@@ -1,0 +1,28 @@
+[package]
+name = "keystore"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+eyre = "0.6"
+thiserror = "1.0"
+uuid = "0.8"
+lru = "0.7"
+
+[dependencies.rusqlite]
+version = "0.26"
+features = ["bundled-sqlcipher", "blob", "wasm32-wasi-vfs"]
+
+[dependencies.refinery]
+git = "https://github.com/rust-db/refinery"
+branch = "main"
+features = ["rusqlite"]
+
+[dependencies.openmls]
+git = "https://github.com/openmls/openmls"
+branch = "main"
+default-features = false
+
+[dependencies.openmls_traits]
+git = "https://github.com/openmls/openmls"
+branch = "main"

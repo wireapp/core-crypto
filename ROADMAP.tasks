@@ -1,0 +1,32 @@
+# CryptoLib
+
+    ☐ Capabilities
+        ☐ Support Proteus
+        ☐ Support MLS
+    ☐ KeyStore
+        ☐ MUST BE ENCRYPTED (with device key?)
+        ☐ Candidates
+            ☐ SQLite (rusqlite) + https://github.com/sqlcipher/sqlcipher
+                - Super stable
+                - Supports WASM
+            ☐ GlueSQL?
+                - Seems alright and has pluggable storage, meaning we can do OTF encrypt/decrypt file storage
+                - Supports WASM OOB
+    ☐ Abstract actionable container on the plaintext data contained in the messages
+    ☐ Implement Crypto Central that abstract both Proteus and MLS management
+    ☐ Reflect events that happen in the group/sessions to respective contexts in the Crypto Central
+        ☐ MLS
+            ☐ Group events
+                ☐ Generic Proposal
+                ☐ Added to a group (Welcome)
+                ☐ Alteration in group members' composition
+                ☐ Group deleted
+                ☐ Group Rekeying
+        ☐ Proteus
+            ☐ Conversation alterations
+                ☐ New client added to the conversation (bound to its user? Or is that a privacy concern)
+                ☐ Client removed from conversation aka HTTP 412
+                ☐ Manual DH key ratchet started (is there a name for this kind of thing? Off-session ratcheting?)
+    ☐ Facilities to encrypt/decrypt data using protocol-specific context (aka. Crypto Central)
+        ☐ Abstract external parameters (prekeys, group configurations) so that it can be provided transparently, regardless from the protocol, and acted on appropriately
+        ☐ If the keystore is managed in CryptoLib, handle key rotation transparently

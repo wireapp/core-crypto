@@ -1,0 +1,31 @@
+[package]
+name = "core-crypto"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+eyre = "0.6"
+thiserror = "1.0"
+uuid = "0.8"
+
+[features]
+
+[dependencies.openmls]
+git = "https://github.com/openmls/openmls"
+branch = "main"
+
+[dependencies.openmls_rust_crypto]
+package = "rust_crypto"
+git = "https://github.com/openmls/openmls"
+branch = "main"
+
+[dependencies.openmls_traits]
+git = "https://github.com/openmls/openmls"
+branch = "main"
+
+[dependencies.proteus]
+git = "https://github.com/wireapp/proteus"
+branch = "otak/sodiumoxide-0.2.7"
+
+[dependencies.keystore]
+path = "../keystore"
