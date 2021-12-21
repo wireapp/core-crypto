@@ -2,6 +2,7 @@
 
 mod message;
 mod error;
+pub use self::error::*;
 mod central;
 mod mls_crypto_provider;
 
@@ -10,6 +11,15 @@ mod mls_crypto_provider;
 pub enum Protocol {
     Mls,
     Proteus,
+}
+
+impl std::fmt::Display for Protocol {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            Protocol::Mls => "MLS",
+            Protocol::Proteus => "Proteus",
+        })
+    }
 }
 
 /////

@@ -1,0 +1,9 @@
+[env]
+EMCC_CFLAGS = "-O2 -s ERROR_ON_UNDEFINED_SYMBOLS=0"
+
+[target.wasm32-unknown-emscripten]
+rustflags = [
+    "-C", "target-feature=-crt-static",
+    "-C", "link-arg=-nostartfiles",
+    "-C", "link-arg=-Wl,--no-entry",
+]

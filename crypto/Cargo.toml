@@ -27,5 +27,8 @@ branch = "main"
 git = "https://github.com/wireapp/proteus"
 branch = "otak/sodiumoxide-0.2.7"
 
-[dependencies.keystore]
+[dependencies.core-crypto-keystore]
 path = "../keystore"
+
+[profile.release]
+lto = true

@@ -1,7 +1,11 @@
 [package]
-name = "keystore"
+name = "core-crypto-keystore"
 version = "0.0.0"
 edition = "2021"
+
+[lib]
+name = "core_crypto_keystore"
+crate-type = ["lib", "cdylib"]
 
 [dependencies]
 eyre = "0.6"
@@ -11,7 +15,8 @@ lru = "0.7"
 
 [dependencies.rusqlite]
 version = "0.26"
-features = ["bundled-sqlcipher", "blob", "wasm32-wasi-vfs"]
+default-features = false
+features = ["bundled-sqlcipher-vendored-openssl", "blob", "wasm32-wasi-vfs", "uuid"]
 
 [dependencies.refinery]
 git = "https://github.com/rust-db/refinery"
@@ -26,3 +31,6 @@ default-features = false
 [dependencies.openmls_traits]
 git = "https://github.com/openmls/openmls"
 branch = "main"
+
+[profile.release]
+lto = true

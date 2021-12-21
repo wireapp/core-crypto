@@ -3,7 +3,7 @@ use crate::error::CryptoResult;
 #[repr(C)]
 pub enum Message<'a> {
     Proteus(proteus::message::Message<'a>),
-    Mls(openmls::framing::validation::ApplicationMessage),
+    Mls(openmls::framing::ApplicationMessage),
 }
 
 impl std::fmt::Debug for Message<'_> {
@@ -23,6 +23,14 @@ impl Message<'_> {
             },
             Message::Proteus(_) => Err(eyre::eyre!("Message is still ciphered!").into()),
             Message::Mls(mls_msg) => Ok(mls_msg.message().into()),
+        }
+    }
+
+    pub fn as_slice(&self) -> CryptoResult<&[u8]> {
+        match self {
+            Message::Proteus(proteus::message::Message::Plain(p_msg)) => Ok(p_msg.cipher_text.as_slice()),
+            Message::Proteus(_) => Err(eyre::eyre!("Message is still ciphered!").into()),
+            Message::Mls(mls_msg) => Ok(mls_msg.message()),
         }
     }
 }
