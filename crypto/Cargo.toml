@@ -29,6 +29,3 @@ branch = "otak/sodiumoxide-0.2.7"
 
 [dependencies.core-crypto-keystore]
 path = "../keystore"
-
-[profile.release]
-lto = true

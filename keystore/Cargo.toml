@@ -12,6 +12,7 @@ eyre = "0.6"
 thiserror = "1.0"
 uuid = "0.8"
 lru = "0.7"
+barrel = { version = "0.7", features = ["sqlite3"] }
 
 [dependencies.rusqlite]
 version = "0.26"
@@ -35,6 +36,3 @@ branch = "main"
 [dependencies.proteus]
 git = "https://github.com/wireapp/proteus"
 branch = "otak/sodiumoxide-0.2.7"
-
-[profile.release]
-lto = true

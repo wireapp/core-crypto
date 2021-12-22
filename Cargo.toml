@@ -1,2 +1,5 @@
 [workspace]
 members = ["crypto", "keystore"]
+
+[profile.release]
+lto = true
