@@ -1,6 +1,7 @@
-use rusqlite::blob::ZeroBlob;
-
-use crate::{error::{CryptoKeystoreError, CryptoKeystoreResult}, CryptoKeystore};
+use crate::{
+    error::{CryptoKeystoreError, CryptoKeystoreResult},
+    CryptoKeystore, MissingKeyErrorKind,
+};
 
 impl CryptoKeystore {
     pub fn store_mls_keypackage_bundle(&self, key: openmls::prelude::KeyPackageBundle) -> CryptoKeystoreResult<()> {
@@ -23,7 +24,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         let data = v.to_key_store_value().map_err(Into::into)?;
 
         use rusqlite::ToSql as _;
-        let zb = ZeroBlob(data.len() as i32);
+        let zb = rusqlite::blob::ZeroBlob(data.len() as i32);
         let params: [rusqlite::types::ToSqlOutput; 2] = [
             k.to_sql().map_err(|e| e.to_string())?,
             zb.to_sql().map_err(|e| e.to_string())?
@@ -57,7 +58,17 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         Self: Sized {
         let k = Self::key_to_hash(k);
         let db = self.conn.lock().unwrap();
-        if let Some(row_id) = db.query_row("SELECT rowid FROM mls_keys WHERE uuid = ?", [k], |r| r.get(0)).ok() {
+        use rusqlite::OptionalExtension as _;
+        let maybe_row_id = db.query_row(
+                "SELECT rowid FROM mls_keys WHERE uuid = ?",
+                [k],
+                |r| r.get(0)
+            )
+            .optional()
+            .ok()
+            .flatten();
+
+        if let Some(row_id) = maybe_row_id {
             if let Some(mut blob) = db.blob_open(
                 rusqlite::DatabaseName::Main,
                 "mls_keys",
@@ -111,7 +122,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
             .map_err(|e| e.to_string())?;
 
         if updated == 0 {
-            return Err("Key uuid doesn't exist in the keystore".into());
+            return Err(CryptoKeystoreError::from(MissingKeyErrorKind::MlsKeyBundle).to_string());
         }
         Ok(())
     }

@@ -1,6 +1,7 @@
 mod error;
 pub use error::*;
 mod mls;
+mod proteus;
 
 mod migrations {
     refinery::embed_migrations!("src/migrations");
