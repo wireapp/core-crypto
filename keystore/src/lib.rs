@@ -12,9 +12,7 @@ const LRU_CACHE_CAP: usize = 100;
 #[derive(Debug)]
 pub struct CryptoKeystore {
     conn: std::sync::Mutex<rusqlite::Connection>,
-    #[allow(dead_code)]
-    // TODO: implement LRU to minimize disk lookups
-    memory_cache: lru::LruCache<String, Vec<u8>>,
+    memory_cache: std::sync::RwLock<lru::LruCache<String, Vec<u8>>>,
 }
 
 impl CryptoKeystore {
@@ -24,7 +22,7 @@ impl CryptoKeystore {
         let conn = std::sync::Mutex::new(conn);
         Ok(Self {
             conn,
-            memory_cache: lru::LruCache::new(LRU_CACHE_CAP),
+            memory_cache: std::sync::RwLock::new(lru::LruCache::new(LRU_CACHE_CAP)),
         })
     }
 

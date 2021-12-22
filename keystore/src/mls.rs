@@ -11,6 +11,11 @@ impl CryptoKeystore {
         self.store(&id, &key).map_err(CryptoKeystoreError::MlsKeyStoreError)?;
         Ok(())
     }
+
+    #[inline(always)]
+    pub fn mls_cache_key<S: std::fmt::Display>(k: S) -> String {
+        format!("mls:{}", k)
+    }
 }
 
 
@@ -57,11 +62,15 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
     where
         Self: Sized {
         let k = Self::key_to_hash(k);
+        if let Some(buf) = self.memory_cache.write().unwrap().get(&k) {
+            return V::from_key_store_value(&buf).ok();
+        }
+
         let db = self.conn.lock().unwrap();
         use rusqlite::OptionalExtension as _;
         let maybe_row_id = db.query_row(
                 "SELECT rowid FROM mls_keys WHERE uuid = ?",
-                [k],
+                [&k],
                 |r| r.get(0)
             )
             .optional()
@@ -79,7 +88,9 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
                 use std::io::Read as _;
                 let mut buf = vec![];
                 blob.read_to_end(&mut buf).map_err(|e| e.to_string()).ok()?;
-                return V::from_key_store_value(&buf).ok();
+                let hydrated_ksv = V::from_key_store_value(&buf).ok();
+                let _ = self.memory_cache.write().unwrap().put(k, buf);
+                return hydrated_ksv;
             }
         }
 
@@ -115,6 +126,8 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
 
     fn delete<K: std::hash::Hash>(&self, k: &K) -> Result<(), Self::Error> {
         let k = Self::key_to_hash(k);
+        let _ = self.memory_cache.write().unwrap().pop(&Self::mls_cache_key(&k));
+
         let updated = self.conn
             .lock()
             .unwrap()
