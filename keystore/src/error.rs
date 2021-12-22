@@ -6,11 +6,12 @@ pub enum MissingKeyErrorKind {
     ProteusPrekey,
 }
 
-
 #[derive(Debug, thiserror::Error)]
 pub enum CryptoKeystoreError {
     #[error("The requested {0} is not present in the store")]
     MissingKeyInStore(#[from] MissingKeyErrorKind),
+    #[error("One of the locks has been poisoned")]
+    LockPoisonError,
     #[error(transparent)]
     IoError(#[from] std::io::Error),
     #[error(transparent)]
@@ -26,7 +27,7 @@ pub enum CryptoKeystoreError {
     #[error(transparent)]
     UuidError(#[from] uuid::Error),
     #[error(transparent)]
-    Other(#[from] eyre::Report)
+    Other(#[from] eyre::Report),
 }
 
 pub type CryptoKeystoreResult<T> = Result<T, CryptoKeystoreError>;

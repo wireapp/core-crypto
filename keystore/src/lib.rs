@@ -29,13 +29,18 @@ impl CryptoKeystore {
     #[inline(always)]
     fn key_to_hash<K: std::hash::Hash>(k: &K) -> String {
         use std::hash::Hasher as _;
-        let mut s  = std::collections::hash_map::DefaultHasher::new();
+        let mut s = std::collections::hash_map::DefaultHasher::new();
         k.hash(&mut s);
         format!("{:X}", s.finish())
     }
 
     pub fn run_migrations(&mut self) -> error::CryptoKeystoreResult<()> {
-        migrations::migrations::runner().run(&mut *self.conn.lock().unwrap())?;
+        migrations::migrations::runner().run(
+            &mut *self
+                .conn
+                .lock()
+                .map_err(|_| CryptoKeystoreError::LockPoisonError)?,
+        )?;
         Ok(())
     }
 }
