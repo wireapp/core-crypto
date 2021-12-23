@@ -114,48 +114,48 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         Some(hydrated_ksv)
     }
 
-    #[allow(unreachable_code, unused_imports)]
-    fn update<K: std::hash::Hash, V: openmls_traits::key_store::FromKeyStoreValue>(
-        &self,
-        _k: &K,
-        _v: &V,
-    ) -> Result<(), Self::Error>
-    where
-        Self: Sized,
-    {
-        unimplemented!();
+    // #[allow(unreachable_code, unused_imports)]
+    // fn update<K: std::hash::Hash, V: openmls_traits::key_store::FromKeyStoreValue>(
+    //     &self,
+    //     _k: &K,
+    //     _v: &V,
+    // ) -> Result<(), Self::Error>
+    // where
+    //     Self: Sized,
+    // {
+    //     unimplemented!();
 
-        let k = Self::key_to_hash(_k);
-        let db = self
-            .conn
-            .lock()
-            .map_err(|_| CryptoKeystoreError::LockPoisonError.to_string())?;
+    //     let k = Self::key_to_hash(_k);
+    //     let db = self
+    //         .conn
+    //         .lock()
+    //         .map_err(|_| CryptoKeystoreError::LockPoisonError.to_string())?;
 
-        let row_id = db
-            .query_row("SELECT rowid FROM mls_keys WHERE uuid = ?", [k], |r| {
-                r.get::<_, i64>(0)
-            })
-            .map_err(|_| "Key uuid doesn't exist in the keystore".to_string())?;
+    //     let row_id = db
+    //         .query_row("SELECT rowid FROM mls_keys WHERE uuid = ?", [k], |r| {
+    //             r.get::<_, i64>(0)
+    //         })
+    //         .map_err(|_| "Key uuid doesn't exist in the keystore".to_string())?;
 
-        let mut blob = db
-            .blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_keys",
-                "key",
-                row_id,
-                false,
-            )
-            .map_err(|_| "Key uuid doesn't exist in the keystore".to_string())?;
+    //     let mut blob = db
+    //         .blob_open(
+    //             rusqlite::DatabaseName::Main,
+    //             "mls_keys",
+    //             "key",
+    //             row_id,
+    //             false,
+    //         )
+    //         .map_err(|_| "Key uuid doesn't exist in the keystore".to_string())?;
 
-        use std::io::{Seek as _, Write as _};
-        blob.seek(std::io::SeekFrom::Start(0))
-            .map_err(|e| e.to_string())?;
+    //     use std::io::{Seek as _, Write as _};
+    //     blob.seek(std::io::SeekFrom::Start(0))
+    //         .map_err(|e| e.to_string())?;
 
-        // FIXME: Faulty API Design/Trait, the V bound should be ToKeyStoreValue to allow a write of `v`.
-        //let _ = blob.write_all(v).map_err(|e| e.to_string())?;
+    //     // FIXME: Faulty API Design/Trait, the V bound should be ToKeyStoreValue to allow a write of `v`.
+    //     //let _ = blob.write_all(v).map_err(|e| e.to_string())?;
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     fn delete<K: std::hash::Hash>(&self, k: &K) -> Result<(), Self::Error> {
         let k = Self::key_to_hash(k);
