@@ -1,7 +1,7 @@
 #![allow(dead_code, unused_variables)]
 
-mod message;
 mod error;
+mod message;
 pub use self::error::*;
 mod central;
 mod mls_crypto_provider;
@@ -15,10 +15,14 @@ pub enum Protocol {
 
 impl std::fmt::Display for Protocol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            Protocol::Mls => "MLS",
-            Protocol::Proteus => "Proteus",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Protocol::Mls => "MLS",
+                Protocol::Proteus => "Proteus",
+            }
+        )
     }
 }
 
@@ -45,7 +49,6 @@ impl std::fmt::Display for Protocol {
 //     mlsApplicationMessage: Vec<u8>   // CoreCrypto borrows the MLSApplicationMessage
 // ) -> Result<(Vec<u8>, SavedStateDelta), Error>   // CoreLogic needs to copy the decrypted GenericMessage and state
 
-
 // These are the events that could occur to an MLS group
 // enum GroupAction {
 //     none,                   // ex: Proposal
@@ -69,8 +72,6 @@ impl std::fmt::Display for Protocol {
 // ) -> Result<(MlsGroupChangeEvent, SavedStateDelta), Error>
 // CoreLogic needs to deep copy the MlsGroupChangeEvent
 // C version would be like: unsafe extern "C" fn(*mut u8, usize)
-
-
 
 //
 // Group Management
@@ -101,7 +102,6 @@ impl std::fmt::Display for Protocol {
 //     adminList: Vec<String>,  // list of UUIDs who can add/remove new users
 //     guestList: Vec<String>   // list of guest client IDs?
 // ) -> Result<(), Error>
-
 
 // // ***
 // // We got an unsolicited Welcome message. Someone invited us to join a

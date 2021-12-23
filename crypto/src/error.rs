@@ -10,7 +10,7 @@ pub enum CryptoError {
     #[error("The requested ({0}) configuration is not contained in this package")]
     ConfigurationMismatch(crate::Protocol),
     #[error(transparent)]
-    Other(#[from] eyre::Report)
+    Other(#[from] eyre::Report),
 }
 
 pub type CryptoResult<T> = Result<T, CryptoError>;

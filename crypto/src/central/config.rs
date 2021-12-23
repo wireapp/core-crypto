@@ -1,4 +1,3 @@
-
 #[repr(C)]
 #[derive(Debug)]
 pub struct MlsConversationConfiguration {
@@ -22,8 +21,8 @@ pub struct ProteusConversationConfiguration {
 #[repr(C)]
 #[derive(Debug)]
 pub enum ConversationConfiguration {
-    Mls(MlsConversationConfiguration),
-    Proteus(ProteusConversationConfiguration),
+    Mls(Box<MlsConversationConfiguration>),
+    Proteus(Box<ProteusConversationConfiguration>),
 }
 
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
@@ -31,8 +30,10 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
 
     fn try_into(self) -> Result<MlsConversationConfiguration, Self::Error> {
         match self {
-            ConversationConfiguration::Mls(mls_config) => Ok(mls_config),
-            _ => Err(crate::CryptoError::ConfigurationMismatch(crate::Protocol::Proteus)),
+            ConversationConfiguration::Mls(mls_config) => Ok(*mls_config),
+            _ => Err(crate::CryptoError::ConfigurationMismatch(
+                crate::Protocol::Proteus,
+            )),
         }
     }
 }
@@ -42,8 +43,10 @@ impl TryInto<ProteusConversationConfiguration> for ConversationConfiguration {
 
     fn try_into(self) -> Result<ProteusConversationConfiguration, Self::Error> {
         match self {
-            ConversationConfiguration::Proteus(proteus_config) => Ok(proteus_config),
-            _ => Err(crate::CryptoError::ConfigurationMismatch(crate::Protocol::Mls)),
+            ConversationConfiguration::Proteus(proteus_config) => Ok(*proteus_config),
+            _ => Err(crate::CryptoError::ConfigurationMismatch(
+                crate::Protocol::Mls,
+            )),
         }
     }
 }

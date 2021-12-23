@@ -49,10 +49,8 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
             .lock()
             .map_err(|_| CryptoKeystoreError::LockPoisonError.to_string())?;
 
-        db.execute(
-            "INSERT INTO mls_keys (uuid, key) VALUES (?, ?)",
-            params
-        ).map_err(|e| e.to_string())?;
+        db.execute("INSERT INTO mls_keys (uuid, key) VALUES (?, ?)", params)
+            .map_err(|e| e.to_string())?;
 
         let row_id = db.last_insert_rowid();
 
@@ -96,24 +94,24 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
             .flatten()
             .flatten()?;
 
-            let mut blob = db
-                .blob_open(
-                    rusqlite::DatabaseName::Main,
-                    "mls_keys",
-                    "key",
-                    row_id,
-                    true,
-                )
-                .ok()?;
+        let mut blob = db
+            .blob_open(
+                rusqlite::DatabaseName::Main,
+                "mls_keys",
+                "key",
+                row_id,
+                true,
+            )
+            .ok()?;
 
-            use std::io::Read as _;
-            let mut buf = vec![];
-            blob.read_to_end(&mut buf).map_err(|e| e.to_string()).ok()?;
-            let hydrated_ksv = V::from_key_store_value(&buf).ok()?;
-            if let Ok(mut cache) = self.memory_cache.try_write() {
-                cache.put(k, buf);
-            }
-            Some(hydrated_ksv)
+        use std::io::Read as _;
+        let mut buf = vec![];
+        blob.read_to_end(&mut buf).map_err(|e| e.to_string()).ok()?;
+        let hydrated_ksv = V::from_key_store_value(&buf).ok()?;
+        if let Ok(mut cache) = self.memory_cache.try_write() {
+            cache.put(k, buf);
+        }
+        Some(hydrated_ksv)
     }
 
     #[allow(unreachable_code, unused_imports)]
@@ -134,11 +132,10 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
             .map_err(|_| CryptoKeystoreError::LockPoisonError.to_string())?;
 
         let row_id = db
-            .query_row(
-                "SELECT rowid FROM mls_keys WHERE uuid = ?",
-                [k],
-                |r| r.get::<_, i64>(0),
-            ).map_err(|_| "Key uuid doesn't exist in the keystore".to_string())?;
+            .query_row("SELECT rowid FROM mls_keys WHERE uuid = ?", [k], |r| {
+                r.get::<_, i64>(0)
+            })
+            .map_err(|_| "Key uuid doesn't exist in the keystore".to_string())?;
 
         let mut blob = db
             .blob_open(
@@ -147,7 +144,8 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
                 "key",
                 row_id,
                 false,
-            ).map_err(|_| "Key uuid doesn't exist in the keystore".to_string())?;
+            )
+            .map_err(|_| "Key uuid doesn't exist in the keystore".to_string())?;
 
         use std::io::{Seek as _, Write as _};
         blob.seek(std::io::SeekFrom::Start(0))
