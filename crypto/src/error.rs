@@ -5,6 +5,8 @@ pub enum CryptoError {
     #[error(transparent)]
     MlsGroupError(#[from] openmls::group::MlsGroupError),
     #[error(transparent)]
+    MlsErrorString(#[from] openmls::error::ErrorString),
+    #[error(transparent)]
     // TODO: Fix inner proteus::session:Error type to not be self
     ProteusSessionError(#[from] proteus::session::Error<Box<CryptoError>>),
     #[error("The requested ({0}) configuration is not contained in this package")]

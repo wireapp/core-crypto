@@ -7,21 +7,36 @@ mod migrations {
     refinery::embed_migrations!("src/migrations");
 }
 
+#[cfg(feature = "memory-cache")]
 const LRU_CACHE_CAP: usize = 100;
 
 #[derive(Debug)]
 pub struct CryptoKeystore {
     conn: std::sync::Mutex<rusqlite::Connection>,
+    #[cfg(feature = "memory-cache")]
     memory_cache: std::sync::RwLock<lru::LruCache<String, Vec<u8>>>,
 }
 
 impl CryptoKeystore {
-    pub fn open_with_key<S: AsRef<str>>(path: S, key: S) -> error::CryptoKeystoreResult<Self> {
+    pub fn open_with_key<P: AsRef<str>, K: rusqlite::ToSql>(
+        path: P,
+        key: K,
+    ) -> error::CryptoKeystoreResult<Self> {
+        let mut store = Self::init_with_key(path, key)?;
+        store.run_migrations()?;
+        Ok(store)
+    }
+
+    fn init_with_key<P: AsRef<str>, K: rusqlite::ToSql>(
+        path: P,
+        key: K,
+    ) -> error::CryptoKeystoreResult<Self> {
         let conn = rusqlite::Connection::open(path.as_ref())?;
-        conn.pragma_update(None, "key", key.as_ref())?;
+        conn.pragma_update(None, "key", key)?;
         let conn = std::sync::Mutex::new(conn);
         Ok(Self {
             conn,
+            #[cfg(feature = "memory-cache")]
             memory_cache: std::sync::RwLock::new(lru::LruCache::new(LRU_CACHE_CAP)),
         })
     }

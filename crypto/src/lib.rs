@@ -4,7 +4,6 @@ mod error;
 mod message;
 pub use self::error::*;
 mod central;
-mod mls_crypto_provider;
 
 #[repr(u8)]
 #[derive(Debug)]

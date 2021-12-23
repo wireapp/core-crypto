@@ -4,7 +4,7 @@ pub fn migration() -> String {
     let mut m = Migration::new();
 
     m.create_table("mls_keys", |t| {
-        t.add_column("uuid", types::uuid().unique(true));
+        t.add_column("uuid", types::varchar(255).unique(true));
         t.add_column("key", types::binary());
     });
 

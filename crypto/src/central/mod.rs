@@ -10,7 +10,7 @@ pub type ConversationId = uuid::Uuid;
 /// For instance: creating a new conversation for example creates a new `Group` in MLS, and sum(users' devices) `Session`s in Proteus
 #[derive(Debug)]
 pub struct Central {
-    mls_backend: crate::mls_crypto_provider::MlsCryptoProvider,
+    mls_backend: mls_crypto_provider::MlsCryptoProvider,
     mls_groups: HashMap<ConversationId, openmls::group::MlsGroup>,
     proteus:
         HashMap<ConversationId, Vec<proteus::session::Session<proteus::keys::IdentityKeyPair>>>,
@@ -22,7 +22,7 @@ impl Central {
         identity_key: S,
     ) -> crate::error::CryptoResult<Self> {
         let mls_backend =
-            crate::mls_crypto_provider::MlsCryptoProvider::try_new(store_path, identity_key)?;
+            mls_crypto_provider::MlsCryptoProvider::try_new(store_path, identity_key)?;
 
         Ok(Self {
             mls_backend,

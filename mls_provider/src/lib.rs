@@ -8,9 +8,13 @@ pub struct MlsCryptoProvider {
 }
 
 impl MlsCryptoProvider {
-    pub fn try_new<S: AsRef<str>>(db_path: S, identity_key: S) -> crate::error::CryptoResult<Self> {
+    pub fn try_new<S: AsRef<str>, K: AsRef<str>>(
+        db_path: S,
+        identity_key: K,
+    ) -> core_crypto_keystore::CryptoKeystoreResult<Self> {
         let crypto = OpenMlsRustCrypto::default();
-        let key_store = core_crypto_keystore::CryptoKeystore::open_with_key(db_path, identity_key)?;
+        let key_store =
+            core_crypto_keystore::CryptoKeystore::open_with_key(db_path, identity_key.as_ref())?;
         Ok(Self { crypto, key_store })
     }
 }

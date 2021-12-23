@@ -7,22 +7,37 @@ edition = "2021"
 name = "core_crypto_keystore"
 crate-type = ["lib", "cdylib"]
 
+[features]
+default = ["memory-cache"]
+memory-cache = ["lru"]
+
 [dependencies]
 eyre = "0.6"
 thiserror = "1.0"
-uuid = "0.8"
-lru = "0.7"
+uuid = { version = "0.8", default-features = false }
+lru = { version = "0.7", optional = true }
 barrel = { version = "0.7", features = ["sqlite3"] }
 
-[dependencies.rusqlite]
+[target.wasm32-unknown-emscripten.dependencies.rusqlite]
 version = "0.26"
 default-features = false
 features = ["bundled-sqlcipher-vendored-openssl", "blob", "wasm32-wasi-vfs", "uuid"]
 
+[target.'cfg(not(target = "wasm32-unknown-emscripten"))'.dependencies.rusqlite]
+version = "0.26"
+default-features = false
+features = ["bundled-sqlcipher", "blob", "uuid"]
+
 [dependencies.refinery]
 git = "https://github.com/rust-db/refinery"
 branch = "main"
+default-features = false
 features = ["rusqlite"]
+
+[dependencies.proteus]
+git = "https://github.com/wireapp/proteus"
+branch = "otak/sodiumoxide-0.2.7"
+default-features = false
 
 [dependencies.openmls]
 git = "https://github.com/openmls/openmls"
@@ -32,7 +47,9 @@ default-features = false
 [dependencies.openmls_traits]
 git = "https://github.com/openmls/openmls"
 branch = "main"
+default-features = false
 
-[dependencies.proteus]
-git = "https://github.com/wireapp/proteus"
-branch = "otak/sodiumoxide-0.2.7"
+[dev-dependencies.openmls_rust_crypto]
+git = "https://github.com/openmls/openmls"
+branch = "main"
+default-features = false

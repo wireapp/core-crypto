@@ -1,5 +1,5 @@
 [workspace]
-members = ["crypto", "keystore"]
+members = ["crypto", "keystore", "mls_provider"]
 
 [profile.release]
 lto = true

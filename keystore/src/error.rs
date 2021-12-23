@@ -22,6 +22,8 @@ pub enum CryptoKeystoreError {
     KeyPackageError(#[from] openmls::prelude::KeyPackageError),
     #[error(transparent)]
     PrekeyDecodeError(#[from] proteus::internal::types::DecodeError),
+    #[error(transparent)]
+    PrekeyEncodeError(#[from] proteus::internal::types::EncodeError),
     #[error("{0}")]
     MlsKeyStoreError(String),
     #[error(transparent)]

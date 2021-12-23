@@ -17,8 +17,9 @@ impl CryptoKeystore {
         Ok(())
     }
 
+    #[cfg(feature = "memory-cache")]
     #[inline(always)]
-    pub fn mls_cache_key<S: std::fmt::Display>(k: S) -> String {
+    fn mls_cache_key<S: std::fmt::Display>(k: S) -> String {
         format!("mls:{}", k)
     }
 }
@@ -77,10 +78,14 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         Self: Sized,
     {
         let k = Self::key_to_hash(k);
+        #[cfg(feature = "memory-cache")]
         if let Ok(mut cache) = self.memory_cache.try_write() {
-            return cache
+            if let Some(value) = cache
                 .get(&k)
-                .and_then(|buf| V::from_key_store_value(buf).ok());
+                .and_then(|buf| V::from_key_store_value(buf).ok())
+            {
+                return Some(value);
+            }
         }
 
         let db = self.conn.lock().ok()?;
@@ -108,57 +113,19 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         let mut buf = vec![];
         blob.read_to_end(&mut buf).map_err(|e| e.to_string()).ok()?;
         let hydrated_ksv = V::from_key_store_value(&buf).ok()?;
+
+        #[cfg(feature = "memory-cache")]
         if let Ok(mut cache) = self.memory_cache.try_write() {
             cache.put(k, buf);
         }
+
         Some(hydrated_ksv)
     }
 
-    // #[allow(unreachable_code, unused_imports)]
-    // fn update<K: std::hash::Hash, V: openmls_traits::key_store::FromKeyStoreValue>(
-    //     &self,
-    //     _k: &K,
-    //     _v: &V,
-    // ) -> Result<(), Self::Error>
-    // where
-    //     Self: Sized,
-    // {
-    //     unimplemented!();
-
-    //     let k = Self::key_to_hash(_k);
-    //     let db = self
-    //         .conn
-    //         .lock()
-    //         .map_err(|_| CryptoKeystoreError::LockPoisonError.to_string())?;
-
-    //     let row_id = db
-    //         .query_row("SELECT rowid FROM mls_keys WHERE uuid = ?", [k], |r| {
-    //             r.get::<_, i64>(0)
-    //         })
-    //         .map_err(|_| "Key uuid doesn't exist in the keystore".to_string())?;
-
-    //     let mut blob = db
-    //         .blob_open(
-    //             rusqlite::DatabaseName::Main,
-    //             "mls_keys",
-    //             "key",
-    //             row_id,
-    //             false,
-    //         )
-    //         .map_err(|_| "Key uuid doesn't exist in the keystore".to_string())?;
-
-    //     use std::io::{Seek as _, Write as _};
-    //     blob.seek(std::io::SeekFrom::Start(0))
-    //         .map_err(|e| e.to_string())?;
-
-    //     // FIXME: Faulty API Design/Trait, the V bound should be ToKeyStoreValue to allow a write of `v`.
-    //     //let _ = blob.write_all(v).map_err(|e| e.to_string())?;
-
-    //     Ok(())
-    // }
-
     fn delete<K: std::hash::Hash>(&self, k: &K) -> Result<(), Self::Error> {
         let k = Self::key_to_hash(k);
+
+        #[cfg(feature = "memory-cache")]
         let _ = self
             .memory_cache
             .write()
