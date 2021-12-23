@@ -9,16 +9,17 @@ impl crate::CryptoKeystore {
         format!("proteus:{}", k)
     }
 
-    pub fn store_prekey(&self, prekey: proteus::keys::PreKey) -> crate::CryptoKeystoreResult<()> {
-        // let prekey = proteus::keys::PreKey::new(proteus::keys::PreKeyId::new(PREKEY_ID));
+    pub fn store_prekey(&self, prekey: &proteus::keys::PreKey) -> crate::CryptoKeystoreResult<()> {
         let prekey_buf = prekey.serialise()?;
-        let db = self
+        let mut db = self
             .conn
             .lock()
             .map_err(|_| CryptoKeystoreError::LockPoisonError)?;
 
+        let transaction = db.transaction()?;
+
         use rusqlite::ToSql as _;
-        db.execute(
+        transaction.execute(
             "INSERT INTO proteus_prekeys (id, key) VALUES (?, ?)",
             [
                 prekey.key_id.value().to_sql()?,
@@ -26,9 +27,9 @@ impl crate::CryptoKeystore {
             ],
         )?;
 
-        let row_id = db.last_insert_rowid();
+        let row_id = transaction.last_insert_rowid();
 
-        let mut blob = db.blob_open(
+        let mut blob = transaction.blob_open(
             rusqlite::DatabaseName::Main,
             "proteus_prekeys",
             "key",
@@ -37,6 +38,9 @@ impl crate::CryptoKeystore {
         )?;
         use std::io::Write as _;
         blob.write_all(&prekey_buf)?;
+        drop(blob);
+
+        transaction.commit()?;
 
         Ok(())
     }
@@ -53,21 +57,25 @@ impl proteus::session::PreKeyStore for crate::CryptoKeystore {
         let memory_cache_key = Self::proteus_memory_key(id);
 
         #[cfg(feature = "memory-cache")]
-        if let Some(buf) = self
-            .memory_cache
-            .write()
-            .map_err(|_| CryptoKeystoreError::LockPoisonError)?
-            .get(&memory_cache_key)
-        {
-            return Ok(Some(proteus::keys::PreKey::deserialise(buf)?));
+        if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
+            if let Some(buf) = self
+                .memory_cache
+                .write()
+                .map_err(|_| CryptoKeystoreError::LockPoisonError)?
+                .get(&memory_cache_key)
+            {
+                return Ok(Some(proteus::keys::PreKey::deserialise(buf)?));
+            }
         }
 
-        let db = self
+        let mut db = self
             .conn
             .lock()
             .map_err(|_| CryptoKeystoreError::LockPoisonError)?;
 
-        let maybe_row_id = db
+        let transaction = db.transaction()?;
+
+        let maybe_row_id = transaction
             .query_row(
                 "SELECT rowid FROM proteus_prekeys WHERE id = ?",
                 [id.value()],
@@ -76,7 +84,7 @@ impl proteus::session::PreKeyStore for crate::CryptoKeystore {
             .optional()?;
 
         if let Some(row_id) = maybe_row_id {
-            let mut blob = db.blob_open(
+            let mut blob = transaction.blob_open(
                 rusqlite::DatabaseName::Main,
                 "proteus_prekeys",
                 "key",
@@ -90,10 +98,12 @@ impl proteus::session::PreKeyStore for crate::CryptoKeystore {
             let prekey = proteus::keys::PreKey::deserialise(&buf)?;
 
             #[cfg(feature = "memory-cache")]
-            self.memory_cache
-                .write()
-                .map_err(|_| CryptoKeystoreError::LockPoisonError)?
-                .put(memory_cache_key, buf);
+            if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
+                self.memory_cache
+                    .write()
+                    .map_err(|_| CryptoKeystoreError::LockPoisonError)?
+                    .put(memory_cache_key, buf);
+            }
 
             return Ok(Some(prekey));
         }
@@ -103,11 +113,13 @@ impl proteus::session::PreKeyStore for crate::CryptoKeystore {
 
     fn remove(&mut self, id: proteus::keys::PreKeyId) -> Result<(), Self::Error> {
         #[cfg(feature = "memory-cache")]
-        let _ = self
-            .memory_cache
-            .write()
-            .map_err(|_| CryptoKeystoreError::LockPoisonError)?
-            .pop(&format!("proteus:{}", id));
+        if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
+            let _ = self
+                .memory_cache
+                .write()
+                .map_err(|_| CryptoKeystoreError::LockPoisonError)?
+                .pop(&format!("proteus:{}", id));
+        }
 
         let updated = self
             .conn
@@ -118,6 +130,7 @@ impl proteus::session::PreKeyStore for crate::CryptoKeystore {
         if updated == 0 {
             return Err(MissingKeyErrorKind::ProteusPrekey.into());
         }
+
         Ok(())
     }
 }

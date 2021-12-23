@@ -6,8 +6,8 @@ mod tests {
 
     #[test]
     fn can_create_and_init_store() {
-        let _ = setup("general");
+        let store = setup("general");
 
-        teardown("general");
+        teardown(store);
     }
 }

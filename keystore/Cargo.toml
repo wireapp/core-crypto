@@ -7,6 +7,14 @@ edition = "2021"
 name = "core_crypto_keystore"
 crate-type = ["lib", "cdylib"]
 
+[[bench]]
+name = "read"
+harness = false
+
+[[bench]]
+name = "write"
+harness = false
+
 [features]
 default = ["memory-cache"]
 memory-cache = ["lru"]
@@ -48,6 +56,9 @@ default-features = false
 git = "https://github.com/openmls/openmls"
 branch = "main"
 default-features = false
+
+[dev-dependencies]
+criterion = "0.3"
 
 [dev-dependencies.openmls_rust_crypto]
 git = "https://github.com/openmls/openmls"

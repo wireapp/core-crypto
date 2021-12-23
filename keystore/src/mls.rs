@@ -45,17 +45,20 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
             zb.to_sql().map_err(|e| e.to_string())?,
         ];
 
-        let db = self
+        let mut db = self
             .conn
             .lock()
             .map_err(|_| CryptoKeystoreError::LockPoisonError.to_string())?;
 
-        db.execute("INSERT INTO mls_keys (uuid, key) VALUES (?, ?)", params)
+        let transaction = db.transaction().map_err(|e| e.to_string())?;
+
+        transaction
+            .execute("INSERT INTO mls_keys (uuid, key) VALUES (?, ?)", params)
             .map_err(|e| e.to_string())?;
 
-        let row_id = db.last_insert_rowid();
+        let row_id = transaction.last_insert_rowid();
 
-        let mut blob = db
+        let mut blob = transaction
             .blob_open(
                 rusqlite::DatabaseName::Main,
                 "mls_keys",
@@ -64,8 +67,12 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
                 false,
             )
             .map_err(|e| e.to_string())?;
+
         use std::io::Write as _;
         blob.write_all(&data).map_err(|e| e.to_string())?;
+        drop(blob);
+
+        transaction.commit().map_err(|e| e.to_string())?;
 
         Ok(())
     }
@@ -79,18 +86,21 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
     {
         let k = Self::key_to_hash(k);
         #[cfg(feature = "memory-cache")]
-        if let Ok(mut cache) = self.memory_cache.try_write() {
-            if let Some(value) = cache
-                .get(&k)
-                .and_then(|buf| V::from_key_store_value(buf).ok())
-            {
-                return Some(value);
+        if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
+            if let Ok(mut cache) = self.memory_cache.try_write() {
+                if let Some(value) = cache
+                    .get(&k)
+                    .and_then(|buf| V::from_key_store_value(buf).ok())
+                {
+                    return Some(value);
+                }
             }
         }
 
-        let db = self.conn.lock().ok()?;
+        let mut db = self.conn.lock().ok()?;
+        let transaction = db.transaction().ok()?;
         use rusqlite::OptionalExtension as _;
-        let row_id = db
+        let row_id = transaction
             .query_row("SELECT rowid FROM mls_keys WHERE uuid = ?", [&k], |r| {
                 r.get(0)
             })
@@ -99,7 +109,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
             .flatten()
             .flatten()?;
 
-        let mut blob = db
+        let mut blob = transaction
             .blob_open(
                 rusqlite::DatabaseName::Main,
                 "mls_keys",
@@ -115,8 +125,10 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         let hydrated_ksv = V::from_key_store_value(&buf).ok()?;
 
         #[cfg(feature = "memory-cache")]
-        if let Ok(mut cache) = self.memory_cache.try_write() {
-            cache.put(k, buf);
+        if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
+            if let Ok(mut cache) = self.memory_cache.try_write() {
+                cache.put(k, buf);
+            }
         }
 
         Some(hydrated_ksv)
@@ -126,11 +138,13 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         let k = Self::key_to_hash(k);
 
         #[cfg(feature = "memory-cache")]
-        let _ = self
-            .memory_cache
-            .write()
-            .map_err(|_| CryptoKeystoreError::LockPoisonError.to_string())?
-            .pop(&Self::mls_cache_key(&k));
+        if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
+            let _ = self
+                .memory_cache
+                .write()
+                .map_err(|_| CryptoKeystoreError::LockPoisonError.to_string())?
+                .pop(&Self::mls_cache_key(&k));
+        }
 
         let updated = self
             .conn

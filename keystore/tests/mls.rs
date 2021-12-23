@@ -55,6 +55,6 @@ mod tests {
         assert_eq!(keypackage_bundle.key_package(), bundle2.key_package());
         let _ = store.delete(&key).unwrap();
 
-        teardown("mls");
+        teardown(store);
     }
 }

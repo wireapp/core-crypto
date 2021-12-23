@@ -13,6 +13,6 @@ pub fn setup(name: &str) -> core_crypto_keystore::CryptoKeystore {
     store
 }
 
-pub fn teardown(name: &str) {
-    std::fs::remove_file(&get_file_path(name)).unwrap();
+pub fn teardown(store: CryptoKeystore) {
+    store.delete_database_but_please_be_sure().unwrap();
 }
