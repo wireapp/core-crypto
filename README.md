@@ -3,7 +3,8 @@
 ## Parts
 
 * CoreCrypto: Abstracts MLS & Proteus in a unified API
-* Keystore: As of 17/12/2021: PoC of a keystore powered by `rusqlite` (SQLite + SQLCipher)
+* Keystore: Encrypted Keystore powered by SQLite + SQLCipher
+* MlsProvider: RustCryto + Keystore MLS crypto provider
 
 ## Usage
 

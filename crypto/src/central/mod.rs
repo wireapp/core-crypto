@@ -30,6 +30,7 @@ impl Central {
             proteus: Default::default(),
         })
     }
+
     /// Create a new (empty) conversation
     pub fn new_conversation(
         &mut self,
