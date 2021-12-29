@@ -1,112 +1,131 @@
-#![allow(dead_code, unused_variables)]
-
 mod error;
-mod message;
 pub use self::error::*;
-mod central;
 
-#[repr(u8)]
-#[derive(Debug)]
-pub enum Protocol {
-    Mls,
-    Proteus,
+use std::collections::HashMap;
+
+pub type ConversationId = uuid::Uuid;
+
+#[repr(C)]
+#[derive(Debug, Default)]
+pub struct MlsConversationConfiguration {
+    pub(crate) init_keys: Vec<Vec<u8>>,
+    pub(crate) admins: Vec<uuid::Uuid>,
+    // FIXME: No way to configure ciphersuites.
+    // FIXME: Can maybe only check it against the supported ciphersuites in the group afterwards?
+    pub(crate) ciphersuite: (),
+    // FIXME: openmls::group::config::UpdatePolicy is NOT configurable at the moment.
+    // FIXME: None of the fields are available and there are no way to build it/mutate it
+    pub(crate) key_rotation_span: (),
 }
 
-impl std::fmt::Display for Protocol {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Protocol::Mls => "MLS",
-                Protocol::Proteus => "Proteus",
-            }
-        )
+// impl Into<openmls::group::MlsGroupConfig> for MlsConversationConfiguration {
+//     fn into(self) -> openmls::group::MlsGroupConfig {
+//         let mls_group_config = openmls::group::MlsGroupConfig::builder()
+//             .wire_format(openmls::framing::WireFormat::MlsCiphertext)
+//             // .padding_size(0) TODO: Understand what it does and define a safe value
+//             // .max_past_epochs(5) TODO: Understand what it does and define a safe value
+//             // .number_of_resumtion_secrets(0) TODO: Understand what it does and define a safe value
+//             // .use_ratchet_tree_extension(false) TODO: Understand what it does and define a safe value
+//             .build();
+
+//         mls_group_config
+//     }
+// }
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct MlsCentral {
+    configuration: MlsConversationConfiguration,
+    mls_backend: mls_crypto_provider::MlsCryptoProvider,
+    mls_groups: HashMap<ConversationId, openmls::group::MlsGroup>,
+}
+
+impl MlsCentral {
+    pub fn try_new<S: AsRef<str>>(
+        store_path: S,
+        identity_key: S,
+    ) -> crate::error::CryptoResult<Self> {
+        let mls_backend =
+            mls_crypto_provider::MlsCryptoProvider::try_new(store_path, identity_key)?;
+
+        Ok(Self {
+            configuration: Default::default(),
+            mls_backend,
+            mls_groups: Default::default(),
+        })
+    }
+
+    pub fn new_conversation(
+        &mut self,
+        id: ConversationId,
+        _config: MlsConversationConfiguration,
+    ) -> crate::error::CryptoResult<()> {
+        let group = openmls::group::MlsGroup::new(
+            &self.mls_backend,
+            &openmls::group::MlsGroupConfig::default(),
+            openmls::group::GroupId::from_slice(id.as_bytes()),
+            &[],
+        ).map_err(MlsError::from)?;
+
+        self.mls_groups.insert(id, group);
+
+        Ok(())
+    }
+
+    pub fn encrypt_message<M: AsRef<[u8]>>(
+        &mut self,
+        conversation: ConversationId,
+        message: M,
+    ) -> CryptoResult<Vec<u8>> {
+        let group = self.mls_groups
+            .get_mut(&conversation)
+            .ok_or(CryptoError::ConversationNotFound(
+                conversation
+            ))?;
+
+        use openmls::prelude::{TlsSizeTrait as _, TlsSerializeTrait as _};
+
+        let message = group.create_message(&self.mls_backend, message.as_ref()).map_err(crate::MlsError::from)?;
+        let mut buf = Vec::with_capacity(message.tls_serialized_len());
+        // TODO: Define serialization format? Probably won't be the TLS thingy?
+        message.tls_serialize(&mut buf)
+            .map_err(openmls::prelude::MlsCiphertextError::from)
+            .map_err(MlsError::from)?;
+
+        Ok(buf)
+    }
+
+    pub fn decrypt_message<M: std::io::Read>(
+        &mut self,
+        conversation: ConversationId,
+        message: &mut M,
+    ) -> CryptoResult<Vec<u8>> {
+        use openmls::prelude::TlsDeserializeTrait as _;
+
+        let raw_msg = openmls::framing::MlsCiphertext::tls_deserialize(message)
+            .map_err(openmls::prelude::MlsCiphertextError::from)
+            .map_err(MlsError::from)?;
+
+        let group = self.mls_groups
+            .get_mut(&conversation)
+            .ok_or(CryptoError::ConversationNotFound(
+                conversation
+            ))?;
+
+        // FIXME: Waiting on https://github.com/openmls/openmls/pull/670
+        // openmls::framing::MlsMessageIn::
+
+        // let parsed_message = group.parse_message(
+        //     &raw_msg,
+        //     &self.mls_backend,
+        // ).map_err(MlsError::from)?;
+
+        // let message = group.process_unverified_message(
+        //     parsed_message,
+        //     None,
+        //     &self.mls_backend,
+        // ).map_err(MlsError::from)?;
+
+        todo!()
     }
 }
-
-/////
-// Sending
-//
-//
-// To avoid possible decryption errors, CoreLogic will not send a message for encryption with MLS
-//  until the backend is up and there are no incoming messages to process for that conversation.
-//
-// This is a blocking, synchronous call from CoreLogic to CoreCrypto. If successful, it returns an encrypted
-//  MLSApplicationMessage.
-// pub fun encryptMlsMessage(
-//     qualifiedConversationId: String,
-//     messageId: String,  // UUID4?
-//     genericMessage: Vec<u8>    // CoreCrypto borrows genericMessage
-// ) -> Result<Vec<u8>, Error>    // CoreLogic needs to copy the MLSApplicationMessage
-
-//
-// Receiving
-//
-
-// pub fun decryptMlsApplicationMessage(
-//     mlsApplicationMessage: Vec<u8>   // CoreCrypto borrows the MLSApplicationMessage
-// ) -> Result<(Vec<u8>, SavedStateDelta), Error>   // CoreLogic needs to copy the decrypted GenericMessage and state
-
-// These are the events that could occur to an MLS group
-// enum GroupAction {
-//     none,                   // ex: Proposal
-//     welcomedToGroup,
-//     modifiedGroupMembers,
-//     deletedGroup,
-//     rekeyedGroup            // does CoreLogic care about this?
-// }
-
-// struct MlsGroupChangeEvent {
-//     groupChangeEvent: GroupAction,
-//     qualifiedConversationId: Option<String>,
-//     addedClientList: Option<Vec<String>>,     // only relevant for newGroup and modifyGroupMembers
-//     removedClientList: Option<Vec<String>>    // only relevant for modifyGroupMembers
-// }
-
-// pub fun processMlsControlMessage(
-//     mlsControlMessage: Vec<u8>,             // CoreCrypto borrows the MLSControlMessage
-//     // We can include the callback here or once at initialization time
-//     wecomeCallback: Option<unsafe extern fn(&mut self, String, Vec<(String, String)>)>
-// ) -> Result<(MlsGroupChangeEvent, SavedStateDelta), Error>
-// CoreLogic needs to deep copy the MlsGroupChangeEvent
-// C version would be like: unsafe extern "C" fn(*mut u8, usize)
-
-//
-// Group Management
-//
-
-// pub fun newMlsConversation(
-//     qualifiedConversationId: String,
-//     initKeyList: Vec<InitKey>,
-//     // MlsConfiguration includes among other fun things:
-//     //   list of admins
-//     //   ciphersuite
-//     //   amount of time before key rotation (ex: 1 week, 1 day, 1 hour)
-//     groupConfig: mut MlsConfiguration
-// ) -> Result<(Vec<u8>, SavedStateDelta), Error>   // The MLSControlMessage
-
-// pub fun deleteConversation(
-//     qualifiedConversationId: String
-// ) -> Result<(Vec<u8>, SavedStateDelta), Error>
-
-// pub fun modifyParticipants(
-//     qualifiedConversationId: String,
-//     addedClientList: Option<Vec<String>>,
-//     removedClientList: Option<Vec<String>>
-// ) -> Result<(Vec<u8>, SavedStateDelta), Error>
-
-// pub fun modifyAuthorization(
-//     qualifiedConversationId: String,
-//     adminList: Vec<String>,  // list of UUIDs who can add/remove new users
-//     guestList: Vec<String>   // list of guest client IDs?
-// ) -> Result<(), Error>
-
-// // ***
-// // We got an unsolicited Welcome message. Someone invited us to join a
-// // conversation (could also be a 1:1 "connection")
-// // Is that OK CoreLogic?
-// fun onWelcomeCallback(
-//     inviter: String,          // userID of inviter
-//     participants: Vec<(String, String)> // list of tuples of client IDs with each's wire handle
-// ) -> Result<String, Error>   // Kotlin, return conversation ID if we should create
