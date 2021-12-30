@@ -1,16 +1,18 @@
 mod error;
 pub use self::error::*;
 
-mod identifiers;
 pub mod conversation;
+mod identifiers;
 
 pub mod prelude {
-    pub use crate::error::*;
     pub use crate::conversation::*;
+    pub use crate::error::*;
     pub use crate::MlsCentral;
 }
 
-use conversation::{MlsConversationConfiguration, ConversationId, MlsConversation, MlsConversationCreationMessage};
+use conversation::{
+    ConversationId, MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage,
+};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::messages::Welcome;
 use std::collections::HashMap;
@@ -51,10 +53,7 @@ impl MlsCentral {
         id: ConversationId,
         config: MlsConversationConfiguration,
     ) -> crate::error::CryptoResult<Option<MlsConversationCreationMessage>> {
-        let (
-            conversation,
-            messages,
-        ) = MlsConversation::create(id, config, &self.mls_backend)?;
+        let (conversation, messages) = MlsConversation::create(id, config, &self.mls_backend)?;
         self.mls_groups.insert(id, conversation);
         Ok(messages)
     }
@@ -78,7 +77,8 @@ impl MlsCentral {
 
         use openmls::prelude::{TlsSerializeTrait as _, TlsSizeTrait as _};
 
-        let message = conversation.group
+        let message = conversation
+            .group
             .create_message(&self.mls_backend, message.as_ref())
             .map_err(crate::MlsError::from)?;
 
@@ -113,11 +113,13 @@ impl MlsCentral {
 
         let msg_in = openmls::framing::MlsMessageIn::Ciphertext(Box::new(raw_msg));
 
-        let parsed_message = conversation.group
+        let parsed_message = conversation
+            .group
             .parse_message(msg_in, &self.mls_backend)
             .map_err(MlsError::from)?;
 
-        let message = conversation.group
+        let message = conversation
+            .group
             .process_unverified_message(parsed_message, None, &self.mls_backend)
             .map_err(MlsError::from)?;
 

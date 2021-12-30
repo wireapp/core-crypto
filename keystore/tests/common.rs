@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use core_crypto_keystore::CryptoKeystore;
 
 const TEST_ENCRYPTION_KEY: &str = "test1234";

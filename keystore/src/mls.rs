@@ -1,8 +1,4 @@
-use crate::{
-    CryptoKeystoreError,
-    CryptoKeystore,
-    MissingKeyErrorKind,
-};
+use crate::{CryptoKeystore, CryptoKeystoreError, MissingKeyErrorKind};
 
 impl CryptoKeystore {
     #[cfg(test)]

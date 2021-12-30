@@ -1,8 +1,7 @@
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::{prelude::KeyPackage, group::MlsGroup, messages::Welcome, framing::MlsMessageOut};
+use openmls::{framing::MlsMessageOut, group::MlsGroup, messages::Welcome, prelude::KeyPackage};
 
-use crate::{CryptoResult, MlsError, identifiers::ZeroKnowledgeUuid};
-
+use crate::{identifiers::ZeroKnowledgeUuid, CryptoResult, MlsError};
 
 pub type ConversationId = ZeroKnowledgeUuid;
 
@@ -64,12 +63,11 @@ impl MlsConversation {
         .map_err(MlsError::from)?;
 
         let mut maybe_creation_message = None;
-        if config.init_keys.len() > 0 {
-            let (message, welcome) = group.add_members(backend, &config.init_keys).map_err(MlsError::from)?;
-            maybe_creation_message = Some(MlsConversationCreationMessage {
-                message,
-                welcome,
-            });
+        if !config.init_keys.is_empty() {
+            let (message, welcome) = group
+                .add_members(backend, &config.init_keys)
+                .map_err(MlsError::from)?;
+            maybe_creation_message = Some(MlsConversationCreationMessage { message, welcome });
         }
 
         let conversation = Self {

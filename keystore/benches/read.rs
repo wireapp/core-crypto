@@ -7,11 +7,14 @@ use openmls::{
     key_packages::KeyPackageBundle,
 };
 use openmls_rust_crypto_provider::OpenMlsRustCrypto;
-use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider, random::OpenMlsRand};
+use openmls_traits::{key_store::OpenMlsKeyStore, random::OpenMlsRand, OpenMlsCryptoProvider};
 
+#[cfg(feature = "proteus")]
 fn benchmark_reads_proteus(c: &mut Criterion) {
-    let mut store_cached = CryptoKeystore::open_with_key("bench_cached_read_proteus", "key").unwrap();
-    let mut store_uncached = CryptoKeystore::open_with_key("bench_uncached_read_proteus", "key").unwrap();
+    let mut store_cached =
+        CryptoKeystore::open_with_key("bench_cached_read_proteus", "key").unwrap();
+    let mut store_uncached =
+        CryptoKeystore::open_with_key("bench_uncached_read_proteus", "key").unwrap();
     store_uncached.cache(false);
 
     let prekey_id = proteus::keys::PreKeyId::new(28273);
@@ -84,23 +87,19 @@ fn benchmark_reads_mls(c: &mut Criterion) {
     let mut group = c.benchmark_group("MLS Reads");
     group.throughput(Throughput::Elements(1));
 
-    group.bench_with_input(
-        BenchmarkId::new("Reads", "cached"),
-        &key,
-        |b, key| b.iter(|| {
+    group.bench_with_input(BenchmarkId::new("Reads", "cached"), &key, |b, key| {
+        b.iter(|| {
             let bundle: KeyPackageBundle = store_cached.read(&key).unwrap();
             black_box(bundle);
-        }),
-    );
+        })
+    });
 
-    group.bench_with_input(
-        BenchmarkId::new("Reads", "uncached"),
-        &key,
-        |b, key| b.iter(|| {
+    group.bench_with_input(BenchmarkId::new("Reads", "uncached"), &key, |b, key| {
+        b.iter(|| {
             let bundle: KeyPackageBundle = store_uncached.read(&key).unwrap();
             black_box(bundle);
-        }),
-    );
+        })
+    });
 
     group.finish();
 

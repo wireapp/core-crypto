@@ -1,6 +1,6 @@
 mod common;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "proteus"))]
 mod tests {
     use super::common::*;
     use proteus::keys::{PreKey, PreKeyId};

@@ -7,10 +7,12 @@ use openmls::{
     key_packages::KeyPackageBundle,
 };
 use openmls_rust_crypto_provider::OpenMlsRustCrypto;
-use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider, random::OpenMlsRand};
-use proteus::keys::{PreKey, PreKeyId};
+use openmls_traits::{key_store::OpenMlsKeyStore, random::OpenMlsRand, OpenMlsCryptoProvider};
 
+#[cfg(feature = "proteus")]
 fn benchmark_writes_proteus(c: &mut Criterion) {
+    use proteus::keys::{PreKey, PreKeyId};
+
     let store = CryptoKeystore::open_with_key("bench_write", "key").unwrap();
     let backend = OpenMlsRustCrypto::default();
 
