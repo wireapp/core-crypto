@@ -1,46 +1,31 @@
 mod error;
 pub use self::error::*;
 
-use std::collections::HashMap;
+mod identifiers;
+pub mod conversation;
 
-pub type ConversationId = uuid::Uuid;
-
-#[repr(C)]
-#[derive(Debug, Default)]
-pub struct MlsConversationConfiguration {
-    pub(crate) init_keys: Vec<Vec<u8>>,
-    pub(crate) admins: Vec<uuid::Uuid>,
-    // FIXME: No way to configure ciphersuites.
-    // FIXME: Can maybe only check it against the supported ciphersuites in the group afterwards?
-    pub(crate) ciphersuite: (),
-    // FIXME: openmls::group::config::UpdatePolicy is NOT configurable at the moment.
-    // FIXME: None of the fields are available and there are no way to build it/mutate it
-    pub(crate) key_rotation_span: (),
+pub mod prelude {
+    pub use crate::error::*;
+    pub use crate::conversation::*;
+    pub use crate::MlsCentral;
 }
 
-// impl Into<openmls::group::MlsGroupConfig> for MlsConversationConfiguration {
-//     fn into(self) -> openmls::group::MlsGroupConfig {
-//         let mls_group_config = openmls::group::MlsGroupConfig::builder()
-//             .wire_format(openmls::framing::WireFormat::MlsCiphertext)
-//             // .padding_size(0) TODO: Understand what it does and define a safe value
-//             // .max_past_epochs(5) TODO: Understand what it does and define a safe value
-//             // .number_of_resumtion_secrets(0) TODO: Understand what it does and define a safe value
-//             // .use_ratchet_tree_extension(false) TODO: Understand what it does and define a safe value
-//             .build();
+use conversation::{MlsConversationConfiguration, ConversationId, MlsConversation, MlsConversationCreationMessage};
+use mls_crypto_provider::MlsCryptoProvider;
+use openmls::messages::Welcome;
+use std::collections::HashMap;
 
-//         mls_group_config
-//     }
-// }
-
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct MlsCentral {
-    configuration: MlsConversationConfiguration,
-    mls_backend: mls_crypto_provider::MlsCryptoProvider,
-    mls_groups: HashMap<ConversationId, openmls::group::MlsGroup>,
+    mls_backend: MlsCryptoProvider,
+    mls_groups: HashMap<ConversationId, MlsConversation>,
+    welcome_callback: Option<fn(Welcome)>,
 }
 
 impl MlsCentral {
+    /// Tries to initialize the MLS Central object.
+    /// Takes a store path (i.e. Disk location of the embedded database, should be consistent between messaging sessions)
+    /// And a root identity key (i.e. enclaved encryption key for this device)
     pub fn try_new<S: AsRef<str>>(
         store_path: S,
         identity_key: S,
@@ -49,43 +34,51 @@ impl MlsCentral {
             mls_crypto_provider::MlsCryptoProvider::try_new(store_path, identity_key)?;
 
         Ok(Self {
-            configuration: Default::default(),
             mls_backend,
-            mls_groups: Default::default(),
+            mls_groups: HashMap::new(),
+            welcome_callback: None,
         })
     }
 
+    /// Callback for the welcome messages. The passed message will be passed along to the MLS DS
+    pub fn on_welcome(&mut self, callback: fn(Welcome)) {
+        self.welcome_callback = Some(callback);
+    }
+
+    /// Create a new empty conversation
     pub fn new_conversation(
         &mut self,
         id: ConversationId,
-        _config: MlsConversationConfiguration,
-    ) -> crate::error::CryptoResult<()> {
-        let group = openmls::group::MlsGroup::new(
-            &self.mls_backend,
-            &openmls::group::MlsGroupConfig::default(),
-            openmls::group::GroupId::from_slice(id.as_bytes()),
-            &[],
-        )
-        .map_err(MlsError::from)?;
-
-        self.mls_groups.insert(id, group);
-
-        Ok(())
+        config: MlsConversationConfiguration,
+    ) -> crate::error::CryptoResult<Option<MlsConversationCreationMessage>> {
+        let (
+            conversation,
+            messages,
+        ) = MlsConversation::create(id, config, &self.mls_backend)?;
+        self.mls_groups.insert(id, conversation);
+        Ok(messages)
     }
 
+    // pub fn add_member_to_conversation(
+    //     &self,
+    //     id: ConversationId,
+
+    // )
+
+    /// Encrypts a raw payload then serializes it to the TLS wire format
     pub fn encrypt_message<M: AsRef<[u8]>>(
         &mut self,
         conversation: ConversationId,
         message: M,
     ) -> CryptoResult<Vec<u8>> {
-        let group = self
+        let conversation = self
             .mls_groups
             .get_mut(&conversation)
             .ok_or(CryptoError::ConversationNotFound(conversation))?;
 
         use openmls::prelude::{TlsSerializeTrait as _, TlsSizeTrait as _};
 
-        let message = group
+        let message = conversation.group
             .create_message(&self.mls_backend, message.as_ref())
             .map_err(crate::MlsError::from)?;
 
@@ -100,6 +93,8 @@ impl MlsCentral {
         Ok(buf)
     }
 
+    /// Deserializes a TLS-serialized message, then deciphers it
+    /// Warning: This method only supports MLS Application Messages as of 0.0.1
     pub fn decrypt_message<M: std::io::Read>(
         &mut self,
         conversation: ConversationId,
@@ -111,18 +106,18 @@ impl MlsCentral {
             .map_err(openmls::prelude::MlsCiphertextError::from)
             .map_err(MlsError::from)?;
 
-        let group = self
+        let conversation = self
             .mls_groups
             .get_mut(&conversation)
             .ok_or(CryptoError::ConversationNotFound(conversation))?;
 
         let msg_in = openmls::framing::MlsMessageIn::Ciphertext(Box::new(raw_msg));
 
-        let parsed_message = group
+        let parsed_message = conversation.group
             .parse_message(msg_in, &self.mls_backend)
             .map_err(MlsError::from)?;
 
-        let message = group
+        let message = conversation.group
             .process_unverified_message(parsed_message, None, &self.mls_backend)
             .map_err(MlsError::from)?;
 
@@ -130,29 +125,7 @@ impl MlsCentral {
             let (buf, _sender) = app_msg.into_parts();
             Ok(buf)
         } else {
-            unimplemented!()
+            unimplemented!("Types of messages other than ProcessedMessage::ApplicationMessage aren't supported just yet")
         }
-
-        // match message {
-        //     openmls::framing::ProcessedMessage::ApplicationMessage(app_msg) => {
-        //         let (buf, _sender) = app_msg.into_parts();
-        //         return Ok(buf);
-        //     },
-        //     openmls::framing::ProcessedMessage::ProposalMessage(proposal) => {
-        //         let _leaf_index = proposal.sender().to_leaf_index();
-
-        //         // FIXME: Indexed members isn't pub? How to check authentication?
-        //         // for (index, keypackage) in group.indexed_members()? {
-        //         //     if index == leaf_index {
-        //         //         if let Some(ext) = keypackage.extensions().iter().find(|e| e.as_capabilities_extension().ok()) {
-        //         //         }
-        //         //         break;
-        //         //     }
-        //         // }
-        //     },
-        //     openmls::framing::ProcessedMessage::StagedCommitMessage(_staged_commit) => {
-        //         //group.merge_staged_commit(*staged_commit).map_err(MlsError::from)?;
-        //     },
-        // }
     }
 }

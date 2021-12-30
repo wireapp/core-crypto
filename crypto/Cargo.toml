@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 eyre = "0.6"
 thiserror = "1.0"
-uuid = "0.8"
+uuid = { version = "0.8", features = ["v5"] }
 openmls = { git = "https://github.com/openmls/openmls" }
 openmls_traits = { git = "https://github.com/openmls/openmls" }
 

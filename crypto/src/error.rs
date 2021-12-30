@@ -1,18 +1,29 @@
+/// CoreCrypto errors
 #[derive(Debug, thiserror::Error)]
 pub enum CryptoError {
+    /// This error is emitted when the requested conversation couldn't be found in our store
     #[error("Couldn't find conversation with id {0}")]
     ConversationNotFound(crate::ConversationId),
+    /// This error is emitted when we find a malformed (i.e. not uuid) or empty identifier
+    #[error("Malformed identifier found: {0}")]
+    MalformedIdentifier(String),
+    /// Errors that are sent by our Keystore
     #[error(transparent)]
     KeyStoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
+    /// MLS Internal Errors
     #[error(transparent)]
     MlsError(#[from] MlsError),
+    /// UUID-related errors
+    #[error(transparent)]
+    UuidError(#[from] uuid::Error),
+    /// Other thingies
     #[error(transparent)]
     Other(#[from] eyre::Report),
 }
 
 pub type CryptoResult<T> = Result<T, CryptoError>;
 
-/// MLS-specific error wrapper
+/// MLS-specific error wrapper - see github.com/openmls/openmls for details
 #[derive(Debug, thiserror::Error)]
 pub enum MlsError {
     #[error(transparent)]
