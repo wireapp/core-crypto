@@ -6,7 +6,7 @@ use openmls::{
     extensions::{Extension, KeyIdExtension},
     key_packages::KeyPackageBundle,
 };
-use openmls_rust_crypto::OpenMlsRustCrypto;
+use openmls_rust_crypto_provider::OpenMlsRustCrypto;
 use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider, random::OpenMlsRand};
 
 fn benchmark_reads_proteus(c: &mut Criterion) {

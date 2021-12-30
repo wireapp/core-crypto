@@ -88,7 +88,9 @@ impl MlsCentral {
         let message = group
             .create_message(&self.mls_backend, message.as_ref())
             .map_err(crate::MlsError::from)?;
+
         let mut buf = Vec::with_capacity(message.tls_serialized_len());
+
         // TODO: Define serialization format? Probably won't be the TLS thingy?
         message
             .tls_serialize(&mut buf)
@@ -124,27 +126,33 @@ impl MlsCentral {
             .process_unverified_message(parsed_message, None, &self.mls_backend)
             .map_err(MlsError::from)?;
 
-        match message {
-            openmls::framing::ProcessedMessage::ApplicationMessage(app_msg) => {
-                return Ok(app_msg.message().into());
-            },
-            openmls::framing::ProcessedMessage::ProposalMessage(proposal) => {
-                let _leaf_index = proposal.sender().to_leaf_index();
-
-                // FIXME: Indexed members isn't pub? How to check authentication?
-                // for (index, keypackage) in group.indexed_members()? {
-                //     if index == leaf_index {
-                //         if let Some(ext) = keypackage.extensions().iter().find(|e| e.as_capabilities_extension().ok()) {
-                //         }
-                //         break;
-                //     }
-                // }
-            },
-            openmls::framing::ProcessedMessage::StagedCommitMessage(_staged_commit) => {
-                //group.merge_staged_commit(*staged_commit).map_err(MlsError::from)?;
-            },
+        if let openmls::framing::ProcessedMessage::ApplicationMessage(app_msg) = message {
+            let (buf, _sender) = app_msg.into_parts();
+            Ok(buf)
+        } else {
+            unimplemented!()
         }
 
-        todo!()
+        // match message {
+        //     openmls::framing::ProcessedMessage::ApplicationMessage(app_msg) => {
+        //         let (buf, _sender) = app_msg.into_parts();
+        //         return Ok(buf);
+        //     },
+        //     openmls::framing::ProcessedMessage::ProposalMessage(proposal) => {
+        //         let _leaf_index = proposal.sender().to_leaf_index();
+
+        //         // FIXME: Indexed members isn't pub? How to check authentication?
+        //         // for (index, keypackage) in group.indexed_members()? {
+        //         //     if index == leaf_index {
+        //         //         if let Some(ext) = keypackage.extensions().iter().find(|e| e.as_capabilities_extension().ok()) {
+        //         //         }
+        //         //         break;
+        //         //     }
+        //         // }
+        //     },
+        //     openmls::framing::ProcessedMessage::StagedCommitMessage(_staged_commit) => {
+        //         //group.merge_staged_commit(*staged_commit).map_err(MlsError::from)?;
+        //     },
+        // }
     }
 }

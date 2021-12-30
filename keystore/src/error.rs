@@ -19,6 +19,7 @@ pub enum CryptoKeystoreError {
     DbError(#[from] rusqlite::Error),
     #[error(transparent)]
     DbMigrationError(#[from] refinery::Error),
+    #[cfg(test)]
     #[error(transparent)]
     KeyPackageError(#[from] openmls::prelude::KeyPackageError),
     #[cfg(feature = "proteus_keystore")]

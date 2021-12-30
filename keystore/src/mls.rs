@@ -1,13 +1,15 @@
 use crate::{
-    error::{CryptoKeystoreError, CryptoKeystoreResult},
-    CryptoKeystore, MissingKeyErrorKind,
+    CryptoKeystoreError,
+    CryptoKeystore,
+    MissingKeyErrorKind,
 };
 
 impl CryptoKeystore {
+    #[cfg(test)]
     pub fn store_mls_keypackage_bundle(
         &self,
         key: openmls::prelude::KeyPackageBundle,
-    ) -> CryptoKeystoreResult<()> {
+    ) -> crate::CryptoKeystoreResult<()> {
         let id = key.key_package().key_id()?;
         let id = uuid::Uuid::from_slice(id)?;
         use openmls_traits::key_store::OpenMlsKeyStore as _;

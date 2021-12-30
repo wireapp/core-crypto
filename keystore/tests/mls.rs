@@ -10,7 +10,7 @@ mod tests {
         extensions::{Extension, KeyIdExtension},
         key_packages::KeyPackageBundle,
     };
-    use openmls_rust_crypto::OpenMlsRustCrypto;
+    use openmls_rust_crypto_provider::OpenMlsRustCrypto;
     use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
 
     #[test]

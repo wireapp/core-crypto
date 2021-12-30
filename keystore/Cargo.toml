@@ -28,9 +28,7 @@ lru = { version = "0.7", optional = true }
 refinery = { version = "0.7", default-features = false, features = ["rusqlite"] }
 barrel = { version = "0.7", features = ["sqlite3"] }
 
-openmls = { git = "https://github.com/openmls/openmls", default-features = false }
 openmls_traits = { git = "https://github.com/openmls/openmls" }
-openmls_rust_crypto = { git = "https://github.com/openmls/openmls", package = "rust_crypto", default-features = false }
 proteus = { version = "1.0", default-features = false, optional = true }
 
 [target.wasm32-unknown-emscripten.dependencies.rusqlite]
@@ -45,4 +43,5 @@ features = ["bundled-sqlcipher", "blob", "uuid"]
 
 [dev-dependencies]
 criterion = "0.3"
-
+openmls = { git = "https://github.com/openmls/openmls", default-features = false }
+openmls_rust_crypto_provider = { git = "https://github.com/openmls/openmls", package = "openmls_rust_crypto", default-features = false }
