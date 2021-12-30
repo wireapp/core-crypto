@@ -65,7 +65,8 @@ impl MlsCentral {
             &openmls::group::MlsGroupConfig::default(),
             openmls::group::GroupId::from_slice(id.as_bytes()),
             &[],
-        ).map_err(MlsError::from)?;
+        )
+        .map_err(MlsError::from)?;
 
         self.mls_groups.insert(id, group);
 
@@ -77,18 +78,20 @@ impl MlsCentral {
         conversation: ConversationId,
         message: M,
     ) -> CryptoResult<Vec<u8>> {
-        let group = self.mls_groups
+        let group = self
+            .mls_groups
             .get_mut(&conversation)
-            .ok_or(CryptoError::ConversationNotFound(
-                conversation
-            ))?;
+            .ok_or(CryptoError::ConversationNotFound(conversation))?;
 
-        use openmls::prelude::{TlsSizeTrait as _, TlsSerializeTrait as _};
+        use openmls::prelude::{TlsSerializeTrait as _, TlsSizeTrait as _};
 
-        let message = group.create_message(&self.mls_backend, message.as_ref()).map_err(crate::MlsError::from)?;
+        let message = group
+            .create_message(&self.mls_backend, message.as_ref())
+            .map_err(crate::MlsError::from)?;
         let mut buf = Vec::with_capacity(message.tls_serialized_len());
         // TODO: Define serialization format? Probably won't be the TLS thingy?
-        message.tls_serialize(&mut buf)
+        message
+            .tls_serialize(&mut buf)
             .map_err(openmls::prelude::MlsCiphertextError::from)
             .map_err(MlsError::from)?;
 
@@ -106,25 +109,41 @@ impl MlsCentral {
             .map_err(openmls::prelude::MlsCiphertextError::from)
             .map_err(MlsError::from)?;
 
-        let group = self.mls_groups
+        let group = self
+            .mls_groups
             .get_mut(&conversation)
-            .ok_or(CryptoError::ConversationNotFound(
-                conversation
-            ))?;
+            .ok_or(CryptoError::ConversationNotFound(conversation))?;
 
-        // FIXME: Waiting on https://github.com/openmls/openmls/pull/670
-        // openmls::framing::MlsMessageIn::
+        let msg_in = openmls::framing::MlsMessageIn::Ciphertext(Box::new(raw_msg));
 
-        // let parsed_message = group.parse_message(
-        //     &raw_msg,
-        //     &self.mls_backend,
-        // ).map_err(MlsError::from)?;
+        let parsed_message = group
+            .parse_message(msg_in, &self.mls_backend)
+            .map_err(MlsError::from)?;
 
-        // let message = group.process_unverified_message(
-        //     parsed_message,
-        //     None,
-        //     &self.mls_backend,
-        // ).map_err(MlsError::from)?;
+        let message = group
+            .process_unverified_message(parsed_message, None, &self.mls_backend)
+            .map_err(MlsError::from)?;
+
+        match message {
+            openmls::framing::ProcessedMessage::ApplicationMessage(app_msg) => {
+                return Ok(app_msg.message().into());
+            },
+            openmls::framing::ProcessedMessage::ProposalMessage(proposal) => {
+                let _leaf_index = proposal.sender().to_leaf_index();
+
+                // FIXME: Indexed members isn't pub? How to check authentication?
+                // for (index, keypackage) in group.indexed_members()? {
+                //     if index == leaf_index {
+                //         if let Some(ext) = keypackage.extensions().iter().find(|e| e.as_capabilities_extension().ok()) {
+                //         }
+                //         break;
+                //     }
+                // }
+            },
+            openmls::framing::ProcessedMessage::StagedCommitMessage(_staged_commit) => {
+                //group.merge_staged_commit(*staged_commit).map_err(MlsError::from)?;
+            },
+        }
 
         todo!()
     }

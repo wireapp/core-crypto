@@ -2,6 +2,7 @@
 pub enum MissingKeyErrorKind {
     #[error("MLS Key Bundle")]
     MlsKeyBundle,
+    #[cfg(feature = "proteus_keystore")]
     #[error("Proteus PreKey")]
     ProteusPrekey,
 }
@@ -20,8 +21,10 @@ pub enum CryptoKeystoreError {
     DbMigrationError(#[from] refinery::Error),
     #[error(transparent)]
     KeyPackageError(#[from] openmls::prelude::KeyPackageError),
+    #[cfg(feature = "proteus_keystore")]
     #[error(transparent)]
     PrekeyDecodeError(#[from] proteus::internal::types::DecodeError),
+    #[cfg(feature = "proteus_keystore")]
     #[error(transparent)]
     PrekeyEncodeError(#[from] proteus::internal::types::EncodeError),
     #[error("{0}")]

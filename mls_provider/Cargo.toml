@@ -1,20 +1,16 @@
 [package]
 name = "mls-crypto-provider"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2018"
 
 [lib]
 name = "mls_crypto_provider"
 crate-type = ["lib", "cdylib"]
 
-[dependencies.openmls_rust_crypto]
-package = "rust_crypto"
-git = "https://github.com/openmls/openmls"
-branch = "main"
-
-[dependencies.openmls_traits]
-git = "https://github.com/openmls/openmls"
-branch = "main"
+[dependencies]
+openmls_rust_crypto = { git = "https://github.com/openmls/openmls", package = "rust_crypto" }
+openmls_traits = { git = "https://github.com/openmls/openmls" }
 
 [dependencies.core-crypto-keystore]
+version = "0.1"
 path = "../keystore"

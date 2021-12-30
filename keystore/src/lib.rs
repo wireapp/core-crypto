@@ -1,6 +1,8 @@
 mod error;
 pub use error::*;
 mod mls;
+
+#[cfg(feature = "proteus_keystore")]
 mod proteus;
 
 mod migrations {

@@ -7,17 +7,13 @@ edition = "2021"
 eyre = "0.6"
 thiserror = "1.0"
 uuid = "0.8"
-
-[dependencies.openmls]
-git = "https://github.com/openmls/openmls"
-branch = "main"
-
-[dependencies.openmls_traits]
-git = "https://github.com/openmls/openmls"
-branch = "main"
+openmls = { git = "https://github.com/openmls/openmls" }
+openmls_traits = { git = "https://github.com/openmls/openmls" }
 
 [dependencies.core-crypto-keystore]
+version = "0.1.0"
 path = "../keystore"
 
 [dependencies.mls-crypto-provider]
+version = "0.1.0"
 path = "../mls_provider"

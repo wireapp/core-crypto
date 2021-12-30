@@ -1,5 +1,19 @@
 [workspace]
 members = ["crypto", "keystore", "mls_provider"]
+exclude = ["anycrypto"]
+
+[patch."https://github.com/openmls/openmls"]
+openmls =               { git = "https://github.com/sgmenda/openmls", branch = "473-expose-mlsmessage-in-and-out", package = "openmls" }
+openmls_traits =        { git = "https://github.com/sgmenda/openmls", branch = "473-expose-mlsmessage-in-and-out", package = "openmls_traits" }
+openmls_rust_crypto =   { git = "https://github.com/sgmenda/openmls", branch = "473-expose-mlsmessage-in-and-out", package = "rust_crypto"}
+
+[patch.crates-io.proteus]
+git = "https://github.com/wireapp/proteus"
+branch = "otak/sodiumoxide-0.2.7"
+
+[patch.crates-io.refinery]
+git = "https://github.com/rust-db/refinery"
+branch = "main"
 
 [profile.release]
 lto = true
