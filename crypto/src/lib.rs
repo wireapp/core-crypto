@@ -53,7 +53,7 @@ impl MlsCentral {
         id: ConversationId,
         config: MlsConversationConfiguration,
     ) -> crate::error::CryptoResult<Option<MlsConversationCreationMessage>> {
-        let (conversation, messages) = MlsConversation::create(id, config, &self.mls_backend)?;
+        let (conversation, messages) = MlsConversation::create(id.clone(), config, &self.mls_backend)?;
         self.mls_groups.insert(id, conversation);
         Ok(messages)
     }
@@ -75,59 +75,21 @@ impl MlsCentral {
             .get_mut(&conversation)
             .ok_or(CryptoError::ConversationNotFound(conversation))?;
 
-        use openmls::prelude::{TlsSerializeTrait as _, TlsSizeTrait as _};
-
-        let message = conversation
-            .group
-            .create_message(&self.mls_backend, message.as_ref())
-            .map_err(crate::MlsError::from)?;
-
-        let mut buf = Vec::with_capacity(message.tls_serialized_len());
-
-        // TODO: Define serialization format? Probably won't be the TLS thingy?
-        message
-            .tls_serialize(&mut buf)
-            .map_err(openmls::prelude::MlsCiphertextError::from)
-            .map_err(MlsError::from)?;
-
-        Ok(buf)
+        conversation.encrypt_message(message, &self.mls_backend)
     }
 
     /// Deserializes a TLS-serialized message, then deciphers it
     /// Warning: This method only supports MLS Application Messages as of 0.0.1
     pub fn decrypt_message<M: std::io::Read>(
         &mut self,
-        conversation: ConversationId,
+        conversation_id: ConversationId,
         message: &mut M,
     ) -> CryptoResult<Vec<u8>> {
-        use openmls::prelude::TlsDeserializeTrait as _;
-
-        let raw_msg = openmls::framing::MlsCiphertext::tls_deserialize(message)
-            .map_err(openmls::prelude::MlsCiphertextError::from)
-            .map_err(MlsError::from)?;
-
         let conversation = self
             .mls_groups
-            .get_mut(&conversation)
-            .ok_or(CryptoError::ConversationNotFound(conversation))?;
+            .get_mut(&conversation_id)
+            .ok_or(CryptoError::ConversationNotFound(conversation_id))?;
 
-        let msg_in = openmls::framing::MlsMessageIn::Ciphertext(Box::new(raw_msg));
-
-        let parsed_message = conversation
-            .group
-            .parse_message(msg_in, &self.mls_backend)
-            .map_err(MlsError::from)?;
-
-        let message = conversation
-            .group
-            .process_unverified_message(parsed_message, None, &self.mls_backend)
-            .map_err(MlsError::from)?;
-
-        if let openmls::framing::ProcessedMessage::ApplicationMessage(app_msg) = message {
-            let (buf, _sender) = app_msg.into_parts();
-            Ok(buf)
-        } else {
-            unimplemented!("Types of messages other than ProcessedMessage::ApplicationMessage aren't supported just yet")
-        }
+        conversation.decrypt_message(message, &self.mls_backend)
     }
 }

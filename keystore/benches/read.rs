@@ -107,5 +107,7 @@ fn benchmark_reads_mls(c: &mut Criterion) {
     store_uncached.delete_database_but_please_be_sure().unwrap();
 }
 
-criterion_group!(benches, benchmark_reads_proteus, benchmark_reads_mls);
+criterion_group!(benches, benchmark_reads_mls);
+#[cfg(feature = "proteus")]
+criterion_group!(benches, benchmark_reads_proteus);
 criterion_main!(benches);

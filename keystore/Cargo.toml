@@ -25,7 +25,7 @@ eyre = "0.6"
 thiserror = "1.0"
 uuid = { version = "0.8", default-features = false }
 lru = { version = "0.7", optional = true }
-refinery = { version = "0.7", default-features = false, features = ["rusqlite"] }
+refinery = { version = "0.8", default-features = false, features = ["rusqlite"] }
 barrel = { version = "0.7", features = ["sqlite3"] }
 
 openmls_traits = { git = "https://github.com/openmls/openmls" }

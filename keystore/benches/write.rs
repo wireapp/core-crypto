@@ -85,6 +85,7 @@ fn benchmark_writes_mls(c: &mut Criterion) {
     group.finish();
     store.delete_database_but_please_be_sure().unwrap();
 }
-
-criterion_group!(benches, benchmark_writes_proteus, benchmark_writes_mls);
+criterion_group!(benches, benchmark_writes_mls);
+#[cfg(feature = "proteus")]
+criterion_group!(benches, benchmark_writes_proteus);
 criterion_main!(benches);
