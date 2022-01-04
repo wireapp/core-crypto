@@ -16,4 +16,4 @@ path = "../keystore"
 
 [dependencies.mls-crypto-provider]
 version = "0.1.0"
-path = "../mls_provider"
+path = "../mls-provider"

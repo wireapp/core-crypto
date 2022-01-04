@@ -1,0 +1,22 @@
+[package]
+name = "core-distribution-service"
+version = "0.0.1"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["local-selfcert"]
+local-selfcert = ["rcgen", "rustls/dangerous_configuration"]
+
+[dependencies]
+eyre = "0.6"
+thiserror = "1.0"
+quinn = "0.8"
+rustls = "0.20"
+tokio = { version = "1.15", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+rcgen = { version = "0.8", optional = true }
+tracing-futures = "0.2.5"
+futures-util = "0.3.19"
