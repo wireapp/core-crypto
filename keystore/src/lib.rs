@@ -50,6 +50,20 @@ impl CryptoKeystore {
         })
     }
 
+    pub fn open_in_memory_with_key<K: rusqlite::ToSql>(key: K) -> error::CryptoKeystoreResult<Self> {
+        let conn = rusqlite::Connection::open_in_memory()?;
+        conn.pragma_update(None, "key", key)?;
+        let conn = std::sync::Mutex::new(conn);
+        Ok(Self {
+            path: String::new(),
+            conn,
+            #[cfg(feature = "memory-cache")]
+            memory_cache: std::sync::RwLock::new(lru::LruCache::new(LRU_CACHE_CAP)),
+            #[cfg(feature = "memory-cache")]
+            cache_enabled: false.into(),
+        })
+    }
+
     #[cfg(feature = "memory-cache")]
     pub fn cache(&self, enabled: bool) {
         self.cache_enabled
@@ -75,6 +89,10 @@ impl CryptoKeystore {
     }
 
     pub fn delete_database_but_please_be_sure(self) -> error::CryptoKeystoreResult<()> {
+        if self.path.is_empty() {
+            return Ok(());
+        }
+
         let conn = self
             .conn
             .into_inner()
