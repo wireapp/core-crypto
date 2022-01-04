@@ -55,10 +55,6 @@ impl ConversationMember {
         Ok(member)
     }
 
-    // pub fn load(id: UserId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
-
-    // }
-
     fn gen_keypackage(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         let kpb = KeyPackageBundle::new(
             &[self.ciphersuite.name()],
@@ -100,8 +96,22 @@ impl Eq for ConversationMember {}
 
 #[cfg(test)]
 mod tests {
+    use mls_crypto_provider::MlsCryptoProvider;
+
+    use super::ConversationMember;
+
     #[test]
     fn can_generate_member() {
+        let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
+        assert!(ConversationMember::generate("592f5065-f007-48fc-9b5e-ad4c3d9b8fd7@test.wire.com".parse().unwrap(), &backend).is_ok());
+    }
 
+    #[test]
+    fn never_run_out_of_keypackages() {
+        let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
+        let mut member = ConversationMember::generate("592f5065-f007-48fc-9b5e-ad4c3d9b8fd7@test.wire.com".parse().unwrap(), &backend).unwrap();
+        for _ in 0..100 {
+            assert!(member.keypackage_hash(&backend).is_ok())
+        }
     }
 }

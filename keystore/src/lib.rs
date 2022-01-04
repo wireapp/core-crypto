@@ -54,14 +54,16 @@ impl CryptoKeystore {
         let conn = rusqlite::Connection::open_in_memory()?;
         conn.pragma_update(None, "key", key)?;
         let conn = std::sync::Mutex::new(conn);
-        Ok(Self {
+        let mut store = Self {
             path: String::new(),
             conn,
             #[cfg(feature = "memory-cache")]
             memory_cache: std::sync::RwLock::new(lru::LruCache::new(LRU_CACHE_CAP)),
             #[cfg(feature = "memory-cache")]
             cache_enabled: false.into(),
-        })
+        };
+        store.run_migrations()?;
+        Ok(store)
     }
 
     #[cfg(feature = "memory-cache")]

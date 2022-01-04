@@ -20,6 +20,8 @@ pub enum CryptoError {
     /// UUID-related errors
     #[error(transparent)]
     UuidError(#[from] uuid::Error),
+    #[error(transparent)]
+    Utf8Error(#[from] std::str::Utf8Error),
     /// Other thingies
     #[error(transparent)]
     Other(#[from] eyre::Report),

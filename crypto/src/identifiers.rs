@@ -11,7 +11,8 @@ pub struct QualifiedUuid {
 impl QualifiedUuid {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut ret = vec![];
-        ret.extend_from_slice(self.uuid.as_bytes());
+        ret.extend_from_slice(self.uuid.to_hyphenated_ref().to_string().as_bytes());
+        ret.push(b'@');
         if let Some(domain) = self.domain.as_ref() {
             ret.extend_from_slice(domain.as_bytes());
         }

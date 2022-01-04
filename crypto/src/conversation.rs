@@ -10,6 +10,7 @@ pub type ConversationId = crate::identifiers::QualifiedUuid;
 
 #[derive(Debug, Default)]
 pub struct MlsConversationConfiguration {
+    pub(crate) keypackage_hash: Vec<u8>,
     pub(crate) init_keys: Vec<KeyPackage>,
     pub(crate) admins: Vec<UserId>,
     // FIXME: No way to configure ciphersuites.
@@ -63,7 +64,7 @@ impl MlsConversation {
             backend,
             &mls_group_config,
             openmls::group::GroupId::from_slice(id.to_string().as_bytes()),
-            uuid::Uuid::new_v5(&uuid::Uuid::NAMESPACE_OID, b"test").as_bytes(),
+            &config.keypackage_hash,
         )
         .map_err(MlsError::from)?;
 
@@ -90,13 +91,14 @@ impl MlsConversation {
         &self.id
     }
 
-    pub fn members(&self) -> std::collections::HashMap<UserId, openmls::credentials::Credential> {
+    pub fn members(&self) -> CryptoResult<std::collections::HashMap<UserId, openmls::credentials::Credential>> {
         let mut ret = std::collections::HashMap::default();
-        for c in self.group.members().unwrap() {
-            let identity_str = std::str::from_utf8(c.identity()).unwrap();
-            ret.insert(identity_str.parse().unwrap(), c.clone());
+
+        for c in self.group.members().map_err(MlsError::from)? {
+            let identity_str = std::str::from_utf8(c.identity())?;
+            ret.insert(identity_str.parse()?, c.clone());
         }
-        ret
+        Ok(ret)
     }
 
     pub fn can_user_act(&self, uuid: UserId) -> bool {
@@ -154,76 +156,29 @@ impl MlsConversation {
 #[cfg(test)]
 mod tests {
     use mls_crypto_provider::MlsCryptoProvider;
-    use openmls::{ciphersuite::{ciphersuites::CiphersuiteName, Ciphersuite}, credentials::{CredentialBundle, CredentialType}, prelude::KeyPackageBundle, extensions::{KeyIdExtension, Extension}};
-    use openmls_traits::{OpenMlsCryptoProvider, key_store::OpenMlsKeyStore};
-    //use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider};
-
+    use crate::member::ConversationMember;
     use super::{MlsConversation, MlsConversationConfiguration, ConversationId};
     use std::str::FromStr as _;
 
     #[inline(always)]
-    fn init_keystore(identifier: &str) -> (MlsCryptoProvider, CredentialBundle, KeyPackageBundle) {
-        let backend = MlsCryptoProvider::try_new_in_memory(
-            "test1234"
-        ).unwrap();
-
-        // TODO: Add at least one key bundle
-        let ciphersuite = Ciphersuite::new(CiphersuiteName::default()).unwrap();
-        let raw_key_id = b"test_key";
-        let key_id = uuid::Uuid::new_v5(&uuid::Uuid::NAMESPACE_OID, raw_key_id);
-
-        let credentials = CredentialBundle::new(
-            b"test_client".to_vec(),
-            CredentialType::Basic,
-            ciphersuite.signature_scheme(),
-            &backend,
-        )
-        .unwrap();
-
-        backend.key_store().store(
-            &credentials.credential().signature_key(),
-            &credentials,
-        ).unwrap();
-
-        let keypackage_bundle = KeyPackageBundle::new(
-            &[ciphersuite.name()],
-            &credentials,
-            &backend,
-            vec![Extension::KeyPackageId(KeyIdExtension::new(
-                key_id.as_bytes(),
-            ))],
-        )
-        .unwrap();
-
-        keypackage_bundle.key_package().verify(&backend).unwrap();
-
-        backend.key_store().store(
-            &keypackage_bundle.key_package().hash(&backend).unwrap(),
-            &keypackage_bundle
-        ).unwrap();
-
-        (backend, credentials, keypackage_bundle)
-    }
-
-    fn teardown_keystore(identifier: &str) {
-        std::fs::remove_file(format!("./{}.db", identifier)).unwrap();
+    fn init_keystore() -> MlsCryptoProvider {
+        let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
+        backend
     }
 
     #[test]
     fn can_create_conversation() {
-        let (
-            mut backend,
-            credentials,
-            keypackage_bundle,
-        ) = init_keystore("create_conversation");
+        let mut backend= init_keystore();
+        let mut member = ConversationMember::generate("592f5065-f007-48fc-9b5e-ad4c3d9b8fd7@members.wire.com".parse().unwrap(), &backend).unwrap();
 
         let conversation_id = ConversationId::from_str(
-            "85764bcc-4fa1-451f-9e1a-c190a62a8de1@test.wire.com"
+            "85764bcc-4fa1-451f-9e1a-c190a62a8de1@conversations.wire.com"
         ).unwrap();
         let (a, b) = MlsConversation::create(
             conversation_id.clone(),
             MlsConversationConfiguration {
-                init_keys: vec![keypackage_bundle.key_package().clone()],
+                init_keys: vec![],
+                keypackage_hash: member.keypackage_hash(&backend).unwrap(),
                 admins: vec![],
                 ..Default::default()
             },
@@ -233,8 +188,6 @@ mod tests {
         assert_eq!(a.id, conversation_id);
         assert_eq!(a.group.group_id().as_slice(), conversation_id.to_string().as_bytes());
 
-        assert!(a.members().is_empty());
-
-        teardown_keystore("create_conversation");
+        assert!(!a.members().unwrap().is_empty());
     }
 }
