@@ -3,6 +3,7 @@ pub use self::error::*;
 
 pub mod conversation;
 mod identifiers;
+mod member;
 
 pub mod prelude {
     pub use crate::conversation::*;

@@ -8,6 +8,18 @@ pub struct QualifiedUuid {
     uuid: uuid::Uuid,
 }
 
+impl QualifiedUuid {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut ret = vec![];
+        ret.extend_from_slice(self.uuid.as_bytes());
+        if let Some(domain) = self.domain.as_ref() {
+            ret.extend_from_slice(domain.as_bytes());
+        }
+
+        ret
+    }
+}
+
 impl std::fmt::Display for QualifiedUuid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(domain) = self.domain.as_ref() {
@@ -49,6 +61,13 @@ impl FromStr for QualifiedUuid {
 #[repr(transparent)]
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ZeroKnowledgeUuid(uuid::Uuid);
+
+impl ZeroKnowledgeUuid {
+    #[allow(dead_code)]
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.as_bytes().to_vec()
+    }
+}
 
 impl From<uuid::Uuid> for ZeroKnowledgeUuid {
     fn from(uuid: uuid::Uuid) -> Self {
