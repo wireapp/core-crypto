@@ -11,9 +11,7 @@ pub mod prelude {
     pub use crate::MlsCentral;
 }
 
-use conversation::{
-    ConversationId, MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage,
-};
+use conversation::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::messages::Welcome;
 use std::collections::HashMap;
@@ -29,12 +27,8 @@ impl MlsCentral {
     /// Tries to initialize the MLS Central object.
     /// Takes a store path (i.e. Disk location of the embedded database, should be consistent between messaging sessions)
     /// And a root identity key (i.e. enclaved encryption key for this device)
-    pub fn try_new<S: AsRef<str>>(
-        store_path: S,
-        identity_key: S,
-    ) -> crate::error::CryptoResult<Self> {
-        let mls_backend =
-            mls_crypto_provider::MlsCryptoProvider::try_new(store_path, identity_key)?;
+    pub fn try_new<S: AsRef<str>>(store_path: S, identity_key: S) -> crate::error::CryptoResult<Self> {
+        let mls_backend = mls_crypto_provider::MlsCryptoProvider::try_new(store_path, identity_key)?;
 
         Ok(Self {
             mls_backend,

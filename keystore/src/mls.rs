@@ -9,8 +9,7 @@ impl CryptoKeystore {
         let id = key.key_package().key_id()?;
         let id = uuid::Uuid::from_slice(id)?;
         use openmls_traits::key_store::OpenMlsKeyStore as _;
-        self.store(&id, &key)
-            .map_err(CryptoKeystoreError::MlsKeyStoreError)?;
+        self.store(&id, &key).map_err(CryptoKeystoreError::MlsKeyStoreError)?;
 
         Ok(())
     }
@@ -57,13 +56,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         let row_id = transaction.last_insert_rowid();
 
         let mut blob = transaction
-            .blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_keys",
-                "key",
-                row_id,
-                false,
-            )
+            .blob_open(rusqlite::DatabaseName::Main, "mls_keys", "key", row_id, false)
             .map_err(|e| e.to_string())?;
 
         use std::io::Write as _;
@@ -75,10 +68,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         Ok(())
     }
 
-    fn read<K: std::hash::Hash, V: openmls_traits::key_store::FromKeyStoreValue>(
-        &self,
-        k: &K,
-    ) -> Option<V>
+    fn read<K: std::hash::Hash, V: openmls_traits::key_store::FromKeyStoreValue>(&self, k: &K) -> Option<V>
     where
         Self: Sized,
     {
@@ -86,10 +76,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         #[cfg(feature = "memory-cache")]
         if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
             if let Ok(mut cache) = self.memory_cache.try_write() {
-                if let Some(value) = cache
-                    .get(&k)
-                    .and_then(|buf| V::from_key_store_value(buf).ok())
-                {
+                if let Some(value) = cache.get(&k).and_then(|buf| V::from_key_store_value(buf).ok()) {
                     return Some(value);
                 }
             }
@@ -99,22 +86,14 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         let transaction = db.transaction().ok()?;
         use rusqlite::OptionalExtension as _;
         let row_id = transaction
-            .query_row("SELECT rowid FROM mls_keys WHERE uuid = ?", [&k], |r| {
-                r.get(0)
-            })
+            .query_row("SELECT rowid FROM mls_keys WHERE uuid = ?", [&k], |r| r.get(0))
             .optional()
             .ok()
             .flatten()
             .flatten()?;
 
         let mut blob = transaction
-            .blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_keys",
-                "key",
-                row_id,
-                true,
-            )
+            .blob_open(rusqlite::DatabaseName::Main, "mls_keys", "key", row_id, true)
             .ok()?;
 
         use std::io::Read as _;

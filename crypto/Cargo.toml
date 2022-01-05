@@ -9,6 +9,7 @@ thiserror = "1.0"
 uuid = { version = "0.8", features = ["v5"] }
 openmls = { git = "https://github.com/openmls/openmls" }
 openmls_traits = { git = "https://github.com/openmls/openmls" }
+derive_builder = "0.10"
 
 [dependencies.core-crypto-keystore]
 version = "0.1.0"
@@ -17,3 +18,6 @@ path = "../keystore"
 [dependencies.mls-crypto-provider]
 version = "0.1.0"
 path = "../mls-provider"
+
+[dev-dependencies]
+uuid = { version = "0.8", features = ["v4", "v5"] }

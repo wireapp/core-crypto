@@ -62,9 +62,7 @@ fn benchmark_writes_mls(c: &mut Criterion) {
                     &[ciphersuite.name()],
                     &credentials,
                     &backend,
-                    vec![Extension::KeyPackageId(KeyIdExtension::new(
-                        key_id.as_bytes(),
-                    ))],
+                    vec![Extension::KeyPackageId(KeyIdExtension::new(key_id.as_bytes()))],
                 )
                 .unwrap();
 

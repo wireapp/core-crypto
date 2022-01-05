@@ -11,10 +11,8 @@ use openmls_traits::{key_store::OpenMlsKeyStore, random::OpenMlsRand, OpenMlsCry
 
 #[cfg(feature = "proteus")]
 fn benchmark_reads_proteus(c: &mut Criterion) {
-    let mut store_cached =
-        CryptoKeystore::open_with_key("bench_cached_read_proteus", "key").unwrap();
-    let mut store_uncached =
-        CryptoKeystore::open_with_key("bench_uncached_read_proteus", "key").unwrap();
+    let mut store_cached = CryptoKeystore::open_with_key("bench_cached_read_proteus", "key").unwrap();
+    let mut store_uncached = CryptoKeystore::open_with_key("bench_uncached_read_proteus", "key").unwrap();
     store_uncached.cache(false);
 
     let prekey_id = proteus::keys::PreKeyId::new(28273);
@@ -27,17 +25,13 @@ fn benchmark_reads_proteus(c: &mut Criterion) {
     group.throughput(Throughput::Elements(1));
 
     use proteus::session::PreKeyStore as _;
-    group.bench_with_input(
-        BenchmarkId::new("Reads", "cached"),
-        &prekey_id,
-        |b, prekey_id| b.iter(|| black_box(store_cached.prekey(*prekey_id))),
-    );
+    group.bench_with_input(BenchmarkId::new("Reads", "cached"), &prekey_id, |b, prekey_id| {
+        b.iter(|| black_box(store_cached.prekey(*prekey_id)))
+    });
 
-    group.bench_with_input(
-        BenchmarkId::new("Reads", "uncached"),
-        &prekey_id,
-        |b, prekey_id| b.iter(|| black_box(store_uncached.prekey(*prekey_id))),
-    );
+    group.bench_with_input(BenchmarkId::new("Reads", "uncached"), &prekey_id, |b, prekey_id| {
+        b.iter(|| black_box(store_uncached.prekey(*prekey_id)))
+    });
 
     group.finish();
 
@@ -68,9 +62,7 @@ fn benchmark_reads_mls(c: &mut Criterion) {
         &[ciphersuite.name()],
         &credentials,
         &backend,
-        vec![Extension::KeyPackageId(KeyIdExtension::new(
-            key_id.as_bytes(),
-        ))],
+        vec![Extension::KeyPackageId(KeyIdExtension::new(key_id.as_bytes()))],
     )
     .unwrap();
 

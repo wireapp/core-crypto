@@ -1,18 +1,20 @@
-#![allow(dead_code)]
-
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::{credentials::CredentialBundle, prelude::KeyPackageBundle, ciphersuite::{Ciphersuite, ciphersuites::CiphersuiteName}, extensions::{Extension, KeyIdExtension}};
-use openmls_traits::{OpenMlsCryptoProvider, key_store::OpenMlsKeyStore};
+use openmls::{
+    ciphersuite::{ciphersuites::CiphersuiteName, Ciphersuite},
+    credentials::CredentialBundle,
+    extensions::{Extension, KeyIdExtension},
+    prelude::{KeyPackage, KeyPackageBundle},
+};
+use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider};
 
 use crate::{CryptoResult, MlsError};
 
-
 #[cfg(not(debug_assertions))]
-pub type UserId = ZeroKnowledgeUuid;
+pub type UserId = crate::identifiers::ZeroKnowledgeUuid;
 #[cfg(debug_assertions)]
 pub type UserId = crate::identifiers::QualifiedUuid;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConversationMember {
     id: UserId,
     credentials: CredentialBundle,
@@ -33,11 +35,12 @@ impl ConversationMember {
     pub fn generate(id: UserId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
         let ciphersuite = Ciphersuite::new(CiphersuiteName::default()).map_err(MlsError::from)?;
         let credentials = CredentialBundle::new(
-            id.to_bytes(),
+            id.as_bytes(),
             openmls::credentials::CredentialType::Basic,
             ciphersuite.signature_scheme(),
-            backend
-        ).map_err(MlsError::from)?;
+            backend,
+        )
+        .map_err(MlsError::from)?;
 
         backend
             .key_store()
@@ -55,22 +58,25 @@ impl ConversationMember {
         Ok(member)
     }
 
+    #[cfg(test)]
+    pub fn random_generate(backend: &MlsCryptoProvider) -> CryptoResult<Self> {
+        let uuid = uuid::Uuid::new_v4();
+        Self::generate(format!("{}@members.wire.com", uuid.to_hyphenated()).parse()?, &backend)
+    }
+
     fn gen_keypackage(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         let kpb = KeyPackageBundle::new(
             &[self.ciphersuite.name()],
             &self.credentials,
             backend,
-            vec![Extension::KeyPackageId(KeyIdExtension::new(
-                &self.id.to_bytes(),
-            ))],
-        ).map_err(MlsError::from)?;
+            vec![Extension::KeyPackageId(KeyIdExtension::new(&self.id.as_bytes()))],
+        )
+        .map_err(MlsError::from)?;
 
         backend
             .key_store()
-            .store(
-                &kpb.key_package().hash(backend).map_err(MlsError::from)?,
-                &kpb,
-            ).map_err(eyre::Report::msg)?;
+            .store(&kpb.key_package().hash(backend).map_err(MlsError::from)?, &kpb)
+            .map_err(eyre::Report::msg)?;
 
         self.keypackage_bundles.push(kpb);
         Ok(())
@@ -83,6 +89,10 @@ impl ConversationMember {
             self.gen_keypackage(backend)?;
             self.keypackage_hash(backend)
         }
+    }
+
+    pub fn current_keypackage(&self) -> &KeyPackage {
+        self.keypackage_bundles[0].key_package()
     }
 }
 
@@ -103,13 +113,13 @@ mod tests {
     #[test]
     fn can_generate_member() {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        assert!(ConversationMember::generate("592f5065-f007-48fc-9b5e-ad4c3d9b8fd7@test.wire.com".parse().unwrap(), &backend).is_ok());
+        assert!(ConversationMember::random_generate(&backend).is_ok());
     }
 
     #[test]
     fn never_run_out_of_keypackages() {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        let mut member = ConversationMember::generate("592f5065-f007-48fc-9b5e-ad4c3d9b8fd7@test.wire.com".parse().unwrap(), &backend).unwrap();
+        let mut member = ConversationMember::random_generate(&backend).unwrap();
         for _ in 0..100 {
             assert!(member.keypackage_hash(&backend).is_ok())
         }

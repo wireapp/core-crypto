@@ -11,10 +11,7 @@ impl crate::CryptoKeystore {
 
     pub fn store_prekey(&self, prekey: &proteus::keys::PreKey) -> crate::CryptoKeystoreResult<()> {
         let prekey_buf = prekey.serialise()?;
-        let mut db = self
-            .conn
-            .lock()
-            .map_err(|_| CryptoKeystoreError::LockPoisonError)?;
+        let mut db = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
 
         let transaction = db.transaction()?;
 
@@ -29,13 +26,7 @@ impl crate::CryptoKeystore {
 
         let row_id = transaction.last_insert_rowid();
 
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "proteus_prekeys",
-            "key",
-            row_id,
-            false,
-        )?;
+        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "proteus_prekeys", "key", row_id, false)?;
         use std::io::Write as _;
         blob.write_all(&prekey_buf)?;
         drop(blob);
@@ -49,10 +40,7 @@ impl crate::CryptoKeystore {
 impl proteus::session::PreKeyStore for crate::CryptoKeystore {
     type Error = CryptoKeystoreError;
 
-    fn prekey(
-        &mut self,
-        id: proteus::keys::PreKeyId,
-    ) -> Result<Option<proteus::keys::PreKey>, Self::Error> {
+    fn prekey(&mut self, id: proteus::keys::PreKeyId) -> Result<Option<proteus::keys::PreKey>, Self::Error> {
         #[cfg(feature = "memory-cache")]
         let memory_cache_key = Self::proteus_memory_key(id);
 
@@ -68,19 +56,14 @@ impl proteus::session::PreKeyStore for crate::CryptoKeystore {
             }
         }
 
-        let mut db = self
-            .conn
-            .lock()
-            .map_err(|_| CryptoKeystoreError::LockPoisonError)?;
+        let mut db = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
 
         let transaction = db.transaction()?;
 
         let maybe_row_id = transaction
-            .query_row(
-                "SELECT rowid FROM proteus_prekeys WHERE id = ?",
-                [id.value()],
-                |r| r.get::<_, u16>(0),
-            )
+            .query_row("SELECT rowid FROM proteus_prekeys WHERE id = ?", [id.value()], |r| {
+                r.get::<_, u16>(0)
+            })
             .optional()?;
 
         if let Some(row_id) = maybe_row_id {
