@@ -224,18 +224,21 @@ mod tests {
         let conversation_id =
             ConversationId::from_str(&format!("{}@conversations.wire.com", uuid.to_hyphenated())).unwrap();
 
-        let (a, b) = MlsConversation::create(
+        let (alice_group, conversation_creation_message) = MlsConversation::create(
             conversation_id.clone(),
             MlsConversationConfiguration::builder().author(alice).build().unwrap(),
             &mut backend,
         )
         .unwrap();
 
-        assert!(b.is_none());
-        assert_eq!(a.id, conversation_id);
-        assert_eq!(a.group.group_id().as_slice(), conversation_id.to_string().as_bytes());
+        assert!(conversation_creation_message.is_none());
+        assert_eq!(alice_group.id, conversation_id);
+        assert_eq!(
+            alice_group.group.group_id().as_slice(),
+            conversation_id.to_string().as_bytes()
+        );
 
-        assert_eq!(a.members().unwrap().len(), 1);
+        assert_eq!(alice_group.members().unwrap().len(), 1);
     }
 
     #[test]
@@ -254,12 +257,20 @@ mod tests {
             .build()
             .unwrap();
 
-        let (a, b) = MlsConversation::create(conversation_id.clone(), conversation_config, &mut backend).unwrap();
+        let (alice_group, conversation_creation_message) =
+            MlsConversation::create(conversation_id.clone(), conversation_config.clone(), &mut backend).unwrap();
 
-        assert!(b.is_some());
-        assert_eq!(a.id, conversation_id);
-        assert_eq!(a.group.group_id().as_slice(), conversation_id.to_string().as_bytes());
-        assert_eq!(a.members().unwrap().len(), 2);
+        assert!(conversation_creation_message.is_some());
+        assert_eq!(alice_group.id, conversation_id);
+        assert_eq!(
+            alice_group.group.group_id().as_slice(),
+            conversation_id.to_string().as_bytes()
+        );
+        assert_eq!(alice_group.members().unwrap().len(), 2);
+
+        let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
+
+        assert!(MlsConversation::from_welcome_message(welcome, conversation_config, &backend).is_ok());
     }
 
     #[test]
@@ -281,16 +292,31 @@ mod tests {
 
         let conversation_config = MlsConversationConfiguration::builder()
             .author(alice)
-            .extra_members(bob_and_friends)
+            .extra_members(bob_and_friends.clone())
             .build()
             .unwrap();
 
-        let (a, b) = MlsConversation::create(conversation_id.clone(), conversation_config, &mut backend).unwrap();
+        let (alice_group, conversation_creation_message) =
+            MlsConversation::create(conversation_id.clone(), conversation_config.clone(), &mut backend).unwrap();
 
-        assert!(b.is_some());
-        assert_eq!(a.id, conversation_id);
-        assert_eq!(a.group.group_id().as_slice(), conversation_id.to_string().as_bytes());
-        assert_eq!(a.members().unwrap().len(), 1 + number_of_friends);
+        assert!(conversation_creation_message.is_some());
+        assert_eq!(alice_group.id, conversation_id);
+        assert_eq!(
+            alice_group.group.group_id().as_slice(),
+            conversation_id.to_string().as_bytes()
+        );
+        assert_eq!(alice_group.members().unwrap().len(), 1 + number_of_friends);
+
+        let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
+
+        let bob_and_friends_groups: Vec<MlsConversation> = bob_and_friends
+            .iter()
+            .map(|_| {
+                MlsConversation::from_welcome_message(welcome.clone(), conversation_config.clone(), &backend).unwrap()
+            })
+            .collect();
+
+        assert_eq!(bob_and_friends_groups.len(), 99);
     }
 
     #[test]
@@ -330,6 +356,10 @@ mod tests {
         let encrypted_message = alice_group.encrypt_message(original_message, &backend).unwrap();
         let mut cursor = std::io::Cursor::new(encrypted_message);
         let roundtripped_message = bob_group.decrypt_message(&mut cursor, &backend).unwrap();
+        assert_eq!(original_message, roundtripped_message.as_slice());
+        let encrypted_message = bob_group.encrypt_message(roundtripped_message, &backend).unwrap();
+        let mut cursor = std::io::Cursor::new(encrypted_message);
+        let roundtripped_message = alice_group.decrypt_message(&mut cursor, &backend).unwrap();
         assert_eq!(original_message, roundtripped_message.as_slice());
     }
 }
