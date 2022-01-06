@@ -1,76 +1,77 @@
-mod config;
-mod error;
-use futures_util::StreamExt;
-use tracing_futures::Instrument;
+#[cfg(feature = "gql")]
+mod gql;
 
+#[cfg(feature = "ws")]
+mod ws;
+
+mod error;
 pub use self::error::*;
 
-#[tokio::main]
+#[allow(dead_code)]
+#[derive(Clone)]
+pub struct AppState {
+    db: sea_orm::DatabaseConnection,
+    #[cfg(feature = "gql")]
+    schema: gql::LocalSchema,
+}
+
+#[actix_web::get("/healthz")]
+fn healthz(_: actix_web::HttpRequest) -> actix_web::HttpResponse {
+    actix_web::HttpResponseBuilder::new(actix_web::http::StatusCode::OK).into()
+}
+
+fn configure(cfg: &mut actix_web::web::ServiceConfig) {
+    cfg.service(healthz);
+
+    #[cfg(feature = "gql")]
+    cfg.service(gql::gql_endpoint);
+
+    #[cfg(feature = "gql_playground")]
+    cfg.service(gql::gql_playgound);
+}
+
+#[actix_web::main]
 async fn main() -> DsResult<()> {
+    dotenv::dotenv().ok();
+    color_eyre::install()?;
     tracing_subscriber::fmt::init();
 
-    let addr: std::net::SocketAddr = "127.0.0.1:55696".parse()?;
-    let (server_config, _server_cert) = config::configure_server()?;
-    let (endpoint, mut incoming) = quinn::Endpoint::server(server_config, addr)?;
-    tracing::info!("listening on {}", endpoint.local_addr()?);
+    let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL is not set in .env file");
+    let host = std::env::var("HOST").expect("HOST is not set in .env file");
+    let port = std::env::var("PORT").expect("PORT is not set in .env file");
+    let server_url = format!("{}:{}", host, port);
 
-    while let Some(conn) = incoming.next().await {
-        tracing::trace!("Incoming connection from {}", conn.remote_address());
-        let fut = handle_connection(conn);
-        tokio::spawn(async move {
-            if let Err(e) = fut.await {
-                tracing::error!("connection failed: {}", e);
-            }
-        });
-    }
+    let db = {
+        let mut opts = sea_orm::ConnectOptions::new(db_url);
+        opts.max_connections(100).min_connections(5).sqlx_logging(true);
 
-    Ok(())
-}
+        sea_orm::Database::connect(opts).await?
+    };
 
-async fn handle_connection(conn: quinn::Connecting) -> DsResult<()> {
-    let quinn::NewConnection {
-        connection,
-        mut bi_streams,
-        ..
-    } = conn.await?;
+    #[cfg(feature = "gql")]
+    let schema = gql::LocalSchema::new(gql::QueryRoot, gql::MutationRoot, gql::SubscriptionRoot);
 
-    let span = tracing::trace_span!(
-        "connection",
-        remote = %connection.remote_address(),
-        protocol = %connection
-            .handshake_data().unwrap()
-            .downcast::<quinn::crypto::rustls::HandshakeData>().unwrap()
-            .protocol
-            .map_or_else(|| "<none>".into(), |x| String::from_utf8_lossy(&x).into_owned())
-    );
+    let state = AppState {
+        db,
+        #[cfg(feature = "gql")]
+        schema,
+    };
 
-    async {
-        tracing::trace!("established");
-        while let Some(stream) = bi_streams.next().await {
-            let stream = match stream {
-                Ok(s) => s,
-                Err(quinn::ConnectionError::ApplicationClosed { .. }) => {
-                    tracing::trace!("connection closed");
-                    return Ok(())
-                },
-                Err(e) => return Err(e),
-            };
+    let mut listenfd = listenfd::ListenFd::from_env();
 
-            let fut = handle_request(stream);
-            tokio::spawn(async move {
-                if let Err(e) = fut.await {
-                    tracing::error!("failed: {}", e);
-                }
-            }.instrument(tracing::trace_span!("request")));
-        }
-        Ok(())
-    }
-    .instrument(span)
-    .await?;
+    let mut server = actix_web::HttpServer::new(move || {
+        actix_web::App::new()
+            .app_data(state.clone())
+            .wrap(tracing_actix_web::TracingLogger::default())
+            .configure(configure)
+    });
+
+    server = match listenfd.take_tcp_listener(0)? {
+        Some(listener) => server.listen(listener)?,
+        None => server.bind(&server_url)?,
+    };
+
+    server.run().await?;
 
     Ok(())
-}
-
-async fn handle_request((mut send, recv): (quinn::SendStream, quinn::RecvStream)) -> DsResult<()> {
-    todo!()
 }

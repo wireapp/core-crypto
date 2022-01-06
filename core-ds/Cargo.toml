@@ -3,20 +3,36 @@ name = "core-distribution-service"
 version = "0.0.1"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [features]
-default = ["local-selfcert"]
-local-selfcert = ["rcgen", "rustls/dangerous_configuration"]
+default = ["sqlx-sqlite", "ws"]
+ws = ["actix-web-actors"]
+gql = ["async-graphql", "async-graphql-actix-web"]
+gql_playground = ["gql"]
+sqlx-sqlite = ["sea-orm/sqlx-sqlite"]
+sqlx-mysql = ["sea-orm/sqlx-mysql"]
+sqlx-postgres = ["sea-orm/sqlx-postgres"]
 
 [dependencies]
-eyre = "0.6"
+dotenv = "0.15"
+listenfd = "0.3"
+actix = "0.12"
+actix-web = "4.0.0-beta"
+actix-web-actors = { version = "4.0.0-beta", optional = true }
 thiserror = "1.0"
-quinn = "0.8"
-rustls = "0.20"
-tokio = { version = "1.15", features = ["full"] }
+color-eyre = "0.5"
 tracing = "0.1"
+tracing-actix-web = "0.5.0-beta"
 tracing-subscriber = "0.3"
-rcgen = { version = "0.8", optional = true }
-tracing-futures = "0.2.5"
-futures-util = "0.3.19"
+async-graphql-actix-web = { version = "3.0", optional = true }
+serde = { version = "1.0", features = ["derive"] }
+
+
+[dependencies.sea-orm]
+version = "0.5"
+features = ["macros", "runtime-actix-rustls"]
+default-features = false
+
+[dependencies.async-graphql]
+version = "3.0"
+features = ["tracing", "apollo_tracing", "apollo_persisted_queries", "dataloader"]
+optional = true
