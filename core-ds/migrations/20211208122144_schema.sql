@@ -26,8 +26,7 @@ CREATE TABLE client_keypackages (
 CREATE TABLE conversations (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     uuid UUID NOT NULL DEFAULT uuid_generate_v4(),
-
+    title VARCHAR(255),
+    description TEXT,
     author_id BIGSERIAL NOT NULL,
-
-
-)
+);
