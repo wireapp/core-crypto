@@ -1,6 +1,6 @@
 [package]
 name = "core-crypto-keystore"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 [lib]
@@ -17,8 +17,9 @@ harness = false
 
 [features]
 default = ["memory-cache"]
+ios-wal-compat = ["aes", "hex"]
 memory-cache = ["lru"]
-proteus_keystore = ["proteus"]
+proteus-keystore = ["proteus"]
 
 [dependencies]
 eyre = "0.6"
@@ -27,6 +28,10 @@ uuid = { version = "0.8", default-features = false }
 lru = { version = "0.7", optional = true }
 refinery = { version = "0.8", default-features = false, features = ["rusqlite"] }
 barrel = { version = "0.7", features = ["sqlite3"] }
+
+# iOS specific things
+aes = { version = "0.7", optional = true }
+hex = { version = "0.4", optional = true }
 
 openmls_traits = { git = "https://github.com/openmls/openmls" }
 proteus = { version = "1.0", default-features = false, optional = true }

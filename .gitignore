@@ -14,6 +14,8 @@ Cargo.lock
 *.pdb
 
 # Test databases leftovers
+*.edb
+*.edb-salt
 *.db
 
 # End of https://www.toptal.com/developers/gitignore/api/rust

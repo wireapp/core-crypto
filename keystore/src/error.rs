@@ -32,6 +32,9 @@ pub enum CryptoKeystoreError {
     MlsKeyStoreError(String),
     #[error(transparent)]
     UuidError(#[from] uuid::Error),
+    #[cfg(feature = "ios-wal-compat")]
+    #[error(transparent)]
+    HexSaltDecodeError(#[from] hex::FromHexError),
     #[error(transparent)]
     Other(#[from] eyre::Report),
 }
