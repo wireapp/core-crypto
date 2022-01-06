@@ -28,5 +28,6 @@ CREATE TABLE conversations (
     uuid UUID NOT NULL DEFAULT uuid_generate_v4(),
     title VARCHAR(255),
     description TEXT,
-    author_id BIGSERIAL NOT NULL,
+    author_id BIGSERIAL NOT NULL
+    # TODO: FKs & members
 );
