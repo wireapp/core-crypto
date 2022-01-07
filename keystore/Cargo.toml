@@ -39,12 +39,23 @@ proteus = { version = "1.0", default-features = false, optional = true }
 [target.wasm32-unknown-emscripten.dependencies.rusqlite]
 version = "0.26"
 default-features = false
-features = ["bundled-sqlcipher-vendored-openssl", "blob", "wasm32-wasi-vfs", "uuid"]
+features = [
+    "bundled-sqlcipher-vendored-openssl",
+    "blob",
+    "wasm32-wasi-vfs",
+    "uuid"
+]
 
 [target.'cfg(not(target = "wasm32-unknown-emscripten"))'.dependencies.rusqlite]
 version = "0.26"
 default-features = false
-features = ["bundled-sqlcipher", "blob", "uuid"]
+features = [
+    "bundled-sqlcipher",
+    "blob",
+    "uuid",
+    "limits",
+    "unlock_notify"
+]
 
 [dev-dependencies]
 criterion = "0.3"

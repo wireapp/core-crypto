@@ -1,15 +1,14 @@
-uniffi_macros::include_scaffolding!("ffi");
-
 mod error;
 pub use self::error::*;
 
-pub mod conversation;
-mod identifiers;
+mod conversation;
+pub mod identifiers;
 mod member;
 
 pub mod prelude {
     pub use crate::conversation::*;
     pub use crate::error::*;
+    pub use crate::identifiers;
     pub use crate::MlsCentral;
 }
 
@@ -90,3 +89,5 @@ impl MlsCentral {
         conversation.decrypt_message(message, &self.mls_backend)
     }
 }
+
+pub fn init() {}

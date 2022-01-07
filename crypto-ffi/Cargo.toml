@@ -1,0 +1,16 @@
+[package]
+name = "core-crypto-ffi"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "core_crypto_ffi"
+crate-type = ["lib", "cdylib"]
+
+[dependencies]
+uniffi = "0.16"
+uniffi_macros = "0.16"
+core-crypto = { version = "0.1", path = "../crypto" }
+
+[build-dependencies]
+uniffi_build = { version = "0.16", features = ["builtin-bindgen"] }

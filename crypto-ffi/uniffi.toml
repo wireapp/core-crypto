@@ -1,0 +1,7 @@
+[bindings.kotlin]
+package_name = "wire.core.crypto"
+cdylib_name = "corecrypto"
+
+[bindings.swift]
+ffi_module_name = "WireCore"
+ffi_module_filename = "cryptoFFI"
