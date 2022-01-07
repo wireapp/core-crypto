@@ -31,6 +31,6 @@ pub async fn gql_playgound() -> actix_web::HttpResponse {
     actix_web::HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
         .body(async_graphql::http::playground_source(
-            async_graphql::http::GraphQLPlaygroundConfig::new("/"),
+            async_graphql::http::GraphQLPlaygroundConfig::new("/gql"),
         ))
 }

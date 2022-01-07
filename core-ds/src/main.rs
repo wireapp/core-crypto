@@ -4,7 +4,12 @@ mod gql;
 #[cfg(feature = "ws")]
 mod ws;
 
+mod identity_policy;
+mod rest;
+
 mod error;
+use identity_policy::IdentitySignaturePolicy;
+
 pub use self::error::*;
 
 #[allow(dead_code)]
@@ -60,9 +65,23 @@ async fn main() -> DsResult<()> {
     let mut listenfd = listenfd::ListenFd::from_env();
 
     let mut server = actix_web::HttpServer::new(move || {
+        let cors = actix_cors::Cors::default()
+            .allowed_origin_fn(|origin, _| {
+                origin.as_bytes().ends_with(b".wire.com") || origin.as_bytes().ends_with(b"localhost")
+            })
+            .allowed_methods(vec!["GET", "POST", "UPDATE", "PATCH", "DELETE"])
+            .allowed_headers(vec![
+                actix_web::http::header::AUTHORIZATION,
+                actix_web::http::header::ACCEPT,
+                actix_web::http::header::CONTENT_TYPE,
+            ])
+            .max_age(3600);
+
         actix_web::App::new()
             .app_data(state.clone())
+            .wrap(cors)
             .wrap(tracing_actix_web::TracingLogger::default())
+            .wrap(actix_identity::IdentityService::new(IdentitySignaturePolicy))
             .configure(configure)
     });
 

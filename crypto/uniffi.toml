@@ -1,0 +1,6 @@
+[bindings.kotlin]
+package_name = "wire.core.crypto"
+cdylib_name = "core_crypto"
+
+[bindings.swift]
+cdylib_name = "core_crypto"

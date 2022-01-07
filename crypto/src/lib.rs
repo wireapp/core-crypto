@@ -1,3 +1,5 @@
+uniffi_macros::include_scaffolding!("ffi");
+
 mod error;
 pub use self::error::*;
 
