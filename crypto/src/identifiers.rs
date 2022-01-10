@@ -6,9 +6,14 @@ trait Identifier<'a>: std::fmt::Debug + std::hash::Hash + TryFrom<&'a [u8]> + In
 
 #[derive(Debug, Hash, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct QualifiedUuid {
+    // TODO: Make it required
     domain: Option<String>,
     uuid: uuid::Uuid,
 }
+
+// TODO: Separate types for conversation/member uuid structs
+
+// {uuid:user}-{device_id:u32}[@domain]
 
 impl Identifier<'_> for QualifiedUuid {}
 

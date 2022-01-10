@@ -4,6 +4,9 @@ typedef string ConversationId;
 [Wrapped]
 typedef string UserId;
 
+[Wrapped]
+typedef sequence<u8> Bytes;
+
 [Error]
 enum CryptoError {
     "ConversationNotFound",
@@ -16,8 +19,8 @@ enum CryptoError {
 };
 
 dictionary ConversationCreationMessage {
-    sequence<u8> message;
-    sequence<u8> welcome;
+    Bytes message;
+    Bytes welcome;
 };
 
 dictionary ConversationConfiguration {
@@ -28,12 +31,12 @@ dictionary ConversationConfiguration {
     duration? key_rotation_span;
 };
 
-// interface MlsCentral {
+// interface CoreCrypto {
 //     [Throws=CryptoError, Name=try_new]
 //     constructor(string path, string key);
 //
 //     [Throws=CryptoError]
-//     MlsConversationCreationMessage? new_conversation(ConversationId conversation_id, MlsConversationConfiguration config);
+//     ConversationCreationMessage? new_conversation(ConversationId conversation_id, ConversationConfiguration config);
 //
 //     [Throws=CryptoError]
 //     buffer decrypt_message(ConversationId conversation_id, buffer payload);

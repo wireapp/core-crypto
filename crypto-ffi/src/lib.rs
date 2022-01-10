@@ -2,6 +2,13 @@ uniffi_macros::include_scaffolding!("CoreCrypto");
 
 pub use core_crypto::prelude::*;
 
+#[derive(Debug, Clone)]
+pub struct Bytes(Vec<u8>);
+// impl UniffiCustomTypeWrapper for Bytes {
+//     type Wrapped = Vec<u8>;
+
+// }
+
 pub struct ConversationConfiguration {
     pub author: UserId,
     pub extra_members: Vec<UserId>,
@@ -48,6 +55,8 @@ impl UniffiCustomTypeWrapper for identifiers::ZeroKnowledgeUuid {
 
 #[derive(Debug, Clone)]
 pub struct CoreCrypto(std::sync::Arc<std::sync::RwLock<MlsCentral>>);
+
+impl CoreCrypto {}
 
 fn init_corecrypto_with_path_and_key(path: String, key: String) -> CryptoResult<CoreCrypto> {
     let central = MlsCentral::try_new(path, key)?;

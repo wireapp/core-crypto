@@ -82,6 +82,8 @@ impl ConversationMember {
         Ok(())
     }
 
+    /// This method consumes a KeyPackageBundle for the Member, hashes it and returns the hash,
+    /// and if necessary regenerates a new keypackage for immediate use
     pub fn keypackage_hash(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
         if let Some(kpb) = self.keypackage_bundles.pop() {
             Ok(kpb.key_package().hash(backend).map_err(MlsError::from)?)
