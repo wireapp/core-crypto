@@ -17,7 +17,7 @@ harness = false
 
 [features]
 default = ["memory-cache"]
-ios-wal-compat = ["aes", "hex"]
+ios-wal-compat = ["security-framework", "hex"]
 memory-cache = ["lru"]
 proteus-keystore = ["proteus"]
 
@@ -30,8 +30,8 @@ refinery = { version = "0.8", default-features = false, features = ["rusqlite"] 
 barrel = { version = "0.7", features = ["sqlite3"] }
 
 # iOS specific things
-aes = { version = "0.7", optional = true }
 hex = { version = "0.4", optional = true }
+security-framework = { version = "2.5.0-alpha", optional = true }
 
 openmls_traits = { git = "https://github.com/openmls/openmls" }
 proteus = { version = "1.0", default-features = false, optional = true }

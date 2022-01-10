@@ -37,7 +37,7 @@ impl CryptoKeystore {
 
         // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
         #[cfg(feature = "ios-wal-compat")]
-        Self::handle_ios_wal_compat(&conn, &path, key)?;
+        Self::handle_ios_wal_compat(&conn)?; //, &path, key)?;
 
         // Enable WAL journaling mode
         conn.pragma_update(None, "journal_mode", "wal")?;
@@ -60,33 +60,47 @@ impl CryptoKeystore {
     /// when doing background work
     /// See more: https://github.com/sqlcipher/sqlcipher/issues/255
     #[cfg(feature = "ios-wal-compat")]
-    fn handle_ios_wal_compat<K: AsRef<str>>(
+    fn handle_ios_wal_compat(
         conn: &rusqlite::Connection,
-        db_path: &String,
-        key: K,
+        // db_path: &String,
+        // key: K,
     ) -> CryptoKeystoreResult<()> {
-        use aes::{BlockDecrypt as _, BlockEncrypt as _, NewBlockCipher as _};
-        use std::io::Read as _;
+        const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
+        match security_framework::passwords::get_generic_password("wire.com", "keystore_salt") {
+            Ok(salt) => {
+                conn.pragma_update(None, "cipher_salt", format!("x'{}'", hex::encode(salt)))?;
+            }
+            Err(e) if e.code() == ERR_SEC_ITEM_NOT_FOUND => {
+                let salt = conn.pragma_query_value(None, "cipher_salt", |r| r.get::<_, String>(0))?;
+                let mut bytes = [0u8; 16];
+                hex::decode_to_slice(salt, &mut bytes)?;
+                security_framework::password::set_generic_password("wire.com", "keystore_salt", bytes)?;
+            }
+            Err(e) => return Err(e.into()),
+        }
+        // TODO: Refactor this and store the salt in the iOS keychain instead
+        // use aes::{BlockDecrypt as _, BlockEncrypt as _, NewBlockCipher as _};
+        // use std::io::Read as _;
 
         const CIPHER_PLAINTEXT_BYTES: u32 = 32;
-        let mut cipher_key = [0u8; 32];
-        cipher_key[..std::cmp::min(key.as_ref().len(), 32)].copy_from_slice(key.as_ref().as_bytes());
-        let cipher = aes::Aes256::new(&cipher_key.into());
+        // let mut cipher_key = [0u8; 32];
+        // cipher_key[..std::cmp::min(key.as_ref().len(), 32)].copy_from_slice(key.as_ref().as_bytes());
+        // let cipher = aes::Aes256::new(&cipher_key.into());
 
-        let salt_path = std::path::Path::new(db_path).with_extension("edb-salt");
-        if salt_path.is_file() {
-            let mut salt_file = std::fs::File::open(salt_path)?;
-            let mut buf = [0u8; 16];
-            salt_file.read_exact(&mut buf)?;
-            cipher.decrypt_block(aes::Block::from_mut_slice(&mut buf));
-            conn.pragma_update(None, "cipher_salt", format!("x'{}'", hex::encode(buf)))?;
-        } else {
-            let salt = conn.pragma_query_value(None, "cipher_salt", |r| r.get::<_, String>(0))?;
-            let mut bytes = [0u8; 16];
-            hex::decode_to_slice(salt, &mut bytes)?;
-            cipher.encrypt_block(aes::Block::from_mut_slice(&mut bytes));
-            std::fs::write(salt_path, bytes.as_slice())?;
-        }
+        // let salt_path = std::path::Path::new(db_path).with_extension("edb-salt");
+        // if salt_path.is_file() {
+        //     let mut salt_file = std::fs::File::open(salt_path)?;
+        //     let mut buf = [0u8; 16];
+        //     salt_file.read_exact(&mut buf)?;
+        //     cipher.decrypt_block(aes::Block::from_mut_slice(&mut buf));
+        //     conn.pragma_update(None, "cipher_salt", format!("x'{}'", hex::encode(buf)))?;
+        // } else {
+        //     let salt = conn.pragma_query_value(None, "cipher_salt", |r| r.get::<_, String>(0))?;
+        //     let mut bytes = [0u8; 16];
+        //     hex::decode_to_slice(salt, &mut bytes)?;
+        //     cipher.encrypt_block(aes::Block::from_mut_slice(&mut bytes));
+        //     std::fs::write(salt_path, bytes.as_slice())?;
+        // }
 
         conn.pragma_update(None, "cipher_plaintext_header_size", CIPHER_PLAINTEXT_BYTES)?;
         conn.pragma_update(None, "user_version", 1)?;
