@@ -14,22 +14,22 @@ pub type ConversationId = crate::identifiers::QualifiedUuid;
 #[derive(Debug, Clone, derive_builder::Builder)]
 #[allow(dead_code)]
 pub struct MlsConversationConfiguration {
-    author: ConversationMember,
+    pub author: ConversationMember,
     #[builder(default)]
-    extra_members: Vec<ConversationMember>,
+    pub extra_members: Vec<ConversationMember>,
     #[builder(default)]
-    admins: Vec<UserId>,
+    pub admins: Vec<UserId>,
     // FIXME: No way to configure ciphersuites.
     // FIXME: Can maybe only check it against the supported ciphersuites in the group afterwards?
     // TODO: Maybe pull CiphersuiteName from OpenMLS
     #[builder(default)]
-    ciphersuite: Option<()>,
+    pub ciphersuite: Option<String>,
     // FIXME: openmls::group::config::UpdatePolicy is NOT configurable at the moment.
     // FIXME: None of the fields are available and there are no ways to build it/mutate it
     // TODO: Implement the key rotation manually instead.
     // TODO: Define if the rotation span is per X messages or per X epochs or even per X time interval
     #[builder(default)]
-    key_rotation_span: Option<std::time::Duration>,
+    pub key_rotation_span: Option<std::time::Duration>,
 }
 
 impl MlsConversationConfiguration {

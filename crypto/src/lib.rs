@@ -9,6 +9,7 @@ pub mod prelude {
     pub use crate::conversation::*;
     pub use crate::error::*;
     pub use crate::identifiers;
+    pub use crate::member::*;
     pub use crate::MlsCentral;
 }
 

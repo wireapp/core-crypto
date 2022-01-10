@@ -27,9 +27,8 @@ tracing-actix-web = "0.5.0-beta"
 tracing-subscriber = "0.3"
 async-graphql-actix-web = { version = "3.0", optional = true }
 serde = { version = "1.0", features = ["derive"] }
-actix-utils = "3.0.0"
-hex = "0.4.3"
-
+actix-utils = "3.0"
+hex = "0.4"
 
 [dependencies.sea-orm]
 version = "0.5"

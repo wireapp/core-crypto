@@ -1,34 +1,32 @@
-// [Custom]
-// typedef string ConversationId;
-//
-// [Custom]
-// typedef string MemberId;
-//
-// // typedef buffer sequence<u8>;
-//
-// [Error]
-// enum CryptoError {
-//     "ConversationNotFound",
-//     "MalformedIdentifier",
-//     "KeyStoreError",
-//     "MlsError",
-//     "UuidError",
-//     "Utf8Error",
-//     "Other"
-// };
-//
-// dictionary MlsConversationCreationMessage {
-//     buffer out;
-//     buffer welcome;
-// };
-//
-// dictionary MlsConversationConfiguration {
-//     author: MemberId;
-//     extra_members: sequence<MemberId>;
-//     admins: sequence<MemberId>;
-//     ciphersuite: void?;
-//     key_rotation_span: duration?;
-// };
+[Wrapped]
+typedef string ConversationId;
+
+[Wrapped]
+typedef string UserId;
+
+[Error]
+enum CryptoError {
+    "ConversationNotFound",
+    "MalformedIdentifier",
+    "KeyStoreError",
+    "MlsError",
+    "UuidError",
+    "Utf8Error",
+    "Other"
+};
+
+dictionary ConversationCreationMessage {
+    sequence<u8> message;
+    sequence<u8> welcome;
+};
+
+dictionary ConversationConfiguration {
+    UserId author;
+    sequence<UserId> extra_members;
+    sequence<UserId> admins;
+    string? ciphersuite;
+    duration? key_rotation_span;
+};
 
 // interface MlsCentral {
 //     [Throws=CryptoError, Name=try_new]
@@ -45,4 +43,5 @@
 // };
 
 namespace CoreCrypto {
+
 };
