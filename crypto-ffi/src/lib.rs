@@ -1,13 +1,9 @@
 uniffi_macros::include_scaffolding!("CoreCrypto");
 
-pub use core_crypto::prelude::*;
+mod uniffi_support;
 
-#[derive(Debug, Clone)]
-pub struct Bytes(Vec<u8>);
-// impl UniffiCustomTypeWrapper for Bytes {
-//     type Wrapped = Vec<u8>;
-
-// }
+use core_crypto::prelude::*;
+pub use core_crypto::CryptoError;
 
 pub struct ConversationConfiguration {
     pub author: UserId,
@@ -23,46 +19,40 @@ pub struct ConversationCreationMessage {
     pub message: Vec<u8>,
 }
 
-impl UniffiCustomTypeWrapper for identifiers::QualifiedUuid {
-    type Wrapped = String;
+#[derive(Debug)]
+pub struct CoreCrypto(std::sync::RwLock<MlsCentral>);
 
-    fn wrap(val: Self::Wrapped) -> uniffi::Result<Self>
-    where
-        Self: Sized,
-    {
-        Ok(val.parse()?)
+#[allow(dead_code, unused_variables)]
+impl CoreCrypto {
+    pub fn new(path: &str, key: &str) -> CryptoResult<Self> {
+        let central = MlsCentral::try_new(path, key)?;
+        Ok(CoreCrypto(std::sync::RwLock::new(central)))
     }
 
-    fn unwrap(obj: Self) -> Self::Wrapped {
-        obj.to_string()
+    pub fn create_conversation(
+        &self,
+        conversation_id: ConversationId,
+        config: ConversationConfiguration,
+    ) -> CryptoResult<Option<ConversationCreationMessage>> {
+        unimplemented!()
+        // let ret = self
+        //     .0
+        //     .write()
+        //     .unwrap()
+        //     .new_conversation(conversation_id, config.into())?;
+        // Ok(ret.into())
+    }
+
+    pub fn decrypt_message(&self, conversation_id: ConversationId, message: &[u8]) -> CryptoResult<Vec<u8>> {
+        unimplemented!()
+    }
+
+    pub fn encrypt_message(&self, conversation_id: ConversationId, message: &[u8]) -> CryptoResult<Vec<u8>> {
+        unimplemented!()
     }
 }
 
-impl UniffiCustomTypeWrapper for identifiers::ZeroKnowledgeUuid {
-    type Wrapped = String;
-
-    fn wrap(val: Self::Wrapped) -> uniffi::Result<Self>
-    where
-        Self: Sized,
-    {
-        Ok(val.parse()?)
-    }
-
-    fn unwrap(obj: Self) -> Self::Wrapped {
-        obj.to_string()
-    }
+#[inline(always)]
+pub fn init_with_path_and_key(path: &str, key: &str) -> CryptoResult<std::sync::Arc<CoreCrypto>> {
+    Ok(std::sync::Arc::new(CoreCrypto::new(path, key)?))
 }
-
-#[derive(Debug, Clone)]
-pub struct CoreCrypto(std::sync::Arc<std::sync::RwLock<MlsCentral>>);
-
-impl CoreCrypto {}
-
-fn init_corecrypto_with_path_and_key(path: String, key: String) -> CryptoResult<CoreCrypto> {
-    let central = MlsCentral::try_new(path, key)?;
-    Ok(CoreCrypto(std::sync::Arc::new(std::sync::RwLock::new(central))))
-}
-
-// fn register_on_welcome_cb(cc: &CoreCrypto, cb: fn(Vec<u8>)) {
-//     todo!()
-// }

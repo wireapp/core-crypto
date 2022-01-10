@@ -4,9 +4,6 @@ typedef string ConversationId;
 [Wrapped]
 typedef string UserId;
 
-[Wrapped]
-typedef sequence<u8> Bytes;
-
 [Error]
 enum CryptoError {
     "ConversationNotFound",
@@ -19,8 +16,8 @@ enum CryptoError {
 };
 
 dictionary ConversationCreationMessage {
-    Bytes message;
-    Bytes welcome;
+    sequence<u8> message;
+    sequence<u8> welcome;
 };
 
 dictionary ConversationConfiguration {
@@ -31,20 +28,21 @@ dictionary ConversationConfiguration {
     duration? key_rotation_span;
 };
 
-// interface CoreCrypto {
-//     [Throws=CryptoError, Name=try_new]
-//     constructor(string path, string key);
-//
-//     [Throws=CryptoError]
-//     ConversationCreationMessage? new_conversation(ConversationId conversation_id, ConversationConfiguration config);
-//
-//     [Throws=CryptoError]
-//     buffer decrypt_message(ConversationId conversation_id, buffer payload);
-//
-//     [Throws=CryptoError]
-//     buffer encrypt_message(ConversationId conversation_id, buffer message);
-// };
+interface CoreCrypto {
+    [Throws=CryptoError, Name=new]
+    constructor([ByRef] string path, [ByRef] string key);
+
+    [Throws=CryptoError]
+    ConversationCreationMessage? create_conversation(ConversationId conversation_id, ConversationConfiguration config);
+
+    [Throws=CryptoError]
+    sequence<u8> decrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> payload);
+
+    [Throws=CryptoError]
+    sequence<u8> encrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> message);
+};
 
 namespace CoreCrypto {
-
+    [Throws=CryptoError]
+    CoreCrypto init_with_path_and_key([ByRef] string path, [ByRef] string key);
 };
