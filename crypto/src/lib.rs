@@ -11,6 +11,7 @@ pub mod prelude {
     pub use crate::identifiers;
     pub use crate::member::*;
     pub use crate::MlsCentral;
+    pub use openmls;
 }
 
 use conversation::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage};

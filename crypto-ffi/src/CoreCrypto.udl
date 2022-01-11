@@ -20,23 +20,23 @@ dictionary ConversationCreationMessage {
     sequence<u8> welcome;
 };
 
-dictionary ConversationConfiguration {
-    UserId author;
-    sequence<UserId> extra_members;
-    sequence<UserId> admins;
-    string? ciphersuite;
-    duration? key_rotation_span;
-};
+// dictionary MlsConversationConfiguration {
+//     UserId author;
+//     sequence<UserId> extra_members;
+//     sequence<UserId> admins;
+//     string? ciphersuite;
+//     duration? key_rotation_span;
+// };
 
 interface CoreCrypto {
     [Throws=CryptoError, Name=new]
     constructor([ByRef] string path, [ByRef] string key);
 
-    [Throws=CryptoError]
-    ConversationCreationMessage? create_conversation(ConversationId conversation_id, ConversationConfiguration config);
+//    [Throws=CryptoError]
+//    ConversationCreationMessage? create_conversation(ConversationId conversation_id, ConversationConfiguration config);
 
     [Throws=CryptoError]
-    sequence<u8> decrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> payload);
+    sequence<u8> decrypt_message(ConversationId conversation_id, sequence<u8> payload);
 
     [Throws=CryptoError]
     sequence<u8> encrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> message);

@@ -33,6 +33,8 @@ pub type CryptoResult<T> = Result<T, CryptoError>;
 #[derive(Debug, thiserror::Error)]
 pub enum MlsError {
     #[error(transparent)]
+    MlsWelcomeError(#[from] openmls::prelude::WelcomeError),
+    #[error(transparent)]
     MlsKeyPackageError(#[from] openmls::key_packages::KeyPackageError),
     #[error(transparent)]
     MlsConfigError(#[from] openmls::config::ConfigError),
@@ -46,6 +48,8 @@ pub enum MlsError {
     MlsEmptyInputError(#[from] openmls::prelude::EmptyInputError),
     #[error(transparent)]
     MlsCredentialError(#[from] openmls::prelude::CredentialError),
+    #[error(transparent)]
+    MlsMessageError(#[from] openmls::prelude::MlsMessageError),
     #[error(transparent)]
     MlsGroupError(#[from] openmls::prelude::MlsGroupError),
     #[error(transparent)]

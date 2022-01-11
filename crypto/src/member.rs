@@ -32,6 +32,10 @@ impl ConversationMember {
         })
     }
 
+    pub fn id(&self) -> &UserId {
+        &self.id
+    }
+
     pub fn generate(id: UserId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
         let ciphersuite = Ciphersuite::new(CiphersuiteName::default()).map_err(MlsError::from)?;
         let credentials = CredentialBundle::new(

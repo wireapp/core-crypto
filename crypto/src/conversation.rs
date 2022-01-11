@@ -24,7 +24,7 @@ pub struct MlsConversationConfiguration {
     // FIXME: Can maybe only check it against the supported ciphersuites in the group afterwards?
     // TODO: Maybe pull CiphersuiteName from OpenMLS
     #[builder(default)]
-    pub ciphersuite: Option<()>,
+    pub ciphersuite: Option<String>,
     // FIXME: openmls::group::config::UpdatePolicy is NOT configurable at the moment.
     // FIXME: None of the fields are available and there are no ways to build it/mutate it
     // TODO: Implement the key rotation manually instead.

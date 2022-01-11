@@ -11,6 +11,7 @@ crate-type = ["lib", "cdylib"]
 uniffi = "0.16"
 uniffi_macros = "0.16"
 core-crypto = { version = "0.1", path = "../crypto" }
+tls_codec = "0.1.4"
 
 [build-dependencies]
 uniffi_build = { version = "0.16", features = ["builtin-bindgen"] }
