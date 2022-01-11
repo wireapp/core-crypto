@@ -36,7 +36,7 @@ interface CoreCrypto {
 //    ConversationCreationMessage? create_conversation(ConversationId conversation_id, ConversationConfiguration config);
 
     [Throws=CryptoError]
-    sequence<u8> decrypt_message(ConversationId conversation_id, sequence<u8> payload);
+    sequence<u8> decrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> payload);
 
     [Throws=CryptoError]
     sequence<u8> encrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> message);

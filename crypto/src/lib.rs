@@ -11,7 +11,6 @@ pub mod prelude {
     pub use crate::identifiers;
     pub use crate::member::*;
     pub use crate::MlsCentral;
-    pub use openmls;
 }
 
 use conversation::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage};
@@ -22,7 +21,7 @@ use std::collections::HashMap;
 #[derive(Debug)]
 pub struct MlsCentral {
     mls_backend: MlsCryptoProvider,
-    mls_groups: HashMap<ConversationId, MlsConversation>,
+    mls_groups: parking_lot::RwLock<HashMap<ConversationId, MlsConversation>>,
     welcome_callback: Option<fn(Welcome)>,
 }
 
@@ -35,7 +34,7 @@ impl MlsCentral {
 
         Ok(Self {
             mls_backend,
-            mls_groups: HashMap::new(),
+            mls_groups: HashMap::new().into(),
             welcome_callback: None,
         })
     }
@@ -52,7 +51,7 @@ impl MlsCentral {
         config: MlsConversationConfiguration,
     ) -> crate::error::CryptoResult<Option<MlsConversationCreationMessage>> {
         let (conversation, messages) = MlsConversation::create(id.clone(), config, &self.mls_backend)?;
-        self.mls_groups.insert(id, conversation);
+        self.mls_groups.write().insert(id, conversation);
         Ok(messages)
     }
 
@@ -63,14 +62,10 @@ impl MlsCentral {
     // )
 
     /// Encrypts a raw payload then serializes it to the TLS wire format
-    pub fn encrypt_message<M: AsRef<[u8]>>(
-        &mut self,
-        conversation: ConversationId,
-        message: M,
-    ) -> CryptoResult<Vec<u8>> {
-        let conversation = self
-            .mls_groups
-            .get_mut(&conversation)
+    pub fn encrypt_message<M: AsRef<[u8]>>(&self, conversation: ConversationId, message: M) -> CryptoResult<Vec<u8>> {
+        let groups = self.mls_groups.read();
+        let conversation = groups
+            .get(&conversation)
             .ok_or(CryptoError::ConversationNotFound(conversation))?;
 
         conversation.encrypt_message(message, &self.mls_backend)
@@ -78,17 +73,17 @@ impl MlsCentral {
 
     /// Deserializes a TLS-serialized message, then deciphers it
     /// Warning: This method only supports MLS Application Messages as of 0.0.1
-    pub fn decrypt_message<M: std::io::Read>(
-        &mut self,
+    pub fn decrypt_message<M: AsRef<[u8]>>(
+        &self,
         conversation_id: ConversationId,
-        message: &mut M,
+        message: M,
     ) -> CryptoResult<Vec<u8>> {
-        let conversation = self
-            .mls_groups
-            .get_mut(&conversation_id)
+        let groups = self.mls_groups.read();
+        let conversation = groups
+            .get(&conversation_id)
             .ok_or(CryptoError::ConversationNotFound(conversation_id))?;
 
-        conversation.decrypt_message(message, &self.mls_backend)
+        conversation.decrypt_message(message.as_ref(), &self.mls_backend)
     }
 }
 

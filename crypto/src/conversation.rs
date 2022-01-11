@@ -60,7 +60,7 @@ impl MlsConversationConfiguration {
 #[allow(dead_code)]
 pub struct MlsConversation {
     pub(crate) id: ConversationId,
-    pub(crate) group: MlsGroup,
+    pub(crate) group: parking_lot::RwLock<MlsGroup>,
     pub(crate) admins: Vec<UserId>,
     configuration: MlsConversationConfiguration,
 }
@@ -69,6 +69,22 @@ pub struct MlsConversation {
 pub struct MlsConversationCreationMessage {
     pub welcome: Welcome,
     pub message: MlsMessageOut,
+}
+
+impl MlsConversationCreationMessage {
+    /// Order is (welcome, message)
+    pub fn to_bytes_pairs(&self) -> CryptoResult<(Vec<u8>, Vec<u8>)> {
+        use openmls::prelude::TlsSerializeTrait as _;
+        let welcome = self
+            .welcome
+            .tls_serialize_detached()
+            .map_err(openmls::prelude::WelcomeError::from)
+            .map_err(MlsError::from)?;
+
+        let msg = self.message.to_bytes().map_err(MlsError::from)?;
+
+        Ok((welcome, msg))
+    }
 }
 
 impl MlsConversation {
@@ -103,7 +119,7 @@ impl MlsConversation {
 
         let conversation = Self {
             id,
-            group,
+            group: group.into(),
             admins: config.admins.clone(),
             configuration: config,
         };
@@ -126,7 +142,7 @@ impl MlsConversation {
             // ? Add custom extension to the group?
             // ? Get this data from the DS?
             admins: configuration.admins.clone(),
-            group,
+            group: group.into(),
             configuration,
         })
     }
@@ -138,37 +154,24 @@ impl MlsConversation {
     pub fn members(&self) -> CryptoResult<std::collections::HashMap<UserId, openmls::credentials::Credential>> {
         let mut ret = std::collections::HashMap::default();
 
-        for c in self.group.members().map_err(MlsError::from)? {
+        for c in self.group.read().members().map_err(MlsError::from)? {
             let identity_str = std::str::from_utf8(c.identity())?;
             ret.insert(identity_str.parse()?, c.clone());
         }
         Ok(ret)
     }
 
-    pub fn group(&self) -> &openmls::group::MlsGroup {
-        &self.group
-    }
-
     pub fn can_user_act(&self, uuid: UserId) -> bool {
         self.admins.contains(&uuid)
     }
 
-    pub fn decrypt_message<M: std::io::Read>(
-        &mut self,
-        message: &mut M,
-        backend: &MlsCryptoProvider,
-    ) -> CryptoResult<Vec<u8>> {
-        use openmls::prelude::TlsDeserializeTrait as _;
+    pub fn decrypt_message<M: AsRef<[u8]>>(&self, message: M, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
+        let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
 
-        // TODO: Move serialization out of this
-        let msg_in = openmls::framing::MlsMessageIn::tls_deserialize(message)
-            .map_err(openmls::prelude::MlsCiphertextError::from)
-            .map_err(MlsError::from)?;
+        let mut group = self.group.write();
+        let parsed_message = group.parse_message(msg_in, backend).map_err(MlsError::from)?;
 
-        let parsed_message = self.group.parse_message(msg_in, backend).map_err(MlsError::from)?;
-
-        let message = self
-            .group
+        let message = group
             .process_unverified_message(parsed_message, None, backend)
             .map_err(MlsError::from)?;
 
@@ -182,24 +185,14 @@ impl MlsConversation {
         }
     }
 
-    pub fn encrypt_message<M: AsRef<[u8]>>(
-        &mut self,
-        message: M,
-        backend: &MlsCryptoProvider,
-    ) -> CryptoResult<Vec<u8>> {
+    pub fn encrypt_message<M: AsRef<[u8]>>(&self, message: M, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
         let message = self
             .group
+            .write()
             .create_message(backend, message.as_ref())
             .map_err(crate::MlsError::from)?;
 
-        use openmls::prelude::TlsSerializeTrait as _;
-        // TODO: Move serialization out of this
-        let buf = message
-            .tls_serialize_detached()
-            .map_err(openmls::prelude::MlsCiphertextError::from)
-            .map_err(MlsError::from)?;
-
-        Ok(buf)
+        Ok(message.to_bytes().map_err(MlsError::from)?)
     }
 }
 

@@ -14,6 +14,7 @@ uuid = { version = "0.8", features = ["v5"] }
 openmls = { git = "https://github.com/openmls/openmls" }
 openmls_traits = { git = "https://github.com/openmls/openmls" }
 derive_builder = "0.10"
+parking_lot = "0.11"
 
 [dependencies.core-crypto-keystore]
 version = "0.1.0"
