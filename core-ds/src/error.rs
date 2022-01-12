@@ -14,7 +14,12 @@ pub enum DsError {
     IoError(#[from] std::io::Error),
 
     #[error(transparent)]
+    ActixError(#[from] actix_web::Error),
+
+    #[error(transparent)]
     Other(#[from] color_eyre::Report),
 }
+
+impl actix_web::ResponseError for DsError {}
 
 pub type DsResult<T> = Result<T, DsError>;

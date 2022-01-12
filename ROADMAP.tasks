@@ -1,4 +1,66 @@
-# CryptoLib
+CoreCrypto:
+    Keystore:
+        ✔ Wrap SQLCipher store @done (22-01-12 19:06)
+            ✔ Add in-memory store capabilities @done (22-01-12 19:09)
+        ✔ MLS @done (22-01-12 19:08)
+            ✔ Store keying material @done (22-01-12 19:07)
+            ✔ Retrieve keying material @done (22-01-12 19:07)
+            ✔ Remove keying material @done (22-01-12 19:07)
+            ✔ impl MLS trait @done (22-01-12 19:07)
+        ✔ Proteus @done (22-01-12 19:08)
+            ✔ Store prekey @done (22-01-12 19:08)
+            ✔ Retrieve prekey @done (22-01-12 19:08)
+            ✔ impl Proteus trait @done (22-01-12 19:08)
+        ✔ Bench @done (22-01-12 19:08)
+        ✔ Test @done (22-01-12 19:08)
+
+    MLS Provider:
+        ✔ Crypto primitives: RustCrypto backend @done (22-01-12 19:08)
+        ✔ Keystore: CoreCrypto Keystore @done (22-01-12 19:08)
+            ✔ In-memory mode entrypoint @done (22-01-12 19:09)
+
+    CoreCrypto - MLS Test Distribution Service:
+        ☐ Core
+            ✔ Actix-Web @done (22-01-12 19:20)
+            ✔ graphql_async @done (22-01-12 19:20)
+            ✔ SeaORM @done (22-01-12 19:20)
+            ☐ Redis
+        ☐ Features
+            ☐ Client
+                ✔ Register client with initial keying material @done (22-01-12 19:12)
+                ☐ Get keybundle for client / user
+            ☐ Conversation
+                ☐ Create conversation
+                ☐ Add members to conversation
+                ☐ Prune keying material when used to add someone to a conversation  @critical
+                ☐ Send message
+                ☐ Fetch messages
+
+    CoreCrypto - Rust:
+        ☐ Features
+            ☐ Client
+                ✔ Generate Client @done (22-01-12 19:02)
+                ☐ Generate key material (n number keypackages)
+                ☐ Expose Client abstraction
+            ☐ Conversation
+                ✔ Create empty conversation @done (22-01-12 19:02)
+                ☐ Create conversation with others
+                ✔ Encrypt & serialize message @done (22-01-12 19:02)
+                ✔ Deserialize & decrypt message @done (22-01-12 19:02)
+            ☐ Central
+                ✔ Init - db + mls groups in-mem store @done (22-01-12 19:02)
+                ✔ Entrypoint for conversation management @done (22-01-12 19:02)
+                ☐ Entrypoint for client management
+        ☐ Test
+        ☐ Bench
+
+    CoreCrypto - FFI:
+        ☐ Central
+            ☐ Client management
+            ☐ Conversation management
+
+
+CryptoLib:
 
     ☐ Capabilities
         ☐ Support Proteus

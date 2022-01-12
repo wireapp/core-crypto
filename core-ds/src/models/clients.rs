@@ -2,15 +2,16 @@
 
 use sea_orm::entity::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, serde::Serialize)]
 #[sea_orm(table_name = "clients")]
 pub struct Model {
+    #[serde(skip)]
     #[sea_orm(primary_key)]
     pub id: i64,
     #[sea_orm(unique)]
     pub uuid: Uuid,
     #[sea_orm(unique)]
-    pub identity: Option<Vec<u8>>,
+    pub identity: Uuid,
     pub display_name: String,
     pub created_at: DateTime,
     pub updated_at: DateTime,
