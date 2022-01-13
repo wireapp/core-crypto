@@ -9,7 +9,6 @@ mod models;
 mod rest;
 
 mod error;
-use identity_policy::IdentitySignaturePolicy;
 
 pub use self::error::*;
 
@@ -86,7 +85,9 @@ async fn main() -> DsResult<()> {
             .app_data(state.clone())
             .wrap(cors)
             .wrap(tracing_actix_web::TracingLogger::default())
-            .wrap(actix_identity::IdentityService::new(IdentitySignaturePolicy))
+            .wrap(actix_identity::IdentityService::new(
+                identity_policy::IdentitySignaturePolicy,
+            ))
             .configure(configure)
     });
 

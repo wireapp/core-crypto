@@ -63,6 +63,6 @@ impl Handler<SendMessage> for DsMsgBroker {
         //let SendMessage { cnv, msg } = msg;
 
         // TODO: Ask another actor (db?) for the member list
-        // TODO Actually scrap that whole thing and rewrite it using redis streams on ws client side only
+        // TODO Actually scrap that whole thing and rewrite it using redis streams (XREAD) on ws client side only
     }
 }
