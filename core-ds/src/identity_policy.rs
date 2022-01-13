@@ -10,10 +10,16 @@ impl actix_identity::IdentityPolicy for IdentitySignaturePolicy {
     type ResponseFuture = Ready<Result<(), actix_web::Error>>;
 
     fn from_request(&self, req: &mut ServiceRequest) -> <Self as IdentityPolicy>::Future {
-        ready(Ok(req
-            .headers()
-            .get(actix_web::http::header::AUTHORIZATION)
-            .map(|auth_header| hex::encode(auth_header.as_bytes()))))
+        ready({
+            let token = req
+                .headers()
+                .get(actix_web::http::header::AUTHORIZATION)
+                .map(|auth_header| hex::encode(auth_header.as_bytes()));
+
+            // if let Some(token) = token.as_ref() {}
+
+            Ok(token)
+        })
     }
 
     fn to_response<B>(

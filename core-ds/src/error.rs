@@ -1,9 +1,5 @@
 #[derive(Debug, thiserror::Error)]
 pub enum DsError {
-    #[cfg(feature = "local-selfcert")]
-    #[error(transparent)]
-    LocalCertError(#[from] rcgen::RcgenError),
-
     #[error(transparent)]
     AddrParseError(#[from] std::net::AddrParseError),
 
@@ -15,6 +11,15 @@ pub enum DsError {
 
     #[error(transparent)]
     ActixError(#[from] actix_web::Error),
+
+    #[error(transparent)]
+    HexError(#[from] hex::FromHexError),
+
+    #[error(transparent)]
+    RedisError(#[from] redis::RedisError),
+
+    #[error(transparent)]
+    UuidError(#[from] uuid::Error),
 
     #[error(transparent)]
     Other(#[from] color_eyre::Report),

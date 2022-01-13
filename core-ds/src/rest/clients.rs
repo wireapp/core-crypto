@@ -1,9 +1,6 @@
-use crate::models;
-use crate::DsResult;
+use crate::{models, DsResult};
 use actix_web::web;
-use sea_orm::ActiveModelTrait;
-use sea_orm::EntityTrait;
-use sea_orm::Set;
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct RegisterClientPayload {
@@ -12,7 +9,7 @@ pub struct RegisterClientPayload {
     key_packages: std::collections::HashMap<Vec<u8>, Vec<u8>>,
 }
 
-#[actix_web::post("/clients/register")]
+#[actix_web::post("/clients")]
 pub async fn register_client(
     payload: web::Json<RegisterClientPayload>,
     state: web::Data<crate::AppState>,
@@ -43,4 +40,16 @@ pub async fn register_client(
         .await?;
 
     Ok(web::Json(client))
+}
+
+#[actix_web::get("/clients/{uuid}/keypackage")]
+pub async fn list_client_keypackages(
+    uuid: web::Path<uuid::Uuid>,
+    state: web::Data<crate::AppState>,
+) -> DsResult<Option<web::Json<models::client_keypackages::Model>>> {
+    Ok(models::client_keypackages::Entity::find()
+        .filter(models::client_keypackages::Column::Uuid.eq(uuid.into_inner()))
+        .one(&state.db)
+        .await?
+        .map(|model| web::Json(model)))
 }

@@ -16,7 +16,7 @@ pub use self::error::*;
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct AppState {
-    redis: actix::Addr<actix_redis::RedisActor>,
+    redis: redis::Client,
     db: sea_orm::DatabaseConnection,
     #[cfg(feature = "gql")]
     schema: gql::LocalSchema,
@@ -60,16 +60,16 @@ async fn main() -> DsResult<()> {
     #[cfg(feature = "gql")]
     let schema = gql::LocalSchema::new(gql::QueryRoot, gql::MutationRoot, gql::SubscriptionRoot);
 
+    let state = AppState {
+        redis: redis::Client::open("redis://127.0.0.1:6379/")?,
+        db: db.clone(),
+        #[cfg(feature = "gql")]
+        schema: schema.clone(),
+    };
+
     let mut listenfd = listenfd::ListenFd::from_env();
 
     let mut server = actix_web::HttpServer::new(move || {
-        let state = AppState {
-            redis: actix_redis::RedisActor::start("127.0.0.1:6379"),
-            db: db.clone(),
-            #[cfg(feature = "gql")]
-            schema: schema.clone(),
-        };
-
         let cors = actix_cors::Cors::default()
             .allowed_origin_fn(|origin, _| {
                 origin.as_bytes().ends_with(b".wire.com") || origin.as_bytes().ends_with(b"localhost")
@@ -83,7 +83,7 @@ async fn main() -> DsResult<()> {
             .max_age(3600);
 
         actix_web::App::new()
-            .app_data(state)
+            .app_data(state.clone())
             .wrap(cors)
             .wrap(tracing_actix_web::TracingLogger::default())
             .wrap(actix_identity::IdentityService::new(IdentitySignaturePolicy))

@@ -1,5 +1,6 @@
 mod clients;
+mod conversations;
 
 pub fn rest_services() -> impl actix_web::dev::HttpServiceFactory {
-    vec![clients::register_client]
+    actix_web::services![clients::register_client, clients::list_client_keypackages]
 }
