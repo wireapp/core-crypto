@@ -1,4 +1,4 @@
-// use crate::member::UserId;
+use crate::prelude::MemberId;
 
 /// CoreCrypto errors
 #[derive(Debug, thiserror::Error)]
@@ -9,8 +9,8 @@ pub enum CryptoError {
     /// This error is emitted when we find a malformed (i.e. not uuid) or empty identifier
     #[error("Malformed identifier found: {0}")]
     MalformedIdentifier(String),
-    // #[error("User #{0} is out of keypackages. This shouldn't happen as we should regenerate keypackages on demand")]
-    // OutOfKeyPackage(UserId),
+    #[error("Member #{0} is out of keypackages")]
+    OutOfKeyPackage(MemberId),
     /// Errors that are sent by our Keystore
     #[error(transparent)]
     KeyStoreError(#[from] core_crypto_keystore::CryptoKeystoreError),

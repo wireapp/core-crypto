@@ -2,13 +2,17 @@
 typedef string ConversationId;
 
 [Wrapped]
-typedef string UserId;
+typedef string MemberId;
+
+[Wrapped]
+typedef string ClientId;
 
 [Error]
 enum CryptoError {
     "ConversationNotFound",
     "MalformedIdentifier",
     "KeyStoreError",
+    "OutOfKeyPackage",
     "MlsError",
     "UuidError",
     "Utf8Error",

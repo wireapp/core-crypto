@@ -6,14 +6,11 @@ trait Identifier<'a>: std::fmt::Debug + std::hash::Hash + TryFrom<&'a [u8]> + In
 
 #[derive(Debug, Hash, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct QualifiedUuid {
-    // TODO: Make it required
-    domain: Option<String>,
+    domain: String,
     uuid: uuid::Uuid,
 }
 
 // TODO: Separate types for conversation/member uuid structs
-
-// {uuid:user}-{device_id:u32}[@domain]
 
 impl Identifier<'_> for QualifiedUuid {}
 
@@ -28,13 +25,11 @@ impl<'a> TryFrom<&'a [u8]> for QualifiedUuid {
 
 #[allow(clippy::from_over_into)]
 impl Into<Vec<u8>> for QualifiedUuid {
-    fn into(mut self) -> Vec<u8> {
+    fn into(self) -> Vec<u8> {
         let mut ret = vec![];
         ret.extend_from_slice(self.uuid.to_hyphenated().to_string().as_bytes());
         ret.push(b'@');
-        if let Some(domain) = self.domain.take() {
-            ret.extend_from_slice(domain.as_bytes());
-        }
+        ret.extend_from_slice(&self.domain.into_bytes());
 
         ret
     }
@@ -45,9 +40,7 @@ impl QualifiedUuid {
         let mut ret = vec![];
         ret.extend_from_slice(self.uuid.to_hyphenated_ref().to_string().as_bytes());
         ret.push(b'@');
-        if let Some(domain) = self.domain.as_ref() {
-            ret.extend_from_slice(domain.as_bytes());
-        }
+        ret.extend_from_slice(self.domain.as_bytes());
 
         ret
     }
@@ -55,11 +48,7 @@ impl QualifiedUuid {
 
 impl std::fmt::Display for QualifiedUuid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(domain) = self.domain.as_ref() {
-            write!(f, "{}@{}", self.uuid, domain)
-        } else {
-            self.uuid.fmt(f)
-        }
+        write!(f, "{}@{}", self.uuid, self.domain)
     }
 }
 
@@ -76,13 +65,13 @@ impl FromStr for QualifiedUuid {
 
         let uuid = parsed[0].parse()?;
 
-        // If we don't have a domain to qualify the user UUID, just parse it
+        // If we don't have a domain to qualify the user UUID, error out
         if parsed.len() == 1 {
-            return Ok(Self { domain: None, uuid });
+            return Err(CryptoError::MalformedIdentifier(s.into()));
         }
 
         Ok(Self {
-            domain: Some(parsed[1].into()),
+            domain: parsed[1].into(),
             uuid,
         })
     }
@@ -136,21 +125,10 @@ impl std::fmt::Display for ZeroKnowledgeUuid {
 }
 
 impl From<QualifiedUuid> for ZeroKnowledgeUuid {
-    fn from(mut quuid: QualifiedUuid) -> Self {
-        match quuid.domain.take() {
-            Some(domain) => {
-                let domain_namespace_uuid = uuid::Uuid::new_v5(&uuid::Uuid::NAMESPACE_DNS, domain.as_bytes());
-                let nk_uuid = uuid::Uuid::new_v5(&domain_namespace_uuid, quuid.uuid.as_bytes());
-                Self(nk_uuid)
-            }
-            // If we don't have a domain to qualify the user UUID, make a OID v5 UUID out of it
-            // None => Ok(Self(uuid::Uuid::new_v5(
-            //     &uuid::Uuid::NAMESPACE_OID,
-            //     quuid.uuid.as_bytes(),
-            // ))),
-            // Or maybe just wrap it?
-            None => Self(quuid.uuid),
-        }
+    fn from(quuid: QualifiedUuid) -> Self {
+        let domain_namespace_uuid = uuid::Uuid::new_v5(&uuid::Uuid::NAMESPACE_DNS, quuid.domain.as_bytes());
+        let nk_uuid = uuid::Uuid::new_v5(&domain_namespace_uuid, quuid.uuid.as_bytes());
+        Self(nk_uuid)
     }
 }
 
@@ -174,17 +152,16 @@ mod tests {
         let uuid = uuid::Uuid::new_v4().to_hyphenated().to_string();
 
         let quuid = QualifiedUuid::from_str(&format!("{}@{}", uuid, domain)).unwrap();
-        assert_eq!(domain, quuid.domain.unwrap());
+        assert_eq!(domain, quuid.domain);
         assert_eq!(uuid.parse::<uuid::Uuid>().unwrap(), quuid.uuid);
     }
 
     #[test]
+    #[should_panic]
     fn quuid_can_parse_unqualified_uuid() {
         let uuid = uuid::Uuid::new_v4().to_hyphenated().to_string();
 
-        let quuid = QualifiedUuid::from_str(&uuid).unwrap();
-        assert!(quuid.domain.is_none());
-        assert_eq!(uuid.parse::<uuid::Uuid>().unwrap(), quuid.uuid);
+        let _quuid = QualifiedUuid::from_str(&uuid).unwrap();
     }
 
     #[test]
@@ -195,11 +172,11 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn zku_can_parse_unqualified_uuid() {
         let uuid_string = uuid::Uuid::new_v4().to_hyphenated().to_string();
-        let parsed_uuid = uuid_string.parse::<uuid::Uuid>().unwrap();
-        let zkuuid: ZeroKnowledgeUuid = uuid_string.parse().unwrap();
-        assert_eq!(*zkuuid, parsed_uuid);
+        let _parsed_uuid = uuid_string.parse::<uuid::Uuid>().unwrap();
+        let _zkuuid: ZeroKnowledgeUuid = uuid_string.parse().unwrap();
     }
 
     #[test]

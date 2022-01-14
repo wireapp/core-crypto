@@ -5,7 +5,6 @@ use crate::{
     DsResult,
 };
 use actix_web::web;
-use color_eyre::owo_colors::colored;
 use redis::AsyncCommands;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QuerySelect, Set};
 

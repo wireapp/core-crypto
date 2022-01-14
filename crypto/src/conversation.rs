@@ -2,7 +2,8 @@ use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{framing::MlsMessageOut, group::MlsGroup, messages::Welcome, prelude::KeyPackage};
 
 use crate::{
-    member::{ConversationMember, UserId},
+    member::{ConversationMember, MemberId},
+    client::Client,
     CryptoResult, MlsError,
 };
 
@@ -12,14 +13,16 @@ pub type ConversationId = crate::identifiers::ZeroKnowledgeUuid;
 #[cfg(debug_assertions)]
 pub type ConversationId = crate::identifiers::QualifiedUuid;
 
-#[derive(Debug, Clone, derive_builder::Builder)]
+// FIXME: This is utterly broken and wouldn't pass FFI
+#[derive(Debug, derive_builder::Builder)]
+#[builder(pattern = "owned")]
 #[allow(dead_code)]
 pub struct MlsConversationConfiguration {
-    pub author: ConversationMember,
+    pub author: Client,
     #[builder(default)]
     pub extra_members: Vec<ConversationMember>,
     #[builder(default)]
-    pub admins: Vec<UserId>,
+    pub admins: Vec<MemberId>,
     // FIXME: No way to configure ciphersuites.
     // FIXME: Can maybe only check it against the supported ciphersuites in the group afterwards?
     // TODO: Maybe pull CiphersuiteName from OpenMLS
@@ -61,7 +64,7 @@ impl MlsConversationConfiguration {
 pub struct MlsConversation {
     pub(crate) id: ConversationId,
     pub(crate) group: parking_lot::RwLock<MlsGroup>,
-    pub(crate) admins: Vec<UserId>,
+    pub(crate) admins: Vec<MemberId>,
     configuration: MlsConversationConfiguration,
 }
 
@@ -151,7 +154,7 @@ impl MlsConversation {
         &self.id
     }
 
-    pub fn members(&self) -> CryptoResult<std::collections::HashMap<UserId, openmls::credentials::Credential>> {
+    pub fn members(&self) -> CryptoResult<std::collections::HashMap<MemberId, openmls::credentials::Credential>> {
         let mut ret = std::collections::HashMap::default();
 
         for c in self.group.read().members().map_err(MlsError::from)? {
@@ -161,7 +164,7 @@ impl MlsConversation {
         Ok(ret)
     }
 
-    pub fn can_user_act(&self, uuid: UserId) -> bool {
+    pub fn can_user_act(&self, uuid: MemberId) -> bool {
         self.admins.contains(&uuid)
     }
 
@@ -198,6 +201,7 @@ impl MlsConversation {
 
 #[cfg(test)]
 mod tests {
+    use crate::conversation::Client;
     use super::{ConversationId, MlsConversation, MlsConversationConfiguration};
     use crate::{member::ConversationMember, prelude::MlsConversationCreationMessage};
     use mls_crypto_provider::MlsCryptoProvider;
@@ -212,7 +216,7 @@ mod tests {
     #[test]
     fn can_create_self_conversation() {
         let mut backend = init_keystore();
-        let alice = ConversationMember::random_generate(&backend).unwrap();
+        let alice = Client::random_generate(&backend).unwrap();
 
         let uuid = uuid::Uuid::new_v4();
         let conversation_id =
@@ -228,7 +232,7 @@ mod tests {
         assert!(conversation_creation_message.is_none());
         assert_eq!(alice_group.id, conversation_id);
         assert_eq!(
-            alice_group.group.group_id().as_slice(),
+            alice_group.group.read().group_id().as_slice(),
             conversation_id.to_string().as_bytes()
         );
 
@@ -238,7 +242,7 @@ mod tests {
     #[test]
     fn can_create_1_1_conversation() {
         let mut backend = init_keystore();
-        let alice = ConversationMember::random_generate(&backend).unwrap();
+        let alice = Client::random_generate(&backend).unwrap();
         let bob = ConversationMember::random_generate(&backend).unwrap();
 
         let uuid = uuid::Uuid::new_v4();
@@ -247,17 +251,17 @@ mod tests {
 
         let conversation_config = MlsConversationConfiguration::builder()
             .author(alice)
-            .extra_members(vec![bob.clone()])
+            .extra_members(vec![bob])
             .build()
             .unwrap();
 
         let (alice_group, conversation_creation_message) =
-            MlsConversation::create(conversation_id.clone(), conversation_config.clone(), &mut backend).unwrap();
+            MlsConversation::create(conversation_id.clone(), conversation_config, &mut backend).unwrap();
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
         assert_eq!(
-            alice_group.group.group_id().as_slice(),
+            alice_group.group.read().group_id().as_slice(),
             conversation_id.to_string().as_bytes()
         );
         assert_eq!(alice_group.members().unwrap().len(), 2);
@@ -270,7 +274,7 @@ mod tests {
     #[test]
     fn can_create_100_people_conversation() {
         let mut backend = init_keystore();
-        let alice = ConversationMember::random_generate(&backend).unwrap();
+        let alice = Client::random_generate(&backend).unwrap();
 
         let bob_and_friends = (0..99).fold(Vec::with_capacity(100), |mut acc, _| {
             let member = ConversationMember::random_generate(&backend).unwrap();
@@ -286,17 +290,17 @@ mod tests {
 
         let conversation_config = MlsConversationConfiguration::builder()
             .author(alice)
-            .extra_members(bob_and_friends.clone())
+            .extra_members(bob_and_friends)
             .build()
             .unwrap();
 
         let (alice_group, conversation_creation_message) =
-            MlsConversation::create(conversation_id.clone(), conversation_config.clone(), &mut backend).unwrap();
+            MlsConversation::create(conversation_id.clone(), conversation_config, &mut backend).unwrap();
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
         assert_eq!(
-            alice_group.group.group_id().as_slice(),
+            alice_group.group.read().group_id().as_slice(),
             conversation_id.to_string().as_bytes()
         );
         assert_eq!(alice_group.members().unwrap().len(), 1 + number_of_friends);
@@ -306,7 +310,7 @@ mod tests {
         let bob_and_friends_groups: Vec<MlsConversation> = bob_and_friends
             .iter()
             .map(|_| {
-                MlsConversation::from_welcome_message(welcome.clone(), conversation_config.clone(), &backend).unwrap()
+                MlsConversation::from_welcome_message(welcome.clone(), conversation_config, &backend).unwrap()
             })
             .collect();
 
@@ -316,7 +320,7 @@ mod tests {
     #[test]
     fn can_roundtrip_message_in_1_1_conversation() {
         let mut backend = init_keystore();
-        let alice = ConversationMember::random_generate(&backend).unwrap();
+        let alice = Client::random_generate(&backend).unwrap();
 
         let bob = ConversationMember::random_generate(&backend).unwrap();
 
@@ -331,12 +335,12 @@ mod tests {
             .unwrap();
 
         let (mut alice_group, conversation_creation_message) =
-            MlsConversation::create(conversation_id.clone(), configuration.clone(), &mut backend).unwrap();
+            MlsConversation::create(conversation_id.clone(), configuration, &mut backend).unwrap();
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
         assert_eq!(
-            alice_group.group.group_id().as_slice(),
+            alice_group.group.read().group_id().as_slice(),
             conversation_id.to_string().as_bytes()
         );
         assert_eq!(alice_group.members().unwrap().len(), 2);
@@ -348,12 +352,10 @@ mod tests {
         let original_message = b"Hello World!";
 
         let encrypted_message = alice_group.encrypt_message(original_message, &backend).unwrap();
-        let mut cursor = std::io::Cursor::new(encrypted_message);
-        let roundtripped_message = bob_group.decrypt_message(&mut cursor, &backend).unwrap();
+        let roundtripped_message = bob_group.decrypt_message(&encrypted_message, &backend).unwrap();
         assert_eq!(original_message, roundtripped_message.as_slice());
         let encrypted_message = bob_group.encrypt_message(roundtripped_message, &backend).unwrap();
-        let mut cursor = std::io::Cursor::new(encrypted_message);
-        let roundtripped_message = alice_group.decrypt_message(&mut cursor, &backend).unwrap();
+        let roundtripped_message = alice_group.decrypt_message(&encrypted_message, &backend).unwrap();
         assert_eq!(original_message, roundtripped_message.as_slice());
     }
 }

@@ -1,64 +1,43 @@
+use crate::{client::Client, CryptoError, CryptoResult, MlsError};
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::{
-    ciphersuite::{ciphersuites::CiphersuiteName, Ciphersuite},
-    credentials::CredentialBundle,
-    extensions::{Extension, KeyIdExtension},
-    prelude::{KeyPackage, KeyPackageBundle},
-};
-use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider};
-
-use crate::{CryptoResult, MlsError};
+use openmls::prelude::KeyPackage;
 
 #[cfg(not(debug_assertions))]
-pub type UserId = crate::identifiers::ZeroKnowledgeUuid;
+pub type MemberId = crate::identifiers::ZeroKnowledgeUuid;
 #[cfg(debug_assertions)]
-pub type UserId = crate::identifiers::QualifiedUuid;
+pub type MemberId = crate::identifiers::QualifiedUuid;
 
 #[derive(Debug, Clone)]
 pub struct ConversationMember {
-    id: UserId,
-    credentials: CredentialBundle,
-    keypackage_bundles: Vec<KeyPackageBundle>,
-    ciphersuite: Ciphersuite,
+    id: MemberId,
+    keypackages: Vec<KeyPackage>,
+    #[allow(dead_code)]
+    client: Option<Client>,
 }
 
 impl ConversationMember {
-    pub fn new(id: UserId, credentials: CredentialBundle, kpb: KeyPackageBundle) -> CryptoResult<Self> {
+    pub fn new(id: MemberId, kp: KeyPackage) -> CryptoResult<Self> {
         Ok(Self {
             id,
-            credentials,
-            keypackage_bundles: vec![kpb],
-            ciphersuite: Ciphersuite::new(CiphersuiteName::default()).map_err(MlsError::from)?,
+            keypackages: vec![kp],
+            client: None,
         })
     }
 
-    pub fn id(&self) -> &UserId {
+    pub fn id(&self) -> &MemberId {
         &self.id
     }
 
-    pub fn generate(id: UserId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
-        let ciphersuite = Ciphersuite::new(CiphersuiteName::default()).map_err(MlsError::from)?;
-        let credentials = CredentialBundle::new(
-            id.as_bytes(),
-            openmls::credentials::CredentialType::Basic,
-            ciphersuite.signature_scheme(),
-            backend,
-        )
-        .map_err(MlsError::from)?;
+    pub fn generate(id: MemberId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
+        let mut client = Client::generate(id.clone(), backend)?;
+        client.gen_keypackage(backend)?;
 
-        backend
-            .key_store()
-            .store(credentials.credential().signature_key(), &credentials)
-            .map_err(eyre::Report::msg)?;
-
-        let mut member = Self {
+        let member = Self {
             id,
-            credentials,
-            keypackage_bundles: vec![],
-            ciphersuite,
+            keypackages: client.keypackages().into_iter().cloned().collect(),
+            client: Some(client),
         };
 
-        member.gen_keypackage(backend)?;
         Ok(member)
     }
 
@@ -68,37 +47,18 @@ impl ConversationMember {
         Self::generate(format!("{}@members.wire.com", uuid.to_hyphenated()).parse()?, &backend)
     }
 
-    fn gen_keypackage(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
-        let kpb = KeyPackageBundle::new(
-            &[self.ciphersuite.name()],
-            &self.credentials,
-            backend,
-            vec![Extension::KeyPackageId(KeyIdExtension::new(&self.id.as_bytes()))],
-        )
-        .map_err(MlsError::from)?;
-
-        backend
-            .key_store()
-            .store(&kpb.key_package().hash(backend).map_err(MlsError::from)?, &kpb)
-            .map_err(eyre::Report::msg)?;
-
-        self.keypackage_bundles.push(kpb);
-        Ok(())
-    }
-
     /// This method consumes a KeyPackageBundle for the Member, hashes it and returns the hash,
     /// and if necessary regenerates a new keypackage for immediate use
     pub fn keypackage_hash(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
-        if let Some(kpb) = self.keypackage_bundles.pop() {
-            Ok(kpb.key_package().hash(backend).map_err(MlsError::from)?)
-        } else {
-            self.gen_keypackage(backend)?;
-            self.keypackage_hash(backend)
-        }
+        let kp = self
+            .keypackages
+            .pop()
+            .ok_or_else(|| CryptoError::OutOfKeyPackage(self.id.clone()))?;
+        Ok(kp.hash(backend).map_err(MlsError::from)?)
     }
 
     pub fn current_keypackage(&self) -> &KeyPackage {
-        self.keypackage_bundles[0].key_package()
+        &self.keypackages[0]
     }
 }
 

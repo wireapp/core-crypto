@@ -1,11 +1,13 @@
 mod error;
 pub use self::error::*;
 
+mod client;
 mod conversation;
 pub mod identifiers;
 mod member;
 
 pub mod prelude {
+    pub use crate::client::*;
     pub use crate::conversation::*;
     pub use crate::error::*;
     pub use crate::identifiers;
