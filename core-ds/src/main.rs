@@ -12,6 +12,8 @@ mod error;
 
 pub use self::error::*;
 
+const REDIS_DEFAULT_URL: &str = "redis://127.0.0.1:6379/core-crypto";
+
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct AppState {
@@ -25,6 +27,33 @@ pub struct AppState {
 fn healthz(_: actix_web::HttpRequest) -> actix_web::HttpResponse {
     actix_web::HttpResponseBuilder::new(actix_web::http::StatusCode::OK).into()
 }
+
+// #[actix_web::get("/ws")]
+// async fn ws_start(
+//     uuid: actix_identity::Identity,
+//     req: actix_web::HttpRequest,
+//     stream: actix_web::web::Payload,
+// ) -> impl actix_web::Responder {
+//     if uuid.identity().is_none() {
+//         return Ok(actix_web::Either::Left(
+//             actix_web::HttpResponse::Unauthorized().finish(),
+//         ));
+//     }
+
+//     let uuid = uuid::Uuid::from_slice(&hex::decode(uuid.identity().unwrap())?)?;
+//     let redis_url = std::env::var("REDIS_URL").unwrap_or_else(|_| REDIS_DEFAULT_URL.into());
+
+//     Ok(actix_web::Either::Right(actix_web_actors::ws::start(
+//         ws::client::DsClientSession {
+//             id: ws::client::DsClientSessionId(uuid::Uuid::new_v4()),
+//             identity: uuid,
+//             hb: std::time::Instant::now(),
+//             redis: redis::Client::open(redis_url)?,
+//         },
+//         &req,
+//         stream,
+//     )))
+// }
 
 fn configure(cfg: &mut actix_web::web::ServiceConfig) {
     cfg.service(healthz);
@@ -49,6 +78,8 @@ async fn main() -> DsResult<()> {
     let port = std::env::var("PORT").expect("PORT is not set in .env file");
     let server_url = format!("{}:{}", host, port);
 
+    let redis_url = std::env::var("REDIS_URL").unwrap_or_else(|_| REDIS_DEFAULT_URL.into());
+
     let db = {
         let mut opts = sea_orm::ConnectOptions::new(db_url);
         opts.max_connections(100).min_connections(5).sqlx_logging(true);
@@ -60,7 +91,7 @@ async fn main() -> DsResult<()> {
     let schema = gql::LocalSchema::new(gql::QueryRoot, gql::MutationRoot, gql::SubscriptionRoot);
 
     let state = AppState {
-        redis: redis::Client::open("redis://127.0.0.1:6379/")?,
+        redis: redis::Client::open(redis_url)?,
         db: db.clone(),
         #[cfg(feature = "gql")]
         schema: schema.clone(),

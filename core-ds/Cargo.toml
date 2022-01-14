@@ -4,7 +4,7 @@ version = "0.0.1"
 edition = "2021"
 
 [features]
-default = ["sqlx-sqlite", "ws"]
+default = ["sqlx-sqlite"]
 ws = ["actix-web-actors"]
 gql = ["async-graphql", "async-graphql-actix-web"]
 gql_playground = ["gql"]

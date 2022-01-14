@@ -16,11 +16,13 @@ const CLIENT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
 #[rtype(uuid::Uuid)]
 pub struct DsClientSessionId(pub uuid::Uuid);
 
+#[derive(Debug)]
 pub struct DsClientSession {
-    id: DsClientSessionId,
-    identity: uuid::Uuid,
-    hb: std::time::Instant,
-    addr: Addr<super::server::DsMsgBroker>,
+    pub id: DsClientSessionId,
+    pub identity: uuid::Uuid,
+    pub hb: std::time::Instant,
+    //pub addr: Addr<super::server::DsMsgBroker>,
+    pub redis: redis::Client,
 }
 
 impl actix::Actor for DsClientSession {
@@ -29,23 +31,36 @@ impl actix::Actor for DsClientSession {
     fn started(&mut self, ctx: &mut Self::Context) {
         self.hb(ctx);
 
-        let addr = ctx.address();
-
-        self.addr
-            .send(super::server::Connect { addr: addr.recipient() })
+        let connection = self
+            .redis
+            .get_async_connection()
             .into_actor(self)
             .then(|res, act, ctx| {
                 match res {
-                    Ok(res) => act.id = res,
+                    Ok(res) => (),
                     _ => ctx.stop(),
                 }
                 actix::fut::ready(())
             })
             .wait(ctx);
+
+        // let addr = ctx.address();
+
+        // self.addr
+        //     .send(super::server::Connect { addr: addr.recipient() })
+        //     .into_actor(self)
+        //     .then(|res, act, ctx| {
+        //         match res {
+        //             Ok(res) => act.id = res,
+        //             _ => ctx.stop(),
+        //         }
+        //         actix::fut::ready(())
+        //     })
+        //     .wait(ctx);
     }
 
     fn stopping(&mut self, _: &mut Self::Context) -> actix::Running {
-        self.addr.do_send(super::server::Disconnect { id: self.id });
+        // self.addr.do_send(super::server::Disconnect { id: self.id });
         actix::Running::Stop
     }
 }
@@ -80,6 +95,7 @@ impl actix::StreamHandler<Result<ws::Message, ws::ProtocolError>> for DsClientSe
                 self.handle(Ok(ws::Message::Binary(text.into_bytes())), ctx);
             }
             ws::Message::Binary(_buf) => {
+                // TODO: use XADD to push the message on the queue
                 todo!();
             }
             ws::Message::Close(reason) => {
@@ -89,7 +105,7 @@ impl actix::StreamHandler<Result<ws::Message, ws::ProtocolError>> for DsClientSe
             ws::Message::Continuation(_) => {
                 ctx.stop();
             }
-            ws::Message::Nop => ()
+            ws::Message::Nop => (),
         }
     }
 }
@@ -98,7 +114,7 @@ impl DsClientSession {
     fn hb(&self, ctx: &mut ws::WebsocketContext<Self>) {
         ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
             if std::time::Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
-                act.addr.do_send(super::server::Disconnect { id: act.id });
+                // act.addr.do_send(super::server::Disconnect { id: act.id });
                 ctx.stop();
                 return;
             }
