@@ -115,7 +115,7 @@ async fn main() -> DsResult<()> {
         actix_web::App::new()
             .app_data(state.clone())
             .wrap(cors)
-            .wrap(tracing_actix_web::TracingLogger::default())
+            // .wrap(tracing_actix_web::TracingLogger::default())
             .wrap(actix_identity::IdentityService::new(
                 identity_policy::IdentitySignaturePolicy,
             ))

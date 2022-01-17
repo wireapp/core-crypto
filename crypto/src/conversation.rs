@@ -61,7 +61,8 @@ impl MlsConversationConfiguration {
     pub fn openmls_default_configuration() -> openmls::group::MlsGroupConfig {
         openmls::group::MlsGroupConfig::builder()
             // Ciphertext only!
-            .wire_format(openmls::framing::WireFormat::MlsCiphertext)
+            // TODO: Find a replacement? API is gone
+            // .wire_format(openmls::framing::WireFormat::MlsCiphertext)
             // TODO: Understand what it does and define a safe value
             // .padding_size(0)
             // TODO: Understand what it does and define a safe value

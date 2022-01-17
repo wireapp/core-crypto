@@ -23,7 +23,7 @@ actix-identity = "0.4.0-beta"
 thiserror = "1.0"
 color-eyre = "0.5"
 tracing = "0.1"
-tracing-actix-web = "0.5.0-beta"
+# tracing-actix-web = "0.5.0-beta" # FIXME: Not up to date
 tracing-subscriber = "0.3"
 async-graphql-actix-web = { version = "3.0", optional = true }
 serde = { version = "1.0", features = ["derive"] }
