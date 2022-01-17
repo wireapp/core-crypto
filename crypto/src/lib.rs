@@ -15,6 +15,7 @@ pub mod prelude {
     pub use crate::MlsCentral;
 }
 
+use client::Client;
 use conversation::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::messages::Welcome;
@@ -22,6 +23,7 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct MlsCentral {
+    mls_client: Option<Client>,
     mls_backend: MlsCryptoProvider,
     mls_groups: parking_lot::RwLock<HashMap<ConversationId, MlsConversation>>,
     welcome_callback: Option<fn(Welcome)>,
@@ -36,6 +38,7 @@ impl MlsCentral {
 
         Ok(Self {
             mls_backend,
+            mls_client: None,
             mls_groups: HashMap::new().into(),
             welcome_callback: None,
         })

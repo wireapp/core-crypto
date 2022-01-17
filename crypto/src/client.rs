@@ -3,11 +3,13 @@ use openmls::{
     ciphersuite::{ciphersuites::CiphersuiteName, Ciphersuite},
     credentials::CredentialBundle,
     extensions::{Extension, KeyIdExtension},
-    prelude::{KeyPackage, KeyPackageBundle},
+    prelude::KeyPackageBundle,
 };
 use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider};
 
-use crate::{CryptoResult, MlsError};
+use crate::{CryptoError, CryptoResult, MlsError};
+
+const INITIAL_KEYING_MATERIAL_COUNT: usize = 50;
 
 #[cfg(not(debug_assertions))]
 pub type ClientId = crate::identifiers::ZeroKnowledgeUuid;
@@ -23,7 +25,22 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn generate(id: ClientId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
+    pub fn load_or_generate<S: std::hash::Hash>(
+        id: ClientId,
+        signature_public_key: Option<&S>,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<Self> {
+        match signature_public_key {
+            Some(sig) => match Self::load(id.clone(), sig, backend) {
+                Ok(ret) => Ok(ret),
+                Err(CryptoError::ClientSignatureNotFound) => Self::generate(id, backend),
+                Err(e) => Err(e),
+            },
+            None => Self::generate(id, backend),
+        }
+    }
+
+    pub(crate) fn generate(id: ClientId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
         let ciphersuite = Ciphersuite::new(CiphersuiteName::default()).map_err(MlsError::from)?;
         let credentials = CredentialBundle::new(
             id.as_bytes(),
@@ -33,6 +50,9 @@ impl Client {
         )
         .map_err(MlsError::from)?;
 
+        // FIXME: Storing the credentials this way prevents from reconstructing
+        // FIXME: the keypackages list belonging to this device.
+        // FIXME: i.e. there's no way to tell between outside public keys & own keypackages
         backend
             .key_store()
             .store(credentials.credential().signature_key(), &credentials)
@@ -45,8 +65,31 @@ impl Client {
             ciphersuite,
         };
 
-        client.gen_keypackage(backend)?;
+        client.provision_keying_material(INITIAL_KEYING_MATERIAL_COUNT, backend)?;
         Ok(client)
+    }
+
+    pub(crate) fn load<S: std::hash::Hash>(
+        id: ClientId,
+        signature_public_key: &S,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<Self> {
+        let ciphersuite = Ciphersuite::new(CiphersuiteName::default()).map_err(MlsError::from)?;
+        let credentials: CredentialBundle = backend
+            .key_store()
+            .read(signature_public_key)
+            .ok_or(CryptoError::ClientSignatureNotFound)?;
+
+        Ok(Self {
+            id,
+            credentials,
+            keypackage_bundles: vec![], // TODO: Find a way to restore the keypackage_bundles? Or not cache them at all?
+            ciphersuite,
+        })
+    }
+
+    pub fn public_key(&self) -> &[u8] {
+        self.credentials.credential().signature_key().as_slice()
     }
 
     /// This method consumes a KeyPackageBundle for the Client, hashes it and returns the hash,
@@ -58,12 +101,6 @@ impl Client {
             self.gen_keypackage(backend)?;
             self.keypackage_hash(backend)
         }
-    }
-
-    #[cfg(test)]
-    pub fn random_generate(backend: &MlsCryptoProvider) -> CryptoResult<Self> {
-        let uuid = uuid::Uuid::new_v4();
-        Self::generate(format!("{}@clients.wire.com", uuid.to_hyphenated()).parse()?, &backend)
     }
 
     pub(crate) fn gen_keypackage(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
@@ -84,23 +121,25 @@ impl Client {
         Ok(())
     }
 
-    pub(crate) fn keypackages(&self) -> Vec<&KeyPackage> {
-        self.keypackage_bundles.iter().map(|kpb| kpb.key_package()).collect()
-    }
-
     /// Requests additional `count` keying material and returns
     /// a reference to it for the consumer to copy/clone.
     // TODO: Re-examine this
     pub fn request_keying_material(
         &mut self,
-        backend: &MlsCryptoProvider,
         count: usize,
+        backend: &MlsCryptoProvider,
     ) -> CryptoResult<&Vec<KeyPackageBundle>> {
+        self.provision_keying_material(count, backend)?;
+
+        Ok(&self.keypackage_bundles)
+    }
+
+    fn provision_keying_material(&mut self, count: usize, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         for _ in 0..count {
             self.gen_keypackage(backend)?;
         }
 
-        Ok(&self.keypackage_bundles)
+        Ok(())
     }
 }
 
@@ -111,6 +150,18 @@ impl PartialEq for Client {
 }
 
 impl Eq for Client {}
+
+#[cfg(test)]
+impl Client {
+    pub fn random_generate(backend: &MlsCryptoProvider) -> CryptoResult<Self> {
+        let uuid = uuid::Uuid::new_v4();
+        Self::generate(format!("{}@clients.wire.com", uuid.to_hyphenated()).parse()?, &backend)
+    }
+
+    pub fn keypackages(&self) -> Vec<&openmls::prelude::KeyPackage> {
+        self.keypackage_bundles.iter().map(|kpb| kpb.key_package()).collect()
+    }
+}
 
 #[cfg(test)]
 mod tests {

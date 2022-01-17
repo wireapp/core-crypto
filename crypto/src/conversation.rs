@@ -2,8 +2,8 @@ use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{framing::MlsMessageOut, group::MlsGroup, messages::Welcome, prelude::KeyPackage};
 
 use crate::{
-    member::{ConversationMember, MemberId},
     client::Client,
+    member::{ConversationMember, MemberId},
     CryptoResult, MlsError,
 };
 
@@ -14,8 +14,7 @@ pub type ConversationId = crate::identifiers::ZeroKnowledgeUuid;
 pub type ConversationId = crate::identifiers::QualifiedUuid;
 
 // FIXME: This is utterly broken and wouldn't pass FFI
-#[derive(Debug, derive_builder::Builder)]
-#[builder(pattern = "owned")]
+#[derive(Debug, Clone, derive_builder::Builder)]
 #[allow(dead_code)]
 pub struct MlsConversationConfiguration {
     pub author: Client,
@@ -201,8 +200,8 @@ impl MlsConversation {
 
 #[cfg(test)]
 mod tests {
-    use crate::conversation::Client;
     use super::{ConversationId, MlsConversation, MlsConversationConfiguration};
+    use crate::conversation::Client;
     use crate::{member::ConversationMember, prelude::MlsConversationCreationMessage};
     use mls_crypto_provider::MlsCryptoProvider;
     use std::str::FromStr as _;
@@ -256,7 +255,7 @@ mod tests {
             .unwrap();
 
         let (alice_group, conversation_creation_message) =
-            MlsConversation::create(conversation_id.clone(), conversation_config, &mut backend).unwrap();
+            MlsConversation::create(conversation_id.clone(), conversation_config.clone(), &mut backend).unwrap();
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
@@ -290,12 +289,12 @@ mod tests {
 
         let conversation_config = MlsConversationConfiguration::builder()
             .author(alice)
-            .extra_members(bob_and_friends)
+            .extra_members(bob_and_friends.clone())
             .build()
             .unwrap();
 
         let (alice_group, conversation_creation_message) =
-            MlsConversation::create(conversation_id.clone(), conversation_config, &mut backend).unwrap();
+            MlsConversation::create(conversation_id.clone(), conversation_config.clone(), &mut backend).unwrap();
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
@@ -310,7 +309,7 @@ mod tests {
         let bob_and_friends_groups: Vec<MlsConversation> = bob_and_friends
             .iter()
             .map(|_| {
-                MlsConversation::from_welcome_message(welcome.clone(), conversation_config, &backend).unwrap()
+                MlsConversation::from_welcome_message(welcome.clone(), conversation_config.clone(), &backend).unwrap()
             })
             .collect();
 
@@ -334,8 +333,8 @@ mod tests {
             .build()
             .unwrap();
 
-        let (mut alice_group, conversation_creation_message) =
-            MlsConversation::create(conversation_id.clone(), configuration, &mut backend).unwrap();
+        let (alice_group, conversation_creation_message) =
+            MlsConversation::create(conversation_id.clone(), configuration.clone(), &mut backend).unwrap();
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
@@ -347,7 +346,7 @@ mod tests {
 
         let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
 
-        let mut bob_group = MlsConversation::from_welcome_message(welcome, configuration, &backend).unwrap();
+        let bob_group = MlsConversation::from_welcome_message(welcome, configuration, &backend).unwrap();
 
         let original_message = b"Hello World!";
 

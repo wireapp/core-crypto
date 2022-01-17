@@ -12,6 +12,7 @@ enum CryptoError {
     "ConversationNotFound",
     "MalformedIdentifier",
     "KeyStoreError",
+    "ClientSignatureNotFound",
     "OutOfKeyPackage",
     "MlsError",
     "UuidError",

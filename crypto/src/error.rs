@@ -9,6 +9,8 @@ pub enum CryptoError {
     /// This error is emitted when we find a malformed (i.e. not uuid) or empty identifier
     #[error("Malformed identifier found: {0}")]
     MalformedIdentifier(String),
+    #[error("The provided client signature has not been found in the keystore")]
+    ClientSignatureNotFound,
     #[error("Member #{0} is out of keypackages")]
     OutOfKeyPackage(MemberId),
     /// Errors that are sent by our Keystore
