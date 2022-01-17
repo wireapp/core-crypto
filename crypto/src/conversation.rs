@@ -1,5 +1,8 @@
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::{framing::MlsMessageOut, group::MlsGroup, messages::Welcome, prelude::KeyPackage};
+use openmls::{
+    ciphersuite::ciphersuites::CiphersuiteName, framing::MlsMessageOut, group::MlsGroup, messages::Welcome,
+    prelude::KeyPackage,
+};
 
 use crate::{
     client::Client,
@@ -12,6 +15,20 @@ use crate::{
 pub type ConversationId = crate::identifiers::ZeroKnowledgeUuid;
 #[cfg(debug_assertions)]
 pub type ConversationId = crate::identifiers::QualifiedUuid;
+
+// #[derive(Debug, Clone, derive_builder::Builder)]
+// pub struct MlsConversationConfiguration<'a> {
+//     pub extra_members: &'a [(MemberId, &'a [u8])],
+//     pub admins: &'a [MemberId],
+//     pub ciphersuite: CiphersuiteName,
+//     pub key_rotation_span: Option<std::time::Duration>,
+// }
+
+// impl<'a> MlsConversationConfiguration<'a> {
+//     pub fn builder() -> MlsConversationConfigurationBuilder<'a> {
+//         MlsConversationConfigurationBuilder::default()
+//     }
+// }
 
 // FIXME: This is utterly broken and wouldn't pass FFI
 #[derive(Debug, Clone, derive_builder::Builder)]
@@ -26,7 +43,7 @@ pub struct MlsConversationConfiguration {
     // FIXME: Can maybe only check it against the supported ciphersuites in the group afterwards?
     // TODO: Maybe pull CiphersuiteName from OpenMLS
     #[builder(default)]
-    pub ciphersuite: Option<String>,
+    pub ciphersuite: Option<CiphersuiteName>,
     // FIXME: openmls::group::config::UpdatePolicy is NOT configurable at the moment.
     // FIXME: None of the fields are available and there are no ways to build it/mutate it
     // TODO: Implement the key rotation manually instead.

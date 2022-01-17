@@ -20,6 +20,20 @@ impl TryFrom<MlsConversationCreationMessage> for ConversationCreationMessage {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Invitee {
+    pub id: Vec<u8>,
+    pub kph: Vec<u8>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ConversationConfiguration {
+    pub extra_members: Vec<Invitee>,
+    pub admins: Vec<MemberId>,
+    pub ciphersuite: Option<CiphersuiteName>,
+    pub key_rotation_span: Option<std::time::Duration>,
+}
+
 #[derive(Debug)]
 pub struct CoreCrypto(std::sync::RwLock<MlsCentral>);
 
@@ -33,10 +47,12 @@ impl CoreCrypto {
     pub fn create_conversation(
         &self,
         conversation_id: ConversationId,
-        config: MlsConversationConfiguration,
+        config: ConversationConfiguration,
     ) -> CryptoResult<Option<ConversationCreationMessage>> {
-        let ret = self.0.write().unwrap().new_conversation(conversation_id, config)?;
-        Ok(ret.map(TryInto::try_into).transpose()?)
+        // FIXME: Fix the api on the core-crypto side and allow transforming FFI-side config to inner config
+        // let ret = self.0.write().unwrap().new_conversation(conversation_id, config)?;
+        // Ok(ret.map(TryInto::try_into).transpose()?)
+        todo!()
     }
 
     pub fn decrypt_message(&self, conversation_id: ConversationId, payload: &[u8]) -> CryptoResult<Vec<u8>> {

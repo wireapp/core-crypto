@@ -13,6 +13,7 @@ pub mod prelude {
     pub use crate::identifiers;
     pub use crate::member::*;
     pub use crate::MlsCentral;
+    pub use openmls::ciphersuite::ciphersuites::CiphersuiteName;
 }
 
 use client::Client;
@@ -23,6 +24,7 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct MlsCentral {
+    #[allow(dead_code)]
     mls_client: Option<Client>,
     mls_backend: MlsCryptoProvider,
     mls_groups: parking_lot::RwLock<HashMap<ConversationId, MlsConversation>>,
