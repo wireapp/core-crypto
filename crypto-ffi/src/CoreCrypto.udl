@@ -24,9 +24,13 @@ enum CryptoError {
     "KeyStoreError",
     "ClientSignatureNotFound",
     "OutOfKeyPackage",
+    "LockPoisonError",
+    "ConversationConfigurationError",
+    "CentralConfigurationError",
     "MlsError",
     "UuidError",
     "Utf8Error",
+    "ParseIntError",
     "Other"
 };
 
@@ -49,13 +53,13 @@ dictionary ConversationConfiguration {
 
 interface CoreCrypto {
     [Throws=CryptoError, Name=new]
-    constructor([ByRef] string path, [ByRef] string key);
+    constructor([ByRef] string path, [ByRef] string key, [ByRef] string client_id);
 
     [Throws=CryptoError]
     ConversationCreationMessage? create_conversation(ConversationId conversation_id, ConversationConfiguration config);
 
     [Throws=CryptoError]
-    sequence<u8> decrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> payload);
+    sequence<u8>? decrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> payload);
 
     [Throws=CryptoError]
     sequence<u8> encrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> message);
@@ -63,5 +67,5 @@ interface CoreCrypto {
 
 namespace CoreCrypto {
     [Throws=CryptoError]
-    CoreCrypto init_with_path_and_key([ByRef] string path, [ByRef] string key);
+    CoreCrypto init_with_path_and_key([ByRef] string path, [ByRef] string key, [ByRef] string client_id);
 };

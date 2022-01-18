@@ -7,14 +7,88 @@ use openmls::{
 };
 use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider};
 
-use crate::{CryptoError, CryptoResult, MlsError};
+use crate::{prelude::MemberId, CryptoError, CryptoResult, MlsError};
 
 const INITIAL_KEYING_MATERIAL_COUNT: usize = 50;
 
-#[cfg(not(debug_assertions))]
-pub type ClientId = crate::identifiers::ZeroKnowledgeUuid;
-#[cfg(debug_assertions)]
-pub type ClientId = crate::identifiers::QualifiedUuid;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ClientId {
+    user_id: uuid::Uuid,
+    domain: String,
+    client_id: u64,
+}
+
+impl ClientId {
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut ret = vec![];
+        ret.extend_from_slice(self.user_id.to_hyphenated_ref().to_string().as_bytes());
+        ret.push(b':');
+        ret.extend_from_slice(self.client_id.to_string().as_bytes());
+        ret.push(b'@');
+        ret.extend_from_slice(self.domain.as_bytes());
+
+        ret
+    }
+}
+
+impl std::fmt::Display for ClientId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}:{}@{}",
+            self.user_id.to_hyphenated_ref(),
+            self.client_id,
+            self.domain
+        )
+    }
+}
+
+impl std::str::FromStr for ClientId {
+    type Err = CryptoError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut iter = s.split('@').take(2);
+        let uid_cid_tuple = iter
+            .next()
+            .ok_or_else(|| CryptoError::MalformedIdentifier(s.to_string()))?;
+
+        let domain = iter
+            .next()
+            .ok_or_else(|| CryptoError::MalformedIdentifier(s.to_string()))?
+            .to_string();
+
+        let mut iter_uid = uid_cid_tuple.split(':').take(2);
+        let user_id = iter_uid
+            .next()
+            .ok_or_else(|| CryptoError::MalformedIdentifier(s.to_string()))?
+            .parse()?;
+
+        let client_id = iter_uid
+            .next()
+            .ok_or_else(|| CryptoError::MalformedIdentifier(s.to_string()))?
+            .parse()?;
+
+        Ok(Self {
+            user_id,
+            domain,
+            client_id,
+        })
+    }
+}
+
+impl Into<MemberId> for ClientId {
+    fn into(self) -> MemberId {
+        MemberId {
+            domain: self.domain,
+            uuid: self.user_id,
+        }
+    }
+}
+
+// #[cfg(not(debug_assertions))]
+// pub type ClientId = crate::identifiers::ZeroKnowledgeUuid;
+// #[cfg(debug_assertions)]
+// pub type ClientId = crate::identifiers::QualifiedUuid;
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -25,19 +99,25 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn load_or_generate<S: std::hash::Hash>(
-        id: ClientId,
-        signature_public_key: Option<&S>,
-        backend: &MlsCryptoProvider,
-    ) -> CryptoResult<Self> {
-        match signature_public_key {
-            Some(sig) => match Self::load(id.clone(), sig, backend) {
-                Ok(ret) => Ok(ret),
-                Err(CryptoError::ClientSignatureNotFound) => Self::generate(id, backend),
-                Err(e) => Err(e),
-            },
-            None => Self::generate(id, backend),
+    pub fn init(id: ClientId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
+        let id_str = id.to_string();
+        let (client, generated) = if let Some(signature) = backend.key_store().load_mls_identity_signature(&id_str)? {
+            match Self::load(id.clone(), &signature, backend) {
+                Ok(client) => (client, false),
+                Err(CryptoError::ClientSignatureNotFound) => (Self::generate(id, backend)?, true),
+                Err(e) => return Err(e),
+            }
+        } else {
+            (Self::generate(id, backend)?, true)
+        };
+
+        if generated {
+            backend
+                .key_store()
+                .save_mls_identity_signature(&id_str, client.credentials.credential().signature_key().as_slice())?;
         }
+
+        Ok(client)
     }
 
     pub(crate) fn generate(id: ClientId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
@@ -123,15 +203,14 @@ impl Client {
 
     /// Requests additional `count` keying material and returns
     /// a reference to it for the consumer to copy/clone.
-    // TODO: Re-examine this
     pub fn request_keying_material(
         &mut self,
         count: usize,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<&Vec<KeyPackageBundle>> {
+    ) -> CryptoResult<&[KeyPackageBundle]> {
         self.provision_keying_material(count, backend)?;
 
-        Ok(&self.keypackage_bundles)
+        Ok(self.keypackage_bundles.as_slice())
     }
 
     fn provision_keying_material(&mut self, count: usize, backend: &MlsCryptoProvider) -> CryptoResult<()> {

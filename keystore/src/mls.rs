@@ -1,6 +1,58 @@
 use crate::{CryptoKeystore, CryptoKeystoreError, MissingKeyErrorKind};
 
 impl CryptoKeystore {
+    pub fn load_mls_identity_signature(&self, id: &str) -> crate::CryptoKeystoreResult<Option<Vec<u8>>> {
+        let mut conn_lock = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
+        let transaction = conn_lock.transaction()?;
+        use rusqlite::OptionalExtension as _;
+        let maybe_rowid = transaction
+            .query_row("SELECT rowid FROM mls_identities WHERE id = ?", &[id], |r| {
+                r.get::<_, i64>(0)
+            })
+            .optional()?;
+
+        if let Some(rowid) = maybe_rowid {
+            let mut blob =
+                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_identities", "signature", rowid, true)?;
+
+            use std::io::Read as _;
+            let mut buf = vec![];
+            blob.read_to_end(&mut buf)?;
+
+            Ok(Some(buf))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn save_mls_identity_signature(&self, id: &str, signature: &[u8]) -> crate::CryptoKeystoreResult<()> {
+        let zb = rusqlite::blob::ZeroBlob(signature.len() as i32);
+
+        let mut conn_lock = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
+        let transaction = conn_lock.transaction()?;
+        use rusqlite::ToSql as _;
+        let params: [rusqlite::types::ToSqlOutput; 2] = [id.to_sql()?, zb.to_sql()?];
+
+        transaction.execute("INSERT INTO mls_identities (id, signature) VALUES (?, ?)", params)?;
+        let row_id = transaction.last_insert_rowid();
+
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            "mls_identities",
+            "signature",
+            row_id,
+            false,
+        )?;
+
+        use std::io::Write as _;
+        blob.write_all(&signature)?;
+        drop(blob);
+
+        transaction.commit()?;
+
+        Ok(())
+    }
+
     #[cfg(test)]
     pub fn store_mls_keypackage_bundle(
         &self,

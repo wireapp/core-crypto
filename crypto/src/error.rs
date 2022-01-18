@@ -1,5 +1,3 @@
-use crate::prelude::MemberId;
-
 /// CoreCrypto errors
 #[derive(Debug, thiserror::Error)]
 pub enum CryptoError {
@@ -11,8 +9,14 @@ pub enum CryptoError {
     MalformedIdentifier(String),
     #[error("The provided client signature has not been found in the keystore")]
     ClientSignatureNotFound,
+    #[error("One of the locks has been poisoned")]
+    LockPoisonError,
     #[error("Member #{0} is out of keypackages")]
-    OutOfKeyPackage(MemberId),
+    OutOfKeyPackage(crate::member::MemberId),
+    #[error(transparent)]
+    ConversationConfigurationError(#[from] crate::conversation::MlsConversationConfigurationBuilderError),
+    #[error(transparent)]
+    CentralConfigurationError(#[from] crate::MlsCentralConfigurationBuilderError),
     /// Errors that are sent by our Keystore
     #[error(transparent)]
     KeyStoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
@@ -24,6 +28,8 @@ pub enum CryptoError {
     UuidError(#[from] uuid::Error),
     #[error(transparent)]
     Utf8Error(#[from] std::str::Utf8Error),
+    #[error(transparent)]
+    ParseIntError(#[from] std::num::ParseIntError),
     /// Other thingies
     #[error(transparent)]
     Other(#[from] eyre::Report),

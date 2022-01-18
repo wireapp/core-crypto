@@ -39,8 +39,14 @@ pub struct CoreCrypto(std::sync::RwLock<MlsCentral>);
 
 #[allow(dead_code, unused_variables)]
 impl CoreCrypto {
-    pub fn new(path: &str, key: &str) -> CryptoResult<Self> {
-        let central = MlsCentral::try_new(path, key)?;
+    pub fn new(path: &str, key: &str, client_id: &str) -> CryptoResult<Self> {
+        let configuration = MlsCentralConfiguration::builder()
+            .store_path(path.into())
+            .identity_key(key.into())
+            .client_id(client_id.into())
+            .build()?;
+
+        let central = MlsCentral::try_new(configuration)?;
         Ok(CoreCrypto(std::sync::RwLock::new(central)))
     }
 
@@ -55,7 +61,7 @@ impl CoreCrypto {
         todo!()
     }
 
-    pub fn decrypt_message(&self, conversation_id: ConversationId, payload: &[u8]) -> CryptoResult<Vec<u8>> {
+    pub fn decrypt_message(&self, conversation_id: ConversationId, payload: &[u8]) -> CryptoResult<Option<Vec<u8>>> {
         self.0.read().unwrap().decrypt_message(conversation_id, payload)
     }
 
@@ -65,6 +71,6 @@ impl CoreCrypto {
 }
 
 #[inline(always)]
-pub fn init_with_path_and_key(path: &str, key: &str) -> CryptoResult<std::sync::Arc<CoreCrypto>> {
-    Ok(std::sync::Arc::new(CoreCrypto::new(path, key)?))
+pub fn init_with_path_and_key(path: &str, key: &str, client_id: &str) -> CryptoResult<std::sync::Arc<CoreCrypto>> {
+    Ok(std::sync::Arc::new(CoreCrypto::new(path, key, client_id)?))
 }

@@ -1,13 +1,16 @@
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
-    ciphersuite::ciphersuites::CiphersuiteName, framing::MlsMessageOut, group::MlsGroup, messages::Welcome,
+    ciphersuite::ciphersuites::CiphersuiteName,
+    framing::{MlsMessageOut, ProcessedMessage},
+    group::MlsGroup,
+    messages::Welcome,
     prelude::KeyPackage,
 };
 
 use crate::{
     client::Client,
     member::{ConversationMember, MemberId},
-    CryptoResult, MlsError,
+    CryptoError, CryptoResult, MlsError,
 };
 
 // TODO: KISS
@@ -60,17 +63,12 @@ impl MlsConversationConfiguration {
     #[inline(always)]
     pub fn openmls_default_configuration() -> openmls::group::MlsGroupConfig {
         openmls::group::MlsGroupConfig::builder()
-            // Ciphertext only!
-            // TODO: Find a replacement? API is gone
-            // .wire_format(openmls::framing::WireFormat::MlsCiphertext)
-            // TODO: Understand what it does and define a safe value
-            // .padding_size(0)
-            // TODO: Understand what it does and define a safe value
-            // .max_past_epochs(5)
-            // TODO: Understand what it does and define a safe value
-            // .number_of_resumption_secrets(0)
-            // ! Make sure our DS *does* distribute copies of the group's ratchet tree
-            // ! If yes, we can set it to false, otherwise, set it to true
+            .wire_format_policy(openmls::group::WireFormatPolicy::new(
+                openmls::group::OutgoingWireFormatPolicy::AlwaysCiphertext,
+                openmls::group::IncomingWireFormatPolicy::AlwaysCiphertext,
+            ))
+            .max_past_epochs(3)
+            .number_of_resumtion_secrets(1)
             .use_ratchet_tree_extension(true)
             .build()
     }
@@ -80,7 +78,7 @@ impl MlsConversationConfiguration {
 #[allow(dead_code)]
 pub struct MlsConversation {
     pub(crate) id: ConversationId,
-    pub(crate) group: parking_lot::RwLock<MlsGroup>,
+    pub(crate) group: std::sync::RwLock<MlsGroup>,
     pub(crate) admins: Vec<MemberId>,
     configuration: MlsConversationConfiguration,
 }
@@ -110,7 +108,8 @@ impl MlsConversationCreationMessage {
 impl MlsConversation {
     pub fn create(
         id: ConversationId,
-        mut config: MlsConversationConfiguration,
+        client: &mut Client,
+        config: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<(Self, Option<MlsConversationCreationMessage>)> {
         let mls_group_config = MlsConversationConfiguration::openmls_default_configuration();
@@ -118,7 +117,7 @@ impl MlsConversation {
             backend,
             &mls_group_config,
             openmls::group::GroupId::from_slice(id.to_string().as_bytes()),
-            &config.author.keypackage_hash(backend)?,
+            &client.keypackage_hash(backend)?,
         )
         .map_err(MlsError::from)?;
 
@@ -174,7 +173,13 @@ impl MlsConversation {
     pub fn members(&self) -> CryptoResult<std::collections::HashMap<MemberId, openmls::credentials::Credential>> {
         let mut ret = std::collections::HashMap::default();
 
-        for c in self.group.read().members().map_err(MlsError::from)? {
+        for c in self
+            .group
+            .read()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .members()
+            .map_err(MlsError::from)?
+        {
             let identity_str = std::str::from_utf8(c.identity())?;
             ret.insert(identity_str.parse()?, c.clone());
         }
@@ -185,30 +190,41 @@ impl MlsConversation {
         self.admins.contains(&uuid)
     }
 
-    pub fn decrypt_message<M: AsRef<[u8]>>(&self, message: M, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
+    pub fn decrypt_message<M: AsRef<[u8]>>(
+        &self,
+        message: M,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<Option<Vec<u8>>> {
         let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
 
-        let mut group = self.group.write();
+        let mut group = self.group.write().map_err(|_| CryptoError::LockPoisonError)?;
         let parsed_message = group.parse_message(msg_in, backend).map_err(MlsError::from)?;
 
         let message = group
             .process_unverified_message(parsed_message, None, backend)
             .map_err(MlsError::from)?;
 
-        if let openmls::framing::ProcessedMessage::ApplicationMessage(app_msg) = message {
-            let (buf, _sender) = app_msg.into_parts();
-            Ok(buf)
-        } else {
-            unimplemented!(
-                "Types of messages other than ProcessedMessage::ApplicationMessage aren't supported just yet"
-            )
+        match message {
+            ProcessedMessage::ApplicationMessage(app_msg) => {
+                let (buf, _sender) = app_msg.into_parts();
+                return Ok(Some(buf));
+            }
+            ProcessedMessage::ProposalMessage(proposal) => {
+                group.store_pending_proposal(*proposal);
+            }
+            ProcessedMessage::StagedCommitMessage(staged_commit) => {
+                group.merge_staged_commit(*staged_commit).map_err(MlsError::from)?;
+            }
         }
+
+        Ok(None)
     }
 
     pub fn encrypt_message<M: AsRef<[u8]>>(&self, message: M, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
         let message = self
             .group
             .write()
+            .map_err(|_| CryptoError::LockPoisonError)?
             .create_message(backend, message.as_ref())
             .map_err(crate::MlsError::from)?;
 
@@ -233,7 +249,7 @@ mod tests {
     #[test]
     fn can_create_self_conversation() {
         let mut backend = init_keystore();
-        let alice = Client::random_generate(&backend).unwrap();
+        let mut alice = Client::random_generate(&backend).unwrap();
 
         let uuid = uuid::Uuid::new_v4();
         let conversation_id =
@@ -241,7 +257,8 @@ mod tests {
 
         let (alice_group, conversation_creation_message) = MlsConversation::create(
             conversation_id.clone(),
-            MlsConversationConfiguration::builder().author(alice).build().unwrap(),
+            &mut alice,
+            MlsConversationConfiguration::builder().build().unwrap(),
             &mut backend,
         )
         .unwrap();
@@ -249,7 +266,7 @@ mod tests {
         assert!(conversation_creation_message.is_none());
         assert_eq!(alice_group.id, conversation_id);
         assert_eq!(
-            alice_group.group.read().group_id().as_slice(),
+            alice_group.group.read().unwrap().group_id().as_slice(),
             conversation_id.to_string().as_bytes()
         );
 
@@ -259,7 +276,7 @@ mod tests {
     #[test]
     fn can_create_1_1_conversation() {
         let mut backend = init_keystore();
-        let alice = Client::random_generate(&backend).unwrap();
+        let mut alice = Client::random_generate(&backend).unwrap();
         let bob = ConversationMember::random_generate(&backend).unwrap();
 
         let uuid = uuid::Uuid::new_v4();
@@ -267,18 +284,22 @@ mod tests {
             ConversationId::from_str(&format!("{}@conversations.wire.com", uuid.to_hyphenated())).unwrap();
 
         let conversation_config = MlsConversationConfiguration::builder()
-            .author(alice)
             .extra_members(vec![bob])
             .build()
             .unwrap();
 
-        let (alice_group, conversation_creation_message) =
-            MlsConversation::create(conversation_id.clone(), conversation_config.clone(), &mut backend).unwrap();
+        let (alice_group, conversation_creation_message) = MlsConversation::create(
+            conversation_id.clone(),
+            &mut alice,
+            conversation_config.clone(),
+            &mut backend,
+        )
+        .unwrap();
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
         assert_eq!(
-            alice_group.group.read().group_id().as_slice(),
+            alice_group.group.read().unwrap().group_id().as_slice(),
             conversation_id.to_string().as_bytes()
         );
         assert_eq!(alice_group.members().unwrap().len(), 2);
@@ -291,7 +312,7 @@ mod tests {
     #[test]
     fn can_create_100_people_conversation() {
         let mut backend = init_keystore();
-        let alice = Client::random_generate(&backend).unwrap();
+        let mut alice = Client::random_generate(&backend).unwrap();
 
         let bob_and_friends = (0..99).fold(Vec::with_capacity(100), |mut acc, _| {
             let member = ConversationMember::random_generate(&backend).unwrap();
@@ -306,18 +327,22 @@ mod tests {
             ConversationId::from_str(&format!("{}@conversations.wire.com", uuid.to_hyphenated())).unwrap();
 
         let conversation_config = MlsConversationConfiguration::builder()
-            .author(alice)
             .extra_members(bob_and_friends.clone())
             .build()
             .unwrap();
 
-        let (alice_group, conversation_creation_message) =
-            MlsConversation::create(conversation_id.clone(), conversation_config.clone(), &mut backend).unwrap();
+        let (alice_group, conversation_creation_message) = MlsConversation::create(
+            conversation_id.clone(),
+            &mut alice,
+            conversation_config.clone(),
+            &mut backend,
+        )
+        .unwrap();
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
         assert_eq!(
-            alice_group.group.read().group_id().as_slice(),
+            alice_group.group.read().unwrap().group_id().as_slice(),
             conversation_id.to_string().as_bytes()
         );
         assert_eq!(alice_group.members().unwrap().len(), 1 + number_of_friends);
@@ -337,7 +362,7 @@ mod tests {
     #[test]
     fn can_roundtrip_message_in_1_1_conversation() {
         let mut backend = init_keystore();
-        let alice = Client::random_generate(&backend).unwrap();
+        let mut alice = Client::random_generate(&backend).unwrap();
 
         let bob = ConversationMember::random_generate(&backend).unwrap();
 
@@ -346,18 +371,17 @@ mod tests {
             ConversationId::from_str(&format!("{}@conversations.wire.com", uuid.to_hyphenated())).unwrap();
 
         let configuration = MlsConversationConfiguration::builder()
-            .author(alice)
             .extra_members(vec![bob])
             .build()
             .unwrap();
 
         let (alice_group, conversation_creation_message) =
-            MlsConversation::create(conversation_id.clone(), configuration.clone(), &mut backend).unwrap();
+            MlsConversation::create(conversation_id.clone(), &mut alice, configuration.clone(), &mut backend).unwrap();
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
         assert_eq!(
-            alice_group.group.read().group_id().as_slice(),
+            alice_group.group.read().unwrap().group_id().as_slice(),
             conversation_id.to_string().as_bytes()
         );
         assert_eq!(alice_group.members().unwrap().len(), 2);
@@ -369,10 +393,16 @@ mod tests {
         let original_message = b"Hello World!";
 
         let encrypted_message = alice_group.encrypt_message(original_message, &backend).unwrap();
-        let roundtripped_message = bob_group.decrypt_message(&encrypted_message, &backend).unwrap();
+        let roundtripped_message = bob_group
+            .decrypt_message(&encrypted_message, &backend)
+            .unwrap()
+            .unwrap();
         assert_eq!(original_message, roundtripped_message.as_slice());
         let encrypted_message = bob_group.encrypt_message(roundtripped_message, &backend).unwrap();
-        let roundtripped_message = alice_group.decrypt_message(&encrypted_message, &backend).unwrap();
+        let roundtripped_message = alice_group
+            .decrypt_message(&encrypted_message, &backend)
+            .unwrap()
+            .unwrap();
         assert_eq!(original_message, roundtripped_message.as_slice());
     }
 }

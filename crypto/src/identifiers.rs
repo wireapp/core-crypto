@@ -6,8 +6,8 @@ trait Identifier<'a>: std::fmt::Debug + std::hash::Hash + TryFrom<&'a [u8]> + In
 
 #[derive(Debug, Hash, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct QualifiedUuid {
-    domain: String,
-    uuid: uuid::Uuid,
+    pub(crate) domain: String,
+    pub(crate) uuid: uuid::Uuid,
 }
 
 // TODO: Separate types for conversation/member uuid structs

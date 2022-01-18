@@ -1,4 +1,7 @@
-use crate::{client::Client, CryptoError, CryptoResult, MlsError};
+use crate::{
+    client::{Client, ClientId},
+    CryptoError, CryptoResult, MlsError,
+};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::KeyPackage;
 
@@ -10,15 +13,17 @@ pub type MemberId = crate::identifiers::QualifiedUuid;
 #[derive(Debug, Clone)]
 pub struct ConversationMember {
     id: MemberId,
+    client_ids: Vec<ClientId>,
     keypackages: Vec<KeyPackage>,
     #[allow(dead_code)]
     client: Option<Client>,
 }
 
 impl ConversationMember {
-    pub fn new(id: MemberId, kp: KeyPackage) -> CryptoResult<Self> {
+    pub fn new(client_id: ClientId, kp: KeyPackage) -> CryptoResult<Self> {
         Ok(Self {
-            id,
+            id: client_id.clone().into(),
+            client_ids: vec![client_id],
             keypackages: vec![kp],
             client: None,
         })
@@ -26,6 +31,10 @@ impl ConversationMember {
 
     pub fn id(&self) -> &MemberId {
         &self.id
+    }
+
+    pub fn clients(&self) -> &[ClientId] {
+        self.client_ids.as_slice()
     }
 
     /// This method consumes a KeyPackageBundle for the Member, hashes it and returns the hash,
@@ -54,22 +63,20 @@ impl Eq for ConversationMember {}
 
 #[cfg(test)]
 impl ConversationMember {
-    pub fn generate(id: MemberId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
+    pub fn random_generate(backend: &MlsCryptoProvider) -> CryptoResult<Self> {
+        let uuid = uuid::Uuid::new_v4();
+        let id: ClientId = format!("{}:{}@members.wire.com", uuid.to_hyphenated(), rand::random::<usize>()).parse()?;
         let mut client = Client::generate(id.clone(), backend)?;
         client.gen_keypackage(backend)?;
 
         let member = Self {
-            id,
+            id: id.clone().into(),
+            client_ids: vec![id],
             keypackages: client.keypackages().into_iter().cloned().collect(),
             client: Some(client),
         };
 
         Ok(member)
-    }
-
-    pub fn random_generate(backend: &MlsCryptoProvider) -> CryptoResult<Self> {
-        let uuid = uuid::Uuid::new_v4();
-        Self::generate(format!("{}@members.wire.com", uuid.to_hyphenated()).parse()?, &backend)
     }
 }
 

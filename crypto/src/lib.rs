@@ -12,7 +12,7 @@ pub mod prelude {
     pub use crate::error::*;
     pub use crate::identifiers;
     pub use crate::member::*;
-    pub use crate::MlsCentral;
+    pub use crate::{MlsCentral, MlsCentralConfiguration};
     pub use openmls::ciphersuite::ciphersuites::CiphersuiteName;
 }
 
@@ -22,12 +22,24 @@ use mls_crypto_provider::MlsCryptoProvider;
 use openmls::messages::Welcome;
 use std::collections::HashMap;
 
+#[derive(Debug, Clone, derive_builder::Builder)]
+pub struct MlsCentralConfiguration {
+    pub(crate) store_path: String,
+    pub(crate) identity_key: String,
+    pub(crate) client_id: String,
+}
+
+impl MlsCentralConfiguration {
+    pub fn builder() -> MlsCentralConfigurationBuilder {
+        MlsCentralConfigurationBuilder::default()
+    }
+}
+
 #[derive(Debug)]
 pub struct MlsCentral {
-    #[allow(dead_code)]
-    mls_client: Option<Client>,
+    mls_client: Client,
     mls_backend: MlsCryptoProvider,
-    mls_groups: parking_lot::RwLock<HashMap<ConversationId, MlsConversation>>,
+    mls_groups: std::sync::RwLock<HashMap<ConversationId, MlsConversation>>,
     welcome_callback: Option<fn(Welcome)>,
 }
 
@@ -35,12 +47,14 @@ impl MlsCentral {
     /// Tries to initialize the MLS Central object.
     /// Takes a store path (i.e. Disk location of the embedded database, should be consistent between messaging sessions)
     /// And a root identity key (i.e. enclaved encryption key for this device)
-    pub fn try_new<S: AsRef<str>>(store_path: S, identity_key: S) -> crate::error::CryptoResult<Self> {
-        let mls_backend = mls_crypto_provider::MlsCryptoProvider::try_new(store_path, identity_key)?;
+    pub fn try_new(configuration: MlsCentralConfiguration) -> crate::error::CryptoResult<Self> {
+        let mls_backend =
+            mls_crypto_provider::MlsCryptoProvider::try_new(&configuration.store_path, &configuration.identity_key)?;
+        let mls_client = Client::init(configuration.client_id.parse()?, &mls_backend)?;
 
         Ok(Self {
             mls_backend,
-            mls_client: None,
+            mls_client,
             mls_groups: HashMap::new().into(),
             welcome_callback: None,
         })
@@ -57,8 +71,14 @@ impl MlsCentral {
         id: ConversationId,
         config: MlsConversationConfiguration,
     ) -> crate::error::CryptoResult<Option<MlsConversationCreationMessage>> {
-        let (conversation, messages) = MlsConversation::create(id.clone(), config, &self.mls_backend)?;
-        self.mls_groups.write().insert(id, conversation);
+        let (conversation, messages) =
+            MlsConversation::create(id.clone(), &mut self.mls_client, config, &self.mls_backend)?;
+
+        self.mls_groups
+            .write()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .insert(id, conversation);
+
         Ok(messages)
     }
 
@@ -70,7 +90,7 @@ impl MlsCentral {
 
     /// Encrypts a raw payload then serializes it to the TLS wire format
     pub fn encrypt_message<M: AsRef<[u8]>>(&self, conversation: ConversationId, message: M) -> CryptoResult<Vec<u8>> {
-        let groups = self.mls_groups.read();
+        let groups = self.mls_groups.read().map_err(|_| CryptoError::LockPoisonError)?;
         let conversation = groups
             .get(&conversation)
             .ok_or(CryptoError::ConversationNotFound(conversation))?;
@@ -79,13 +99,14 @@ impl MlsCentral {
     }
 
     /// Deserializes a TLS-serialized message, then deciphers it
-    /// Warning: This method only supports MLS Application Messages as of 0.0.1
+    /// This methids will return None for the message in case the provided payload is
+    /// a system message
     pub fn decrypt_message<M: AsRef<[u8]>>(
         &self,
         conversation_id: ConversationId,
         message: M,
-    ) -> CryptoResult<Vec<u8>> {
-        let groups = self.mls_groups.read();
+    ) -> CryptoResult<Option<Vec<u8>>> {
+        let groups = self.mls_groups.read().map_err(|_| CryptoError::LockPoisonError)?;
         let conversation = groups
             .get(&conversation_id)
             .ok_or(CryptoError::ConversationNotFound(conversation_id))?;
