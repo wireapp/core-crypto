@@ -9,7 +9,7 @@ use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider};
 
 use crate::{prelude::MemberId, CryptoError, CryptoResult, MlsError};
 
-const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
+pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ClientId {
@@ -240,8 +240,12 @@ impl Eq for Client {}
 #[cfg(test)]
 impl Client {
     pub fn random_generate(backend: &MlsCryptoProvider) -> CryptoResult<Self> {
-        let uuid = uuid::Uuid::new_v4();
-        Self::generate(format!("{}@clients.wire.com", uuid.to_hyphenated()).parse()?, &backend)
+        let user_uuid = uuid::Uuid::new_v4();
+        let client_id = rand::random::<usize>();
+        Self::generate(
+            format!("{}:{client_id}@members.wire.com", user_uuid.to_hyphenated()).parse()?,
+            &backend,
+        )
     }
 
     pub fn keypackages(&self) -> Vec<&openmls::prelude::KeyPackage> {
@@ -256,13 +260,13 @@ mod tests {
     use super::Client;
 
     #[test]
-    fn can_generate_member() {
+    fn can_generate_client() {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
         assert!(Client::random_generate(&backend).is_ok());
     }
 
     #[test]
-    fn never_run_out_of_keypackages() {
+    fn client_never_runs_out_of_keypackages() {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
         let mut client = Client::random_generate(&backend).unwrap();
         for _ in 0..100 {

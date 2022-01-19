@@ -36,7 +36,6 @@ pub type ConversationId = crate::identifiers::QualifiedUuid;
 // FIXME: This is utterly broken and wouldn't pass FFI
 #[derive(Debug, Clone, derive_builder::Builder)]
 pub struct MlsConversationConfiguration {
-    pub author: Client,
     #[builder(default)]
     pub extra_members: Vec<ConversationMember>,
     #[builder(default)]
@@ -104,7 +103,7 @@ impl MlsConversationCreationMessage {
 impl MlsConversation {
     pub fn create(
         id: ConversationId,
-        client: &mut Client,
+        author_client: &mut Client,
         config: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<(Self, Option<MlsConversationCreationMessage>)> {
@@ -113,7 +112,7 @@ impl MlsConversation {
             backend,
             &mls_group_config,
             openmls::group::GroupId::from_slice(id.to_string().as_bytes()),
-            &client.keypackage_hash(backend)?,
+            &author_client.keypackage_hash(backend)?,
         )
         .map_err(MlsError::from)?;
 
@@ -166,20 +165,27 @@ impl MlsConversation {
         &self.id
     }
 
-    pub fn members(&self) -> CryptoResult<std::collections::HashMap<MemberId, openmls::credentials::Credential>> {
-        let mut ret = std::collections::HashMap::default();
-
-        for c in self
+    pub fn members(&self) -> CryptoResult<std::collections::HashMap<MemberId, Vec<openmls::credentials::Credential>>> {
+        Ok(self
             .group
             .read()
             .map_err(|_| CryptoError::LockPoisonError)?
             .members()
             .map_err(MlsError::from)?
-        {
-            let identity_str = std::str::from_utf8(c.identity())?;
-            ret.insert(identity_str.parse()?, c.clone());
-        }
-        Ok(ret)
+            .iter()
+            .try_fold(
+                std::collections::HashMap::new(),
+                |mut acc, credential| -> CryptoResult<_> {
+                    let identity_str = std::str::from_utf8(credential.identity())?;
+                    let client_id: crate::client::ClientId = identity_str.parse()?;
+                    let member_id: MemberId = client_id.into();
+                    acc.entry(member_id)
+                        .or_insert_with(|| vec![])
+                        .push((*credential).clone());
+
+                    Ok(acc)
+                },
+            )?)
     }
 
     pub fn can_user_act(&self, uuid: MemberId) -> bool {

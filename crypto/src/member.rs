@@ -94,6 +94,7 @@ impl ConversationMember {
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::INITIAL_KEYING_MATERIAL_COUNT;
     use mls_crypto_provider::MlsCryptoProvider;
 
     use super::ConversationMember;
@@ -106,10 +107,10 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn can_run_out_of_keypackage_hashes() {
+    fn member_can_run_out_of_keypackage_hashes() {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
         let mut member = ConversationMember::random_generate(&backend).unwrap();
-        for _ in 0..100 {
+        for _ in 0..INITIAL_KEYING_MATERIAL_COUNT * 2 {
             assert!(member.keypackage_hash(&backend).is_ok())
         }
     }
