@@ -37,7 +37,7 @@ impl MlsCentralConfiguration {
 
 #[derive(Debug)]
 pub struct MlsCentral {
-    mls_client: Client,
+    mls_client: std::sync::RwLock<Client>,
     mls_backend: MlsCryptoProvider,
     mls_groups: std::sync::RwLock<HashMap<ConversationId, MlsConversation>>,
     welcome_callback: Option<fn(Welcome)>,
@@ -54,7 +54,7 @@ impl MlsCentral {
 
         Ok(Self {
             mls_backend,
-            mls_client,
+            mls_client: mls_client.into(),
             mls_groups: HashMap::new().into(),
             welcome_callback: None,
         })
@@ -67,12 +67,12 @@ impl MlsCentral {
 
     /// Create a new empty conversation
     pub fn new_conversation(
-        &mut self,
+        &self,
         id: ConversationId,
         config: MlsConversationConfiguration,
     ) -> crate::error::CryptoResult<Option<MlsConversationCreationMessage>> {
-        let (conversation, messages) =
-            MlsConversation::create(id.clone(), &mut self.mls_client, config, &self.mls_backend)?;
+        let mut client = self.mls_client.write().map_err(|_| CryptoError::LockPoisonError)?;
+        let (conversation, messages) = MlsConversation::create(id.clone(), &mut client, config, &self.mls_backend)?;
 
         self.mls_groups
             .write()

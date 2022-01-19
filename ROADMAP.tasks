@@ -23,23 +23,6 @@ CoreCrypto:
         ✔ Keystore: CoreCrypto Keystore @done (22-01-12 19:08)
             ✔ In-memory mode entrypoint @done (22-01-12 19:09)
 
-    CoreCrypto - MLS Test Distribution Service:
-        ☐ Core
-            ✔ Actix-Web @done (22-01-12 19:20)
-            ✔ graphql_async @done (22-01-12 19:20)
-            ✔ SeaORM @done (22-01-12 19:20)
-            ☐ Redis
-        ☐ Features
-            ☐ Client
-                ✔ Register client with initial keying material @done (22-01-12 19:12)
-                ☐ Get keybundle for client / user
-            ☐ Conversation
-                ☐ Create conversation
-                ☐ Add members to conversation
-                ☐ Prune keying material when used to add someone to a conversation  @critical
-                ☐ Send message
-                ☐ Fetch messages
-
     CoreCrypto - Rust:
         ☐ Features
             ☐ Client
@@ -63,6 +46,22 @@ CoreCrypto:
             ☐ Client management
             ☐ Conversation management
 
+    CoreCrypto - MLS Test Distribution Service:
+        ☐ Core
+            ✔ Actix-Web @done (22-01-12 19:20)
+            ✔ graphql_async @done (22-01-12 19:20)
+            ✔ SeaORM @done (22-01-12 19:20)
+            ☐ Redis
+        ☐ Features
+            ☐ Client
+                ✔ Register client with initial keying material @done (22-01-12 19:12)
+                ☐ Get keybundle for client / user
+            ☐ Conversation
+                ☐ Create conversation
+                ☐ Add members to conversation
+                ☐ Prune keying material when used to add someone to a conversation  @critical
+                ☐ Send message
+                ☐ Fetch messages
 
 CryptoLib:
 

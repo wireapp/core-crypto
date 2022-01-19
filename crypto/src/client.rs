@@ -9,7 +9,7 @@ use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider};
 
 use crate::{prelude::MemberId, CryptoError, CryptoResult, MlsError};
 
-const INITIAL_KEYING_MATERIAL_COUNT: usize = 50;
+const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ClientId {
@@ -46,6 +46,7 @@ impl std::fmt::Display for ClientId {
 impl std::str::FromStr for ClientId {
     type Err = CryptoError;
 
+    // Format: user_uuid:client_id@domain
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut iter = s.split('@').take(2);
         let uid_cid_tuple = iter
@@ -174,6 +175,7 @@ impl Client {
 
     /// This method consumes a KeyPackageBundle for the Client, hashes it and returns the hash,
     /// and if necessary regenerates a new keypackage for immediate use
+    // FIXME: This shouldn't take &mut self; Maybe rework the whole thing to not used a cached view of KPBs and only interact with the keystore?
     pub fn keypackage_hash(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
         if let Some(kpb) = self.keypackage_bundles.pop() {
             Ok(kpb.key_package().hash(backend).map_err(MlsError::from)?)
@@ -201,7 +203,7 @@ impl Client {
         Ok(())
     }
 
-    /// Requests additional `count` keying material and returns
+    /// Requests `count` keying material to be present and returns
     /// a reference to it for the consumer to copy/clone.
     pub fn request_keying_material(
         &mut self,
@@ -214,6 +216,11 @@ impl Client {
     }
 
     fn provision_keying_material(&mut self, count: usize, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+        if count <= self.keypackage_bundles.len() {
+            return Ok(());
+        }
+
+        let count = count - self.keypackage_bundles.len();
         for _ in 0..count {
             self.gen_keypackage(backend)?;
         }

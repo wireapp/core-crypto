@@ -22,8 +22,16 @@ impl TryFrom<MlsConversationCreationMessage> for ConversationCreationMessage {
 
 #[derive(Debug, Clone)]
 pub struct Invitee {
-    pub id: Vec<u8>,
-    pub kph: Vec<u8>,
+    pub id: ClientId,
+    pub kp: Vec<u8>,
+}
+
+impl TryInto<ConversationMember> for Invitee {
+    type Error = CryptoError;
+
+    fn try_into(self) -> Result<ConversationMember, Self::Error> {
+        ConversationMember::new_raw(self.id, self.kp)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -35,7 +43,8 @@ pub struct ConversationConfiguration {
 }
 
 #[derive(Debug)]
-pub struct CoreCrypto(std::sync::RwLock<MlsCentral>);
+#[repr(transparent)]
+pub struct CoreCrypto(MlsCentral);
 
 #[allow(dead_code, unused_variables)]
 impl CoreCrypto {
@@ -47,26 +56,43 @@ impl CoreCrypto {
             .build()?;
 
         let central = MlsCentral::try_new(configuration)?;
-        Ok(CoreCrypto(std::sync::RwLock::new(central)))
+
+        Ok(CoreCrypto(central))
     }
 
     pub fn create_conversation(
         &self,
         conversation_id: ConversationId,
-        config: ConversationConfiguration,
+        mut config: ConversationConfiguration,
     ) -> CryptoResult<Option<ConversationCreationMessage>> {
-        // FIXME: Fix the api on the core-crypto side and allow transforming FFI-side config to inner config
-        // let ret = self.0.write().unwrap().new_conversation(conversation_id, config)?;
-        // Ok(ret.map(TryInto::try_into).transpose()?)
-        todo!()
+        let mut cfg = MlsConversationConfiguration::builder();
+        let extra_members = config.extra_members.into_iter().try_fold(
+            vec![],
+            |mut acc, inv| -> CryptoResult<Vec<ConversationMember>> {
+                acc.push(inv.try_into()?);
+                Ok(acc)
+            },
+        )?;
+
+        cfg.extra_members(extra_members);
+        cfg.admins(config.admins);
+        cfg.key_rotation_span(config.key_rotation_span);
+
+        if let Some(ciphersuite) = config.ciphersuite.take() {
+            cfg.ciphersuite(ciphersuite);
+        }
+
+        let ret = self.0.new_conversation(conversation_id, cfg.build()?)?;
+
+        Ok(ret.map(TryInto::try_into).transpose()?)
     }
 
     pub fn decrypt_message(&self, conversation_id: ConversationId, payload: &[u8]) -> CryptoResult<Option<Vec<u8>>> {
-        self.0.read().unwrap().decrypt_message(conversation_id, payload)
+        self.0.decrypt_message(conversation_id, payload)
     }
 
     pub fn encrypt_message(&self, conversation_id: ConversationId, message: &[u8]) -> CryptoResult<Vec<u8>> {
-        self.0.read().unwrap().encrypt_message(conversation_id, message)
+        self.0.encrypt_message(conversation_id, message)
     }
 }
 

@@ -4,7 +4,7 @@ use openmls::{
     framing::{MlsMessageOut, ProcessedMessage},
     group::MlsGroup,
     messages::Welcome,
-    prelude::KeyPackage,
+    prelude::{KeyPackage, SenderRatchetConfiguration},
 };
 
 use crate::{
@@ -35,20 +35,14 @@ pub type ConversationId = crate::identifiers::QualifiedUuid;
 
 // FIXME: This is utterly broken and wouldn't pass FFI
 #[derive(Debug, Clone, derive_builder::Builder)]
-#[allow(dead_code)]
 pub struct MlsConversationConfiguration {
     pub author: Client,
     #[builder(default)]
     pub extra_members: Vec<ConversationMember>,
     #[builder(default)]
     pub admins: Vec<MemberId>,
-    // FIXME: No way to configure ciphersuites.
-    // FIXME: Can maybe only check it against the supported ciphersuites in the group afterwards?
-    // TODO: Maybe pull CiphersuiteName from OpenMLS
     #[builder(default)]
-    pub ciphersuite: Option<CiphersuiteName>,
-    // FIXME: openmls::group::config::UpdatePolicy is NOT configurable at the moment.
-    // FIXME: None of the fields are available and there are no ways to build it/mutate it
+    pub ciphersuite: CiphersuiteName,
     // TODO: Implement the key rotation manually instead.
     // TODO: Define if the rotation span is per X messages or per X epochs or even per X time interval
     #[builder(default)]
@@ -69,6 +63,8 @@ impl MlsConversationConfiguration {
             ))
             .max_past_epochs(3)
             .number_of_resumtion_secrets(1)
+            // TODO: Choose appropriate values
+            .sender_ratchet_configuration(SenderRatchetConfiguration::new(2, 5))
             .use_ratchet_tree_extension(true)
             .build()
     }

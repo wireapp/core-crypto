@@ -40,8 +40,8 @@ dictionary ConversationCreationMessage {
 };
 
 dictionary Invitee {
-    sequence<u8> id;
-    sequence<u8> kph;
+    ClientId id;
+    sequence<u8> kp;
 };
 
 dictionary ConversationConfiguration {

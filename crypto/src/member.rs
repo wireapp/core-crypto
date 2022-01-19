@@ -20,13 +20,25 @@ pub struct ConversationMember {
 }
 
 impl ConversationMember {
-    pub fn new(client_id: ClientId, kp: KeyPackage) -> CryptoResult<Self> {
+    pub fn new_raw(client_id: ClientId, kp_ser: Vec<u8>) -> CryptoResult<Self> {
+        use openmls::prelude::TlsDeserializeTrait as _;
+        let kp = KeyPackage::tls_deserialize(&mut &kp_ser[..]).map_err(|e| MlsError::MlsKeyPackageError(e.into()))?;
+
         Ok(Self {
             id: client_id.clone().into(),
             client_ids: vec![client_id],
             keypackages: vec![kp],
             client: None,
         })
+    }
+
+    pub fn new(client_id: ClientId, kp: KeyPackage) -> Self {
+        Self {
+            id: client_id.clone().into(),
+            client_ids: vec![client_id],
+            keypackages: vec![kp],
+            client: None,
+        }
     }
 
     pub fn id(&self) -> &MemberId {
