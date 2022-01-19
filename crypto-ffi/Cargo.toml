@@ -15,3 +15,4 @@ tls_codec = "0.1.4"
 
 [build-dependencies]
 uniffi_build = { version = "0.16", features = ["builtin-bindgen"] }
+uniffi_bindgen = "0.16"
