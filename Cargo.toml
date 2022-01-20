@@ -1,6 +1,6 @@
 [workspace]
-members = ["crypto", "crypto-ffi", "keystore", "mls-provider", "core-ds"]
-exclude = ["anycrypto"]
+members = ["crypto-ffi", "keystore", "mls-provider", "core-ds"]
+exclude = ["crypto", "anycrypto"]
 
 [patch.crates-io.proteus]
 git = "https://github.com/wireapp/proteus"

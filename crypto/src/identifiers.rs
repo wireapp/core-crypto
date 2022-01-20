@@ -27,7 +27,7 @@ impl<'a> TryFrom<&'a [u8]> for QualifiedUuid {
 impl Into<Vec<u8>> for QualifiedUuid {
     fn into(self) -> Vec<u8> {
         let mut ret = vec![];
-        ret.extend_from_slice(self.uuid.to_hyphenated().to_string().as_bytes());
+        ret.extend_from_slice(self.uuid.hyphenated().to_string().as_bytes());
         ret.push(b'@');
         ret.extend_from_slice(&self.domain.into_bytes());
 
@@ -38,7 +38,7 @@ impl Into<Vec<u8>> for QualifiedUuid {
 impl QualifiedUuid {
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut ret = vec![];
-        ret.extend_from_slice(self.uuid.to_hyphenated_ref().to_string().as_bytes());
+        ret.extend_from_slice(self.uuid.as_hyphenated().to_string().as_bytes());
         ret.push(b'@');
         ret.extend_from_slice(self.domain.as_bytes());
 

@@ -21,7 +21,7 @@ pub struct ClientId {
 impl ClientId {
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut ret = vec![];
-        ret.extend_from_slice(self.user_id.to_hyphenated_ref().to_string().as_bytes());
+        ret.extend_from_slice(self.user_id.as_hyphenated().to_string().as_bytes());
         ret.push(b':');
         ret.extend_from_slice(self.client_id.to_string().as_bytes());
         ret.push(b'@');
@@ -33,13 +33,7 @@ impl ClientId {
 
 impl std::fmt::Display for ClientId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}:{}@{}",
-            self.user_id.to_hyphenated_ref(),
-            self.client_id,
-            self.domain
-        )
+        write!(f, "{}:{}@{}", self.user_id.as_hyphenated(), self.client_id, self.domain)
     }
 }
 
