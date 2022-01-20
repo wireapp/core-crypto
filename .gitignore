@@ -19,6 +19,3 @@ Cargo.lock
 *.db
 
 # End of https://www.toptal.com/developers/gitignore/api/rust
-
-# Don't check in the generated bindings
-crypto-ffi/bindings
