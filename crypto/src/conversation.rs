@@ -13,27 +13,11 @@ use crate::{
     CryptoError, CryptoResult, MlsError,
 };
 
-// TODO: KISS
-#[cfg(not(debug_assertions))]
-pub type ConversationId = crate::identifiers::ZeroKnowledgeUuid;
-#[cfg(debug_assertions)]
+// #[cfg(not(debug_assertions))]
+// pub type ConversationId = crate::identifiers::ZeroKnowledgeUuid;
+// #[cfg(debug_assertions)]
 pub type ConversationId = crate::identifiers::QualifiedUuid;
 
-// #[derive(Debug, Clone, derive_builder::Builder)]
-// pub struct MlsConversationConfiguration<'a> {
-//     pub extra_members: &'a [(MemberId, &'a [u8])],
-//     pub admins: &'a [MemberId],
-//     pub ciphersuite: CiphersuiteName,
-//     pub key_rotation_span: Option<std::time::Duration>,
-// }
-
-// impl<'a> MlsConversationConfiguration<'a> {
-//     pub fn builder() -> MlsConversationConfigurationBuilder<'a> {
-//         MlsConversationConfigurationBuilder::default()
-//     }
-// }
-
-// FIXME: This is utterly broken and wouldn't pass FFI
 #[derive(Debug, Clone, derive_builder::Builder)]
 pub struct MlsConversationConfiguration {
     #[builder(default)]
@@ -81,6 +65,12 @@ pub struct MlsConversation {
 #[derive(Debug)]
 pub struct MlsConversationCreationMessage {
     pub welcome: Welcome,
+    pub message: MlsMessageOut,
+}
+
+#[derive(Debug)]
+pub struct MlsConversationReinitMessage {
+    pub welcome: Option<Welcome>,
     pub message: MlsMessageOut,
 }
 
@@ -228,9 +218,19 @@ impl MlsConversation {
             .write()
             .map_err(|_| CryptoError::LockPoisonError)?
             .create_message(backend, message.as_ref())
-            .map_err(crate::MlsError::from)?;
+            .map_err(MlsError::from)?;
 
         Ok(message.to_bytes().map_err(MlsError::from)?)
+    }
+
+    pub fn reinit(&self, backend: &MlsCryptoProvider) -> CryptoResult<MlsConversationReinitMessage> {
+        Ok(self
+            .group
+            .write()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .self_update(backend, None)
+            .map_err(MlsError::from)
+            .map(|(message, welcome)| MlsConversationReinitMessage { welcome, message })?)
     }
 }
 

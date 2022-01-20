@@ -1,9 +1,5 @@
 fn main() {
-    #[cfg(any(
-        target = "aarch64-apple-ios",
-        target = "aarch64-apple-ios-sim",
-        target = "x86_64-apple-ios",
-    ))]
+    #[cfg(target_os = "ios")]
     println!("cargo:rustc-cfg=ios");
 
     if cfg!(all(ios, not(feature = "ios-wal-compat"))) {

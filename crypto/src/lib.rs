@@ -99,8 +99,8 @@ impl MlsCentral {
     }
 
     /// Deserializes a TLS-serialized message, then deciphers it
-    /// This methids will return None for the message in case the provided payload is
-    /// a system message
+    /// This method will return None for the message in case the provided payload is
+    /// a system message, such as Proposals and Commits
     pub fn decrypt_message<M: AsRef<[u8]>>(
         &self,
         conversation_id: ConversationId,
@@ -114,5 +114,3 @@ impl MlsCentral {
         conversation.decrypt_message(message.as_ref(), &self.mls_backend)
     }
 }
-
-pub fn init() {}

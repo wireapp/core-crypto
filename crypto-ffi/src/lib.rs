@@ -1,5 +1,7 @@
+#[cfg(feature = "uniffi")]
 uniffi_macros::include_scaffolding!("CoreCrypto");
 
+#[cfg(feature = "uniffi")]
 mod uniffi_support;
 
 use core_crypto::prelude::*;

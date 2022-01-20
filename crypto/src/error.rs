@@ -7,12 +7,16 @@ pub enum CryptoError {
     /// This error is emitted when we find a malformed (i.e. not uuid) or empty identifier
     #[error("Malformed identifier found: {0}")]
     MalformedIdentifier(String),
+    /// The keystore has no knowledge of such client; this shouldn't happen as Client::init is failsafe (find-else-create)
     #[error("The provided client signature has not been found in the keystore")]
     ClientSignatureNotFound,
+    /// !!!! Something went very wrong and one of our locks has been poisoned by an in-thread panic !!!!
     #[error("One of the locks has been poisoned")]
     LockPoisonError,
+    /// A conversation member is out of local stored keypackages - if it does happen something went wrong
     #[error("Member #{0} is out of keypackages")]
     OutOfKeyPackage(crate::member::MemberId),
+    /// There was an issue when configuring a new conversation
     #[error(transparent)]
     ConversationConfigurationError(#[from] crate::conversation::MlsConversationConfigurationBuilderError),
     #[error(transparent)]
@@ -26,8 +30,10 @@ pub enum CryptoError {
     /// UUID-related errors
     #[error(transparent)]
     UuidError(#[from] uuid::Error),
+    /// Error when parsing Strings that are not UTF-8
     #[error(transparent)]
     Utf8Error(#[from] std::str::Utf8Error),
+    /// Error when trying to coerce ints into Strings
     #[error(transparent)]
     ParseIntError(#[from] std::num::ParseIntError),
     /// Other thingies

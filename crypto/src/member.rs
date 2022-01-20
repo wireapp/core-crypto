@@ -5,9 +5,9 @@ use crate::{
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::KeyPackage;
 
-#[cfg(not(debug_assertions))]
-pub type MemberId = crate::identifiers::ZeroKnowledgeUuid;
-#[cfg(debug_assertions)]
+// #[cfg(not(debug_assertions))]
+// pub type MemberId = crate::identifiers::ZeroKnowledgeUuid;
+// #[cfg(debug_assertions)]
 pub type MemberId = crate::identifiers::QualifiedUuid;
 
 #[derive(Debug, Clone)]

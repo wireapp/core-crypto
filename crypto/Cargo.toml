@@ -10,10 +10,11 @@ crate-type = ["lib", "cdylib"]
 [dependencies]
 eyre = "0.6"
 thiserror = "1.0"
-uuid = { version = "0.8", features = ["v5"] }
+uuid = { version = "0.8", default-features = false, features = ["v5"] }
+derive_builder = "0.10"
+
 openmls = { git = "https://github.com/openmls/openmls" }
 openmls_traits = { git = "https://github.com/openmls/openmls" }
-derive_builder = "0.10"
 
 [dependencies.core-crypto-keystore]
 version = "0.1.0"

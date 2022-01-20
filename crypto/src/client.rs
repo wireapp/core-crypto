@@ -86,11 +86,6 @@ impl Into<MemberId> for ClientId {
     }
 }
 
-// #[cfg(not(debug_assertions))]
-// pub type ClientId = crate::identifiers::ZeroKnowledgeUuid;
-// #[cfg(debug_assertions)]
-// pub type ClientId = crate::identifiers::QualifiedUuid;
-
 #[derive(Debug, Clone)]
 pub struct Client {
     id: ClientId,

@@ -1,0 +1,44 @@
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+[tasks.test]
+command = "cargo"
+args = ["test"]
+dependencies = ["clean"]
+
+[tasks.check]
+command = "cargo"
+args = ["check"]
+
+# WASM
+
+[tasks.build-wasm]
+command = "cargo"
+args = ["build", "--target", "wasm32-unknown-emscripten", "${@}"]
+
+# iOS
+
+[tasks.build-ios]
+command = "cargo"
+args = ["build", "--target", "aarch64-apple-ios", "--features", "mobile", "${@}"]
+
+# Android
+[tasks.build-android-armv7]
+command = "cargo"
+args = ["build", "--target", "armv7-linux-android", "--features", "mobile", "${@}"]
+
+[tasks.build-android-armv8]
+command = "cargo"
+args = ["build", "--target", "aarch64-linux-android", "--features", "mobile", "${@}"]
+
+[tasks.build-android]
+dependencies = ["build-android-armv7", "build-android-armv8"]
+
+# Mobile
+[tasks.build-mobile]
+dependencies = ["build-android", "build-ios"]
+
+# ALL OF THE THINGS
+[tasks.build-all]
+dependencies = ["build-mobile", "build-wasm"]

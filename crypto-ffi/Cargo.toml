@@ -7,12 +7,17 @@ edition = "2021"
 name = "core_crypto_ffi"
 crate-type = ["lib", "cdylib"]
 
+[features]
+default = []
+mobile = ["uniffi", "uniffi_macros", "uniffi_build", "uniffi_bindgen"]
+
 [dependencies]
-uniffi = "0.16"
-uniffi_macros = "0.16"
 core-crypto = { version = "0.1", path = "../crypto" }
-tls_codec = "0.1.4"
+# UniFFI - Android + iOS bindings - Runtime support
+uniffi = { version = "0.16", optional = true }
+uniffi_macros = { version = "0.16", optional = true }
 
 [build-dependencies]
-uniffi_build = { version = "0.16", features = ["builtin-bindgen"] }
-uniffi_bindgen = "0.16"
+# UniFFI - Android + iOS bindings - Build support
+uniffi_build = { version = "0.16", features = ["builtin-bindgen"], optional = true }
+uniffi_bindgen = { version = "0.16", optional = true }

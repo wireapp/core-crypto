@@ -77,8 +77,8 @@ impl FromStr for QualifiedUuid {
     }
 }
 
-#[repr(transparent)]
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
 pub struct ZeroKnowledgeUuid(uuid::Uuid);
 
 impl<'a> TryFrom<&'a [u8]> for ZeroKnowledgeUuid {
