@@ -4,6 +4,9 @@ CoreCrypto:
             * Requires compiling with emscripten for WASM, which artificially inflates the bundle size
             * In an ideal world I'd like to target wasm32-unknown-unknown or wasm32-wasi to limit arcane `emcc` magic
             * Study feasibility of SQLGlue + OTF encrypted flatbuffers [offtime]
+            * Update 25/01/22:
+                * OpenSSL is the major culprit of WASI incompatibility - fix in progress when I have time
+                * SQLite/Cipher makes heavy use of OpenSSL so OSSL is a blocker on that topic
         ✔ Wrap SQLCipher store @done (22-01-12 19:06)
             ✔ Add in-memory store capabilities @done (22-01-12 19:09)
         ✔ MLS @done (22-01-12 19:08)
@@ -45,6 +48,18 @@ CoreCrypto:
         ☐ Central
             ☐ Client management
             ☐ Conversation management
+        ☐ Bindings
+            ☐ Swift
+                ✔ Produce @done (22-01-25 18:19)
+                ☐ Test
+                ☐ Package in a XCFramework?
+            ☐ Kotlin
+                ✔ Produce @done (22-01-25 18:19)
+                ☐ Test
+            ☐ JS/TS
+                ✔ Produce WASM @done (22-01-25 18:20)
+                ☐ Write TS/JS bindings
+                ☐ Test w/ Deno
 
     CoreCrypto - MLS Test Distribution Service:
         ☐ Core

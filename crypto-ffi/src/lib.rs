@@ -98,7 +98,15 @@ impl CoreCrypto {
     }
 }
 
-#[inline(always)]
+// #[cfg(not(wasm))]
+#[no_mangle]
 pub fn init_with_path_and_key(path: &str, key: &str, client_id: &str) -> CryptoResult<std::sync::Arc<CoreCrypto>> {
     Ok(std::sync::Arc::new(CoreCrypto::new(path, key, client_id)?))
+}
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+#[no_mangle]
+pub extern "C" fn version() -> *const u8 {
+    VERSION.as_ptr()
 }

@@ -12,6 +12,12 @@ fn main() {
     #[cfg(all(feature = "uniffi", target_os = "android"))]
     println!("cargo:rustc-cfg=android");
 
+    #[cfg(target = "wasm32-unknown-emscripten")]
+    Command::new("emcc")
+        .args(&["-c ./support/gxx_personality_v0_stub.cpp"])
+        .status()
+        .unwrap();
+
     #[cfg(feature = "uniffi")]
     uniffi_build::generate_scaffolding(UDL_FILE).unwrap();
     #[cfg(feature = "uniffi")]

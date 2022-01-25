@@ -1,17 +1,17 @@
 // WIP
 
-interface CoreCryptoParams {
+export interface CoreCryptoParams {
     path: string;
     key: string;
     clientId: string;
 }
 
-interface Invitee {
+export interface Invitee {
     id: string;
     kp: Uint8Array;
 }
 
-interface CreateConversationParams {
+export interface CreateConversationParams {
     extraMembers: Invitee[],
     admins: string[],
     ciphersuite: string;
@@ -31,21 +31,21 @@ interface RustCoreCryptoFfi {
     encrypt_message(conversationUuid: string, message: Uint8Array): Uint8Array;
 }
 
-class CoreCrypto {
+export class CoreCrypto {
     #module: WebAssembly.WebAssemblyInstantiatedSource;
     #cc: RustCoreCryptoFfi;
 
     static async init(wasmFile: string, params: CoreCryptoParams): Promise<CoreCrypto> {
-        const response = await fetch(wasmFile);
-        const bytes = response.arrayBuffer();
-        const wasmModule = WebAssembly.instantiate(bytes, {});
+        const wasmModule = await WebAssembly.instantiateStreaming(fetch(wasmFile), {})
         const self = new CoreCrypto({ wasmModule, ...params });
         return self;
     }
 
-    private constructor({ wasmModule, path, key, clientId }) {
+    constructor({ wasmModule, path, key, clientId }: CoreCryptoParams & {
+        wasmModule: WebAssembly.WebAssemblyInstantiatedSource
+    }) {
         this.#module = wasmModule;
-        this.#cc = (this.#module.instance.exports.init_with_path_and_key as Function)(path, key, clientId);
+        this.#cc = (this.#module.instance.exports.init_with_path_and_key as CallableFunction)(path, key, clientId);
     }
 
     createConversation(conversationUuid: string, { extraMembers, admins, ciphersuite, keyRotationSpan }: CreateConversationParams) {
