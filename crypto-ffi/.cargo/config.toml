@@ -1,0 +1,59 @@
+[env]
+EMCC_CFLAGS = "--bind -O2 -s ERROR_ON_UNDEFINED_SYMBOLS=0"
+CC_wasm32-wasi = """
+    --sysroot=$WASI_SDK/share/wasi-sysroot
+    -pthread
+    -DOPENSSL_NO_SOCK
+    -DOPENSSL_STATIC
+    -DOPENSSL_NO_AFALGENG
+    -DOPENSSL_SYS_NETWARE
+    -DNO_SYSLOG
+    -DOPENSSL_NO_UI_CONSOLE
+    -DOPENSSL_NO_DGRAM
+    -DOPENSSL_NO_THREADS
+    -DOPENSSL_NO_SHARED
+    -D_WASI_EMULATED_MMAN
+    -DSQLITE_OMIT_LOAD_EXTENSION
+    -DSQLITE_DISABLE_LFS
+    -DSQLITE_ENABLE_NORMALIZE
+    -DSQLITE_MUTEX_NOOP
+    -DSQLITE_THREADSAFE=0
+    -lwasi-emulated-mman
+    -DOPENSSL_NO_SECURE_MEMORY
+    -D_WASI_EMULATED_SIGNAL
+    -lwasi-emulated-signal
+    -D_WASI_EMULATED_PROCESS_CLOCKS
+    -lwasi-emulated-process-clocks
+"""
+CARGO_TARGET_WASM32_WASI_LINKER = """
+    -O2 --sysroot=$WASI_SDK/share/wasi-sysroot
+    -pthread
+    -DOPENSSL_NO_SOCK
+    -DOPENSSL_STATIC
+    -DOPENSSL_NO_AFALGENG
+    -DOPENSSL_SYS_NETWARE
+    -DNO_SYSLOG
+    -DOPENSSL_NO_UI_CONSOLE
+    -DOPENSSL_NO_DGRAM
+    -DOPENSSL_NO_THREADS
+    -DOPENSSL_NO_SHARED
+    -D_WASI_EMULATED_MMAN
+    -DSQLITE_OMIT_LOAD_EXTENSION
+    -DSQLITE_DISABLE_LFS
+    -DSQLITE_ENABLE_NORMALIZE
+    -DSQLITE_MUTEX_NOOP
+    -DSQLITE_THREADSAFE=0
+    -lwasi-emulated-mman
+    -DOPENSSL_NO_SECURE_MEMORY
+    -D_WASI_EMULATED_SIGNAL
+    -lwasi-emulated-signal
+    -D_WASI_EMULATED_PROCESS_CLOCKS
+    -lwasi-emulated-process-clocks
+"""
+
+[target.wasm32-unknown-emscripten]
+rustflags = [
+    "-C", "target-feature=-crt-static",
+    "-C", "link-arg=-nostartfiles",
+    "-C", "link-arg=-Wl,--no-entry",
+]

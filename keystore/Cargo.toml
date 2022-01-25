@@ -61,6 +61,18 @@ features = [
     "wasm32-wasi-vfs"
 ]
 
+[target.'cfg(target = "wasm32-wasi")'.dependencies.rusqlite]
+version = "0.26"
+default-features = false
+features = [
+    "bundled-sqlcipher",
+    "blob",
+    "limits",
+    "unlock_notify",
+    "wasm32-wasi-vfs",
+    "uuid"
+]
+
 [dev-dependencies]
 criterion = "0.3"
 openmls = { version = "0.4", default-features = false }
