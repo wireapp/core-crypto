@@ -84,7 +84,12 @@ impl MlsConversationCreationMessage {
             .map_err(openmls::prelude::WelcomeError::from)
             .map_err(MlsError::from)?;
 
-        let msg = self.message.to_bytes().map_err(MlsError::from)?;
+        let msg = self
+            .message
+            .to_bytes()
+            // FIXME: Remove this when it's fixed MLS-side
+            .map_err(|e| openmls::error::ErrorString::from(e.to_string()))
+            .map_err(MlsError::from)?;
 
         Ok((welcome, msg))
     }
@@ -187,7 +192,10 @@ impl MlsConversation {
         message: M,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Option<Vec<u8>>> {
-        let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
+        let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref())
+            // FIXME: Remove this when it's fixed MLS-side
+            .map_err(|e| openmls::error::ErrorString::from(e.to_string()))
+            .map_err(MlsError::from)?;
 
         let mut group = self.group.write().map_err(|_| CryptoError::LockPoisonError)?;
         let parsed_message = group.parse_message(msg_in, backend).map_err(MlsError::from)?;
@@ -220,7 +228,10 @@ impl MlsConversation {
             .create_message(backend, message.as_ref())
             .map_err(MlsError::from)?;
 
-        Ok(message.to_bytes().map_err(MlsError::from)?)
+        Ok(message.to_bytes()
+            // FIXME: Remove this when it's fixed MLS-side
+            .map_err(|e| openmls::error::ErrorString::from(e.to_string()))
+            .map_err(MlsError::from)?)
     }
 
     pub fn reinit(&self, backend: &MlsCryptoProvider) -> CryptoResult<MlsConversationReinitMessage> {
@@ -255,7 +266,7 @@ mod tests {
 
         let uuid = uuid::Uuid::new_v4();
         let conversation_id =
-            ConversationId::from_str(&format!("{}@conversations.wire.com", uuid.to_hyphenated())).unwrap();
+            ConversationId::from_str(&format!("{}@conversations.wire.com", uuid.hyphenated())).unwrap();
 
         let (alice_group, conversation_creation_message) = MlsConversation::create(
             conversation_id.clone(),
@@ -283,7 +294,7 @@ mod tests {
 
         let uuid = uuid::Uuid::new_v4();
         let conversation_id =
-            ConversationId::from_str(&format!("{}@conversations.wire.com", uuid.to_hyphenated())).unwrap();
+            ConversationId::from_str(&format!("{}@conversations.wire.com", uuid.hyphenated())).unwrap();
 
         let conversation_config = MlsConversationConfiguration::builder()
             .extra_members(vec![bob])
@@ -326,7 +337,7 @@ mod tests {
 
         let uuid = uuid::Uuid::new_v4();
         let conversation_id =
-            ConversationId::from_str(&format!("{}@conversations.wire.com", uuid.to_hyphenated())).unwrap();
+            ConversationId::from_str(&format!("{}@conversations.wire.com", uuid.hyphenated())).unwrap();
 
         let conversation_config = MlsConversationConfiguration::builder()
             .extra_members(bob_and_friends.clone())
@@ -370,7 +381,7 @@ mod tests {
 
         let uuid = uuid::Uuid::new_v4();
         let conversation_id =
-            ConversationId::from_str(&format!("{}@conversations.wire.com", uuid.to_hyphenated())).unwrap();
+            ConversationId::from_str(&format!("{}@conversations.wire.com", uuid.hyphenated())).unwrap();
 
         let configuration = MlsConversationConfiguration::builder()
             .extra_members(vec![bob])

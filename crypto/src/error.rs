@@ -52,24 +52,26 @@ pub enum MlsError {
     MlsKeyPackageError(#[from] openmls::key_packages::KeyPackageError),
     #[error(transparent)]
     MlsConfigError(#[from] openmls::config::ConfigError),
-    #[error(transparent)]
-    MlsValidationError(#[from] openmls::prelude::ValidationError),
-    #[error(transparent)]
-    MlsVerificationError(#[from] openmls::prelude::VerificationError),
+    // #[error(transparent)]
+    // MlsValidationError(#[from] openmls::prelude::ValidationError),
+    // #[error(transparent)]
+    // MlsVerificationError(#[from] openmls::prelude::VerificationError),
     #[error(transparent)]
     MlsInvalidMessageError(#[from] openmls::prelude::InvalidMessageError),
     #[error(transparent)]
     MlsEmptyInputError(#[from] openmls::prelude::EmptyInputError),
     #[error(transparent)]
     MlsCredentialError(#[from] openmls::prelude::CredentialError),
-    #[error(transparent)]
-    MlsMessageError(#[from] openmls::prelude::MlsMessageError),
+    // #[error(transparent)]
+    // MlsMessageError(#[from] openmls::prelude::MlsMessageError),
     #[error(transparent)]
     MlsGroupError(#[from] openmls::prelude::MlsGroupError),
     #[error(transparent)]
-    MlsCiphertextError(#[from] openmls::prelude::MlsCiphertextError),
-    #[error(transparent)]
-    MlsPlaintextError(#[from] openmls::prelude::MlsPlaintextError),
+    MlsCoreGroupError(#[from] openmls::prelude::CoreGroupError),
+    // #[error(transparent)]
+    // MlsCiphertextError(#[from] openmls::prelude::MlsCiphertextError),
+    // #[error(transparent)]
+    // MlsPlaintextError(#[from] openmls::prelude::MlsPlaintextError),
     #[error(transparent)]
     MlsErrorString(#[from] openmls::error::ErrorString),
 }

@@ -68,4 +68,6 @@ interface CoreCrypto {
 namespace CoreCrypto {
     [Throws=CryptoError]
     CoreCrypto init_with_path_and_key([ByRef] string path, [ByRef] string key, [ByRef] string client_id);
+
+    string version();
 };

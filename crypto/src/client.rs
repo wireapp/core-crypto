@@ -167,7 +167,11 @@ impl Client {
     // FIXME: This shouldn't take &mut self; Maybe rework the whole thing to not used a cached view of KPBs and only interact with the keystore?
     pub fn keypackage_hash(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
         if let Some(kpb) = self.keypackage_bundles.pop() {
-            Ok(kpb.key_package().hash(backend).map_err(MlsError::from)?)
+            Ok(kpb
+                .key_package()
+                .hash_ref(backend.crypto())
+                .map(|href| href.value().to_vec())
+                .map_err(MlsError::from)?)
         } else {
             self.gen_keypackage(backend)?;
             self.keypackage_hash(backend)
@@ -185,7 +189,13 @@ impl Client {
 
         backend
             .key_store()
-            .store(&kpb.key_package().hash(backend).map_err(MlsError::from)?, &kpb)
+            .store(
+                &kpb.key_package()
+                    .hash_ref(backend.crypto())
+                    .map(|href| href.value().to_vec())
+                    .map_err(MlsError::from)?,
+                &kpb,
+            )
             .map_err(eyre::Report::msg)?;
 
         self.keypackage_bundles.push(kpb);
@@ -232,7 +242,7 @@ impl Client {
         let user_uuid = uuid::Uuid::new_v4();
         let client_id = rand::random::<usize>();
         Self::generate(
-            format!("{}:{client_id}@members.wire.com", user_uuid.to_hyphenated()).parse()?,
+            format!("{}:{client_id}@members.wire.com", user_uuid.hyphenated()).parse()?,
             &backend,
         )
     }

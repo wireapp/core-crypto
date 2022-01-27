@@ -19,13 +19,13 @@ fileprivate extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_CoreCrypto_94b9_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_CoreCrypto_2aac_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_CoreCrypto_94b9_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_CoreCrypto_2aac_rustbuffer_free(self, $0) }
     }
 }
 
@@ -458,9 +458,22 @@ public func initWithPathAndKey( path: String,  key: String,  clientId: String ) 
     
     rustCallWithError(CryptoError.self) {
     
-    CoreCrypto_94b9_init_with_path_and_key(path.lower(), key.lower(), clientId.lower() , $0)
+    CoreCrypto_2aac_init_with_path_and_key(path.lower(), key.lower(), clientId.lower() , $0)
 }
     return try CoreCrypto.lift(_retval)
+}
+
+
+
+public func version()  -> String {
+    let _retval = try!
+    
+    
+    rustCall() {
+    
+    CoreCrypto_2aac_version( $0)
+}
+    return try! String.lift(_retval)
 }
 
 
@@ -487,12 +500,12 @@ public class CoreCrypto: CoreCryptoProtocol {
     
     rustCallWithError(CryptoError.self) {
     
-    CoreCrypto_94b9_CoreCrypto_new(path.lower(), key.lower(), clientId.lower() , $0)
+    CoreCrypto_2aac_CoreCrypto_new(path.lower(), key.lower(), clientId.lower() , $0)
 })
     }
 
     deinit {
-        try! rustCall { ffi_CoreCrypto_94b9_CoreCrypto_object_free(pointer, $0) }
+        try! rustCall { ffi_CoreCrypto_2aac_CoreCrypto_object_free(pointer, $0) }
     }
 
     
@@ -502,7 +515,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         let _retval = try
     rustCallWithError(CryptoError.self) {
     
-    CoreCrypto_94b9_CoreCrypto_create_conversation(self.pointer, conversationId.lower(), config.lower() , $0
+    CoreCrypto_2aac_CoreCrypto_create_conversation(self.pointer, conversationId.lower(), config.lower() , $0
     )
 }
         return try FfiConverterOptionRecordConversationCreationMessage.lift(_retval)
@@ -511,7 +524,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         let _retval = try
     rustCallWithError(CryptoError.self) {
     
-    CoreCrypto_94b9_CoreCrypto_decrypt_message(self.pointer, conversationId.lower(), FfiConverterSequenceUInt8.lower(payload) , $0
+    CoreCrypto_2aac_CoreCrypto_decrypt_message(self.pointer, conversationId.lower(), FfiConverterSequenceUInt8.lower(payload) , $0
     )
 }
         return try FfiConverterOptionSequenceUInt8.lift(_retval)
@@ -520,7 +533,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         let _retval = try
     rustCallWithError(CryptoError.self) {
     
-    CoreCrypto_94b9_CoreCrypto_encrypt_message(self.pointer, conversationId.lower(), FfiConverterSequenceUInt8.lower(message) , $0
+    CoreCrypto_2aac_CoreCrypto_encrypt_message(self.pointer, conversationId.lower(), FfiConverterSequenceUInt8.lower(message) , $0
     )
 }
         return try FfiConverterSequenceUInt8.lift(_retval)

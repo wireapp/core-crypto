@@ -1,5 +1,7 @@
 mod error;
 pub use error::*;
+
+#[cfg(feature = "mls-keystore")]
 mod mls;
 
 #[cfg(feature = "proteus-keystore")]

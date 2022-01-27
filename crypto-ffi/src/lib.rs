@@ -107,6 +107,6 @@ pub fn init_with_path_and_key(path: &str, key: &str, client_id: &str) -> CryptoR
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[no_mangle]
-pub extern "C" fn version() -> *const u8 {
-    VERSION.as_ptr()
+pub fn version() -> String {
+    VERSION.to_string()
 }

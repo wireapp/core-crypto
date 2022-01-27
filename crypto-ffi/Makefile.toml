@@ -20,6 +20,10 @@ args = ["check"]
 command = "cargo"
 args = ["build", "--target", "wasm32-unknown-emscripten", "${@}"]
 
+[tasks.wasm-xargo]
+command = "rustup"
+args = ["run", "nightly", "xargo", "build", "-Zbuild-std", "--target", "wasm32-unknown-emscripten", "${@}"]
+
 # [tasks.wasm-debug]
 # private = true
 # command = "cargo"
@@ -41,14 +45,23 @@ args = ["build", "--target", "aarch64-apple-ios", "--features", "mobile", "${@}"
 # Android
 [tasks.android-armv7]
 command = "cargo"
-args = ["build", "--target", "armv7-linux-android", "--features", "mobile", "${@}"]
+args = ["build", "--target", "armv7-linux-androideabi", "--features", "mobile", "${@}"]
+# env = { CC = "~/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi31-clang" }
 
 [tasks.android-armv8]
 command = "cargo"
 args = ["build", "--target", "aarch64-linux-android", "--features", "mobile", "${@}"]
 
+[tasks.android-x86]
+command = "cargo"
+args = ["build", "--target", "x86_64-linux-android", "--features", "mobile", "${@}"]
+
+[tasks.android-i686]
+command = "cargo"
+args = ["build", "--target", "i686-linux-android", "--features", "mobile", "${@}"]
+
 [tasks.android]
-dependencies = ["android-armv7", "android-armv8"]
+dependencies = ["android-armv7", "android-armv8", "android-x86", "android-i686"]
 
 # Mobile
 [tasks.mobile]

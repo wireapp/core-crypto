@@ -16,10 +16,11 @@ name = "write"
 harness = false
 
 [features]
-default = ["memory-cache"]
+default = ["mls-keystore", "memory-cache"]
+mls-keystore = ["openmls_traits"]
+proteus-keystore = ["proteus"]
 ios-wal-compat = ["security-framework", "hex"]
 memory-cache = ["lru"]
-proteus-keystore = ["proteus"]
 
 [dependencies]
 eyre = "0.6"
@@ -33,10 +34,22 @@ barrel = { version = "0.7", features = ["sqlite3"] }
 hex = { version = "0.4", optional = true }
 security-framework = { version = "2.5.0-alpha", optional = true }
 
-openmls_traits = { git = "https://github.com/openmls/openmls" }
+openmls_traits = { git = "https://github.com/openmls/openmls", optional = true }
 proteus = { version = "1.0", default-features = false, optional = true }
 
 [dependencies.rusqlite]
+version = "0.26"
+default-features = false
+features = [
+    "bundled-sqlcipher",
+    "blob",
+    "limits",
+    "unlock_notify",
+    "uuid",
+    "buildtime_bindgen"
+]
+
+[target.'cfg(target_family = "wasm")'.dependencies.rusqlite]
 version = "0.26"
 default-features = false
 features = [
@@ -44,7 +57,9 @@ features = [
     "blob",
     "limits",
     "unlock_notify",
-    "uuid"
+    "uuid",
+    "buildtime_bindgen",
+    "wasm32-wasi-vfs"
 ]
 
 [dev-dependencies]

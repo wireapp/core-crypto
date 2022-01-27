@@ -43,7 +43,7 @@ open class RustBuffer : Structure() {
 
     companion object {
         internal fun alloc(size: Int = 0) = rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_94b9_rustbuffer_alloc(size, status).also {
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_2aac_rustbuffer_alloc(size, status).also {
                 if(it.data == null) {
                    throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=${size})")
                }
@@ -51,11 +51,11 @@ open class RustBuffer : Structure() {
         }
 
         internal fun free(buf: RustBuffer.ByValue) = rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_94b9_rustbuffer_free(buf, status)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_2aac_rustbuffer_free(buf, status)
         }
 
         internal fun reserve(buf: RustBuffer.ByValue, additional: Int) = rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_94b9_rustbuffer_reserve(buf, additional, status)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_2aac_rustbuffer_reserve(buf, additional, status)
         }
     }
 
@@ -322,43 +322,47 @@ internal interface _UniFFILib : Library {
         }
     }
 
-    fun ffi_CoreCrypto_94b9_CoreCrypto_object_free(ptr: Pointer,
+    fun ffi_CoreCrypto_2aac_CoreCrypto_object_free(ptr: Pointer,
     uniffi_out_err: RustCallStatus
     ): Unit
 
-    fun CoreCrypto_94b9_CoreCrypto_new(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
+    fun CoreCrypto_2aac_CoreCrypto_new(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
     uniffi_out_err: RustCallStatus
     ): Pointer
 
-    fun CoreCrypto_94b9_CoreCrypto_create_conversation(ptr: Pointer,conversation_id: RustBuffer.ByValue,config: RustBuffer.ByValue,
+    fun CoreCrypto_2aac_CoreCrypto_create_conversation(ptr: Pointer,conversation_id: RustBuffer.ByValue,config: RustBuffer.ByValue,
     uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_94b9_CoreCrypto_decrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,payload: RustBuffer.ByValue,
+    fun CoreCrypto_2aac_CoreCrypto_decrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,payload: RustBuffer.ByValue,
     uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_94b9_CoreCrypto_encrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,message: RustBuffer.ByValue,
+    fun CoreCrypto_2aac_CoreCrypto_encrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,message: RustBuffer.ByValue,
     uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_94b9_init_with_path_and_key(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
+    fun CoreCrypto_2aac_init_with_path_and_key(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
     uniffi_out_err: RustCallStatus
     ): Pointer
 
-    fun ffi_CoreCrypto_94b9_rustbuffer_alloc(size: Int,
+    fun CoreCrypto_2aac_version(
     uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun ffi_CoreCrypto_94b9_rustbuffer_from_bytes(bytes: ForeignBytes.ByValue,
+    fun ffi_CoreCrypto_2aac_rustbuffer_alloc(size: Int,
     uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun ffi_CoreCrypto_94b9_rustbuffer_free(buf: RustBuffer.ByValue,
+    fun ffi_CoreCrypto_2aac_rustbuffer_from_bytes(bytes: ForeignBytes.ByValue,
+    uniffi_out_err: RustCallStatus
+    ): RustBuffer.ByValue
+
+    fun ffi_CoreCrypto_2aac_rustbuffer_free(buf: RustBuffer.ByValue,
     uniffi_out_err: RustCallStatus
     ): Unit
 
-    fun ffi_CoreCrypto_94b9_rustbuffer_reserve(buf: RustBuffer.ByValue,additional: Int,
+    fun ffi_CoreCrypto_2aac_rustbuffer_reserve(buf: RustBuffer.ByValue,additional: Int,
     uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
@@ -562,9 +566,19 @@ enum class CiphersuiteName {
 fun initWithPathAndKey(path: String, key: String, clientId: String ): CoreCrypto {
     val _retval = 
     rustCallWithError(CryptoException) { status ->
-    _UniFFILib.INSTANCE.CoreCrypto_94b9_init_with_path_and_key(path.lower(), key.lower(), clientId.lower() ,status)
+    _UniFFILib.INSTANCE.CoreCrypto_2aac_init_with_path_and_key(path.lower(), key.lower(), clientId.lower() ,status)
 }
     return CoreCrypto.lift(_retval)
+}
+
+
+
+fun version(): String {
+    val _retval = 
+    rustCall() { status ->
+    _UniFFILib.INSTANCE.CoreCrypto_2aac_version(status)
+}
+    return String.lift(_retval)
 }
 
 
@@ -587,7 +601,7 @@ class CoreCrypto(
     constructor(path: String, key: String, clientId: String ) :
         this(
     rustCallWithError(CryptoException) { status ->
-    _UniFFILib.INSTANCE.CoreCrypto_94b9_CoreCrypto_new(path.lower(), key.lower(), clientId.lower() ,status)
+    _UniFFILib.INSTANCE.CoreCrypto_2aac_CoreCrypto_new(path.lower(), key.lower(), clientId.lower() ,status)
 })
 
     /**
@@ -600,7 +614,7 @@ class CoreCrypto(
      */
     override protected fun freeRustArcPtr() {
         rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_94b9_CoreCrypto_object_free(this.pointer, status)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_2aac_CoreCrypto_object_free(this.pointer, status)
         }
     }
 
@@ -616,7 +630,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun createConversation(conversationId: String, config: ConversationConfiguration ): ConversationCreationMessage? =
         callWithPointer {
     rustCallWithError(CryptoException) { status ->
-    _UniFFILib.INSTANCE.CoreCrypto_94b9_CoreCrypto_create_conversation(it, conversationId.lower(), config.lower() , status)
+    _UniFFILib.INSTANCE.CoreCrypto_2aac_CoreCrypto_create_conversation(it, conversationId.lower(), config.lower() , status)
 }
         }.let {
             liftOptionalRecordConversationCreationMessage(it)
@@ -626,7 +640,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun decryptMessage(conversationId: String, payload: List<UByte> ): List<UByte>? =
         callWithPointer {
     rustCallWithError(CryptoException) { status ->
-    _UniFFILib.INSTANCE.CoreCrypto_94b9_CoreCrypto_decrypt_message(it, conversationId.lower(), lowerSequenceUByte(payload) , status)
+    _UniFFILib.INSTANCE.CoreCrypto_2aac_CoreCrypto_decrypt_message(it, conversationId.lower(), lowerSequenceUByte(payload) , status)
 }
         }.let {
             liftOptionalSequenceUByte(it)
@@ -636,7 +650,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun encryptMessage(conversationId: String, message: List<UByte> ): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { status ->
-    _UniFFILib.INSTANCE.CoreCrypto_94b9_CoreCrypto_encrypt_message(it, conversationId.lower(), lowerSequenceUByte(message) , status)
+    _UniFFILib.INSTANCE.CoreCrypto_2aac_CoreCrypto_encrypt_message(it, conversationId.lower(), lowerSequenceUByte(message) , status)
 }
         }.let {
             liftSequenceUByte(it)

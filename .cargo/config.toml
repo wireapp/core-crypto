@@ -1,0 +1,40 @@
+# Emscripten flags
+[env]
+EMCC_CFLAGS = "-O3"
+CC_armv7-linux-androideabi = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi31-clang"
+AR_armv7-linux-androideabi = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+CC_aarch64-linux-android = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android31-clang"
+# AR_aarch64-linux-android = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+CC_x86_64-linux-android = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android31-clang"
+# AR_x86_64-linux-android = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+CC_i686-linux-android = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android31-clang"
+# AR_i686-linux-android = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+
+[target.wasm32-unknown-emscripten]
+rustflags = [
+    "-C", "link-args=./support/wasm/gxx_personality_v0_stub.o",
+    "-C", "link-args=--bind,--export-dynamic",
+    "-C", "target-feature=+crt-static",
+    "-C", "link-arg=-nostartfiles",
+    "-C", "link-arg=-Wl,--no-entry",
+]
+
+# Android linkage
+[target.armv7-linux-androideabi]
+ar = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+linker = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi31-clang"
+rustflags = [
+    "-C", "link-args=-Lsupport/android"
+]
+
+[target.aarch64-linux-android]
+ar = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+linker = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android31-clang"
+
+[target.x86_64-linux-android]
+ar = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+linker = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android31-clang"
+
+[target.i686-linux-android]
+ar = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+linker = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android31-clang"

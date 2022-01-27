@@ -4,6 +4,7 @@ use crate::{
 };
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::KeyPackage;
+use openmls_traits::OpenMlsCryptoProvider;
 
 // #[cfg(not(debug_assertions))]
 // pub type MemberId = crate::identifiers::ZeroKnowledgeUuid;
@@ -57,7 +58,10 @@ impl ConversationMember {
             .pop()
             .ok_or_else(|| CryptoError::OutOfKeyPackage(self.id.clone()))?;
 
-        Ok(kp.hash(backend).map_err(MlsError::from)?)
+        Ok(kp
+            .hash_ref(backend.crypto())
+            .map(|href| href.value().to_vec())
+            .map_err(MlsError::from)?)
     }
 
     pub fn current_keypackage(&self) -> &KeyPackage {
@@ -77,7 +81,7 @@ impl Eq for ConversationMember {}
 impl ConversationMember {
     pub fn random_generate(backend: &MlsCryptoProvider) -> CryptoResult<Self> {
         let uuid = uuid::Uuid::new_v4();
-        let id: ClientId = format!("{}:{}@members.wire.com", uuid.to_hyphenated(), rand::random::<usize>()).parse()?;
+        let id: ClientId = format!("{}:{}@members.wire.com", uuid.hyphenated(), rand::random::<usize>()).parse()?;
         let mut client = Client::generate(id.clone(), backend)?;
         client.gen_keypackage(backend)?;
 
