@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn quuid_can_parse_qualified_uuid() {
         let domain = "test.wire.com";
-        let uuid = uuid::Uuid::new_v4().to_hyphenated().to_string();
+        let uuid = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let quuid = QualifiedUuid::from_str(&format!("{}@{}", uuid, domain)).unwrap();
         assert_eq!(domain, quuid.domain);
@@ -159,14 +159,14 @@ mod tests {
     #[test]
     #[should_panic]
     fn quuid_can_parse_unqualified_uuid() {
-        let uuid = uuid::Uuid::new_v4().to_hyphenated().to_string();
+        let uuid = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let _quuid = QualifiedUuid::from_str(&uuid).unwrap();
     }
 
     #[test]
     fn zku_can_passthrough_uuid() {
-        let uuid_string = uuid::Uuid::new_v4().to_hyphenated().to_string();
+        let uuid_string = uuid::Uuid::new_v4().hyphenated().to_string();
         let zkuuid: ZeroKnowledgeUuid = uuid::Uuid::from_str(&uuid_string).unwrap().into();
         assert_eq!(*zkuuid, uuid::Uuid::from_str(&uuid_string).unwrap());
     }
@@ -174,7 +174,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn zku_can_parse_unqualified_uuid() {
-        let uuid_string = uuid::Uuid::new_v4().to_hyphenated().to_string();
+        let uuid_string = uuid::Uuid::new_v4().hyphenated().to_string();
         let _parsed_uuid = uuid_string.parse::<uuid::Uuid>().unwrap();
         let _zkuuid: ZeroKnowledgeUuid = uuid_string.parse().unwrap();
     }
@@ -182,7 +182,7 @@ mod tests {
     #[test]
     fn zku_can_parse_qualified_uuid() {
         let domain = "test.wire.com";
-        let uuid_string = uuid::Uuid::new_v4().to_hyphenated().to_string();
+        let uuid_string = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let zkuuid: ZeroKnowledgeUuid = format!("{}@{}", uuid_string, domain).parse().unwrap();
         let domain_uuid = uuid::Uuid::new_v5(&uuid::Uuid::NAMESPACE_DNS, domain.as_bytes());
