@@ -38,15 +38,21 @@ args = ["run", "nightly", "xargo", "build", "-Zbuild-std", "--target", "wasm32-u
 
 # iOS
 
-[tasks.ios]
+[tasks.ios-device]
 command = "cargo"
 args = ["build", "--target", "aarch64-apple-ios", "--features", "mobile", "${@}"]
+
+[tasks.ios-simulator]
+command = "cargo"
+args = ["build", "--target", "x86_64-apple-ios", "--features", "mobile", "${@}"]
+
+[tasks.ios]
+dependencies = ["ios-device", "ios-simulator"]
 
 # Android
 [tasks.android-armv7]
 command = "cargo"
 args = ["build", "--target", "armv7-linux-androideabi", "--features", "mobile", "${@}"]
-# env = { CC = "~/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi31-clang" }
 
 [tasks.android-armv8]
 command = "cargo"

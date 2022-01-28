@@ -46,7 +46,6 @@ features = [
     "limits",
     "unlock_notify",
     "uuid",
-    "buildtime_bindgen"
 ]
 
 [target.'cfg(target_family = "wasm")'.dependencies.rusqlite]
@@ -58,7 +57,6 @@ features = [
     "limits",
     "unlock_notify",
     "uuid",
-    "buildtime_bindgen",
     "wasm32-wasi-vfs"
 ]
 
