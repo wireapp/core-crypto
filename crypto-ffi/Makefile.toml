@@ -1,6 +1,3 @@
-[config]
-additional_profiles = ["release"]
-
 [tasks.clean]
 command = "cargo"
 args = ["clean"]
@@ -50,21 +47,28 @@ args = ["build", "--target", "x86_64-apple-ios", "--features", "mobile", "${@}"]
 dependencies = ["ios-device", "ios-simulator"]
 
 # Android
+[tasks.android-env]
+plugin = "android-env"
+
 [tasks.android-armv7]
 command = "cargo"
 args = ["build", "--target", "armv7-linux-androideabi", "--features", "mobile", "${@}"]
+dependencies = ["android-env"]
 
 [tasks.android-armv8]
 command = "cargo"
 args = ["build", "--target", "aarch64-linux-android", "--features", "mobile", "${@}"]
+dependencies = ["android-env"]
 
 [tasks.android-x86]
 command = "cargo"
 args = ["build", "--target", "x86_64-linux-android", "--features", "mobile", "${@}"]
+dependencies = ["android-env"]
 
 [tasks.android-i686]
 command = "cargo"
 args = ["build", "--target", "i686-linux-android", "--features", "mobile", "${@}"]
+dependencies = ["android-env"]
 
 [tasks.android]
 dependencies = ["android-armv7", "android-armv8", "android-x86", "android-i686"]
@@ -76,3 +80,52 @@ dependencies = ["android", "ios"]
 # ALL OF THE THINGS
 [tasks.all]
 dependencies = ["mobile", "wasm"]
+
+# Plugins
+[plugins.impl.android-env]
+script = '''
+exit_on_error true
+
+fn update_android_env
+    android_ndk_path = set "${1}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+    new_path = set "${PATH}:${android_ndk_path}"
+    print -c bright_blue "Updating PATH to include ${android_ndk_path}\n"
+    set_env PATH "${new_path}"
+end
+
+fn autodetect_android_env
+    if not is_empty ${ANDROID_NDK_HOME}
+        return ${ANDROID_NDK_HOME}
+    elseif not is_empty ${NDK_HOME}
+        return ${NDK_HOME}
+    else
+        platform = os_family
+        if eq ${platform} "windows"
+            platform_dir = set "${get_home_dir}/AppData/Local"
+        elseif eq ${platform} "linux"
+            platform_dir = get_home_dir
+        elseif eq ${platform} "mac"
+            platform_dir = set "${get_home_dir}/Library"
+        else
+            trigger_error "Unsupported host platform"
+        end
+
+        ndk_versions_hwnd = glob_array "${platform_dir}/Android/Sdk/ndk/*"
+        for path in ${ndk_versions_hwnd}
+            ndk_latest_version = set ${path}
+        end
+        print -c bright_blue "Autodetected NDK: host:${platform} @ v${ndk_latest_version}\n"
+        return ${ndk_latest_version}
+    end
+end
+
+if starts_with ${task.name} "android"
+    ndk_home_dir = autodetect_android_env
+    print -c bright_blue "NDK Home Dir: ${ndk_home_dir}\n"
+    if is_empty ${ndk_home_dir}
+        trigger_error "$ANDROID_NDK_HOME/$NDK_HOME haven't been set and/or NDK couldn't be found in the Android Studio directories.\nPlease set it correctly to target your NDK installation"
+    else
+        update_android_env ${ndk_home_dir}
+    end
+end
+'''

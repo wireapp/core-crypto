@@ -1,14 +1,14 @@
 # Emscripten flags
 [env]
 EMCC_CFLAGS = "-O3"
-CC_armv7-linux-androideabi = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi31-clang"
-AR_armv7-linux-androideabi = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-CC_aarch64-linux-android = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android31-clang"
-AR_aarch64-linux-android = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-CC_x86_64-linux-android = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android31-clang"
-AR_x86_64-linux-android = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-CC_i686-linux-android = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android31-clang"
-AR_i686-linux-android = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+CC_armv7-linux-androideabi = "armv7a-linux-androideabi31-clang"
+AR_armv7-linux-androideabi = "llvm-ar"
+CC_aarch64-linux-android = "aarch64-linux-android31-clang"
+AR_aarch64-linux-android = "llvm-ar"
+CC_x86_64-linux-android = "x86_64-linux-android31-clang"
+AR_x86_64-linux-android = "llvm-ar"
+CC_i686-linux-android = "i686-linux-android31-clang"
+AR_i686-linux-android = "llvm-ar"
 
 [target.wasm32-unknown-emscripten]
 rustflags = [
@@ -21,29 +21,29 @@ rustflags = [
 
 # Android linkage
 [target.armv7-linux-androideabi]
-ar = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-linker = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi31-clang"
+ar = "llvm-ar"
+linker = "armv7a-linux-androideabi31-clang"
 rustflags = [
     "-C", "link-args=-Lsupport/android"
 ]
 
 [target.aarch64-linux-android]
-ar = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-linker = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android31-clang"
+ar = "llvm-ar"
+linker = "aarch64-linux-android31-clang"
 rustflags = [
     "-C", "link-args=-Lsupport/android"
 ]
 
 [target.x86_64-linux-android]
-ar = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-linker = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android31-clang"
+ar = "llvm-ar"
+linker = "x86_64-linux-android31-clang"
 rustflags = [
     "-C", "link-args=-Lsupport/android"
 ]
 
 [target.i686-linux-android]
-ar = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-linker = "/home/otak/Android/Sdk/ndk/current/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android31-clang"
+ar = "llvm-ar"
+linker = "i686-linux-android31-clang"
 rustflags = [
     "-C", "link-args=-Lsupport/android"
 ]

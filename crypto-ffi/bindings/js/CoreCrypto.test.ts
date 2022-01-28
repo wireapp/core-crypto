@@ -17,8 +17,8 @@ CoreCrypto.init = async function init(wasmFile: string, params: CoreCryptoParams
         },
         wasi_snapshot_preview1: wasiCtx.exports,
     });
-    const self = new CoreCrypto({ wasmModule: { module, instance }, ...params });
-    return self;
+
+    return new CoreCrypto({ wasmModule: { module, instance }, ...params });
 }.bind(CoreCrypto);
 
 const coreCrypto = await CoreCrypto.init("./target/wasm32-unknown-emscripten/debug/core_crypto_ffi.wasm", {
