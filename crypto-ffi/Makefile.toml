@@ -63,11 +63,11 @@ private = true
 command = "swiftc"
 args = [
     "-module-name", "CoreCrypto",
-    "-emit-library", "-o", "CoreCrypto.dylib",
-    "-emit-module", "-emit-module-path", "./",
+    "-emit-library", "-o", "./bindings/swift/out/CoreCrypto.dylib",
+    "-emit-module", "-emit-module-path", "./bindings/swift/out/CoreCrypto",
     "-parse-as-library",
-    "-L", "./target/debug",
-    "-lcorecrypto_ffi",
+    "-L", "../target/debug",
+    "-lcore_crypto_ffi",
     "-Xcc", "-fmodule-map-file=bindings/swift/cryptoFFI.modulemap",
     "bindings/swift/CoreCrypto.swift",
 ]
