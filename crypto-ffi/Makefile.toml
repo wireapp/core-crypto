@@ -38,16 +38,24 @@ args = ["run", "nightly", "xargo", "build", "-Zbuild-std", "--target", "wasm32-u
 [tasks.ios-env]
 plugin = "detect-release"
 
-[tasks.ios-device]
+[tasks.ios-device-internal]
+private = true
 command = "cargo"
 args = ["build", "--target", "aarch64-apple-ios", "--features", "mobile", "${@}"]
 dependencies = ["ios-env"]
+
+[tasks.ios-device]
+dependencies = ["ios-device-internal"]
 run_task = "call-swiftc"
 
-[tasks.ios-simulator]
+[tasks.ios-simulator-internal]
+private = true
 command = "cargo"
 args = ["build", "--target", "x86_64-apple-ios", "--features", "mobile", "${@}"]
 dependencies = ["ios-env"]
+
+[tasks.ios-simulator]
+dependencies = ["ios-simulator-internal"]
 run_task = "call-swiftc"
 
 [tasks.call-swiftc]
