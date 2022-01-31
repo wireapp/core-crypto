@@ -1,4 +1,3 @@
-# Emscripten flags
 [env]
 EMCC_CFLAGS = "-O3"
 CC_armv7-linux-androideabi = "armv7a-linux-androideabi31-clang"

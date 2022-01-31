@@ -35,13 +35,34 @@ args = ["run", "nightly", "xargo", "build", "-Zbuild-std", "--target", "wasm32-u
 
 # iOS
 
+[tasks.ios-env]
+plugin = "detect-release"
+
 [tasks.ios-device]
 command = "cargo"
 args = ["build", "--target", "aarch64-apple-ios", "--features", "mobile", "${@}"]
+dependencies = ["ios-env"]
+run_task = "call-swiftc"
 
 [tasks.ios-simulator]
 command = "cargo"
 args = ["build", "--target", "x86_64-apple-ios", "--features", "mobile", "${@}"]
+dependencies = ["ios-env"]
+run_task = "call-swiftc"
+
+[tasks.call-swiftc]
+private = true
+command = "swiftc"
+args = [
+    "-module-name", "CoreCrypto",
+    "-emit-library", "-o", "CoreCrypto.dylib",
+    "-emit-module", "-emit-module-path", "./",
+    "-parse-as-library",
+    "-L", "./target/debug",
+    "-lcorecrypto_ffi",
+    "-Xcc", "-fmodule-map-file=bindings/swift/cryptoFFI.modulemap",
+    "bindings/swift/CoreCrypto.swift",
+]
 
 [tasks.ios]
 dependencies = ["ios-device", "ios-simulator"]
@@ -81,7 +102,22 @@ dependencies = ["android", "ios"]
 [tasks.all]
 dependencies = ["mobile", "wasm"]
 
+
+
 # Plugins
+[plugins.impl.detect-release]
+script = '''
+for arg in ${task.args}
+    println "arg ${arg}"
+end
+index = array_contains ${task.args} "--release"
+println "ehhhh: ${index}"
+if index
+    set_env IS_RELEASE_BUILD 1
+    println -c bright_blue "Release mode detected!"
+end
+'''
+
 [plugins.impl.android-env]
 script = '''
 exit_on_error true
