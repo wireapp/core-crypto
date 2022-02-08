@@ -68,13 +68,11 @@ impl CoreCrypto {
         mut config: ConversationConfiguration,
     ) -> CryptoResult<Option<ConversationCreationMessage>> {
         let mut cfg = MlsConversationConfiguration::builder();
-        let extra_members = config.extra_members.into_iter().try_fold(
-            vec![],
-            |mut acc, inv| -> CryptoResult<Vec<ConversationMember>> {
-                acc.push(inv.try_into()?);
-                Ok(acc)
-            },
-        )?;
+        let extra_members = config
+            .extra_members
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<CryptoResult<Vec<ConversationMember>>>()?;
 
         cfg.extra_members(extra_members);
         cfg.admins(config.admins);

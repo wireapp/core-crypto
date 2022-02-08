@@ -11,7 +11,7 @@ dependencies = ["clean"]
 command = "cargo"
 args = ["check"]
 
-# WASM
+##################################### WASM ####################################
 
 [tasks.wasm]
 command = "cargo"
@@ -33,7 +33,7 @@ args = ["run", "nightly", "xargo", "build", "-Zbuild-std", "--target", "wasm32-u
 # args = ["build", "--target", "wasm32-unknown-emscripten", "--release"]
 # env = { EMCC_CFLAGS = "--bind -O3" }
 
-# iOS
+##################################### iOS #####################################
 
 [tasks.ios-env]
 plugin = "detect-release"
@@ -75,7 +75,8 @@ args = [
 [tasks.ios]
 dependencies = ["ios-device", "ios-simulator"]
 
-# Android
+################################### Android ###################################
+
 [tasks.android-env]
 plugin = "android-env"
 
@@ -102,24 +103,18 @@ dependencies = ["android-env"]
 [tasks.android]
 dependencies = ["android-armv7", "android-armv8", "android-x86", "android-i686"]
 
-# Mobile
+#################################### Mobile ###################################
 [tasks.mobile]
 dependencies = ["android", "ios"]
 
-# ALL OF THE THINGS
+####################################  all  ####################################
 [tasks.all]
 dependencies = ["mobile", "wasm"]
 
-
-
-# Plugins
+################################### Plugins ###################################
 [plugins.impl.detect-release]
 script = '''
-for arg in ${task.args}
-    println "arg ${arg}"
-end
 index = array_contains ${task.args} "--release"
-println "ehhhh: ${index}"
 if index
     set_env IS_RELEASE_BUILD 1
     println -c bright_blue "Release mode detected!"

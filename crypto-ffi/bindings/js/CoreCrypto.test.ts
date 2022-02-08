@@ -4,7 +4,7 @@ import { CoreCrypto, CoreCryptoParams } from './CoreCrypto.ts';
 const wasiCtx = new WasiContext({
     args: Deno.args,
     env: Deno.env.toObject(),
-})
+});
 
 CoreCrypto.init = async function init(wasmFile: string, params: CoreCryptoParams): Promise<CoreCrypto> {
     const wasmCode = await Deno.readFile(wasmFile);
@@ -21,8 +21,10 @@ CoreCrypto.init = async function init(wasmFile: string, params: CoreCryptoParams
     return new CoreCrypto({ wasmModule: { module, instance }, ...params });
 }.bind(CoreCrypto);
 
-const coreCrypto = await CoreCrypto.init("./target/wasm32-unknown-emscripten/debug/core_crypto_ffi.wasm", {
+const coreCrypto = await CoreCrypto.init("./target/wasm32-unknown-emscripten/release/core_crypto_ffi.wasm", {
     path: "./test.edb",
     key: "test",
     clientId: "deno-test",
 });
+
+console.log(`CoreCrypto v${coreCrypto.version()} [OK]`);

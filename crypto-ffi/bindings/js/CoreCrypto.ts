@@ -64,4 +64,8 @@ export class CoreCrypto {
     encryptMessage(conversationUuid: string, message: Uint8Array): Uint8Array {
         return this.#cc.encrypt_message(conversationUuid, message);
     }
+
+    version(): string {
+        return (this.#module.instance.exports.version as CallableFunction)();
+    }
 }

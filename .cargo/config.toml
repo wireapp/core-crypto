@@ -1,12 +1,16 @@
 [env]
 EMCC_CFLAGS = "-O3"
-CC_armv7-linux-androideabi = "armv7a-linux-androideabi31-clang"
+CC_armv7-linux-androideabi = "armv7a-linux-androideabi30-clang"
+CXX_armv7-linux-androideabi = "armv7a-linux-androideabi30-clang++"
 AR_armv7-linux-androideabi = "llvm-ar"
-CC_aarch64-linux-android = "aarch64-linux-android31-clang"
+CC_aarch64-linux-android = "aarch64-linux-android30-clang"
+CXX_aarch64-linux-android = "aarch64-linux-android30-clang++"
 AR_aarch64-linux-android = "llvm-ar"
-CC_x86_64-linux-android = "x86_64-linux-android31-clang"
+CC_x86_64-linux-android = "x86_64-linux-android30-clang"
+CXX_x86_64-linux-android = "x86_64-linux-android30-clang++"
 AR_x86_64-linux-android = "llvm-ar"
-CC_i686-linux-android = "i686-linux-android31-clang"
+CC_i686-linux-android = "i686-linux-android30-clang"
+CXX_i686-linux-android = "i686-linux-android30-clang++"
 AR_i686-linux-android = "llvm-ar"
 
 [target.wasm32-unknown-emscripten]
@@ -21,28 +25,16 @@ rustflags = [
 # Android linkage
 [target.armv7-linux-androideabi]
 ar = "llvm-ar"
-linker = "armv7a-linux-androideabi31-clang"
-rustflags = [
-    "-C", "link-args=-Lsupport/android"
-]
+linker = "armv7a-linux-androideabi30-clang"
 
 [target.aarch64-linux-android]
 ar = "llvm-ar"
-linker = "aarch64-linux-android31-clang"
-rustflags = [
-    "-C", "link-args=-Lsupport/android"
-]
+linker = "aarch64-linux-android30-clang"
 
 [target.x86_64-linux-android]
 ar = "llvm-ar"
-linker = "x86_64-linux-android31-clang"
-rustflags = [
-    "-C", "link-args=-Lsupport/android"
-]
+linker = "x86_64-linux-android30-clang"
 
 [target.i686-linux-android]
 ar = "llvm-ar"
-linker = "i686-linux-android31-clang"
-rustflags = [
-    "-C", "link-args=-Lsupport/android"
-]
+linker = "i686-linux-android30-clang"
