@@ -19,3 +19,6 @@ Cargo.lock
 *.db
 
 # End of https://www.toptal.com/developers/gitignore/api/rust
+
+# sample-projects/CoreCryptoTestApp/**/build/
+# sample-projects/CoreCryptoTestApp/app/src/main/jniLibs/**/*.so
