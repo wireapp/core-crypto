@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-#[allow(dead_code)]
 const UDL_FILE: &str = "./src/CoreCrypto.udl";
 
 fn main() {
@@ -39,5 +38,12 @@ fn main() {
     #[cfg(feature = "mobile")]
     uniffi_bindgen::generate_bindings(UDL_FILE, None, vec!["kotlin"], Some("./bindings/kt/"), false).unwrap();
     #[cfg(feature = "mobile")]
-    uniffi_bindgen::generate_bindings(UDL_FILE, None, vec!["swift"], Some("./bindings/swift/"), false).unwrap();
+    uniffi_bindgen::generate_bindings(UDL_FILE, None, vec!["swift"], Some("./bindings/swift/include"), false).unwrap();
+    if cfg!(feature = "mobile") {
+        std::fs::rename(
+            "./bindings/swift/include/CoreCrypto.swift",
+            "./bindings/swift/Sources/CoreCryptoSwift/CoreCryptoSwift.swift",
+        )
+        .unwrap();
+    }
 }

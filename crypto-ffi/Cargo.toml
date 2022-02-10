@@ -7,7 +7,7 @@ license-file = "LICENSE"
 
 [lib]
 name = "core_crypto_ffi"
-crate-type = ["lib", "cdylib", "staticlib"]
+crate-type = ["cdylib", "staticlib"]
 
 [features]
 default = []

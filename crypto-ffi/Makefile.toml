@@ -38,42 +38,51 @@ args = ["run", "nightly", "xargo", "build", "-Zbuild-std", "--target", "wasm32-u
 [tasks.ios-env]
 plugin = "detect-release"
 
-[tasks.ios-device-internal]
-private = true
-command = "cargo"
-args = ["build", "--target", "aarch64-apple-ios", "--features", "mobile", "${@}"]
-# dependencies = ["ios-env"]
-
 [tasks.ios-device]
-dependencies = ["ios-device-internal"]
-run_task = "call-swiftc"
-
-[tasks.ios-simulator-internal]
-private = true
 command = "cargo"
-args = ["build", "--target", "x86_64-apple-ios", "--features", "mobile", "${@}"]
-# dependencies = ["ios-env"]
+args = ["build", "--target", "aarch64-apple-ios", "--features", "mobile", "--release"]
 
-[tasks.ios-simulator]
-dependencies = ["ios-simulator-internal"]
-run_task = "call-swiftc"
+[tasks.ios-simulator-x86]
+command = "cargo"
+args = ["build", "--target", "x86_64-apple-ios", "--features", "mobile", "--release"]
 
-[tasks.call-swiftc]
-private = true
-command = "swiftc"
-args = [
-    "-module-name", "CoreCrypto",
-    "-emit-library", "-o", "./bindings/swift/out/CoreCrypto.dylib",
-    "-emit-module", "-emit-module-path", "./bindings/swift/out/CoreCrypto",
-    "-parse-as-library",
-    "-L", "../target/debug",
-    "-lcore_crypto_ffi",
-    "-Xcc", "-fmodule-map-file=bindings/swift/cryptoFFI.modulemap",
-    "bindings/swift/CoreCrypto.swift",
-]
+[tasks.ios-simulator-arm]
+command = "cargo"
+args = ["build", "--target", "aarch64-apple-ios-sim", "--features", "mobile", "--release"]
 
 [tasks.ios]
-dependencies = ["ios-device", "ios-simulator"]
+dependencies = ["ios-device", "ios-simulator-x86"]
+
+[tasks.ios-test-sim-build]
+script = '''
+    cd bindings/swift
+
+    xcodebuild -scheme CoreCryptoSwift -destination "platform=iOS Simulator,OS=15.2,name=iPhone 8"
+'''
+
+[tasks.create-framework]
+script = '''
+    cd bindings/swift
+
+    rm -rf ./out/CoreCrypto.xcframework
+
+    #lipo -create -output ./out/libcore_crypto_ffi_iossimulator.a \
+    #    ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a
+    #    ../../../target/aarch64-apple-ios-sim/release/libcore_crypto_ffi.a     
+
+    lipo -create -output ./out/libcore_crypto_ffi_iossimulator.a \
+        ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a
+
+    xcodebuild -create-xcframework \
+        -library ../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a \
+        -headers ./include \
+        -library ./out/libcore_crypto_ffi_iossimulator.a \
+        -headers ./include \
+        -output ./out/CoreCrypto.xcframework
+
+    rm ./out/libcore_crypto_ffi_iossimulator.a
+'''
+dependencies = ["ios"]
 
 ################################### Android ###################################
 
@@ -137,9 +146,19 @@ dependencies = ["mobile", "wasm"]
 script = '''
 index = array_contains ${task.args} "--release"
 if index
-    set_env IS_RELEASE_BUILD 1
+    set_env IS_RELEASE_BUILD "release"
     println -c bright_blue "Release mode detected!"
 end
+
+release_path = set IS_RELEASE_BUILD or "debug"
+
+# index_target = array_contains ${task.args} "--target"
+# if index_target
+#     target = array_get ${task.args} ${${index_target} + 1}
+#     set_env CORECRYPTO_TARGET_FOLDER "../target/${target}/${release_path}"
+# else
+#     set_env CORECRYPTO_TARGET_FOLDER "../target/${release_path}"
+# end
 '''
 
 [plugins.impl.android-env]
