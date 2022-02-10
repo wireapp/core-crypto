@@ -18,9 +18,10 @@ Cargo.lock
 *.edb-salt
 *.db
 
-# End of https://www.toptal.com/developers/gitignore/api/rust
+# End of https://www.toptal.com/de§velopers/gitignore/api/rust
 
 # sample-projects/CoreCryptoTestApp/**/build/
 # sample-projects/CoreCryptoTestApp/app/src/main/jniLibs/**/*.so
 
+crypto-ffi/bindings/swift/out
 .DS_Store

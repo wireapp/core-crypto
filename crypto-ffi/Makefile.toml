@@ -56,17 +56,29 @@ args = ["build", "--target", "x86_64-apple-ios", "--features", "mobile", "${@}"]
 
 [tasks.ios-simulator]
 dependencies = ["ios-simulator-internal"]
+# run_task = "create-framework"
 # run_task = "call-swiftc"
 
-[tasks.ios-simulator-arm-internal]
-private = true
-command = "cargo"
-args = ["build", "--target", "aarch64-apple-ios-simulator", "--features", "mobile", "${@}"]
-dependencies = ["ios-env"]
+# [tasks.ios-simulator-arm-internal]
+# private = true
+# command = "cargo"
+# args = ["build", "--target", "aarch64-apple-ios-sim", "--features", "mobile", "${@}"]
+# dependencies = ["ios-env"]
 
-[tasks.ios-simulator-arm]
-dependencies = ["ios-simulator-arm-internal"]
-run_task = "call-swiftc"
+# [tasks.ios-simulator-arm]
+# dependencies = ["ios-simulator-arm-internal"]
+# run_task = "call-swiftc"
+
+[tasks.create-framework]
+script = '''
+    cd bindings/swift
+
+    xcodebuild -create-xcframework \
+        -library ../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a \
+        -library ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a \
+        -headers . \
+        -output ./out/CoreCrypto.xcframework
+'''
 
 [tasks.call-swiftc]
 private = true
@@ -147,9 +159,19 @@ dependencies = ["mobile", "wasm"]
 script = '''
 index = array_contains ${task.args} "--release"
 if index
-    set_env IS_RELEASE_BUILD 1
+    set_env IS_RELEASE_BUILD "release"
     println -c bright_blue "Release mode detected!"
 end
+
+release_path = set IS_RELEASE_BUILD or "debug"
+
+# index_target = array_contains ${task.args} "--target"
+# if index_target
+#     target = array_get ${task.args} ${${index_target} + 1}
+#     set_env CORECRYPTO_TARGET_FOLDER "../target/${target}/${release_path}"
+# else
+#     set_env CORECRYPTO_TARGET_FOLDER "../target/${release_path}"
+# end
 '''
 
 [plugins.impl.android-env]
