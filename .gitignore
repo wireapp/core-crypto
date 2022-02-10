@@ -22,3 +22,5 @@ Cargo.lock
 
 # sample-projects/CoreCryptoTestApp/**/build/
 # sample-projects/CoreCryptoTestApp/app/src/main/jniLibs/**/*.so
+
+.DS_Store

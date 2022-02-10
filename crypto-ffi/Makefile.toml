@@ -46,7 +46,7 @@ args = ["build", "--target", "aarch64-apple-ios", "--features", "mobile", "${@}"
 
 [tasks.ios-device]
 dependencies = ["ios-device-internal"]
-run_task = "call-swiftc"
+# run_task = "call-swiftc"
 
 [tasks.ios-simulator-internal]
 private = true
@@ -56,6 +56,16 @@ args = ["build", "--target", "x86_64-apple-ios", "--features", "mobile", "${@}"]
 
 [tasks.ios-simulator]
 dependencies = ["ios-simulator-internal"]
+# run_task = "call-swiftc"
+
+[tasks.ios-simulator-arm-internal]
+private = true
+command = "cargo"
+args = ["build", "--target", "aarch64-apple-ios-simulator", "--features", "mobile", "${@}"]
+dependencies = ["ios-env"]
+
+[tasks.ios-simulator-arm]
+dependencies = ["ios-simulator-arm-internal"]
 run_task = "call-swiftc"
 
 [tasks.call-swiftc]
