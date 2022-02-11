@@ -1,4 +1,3 @@
-#[allow(dead_code)]
 const UDL_FILE: &str = "./src/CoreCrypto.udl";
 
 fn main() {
@@ -23,5 +22,11 @@ fn main() {
     #[cfg(feature = "mobile")]
     uniffi_bindgen::generate_bindings(UDL_FILE, None, vec!["kotlin"], Some("./bindings/kt/"), false).unwrap();
     #[cfg(feature = "mobile")]
-    uniffi_bindgen::generate_bindings(UDL_FILE, None, vec!["swift"], Some("./bindings/swift/"), false).unwrap();
+    uniffi_bindgen::generate_bindings(UDL_FILE, None, vec!["swift"], Some("./bindings/swift/include"), false).unwrap();
+    #[cfg(feature = "mobile")]
+    std::fs::rename(
+        "./bindings/swift/include/CoreCrypto.swift",
+        "./bindings/swift/Sources/CoreCrypto/CoreCrypto.swift",
+    )
+    .unwrap();
 }

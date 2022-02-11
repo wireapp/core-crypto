@@ -24,4 +24,6 @@ Cargo.lock
 # sample-projects/CoreCryptoTestApp/app/src/main/jniLibs/**/*.so
 
 crypto-ffi/bindings/swift/out
+crypto-ffi/bindings/swift/.build
+crypto-ffi/bindings/swift/.swiftpm
 .DS_Store

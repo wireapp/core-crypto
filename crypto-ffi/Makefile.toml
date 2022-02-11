@@ -73,11 +73,15 @@ dependencies = ["ios-simulator-internal"]
 script = '''
     cd bindings/swift
 
+    cp ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a ./out/libcore_crypto_ffi_iossimulator.a
     xcodebuild -create-xcframework \
         -library ../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a \
-        -library ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a \
-        -headers . \
+        -headers ./include \
+        -library ./out/libcore_crypto_ffi_iossimulator.a \
+        -headers ./include \
         -output ./out/CoreCrypto.xcframework
+
+    rm ./out/libcore_crypto_ffi_iossimulator.a
 '''
 
 [tasks.call-swiftc]
