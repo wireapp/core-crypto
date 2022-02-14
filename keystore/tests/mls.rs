@@ -7,7 +7,7 @@ mod tests {
     use openmls::{
         ciphersuite::{ciphersuites::CiphersuiteName, Ciphersuite},
         credentials::{CredentialBundle, CredentialType},
-        extensions::{Extension, KeyIdExtension},
+        extensions::{Extension, ExternalKeyIdExtension},
         key_packages::KeyPackageBundle,
     };
     use openmls_rust_crypto_provider::OpenMlsRustCrypto;
@@ -35,7 +35,7 @@ mod tests {
             &[ciphersuite.name()],
             &credentials,
             &backend,
-            vec![Extension::KeyPackageId(KeyIdExtension::new(key_id.as_bytes()))],
+            vec![Extension::ExternalKeyId(ExternalKeyIdExtension::new(key_id.as_bytes()))],
         )
         .unwrap();
 
@@ -47,11 +47,11 @@ mod tests {
         };
 
         use openmls_traits::key_store::OpenMlsKeyStore as _;
-        store.store(&key, &keypackage_bundle).unwrap();
-        let bundle2: KeyPackageBundle = store.read(&key).unwrap();
+        store.store(key.as_bytes(), &keypackage_bundle).unwrap();
+        let bundle2: KeyPackageBundle = store.read(key.as_bytes()).unwrap();
         assert_eq!(keypackage_bundle.leaf_secret(), bundle2.leaf_secret());
         assert_eq!(keypackage_bundle.key_package(), bundle2.key_package());
-        let _ = store.delete(&key).unwrap();
+        let _ = store.delete(key.as_bytes()).unwrap();
 
         teardown(store);
     }

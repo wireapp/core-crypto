@@ -42,7 +42,7 @@ plugin = "detect-release"
 private = true
 command = "cargo"
 args = ["build", "--target", "aarch64-apple-ios", "--features", "mobile", "${@}"]
-dependencies = ["ios-env"]
+# dependencies = ["ios-env"]
 
 [tasks.ios-device]
 dependencies = ["ios-device-internal"]
@@ -52,7 +52,7 @@ run_task = "call-swiftc"
 private = true
 command = "cargo"
 args = ["build", "--target", "x86_64-apple-ios", "--features", "mobile", "${@}"]
-dependencies = ["ios-env"]
+# dependencies = ["ios-env"]
 
 [tasks.ios-simulator]
 dependencies = ["ios-simulator-internal"]
@@ -118,7 +118,7 @@ for rust_target in ${keys}
     android_target = map_get ${handle} ${rust_target}
     println -c bright_blue "cp rust-${rust_target}/${libname} -> android-jniLibs/${android_target}/${libname}"
     from = canonicalize "../target/${rust_target}/debug/${libname}"
-    to = canonicalize "../sample-projects/CoreCryptoTestApp/app/src/main/jniLibs/${android_target}/${libname}"
+    to = canonicalize "../sample-projects/android/CoreCryptoTestApp/app/src/main/jniLibs/${android_target}/${libname}"
     mkdir dirname ${to}
     cp ${from} ${to}
 end

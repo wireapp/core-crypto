@@ -24,7 +24,7 @@ pub struct AppState {
 }
 
 #[actix_web::get("/healthz")]
-fn healthz(_: actix_web::HttpRequest) -> actix_web::HttpResponse {
+async fn healthz(_: actix_web::HttpRequest) -> actix_web::HttpResponse {
     actix_web::HttpResponseBuilder::new(actix_web::http::StatusCode::OK).into()
 }
 

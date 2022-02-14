@@ -14,14 +14,14 @@ sqlx-postgres = ["sea-orm/sqlx-postgres"]
 
 [dependencies]
 dotenv = "0.15"
-listenfd = "0.3"
+listenfd = "0.5"
 actix = "0.12"
-actix-web = "4.0.0-beta"
+actix-web = "4.0.0-rc"
 actix-web-actors = { version = "4.0.0-beta", optional = true }
 actix-cors = "0.6.0-beta"
 actix-identity = "0.4.0-beta"
 thiserror = "1.0"
-color-eyre = "0.5"
+color-eyre = "0.6"
 tracing = "0.1"
 # tracing-actix-web = "0.5.0-beta" # FIXME: Not up to date
 tracing-subscriber = "0.3"
@@ -35,7 +35,7 @@ redis = { version = "0.21", default-features = false, features = ["tokio-comp", 
 
 
 [dependencies.sea-orm]
-version = "0.5"
+version = "0.6"
 features = ["macros", "runtime-actix-rustls"]
 default-features = false
 

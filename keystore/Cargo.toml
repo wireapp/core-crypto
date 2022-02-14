@@ -34,7 +34,7 @@ barrel = { version = "0.7", features = ["sqlite3"] }
 hex = { version = "0.4", optional = true }
 security-framework = { version = "2.5.0-alpha", optional = true }
 
-openmls_traits = { git = "https://github.com/openmls/openmls", optional = true }
+openmls_traits = { version = "0.1.0-pre", optional = true }
 proteus = { version = "1.0", default-features = false, optional = true }
 
 [dependencies.rusqlite]
@@ -62,5 +62,5 @@ features = [
 
 [dev-dependencies]
 criterion = "0.3"
-openmls = { git = "https://github.com/openmls/openmls", default-features = false }
-openmls_rust_crypto_provider = { git = "https://github.com/openmls/openmls", package = "openmls_rust_crypto", default-features = false }
+openmls = { version = "0.4.0-pre", default-features = false }
+openmls_rust_crypto_provider = { version = "0.1.0-pre", package = "openmls_rust_crypto", default-features = false }

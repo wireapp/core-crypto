@@ -19,7 +19,7 @@ pub struct CryptoKeystore {
     path: String,
     conn: std::sync::Mutex<rusqlite::Connection>,
     #[cfg(feature = "memory-cache")]
-    memory_cache: std::sync::RwLock<lru::LruCache<String, Vec<u8>>>,
+    memory_cache: std::sync::RwLock<lru::LruCache<Vec<u8>, Vec<u8>>>,
     #[cfg(feature = "memory-cache")]
     cache_enabled: std::sync::atomic::AtomicBool,
 }
@@ -129,14 +129,6 @@ impl CryptoKeystore {
     #[cfg(feature = "memory-cache")]
     pub fn cache(&self, enabled: bool) {
         self.cache_enabled.store(enabled, std::sync::atomic::Ordering::SeqCst);
-    }
-
-    #[inline]
-    fn key_to_hash<K: std::hash::Hash>(k: &K) -> String {
-        use std::hash::Hasher as _;
-        let mut s = std::collections::hash_map::DefaultHasher::new();
-        k.hash(&mut s);
-        format!("{:X}", s.finish())
     }
 
     pub fn run_migrations(&mut self) -> error::CryptoKeystoreResult<()> {

@@ -14,10 +14,10 @@ mobile = ["uniffi", "uniffi_macros", "uniffi_build", "uniffi_bindgen"]
 [dependencies]
 core-crypto = { version = "0.1", path = "../crypto" }
 # UniFFI - Android + iOS bindings - Runtime support
-uniffi = { version = "0.16", optional = true }
-uniffi_macros = { version = "0.16", optional = true }
+uniffi = { version = "0.17", optional = true }
+uniffi_macros = { version = "0.17", optional = true }
 
 [build-dependencies]
 # UniFFI - Android + iOS bindings - Build support
-uniffi_build = { version = "0.16", features = ["builtin-bindgen"], optional = true }
-uniffi_bindgen = { version = "0.16", optional = true }
+uniffi_build = { version = "0.17", features = ["builtin-bindgen"], optional = true }
+uniffi_bindgen = { version = "0.17", optional = true }

@@ -103,6 +103,9 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<(Self, Option<MlsConversationCreationMessage>)> {
         let mls_group_config = MlsConversationConfiguration::openmls_default_configuration();
+        // let mut group = CoreGroup::builder(id, author_client.credentials())
+        //     .build(backend)
+        //     .map_err(MlsError::from)?;
         let mut group = MlsGroup::new(
             backend,
             &mls_group_config,
@@ -168,19 +171,17 @@ impl MlsConversation {
             .members()
             .map_err(MlsError::from)?
             .iter()
-            .try_fold(
-                std::collections::HashMap::new(),
-                |mut acc, credential| -> CryptoResult<_> {
-                    let identity_str = std::str::from_utf8(credential.identity())?;
-                    let client_id: crate::client::ClientId = identity_str.parse()?;
-                    let member_id: MemberId = client_id.into();
-                    acc.entry(member_id)
-                        .or_insert_with(|| vec![])
-                        .push((*credential).clone());
+            .try_fold(std::collections::HashMap::new(), |mut acc, kp| -> CryptoResult<_> {
+                let credential = kp.credential();
+                let identity_str = std::str::from_utf8(credential.identity())?;
+                let client_id: crate::client::ClientId = identity_str.parse()?;
+                let member_id: MemberId = client_id.into();
+                acc.entry(member_id)
+                    .or_insert_with(|| vec![])
+                    .push((*credential).clone());
 
-                    Ok(acc)
-                },
-            )?)
+                Ok(acc)
+            })?)
     }
 
     pub fn can_user_act(&self, uuid: MemberId) -> bool {
@@ -206,8 +207,7 @@ impl MlsConversation {
 
         match message {
             ProcessedMessage::ApplicationMessage(app_msg) => {
-                let (buf, _sender) = app_msg.into_parts();
-                return Ok(Some(buf));
+                return Ok(Some(app_msg.into_bytes()));
             }
             ProcessedMessage::ProposalMessage(proposal) => {
                 group.store_pending_proposal(*proposal);
@@ -389,7 +389,7 @@ mod tests {
             .unwrap();
 
         let (alice_group, conversation_creation_message) =
-            MlsConversation::create(conversation_id.clone(), &mut alice, configuration.clone(), &mut backend).unwrap();
+            MlsConversation::create(conversation_id.clone(), &mut alice, configuration, &mut backend).unwrap();
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
@@ -401,7 +401,12 @@ mod tests {
 
         let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
 
-        let bob_group = MlsConversation::from_welcome_message(welcome, configuration, &backend).unwrap();
+        let bob_group = MlsConversation::from_welcome_message(
+            welcome,
+            MlsConversationConfiguration::builder().build().unwrap(),
+            &backend,
+        )
+        .unwrap();
 
         let original_message = b"Hello World!";
 

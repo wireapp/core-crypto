@@ -2,8 +2,8 @@ use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
     ciphersuite::{ciphersuites::CiphersuiteName, Ciphersuite},
     credentials::CredentialBundle,
-    extensions::{Extension, KeyIdExtension},
-    prelude::KeyPackageBundle,
+    extensions::{Extension, ExternalKeyIdExtension},
+    prelude::{KeyPackageBundle, TlsSerializeTrait},
 };
 use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider};
 
@@ -112,8 +112,9 @@ impl Client {
 
     pub(crate) fn generate(id: ClientId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
         let ciphersuite = Ciphersuite::new(CiphersuiteName::default()).map_err(MlsError::from)?;
+        let id_bytes = id.as_bytes();
         let credentials = CredentialBundle::new(
-            id.as_bytes(),
+            id_bytes,
             openmls::credentials::CredentialType::Basic,
             ciphersuite.signature_scheme(),
             backend,
@@ -125,7 +126,15 @@ impl Client {
         // FIXME: i.e. there's no way to tell between outside public keys & own keypackages
         backend
             .key_store()
-            .store(credentials.credential().signature_key(), &credentials)
+            .store(
+                &credentials
+                    .credential()
+                    .signature_key()
+                    .tls_serialize_detached()
+                    .map_err(openmls::group::MlsGroupError::from)
+                    .map_err(MlsError::from)?,
+                &credentials,
+            )
             .map_err(eyre::Report::msg)?;
 
         let mut client = Self {
@@ -139,11 +148,7 @@ impl Client {
         Ok(client)
     }
 
-    pub(crate) fn load<S: std::hash::Hash>(
-        id: ClientId,
-        signature_public_key: &S,
-        backend: &MlsCryptoProvider,
-    ) -> CryptoResult<Self> {
+    pub(crate) fn load(id: ClientId, signature_public_key: &[u8], backend: &MlsCryptoProvider) -> CryptoResult<Self> {
         let ciphersuite = Ciphersuite::new(CiphersuiteName::default()).map_err(MlsError::from)?;
         let credentials: CredentialBundle = backend
             .key_store()
@@ -160,6 +165,10 @@ impl Client {
 
     pub fn public_key(&self) -> &[u8] {
         self.credentials.credential().signature_key().as_slice()
+    }
+
+    pub fn credentials(&self) -> &CredentialBundle {
+        &self.credentials
     }
 
     /// This method consumes a KeyPackageBundle for the Client, hashes it and returns the hash,
@@ -183,7 +192,9 @@ impl Client {
             &[self.ciphersuite.name()],
             &self.credentials,
             backend,
-            vec![Extension::KeyPackageId(KeyIdExtension::new(&self.id.as_bytes()))],
+            vec![Extension::ExternalKeyId(ExternalKeyIdExtension::new(
+                &self.id.as_bytes(),
+            ))],
         )
         .map_err(MlsError::from)?;
 
