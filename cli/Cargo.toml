@@ -8,7 +8,10 @@ openmls = { git = "https://github.com/openmls/openmls" }
 openmls_rust_crypto = { git = "https://github.com/openmls/openmls" }
 openmls_traits = { git = "https://github.com/openmls/openmls" }
 
-rand = "0.8.4"
-itertools = "0.10.2"
+uuid = "1.0.0-alpha"
 
 [workspace]
+
+[patch.crates-io]
+openmls_rust_crypto = { git = "https://github.com/openmls/openmls" }
+openmls_traits = { git = "https://github.com/openmls/openmls" }
