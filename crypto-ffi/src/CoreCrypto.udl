@@ -1,10 +1,10 @@
-[Wrapped]
+[Custom]
 typedef string ConversationId;
 
-[Wrapped]
+[Custom]
 typedef string MemberId;
 
-[Wrapped]
+[Custom]
 typedef string ClientId;
 
 enum CiphersuiteName {

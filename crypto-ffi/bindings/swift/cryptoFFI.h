@@ -46,47 +46,47 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_CoreCrypto_2aac_CoreCrypto_object_free(
+void ffi_CoreCrypto_174_CoreCrypto_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull CoreCrypto_2aac_CoreCrypto_new(
+void*_Nonnull CoreCrypto_174_CoreCrypto_new(
       RustBuffer path,RustBuffer key,RustBuffer client_id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_2aac_CoreCrypto_create_conversation(
+RustBuffer CoreCrypto_174_CoreCrypto_create_conversation(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer config,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_2aac_CoreCrypto_decrypt_message(
+RustBuffer CoreCrypto_174_CoreCrypto_decrypt_message(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer payload,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_2aac_CoreCrypto_encrypt_message(
+RustBuffer CoreCrypto_174_CoreCrypto_encrypt_message(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer message,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull CoreCrypto_2aac_init_with_path_and_key(
+void*_Nonnull CoreCrypto_174_init_with_path_and_key(
       RustBuffer path,RustBuffer key,RustBuffer client_id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_2aac_version(
+RustBuffer CoreCrypto_174_version(
       
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_CoreCrypto_2aac_rustbuffer_alloc(
+RustBuffer ffi_CoreCrypto_174_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_CoreCrypto_2aac_rustbuffer_from_bytes(
+RustBuffer ffi_CoreCrypto_174_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_CoreCrypto_2aac_rustbuffer_free(
+void ffi_CoreCrypto_174_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_CoreCrypto_2aac_rustbuffer_reserve(
+RustBuffer ffi_CoreCrypto_174_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );

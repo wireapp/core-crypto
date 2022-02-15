@@ -196,6 +196,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         if updated == 0 {
             return Err(CryptoKeystoreError::from(MissingKeyErrorKind::MlsKeyBundle).to_string());
         }
+
         Ok(())
     }
 }

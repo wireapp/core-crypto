@@ -43,7 +43,7 @@ open class RustBuffer : Structure() {
 
     companion object {
         internal fun alloc(size: Int = 0) = rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_2aac_rustbuffer_alloc(size, status).also {
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_174_rustbuffer_alloc(size, status).also {
                 if(it.data == null) {
                    throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=${size})")
                }
@@ -51,11 +51,11 @@ open class RustBuffer : Structure() {
         }
 
         internal fun free(buf: RustBuffer.ByValue) = rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_2aac_rustbuffer_free(buf, status)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_174_rustbuffer_free(buf, status)
         }
 
         internal fun reserve(buf: RustBuffer.ByValue, additional: Int) = rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_2aac_rustbuffer_reserve(buf, additional, status)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_174_rustbuffer_reserve(buf, additional, status)
         }
     }
 
@@ -271,7 +271,7 @@ private inline fun <U, E: Exception> rustCallWithError(errorHandler: CallStatusE
         // with the message.  but if that code panics, then it just sends back
         // an empty buffer.
         if (status.error_buf.len > 0) {
-            throw InternalException(String.lift(status.error_buf))
+            throw InternalException(FfiConverterString.lift(status.error_buf))
         } else {
             throw InternalException("Rust panic")
         }
@@ -322,48 +322,48 @@ internal interface _UniFFILib : Library {
         }
     }
 
-    fun ffi_CoreCrypto_2aac_CoreCrypto_object_free(ptr: Pointer,
-    uniffi_out_err: RustCallStatus
+    fun ffi_CoreCrypto_174_CoreCrypto_object_free(ptr: Pointer,
+    _uniffi_out_err: RustCallStatus
     ): Unit
 
-    fun CoreCrypto_2aac_CoreCrypto_new(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
-    uniffi_out_err: RustCallStatus
+    fun CoreCrypto_174_CoreCrypto_new(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
+    _uniffi_out_err: RustCallStatus
     ): Pointer
 
-    fun CoreCrypto_2aac_CoreCrypto_create_conversation(ptr: Pointer,conversation_id: RustBuffer.ByValue,config: RustBuffer.ByValue,
-    uniffi_out_err: RustCallStatus
+    fun CoreCrypto_174_CoreCrypto_create_conversation(ptr: Pointer,conversation_id: RustBuffer.ByValue,config: RustBuffer.ByValue,
+    _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_2aac_CoreCrypto_decrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,payload: RustBuffer.ByValue,
-    uniffi_out_err: RustCallStatus
+    fun CoreCrypto_174_CoreCrypto_decrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,payload: RustBuffer.ByValue,
+    _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_2aac_CoreCrypto_encrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,message: RustBuffer.ByValue,
-    uniffi_out_err: RustCallStatus
+    fun CoreCrypto_174_CoreCrypto_encrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,message: RustBuffer.ByValue,
+    _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_2aac_init_with_path_and_key(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
-    uniffi_out_err: RustCallStatus
+    fun CoreCrypto_174_init_with_path_and_key(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
+    _uniffi_out_err: RustCallStatus
     ): Pointer
 
-    fun CoreCrypto_2aac_version(
-    uniffi_out_err: RustCallStatus
+    fun CoreCrypto_174_version(
+    _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun ffi_CoreCrypto_2aac_rustbuffer_alloc(size: Int,
-    uniffi_out_err: RustCallStatus
+    fun ffi_CoreCrypto_174_rustbuffer_alloc(size: Int,
+    _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun ffi_CoreCrypto_2aac_rustbuffer_from_bytes(bytes: ForeignBytes.ByValue,
-    uniffi_out_err: RustCallStatus
+    fun ffi_CoreCrypto_174_rustbuffer_from_bytes(bytes: ForeignBytes.ByValue,
+    _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun ffi_CoreCrypto_2aac_rustbuffer_free(buf: RustBuffer.ByValue,
-    uniffi_out_err: RustCallStatus
+    fun ffi_CoreCrypto_174_rustbuffer_free(buf: RustBuffer.ByValue,
+    _uniffi_out_err: RustCallStatus
     ): Unit
 
-    fun ffi_CoreCrypto_2aac_rustbuffer_reserve(buf: RustBuffer.ByValue,additional: Int,
-    uniffi_out_err: RustCallStatus
+    fun ffi_CoreCrypto_174_rustbuffer_reserve(buf: RustBuffer.ByValue,additional: Int,
+    _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
     
@@ -537,25 +537,25 @@ abstract class FFIObject(
 
 enum class CiphersuiteName {
     MLS10_128_DHKEMX25519_AES128GCM_SHA256_ED25519,MLS10_128_DHKEMP256_AES128GCM_SHA256_P256,MLS10_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519,MLS10_256_DHKEMX448_AES256GCM_SHA512_ED448,MLS10_256_DHKEMP521_AES256GCM_SHA512_P521,MLS10_256_DHKEMX448_CHACHA20POLY1305_SHA512_ED448,MLS10_256_DHKEMP384_AES256GCM_SHA384_P384;
+}
 
-    companion object {
-        internal fun lift(rbuf: RustBuffer.ByValue): CiphersuiteName {
-            return liftFromRustBuffer(rbuf) { buf -> CiphersuiteName.read(buf) }
-        }
-
-        internal fun read(buf: ByteBuffer) =
-            try { values()[buf.getInt() - 1] }
-            catch (e: IndexOutOfBoundsException) {
-                throw RuntimeException("invalid enum value, something is very wrong!!", e)
-            }
+internal object FfiConverterTypeCiphersuiteName {
+    fun lift(rbuf: RustBuffer.ByValue): CiphersuiteName {
+        return liftFromRustBuffer(rbuf) { buf -> read(buf) }
     }
 
-    internal fun lower(): RustBuffer.ByValue {
-        return lowerIntoRustBuffer(this, {v, buf -> v.write(buf)})
+    fun read(buf: ByteBuffer) = try {
+        CiphersuiteName.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
 
-    internal fun write(buf: RustBufferBuilder) {
-        buf.putInt(this.ordinal + 1)
+    fun lower(value: CiphersuiteName): RustBuffer.ByValue {
+        return lowerIntoRustBuffer(value, {v, buf -> write(v, buf)})
+    }
+
+    fun write(value: CiphersuiteName, buf: RustBufferBuilder) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 
@@ -564,23 +564,20 @@ enum class CiphersuiteName {
 @Throws(CryptoException::class)
 
 fun initWithPathAndKey(path: String, key: String, clientId: String ): CoreCrypto {
-    val _retval = 
-    rustCallWithError(CryptoException) { status ->
-    _UniFFILib.INSTANCE.CoreCrypto_2aac_init_with_path_and_key(path.lower(), key.lower(), clientId.lower() ,status)
-}
-    return CoreCrypto.lift(_retval)
+    return FfiConverterTypeCoreCrypto.lift(
+    rustCallWithError(CryptoException) { _status ->
+    _UniFFILib.INSTANCE.CoreCrypto_174_init_with_path_and_key(FfiConverterString.lower(path), FfiConverterString.lower(key), FfiConverterString.lower(clientId) , _status)
+})
 }
 
 
 
 fun version(): String {
-    val _retval = 
-    rustCall() { status ->
-    _UniFFILib.INSTANCE.CoreCrypto_2aac_version(status)
+    return FfiConverterString.lift(
+    rustCall() { _status ->
+    _UniFFILib.INSTANCE.CoreCrypto_174_version( _status)
+})
 }
-    return String.lift(_retval)
-}
-
 
 public interface CoreCryptoInterface {
     
@@ -600,8 +597,8 @@ class CoreCrypto(
 ) : FFIObject(pointer), CoreCryptoInterface {
     constructor(path: String, key: String, clientId: String ) :
         this(
-    rustCallWithError(CryptoException) { status ->
-    _UniFFILib.INSTANCE.CoreCrypto_2aac_CoreCrypto_new(path.lower(), key.lower(), clientId.lower() ,status)
+    rustCallWithError(CryptoException) { _status ->
+    _UniFFILib.INSTANCE.CoreCrypto_174_CoreCrypto_new(FfiConverterString.lower(path), FfiConverterString.lower(key), FfiConverterString.lower(clientId) , _status)
 })
 
     /**
@@ -614,128 +611,132 @@ class CoreCrypto(
      */
     override protected fun freeRustArcPtr() {
         rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_2aac_CoreCrypto_object_free(this.pointer, status)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_174_CoreCrypto_object_free(this.pointer, status)
         }
-    }
-
-    internal fun lower(): Pointer = callWithPointer { it }
-
-    internal fun write(buf: RustBufferBuilder) {
-        // The Rust code always expects pointers written as 8 bytes,
-        // and will fail to compile if they don't fit.
-        buf.putLong(Pointer.nativeValue(this.lower()))
     }
 
     
     @Throws(CryptoException::class)override fun createConversation(conversationId: String, config: ConversationConfiguration ): ConversationCreationMessage? =
         callWithPointer {
-    rustCallWithError(CryptoException) { status ->
-    _UniFFILib.INSTANCE.CoreCrypto_2aac_CoreCrypto_create_conversation(it, conversationId.lower(), config.lower() , status)
+    rustCallWithError(CryptoException) { _status ->
+    _UniFFILib.INSTANCE.CoreCrypto_174_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterTypeConversationConfiguration.lower(config) ,  _status)
 }
         }.let {
-            liftOptionalRecordConversationCreationMessage(it)
+            FfiConverterOptionalTypeConversationCreationMessage.lift(it)
         }
     
     
     @Throws(CryptoException::class)override fun decryptMessage(conversationId: String, payload: List<UByte> ): List<UByte>? =
         callWithPointer {
-    rustCallWithError(CryptoException) { status ->
-    _UniFFILib.INSTANCE.CoreCrypto_2aac_CoreCrypto_decrypt_message(it, conversationId.lower(), lowerSequenceUByte(payload) , status)
+    rustCallWithError(CryptoException) { _status ->
+    _UniFFILib.INSTANCE.CoreCrypto_174_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUByte.lower(payload) ,  _status)
 }
         }.let {
-            liftOptionalSequenceUByte(it)
+            FfiConverterOptionalSequenceUByte.lift(it)
         }
     
     
     @Throws(CryptoException::class)override fun encryptMessage(conversationId: String, message: List<UByte> ): List<UByte> =
         callWithPointer {
-    rustCallWithError(CryptoException) { status ->
-    _UniFFILib.INSTANCE.CoreCrypto_2aac_CoreCrypto_encrypt_message(it, conversationId.lower(), lowerSequenceUByte(message) , status)
+    rustCallWithError(CryptoException) { _status ->
+    _UniFFILib.INSTANCE.CoreCrypto_174_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUByte.lower(message) ,  _status)
 }
         }.let {
-            liftSequenceUByte(it)
+            FfiConverterSequenceUByte.lift(it)
         }
     
     
 
-    companion object {
-        internal fun lift(ptr: Pointer): CoreCrypto {
-            return CoreCrypto(ptr)
-        }
+    
+    
+}
 
-        internal fun read(buf: ByteBuffer): CoreCrypto {
-            // The Rust code always writes pointers as 8 bytes, and will
-            // fail to compile if they don't fit.
-            return CoreCrypto.lift(Pointer(buf.getLong()))
-        }
+internal object FfiConverterTypeCoreCrypto {
+    fun lower(value: CoreCrypto): Pointer = value.callWithPointer { it }
 
-        
+    fun write(value: CoreCrypto, buf: RustBufferBuilder) {
+        // The Rust code always expects pointers written as 8 bytes,
+        // and will fail to compile if they don't fit.
+        buf.putLong(Pointer.nativeValue(lower(value)))
+    }
+
+    fun lift(ptr: Pointer): CoreCrypto {
+        return CoreCrypto(ptr)
+    }
+
+    fun read(buf: ByteBuffer): CoreCrypto {
+        // The Rust code always writes pointers as 8 bytes, and will
+        // fail to compile if they don't fit.
+        return lift(Pointer(buf.getLong()))
     }
 }
+
 
 data class ConversationCreationMessage (
     var message: List<UByte>, 
     var welcome: List<UByte> 
 )  {
-    companion object {
-        internal fun lift(rbuf: RustBuffer.ByValue): ConversationCreationMessage {
-            return liftFromRustBuffer(rbuf) { buf -> ConversationCreationMessage.read(buf) }
-        }
-
-        internal fun read(buf: ByteBuffer): ConversationCreationMessage {
-            return ConversationCreationMessage(
-            readSequenceUByte(buf),
-            readSequenceUByte(buf)
-            )
-        }
-    }
-
-    internal fun lower(): RustBuffer.ByValue {
-        return lowerIntoRustBuffer(this, {v, buf -> v.write(buf)})
-    }
-
-    internal fun write(buf: RustBufferBuilder) {
-            writeSequenceUByte(this.message, buf)
-        
-            writeSequenceUByte(this.welcome, buf)
-        
-    }
-
     
     
 }
+
+internal object FfiConverterTypeConversationCreationMessage {
+    fun lift(rbuf: RustBuffer.ByValue): ConversationCreationMessage {
+        return liftFromRustBuffer(rbuf) { buf -> read(buf) }
+    }
+
+    fun read(buf: ByteBuffer): ConversationCreationMessage {
+        return ConversationCreationMessage(
+            FfiConverterSequenceUByte.read(buf),
+            FfiConverterSequenceUByte.read(buf),
+        )
+    }
+
+    fun lower(value: ConversationCreationMessage): RustBuffer.ByValue {
+        return lowerIntoRustBuffer(value, {v, buf -> write(v, buf)})
+    }
+
+    fun write(value: ConversationCreationMessage, buf: RustBufferBuilder) {
+            FfiConverterSequenceUByte.write(value.message, buf)
+        
+            FfiConverterSequenceUByte.write(value.welcome, buf)
+        
+    }
+}
+
 
 data class Invitee (
     var id: String, 
     var kp: List<UByte> 
 )  {
-    companion object {
-        internal fun lift(rbuf: RustBuffer.ByValue): Invitee {
-            return liftFromRustBuffer(rbuf) { buf -> Invitee.read(buf) }
-        }
-
-        internal fun read(buf: ByteBuffer): Invitee {
-            return Invitee(
-            String.read(buf),
-            readSequenceUByte(buf)
-            )
-        }
-    }
-
-    internal fun lower(): RustBuffer.ByValue {
-        return lowerIntoRustBuffer(this, {v, buf -> v.write(buf)})
-    }
-
-    internal fun write(buf: RustBufferBuilder) {
-            this.id.write(buf)
-        
-            writeSequenceUByte(this.kp, buf)
-        
-    }
-
     
     
 }
+
+internal object FfiConverterTypeInvitee {
+    fun lift(rbuf: RustBuffer.ByValue): Invitee {
+        return liftFromRustBuffer(rbuf) { buf -> read(buf) }
+    }
+
+    fun read(buf: ByteBuffer): Invitee {
+        return Invitee(
+            FfiConverterTypeClientId.read(buf),
+            FfiConverterSequenceUByte.read(buf),
+        )
+    }
+
+    fun lower(value: Invitee): RustBuffer.ByValue {
+        return lowerIntoRustBuffer(value, {v, buf -> write(v, buf)})
+    }
+
+    fun write(value: Invitee, buf: RustBufferBuilder) {
+            FfiConverterTypeClientId.write(value.id, buf)
+        
+            FfiConverterSequenceUByte.write(value.kp, buf)
+        
+    }
+}
+
 
 data class ConversationConfiguration (
     var extraMembers: List<Invitee>, 
@@ -743,41 +744,39 @@ data class ConversationConfiguration (
     var ciphersuite: CiphersuiteName?, 
     var keyRotationSpan: java.time.Duration? 
 )  {
-    companion object {
-        internal fun lift(rbuf: RustBuffer.ByValue): ConversationConfiguration {
-            return liftFromRustBuffer(rbuf) { buf -> ConversationConfiguration.read(buf) }
-        }
-
-        internal fun read(buf: ByteBuffer): ConversationConfiguration {
-            return ConversationConfiguration(
-            readSequenceRecordInvitee(buf),
-            readSequenceMemberId(buf),
-            readOptionalEnumCiphersuiteName(buf),
-            readOptionalDuration(buf)
-            )
-        }
-    }
-
-    internal fun lower(): RustBuffer.ByValue {
-        return lowerIntoRustBuffer(this, {v, buf -> v.write(buf)})
-    }
-
-    internal fun write(buf: RustBufferBuilder) {
-            writeSequenceRecordInvitee(this.extraMembers, buf)
-        
-            writeSequenceMemberId(this.admins, buf)
-        
-            writeOptionalEnumCiphersuiteName(this.ciphersuite, buf)
-        
-            writeOptionalDuration(this.keyRotationSpan, buf)
-        
-    }
-
     
     
 }
 
+internal object FfiConverterTypeConversationConfiguration {
+    fun lift(rbuf: RustBuffer.ByValue): ConversationConfiguration {
+        return liftFromRustBuffer(rbuf) { buf -> read(buf) }
+    }
 
+    fun read(buf: ByteBuffer): ConversationConfiguration {
+        return ConversationConfiguration(
+            FfiConverterSequenceTypeInvitee.read(buf),
+            FfiConverterSequenceTypeMemberId.read(buf),
+            FfiConverterOptionalTypeCiphersuiteName.read(buf),
+            FfiConverterOptionalDuration.read(buf),
+        )
+    }
+
+    fun lower(value: ConversationConfiguration): RustBuffer.ByValue {
+        return lowerIntoRustBuffer(value, {v, buf -> write(v, buf)})
+    }
+
+    fun write(value: ConversationConfiguration, buf: RustBufferBuilder) {
+            FfiConverterSequenceTypeInvitee.write(value.extraMembers, buf)
+        
+            FfiConverterSequenceTypeMemberId.write(value.admins, buf)
+        
+            FfiConverterOptionalTypeCiphersuiteName.write(value.ciphersuite, buf)
+        
+            FfiConverterOptionalDuration.write(value.keyRotationSpan, buf)
+        
+    }
+}
 
 sealed class CryptoException(message: String): Exception(message)  {
         // Each variant is a nested class
@@ -798,123 +797,146 @@ sealed class CryptoException(message: String): Exception(message)  {
         
 
     companion object ErrorHandler : CallStatusErrorHandler<CryptoException> {
-        override fun lift(error_buf: RustBuffer.ByValue): CryptoException {
-            return liftFromRustBuffer(error_buf) { error_buf -> read(error_buf) }
-        }
+        override fun lift(error_buf: RustBuffer.ByValue): CryptoException = FfiConverterTypeCryptoError.lift(error_buf)
+    }
+}
 
-        fun read(error_buf: ByteBuffer): CryptoException {
-            
-                return when(error_buf.getInt()) {
-                1 -> CryptoException.ConversationNotFound(String.read(error_buf))
-                2 -> CryptoException.MalformedIdentifier(String.read(error_buf))
-                3 -> CryptoException.KeyStoreException(String.read(error_buf))
-                4 -> CryptoException.ClientSignatureNotFound(String.read(error_buf))
-                5 -> CryptoException.OutOfKeyPackage(String.read(error_buf))
-                6 -> CryptoException.LockPoisonException(String.read(error_buf))
-                7 -> CryptoException.ConversationConfigurationException(String.read(error_buf))
-                8 -> CryptoException.CentralConfigurationException(String.read(error_buf))
-                9 -> CryptoException.MlsException(String.read(error_buf))
-                10 -> CryptoException.UuidException(String.read(error_buf))
-                11 -> CryptoException.Utf8Exception(String.read(error_buf))
-                12 -> CryptoException.ParseIntException(String.read(error_buf))
-                13 -> CryptoException.Other(String.read(error_buf))
-                else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
-            }
+internal object FfiConverterTypeCryptoError {
+    fun lift(error_buf: RustBuffer.ByValue): CryptoException {
+        return liftFromRustBuffer(error_buf) { error_buf -> read(error_buf) }
+    }
+
+    fun read(error_buf: ByteBuffer): CryptoException {
+        
+            return when(error_buf.getInt()) {
+            1 -> CryptoException.ConversationNotFound(FfiConverterString.read(error_buf))
+            2 -> CryptoException.MalformedIdentifier(FfiConverterString.read(error_buf))
+            3 -> CryptoException.KeyStoreException(FfiConverterString.read(error_buf))
+            4 -> CryptoException.ClientSignatureNotFound(FfiConverterString.read(error_buf))
+            5 -> CryptoException.OutOfKeyPackage(FfiConverterString.read(error_buf))
+            6 -> CryptoException.LockPoisonException(FfiConverterString.read(error_buf))
+            7 -> CryptoException.ConversationConfigurationException(FfiConverterString.read(error_buf))
+            8 -> CryptoException.CentralConfigurationException(FfiConverterString.read(error_buf))
+            9 -> CryptoException.MlsException(FfiConverterString.read(error_buf))
+            10 -> CryptoException.UuidException(FfiConverterString.read(error_buf))
+            11 -> CryptoException.Utf8Exception(FfiConverterString.read(error_buf))
+            12 -> CryptoException.ParseIntException(FfiConverterString.read(error_buf))
+            13 -> CryptoException.Other(FfiConverterString.read(error_buf))
+            else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
         }
     }
 
-    
-    
-}
-internal fun UByte.Companion.lift(v: Byte): UByte {
-    return v.toUByte()
+    @Suppress("UNUSED_PARAMETER")
+    fun lower(value: CryptoException): RustBuffer.ByValue {
+        throw RuntimeException("Lowering Errors is not supported")
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun write(value: CryptoException, buf: RustBufferBuilder) {
+        throw RuntimeException("Writing Errors is not supported")
+    }
+
 }
 
-internal fun UByte.Companion.read(buf: ByteBuffer): UByte {
-    return UByte.lift(buf.get())
-}
+internal typealias FfiConverterTypeClientId = FfiConverterString
 
-internal fun UByte.lower(): Byte {
-    return this.toByte()
-}
+internal typealias FfiConverterTypeConversationId = FfiConverterString
 
-internal fun UByte.write(buf: RustBufferBuilder) {
-    buf.putByte(this.toByte())
+internal typealias FfiConverterTypeMemberId = FfiConverterString
+internal object FfiConverterUByte {
+    fun lift(v: Byte): UByte {
+        return v.toUByte()
+    }
+
+    fun read(buf: ByteBuffer): UByte {
+        return lift(buf.get())
+    }
+
+    fun lower(v: UByte): Byte {
+        return v.toByte()
+    }
+
+    fun write(v: UByte, buf: RustBufferBuilder) {
+        buf.putByte(v.toByte())
+    }
 }
-internal fun String.Companion.lift(rbuf: RustBuffer.ByValue): String {
-    try {
-        val byteArr = ByteArray(rbuf.len)
-        rbuf.asByteBuffer()!!.get(byteArr)
+internal object FfiConverterString {
+    fun lift(rbuf: RustBuffer.ByValue): String {
+        try {
+            val byteArr = ByteArray(rbuf.len)
+            rbuf.asByteBuffer()!!.get(byteArr)
+            return byteArr.toString(Charsets.UTF_8)
+        } finally {
+            RustBuffer.free(rbuf)
+        }
+    }
+
+    fun read(buf: ByteBuffer): String {
+        val len = buf.getInt()
+        val byteArr = ByteArray(len)
+        buf.get(byteArr)
         return byteArr.toString(Charsets.UTF_8)
-    } finally {
-        RustBuffer.free(rbuf)
-    }
-}
-
-internal fun String.Companion.read(buf: ByteBuffer): String {
-    val len = buf.getInt()
-    val byteArr = ByteArray(len)
-    buf.get(byteArr)
-    return byteArr.toString(Charsets.UTF_8)
-}
-
-internal fun String.lower(): RustBuffer.ByValue {
-    val byteArr = this.toByteArray(Charsets.UTF_8)
-    // Ideally we'd pass these bytes to `ffi_bytebuffer_from_bytes`, but doing so would require us
-    // to copy them into a JNA `Memory`. So we might as well directly copy them into a `RustBuffer`.
-    val rbuf = RustBuffer.alloc(byteArr.size)
-    rbuf.asByteBuffer()!!.put(byteArr)
-    return rbuf
-}
-
-internal fun String.write(buf: RustBufferBuilder) {
-    val byteArr = this.toByteArray(Charsets.UTF_8)
-    buf.putInt(byteArr.size)
-    buf.put(byteArr)
-}
-
-internal fun liftDuration(rbuf: RustBuffer.ByValue): java.time.Duration {
-    return liftFromRustBuffer(rbuf) { buf ->
-        readDuration(buf)
-    }
-}
-
-internal fun readDuration(buf: ByteBuffer): java.time.Duration {
-    // Type mismatch (should be u64) but we check for overflow/underflow below
-    val seconds = buf.getLong()
-    // Type mismatch (should be u32) but we check for overflow/underflow below
-    val nanoseconds = buf.getInt().toLong()
-    if (seconds < 0) {
-        throw java.time.DateTimeException("Duration exceeds minimum or maximum value supported by uniffi")
-    }
-    if (nanoseconds < 0) {
-        throw java.time.DateTimeException("Duration nanoseconds exceed minimum or maximum supported by uniffi")
-    }
-    return java.time.Duration.ofSeconds(seconds, nanoseconds)
-}
-
-internal fun lowerDuration(v: java.time.Duration): RustBuffer.ByValue {
-    return lowerIntoRustBuffer(v) { v, buf ->
-        writeDuration(v, buf)
-    }
-}
-
-internal fun writeDuration(v: java.time.Duration, buf: RustBufferBuilder) {
-    if (v.seconds < 0) {
-        // Rust does not support negative Durations
-        throw IllegalArgumentException("Invalid duration, must be non-negative")
     }
 
-    if (v.nano < 0) {
-        // Java docs provide guarantee that nano will always be positive, so this should be impossible
-        // See: https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html
-        throw IllegalArgumentException("Invalid duration, nano value must be non-negative")
+    fun lower(value: String): RustBuffer.ByValue {
+        val byteArr = value.toByteArray(Charsets.UTF_8)
+        // Ideally we'd pass these bytes to `ffi_bytebuffer_from_bytes`, but doing so would require us
+        // to copy them into a JNA `Memory`. So we might as well directly copy them into a `RustBuffer`.
+        val rbuf = RustBuffer.alloc(byteArr.size)
+        rbuf.asByteBuffer()!!.put(byteArr)
+        return rbuf
     }
 
-    // Type mismatch (should be u64) but since Rust doesn't support negative durations we should be OK
-    buf.putLong(v.seconds)
-    // Type mismatch (should be u32) but since values will always be between 0 and 999,999,999 it should be OK
-    buf.putInt(v.nano)
+    fun write(value: String, buf: RustBufferBuilder) {
+        val byteArr = value.toByteArray(Charsets.UTF_8)
+        buf.putInt(byteArr.size)
+        buf.put(byteArr)
+    }
+}
+internal object FfiConverterDuration {
+    fun lift(rbuf: RustBuffer.ByValue): java.time.Duration {
+        return liftFromRustBuffer(rbuf) { buf ->
+            read(buf)
+        }
+    }
+
+    fun read(buf: ByteBuffer): java.time.Duration {
+        // Type mismatch (should be u64) but we check for overflow/underflow below
+        val seconds = buf.getLong()
+        // Type mismatch (should be u32) but we check for overflow/underflow below
+        val nanoseconds = buf.getInt().toLong()
+        if (seconds < 0) {
+            throw java.time.DateTimeException("Duration exceeds minimum or maximum value supported by uniffi")
+        }
+        if (nanoseconds < 0) {
+            throw java.time.DateTimeException("Duration nanoseconds exceed minimum or maximum supported by uniffi")
+        }
+        return java.time.Duration.ofSeconds(seconds, nanoseconds)
+    }
+
+    fun lower(v: java.time.Duration): RustBuffer.ByValue {
+        return lowerIntoRustBuffer(v) { v, buf ->
+            write(v, buf)
+        }
+    }
+
+    fun write(v: java.time.Duration, buf: RustBufferBuilder) {
+        if (v.seconds < 0) {
+            // Rust does not support negative Durations
+            throw IllegalArgumentException("Invalid duration, must be non-negative")
+        }
+
+        if (v.nano < 0) {
+            // Java docs provide guarantee that nano will always be positive, so this should be impossible
+            // See: https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html
+            throw IllegalArgumentException("Invalid duration, nano value must be non-negative")
+        }
+
+        // Type mismatch (should be u64) but since Rust doesn't support negative durations we should be OK
+        buf.putLong(v.seconds)
+        // Type mismatch (should be u32) but since values will always be between 0 and 999,999,999 it should be OK
+        buf.putInt(v.nano)
+    }
 }
 // Helper code for CoreCrypto class is found in ObjectTemplate.kt
 // Helper code for ConversationConfiguration record is found in RecordTemplate.kt
@@ -924,206 +946,216 @@ internal fun writeDuration(v: java.time.Duration, buf: RustBufferBuilder) {
 // Helper code for CryptoException error is found in ErrorTemplate.kt
 
 
-// Helper functions for passing values of type java.time.Duration?
-internal fun lowerOptionalDuration(v: java.time.Duration?): RustBuffer.ByValue {
-    return lowerIntoRustBuffer(v) { v, buf ->
-        writeOptionalDuration(v, buf)
+internal object FfiConverterOptionalDuration {
+    fun lift(rbuf: RustBuffer.ByValue): java.time.Duration? {
+        return liftFromRustBuffer(rbuf) { buf ->
+            read(buf)
+        }
     }
-}
 
-internal fun writeOptionalDuration(v: java.time.Duration?, buf: RustBufferBuilder) {
-    if (v == null) {
-        buf.putByte(0)
-    } else {
-        buf.putByte(1)
-        writeDuration(v, buf)
+    fun read(buf: ByteBuffer): java.time.Duration? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterDuration.read(buf)
     }
-}
 
-internal fun liftOptionalDuration(rbuf: RustBuffer.ByValue): java.time.Duration? {
-    return liftFromRustBuffer(rbuf) { buf ->
-        readOptionalDuration(buf)
+    fun lower(v: java.time.Duration?): RustBuffer.ByValue {
+        return lowerIntoRustBuffer(v) { v, buf ->
+            write(v, buf)
+        }
     }
-}
 
-internal fun readOptionalDuration(buf: ByteBuffer): java.time.Duration? {
-    if (buf.get().toInt() == 0) {
-        return null
-    }
-    return readDuration(buf)
-}
-
-
-// Helper functions for passing values of type ConversationCreationMessage?
-internal fun lowerOptionalRecordConversationCreationMessage(v: ConversationCreationMessage?): RustBuffer.ByValue {
-    return lowerIntoRustBuffer(v) { v, buf ->
-        writeOptionalRecordConversationCreationMessage(v, buf)
-    }
-}
-
-internal fun writeOptionalRecordConversationCreationMessage(v: ConversationCreationMessage?, buf: RustBufferBuilder) {
-    if (v == null) {
-        buf.putByte(0)
-    } else {
-        buf.putByte(1)
-        v.write(buf)
-    }
-}
-
-internal fun liftOptionalRecordConversationCreationMessage(rbuf: RustBuffer.ByValue): ConversationCreationMessage? {
-    return liftFromRustBuffer(rbuf) { buf ->
-        readOptionalRecordConversationCreationMessage(buf)
-    }
-}
-
-internal fun readOptionalRecordConversationCreationMessage(buf: ByteBuffer): ConversationCreationMessage? {
-    if (buf.get().toInt() == 0) {
-        return null
-    }
-    return ConversationCreationMessage.read(buf)
-}
-
-
-// Helper functions for passing values of type CiphersuiteName?
-internal fun lowerOptionalEnumCiphersuiteName(v: CiphersuiteName?): RustBuffer.ByValue {
-    return lowerIntoRustBuffer(v) { v, buf ->
-        writeOptionalEnumCiphersuiteName(v, buf)
-    }
-}
-
-internal fun writeOptionalEnumCiphersuiteName(v: CiphersuiteName?, buf: RustBufferBuilder) {
-    if (v == null) {
-        buf.putByte(0)
-    } else {
-        buf.putByte(1)
-        v.write(buf)
-    }
-}
-
-internal fun liftOptionalEnumCiphersuiteName(rbuf: RustBuffer.ByValue): CiphersuiteName? {
-    return liftFromRustBuffer(rbuf) { buf ->
-        readOptionalEnumCiphersuiteName(buf)
-    }
-}
-
-internal fun readOptionalEnumCiphersuiteName(buf: ByteBuffer): CiphersuiteName? {
-    if (buf.get().toInt() == 0) {
-        return null
-    }
-    return CiphersuiteName.read(buf)
-}
-
-
-// Helper functions for passing values of type List<UByte>?
-internal fun lowerOptionalSequenceUByte(v: List<UByte>?): RustBuffer.ByValue {
-    return lowerIntoRustBuffer(v) { v, buf ->
-        writeOptionalSequenceUByte(v, buf)
-    }
-}
-
-internal fun writeOptionalSequenceUByte(v: List<UByte>?, buf: RustBufferBuilder) {
-    if (v == null) {
-        buf.putByte(0)
-    } else {
-        buf.putByte(1)
-        writeSequenceUByte(v, buf)
-    }
-}
-
-internal fun liftOptionalSequenceUByte(rbuf: RustBuffer.ByValue): List<UByte>? {
-    return liftFromRustBuffer(rbuf) { buf ->
-        readOptionalSequenceUByte(buf)
-    }
-}
-
-internal fun readOptionalSequenceUByte(buf: ByteBuffer): List<UByte>? {
-    if (buf.get().toInt() == 0) {
-        return null
-    }
-    return readSequenceUByte(buf)
-}
-
-
-// Helper functions for passing values of type List<UByte>
-internal fun lowerSequenceUByte(v: List<UByte>): RustBuffer.ByValue {
-    return lowerIntoRustBuffer(v) { v, buf ->
-        writeSequenceUByte(v, buf)
-    }
-}
-
-internal fun writeSequenceUByte(v: List<UByte>, buf: RustBufferBuilder) {
-    buf.putInt(v.size)
-    v.forEach {
-        it.write(buf)
-    }
-}
-
-internal fun liftSequenceUByte(rbuf: RustBuffer.ByValue): List<UByte> {
-    return liftFromRustBuffer(rbuf) { buf ->
-        readSequenceUByte(buf)
-    }
-}
-
-internal fun readSequenceUByte(buf: ByteBuffer): List<UByte> {
-    val len = buf.getInt()
-    return List<UByte>(len) {
-        UByte.read(buf)
+    fun write(v: java.time.Duration?, buf: RustBufferBuilder) {
+        if (v == null) {
+            buf.putByte(0)
+        } else {
+            buf.putByte(1)
+            FfiConverterDuration.write(v, buf)
+        }
     }
 }
 
 
-// Helper functions for passing values of type List<Invitee>
-internal fun lowerSequenceRecordInvitee(v: List<Invitee>): RustBuffer.ByValue {
-    return lowerIntoRustBuffer(v) { v, buf ->
-        writeSequenceRecordInvitee(v, buf)
+internal object FfiConverterOptionalTypeConversationCreationMessage {
+    fun lift(rbuf: RustBuffer.ByValue): ConversationCreationMessage? {
+        return liftFromRustBuffer(rbuf) { buf ->
+            read(buf)
+        }
+    }
+
+    fun read(buf: ByteBuffer): ConversationCreationMessage? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeConversationCreationMessage.read(buf)
+    }
+
+    fun lower(v: ConversationCreationMessage?): RustBuffer.ByValue {
+        return lowerIntoRustBuffer(v) { v, buf ->
+            write(v, buf)
+        }
+    }
+
+    fun write(v: ConversationCreationMessage?, buf: RustBufferBuilder) {
+        if (v == null) {
+            buf.putByte(0)
+        } else {
+            buf.putByte(1)
+            FfiConverterTypeConversationCreationMessage.write(v, buf)
+        }
     }
 }
 
-internal fun writeSequenceRecordInvitee(v: List<Invitee>, buf: RustBufferBuilder) {
-    buf.putInt(v.size)
-    v.forEach {
-        it.write(buf)
+
+internal object FfiConverterOptionalTypeCiphersuiteName {
+    fun lift(rbuf: RustBuffer.ByValue): CiphersuiteName? {
+        return liftFromRustBuffer(rbuf) { buf ->
+            read(buf)
+        }
+    }
+
+    fun read(buf: ByteBuffer): CiphersuiteName? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeCiphersuiteName.read(buf)
+    }
+
+    fun lower(v: CiphersuiteName?): RustBuffer.ByValue {
+        return lowerIntoRustBuffer(v) { v, buf ->
+            write(v, buf)
+        }
+    }
+
+    fun write(v: CiphersuiteName?, buf: RustBufferBuilder) {
+        if (v == null) {
+            buf.putByte(0)
+        } else {
+            buf.putByte(1)
+            FfiConverterTypeCiphersuiteName.write(v, buf)
+        }
     }
 }
 
-internal fun liftSequenceRecordInvitee(rbuf: RustBuffer.ByValue): List<Invitee> {
-    return liftFromRustBuffer(rbuf) { buf ->
-        readSequenceRecordInvitee(buf)
+
+internal object FfiConverterOptionalSequenceUByte {
+    fun lift(rbuf: RustBuffer.ByValue): List<UByte>? {
+        return liftFromRustBuffer(rbuf) { buf ->
+            read(buf)
+        }
+    }
+
+    fun read(buf: ByteBuffer): List<UByte>? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterSequenceUByte.read(buf)
+    }
+
+    fun lower(v: List<UByte>?): RustBuffer.ByValue {
+        return lowerIntoRustBuffer(v) { v, buf ->
+            write(v, buf)
+        }
+    }
+
+    fun write(v: List<UByte>?, buf: RustBufferBuilder) {
+        if (v == null) {
+            buf.putByte(0)
+        } else {
+            buf.putByte(1)
+            FfiConverterSequenceUByte.write(v, buf)
+        }
     }
 }
 
-internal fun readSequenceRecordInvitee(buf: ByteBuffer): List<Invitee> {
-    val len = buf.getInt()
-    return List<Invitee>(len) {
-        Invitee.read(buf)
+
+internal object FfiConverterSequenceUByte {
+    internal fun lower(v: List<UByte>): RustBuffer.ByValue {
+        return lowerIntoRustBuffer(v) { v, buf ->
+            write(v, buf)
+        }
+    }
+
+    internal fun write(v: List<UByte>, buf: RustBufferBuilder) {
+        buf.putInt(v.size)
+        v.forEach {
+            FfiConverterUByte.write(it, buf)
+        }
+    }
+
+    internal fun lift(rbuf: RustBuffer.ByValue): List<UByte> {
+        return liftFromRustBuffer(rbuf) { buf ->
+            read(buf)
+        }
+    }
+
+    internal fun read(buf: ByteBuffer): List<UByte> {
+        val len = buf.getInt()
+        return List<UByte>(len) {
+            FfiConverterUByte.read(buf)
+        }
     }
 }
 
 
-// Helper functions for passing values of type List<String>
-internal fun lowerSequenceMemberId(v: List<String>): RustBuffer.ByValue {
-    return lowerIntoRustBuffer(v) { v, buf ->
-        writeSequenceMemberId(v, buf)
+internal object FfiConverterSequenceTypeInvitee {
+    internal fun lower(v: List<Invitee>): RustBuffer.ByValue {
+        return lowerIntoRustBuffer(v) { v, buf ->
+            write(v, buf)
+        }
+    }
+
+    internal fun write(v: List<Invitee>, buf: RustBufferBuilder) {
+        buf.putInt(v.size)
+        v.forEach {
+            FfiConverterTypeInvitee.write(it, buf)
+        }
+    }
+
+    internal fun lift(rbuf: RustBuffer.ByValue): List<Invitee> {
+        return liftFromRustBuffer(rbuf) { buf ->
+            read(buf)
+        }
+    }
+
+    internal fun read(buf: ByteBuffer): List<Invitee> {
+        val len = buf.getInt()
+        return List<Invitee>(len) {
+            FfiConverterTypeInvitee.read(buf)
+        }
     }
 }
 
-internal fun writeSequenceMemberId(v: List<String>, buf: RustBufferBuilder) {
-    buf.putInt(v.size)
-    v.forEach {
-        it.write(buf)
-    }
-}
 
-internal fun liftSequenceMemberId(rbuf: RustBuffer.ByValue): List<String> {
-    return liftFromRustBuffer(rbuf) { buf ->
-        readSequenceMemberId(buf)
+internal object FfiConverterSequenceTypeMemberId {
+    internal fun lower(v: List<String>): RustBuffer.ByValue {
+        return lowerIntoRustBuffer(v) { v, buf ->
+            write(v, buf)
+        }
     }
-}
 
-internal fun readSequenceMemberId(buf: ByteBuffer): List<String> {
-    val len = buf.getInt()
-    return List<String>(len) {
-        String.read(buf)
+    internal fun write(v: List<String>, buf: RustBufferBuilder) {
+        buf.putInt(v.size)
+        v.forEach {
+            FfiConverterTypeMemberId.write(it, buf)
+        }
+    }
+
+    internal fun lift(rbuf: RustBuffer.ByValue): List<String> {
+        return liftFromRustBuffer(rbuf) { buf ->
+            read(buf)
+        }
+    }
+
+    internal fun read(buf: ByteBuffer): List<String> {
+        val len = buf.getInt()
+        return List<String>(len) {
+            FfiConverterTypeMemberId.read(buf)
+        }
     }
 }
+// Helper code for ClientId is found in CustomTypeTemplate.kt
+// Helper code for ConversationId is found in CustomTypeTemplate.kt
+// Helper code for MemberId is found in CustomTypeTemplate.kt
 

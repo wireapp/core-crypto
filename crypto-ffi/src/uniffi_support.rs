@@ -1,46 +1,46 @@
-use crate::UniffiCustomTypeWrapper;
+use crate::UniffiCustomTypeConverter;
 
-impl UniffiCustomTypeWrapper for core_crypto::identifiers::QualifiedUuid {
-    type Wrapped = String;
+impl UniffiCustomTypeConverter for core_crypto::identifiers::QualifiedUuid {
+    type Builtin = String;
 
-    fn wrap(val: Self::Wrapped) -> uniffi::Result<Self>
+    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self>
     where
         Self: Sized,
     {
         Ok(val.parse()?)
     }
 
-    fn unwrap(obj: Self) -> Self::Wrapped {
+    fn from_custom(obj: Self) -> Self::Builtin {
         obj.to_string()
     }
 }
 
-impl UniffiCustomTypeWrapper for core_crypto::identifiers::ZeroKnowledgeUuid {
-    type Wrapped = String;
+impl UniffiCustomTypeConverter for core_crypto::identifiers::ZeroKnowledgeUuid {
+    type Builtin = String;
 
-    fn wrap(val: Self::Wrapped) -> uniffi::Result<Self>
+    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self>
     where
         Self: Sized,
     {
         Ok(val.parse()?)
     }
 
-    fn unwrap(obj: Self) -> Self::Wrapped {
+    fn from_custom(obj: Self) -> Self::Builtin {
         obj.to_string()
     }
 }
 
-impl UniffiCustomTypeWrapper for core_crypto::prelude::ClientId {
-    type Wrapped = String;
+impl UniffiCustomTypeConverter for core_crypto::prelude::ClientId {
+    type Builtin = String;
 
-    fn wrap(val: Self::Wrapped) -> uniffi::Result<Self>
+    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self>
     where
         Self: Sized,
     {
         Ok(val.parse()?)
     }
 
-    fn unwrap(obj: Self) -> Self::Wrapped {
+    fn from_custom(obj: Self) -> Self::Builtin {
         obj.to_string()
     }
 }
