@@ -22,7 +22,7 @@ impl ClientId {
         let mut ret = vec![];
         ret.extend_from_slice(self.user_id.as_hyphenated().to_string().as_bytes());
         ret.push(b':');
-        ret.extend_from_slice(self.client_id.to_string().as_bytes());
+        ret.extend_from_slice(format!("{:x}", self.client_id).as_bytes());
         ret.push(b'@');
         ret.extend_from_slice(self.domain.as_bytes());
 
@@ -38,7 +38,7 @@ fn main() {
     let identity = ClientId {
         user_id: Uuid::parse_str("b455a431-9db6-4404-86e7-6a3ebe73fcaf").unwrap(),
         domain: "mls.example.com".to_string(),
-        client_id: 0,
+        client_id: 988119381,
     };
 
     let credentials = CredentialBundle::new(
