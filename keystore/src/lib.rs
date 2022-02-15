@@ -105,7 +105,7 @@ impl CryptoKeystore {
         // }
 
         conn.pragma_update(None, "cipher_plaintext_header_size", CIPHER_PLAINTEXT_BYTES)?;
-        conn.pragma_update(None, "user_version", 1)?;
+        conn.pragma_update(None, "user_version", 1u32)?;
 
         Ok(())
     }

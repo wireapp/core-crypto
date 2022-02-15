@@ -5,8 +5,8 @@ use crate::{CryptoKeystoreError, MissingKeyErrorKind};
 impl crate::CryptoKeystore {
     #[cfg(feature = "memory-cache")]
     #[inline(always)]
-    fn proteus_memory_key<S: std::fmt::Display>(k: S) -> String {
-        format!("proteus:{}", k)
+    fn proteus_memory_key<S: std::fmt::Display>(k: S) -> Vec<u8> {
+        format!("proteus:{}", k).into_bytes()
     }
 
     pub fn store_prekey(&self, prekey: &proteus::keys::PreKey) -> crate::CryptoKeystoreResult<()> {
@@ -101,7 +101,7 @@ impl proteus::session::PreKeyStore for crate::CryptoKeystore {
                 .memory_cache
                 .write()
                 .map_err(|_| CryptoKeystoreError::LockPoisonError)?
-                .pop(&format!("proteus:{}", id));
+                .pop(format!("proteus:{}", id).as_bytes());
         }
 
         let updated = self

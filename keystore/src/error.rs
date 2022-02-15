@@ -2,7 +2,7 @@
 pub enum MissingKeyErrorKind {
     #[error("MLS Key Bundle")]
     MlsKeyBundle,
-    #[cfg(feature = "proteus_keystore")]
+    #[cfg(feature = "proteus-keystore")]
     #[error("Proteus PreKey")]
     ProteusPrekey,
 }
@@ -24,10 +24,10 @@ pub enum CryptoKeystoreError {
     #[cfg(test)]
     #[error(transparent)]
     KeyPackageError(#[from] openmls::prelude::KeyPackageError),
-    #[cfg(feature = "proteus_keystore")]
+    #[cfg(feature = "proteus-keystore")]
     #[error(transparent)]
     PrekeyDecodeError(#[from] proteus::internal::types::DecodeError),
-    #[cfg(feature = "proteus_keystore")]
+    #[cfg(feature = "proteus-keystore")]
     #[error(transparent)]
     PrekeyEncodeError(#[from] proteus::internal::types::EncodeError),
     #[error("{0}")]
@@ -37,6 +37,9 @@ pub enum CryptoKeystoreError {
     #[cfg(feature = "ios-wal-compat")]
     #[error(transparent)]
     HexSaltDecodeError(#[from] hex::FromHexError),
+    #[cfg(feature = "ios-wal-compat")]
+    #[error(transparent)]
+    SecurityFrameworkError(#[from] security_framework::base::Error),
     #[error(transparent)]
     Other(#[from] eyre::Report),
 }
