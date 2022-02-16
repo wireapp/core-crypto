@@ -9,3 +9,7 @@ openmls_traits = "0.1.0-pre"
 openmls_rust_crypto = "0.1.0-pre"
 
 uuid = "1.0.0-alpha"
+
+[dependencies.core-crypto]
+version = "0.1.0"
+path = "../crypto"
