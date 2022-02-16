@@ -33,11 +33,15 @@ pub struct ClientId {
 }
 
 impl ClientId {
+    pub fn new(user_id: uuid::Uuid, domain: String, client_id: u64) -> Self {
+        ClientId { user_id, domain, client_id }
+    }
+
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut ret = vec![];
         ret.extend_from_slice(self.user_id.as_hyphenated().to_string().as_bytes());
         ret.push(b':');
-        ret.extend_from_slice(self.client_id.to_string().as_bytes());
+        ret.extend_from_slice(format!("{:x}", self.client_id).as_bytes());
         ret.push(b'@');
         ret.extend_from_slice(self.domain.as_bytes());
 
