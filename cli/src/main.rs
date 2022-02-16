@@ -10,27 +10,6 @@ use core_crypto::prelude::ClientId;
 use uuid::Uuid;
 use std::io::Write;
 
-// // copied from crypto::client
-// #[derive(Debug, Clone, PartialEq, Eq)]
-// pub struct ClientId {
-//     user_id: uuid::Uuid,
-//     domain: String,
-//     client_id: u64,
-// }
-
-// impl ClientId {
-//     pub fn as_bytes(&self) -> Vec<u8> {
-//         let mut ret = vec![];
-//         ret.extend_from_slice(self.user_id.as_hyphenated().to_string().as_bytes());
-//         ret.push(b':');
-//         ret.extend_from_slice(format!("{:x}", self.client_id).as_bytes());
-//         ret.push(b'@');
-//         ret.extend_from_slice(self.domain.as_bytes());
-
-//         ret
-//     }
-// }
-
 fn main() {
     let backend = OpenMlsRustCrypto::default();
     let ciphersuite_name = CiphersuiteName::default();
