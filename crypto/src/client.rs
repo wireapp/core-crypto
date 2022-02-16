@@ -76,10 +76,10 @@ impl std::str::FromStr for ClientId {
             .ok_or_else(|| CryptoError::MalformedIdentifier(s.to_string()))?
             .parse()?;
 
-        let client_id = iter_uid
+        let client_id_str = iter_uid
             .next()
-            .ok_or_else(|| CryptoError::MalformedIdentifier(s.to_string()))?
-            .parse()?;
+            .ok_or_else(|| CryptoError::MalformedIdentifier(s.to_string()))?;
+        let client_id = u64::from_str_radix(client_id_str, 16)?;
 
         Ok(Self {
             user_id,
