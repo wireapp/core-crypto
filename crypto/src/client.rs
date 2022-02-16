@@ -271,7 +271,7 @@ impl Client {
         let user_uuid = uuid::Uuid::new_v4();
         let client_id = rand::random::<usize>();
         Self::generate(
-            format!("{}:{client_id}@members.wire.com", user_uuid.hyphenated()).parse()?,
+            format!("{}:{client_id:x}@members.wire.com", user_uuid.hyphenated()).parse()?,
             &backend,
         )
     }

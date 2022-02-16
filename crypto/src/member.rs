@@ -97,7 +97,7 @@ impl Eq for ConversationMember {}
 impl ConversationMember {
     pub fn random_generate(backend: &MlsCryptoProvider) -> CryptoResult<Self> {
         let uuid = uuid::Uuid::new_v4();
-        let id: ClientId = format!("{}:{}@members.wire.com", uuid.hyphenated(), rand::random::<usize>()).parse()?;
+        let id: ClientId = format!("{}:{:x}@members.wire.com", uuid.hyphenated(), rand::random::<usize>()).parse()?;
         let mut client = Client::generate(id.clone(), backend)?;
         client.gen_keypackage(backend)?;
 
