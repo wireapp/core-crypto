@@ -4,14 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-openmls = { git = "https://github.com/openmls/openmls" }
-openmls_rust_crypto = { git = "https://github.com/openmls/openmls" }
-openmls_traits = { git = "https://github.com/openmls/openmls" }
+openmls = "0.4.0-pre"
+openmls_traits = "0.1.0-pre"
+openmls_rust_crypto = "0.1.0-pre"
 
 uuid = "1.0.0-alpha"
-
-[workspace]
-
-[patch.crates-io]
-openmls_rust_crypto = { git = "https://github.com/openmls/openmls" }
-openmls_traits = { git = "https://github.com/openmls/openmls" }
