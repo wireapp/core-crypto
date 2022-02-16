@@ -1,5 +1,5 @@
 [workspace]
-members = ["crypto", "crypto-ffi", "keystore", "mls-provider"]
+members = ["crypto", "crypto-ffi", "keystore", "mls-provider", "cli"]
 exclude = ["anycrypto", "core-ds"]
 
 [patch.crates-io.proteus]
