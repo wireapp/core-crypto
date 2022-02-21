@@ -1,4 +1,4 @@
-# Litz - Wire CoreCrypto
+Wire CoreCrypto
 
 [![Wire logo](https://github.com/wireapp/wire/blob/master/assets/header-small.png?raw=true)](https://wire.com/jobs/)
 
@@ -19,7 +19,3 @@ No license is granted to the Wire trademark and its associated logos, all of whi
 ## Usage
 
 Pre-pre-pre-Alpha WIP - API docs far from ready
-
-## Why Litz
-
-Named after [Litz Wires](https://en.wikipedia.org/wiki/Litz_wire)
