@@ -1,3 +1,3 @@
-# core-crypto-keystore
+# Wire Core-Crypto Keystore
 
-To document
+

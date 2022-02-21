@@ -51,10 +51,11 @@ CoreCrypto:
             ☐ Conversation management
         ☐ Bindings
             ☐ Swift
-                ☐ Compile
+                ✔ Compile @done (22-02-21 10:55)
                 ✔ Produce @done (22-01-25 18:19)
                 ☐ Test
-                ☐ Package in a XCFramework?
+                ✔ Package in a XCFramework @done (22-02-21 10:55)
+                ☐ Package in a Swift package
             ☐ Kotlin
                 ✔ Compile @done (22-01-28 10:42)
                 ✔ Produce @done (22-01-25 18:19)

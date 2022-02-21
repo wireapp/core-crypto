@@ -1,3 +1,19 @@
+// Wire
+// Copyright (C) 2022 Wire Swiss GmbH
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see http://www.gnu.org/licenses/.
+
 mod error;
 pub use error::*;
 
@@ -39,7 +55,7 @@ impl CryptoKeystore {
 
         // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
         #[cfg(feature = "ios-wal-compat")]
-        Self::handle_ios_wal_compat(&conn)?; //, &path, key)?;
+        Self::handle_ios_wal_compat(&conn)?;
 
         // Enable WAL journaling mode
         conn.pragma_update(None, "journal_mode", "wal")?;
@@ -62,11 +78,7 @@ impl CryptoKeystore {
     /// when doing background work
     /// See more: https://github.com/sqlcipher/sqlcipher/issues/255
     #[cfg(feature = "ios-wal-compat")]
-    fn handle_ios_wal_compat(
-        conn: &rusqlite::Connection,
-        // db_path: &String,
-        // key: K,
-    ) -> CryptoKeystoreResult<()> {
+    fn handle_ios_wal_compat(conn: &rusqlite::Connection) -> CryptoKeystoreResult<()> {
         const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
         match security_framework::passwords::get_generic_password("wire.com", "keystore_salt") {
             Ok(salt) => {
@@ -80,30 +92,8 @@ impl CryptoKeystore {
             }
             Err(e) => return Err(e.into()),
         }
-        // TODO: Refactor this and store the salt in the iOS keychain instead
-        // use aes::{BlockDecrypt as _, BlockEncrypt as _, NewBlockCipher as _};
-        // use std::io::Read as _;
 
         const CIPHER_PLAINTEXT_BYTES: u32 = 32;
-        // let mut cipher_key = [0u8; 32];
-        // cipher_key[..std::cmp::min(key.as_ref().len(), 32)].copy_from_slice(key.as_ref().as_bytes());
-        // let cipher = aes::Aes256::new(&cipher_key.into());
-
-        // let salt_path = std::path::Path::new(db_path).with_extension("edb-salt");
-        // if salt_path.is_file() {
-        //     let mut salt_file = std::fs::File::open(salt_path)?;
-        //     let mut buf = [0u8; 16];
-        //     salt_file.read_exact(&mut buf)?;
-        //     cipher.decrypt_block(aes::Block::from_mut_slice(&mut buf));
-        //     conn.pragma_update(None, "cipher_salt", format!("x'{}'", hex::encode(buf)))?;
-        // } else {
-        //     let salt = conn.pragma_query_value(None, "cipher_salt", |r| r.get::<_, String>(0))?;
-        //     let mut bytes = [0u8; 16];
-        //     hex::decode_to_slice(salt, &mut bytes)?;
-        //     cipher.encrypt_block(aes::Block::from_mut_slice(&mut bytes));
-        //     std::fs::write(salt_path, bytes.as_slice())?;
-        // }
-
         conn.pragma_update(None, "cipher_plaintext_header_size", CIPHER_PLAINTEXT_BYTES)?;
         conn.pragma_update(None, "user_version", 1u32)?;
 
@@ -146,8 +136,11 @@ impl CryptoKeystore {
             .conn
             .into_inner()
             .map_err(|_| error::CryptoKeystoreError::LockPoisonError)?;
+
         conn.close().map_err(|(_, e)| e)?;
+
         std::fs::remove_file(&self.path)?;
+
         Ok(())
     }
 }
