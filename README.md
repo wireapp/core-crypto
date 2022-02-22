@@ -13,8 +13,9 @@ No license is granted to the Wire trademark and its associated logos, all of whi
 ## Parts
 
 * CoreCrypto: Abstracts MLS & Proteus in a unified API
-* Keystore: Encrypted Keystore powered by SQLite + SQLCipher
-* MlsProvider: RustCryto + Keystore MLS crypto provider
+* CoreCryptoFFI: FFI bindings for iOS, Android and WASM
+* Keystore: Encrypted Keystore powered by SQLCipher
+* MlsProvider: RustCrypto + Keystore MLS provider
 
 ## Usage
 
