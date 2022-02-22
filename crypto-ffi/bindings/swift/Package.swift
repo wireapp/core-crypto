@@ -1,4 +1,5 @@
 // swift-tools-version:5.5
+
 import PackageDescription
 
 let package = Package(
@@ -14,7 +15,7 @@ let package = Package(
         .target(
             name: "CoreCrypto",
             dependencies: ["CoreCryptoFramework"],
-            cSettings: [.headerSearchPath("include")]
+            cSettings: [.headerSearchPath("./include")]
         ),
         .binaryTarget(
             name: "CoreCryptoFramework",
