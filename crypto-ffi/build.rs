@@ -23,10 +23,21 @@ fn main() {
     uniffi_bindgen::generate_bindings(UDL_FILE, None, vec!["kotlin"], Some("./bindings/kt/"), false).unwrap();
     #[cfg(feature = "mobile")]
     uniffi_bindgen::generate_bindings(UDL_FILE, None, vec!["swift"], Some("./bindings/swift/include"), false).unwrap();
-    #[cfg(feature = "mobile")]
-    std::fs::rename(
-        "./bindings/swift/include/CoreCrypto.swift",
-        "./bindings/swift/Sources/CoreCrypto/CoreCrypto.swift",
-    )
-    .unwrap();
+    if cfg!(feature = "mobile") {
+        std::fs::rename(
+            "./bindings/swift/include/CoreCrypto.swift",
+            "./bindings/swift/Sources/CoreCrypto/CoreCrypto.swift",
+        )
+        .unwrap();
+
+        std::fs::copy(
+            "./bindings/swift/include/core_cryptoFFI.h",
+            "./bindings/swift/Headers/core_cryptoFFI.h",
+        ).unwrap();
+
+        std::fs::copy(
+            "./bindings/swift/include/core_cryptoFFI.modulemap",
+            "./bindings/swift/Modules/core_cryptoFFI.modulemap",
+        ).unwrap();
+    }
 }

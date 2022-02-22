@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.5
 import PackageDescription
 
 let package = Package(
@@ -7,17 +7,22 @@ let package = Package(
     products: [
         .library(
             name: "CoreCrypto",
-            targets: ["CoreCrypto"]
+            targets: ["CoreCrypto", "CoreCryptoFramework"]
         )
     ],
     targets: [
-        .binaryTarget(
+        .target(
             name: "CoreCrypto",
-            path: "out/CoreCrypto.xcframework"
+            dependencies: ["CoreCryptoFramework"],
+            cSettings: [.headerSearchPath("include")]
+        ),
+        .binaryTarget(
+            name: "CoreCryptoFramework",
+            path: "./out/CoreCrypto.xcframework"
         ),
         .testTarget(
             name: "CoreCryptoTests",
             dependencies: ["CoreCrypto"]
-        ),
+        )
     ]
 )

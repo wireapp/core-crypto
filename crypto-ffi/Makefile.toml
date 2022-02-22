@@ -73,6 +73,8 @@ dependencies = ["ios-simulator-internal"]
 script = '''
     cd bindings/swift
 
+    rm -rf ./out/CoreCrypto.xcframework
+
     cp ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a ./out/libcore_crypto_ffi_iossimulator.a
     xcodebuild -create-xcframework \
         -library ../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a \
@@ -85,17 +87,19 @@ script = '''
 '''
 
 [tasks.call-swiftc]
-private = true
+private = false
 command = "swiftc"
 args = [
     "-module-name", "CoreCrypto",
     "-emit-library", "-o", "./bindings/swift/out/CoreCrypto.dylib",
     "-emit-module", "-emit-module-path", "./bindings/swift/out/CoreCrypto",
     "-parse-as-library",
-    "-L", "../target/debug",
+    "-L", "../target/aarch64-apple-ios/release",
     "-lcore_crypto_ffi",
-    "-Xcc", "-fmodule-map-file=bindings/swift/cryptoFFI.modulemap",
-    "bindings/swift/CoreCrypto.swift",
+    "-L", "../target/x86_64-apple-ios/release",
+    "-lcore_crypto_ffi",
+    "-Xcc", "-fmodule-map-file=./bindings/swift/include/core_cryptoFFI.modulemap",
+    "./bindings/swift/Sources/CoreCrypto/CoreCrypto.swift",
 ]
 
 [tasks.ios]
