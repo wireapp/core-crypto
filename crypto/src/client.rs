@@ -19,7 +19,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
     credentials::CredentialBundle,
     extensions::{Extension, ExternalKeyIdExtension},
-    prelude::{KeyPackageBundle, TlsSerializeTrait},
+    prelude::{KeyPackage, KeyPackageBundle, TlsSerializeTrait},
 };
 use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider};
 
@@ -205,7 +205,7 @@ impl Client {
         }
     }
 
-    pub(crate) fn gen_keypackage(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+    pub fn gen_keypackage(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<&KeyPackage> {
         let kpb = KeyPackageBundle::new(
             &[*self.ciphersuite],
             &self.credentials,
@@ -228,7 +228,7 @@ impl Client {
             .map_err(eyre::Report::msg)?;
 
         self.keypackage_bundles.push(kpb);
-        Ok(())
+        Ok(self.keypackage_bundles.last().unwrap().key_package())
     }
 
     /// Requests `count` keying material to be present and returns

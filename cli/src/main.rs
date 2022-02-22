@@ -1,45 +1,27 @@
-use openmls::{
-    ciphersuite::{ciphersuites::CiphersuiteName, Ciphersuite},
-    credentials::{CredentialBundle, CredentialType},
-    key_packages::KeyPackageBundle,
-};
-use openmls_rust_crypto::{OpenMlsRustCrypto};
 use openmls::prelude::{TlsSerializeTrait};
-use core_crypto::prelude::ClientId;
+use core_crypto::prelude::*;
+use mls_crypto_provider::*;
 
 use clap::{Parser, Subcommand};
 use std::io::Write;
 
-fn key_package(client_id: &ClientId) {
-    let backend = OpenMlsRustCrypto::default();
-    let ciphersuite_name = CiphersuiteName::default();
-    let ciphersuite = Ciphersuite::new(ciphersuite_name).unwrap();
-
-    let credentials = CredentialBundle::new(
-        client_id.as_bytes(),
-        CredentialType::Basic,
-        ciphersuite.signature_scheme(),
-        &backend,
-    ).unwrap();
-
-    let kps = KeyPackageBundle::new(
-        &[ciphersuite_name],
-        &credentials,
-        &backend,
-        vec![]
-    ).unwrap();
-
-    let kp = kps.key_package();
+fn key_package(path: &String, enc_key: &String, client_id: ClientId) {
+    let backend = MlsCryptoProvider::try_new(path, enc_key).unwrap();
+    let mut client = Client::init(client_id, &backend).unwrap();
+    let kp = client.gen_keypackage(&backend).unwrap();
     let mut kp_bytes = Vec::new();
     kp.tls_serialize(&mut kp_bytes).unwrap();
     std::io::stdout().write_all(&kp_bytes).unwrap();
 }
 
-
 #[derive(Parser)]
 #[derive(Debug)]
 #[clap(name = "crypto-cli")]
 struct Cli {
+    #[clap(short, long)]
+    store: String,
+    #[clap(short, long)]
+    enc_key: String,
     #[clap(subcommand)]
     command: Command,
 }
@@ -52,13 +34,10 @@ enum Command {
     },
 }
 
-fn execute(cmd: &Command) {
-    match cmd {
-        Command::KeyPackage { client_id } => key_package(client_id),
-    }
-}
 
 fn main() {
     let cli = Cli::parse();
-    execute(&cli.command);
+    match cli.command {
+        Command::KeyPackage { client_id } => key_package(&cli.store, &cli.enc_key, client_id),
+    }
 }
