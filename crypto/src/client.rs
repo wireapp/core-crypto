@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::{prelude::MemberId, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
     credentials::CredentialBundle,
@@ -21,8 +22,6 @@ use openmls::{
     prelude::{KeyPackageBundle, TlsSerializeTrait},
 };
 use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider};
-
-use crate::{prelude::MemberId, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
 
 pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 
@@ -103,6 +102,14 @@ pub struct Client {
     ciphersuite: MlsCiphersuite,
 }
 
+fn identity_key(credentials: &CredentialBundle) -> Result<Vec<u8>, MlsError> {
+    credentials
+        .credential()
+        .signature_key()
+        .tls_serialize_detached()
+        .map_err(MlsError::from)
+}
+
 impl Client {
     pub fn init(id: ClientId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
         let id_str = id.to_string();
@@ -119,7 +126,7 @@ impl Client {
         if generated {
             backend
                 .key_store()
-                .save_mls_identity_signature(&id_str, client.credentials.credential().signature_key().as_slice())?;
+                .save_mls_identity_signature(&id_str, &identity_key(&client.credentials)?)?
         }
 
         Ok(client)
@@ -141,14 +148,7 @@ impl Client {
         // FIXME: i.e. there's no way to tell between outside public keys & own keypackages
         backend
             .key_store()
-            .store(
-                &credentials
-                    .credential()
-                    .signature_key()
-                    .tls_serialize_detached()
-                    .map_err(eyre::Report::msg)?,
-                &credentials,
-            )
+            .store(&identity_key(&credentials)?, &credentials)
             .map_err(eyre::Report::msg)?;
 
         let mut client = Self {
