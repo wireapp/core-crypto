@@ -51,7 +51,14 @@ command = "cargo"
 args = ["build", "--target", "aarch64-apple-ios-sim", "--features", "mobile", "--release"]
 
 [tasks.ios]
-dependencies = ["ios-device", "ios-simulator-x86"       ]
+dependencies = ["ios-device", "ios-simulator-x86"]
+
+[tasks.ios-test-sim-build]
+script = '''
+    cd bindings/swift
+
+    xcodebuild -scheme CoreCryptoSwift -destination "platform=iOS Simulator,OS=15.2,name=iPhone 8"
+'''
 
 [tasks.create-framework]
 script = '''
