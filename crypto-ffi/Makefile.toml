@@ -38,36 +38,20 @@ args = ["run", "nightly", "xargo", "build", "-Zbuild-std", "--target", "wasm32-u
 [tasks.ios-env]
 plugin = "detect-release"
 
-[tasks.ios-device-internal]
-private = true
-command = "cargo"
-args = ["build", "--target", "aarch64-apple-ios", "--features", "mobile", "${@}"]
-# dependencies = ["ios-env"]
-
 [tasks.ios-device]
-dependencies = ["ios-device-internal"]
-# run_task = "call-swiftc"
-
-[tasks.ios-simulator-internal]
-private = true
 command = "cargo"
-args = ["build", "--target", "x86_64-apple-ios", "--features", "mobile", "${@}"]
-# dependencies = ["ios-env"]
+args = ["build", "--target", "aarch64-apple-ios", "--features", "mobile", "--release"]
 
-[tasks.ios-simulator]
-dependencies = ["ios-simulator-internal"]
-# run_task = "create-framework"
-# run_task = "call-swiftc"
+[tasks.ios-simulator-x86]
+command = "cargo"
+args = ["build", "--target", "x86_64-apple-ios", "--features", "mobile", "--release"]
 
-# [tasks.ios-simulator-arm-internal]
-# private = true
-# command = "cargo"
-# args = ["build", "--target", "aarch64-apple-ios-sim", "--features", "mobile", "${@}"]
-# dependencies = ["ios-env"]
+[tasks.ios-simulator-arm]
+command = "cargo"
+args = ["build", "--target", "aarch64-apple-ios-sim", "--features", "mobile", "--release"]
 
-# [tasks.ios-simulator-arm]
-# dependencies = ["ios-simulator-arm-internal"]
-# run_task = "call-swiftc"
+[tasks.ios]
+dependencies = ["ios-device", "ios-simulator-x86"       ]
 
 [tasks.create-framework]
 script = '''
@@ -75,7 +59,13 @@ script = '''
 
     rm -rf ./out/CoreCrypto.xcframework
 
-    cp ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a ./out/libcore_crypto_ffi_iossimulator.a
+    #lipo -create -output ./out/libcore_crypto_ffi_iossimulator.a \
+    #    ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a
+    #    ../../../target/aarch64-apple-ios-sim/release/libcore_crypto_ffi.a     
+
+    lipo -create -output ./out/libcore_crypto_ffi_iossimulator.a \
+        ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a
+
     xcodebuild -create-xcframework \
         -library ../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a \
         -headers ./include \
@@ -85,25 +75,7 @@ script = '''
 
     rm ./out/libcore_crypto_ffi_iossimulator.a
 '''
-
-[tasks.call-swiftc]
-private = false
-command = "swiftc"
-args = [
-    "-module-name", "CoreCrypto",
-    "-emit-library", "-o", "./bindings/swift/out/CoreCrypto.dylib",
-    "-emit-module", "-emit-module-path", "./bindings/swift/out/CoreCrypto",
-    "-parse-as-library",
-    "-L", "../target/aarch64-apple-ios/release",
-    "-lcore_crypto_ffi",
-    "-L", "../target/x86_64-apple-ios/release",
-    "-lcore_crypto_ffi",
-    "-Xcc", "-fmodule-map-file=./bindings/swift/include/core_cryptoFFI.modulemap",
-    "./bindings/swift/Sources/CoreCrypto/CoreCrypto.swift",
-]
-
-[tasks.ios]
-dependencies = ["ios-device", "ios-simulator"]
+dependencies = ["ios"]
 
 ################################### Android ###################################
 

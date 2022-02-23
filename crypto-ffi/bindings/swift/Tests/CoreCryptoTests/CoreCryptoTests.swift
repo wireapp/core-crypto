@@ -1,8 +1,8 @@
 import XCTest
-@testable import CoreCrypto
+@testable import CoreCryptoSwift
 
 class CoreCryptoTests: XCTestCase {
     func testVersion() throws {
-        XCTAssertEqual(CoreCrypto.version(), "0.1.0")
+        XCTAssertEqual(CoreCryptoSwift.version(), "0.1.0")
     }
 }

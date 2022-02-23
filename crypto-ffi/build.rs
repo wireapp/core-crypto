@@ -26,18 +26,8 @@ fn main() {
     if cfg!(feature = "mobile") {
         std::fs::rename(
             "./bindings/swift/include/CoreCrypto.swift",
-            "./bindings/swift/Sources/CoreCrypto/CoreCrypto.swift",
+            "./bindings/swift/Sources/CoreCryptoSwift/CoreCryptoSwift.swift",
         )
         .unwrap();
-
-        std::fs::copy(
-            "./bindings/swift/include/core_cryptoFFI.h",
-            "./bindings/swift/Headers/core_cryptoFFI.h",
-        ).unwrap();
-
-        std::fs::copy(
-            "./bindings/swift/include/core_cryptoFFI.modulemap",
-            "./bindings/swift/Modules/core_cryptoFFI.modulemap",
-        ).unwrap();
     }
 }
