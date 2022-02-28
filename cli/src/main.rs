@@ -11,9 +11,7 @@ use io::Read;
 fn key_package(backend: &MlsCryptoProvider, client_id: ClientId) {
     let mut client = Client::init(client_id, &backend).unwrap();
     let kp = client.gen_keypackage(&backend).unwrap();
-    let mut kp_bytes = Vec::new();
-    kp.tls_serialize(&mut kp_bytes).unwrap();
-    io::stdout().write_all(&kp_bytes).unwrap();
+    kp.tls_serialize(&mut io::stdout()).unwrap();
 }
 
 fn public_key(backend: &MlsCryptoProvider, client_id: ClientId) {
@@ -33,10 +31,16 @@ fn group(backend: &MlsCryptoProvider, client_id: ClientId, group_id: &[u8]) {
 
 fn add_member(backend: &MlsCryptoProvider, group_data: &mut dyn Read, mut kp_data: &mut dyn Read) {
     let mut group = MlsGroup::load(group_data).unwrap();
-    let mut kp = KeyPackage::tls_deserialize(&mut kp_data).unwrap();
-    let (handshake, welcome) = group
+    let kp = KeyPackage::tls_deserialize(&mut kp_data).unwrap();
+    let (handshake, _welcome) = group
         .add_members(backend, &[kp]).unwrap();
     handshake.tls_serialize(&mut io::stdout()).unwrap();
+}
+
+fn app_message(backend: &MlsCryptoProvider, group_data: &mut dyn Read, text: String) {
+    let mut group = MlsGroup::load(group_data).unwrap();
+    let message = group.create_message(backend, text.as_bytes()).unwrap();
+    message.tls_serialize(&mut io::stdout()).unwrap();
 }
 
 #[derive(Parser)]
@@ -67,6 +71,11 @@ enum Command {
     Member {
         #[clap(subcommand)]
         command: MemberCommand,
+    },
+    Message {
+        #[clap(short, long)]
+        group: String,
+        text: String,
     }
 }
 
@@ -101,5 +110,9 @@ fn main() {
             let mut kp_data = path_reader(key_package).unwrap();
             add_member(&backend, &mut group_data, &mut kp_data);
         },
+        Command::Message { group, text } => {
+            let mut group_data = path_reader(group).unwrap();
+            app_message(&backend, &mut group_data, text);
+        }
     }
 }
