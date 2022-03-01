@@ -39,7 +39,7 @@ pub struct ConversationMember {
 impl ConversationMember {
     pub fn new_raw(client_id: ClientId, kp_ser: Vec<u8>) -> CryptoResult<Self> {
         use openmls::prelude::TlsDeserializeTrait as _;
-        let kp = KeyPackage::tls_deserialize(&mut &kp_ser[..]).map_err(|e| MlsError::MlsKeyPackageError(e.into()))?;
+        let kp = KeyPackage::tls_deserialize(&mut &kp_ser[..]).map_err(MlsError::from)?;
 
         Ok(Self {
             id: client_id.clone().into(),
@@ -67,7 +67,7 @@ impl ConversationMember {
     }
 
     /// This method consumes a KeyPackageBundle for the Member, hashes it and returns the hash,
-    /// and if necessary regenerates a new keypackage for immediate use
+    /// and if is the local client, can regenerate a new keypackage for immediate use
     pub fn keypackage_hash(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
         let kp = self
             .keypackages

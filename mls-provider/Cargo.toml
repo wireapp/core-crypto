@@ -3,15 +3,14 @@ name = "mls-crypto-provider"
 version = "0.1.0"
 edition = "2018"
 license = "GPL-3.0-only"
-license-file = "LICENSE"
 
 [lib]
 name = "mls_crypto_provider"
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
-openmls_rust_crypto = "0.1.0-pre"
-openmls_traits = "0.1.0-pre"
+openmls_rust_crypto = "0.1"
+openmls_traits = "0.1"
 
 [dependencies.core-crypto-keystore]
 version = "0.1"

@@ -65,29 +65,33 @@ pub enum MlsError {
     #[error(transparent)]
     MlsWelcomeError(#[from] openmls::prelude::WelcomeError),
     #[error(transparent)]
-    MlsKeyPackageError(#[from] openmls::key_packages::KeyPackageError),
+    MlsLibraryError(#[from] openmls::error::LibraryError),
     #[error(transparent)]
-    MlsConfigError(#[from] openmls::config::ConfigError),
-    // #[error(transparent)]
-    // MlsValidationError(#[from] openmls::prelude::ValidationError),
-    // #[error(transparent)]
-    // MlsVerificationError(#[from] openmls::prelude::VerificationError),
-    #[error(transparent)]
-    MlsInvalidMessageError(#[from] openmls::prelude::InvalidMessageError),
+    MlsInvalidMessageError(#[from] openmls::prelude::CreateMessageError),
     #[error(transparent)]
     MlsEmptyInputError(#[from] openmls::prelude::EmptyInputError),
     #[error(transparent)]
     MlsCredentialError(#[from] openmls::prelude::CredentialError),
-    // #[error(transparent)]
-    // MlsMessageError(#[from] openmls::prelude::MlsMessageError),
     #[error(transparent)]
-    MlsGroupError(#[from] openmls::prelude::MlsGroupError),
+    MlsNewGroupError(#[from] openmls::prelude::NewGroupError),
     #[error(transparent)]
-    MlsCoreGroupError(#[from] openmls::prelude::CoreGroupError),
-    // #[error(transparent)]
-    // MlsCiphertextError(#[from] openmls::prelude::MlsCiphertextError),
-    // #[error(transparent)]
-    // MlsPlaintextError(#[from] openmls::prelude::MlsPlaintextError),
+    MlsLeaveGroupError(#[from] openmls::prelude::LeaveGroupError),
+    #[error(transparent)]
+    MlsAddMembersError(#[from] openmls::prelude::AddMembersError),
+    #[error(transparent)]
+    MlsUnverifiedMessageError(#[from] openmls::prelude::UnverifiedMessageError),
+    #[error(transparent)]
+    MlsParseMessageError(#[from] openmls::prelude::ParseMessageError),
+    #[error(transparent)]
+    MlsKeyPackageBundleNewError(#[from] openmls::prelude::KeyPackageBundleNewError),
+    #[error(transparent)]
+    MlsSelfUpdateError(#[from] openmls::prelude::SelfUpdateError),
+    #[error(transparent)]
+    MlsMlsGroupStateError(#[from] openmls::prelude::MlsGroupStateError),
+    #[error(transparent)]
+    MlsMessageError(#[from] openmls::framing::errors::MlsMessageError),
+    #[error(transparent)]
+    MlsTlsCodecError(#[from] tls_codec::Error),
     #[error(transparent)]
     MlsErrorString(#[from] openmls::error::ErrorString),
 }

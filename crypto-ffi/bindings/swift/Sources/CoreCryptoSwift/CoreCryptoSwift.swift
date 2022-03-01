@@ -19,13 +19,13 @@ fileprivate extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_CoreCrypto_174_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_CoreCrypto_aef3_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_CoreCrypto_174_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_CoreCrypto_aef3_rustbuffer_free(self, $0) }
     }
 }
 
@@ -387,13 +387,13 @@ fileprivate enum FfiConverterDictionary {
 
 public enum CiphersuiteName {
     
-    case mls10128Dhkemx25519Aes128gcmSha256Ed25519
-    case mls10128Dhkemp256Aes128gcmSha256P256
-    case mls10128Dhkemx25519Chacha20poly1305Sha256Ed25519
-    case mls10256Dhkemx448Aes256gcmSha512Ed448
-    case mls10256Dhkemp521Aes256gcmSha512P521
-    case mls10256Dhkemx448Chacha20poly1305Sha512Ed448
-    case mls10256Dhkemp384Aes256gcmSha384P384
+    case mls128Dhkemx25519Aes128gcmSha256Ed25519
+    case mls128Dhkemp256Aes128gcmSha256P256
+    case mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
+    case mls256Dhkemx448Aes256gcmSha512Ed448
+    case mls256Dhkemp521Aes256gcmSha512P521
+    case mls256Dhkemx448Chacha20poly1305Sha512Ed448
+    case mls256Dhkemp384Aes256gcmSha384P384
 }
 
 extension CiphersuiteName: ViaFfiUsingByteBuffer, ViaFfi {
@@ -401,13 +401,13 @@ extension CiphersuiteName: ViaFfiUsingByteBuffer, ViaFfi {
         let variant: Int32 = try buf.readInt()
         switch variant {
         
-        case 1: return .mls10128Dhkemx25519Aes128gcmSha256Ed25519
-        case 2: return .mls10128Dhkemp256Aes128gcmSha256P256
-        case 3: return .mls10128Dhkemx25519Chacha20poly1305Sha256Ed25519
-        case 4: return .mls10256Dhkemx448Aes256gcmSha512Ed448
-        case 5: return .mls10256Dhkemp521Aes256gcmSha512P521
-        case 6: return .mls10256Dhkemx448Chacha20poly1305Sha512Ed448
-        case 7: return .mls10256Dhkemp384Aes256gcmSha384P384
+        case 1: return .mls128Dhkemx25519Aes128gcmSha256Ed25519
+        case 2: return .mls128Dhkemp256Aes128gcmSha256P256
+        case 3: return .mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
+        case 4: return .mls256Dhkemx448Aes256gcmSha512Ed448
+        case 5: return .mls256Dhkemp521Aes256gcmSha512P521
+        case 6: return .mls256Dhkemx448Chacha20poly1305Sha512Ed448
+        case 7: return .mls256Dhkemp384Aes256gcmSha384P384
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
@@ -416,31 +416,31 @@ extension CiphersuiteName: ViaFfiUsingByteBuffer, ViaFfi {
         switch self {
         
         
-        case .mls10128Dhkemx25519Aes128gcmSha256Ed25519:
+        case .mls128Dhkemx25519Aes128gcmSha256Ed25519:
             buf.writeInt(Int32(1))
         
         
-        case .mls10128Dhkemp256Aes128gcmSha256P256:
+        case .mls128Dhkemp256Aes128gcmSha256P256:
             buf.writeInt(Int32(2))
         
         
-        case .mls10128Dhkemx25519Chacha20poly1305Sha256Ed25519:
+        case .mls128Dhkemx25519Chacha20poly1305Sha256Ed25519:
             buf.writeInt(Int32(3))
         
         
-        case .mls10256Dhkemx448Aes256gcmSha512Ed448:
+        case .mls256Dhkemx448Aes256gcmSha512Ed448:
             buf.writeInt(Int32(4))
         
         
-        case .mls10256Dhkemp521Aes256gcmSha512P521:
+        case .mls256Dhkemp521Aes256gcmSha512P521:
             buf.writeInt(Int32(5))
         
         
-        case .mls10256Dhkemx448Chacha20poly1305Sha512Ed448:
+        case .mls256Dhkemx448Chacha20poly1305Sha512Ed448:
             buf.writeInt(Int32(6))
         
         
-        case .mls10256Dhkemp384Aes256gcmSha384P384:
+        case .mls256Dhkemp384Aes256gcmSha384P384:
             buf.writeInt(Int32(7))
         
         }
@@ -458,7 +458,7 @@ public func initWithPathAndKey( path: String,  key: String,  clientId: String ) 
     
     rustCallWithError(CryptoError.self) {
     
-    CoreCrypto_174_init_with_path_and_key(path.lower(), key.lower(), clientId.lower() , $0)
+    CoreCrypto_aef3_init_with_path_and_key(path.lower(), key.lower(), clientId.lower() , $0)
 }
     return try CoreCrypto.lift(_retval)
 }
@@ -471,7 +471,7 @@ public func version()  -> String {
     
     rustCall() {
     
-    CoreCrypto_174_version( $0)
+    CoreCrypto_aef3_version( $0)
 }
     return try! String.lift(_retval)
 }
@@ -500,12 +500,12 @@ public class CoreCrypto: CoreCryptoProtocol {
     
     rustCallWithError(CryptoError.self) {
     
-    CoreCrypto_174_CoreCrypto_new(path.lower(), key.lower(), clientId.lower() , $0)
+    CoreCrypto_aef3_CoreCrypto_new(path.lower(), key.lower(), clientId.lower() , $0)
 })
     }
 
     deinit {
-        try! rustCall { ffi_CoreCrypto_174_CoreCrypto_object_free(pointer, $0) }
+        try! rustCall { ffi_CoreCrypto_aef3_CoreCrypto_object_free(pointer, $0) }
     }
 
     
@@ -515,7 +515,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         let _retval = try
     rustCallWithError(CryptoError.self) {
     
-    CoreCrypto_174_CoreCrypto_create_conversation(self.pointer, FfiConverterTypeConversationId.lower(conversationId), config.lower() , $0
+    CoreCrypto_aef3_CoreCrypto_create_conversation(self.pointer, FfiConverterTypeConversationId.lower(conversationId), config.lower() , $0
     )
 }
         return try FfiConverterOptionRecordConversationCreationMessage.lift(_retval)
@@ -524,7 +524,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         let _retval = try
     rustCallWithError(CryptoError.self) {
     
-    CoreCrypto_174_CoreCrypto_decrypt_message(self.pointer, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUInt8.lower(payload) , $0
+    CoreCrypto_aef3_CoreCrypto_decrypt_message(self.pointer, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUInt8.lower(payload) , $0
     )
 }
         return try FfiConverterOptionSequenceUInt8.lift(_retval)
@@ -533,7 +533,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         let _retval = try
     rustCallWithError(CryptoError.self) {
     
-    CoreCrypto_174_CoreCrypto_encrypt_message(self.pointer, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUInt8.lower(message) , $0
+    CoreCrypto_aef3_CoreCrypto_encrypt_message(self.pointer, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUInt8.lower(message) , $0
     )
 }
         return try FfiConverterSequenceUInt8.lift(_retval)

@@ -43,7 +43,7 @@ open class RustBuffer : Structure() {
 
     companion object {
         internal fun alloc(size: Int = 0) = rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_174_rustbuffer_alloc(size, status).also {
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_aef3_rustbuffer_alloc(size, status).also {
                 if(it.data == null) {
                    throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=${size})")
                }
@@ -51,11 +51,11 @@ open class RustBuffer : Structure() {
         }
 
         internal fun free(buf: RustBuffer.ByValue) = rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_174_rustbuffer_free(buf, status)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_aef3_rustbuffer_free(buf, status)
         }
 
         internal fun reserve(buf: RustBuffer.ByValue, additional: Int) = rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_174_rustbuffer_reserve(buf, additional, status)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_aef3_rustbuffer_reserve(buf, additional, status)
         }
     }
 
@@ -322,47 +322,47 @@ internal interface _UniFFILib : Library {
         }
     }
 
-    fun ffi_CoreCrypto_174_CoreCrypto_object_free(ptr: Pointer,
+    fun ffi_CoreCrypto_aef3_CoreCrypto_object_free(ptr: Pointer,
     _uniffi_out_err: RustCallStatus
     ): Unit
 
-    fun CoreCrypto_174_CoreCrypto_new(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
+    fun CoreCrypto_aef3_CoreCrypto_new(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): Pointer
 
-    fun CoreCrypto_174_CoreCrypto_create_conversation(ptr: Pointer,conversation_id: RustBuffer.ByValue,config: RustBuffer.ByValue,
+    fun CoreCrypto_aef3_CoreCrypto_create_conversation(ptr: Pointer,conversation_id: RustBuffer.ByValue,config: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_174_CoreCrypto_decrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,payload: RustBuffer.ByValue,
+    fun CoreCrypto_aef3_CoreCrypto_decrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,payload: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_174_CoreCrypto_encrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,message: RustBuffer.ByValue,
+    fun CoreCrypto_aef3_CoreCrypto_encrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,message: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_174_init_with_path_and_key(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
+    fun CoreCrypto_aef3_init_with_path_and_key(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): Pointer
 
-    fun CoreCrypto_174_version(
+    fun CoreCrypto_aef3_version(
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun ffi_CoreCrypto_174_rustbuffer_alloc(size: Int,
+    fun ffi_CoreCrypto_aef3_rustbuffer_alloc(size: Int,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun ffi_CoreCrypto_174_rustbuffer_from_bytes(bytes: ForeignBytes.ByValue,
+    fun ffi_CoreCrypto_aef3_rustbuffer_from_bytes(bytes: ForeignBytes.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun ffi_CoreCrypto_174_rustbuffer_free(buf: RustBuffer.ByValue,
+    fun ffi_CoreCrypto_aef3_rustbuffer_free(buf: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): Unit
 
-    fun ffi_CoreCrypto_174_rustbuffer_reserve(buf: RustBuffer.ByValue,additional: Int,
+    fun ffi_CoreCrypto_aef3_rustbuffer_reserve(buf: RustBuffer.ByValue,additional: Int,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
@@ -536,7 +536,7 @@ abstract class FFIObject(
 
 
 enum class CiphersuiteName {
-    MLS10_128_DHKEMX25519_AES128GCM_SHA256_ED25519,MLS10_128_DHKEMP256_AES128GCM_SHA256_P256,MLS10_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519,MLS10_256_DHKEMX448_AES256GCM_SHA512_ED448,MLS10_256_DHKEMP521_AES256GCM_SHA512_P521,MLS10_256_DHKEMX448_CHACHA20POLY1305_SHA512_ED448,MLS10_256_DHKEMP384_AES256GCM_SHA384_P384;
+    MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,MLS_128_DHKEMP256_AES128GCM_SHA256_P256,MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519,MLS_256_DHKEMX448_AES256GCM_SHA512_ED448,MLS_256_DHKEMP521_AES256GCM_SHA512_P521,MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_ED448,MLS_256_DHKEMP384_AES256GCM_SHA384_P384;
 }
 
 internal object FfiConverterTypeCiphersuiteName {
@@ -566,7 +566,7 @@ internal object FfiConverterTypeCiphersuiteName {
 fun initWithPathAndKey(path: String, key: String, clientId: String ): CoreCrypto {
     return FfiConverterTypeCoreCrypto.lift(
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_174_init_with_path_and_key(FfiConverterString.lower(path), FfiConverterString.lower(key), FfiConverterString.lower(clientId) , _status)
+    _UniFFILib.INSTANCE.CoreCrypto_aef3_init_with_path_and_key(FfiConverterString.lower(path), FfiConverterString.lower(key), FfiConverterString.lower(clientId) , _status)
 })
 }
 
@@ -575,7 +575,7 @@ fun initWithPathAndKey(path: String, key: String, clientId: String ): CoreCrypto
 fun version(): String {
     return FfiConverterString.lift(
     rustCall() { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_174_version( _status)
+    _UniFFILib.INSTANCE.CoreCrypto_aef3_version( _status)
 })
 }
 
@@ -598,7 +598,7 @@ class CoreCrypto(
     constructor(path: String, key: String, clientId: String ) :
         this(
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_174_CoreCrypto_new(FfiConverterString.lower(path), FfiConverterString.lower(key), FfiConverterString.lower(clientId) , _status)
+    _UniFFILib.INSTANCE.CoreCrypto_aef3_CoreCrypto_new(FfiConverterString.lower(path), FfiConverterString.lower(key), FfiConverterString.lower(clientId) , _status)
 })
 
     /**
@@ -611,7 +611,7 @@ class CoreCrypto(
      */
     override protected fun freeRustArcPtr() {
         rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_174_CoreCrypto_object_free(this.pointer, status)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_aef3_CoreCrypto_object_free(this.pointer, status)
         }
     }
 
@@ -619,7 +619,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun createConversation(conversationId: String, config: ConversationConfiguration ): ConversationCreationMessage? =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_174_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterTypeConversationConfiguration.lower(config) ,  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_aef3_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterTypeConversationConfiguration.lower(config) ,  _status)
 }
         }.let {
             FfiConverterOptionalTypeConversationCreationMessage.lift(it)
@@ -629,7 +629,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun decryptMessage(conversationId: String, payload: List<UByte> ): List<UByte>? =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_174_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUByte.lower(payload) ,  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_aef3_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUByte.lower(payload) ,  _status)
 }
         }.let {
             FfiConverterOptionalSequenceUByte.lift(it)
@@ -639,7 +639,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun encryptMessage(conversationId: String, message: List<UByte> ): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_174_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUByte.lower(message) ,  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_aef3_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUByte.lower(message) ,  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)

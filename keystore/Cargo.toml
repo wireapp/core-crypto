@@ -3,7 +3,6 @@ name = "core-crypto-keystore"
 version = "0.1.1"
 edition = "2021"
 license = "GPL-3.0-only"
-license-file = "LICENSE"
 
 [lib]
 name = "core_crypto_keystore"
@@ -36,7 +35,7 @@ barrel = { version = "0.7", features = ["sqlite3"] }
 hex = { version = "0.4", optional = true }
 security-framework = { version = "2.5.0-alpha", optional = true }
 
-openmls_traits = { version = "0.1.0-pre", optional = true }
+openmls_traits = { version = "0.1.0", optional = true }
 proteus = { version = "1.0", default-features = false, optional = true }
 
 [dependencies.rusqlite]
@@ -64,5 +63,5 @@ features = [
 
 [dev-dependencies]
 criterion = "0.3"
-openmls = { version = "0.4.0-pre", default-features = false }
-openmls_rust_crypto_provider = { version = "0.1.0-pre", package = "openmls_rust_crypto", default-features = false }
+openmls = { version = "0.4", default-features = false }
+openmls_rust_crypto_provider = { version = "0.1", package = "openmls_rust_crypto", default-features = false }

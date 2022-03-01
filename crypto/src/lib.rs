@@ -28,8 +28,8 @@ pub mod prelude {
     pub use crate::error::*;
     pub use crate::identifiers;
     pub use crate::member::*;
-    pub use crate::{MlsCentral, MlsCentralConfiguration};
-    pub use openmls::ciphersuite::ciphersuites::CiphersuiteName;
+    pub use crate::{MlsCentral, MlsCentralConfiguration, MlsCiphersuite};
+    pub use openmls::prelude::Ciphersuite as CiphersuiteName;
 }
 
 use client::Client;
@@ -37,6 +37,29 @@ use conversation::{ConversationId, MlsConversation, MlsConversationConfiguration
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::messages::Welcome;
 use std::collections::HashMap;
+
+#[derive(Debug, Clone)]
+pub struct MlsCiphersuite(openmls::prelude::Ciphersuite);
+
+impl Default for MlsCiphersuite {
+    fn default() -> Self {
+        Self(openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519)
+    }
+}
+
+impl From<openmls::prelude::Ciphersuite> for MlsCiphersuite {
+    fn from(value: openmls::prelude::Ciphersuite) -> Self {
+        Self(value)
+    }
+}
+
+impl std::ops::Deref for MlsCiphersuite {
+    type Target = openmls::prelude::Ciphersuite;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 #[derive(Debug, Clone, derive_builder::Builder)]
 pub struct MlsCentralConfiguration {

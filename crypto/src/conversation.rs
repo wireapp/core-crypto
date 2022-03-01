@@ -16,7 +16,6 @@
 
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
-    ciphersuite::ciphersuites::CiphersuiteName,
     framing::{MlsMessageOut, ProcessedMessage},
     group::MlsGroup,
     messages::Welcome,
@@ -26,7 +25,7 @@ use openmls::{
 use crate::{
     client::Client,
     member::{ConversationMember, MemberId},
-    CryptoError, CryptoResult, MlsError,
+    CryptoError, CryptoResult, MlsCiphersuite, MlsError,
 };
 
 // #[cfg(not(debug_assertions))]
@@ -41,9 +40,8 @@ pub struct MlsConversationConfiguration {
     #[builder(default)]
     pub admins: Vec<MemberId>,
     #[builder(default)]
-    pub ciphersuite: CiphersuiteName,
+    pub ciphersuite: MlsCiphersuite,
     // TODO: Implement the key rotation manually instead.
-    // TODO: Define if the rotation span is per X messages or per X epochs or even per X time interval
     #[builder(default)]
     pub key_rotation_span: Option<std::time::Duration>,
 }
@@ -56,10 +54,7 @@ impl MlsConversationConfiguration {
     #[inline(always)]
     pub fn openmls_default_configuration() -> openmls::group::MlsGroupConfig {
         openmls::group::MlsGroupConfig::builder()
-            .wire_format_policy(openmls::group::WireFormatPolicy::new(
-                openmls::group::OutgoingWireFormatPolicy::AlwaysCiphertext,
-                openmls::group::IncomingWireFormatPolicy::AlwaysCiphertext,
-            ))
+            .wire_format_policy(openmls::group::MIXED_PLAINTEXT_WIRE_FORMAT_POLICY)
             .max_past_epochs(3)
             .number_of_resumtion_secrets(1)
             // TODO: Choose appropriate values
@@ -94,18 +89,9 @@ impl MlsConversationCreationMessage {
     /// Order is (welcome, message)
     pub fn to_bytes_pairs(&self) -> CryptoResult<(Vec<u8>, Vec<u8>)> {
         use openmls::prelude::TlsSerializeTrait as _;
-        let welcome = self
-            .welcome
-            .tls_serialize_detached()
-            .map_err(openmls::prelude::WelcomeError::from)
-            .map_err(MlsError::from)?;
+        let welcome = self.welcome.tls_serialize_detached().map_err(MlsError::from)?;
 
-        let msg = self
-            .message
-            .to_bytes()
-            // FIXME: Remove this when it's fixed MLS-side
-            .map_err(|e| openmls::error::ErrorString::from(e.to_string()))
-            .map_err(MlsError::from)?;
+        let msg = self.message.to_bytes().map_err(MlsError::from)?;
 
         Ok((welcome, msg))
     }
@@ -183,7 +169,6 @@ impl MlsConversation {
             .read()
             .map_err(|_| CryptoError::LockPoisonError)?
             .members()
-            .map_err(MlsError::from)?
             .iter()
             .try_fold(std::collections::HashMap::new(), |mut acc, kp| -> CryptoResult<_> {
                 let credential = kp.credential();

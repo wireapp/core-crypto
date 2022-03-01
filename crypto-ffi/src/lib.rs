@@ -95,7 +95,7 @@ impl CoreCrypto {
         cfg.key_rotation_span(config.key_rotation_span);
 
         if let Some(ciphersuite) = config.ciphersuite.take() {
-            cfg.ciphersuite(ciphersuite);
+            cfg.ciphersuite(ciphersuite.into());
         }
 
         let ret = self.0.new_conversation(conversation_id, cfg.build()?)?;

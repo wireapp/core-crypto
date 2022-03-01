@@ -16,14 +16,13 @@
 
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
-    ciphersuite::{ciphersuites::CiphersuiteName, Ciphersuite},
     credentials::CredentialBundle,
     extensions::{Extension, ExternalKeyIdExtension},
     prelude::{KeyPackageBundle, TlsSerializeTrait},
 };
 use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider};
 
-use crate::{prelude::MemberId, CryptoError, CryptoResult, MlsError};
+use crate::{prelude::MemberId, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
 
 pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 
@@ -101,7 +100,7 @@ pub struct Client {
     id: ClientId,
     credentials: CredentialBundle,
     keypackage_bundles: Vec<KeyPackageBundle>,
-    ciphersuite: Ciphersuite,
+    ciphersuite: MlsCiphersuite,
 }
 
 impl Client {
@@ -127,12 +126,12 @@ impl Client {
     }
 
     pub(crate) fn generate(id: ClientId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
-        let ciphersuite = Ciphersuite::new(CiphersuiteName::default()).map_err(MlsError::from)?;
+        let ciphersuite = MlsCiphersuite::default();
         let id_bytes = id.as_bytes();
         let credentials = CredentialBundle::new(
             id_bytes,
             openmls::credentials::CredentialType::Basic,
-            ciphersuite.signature_scheme(),
+            ciphersuite.signature_algorithm(),
             backend,
         )
         .map_err(MlsError::from)?;
@@ -147,8 +146,7 @@ impl Client {
                     .credential()
                     .signature_key()
                     .tls_serialize_detached()
-                    .map_err(openmls::group::MlsGroupError::from)
-                    .map_err(MlsError::from)?,
+                    .map_err(eyre::Report::msg)?,
                 &credentials,
             )
             .map_err(eyre::Report::msg)?;
@@ -165,7 +163,7 @@ impl Client {
     }
 
     pub(crate) fn load(id: ClientId, signature_public_key: &[u8], backend: &MlsCryptoProvider) -> CryptoResult<Self> {
-        let ciphersuite = Ciphersuite::new(CiphersuiteName::default()).map_err(MlsError::from)?;
+        let ciphersuite = MlsCiphersuite::default();
         let credentials: CredentialBundle = backend
             .key_store()
             .read(signature_public_key)
@@ -205,7 +203,7 @@ impl Client {
 
     pub(crate) fn gen_keypackage(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         let kpb = KeyPackageBundle::new(
-            &[self.ciphersuite.name()],
+            &[*self.ciphersuite],
             &self.credentials,
             backend,
             vec![Extension::ExternalKeyId(ExternalKeyIdExtension::new(

@@ -3,7 +3,6 @@ name = "core-crypto"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0-only"
-license-file = "LICENSE"
 
 [lib]
 name = "core_crypto"
@@ -15,8 +14,10 @@ thiserror = "1.0"
 uuid = { version = "1.0.0-alpha", features = ["v5"] }
 derive_builder = "0.10"
 
-openmls = "0.4.0-pre"
-openmls_traits = "0.1.0-pre"
+openmls = "0.4"
+openmls_traits = "0.1"
+# FIXME: This is being pulled only because of flaky error types from openmls
+tls_codec = "0.2"
 
 [dependencies.core-crypto-keystore]
 version = "0.1.0"
