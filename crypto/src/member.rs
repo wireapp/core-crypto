@@ -14,26 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use std::collections::HashMap;
+
 use crate::{
     client::{Client, ClientId},
-    CryptoError, CryptoResult, MlsError,
+    CryptoResult, MlsError,
 };
-use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::KeyPackage;
-use openmls_traits::OpenMlsCryptoProvider;
+use tls_codec::Deserialize;
 
-// #[cfg(not(debug_assertions))]
-// pub type MemberId = crate::identifiers::ZeroKnowledgeUuid;
-// #[cfg(debug_assertions)]
-pub type MemberId = crate::identifiers::QualifiedUuid;
+pub type MemberId = Vec<u8>;
 
 #[derive(Debug, Clone)]
 pub struct ConversationMember {
     id: MemberId,
-    client_ids: Vec<ClientId>,
-    keypackages: Vec<KeyPackage>,
+    clients: HashMap<ClientId, Vec<KeyPackage>>,
     #[allow(dead_code)]
-    client: Option<Client>,
+    local_client: Option<Client>,
 }
 
 impl ConversationMember {
@@ -42,19 +39,17 @@ impl ConversationMember {
         let kp = KeyPackage::tls_deserialize(&mut &kp_ser[..]).map_err(MlsError::from)?;
 
         Ok(Self {
-            id: client_id.clone().into(),
-            client_ids: vec![client_id],
-            keypackages: vec![kp],
-            client: None,
+            id: client_id.to_vec(),
+            clients: HashMap::from([(client_id, vec![kp])]),
+            local_client: None,
         })
     }
 
     pub fn new(client_id: ClientId, kp: KeyPackage) -> Self {
         Self {
-            id: client_id.clone().into(),
-            client_ids: vec![client_id],
-            keypackages: vec![kp],
-            client: None,
+            id: client_id.to_vec(),
+            clients: HashMap::from([(client_id, vec![kp])]),
+            local_client: None,
         }
     }
 
@@ -62,26 +57,22 @@ impl ConversationMember {
         &self.id
     }
 
-    pub fn clients(&self) -> &[ClientId] {
-        self.client_ids.as_slice()
+    pub fn clients(&self) -> impl std::iter::Iterator<Item = &ClientId> {
+        self.clients.keys()
     }
 
-    /// This method consumes a KeyPackageBundle for the Member, hashes it and returns the hash,
-    /// and if is the local client, can regenerate a new keypackage for immediate use
-    pub fn keypackage_hash(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
-        let kp = self
-            .keypackages
-            .pop()
-            .ok_or_else(|| CryptoError::OutOfKeyPackage(self.id.clone()))?;
-
-        Ok(kp
-            .hash_ref(backend.crypto())
-            .map(|href| href.value().to_vec())
-            .map_err(MlsError::from)?)
+    pub fn keypackages_for_all_clients(&mut self) -> HashMap<&ClientId, Option<KeyPackage>> {
+        self.clients
+            .iter_mut()
+            .map(|(client, client_kps)| (client, client_kps.pop()))
+            .collect()
     }
 
-    pub fn current_keypackage(&self) -> &KeyPackage {
-        &self.keypackages[0]
+    pub fn add_keypackage(&mut self, kp: Vec<u8>) -> CryptoResult<()> {
+        let kp = KeyPackage::tls_deserialize(&mut &kp[..]).map_err(MlsError::from)?;
+        let cid = ClientId::from(kp.credential().identity());
+        self.clients.entry(cid).or_insert_with(|| vec![]).push(kp);
+        Ok(())
     }
 }
 
@@ -95,17 +86,19 @@ impl Eq for ConversationMember {}
 
 #[cfg(test)]
 impl ConversationMember {
-    pub fn random_generate(backend: &MlsCryptoProvider) -> CryptoResult<Self> {
+    pub fn random_generate(backend: &mls_crypto_provider::MlsCryptoProvider) -> CryptoResult<Self> {
         let uuid = uuid::Uuid::new_v4();
-        let id: ClientId = format!("{}:{:x}@members.wire.com", uuid.hyphenated(), rand::random::<usize>()).parse()?;
-        let mut client = Client::generate(id.clone(), backend)?;
+        let id = format!("{}@members.wire.com", uuid.as_hyphenated()).as_bytes().to_vec();
+        let client_id: ClientId = format!("{}:{:x}@members.wire.com", uuid.hyphenated(), rand::random::<usize>())
+            .as_bytes()
+            .into();
+        let mut client = Client::generate(client_id.clone(), backend)?;
         client.gen_keypackage(backend)?;
 
         let member = Self {
-            id: id.clone().into(),
-            client_ids: vec![id],
-            keypackages: client.keypackages().into_iter().cloned().collect(),
-            client: Some(client),
+            id,
+            clients: HashMap::from([(client_id, client.keypackages(backend)?)]),
+            local_client: Some(client),
         };
 
         Ok(member)
@@ -130,8 +123,10 @@ mod tests {
     fn member_can_run_out_of_keypackage_hashes() {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
         let mut member = ConversationMember::random_generate(&backend).unwrap();
+        let client_id = member.local_client.as_ref().map(|c| c.id().clone()).unwrap();
         for _ in 0..INITIAL_KEYING_MATERIAL_COUNT * 2 {
-            assert!(member.keypackage_hash(&backend).is_ok())
+            let ckp = member.keypackages_for_all_clients();
+            assert!(ckp[&client_id].is_some())
         }
     }
 }

@@ -14,22 +14,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-#[cfg(feature = "uniffi")]
+#[cfg(feature = "mobile")]
 uniffi_macros::include_scaffolding!("CoreCrypto");
 
-#[cfg(feature = "uniffi")]
+#[cfg(feature = "mobile")]
 mod uniffi_support;
+
+use std::collections::HashMap;
 
 use core_crypto::prelude::*;
 pub use core_crypto::CryptoError;
 
 #[derive(Debug)]
-pub struct ConversationCreationMessage {
+pub struct MemberAddedMessages {
     pub welcome: Vec<u8>,
     pub message: Vec<u8>,
 }
 
-impl TryFrom<MlsConversationCreationMessage> for ConversationCreationMessage {
+impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     type Error = CryptoError;
 
     fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
@@ -42,6 +44,27 @@ impl TryFrom<MlsConversationCreationMessage> for ConversationCreationMessage {
 pub struct Invitee {
     pub id: ClientId,
     pub kp: Vec<u8>,
+}
+
+impl Invitee {
+    #[inline(always)]
+    fn group_to_conversation_member(clients: Vec<Self>) -> CryptoResult<Vec<ConversationMember>> {
+        Ok(clients
+            .into_iter()
+            .try_fold(
+                HashMap::new(),
+                |mut acc, c| -> CryptoResult<HashMap<ClientId, ConversationMember>> {
+                    if let Some(member) = acc.get_mut(&c.id) {
+                        member.add_keypackage(c.kp)?;
+                    } else {
+                        acc.insert(c.id.clone(), ConversationMember::new_raw(c.id, c.kp)?);
+                    }
+                    Ok(acc)
+                },
+            )?
+            .into_values()
+            .collect::<Vec<ConversationMember>>())
+    }
 }
 
 impl TryInto<ConversationMember> for Invitee {
@@ -58,6 +81,28 @@ pub struct ConversationConfiguration {
     pub admins: Vec<MemberId>,
     pub ciphersuite: Option<CiphersuiteName>,
     pub key_rotation_span: Option<std::time::Duration>,
+}
+
+impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
+    type Error = CryptoError;
+    fn try_into(mut self) -> CryptoResult<MlsConversationConfiguration> {
+        let mut cfg = MlsConversationConfiguration::builder();
+        let extra_members = self
+            .extra_members
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<CryptoResult<Vec<ConversationMember>>>()?;
+
+        cfg.extra_members(extra_members);
+        cfg.admins(self.admins);
+        cfg.key_rotation_span(self.key_rotation_span);
+
+        if let Some(ciphersuite) = self.ciphersuite.take() {
+            cfg.ciphersuite(ciphersuite.into());
+        }
+
+        Ok(cfg.build()?)
+    }
 }
 
 #[derive(Debug)]
@@ -78,29 +123,78 @@ impl CoreCrypto {
         Ok(CoreCrypto(central))
     }
 
+    #[cfg(feature = "mobile")]
+    pub fn set_callbacks(&self, callbacks: Box<dyn CoreCryptoCallbacks>) -> CryptoResult<()> {
+        self.0.callbacks(callbacks)
+    }
+
+    pub fn client_public_key(&self) -> CryptoResult<Vec<u8>> {
+        self.0.client_public_key()
+    }
+
+    pub fn client_keypackages(&self, amount_requested: u32) -> CryptoResult<Vec<Vec<u8>>> {
+        use core_crypto::prelude::tls_codec::Serialize as _;
+        Ok(self
+            .0
+            .client_keypackages(amount_requested as usize)?
+            .into_iter()
+            .map(|kpb| {
+                kpb.key_package()
+                    .tls_serialize_detached()
+                    .map_err(MlsError::from)
+                    .map_err(CryptoError::from)
+            })
+            .collect::<CryptoResult<Vec<Vec<u8>>>>()?)
+    }
+
     pub fn create_conversation(
         &self,
         conversation_id: ConversationId,
-        mut config: ConversationConfiguration,
-    ) -> CryptoResult<Option<ConversationCreationMessage>> {
-        let mut cfg = MlsConversationConfiguration::builder();
-        let extra_members = config
-            .extra_members
-            .into_iter()
+        config: ConversationConfiguration,
+    ) -> CryptoResult<Option<MemberAddedMessages>> {
+        Ok(self
+            .0
+            .new_conversation(conversation_id, config.try_into()?)?
             .map(TryInto::try_into)
-            .collect::<CryptoResult<Vec<ConversationMember>>>()?;
+            .transpose()?)
+    }
 
-        cfg.extra_members(extra_members);
-        cfg.admins(config.admins);
-        cfg.key_rotation_span(config.key_rotation_span);
+    pub fn process_welcome_message(
+        &self,
+        welcome_message: &[u8],
+        config: ConversationConfiguration,
+    ) -> CryptoResult<ConversationId> {
+        self.0
+            .process_raw_welcome_message(welcome_message.into(), config.try_into()?)
+    }
 
-        if let Some(ciphersuite) = config.ciphersuite.take() {
-            cfg.ciphersuite(ciphersuite.into());
-        }
+    pub fn add_clients_to_conversation(
+        &self,
+        conversation_id: ConversationId,
+        clients: Vec<Invitee>,
+    ) -> CryptoResult<Option<MemberAddedMessages>> {
+        let mut members = Invitee::group_to_conversation_member(clients)?;
 
-        let ret = self.0.new_conversation(conversation_id, cfg.build()?)?;
+        Ok(self
+            .0
+            .add_members_to_conversation(&conversation_id, &mut members)?
+            .map(TryInto::try_into)
+            .transpose()?)
+    }
 
-        Ok(ret.map(TryInto::try_into).transpose()?)
+    /// Returns a MLS commit message serialized as TLS
+    pub fn remove_clients_from_conversation(
+        &self,
+        conversation_id: ConversationId,
+        clients: Vec<Invitee>,
+    ) -> CryptoResult<Option<Vec<u8>>> {
+        let members = Invitee::group_to_conversation_member(clients)?;
+
+        Ok(self
+            .0
+            .remove_members_from_conversation(&conversation_id, &members)?
+            .map(|m| m.to_bytes().map_err(MlsError::from))
+            .transpose()?)
     }
 
     pub fn decrypt_message(&self, conversation_id: ConversationId, payload: &[u8]) -> CryptoResult<Option<Vec<u8>>> {

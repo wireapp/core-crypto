@@ -19,36 +19,48 @@ pub use self::error::*;
 
 mod client;
 mod conversation;
-pub mod identifiers;
+// pub mod identifiers;
 mod member;
 
 pub mod prelude {
     pub use crate::client::*;
     pub use crate::conversation::*;
     pub use crate::error::*;
-    pub use crate::identifiers;
     pub use crate::member::*;
+    pub use crate::CoreCryptoCallbacks;
     pub use crate::{MlsCentral, MlsCentralConfiguration, MlsCiphersuite};
     pub use openmls::prelude::Ciphersuite as CiphersuiteName;
+    pub use tls_codec;
 }
 
-use client::Client;
+use client::{Client, ClientId};
 use conversation::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage};
+use member::ConversationMember;
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::messages::Welcome;
+use openmls::{
+    messages::Welcome,
+    prelude::{Ciphersuite, KeyPackageBundle, MlsMessageOut},
+};
 use std::collections::HashMap;
+use tls_codec::Deserialize;
+
+pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
+    fn authorize(&self, conversation_id: ConversationId, client_id: String) -> bool;
+}
 
 #[derive(Debug, Clone)]
-pub struct MlsCiphersuite(openmls::prelude::Ciphersuite);
+#[repr(transparent)]
+/// Newtype for the OpenMLS Ciphersuite, so that we are able to provide a default value.
+pub struct MlsCiphersuite(Ciphersuite);
 
 impl Default for MlsCiphersuite {
     fn default() -> Self {
-        Self(openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519)
+        Self(Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
     }
 }
 
-impl From<openmls::prelude::Ciphersuite> for MlsCiphersuite {
-    fn from(value: openmls::prelude::Ciphersuite) -> Self {
+impl From<Ciphersuite> for MlsCiphersuite {
+    fn from(value: Ciphersuite) -> Self {
         Self(value)
     }
 }
@@ -79,7 +91,7 @@ pub struct MlsCentral {
     mls_client: std::sync::RwLock<Client>,
     mls_backend: MlsCryptoProvider,
     mls_groups: std::sync::RwLock<HashMap<ConversationId, MlsConversation>>,
-    welcome_callback: Option<fn(Welcome)>,
+    callbacks: std::sync::RwLock<Option<Box<dyn CoreCryptoCallbacks + 'static>>>,
 }
 
 impl MlsCentral {
@@ -87,21 +99,37 @@ impl MlsCentral {
     /// Takes a store path (i.e. Disk location of the embedded database, should be consistent between messaging sessions)
     /// And a root identity key (i.e. enclaved encryption key for this device)
     pub fn try_new(configuration: MlsCentralConfiguration) -> crate::error::CryptoResult<Self> {
-        let mls_backend =
-            mls_crypto_provider::MlsCryptoProvider::try_new(&configuration.store_path, &configuration.identity_key)?;
-        let mls_client = Client::init(configuration.client_id.parse()?, &mls_backend)?;
+        let mls_backend = MlsCryptoProvider::try_new(&configuration.store_path, &configuration.identity_key)?;
+        let mls_client = Client::init(configuration.client_id.as_bytes().into(), &mls_backend)?;
 
         Ok(Self {
             mls_backend,
             mls_client: mls_client.into(),
             mls_groups: HashMap::new().into(),
-            welcome_callback: None,
+            callbacks: None.into(),
         })
     }
 
-    /// Callback for the welcome messages. The passed message will be passed along to the MLS DS
-    pub fn on_welcome(&mut self, callback: fn(Welcome)) {
-        self.welcome_callback = Some(callback);
+    pub fn callbacks(&self, callbacks: Box<dyn CoreCryptoCallbacks>) -> CryptoResult<()> {
+        let mut cb_w = self.callbacks.write().map_err(|_| CryptoError::LockPoisonError)?;
+        *cb_w = Some(callbacks);
+        Ok(())
+    }
+
+    pub fn client_public_key(&self) -> CryptoResult<Vec<u8>> {
+        Ok(self
+            .mls_client
+            .read()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .public_key()
+            .into())
+    }
+
+    pub fn client_keypackages(&self, amount_requested: usize) -> CryptoResult<Vec<KeyPackageBundle>> {
+        self.mls_client
+            .write()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .request_keying_material(amount_requested, &self.mls_backend)
     }
 
     /// Create a new empty conversation
@@ -121,11 +149,101 @@ impl MlsCentral {
         Ok(messages)
     }
 
-    // pub fn add_member_to_conversation(
-    //     &self,
-    //     id: ConversationId,
+    /// Create a conversation from a recieved MLS Welcome message
+    pub fn process_welcome_message(
+        &self,
+        welcome: Welcome,
+        configuration: MlsConversationConfiguration,
+    ) -> crate::error::CryptoResult<ConversationId> {
+        let conversation = MlsConversation::from_welcome_message(welcome, configuration, &self.mls_backend)?;
+        let conversation_id = conversation.id().clone();
+        self.mls_groups
+            .write()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .insert(conversation_id.clone(), conversation);
 
-    // )
+        Ok(conversation_id)
+    }
+
+    pub fn process_raw_welcome_message(
+        &self,
+        welcome: Vec<u8>,
+        configuration: MlsConversationConfiguration,
+    ) -> crate::error::CryptoResult<ConversationId> {
+        let mut cursor = std::io::Cursor::new(welcome);
+        let welcome = Welcome::tls_deserialize(&mut cursor).map_err(MlsError::from)?;
+        self.process_welcome_message(welcome, configuration)
+    }
+
+    pub fn add_members_to_conversation(
+        &self,
+        id: &ConversationId,
+        members: &mut [ConversationMember],
+    ) -> CryptoResult<Option<MlsConversationCreationMessage>> {
+        if let Some(callbacks) = self
+            .callbacks
+            .read()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .as_ref()
+        {
+            if !callbacks.authorize(
+                id.clone(),
+                self.mls_client
+                    .read()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .id()
+                    .to_string(),
+            ) {
+                return Err(CryptoError::Unauthorized);
+            }
+        }
+
+        if let Some(group) = self
+            .mls_groups
+            .write()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .get_mut(id)
+        {
+            Ok(Some(group.add_members(members, &self.mls_backend)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn remove_members_from_conversation(
+        &self,
+        id: &ConversationId,
+        members: &[ConversationMember],
+    ) -> CryptoResult<Option<MlsMessageOut>> {
+        if let Some(callbacks) = self
+            .callbacks
+            .read()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .as_ref()
+        {
+            if !callbacks.authorize(
+                id.clone(),
+                self.mls_client
+                    .read()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .id()
+                    .to_string(),
+            ) {
+                return Err(CryptoError::Unauthorized);
+            }
+        }
+
+        if let Some(group) = self
+            .mls_groups
+            .write()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .get_mut(id)
+        {
+            Ok(Some(group.remove_members(members, &self.mls_backend)?))
+        } else {
+            Ok(None)
+        }
+    }
 
     /// Encrypts a raw payload then serializes it to the TLS wire format
     pub fn encrypt_message<M: AsRef<[u8]>>(&self, conversation: ConversationId, message: M) -> CryptoResult<Vec<u8>> {
@@ -151,5 +269,9 @@ impl MlsCentral {
             .ok_or(CryptoError::ConversationNotFound(conversation_id))?;
 
         conversation.decrypt_message(message.as_ref(), &self.mls_backend)
+    }
+
+    pub fn wipe(self) {
+        self.mls_backend.destroy_and_reset();
     }
 }

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum MissingKeyErrorKind {
     #[error("MLS Key Bundle")]
     MlsKeyBundle,
@@ -31,6 +31,10 @@ pub enum CryptoKeystoreError {
     KeyReprError(std::str::Utf8Error),
     #[error("One of the locks has been poisoned")]
     LockPoisonError,
+    #[error("The keystore has run out of keypackage bundles!")]
+    OutOfKeyPackageBundles,
+    #[error("{0}")]
+    KeyStoreValueTransformError(String),
     #[error(transparent)]
     IoError(#[from] std::io::Error),
     #[error(transparent)]

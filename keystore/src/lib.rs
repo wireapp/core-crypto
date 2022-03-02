@@ -44,6 +44,7 @@ impl CryptoKeystore {
     pub fn open_with_key<P: AsRef<str>, K: AsRef<str>>(path: P, key: K) -> error::CryptoKeystoreResult<Self> {
         let mut store = Self::init_with_key(path, key)?;
         store.run_migrations()?;
+
         Ok(store)
     }
 
@@ -104,6 +105,7 @@ impl CryptoKeystore {
     pub fn open_in_memory_with_key<K: rusqlite::ToSql>(key: K) -> error::CryptoKeystoreResult<Self> {
         let conn = rusqlite::Connection::open_in_memory()?;
         conn.pragma_update(None, "key", key)?;
+
         let conn = std::sync::Mutex::new(conn);
         let mut store = Self {
             path: String::new(),
@@ -113,7 +115,9 @@ impl CryptoKeystore {
             #[cfg(feature = "memory-cache")]
             cache_enabled: false.into(),
         };
+
         store.run_migrations()?;
+
         Ok(store)
     }
 
@@ -125,6 +129,7 @@ impl CryptoKeystore {
     pub fn run_migrations(&mut self) -> error::CryptoKeystoreResult<()> {
         migrations::migrations::runner()
             .run(&mut *self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?)?;
+
         Ok(())
     }
 

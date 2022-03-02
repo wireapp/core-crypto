@@ -14,87 +14,51 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{prelude::MemberId, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
+use crate::{CryptoError, CryptoResult, MlsCiphersuite, MlsError};
+use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreResult};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
     credentials::CredentialBundle,
     extensions::{Extension, ExternalKeyIdExtension},
-    prelude::{KeyPackage, KeyPackageBundle, TlsSerializeTrait},
+    prelude::{KeyPackageBundle, TlsSerializeTrait},
 };
 use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider};
 
 pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ClientId {
-    user_id: uuid::Uuid,
-    domain: String,
-    client_id: u64,
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ClientId(Vec<u8>);
+
+impl std::ops::Deref for ClientId {
+    type Target = Vec<u8>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
-impl ClientId {
-    pub fn new(user_id: uuid::Uuid, domain: String, client_id: u64) -> Self {
-        ClientId { user_id, domain, client_id }
+impl From<&[u8]> for ClientId {
+    fn from(value: &[u8]) -> Self {
+        Self(value.into())
     }
+}
 
-    pub fn as_bytes(&self) -> Vec<u8> {
-        let mut ret = vec![];
-        ret.extend_from_slice(self.user_id.as_hyphenated().to_string().as_bytes());
-        ret.push(b':');
-        ret.extend_from_slice(format!("{:x}", self.client_id).as_bytes());
-        ret.push(b'@');
-        ret.extend_from_slice(self.domain.as_bytes());
-
-        ret
+impl From<Vec<u8>> for ClientId {
+    fn from(value: Vec<u8>) -> Self {
+        Self(value)
     }
 }
 
 impl std::fmt::Display for ClientId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:{}@{}", self.user_id.as_hyphenated(), self.client_id, self.domain)
+        write!(f, "{}", hex::encode(self.0.as_slice()))
     }
 }
 
 impl std::str::FromStr for ClientId {
     type Err = CryptoError;
 
-    // Format: user_uuid:client_id@domain
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut iter = s.split('@').take(2);
-        let uid_cid_tuple = iter
-            .next()
-            .ok_or_else(|| CryptoError::MalformedIdentifier(s.to_string()))?;
-
-        let domain = iter
-            .next()
-            .ok_or_else(|| CryptoError::MalformedIdentifier(s.to_string()))?
-            .to_string();
-
-        let mut iter_uid = uid_cid_tuple.split(':').take(2);
-        let user_id = iter_uid
-            .next()
-            .ok_or_else(|| CryptoError::MalformedIdentifier(s.to_string()))?
-            .parse()?;
-
-        let client_id_str = iter_uid
-            .next()
-            .ok_or_else(|| CryptoError::MalformedIdentifier(s.to_string()))?;
-        let client_id = u64::from_str_radix(client_id_str, 16)?;
-
-        Ok(Self {
-            user_id,
-            domain,
-            client_id,
-        })
-    }
-}
-
-impl Into<MemberId> for ClientId {
-    fn into(self) -> MemberId {
-        MemberId {
-            domain: self.domain,
-            uuid: self.user_id,
-        }
+        Ok(Self(s.as_bytes().to_vec()))
     }
 }
 
@@ -102,10 +66,10 @@ impl Into<MemberId> for ClientId {
 pub struct Client {
     id: ClientId,
     credentials: CredentialBundle,
-    keypackage_bundles: Vec<KeyPackageBundle>,
     ciphersuite: MlsCiphersuite,
 }
 
+#[inline(always)]
 fn identity_key(credentials: &CredentialBundle) -> Result<Vec<u8>, MlsError> {
     credentials
         .credential()
@@ -116,8 +80,8 @@ fn identity_key(credentials: &CredentialBundle) -> Result<Vec<u8>, MlsError> {
 
 impl Client {
     pub fn init(id: ClientId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
-        let id_str = id.to_string();
-        let (client, generated) = if let Some(signature) = backend.key_store().load_mls_identity_signature(&id_str)? {
+        let id_str: String = id.to_string();
+        let (client, generated) = if let Some(signature) = backend.key_store().mls_load_identity_signature(&id_str)? {
             match Self::load(id.clone(), &signature, backend) {
                 Ok(client) => (client, false),
                 Err(CryptoError::ClientSignatureNotFound) => (Self::generate(id, backend)?, true),
@@ -130,7 +94,7 @@ impl Client {
         if generated {
             backend
                 .key_store()
-                .save_mls_identity_signature(&id_str, &identity_key(&client.credentials)?)?
+                .mls_save_identity_signature(&id_str, &identity_key(&client.credentials)?)?;
         }
 
         Ok(client)
@@ -138,18 +102,15 @@ impl Client {
 
     pub(crate) fn generate(id: ClientId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
         let ciphersuite = MlsCiphersuite::default();
-        let id_bytes = id.as_bytes();
+        let id_bytes = &*id;
         let credentials = CredentialBundle::new(
-            id_bytes,
+            id_bytes.to_vec(),
             openmls::credentials::CredentialType::Basic,
             ciphersuite.signature_algorithm(),
             backend,
         )
         .map_err(MlsError::from)?;
 
-        // FIXME: Storing the credentials this way prevents from reconstructing
-        // FIXME: the keypackages list belonging to this device.
-        // FIXME: i.e. there's no way to tell between outside public keys & own keypackages
         backend
             .key_store()
             .store(&identity_key(&credentials)?, &credentials)
@@ -158,7 +119,6 @@ impl Client {
         let mut client = Self {
             id,
             credentials,
-            keypackage_bundles: vec![],
             ciphersuite,
         };
 
@@ -176,9 +136,12 @@ impl Client {
         Ok(Self {
             id,
             credentials,
-            keypackage_bundles: vec![], // TODO: Find a way to restore the keypackage_bundles? Or not cache them at all?
             ciphersuite,
         })
+    }
+
+    pub fn id(&self) -> &ClientId {
+        &self.id
     }
 
     pub fn public_key(&self) -> &[u8] {
@@ -189,46 +152,42 @@ impl Client {
         &self.credentials
     }
 
-    /// This method consumes a KeyPackageBundle for the Client, hashes it and returns the hash,
+    /// This method returns the hash of the oldest available KeyPackageBundle for the Client
     /// and if necessary regenerates a new keypackage for immediate use
-    // FIXME: This shouldn't take &mut self; Maybe rework the whole thing to not used a cached view of KPBs and only interact with the keystore?
     pub fn keypackage_hash(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
-        if let Some(kpb) = self.keypackage_bundles.pop() {
-            Ok(kpb
+        let kpb_result: CryptoKeystoreResult<KeyPackageBundle> = backend.key_store().mls_get_keypackage();
+
+        match kpb_result {
+            Ok(kpb) => Ok(kpb
                 .key_package()
                 .hash_ref(backend.crypto())
                 .map(|href| href.value().to_vec())
-                .map_err(MlsError::from)?)
-        } else {
-            self.gen_keypackage(backend)?;
-            self.keypackage_hash(backend)
+                .map_err(MlsError::from)?),
+            Err(CryptoKeystoreError::OutOfKeyPackageBundles) => {
+                self.gen_keypackage(backend)?;
+                Ok(self.keypackage_hash(backend)?)
+            }
+            Err(e) => Err(e.into()),
         }
     }
 
-    pub fn gen_keypackage(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<&KeyPackage> {
+    pub fn gen_keypackage(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<KeyPackageBundle> {
         let kpb = KeyPackageBundle::new(
             &[*self.ciphersuite],
             &self.credentials,
             backend,
-            vec![Extension::ExternalKeyId(ExternalKeyIdExtension::new(
-                &self.id.as_bytes(),
-            ))],
+            vec![Extension::ExternalKeyId(ExternalKeyIdExtension::new(&self.id))],
         )
         .map_err(MlsError::from)?;
 
+        let href = kpb.key_package().hash_ref(backend.crypto()).map_err(MlsError::from)?;
+
         backend
             .key_store()
-            .store(
-                &kpb.key_package()
-                    .hash_ref(backend.crypto())
-                    .map(|href| href.value().to_vec())
-                    .map_err(MlsError::from)?,
-                &kpb,
-            )
+            .store(href.value(), &kpb)
             .map_err(eyre::Report::msg)?;
 
-        self.keypackage_bundles.push(kpb);
-        Ok(self.keypackage_bundles.last().unwrap().key_package())
+        Ok(kpb)
     }
 
     /// Requests `count` keying material to be present and returns
@@ -237,23 +196,27 @@ impl Client {
         &mut self,
         count: usize,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<&[KeyPackageBundle]> {
-        self.provision_keying_material(count, backend)?;
-
-        Ok(self.keypackage_bundles.as_slice())
+    ) -> CryptoResult<Vec<KeyPackageBundle>> {
+        let kpbs = self.provision_keying_material(count, backend)?;
+        Ok(kpbs)
     }
 
-    fn provision_keying_material(&mut self, count: usize, backend: &MlsCryptoProvider) -> CryptoResult<()> {
-        if count <= self.keypackage_bundles.len() {
-            return Ok(());
+    fn provision_keying_material(
+        &mut self,
+        count: usize,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<Vec<KeyPackageBundle>> {
+        let kpb_count = backend.key_store().mls_keypackagebundle_count()?;
+        if count > kpb_count {
+            let to_generate = count - kpb_count;
+            for _ in 0..=to_generate {
+                self.gen_keypackage(backend)?;
+            }
         }
 
-        let count = count - self.keypackage_bundles.len();
-        for _ in 0..count {
-            self.gen_keypackage(backend)?;
-        }
+        let kpbs: Vec<KeyPackageBundle> = backend.key_store().mls_all_keypackage_bundles()?.collect();
 
-        Ok(())
+        Ok(kpbs)
     }
 }
 
@@ -271,13 +234,23 @@ impl Client {
         let user_uuid = uuid::Uuid::new_v4();
         let client_id = rand::random::<usize>();
         Self::generate(
-            format!("{}:{client_id:x}@members.wire.com", user_uuid.hyphenated()).parse()?,
+            format!("{}:{client_id:x}@members.wire.com", user_uuid.hyphenated())
+                .as_bytes()
+                .into(),
             &backend,
         )
     }
 
-    pub fn keypackages(&self) -> Vec<&openmls::prelude::KeyPackage> {
-        self.keypackage_bundles.iter().map(|kpb| kpb.key_package()).collect()
+    pub fn keypackages(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<openmls::prelude::KeyPackage>> {
+        let kps = backend.key_store().mls_all_keypackage_bundles()?.try_fold(
+            vec![],
+            |mut acc, kpb: KeyPackageBundle| -> crate::CryptoResult<_> {
+                acc.push(kpb.key_package().clone());
+                Ok(acc)
+            },
+        )?;
+
+        Ok(kps)
     }
 }
 
