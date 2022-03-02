@@ -258,6 +258,7 @@ dependencies = [
  "core-crypto-keystore",
  "derive_builder",
  "eyre",
+ "hex",
  "mls-crypto-provider",
  "openmls",
  "openmls_traits",
@@ -272,7 +273,6 @@ version = "0.1.1"
 dependencies = [
  "barrel",
  "eyre",
- "lru",
  "openmls_traits",
  "refinery",
  "rusqlite",
@@ -742,6 +742,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hex"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+
+[[package]]
 name = "hkdf"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -904,15 +910,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "lru"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcb87f3080f6d1d69e8c564c0fcfde1d7aa8cc451ce40cae89479111f03bc0eb"
-dependencies = [
- "hashbrown",
 ]
 
 [[package]]

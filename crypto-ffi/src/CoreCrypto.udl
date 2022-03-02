@@ -1,11 +1,11 @@
 [Custom]
-typedef string ConversationId;
+typedef sequence<u8> ConversationId;
 
 [Custom]
-typedef string MemberId;
+typedef sequence<u8> MemberId;
 
 [Custom]
-typedef string ClientId;
+typedef sequence<u8> ClientId;
 
 enum CiphersuiteName {
     "MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519",
@@ -30,11 +30,13 @@ enum CryptoError {
     "MlsError",
     "UuidError",
     "Utf8Error",
+    "StringUtf8Error",
     "ParseIntError",
+    "Unauthorized",
     "Other"
 };
 
-dictionary ConversationCreationMessage {
+dictionary MemberAddedMessages {
     sequence<u8> message;
     sequence<u8> welcome;
 };
@@ -51,12 +53,34 @@ dictionary ConversationConfiguration {
     duration? key_rotation_span;
 };
 
+callback interface CoreCryptoCallbacks {
+    boolean authorize([ByRef] sequence<u8> conversation_id, [ByRef] string client_id);
+};
+
 interface CoreCrypto {
     [Throws=CryptoError, Name=new]
     constructor([ByRef] string path, [ByRef] string key, [ByRef] string client_id);
 
     [Throws=CryptoError]
-    ConversationCreationMessage? create_conversation(ConversationId conversation_id, ConversationConfiguration config);
+    void set_callbacks(CoreCryptoCallbacks callbacks);
+
+    [Throws=CryptoError]
+    sequence<u8> client_public_key();
+
+    [Throws=CryptoError]
+    sequence<sequence<u8>> client_keypackages(u32 amount_requested);
+
+    [Throws=CryptoError]
+    MemberAddedMessages? create_conversation(ConversationId conversation_id, ConversationConfiguration config);
+
+    [Throws=CryptoError]
+    ConversationId process_welcome_message([ByRef] sequence<u8> welcome_message, ConversationConfiguration config);
+
+    [Throws=CryptoError]
+    MemberAddedMessages? add_clients_to_conversation(ConversationId conversation_id, sequence<Invitee> clients);
+
+    [Throws=CryptoError]
+    sequence<u8>? remove_clients_from_conversation(ConversationId conversation_id, sequence<Invitee> clients);
 
     [Throws=CryptoError]
     sequence<u8>? decrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> payload);

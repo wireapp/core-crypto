@@ -46,47 +46,75 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_CoreCrypto_aef3_CoreCrypto_object_free(
+void ffi_CoreCrypto_3f36_CoreCrypto_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull CoreCrypto_aef3_CoreCrypto_new(
+void*_Nonnull CoreCrypto_3f36_CoreCrypto_new(
       RustBuffer path,RustBuffer key,RustBuffer client_id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_aef3_CoreCrypto_create_conversation(
+void CoreCrypto_3f36_CoreCrypto_set_callbacks(
+      void*_Nonnull ptr,uint64_t callbacks,
+    RustCallStatus *_Nonnull out_status
+    );
+RustBuffer CoreCrypto_3f36_CoreCrypto_client_public_key(
+      void*_Nonnull ptr,
+    RustCallStatus *_Nonnull out_status
+    );
+RustBuffer CoreCrypto_3f36_CoreCrypto_client_keypackages(
+      void*_Nonnull ptr,uint32_t amount_requested,
+    RustCallStatus *_Nonnull out_status
+    );
+RustBuffer CoreCrypto_3f36_CoreCrypto_create_conversation(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer config,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_aef3_CoreCrypto_decrypt_message(
+RustBuffer CoreCrypto_3f36_CoreCrypto_process_welcome_message(
+      void*_Nonnull ptr,RustBuffer welcome_message,RustBuffer config,
+    RustCallStatus *_Nonnull out_status
+    );
+RustBuffer CoreCrypto_3f36_CoreCrypto_add_clients_to_conversation(
+      void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer clients,
+    RustCallStatus *_Nonnull out_status
+    );
+RustBuffer CoreCrypto_3f36_CoreCrypto_remove_clients_from_conversation(
+      void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer clients,
+    RustCallStatus *_Nonnull out_status
+    );
+RustBuffer CoreCrypto_3f36_CoreCrypto_decrypt_message(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer payload,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_aef3_CoreCrypto_encrypt_message(
+RustBuffer CoreCrypto_3f36_CoreCrypto_encrypt_message(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer message,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull CoreCrypto_aef3_init_with_path_and_key(
+void ffi_CoreCrypto_3f36_CoreCryptoCallbacks_init_callback(
+      ForeignCallback  _Nonnull callback_stub,
+    RustCallStatus *_Nonnull out_status
+    );
+void*_Nonnull CoreCrypto_3f36_init_with_path_and_key(
       RustBuffer path,RustBuffer key,RustBuffer client_id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_aef3_version(
+RustBuffer CoreCrypto_3f36_version(
       
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_CoreCrypto_aef3_rustbuffer_alloc(
+RustBuffer ffi_CoreCrypto_3f36_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_CoreCrypto_aef3_rustbuffer_from_bytes(
+RustBuffer ffi_CoreCrypto_3f36_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_CoreCrypto_aef3_rustbuffer_free(
+void ffi_CoreCrypto_3f36_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_CoreCrypto_aef3_rustbuffer_reserve(
+RustBuffer ffi_CoreCrypto_3f36_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );

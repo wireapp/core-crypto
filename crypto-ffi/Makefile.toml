@@ -68,7 +68,7 @@ script = '''
 
     #lipo -create -output ./out/libcore_crypto_ffi_iossimulator.a \
     #    ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a
-    #    ../../../target/aarch64-apple-ios-sim/release/libcore_crypto_ffi.a     
+    #    ../../../target/aarch64-apple-ios-sim/release/libcore_crypto_ffi.a
 
     lipo -create -output ./out/libcore_crypto_ffi_iossimulator.a \
         ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a

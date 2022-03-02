@@ -18,7 +18,7 @@
 #[derive(Debug, thiserror::Error)]
 pub enum CryptoError {
     /// This error is emitted when the requested conversation couldn't be found in our store
-    #[error("Couldn't find conversation with id {0}")]
+    #[error("Couldn't find conversation")]
     ConversationNotFound(crate::ConversationId),
     /// This error is emitted when we find a malformed (i.e. not uuid) or empty identifier
     #[error("Malformed identifier found: {0}")]
@@ -30,7 +30,7 @@ pub enum CryptoError {
     #[error("One of the locks has been poisoned")]
     LockPoisonError,
     /// A conversation member is out of local stored keypackages - if it does happen something went wrong
-    #[error("Member #{0} is out of keypackages")]
+    #[error("Member #{0:x?} is out of keypackages")]
     OutOfKeyPackage(crate::member::MemberId),
     /// There was an issue when configuring a new conversation
     #[error(transparent)]
@@ -46,12 +46,17 @@ pub enum CryptoError {
     /// UUID-related errors
     #[error(transparent)]
     UuidError(#[from] uuid::Error),
-    /// Error when parsing Strings that are not UTF-8
+    /// Error when parsing `str`s that are not UTF-8
     #[error(transparent)]
     Utf8Error(#[from] std::str::Utf8Error),
+    /// Error when parsing `String`s that are not UTF-8
+    #[error(transparent)]
+    StringUtf8Error(#[from] std::string::FromUtf8Error),
     /// Error when trying to coerce ints into Strings
     #[error(transparent)]
     ParseIntError(#[from] std::num::ParseIntError),
+    #[error("The current client id isn't authorized to perform this action")]
+    Unauthorized,
     /// Other thingies
     #[error(transparent)]
     Other(#[from] eyre::Report),
@@ -78,6 +83,8 @@ pub enum MlsError {
     MlsLeaveGroupError(#[from] openmls::prelude::LeaveGroupError),
     #[error(transparent)]
     MlsAddMembersError(#[from] openmls::prelude::AddMembersError),
+    #[error(transparent)]
+    MlsRemoveMembersError(#[from] openmls::prelude::RemoveMembersError),
     #[error(transparent)]
     MlsUnverifiedMessageError(#[from] openmls::prelude::UnverifiedMessageError),
     #[error(transparent)]

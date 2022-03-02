@@ -36,6 +36,10 @@ impl MlsCryptoProvider {
         let key_store = CryptoKeystore::open_in_memory_with_key(identity_key.as_ref())?;
         Ok(Self { crypto, key_store })
     }
+
+    pub fn destroy_and_reset(self) {
+        self.key_store.delete_database_but_please_be_sure().unwrap();
+    }
 }
 
 impl OpenMlsCryptoProvider for MlsCryptoProvider {

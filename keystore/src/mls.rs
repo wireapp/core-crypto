@@ -17,7 +17,7 @@
 use crate::{CryptoKeystore, CryptoKeystoreError, MissingKeyErrorKind};
 
 impl CryptoKeystore {
-    pub fn load_mls_identity_signature(&self, id: &str) -> crate::CryptoKeystoreResult<Option<Vec<u8>>> {
+    pub fn mls_load_identity_signature(&self, id: &str) -> crate::CryptoKeystoreResult<Option<Vec<u8>>> {
         let mut conn_lock = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
         let transaction = conn_lock.transaction()?;
         use rusqlite::OptionalExtension as _;
@@ -41,7 +41,7 @@ impl CryptoKeystore {
         }
     }
 
-    pub fn save_mls_identity_signature(&self, id: &str, signature: &[u8]) -> crate::CryptoKeystoreResult<()> {
+    pub fn mls_save_identity_signature(&self, id: &str, signature: &[u8]) -> crate::CryptoKeystoreResult<()> {
         let zb = rusqlite::blob::ZeroBlob(signature.len() as i32);
 
         let mut conn_lock = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
@@ -69,13 +69,73 @@ impl CryptoKeystore {
         Ok(())
     }
 
+    pub fn mls_keypackagebundle_count(&self) -> crate::CryptoKeystoreResult<usize> {
+        let count = self
+            .conn
+            .lock()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM mls_keys", [], |r| r.get::<_, usize>(0))?;
+
+        Ok(count - 1)
+    }
+
+    pub fn mls_all_keypackage_bundles<'a, V: openmls_traits::key_store::FromKeyStoreValue>(
+        &'a self,
+    ) -> crate::CryptoKeystoreResult<impl Iterator<Item = V> + 'a> {
+        let db = self.conn.lock().unwrap();
+
+        let mut stmt = db.prepare_cached("SELECT rowid FROM mls_keys ORDER BY rowid ASC")?;
+        let kpb_ids: Vec<i64> = stmt
+            .query_map([], |r| r.get(0))?
+            .map(|r| r.map_err(crate::CryptoKeystoreError::from))
+            .collect::<crate::CryptoKeystoreResult<Vec<i64>>>()?;
+
+        drop(stmt);
+
+        Ok(kpb_ids.into_iter().filter_map(move |row_id| {
+            let mut blob = db
+                .blob_open(rusqlite::DatabaseName::Main, "mls_keys", "key", row_id, true)
+                .ok()?;
+            use std::io::Read as _;
+            let mut buf = vec![];
+            blob.read_to_end(&mut buf).ok()?;
+
+            match V::from_key_store_value(&buf) {
+                Ok(value) => Some(value),
+                Err(_) => None,
+            }
+        }))
+    }
+
+    pub fn mls_get_keypackage<V: openmls_traits::key_store::FromKeyStoreValue>(
+        &self,
+    ) -> crate::CryptoKeystoreResult<V> {
+        if self.mls_keypackagebundle_count()? == 0 {
+            return Err(crate::CryptoKeystoreError::OutOfKeyPackageBundles);
+        }
+
+        let db = self.conn.lock().unwrap();
+        let rowid: i64 = db.query_row(
+            "SELECT rowid FROM mls_keys ORDER BY rowid ASC LIMIT 1 OFFSET 1",
+            [],
+            |r| r.get(0),
+        )?;
+
+        let mut blob = db.blob_open(rusqlite::DatabaseName::Main, "mls_keys", "key", rowid, true)?;
+        use std::io::Read as _;
+        let mut buf = vec![];
+        blob.read_to_end(&mut buf)?;
+
+        Ok(V::from_key_store_value(&buf)
+            .map_err(|e| crate::CryptoKeystoreError::KeyStoreValueTransformError(e.into()))?)
+    }
+
     #[cfg(test)]
-    pub fn store_mls_keypackage_bundle(
+    pub fn mls_store_keypackage_bundle(
         &self,
         key: openmls::prelude::KeyPackageBundle,
     ) -> crate::CryptoKeystoreResult<()> {
-        let id = key.key_package().external_key_id()?;
-        let id = uuid::Uuid::from_slice(id)?;
+        let id = uuid::Uuid::from_slice(key.key_package().external_key_id()?)?;
         use openmls_traits::key_store::OpenMlsKeyStore as _;
         self.store(id.as_bytes(), &key)
             .map_err(CryptoKeystoreError::MlsKeyStoreError)?;
