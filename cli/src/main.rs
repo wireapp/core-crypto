@@ -29,12 +29,16 @@ fn group(backend: &MlsCryptoProvider, client_id: ClientId, group_id: &[u8]) {
     group.save(&mut io::stdout()).unwrap();
 }
 
-fn add_member(backend: &MlsCryptoProvider, group_data: &mut dyn Read, mut kp_data: &mut dyn Read) {
+fn add_member<W: Write>(backend: &MlsCryptoProvider, group_data: &mut dyn Read,
+              mut kp_data: &mut dyn Read, opt_wel_data: Option<W>) {
     let mut group = MlsGroup::load(group_data).unwrap();
     let kp = KeyPackage::tls_deserialize(&mut kp_data).unwrap();
-    let (handshake, _welcome) = group
+    let (handshake, welcome) = group
         .add_members(backend, &[kp]).unwrap();
     handshake.tls_serialize(&mut io::stdout()).unwrap();
+    if let Some(mut wel_data) = opt_wel_data {
+        welcome.tls_serialize(&mut wel_data).unwrap();
+    }
 }
 
 fn app_message(backend: &MlsCryptoProvider, group_data: &mut dyn Read, text: String) {
@@ -85,7 +89,9 @@ enum MemberCommand {
     Add {
         #[clap(short, long)]
         group: String,
-        key_package: String
+        key_package: String,
+        #[clap(short, long)]
+        welcome_out: Option<String>,
     }
 }
 
@@ -105,10 +111,11 @@ fn main() {
         Command::KeyPackage { client_id } => key_package(&backend, client_id),
         Command::PublicKey { client_id } => public_key(&backend, client_id),
         Command::Group { client_id, group_id } => group(&backend, client_id, group_id.as_bytes()),
-        Command::Member { command: MemberCommand::Add { group, key_package } } => {
+        Command::Member { command: MemberCommand::Add { group, key_package, welcome_out } } => {
             let mut group_data = path_reader(group).unwrap();
             let mut kp_data = path_reader(key_package).unwrap();
-            add_member(&backend, &mut group_data, &mut kp_data);
+            let wel_data = welcome_out.map(|path| fs::File::create(path).unwrap());
+            add_member(&backend, &mut group_data, &mut kp_data, wel_data);
         },
         Command::Message { group, text } => {
             let mut group_data = path_reader(group).unwrap();
