@@ -131,6 +131,11 @@ for rust_target in ${keys}
     mkdir dirname ${to}
     cp ${from} ${to}
 end
+
+println -c bright_blue "cp ./bindings/kt/wire/core/crypto/CoreCrypto.kt -> ../sample-projects/android/CoreCryptoTestApp/app/src/main/java/com/wire/core/CoreCrypto.kt"
+from = canonicalize "./bindings/kt/wire/core/crypto/CoreCrypto.kt"
+to = canonicalize "../sample-projects/android/CoreCryptoTestApp/app/src/main/java/com/wire/core/CoreCrypto.kt"
+cp ${from} ${to}
 '''
 
 #################################### Mobile ###################################
@@ -166,7 +171,18 @@ script = '''
 exit_on_error true
 
 fn update_android_env
-    android_ndk_path = set "${1}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+    platform = os_family
+    if eq ${platform} "windows"
+        platform_dir = set "windows-x86_64"
+    elseif eq ${platform} "linux"
+        platform_dir = set "linux-x86_64"
+    elseif eq ${platform} "mac"
+        platform_dir = set "darwin-x86_64"
+    else
+        trigger_error "Unsupported host platform"
+    end
+
+    android_ndk_path = set "${1}/toolchains/llvm/prebuilt/${platform_dir}/bin"
     new_path = set "${PATH}:${android_ndk_path}"
     print -c bright_blue "Updating PATH to include ${android_ndk_path}\n"
     set_env PATH "${new_path}"
