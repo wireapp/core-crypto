@@ -50,16 +50,12 @@ afterEvaluate {
 
                 pom {
                     name.set("core-crypto-jvm")
-                    description.set("Core Crypto")
-                    url.set("https://www.wire.com")
+                    description.set("MLS/Proteus multiplexer abstraction with encrypted persistent storage in Rust")
+                    url.set("https://github.com/wireapp/core-crypto")
                     licenses {
                         license {
                             name.set("GPL-3.0")
                             url.set("https://github.com/wireapp/core-crypto/blob/main/LICENSE")
-                        }
-                        license {
-                            name.set("MIT")
-                            url.set("https://github.com/bitcoindevkit/bdk/blob/master/LICENSE-MIT")
                         }
                     }
                     scm {
@@ -72,9 +68,3 @@ afterEvaluate {
         }
     }
 }
-
-//signing {
-//    useGpgCmd()
-//    sign(publishing.publications)
-//}
-
