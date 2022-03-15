@@ -138,6 +138,38 @@ to = canonicalize "../sample-projects/android/CoreCryptoTestApp/app/src/main/jav
 cp ${from} ${to}
 '''
 
+####################################  JVM  ####################################
+
+[tasks.jvm-x86-darwin]
+command = "cargo"
+args = ["build", "--target", "x86_64-apple-darwin", "--features", "mobile", "${@}"]
+
+[tasks.jvm]
+dependencies = ["jvm-x86-darwin"]
+
+[tasks.copy-jvm-resources]
+dependencies = ["jvm"]
+script_runner = "@duckscript"
+script = '''
+handle = map
+map_put ${handle} "x86_64-apple-darwin" "darwin-x86-64"
+keys = map_keys ${handle}
+libname = set "libcore_crypto_ffi.dylib"
+for rust_target in ${keys}
+    jvm_target = map_get ${handle} ${rust_target}
+    println -c bright_blue "cp rust-${rust_target}/${libname} -> resources/${jvm_target}/${libname}"
+    from = canonicalize "../target/${rust_target}/debug/${libname}"
+    to = canonicalize "../kotlin/jvm/src/main/resources/${jvm_target}/${libname}"
+    mkdir dirname ${to}
+    cp ${from} ${to}
+end
+
+println -c bright_blue "cp ./bindings/kt/wire/core/crypto/CoreCrypto.kt -> ../kotlin/jvm/src/main/kotlin/com/wire/core/crypto/CoreCrypto.kt"
+from = canonicalize "./bindings/kt/wire/core/crypto/CoreCrypto.kt"
+to = canonicalize "../kotlin/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt"
+cp ${from} ${to}
+'''
+
 #################################### Mobile ###################################
 [tasks.mobile]
 dependencies = ["android", "ios"]
