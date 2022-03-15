@@ -96,4 +96,7 @@ libs/
 .classpath
 .project
 .settings
-src
+CoreCrypto.kt
+*.so
+*.dylib
+

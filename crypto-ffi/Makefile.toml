@@ -132,9 +132,35 @@ for rust_target in ${keys}
     cp ${from} ${to}
 end
 
-println -c bright_blue "cp ./bindings/kt/wire/core/crypto/CoreCrypto.kt -> ../sample-projects/android/CoreCryptoTestApp/app/src/main/java/com/wire/core/CoreCrypto.kt"
-from = canonicalize "./bindings/kt/wire/core/crypto/CoreCrypto.kt"
-to = canonicalize "../sample-projects/android/CoreCryptoTestApp/app/src/main/java/com/wire/core/CoreCrypto.kt"
+println -c bright_blue "cp ./bindings/kt/com/wire/crypto/CoreCrypto.kt -> ../sample-projects/android/CoreCryptoTestApp/app/src/main/java/com/wire/core/CoreCrypto.kt"
+from = canonicalize "./bindings/kt/com/wire/crypto/CoreCrypto.kt"
+to = canonicalize "../sample-projects/android/CoreCryptoTestApp/app/src/main/java/com/wire/crypto/CoreCrypto.kt"
+cp ${from} ${to}
+'''
+
+[tasks.copy-android-resources]
+dependencies = ["android"]
+script_runner = "@duckscript"
+script = '''
+handle = map
+map_put ${handle} "i686-linux-android" "x86"
+map_put ${handle} "x86_64-linux-android" "x86_64"
+map_put ${handle} "aarch64-linux-android" "arm64-v8a"
+map_put ${handle} "armv7-linux-androideabi" "armeabi-v7a"
+keys = map_keys ${handle}
+libname = set "libcore_crypto_ffi.so"
+for rust_target in ${keys}
+    android_target = map_get ${handle} ${rust_target}
+    println -c bright_blue "cp rust-${rust_target}/${libname} -> android-jniLibs/${android_target}/${libname}"
+    from = canonicalize "../target/${rust_target}/debug/${libname}"
+    to = canonicalize "../kotlin/android/src/main/jniLibs/${android_target}/${libname}"
+    mkdir dirname ${to}
+    cp ${from} ${to}
+end
+
+println -c bright_blue "cp ./bindings/kt/com/wire/crypto/CoreCrypto.kt -> ../kotlin/android/src/main/java/com/wire/crypto/CoreCrypto.kt"
+from = canonicalize "./bindings/kt/com/wire/crypto/CoreCrypto.kt"
+to = canonicalize "../kotlin/android/src/main/kotlin/com/wire/crypto/CoreCrypto.kt"
 cp ${from} ${to}
 '''
 
@@ -164,8 +190,8 @@ for rust_target in ${keys}
     cp ${from} ${to}
 end
 
-println -c bright_blue "cp ./bindings/kt/wire/core/crypto/CoreCrypto.kt -> ../kotlin/jvm/src/main/kotlin/com/wire/core/crypto/CoreCrypto.kt"
-from = canonicalize "./bindings/kt/wire/core/crypto/CoreCrypto.kt"
+println -c bright_blue "cp ./bindings/kt/com/wire/crypto/CoreCrypto.kt -> ../kotlin/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt"
+from = canonicalize "./bindings/kt/com/wire/crypto/CoreCrypto.kt"
 to = canonicalize "../kotlin/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt"
 cp ${from} ${to}
 '''
