@@ -16,7 +16,8 @@ plugins {
 publishing {
     repositories {
         maven {
-            url = uri("../local-maven/")
+            name = "WireMaven"
+            url = uri("../../wire-maven/releases")
         }
     }
 }

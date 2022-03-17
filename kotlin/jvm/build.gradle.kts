@@ -37,6 +37,15 @@ dependencies {
     testImplementation("ch.qos.logback:logback-core:1.2.3")
 }
 
+publishing {
+    repositories {
+        maven {
+            name = "Wire"
+            url = uri("../../../wire-maven/releases")
+        }
+    }
+}
+
 afterEvaluate {
     publishing {
         publications {
@@ -44,7 +53,7 @@ afterEvaluate {
 
                 groupId = "com.wire"
                 artifactId = "core-crypto-jvm"
-                version = "0.0.1-SNAPSHOT"
+                version = "0.0.1"
 
                 from(components["java"])
 
