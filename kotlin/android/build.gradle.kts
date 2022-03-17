@@ -35,13 +35,22 @@ dependencies {
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.1")
 }
 
+publishing {
+    repositories {
+        maven {
+            name = "Wire"
+            url = uri("../../../wire-maven/releases")
+        }
+    }
+}
+
 afterEvaluate {
     publishing {
         publications {
             create<MavenPublication>("maven") {
                 groupId = "com.wire"
                 artifactId = "core-crypto-android"
-                version = "0.0.1-SNAPSHOT"
+                version = "0.0.1"
                 from(components["release"])
                 pom {
                     name.set("core-crypto-android")
