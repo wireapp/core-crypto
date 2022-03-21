@@ -66,6 +66,9 @@ enum Command {
     KeyPackage {
         client_id: ClientId,
     },
+    KeyPackageRef {
+        key_package: String,
+    },
     PublicKey {
         client_id: ClientId,
     },
@@ -108,6 +111,13 @@ fn main() {
     let backend = MlsCryptoProvider::try_new(&cli.store, &cli.enc_key).unwrap();
     match cli.command {
         Command::KeyPackage { client_id } => key_package(&backend, client_id),
+        Command::KeyPackageRef { key_package } => {
+            let mut kp_data = path_reader(key_package).unwrap();
+            let kp = KeyPackage::tls_deserialize(&mut kp_data).unwrap();
+            io::stdout()
+                .write_all(kp.hash_ref(backend.crypto()).unwrap().value())
+                .unwrap();
+        }
         Command::PublicKey { client_id } => public_key(&backend, client_id),
         Command::Group { client_id, group_id } => group(&backend, client_id, group_id.as_bytes()),
         Command::Member {
