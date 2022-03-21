@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-openmls = "0.4.0"
-openmls_traits = "0.1.0"
-openmls_rust_crypto = "0.1.0"
-core-crypto = { version = "0.1.0", path = "../crypto" }
-core-crypto-keystore = { version = "0.1.0", path = "../keystore" }
-mls-crypto-provider = { version = "0.1.0", path = "../mls-provider" }
+openmls = "0.4"
+openmls_traits = "0.1"
+openmls_rust_crypto = "0.1"
+core-crypto = { version = "0.2", path = "../crypto" }
+core-crypto-keystore = { version = "0.2", path = "../keystore" }
+mls-crypto-provider = { version = "0.2", path = "../mls-provider" }
 
 uuid = "1.0.0-alpha"
 clap = { version = "3", features = ["derive"] }

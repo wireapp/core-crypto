@@ -1,6 +1,6 @@
 [package]
 name = "core-crypto"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "GPL-3.0-only"
 
@@ -21,11 +21,11 @@ openmls_traits = "0.1"
 tls_codec = "0.2"
 
 [dependencies.core-crypto-keystore]
-version = "0.1.0"
+version = "0.2"
 path = "../keystore"
 
 [dependencies.mls-crypto-provider]
-version = "0.1.0"
+version = "0.2"
 path = "../mls-provider"
 
 [dev-dependencies]

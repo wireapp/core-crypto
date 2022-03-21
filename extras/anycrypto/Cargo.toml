@@ -12,15 +12,15 @@ default = []
 eyre = "0.6"
 thiserror = "1.0"
 uuid = "0.8"
-openmls = "0.4.0-pre"
-openmls_rust_crypto = "0.1.0-pre"
-openmls_traits = "0.1.0-pre"
+openmls = "0.4"
+openmls_rust_crypto = "0.1"
+openmls_traits = "0.1"
 proteus = "1.0"
 
 [dependencies.core-crypto-keystore]
-version = "0.1.0"
+version = "0.2"
 path = "../keystore"
 
 [dependencies.mls-crypto-provider]
-version = "0.1.0"
+version = "0.2"
 path = "../mls-provider"
