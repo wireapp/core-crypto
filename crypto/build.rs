@@ -24,4 +24,8 @@ fn main() {
 
     #[cfg(target_os = "android")]
     println!("cargo:rustc-cfg=android");
+
+    if let Ok(profile) = std::env::var("PROFILE") {
+        println!("cargo:rustc-cfg=build=\"{profile}\"");
+    }
 }

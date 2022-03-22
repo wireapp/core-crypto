@@ -15,8 +15,6 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - name: Coverage
         uses: actions-rs/tarpaulin@v0.1
-        with:
-          args: '--ignore-tests --run-types Tests --exclude-files "extras/*" --exclude-files "cli/*"'
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v3
         with:

@@ -1,5 +1,7 @@
 [package]
 name = "core-crypto-keystore"
+description = "Encrypted keystore with support for OpenMLS and Proteus"
+repository = "https://github.com/wireapp/core-crypto"
 version = "0.2.0"
 edition = "2021"
 license = "GPL-3.0-only"
@@ -18,28 +20,26 @@ harness = false
 
 [features]
 default = ["mls-keystore"]
-mls-keystore = ["openmls_traits", "hex"]
+mls-keystore = ["openmls_traits"]
 proteus-keystore = ["proteus"]
-ios-wal-compat = ["security-framework", "hex"]
+ios-wal-compat = ["security-framework"]
 memory-cache = ["lru"]
 
 [dependencies]
-eyre = "0.6"
 thiserror = "1.0"
-uuid = "1.0.0-alpha"
+cfg-if = "1.0"
+hex = "0.4"
+
 lru = { version = "0.7", optional = true }
-refinery = { version = "0.8", default-features = false, features = ["rusqlite"] }
-barrel = { version = "0.7", features = ["sqlite3"] }
 
 # iOS specific things
-security-framework = { version = "2.5.0-alpha", optional = true }
+security-framework = { version = "2.6", optional = true }
 
-hex = { version = "0.4", optional = true }
 openmls_traits = { version = "0.1", optional = true }
 proteus = { version = "1.0", default-features = false, optional = true }
 
-[dependencies.rusqlite]
-version = "0.26"
+[target.'cfg(not(target_family = "wasm"))'.dependencies.rusqlite]
+version = "0.27"
 default-features = false
 features = [
     "bundled-sqlcipher-vendored-openssl",
@@ -49,19 +49,29 @@ features = [
     "uuid",
 ]
 
-[target.'cfg(target_family = "wasm")'.dependencies.rusqlite]
-version = "0.26"
-default-features = false
-features = [
-    "bundled-sqlcipher-vendored-openssl",
-    "blob",
-    "limits",
-    "unlock_notify",
-    "uuid",
-    "wasm32-wasi-vfs"
-]
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+refinery = { git = "https://github.com/rust-db/refinery", default-features = false, features = ["rusqlite"] }
+
+[target.wasm32-unknown-unknown.dependencies]
+rexie = "0.4"
+js-sys = "0.3"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde-wasm-bindgen = "0.4"
+aes-gcm = "0.10.0-pre"
+rand = { version = "0.8", features = ["getrandom"] }
+getrandom = { version = "0.2", features = ["js"] }
+sha2 = "0.10"
 
 [dev-dependencies]
 criterion = "0.3"
+wasm-bindgen-test = "0.3"
+uuid = { version = "1.0", features = ["v4", "js"] }
+rand = { version = "0.8", features = ["getrandom"] }
+getrandom = { version = "0.2", features = ["js"] }
 openmls = { version = "0.4", default-features = false }
-openmls_rust_crypto_provider = { version = "0.1", package = "openmls_rust_crypto", default-features = false }
+openmls_rust_crypto_provider = { version = "0.1", package = "openmls_rust_crypto", features = ["provider"] }
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Os", "--enable-mutable-globals", "--enable-threads", "--detect-features"]

@@ -28,27 +28,27 @@ CoreCrypto:
             ✔ In-memory mode entrypoint @done (22-01-12 19:09)
 
     CoreCrypto - Rust:
-        ☐ Features
-            ☐ Client
+        ✔ Features @done (22-06-15 10:54)
+            ✔ Client @done (22-06-15 10:54)
                 ✔ Generate Client @done (22-01-12 19:02)
                 ✔ Generate key material (n number keypackages) @done (22-01-17 18:04)
-                ☐ Expose Client abstraction
-            ☐ Conversation
+                ✔ Expose Client abstraction @done (22-06-15 10:54)
+            ✔ Conversation @done (22-06-15 10:54)
                 ✔ Create empty conversation @done (22-01-12 19:02)
-                ☐ Create conversation with others
+                ✔ Create conversation with others @done (22-06-15 10:54)
                 ✔ Encrypt & serialize message @done (22-01-12 19:02)
                 ✔ Deserialize & decrypt message @done (22-01-12 19:02)
-            ☐ Central
+            ✔ Central @done (22-06-15 10:54)
                 ✔ Init - db + mls groups in-mem store @done (22-01-12 19:02)
                 ✔ Entrypoint for conversation management @done (22-01-12 19:02)
-                ☐ Entrypoint for client management
-        ☐ Test
-        ☐ Bench
+                ✔ Entrypoint for client management @done (22-06-15 10:54)
+        ✔ Test @done (22-06-15 10:54)
+        ✔ Bench @done (22-06-15 10:54)
 
     CoreCrypto - FFI:
-        ☐ Central
-            ☐ Client management
-            ☐ Conversation management
+        ✔ Central @done (22-06-15 10:54)
+            ✔ Client management @done (22-06-15 10:54)
+            ✔ Conversation management @done (22-06-15 10:54)
         ☐ Bindings
             ☐ Swift
                 ✔ Compile @done (22-02-21 10:55)
@@ -60,9 +60,9 @@ CoreCrypto:
                 ✔ Compile @done (22-01-28 10:42)
                 ✔ Produce @done (22-01-25 18:19)
                 ☐ Test
-            ☐ JS/TS
-                ☐ Compile to WASM
-                ☐ Write TS/JS bindings
+            ✔ JS/TS @done (22-06-15 10:54)
+                ✔ Compile to WASM @done (22-06-15 10:54)
+                ✔ Write TS/JS bindings @done (22-06-15 10:54)
                 ☐ Test w/ Deno
 
     CoreCrypto - MLS Test Distribution Service:
@@ -86,13 +86,12 @@ CryptoLib:
 
     ☐ Capabilities
         ☐ Support Proteus
-        ☐ Support MLS
+        ✔ Support MLS @done (22-06-15 10:54)
     ☐ KeyStore
-        ☐ MUST BE ENCRYPTED (with device key?)
+        ✔ MUST BE ENCRYPTED (with device key?) @done (22-06-15 10:54)
         ☐ Candidates
             ☐ SQLite (rusqlite) + https://github.com/sqlcipher/sqlcipher
                 - Super stable
-                - Supports WASM
             ☐ GlueSQL?
                 - Seems alright and has pluggable storage, meaning we can do OTF encrypt/decrypt file storage
                 - Supports WASM OOB

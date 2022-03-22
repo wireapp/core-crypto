@@ -17,27 +17,84 @@
 mod common;
 
 #[cfg(test)]
-mod tests {
-    use super::common::*;
+pub mod tests {
+    use crate::common::*;
+    use core_crypto_keystore::entities::MlsKeypackage;
+    use openmls_traits::key_store::{FromKeyStoreValue, ToKeyStoreValue};
 
-    use openmls::{
-        credentials::{CredentialBundle, CredentialType},
-        extensions::{Extension, ExternalKeyIdExtension},
-        key_packages::KeyPackageBundle,
-        prelude::Ciphersuite,
-    };
-    use openmls_rust_crypto_provider::OpenMlsRustCrypto;
-    use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
 
     #[test]
-    fn can_add_read_delete_keybundle() {
-        let store = setup("mls");
+    #[wasm_bindgen_test]
+    pub fn can_add_read_delete_keypackage_bundle_openmls_traits() {
+        use openmls::{
+            credentials::{CredentialBundle, CredentialType},
+            extensions::{Extension, ExternalKeyIdExtension},
+            key_packages::KeyPackageBundle,
+            prelude::Ciphersuite,
+        };
+        use openmls_rust_crypto_provider::OpenMlsRustCrypto;
+        let store = setup("mls-traits");
 
         let backend = OpenMlsRustCrypto::default();
-        let uuid: [u8; 16] = backend.rand().random_array().unwrap();
-        let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519;
+        let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 
-        let key_id = uuid::Uuid::from_bytes(uuid);
+        let key_id: [u8; 16] = rand::random();
+        let key_id = uuid::Uuid::from_bytes(key_id);
+
+        let credentials = CredentialBundle::new(
+            vec![1, 2, 3],
+            CredentialType::Basic,
+            ciphersuite.signature_algorithm(),
+            &backend,
+        )
+        .unwrap();
+
+        let keypackage_bundle = KeyPackageBundle::new(
+            &[ciphersuite],
+            &credentials,
+            &backend,
+            vec![Extension::ExternalKeyId(ExternalKeyIdExtension::new(key_id.as_bytes()))],
+        )
+        .unwrap();
+
+        let key_string = key_id.as_hyphenated().to_string();
+
+        keypackage_bundle.key_package().verify(&backend).unwrap();
+
+        use openmls_traits::key_store::OpenMlsKeyStore as _;
+        store.store(&key_string.as_bytes(), &keypackage_bundle).unwrap();
+        let bundle2: KeyPackageBundle = store.read(&key_string.as_bytes()).unwrap();
+        let (b1_kp, (b1_sk, b1_ls)) = keypackage_bundle.into_parts();
+        let (b2_kp, (b2_sk, b2_ls)) = bundle2.into_parts();
+        assert_eq!(b1_kp, b2_kp);
+        assert_eq!(b1_sk, b2_sk);
+        assert_eq!(b1_ls, b2_ls);
+
+        store.delete(&key_string.as_bytes()).unwrap();
+
+        teardown(store);
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    pub fn can_add_read_delete_keypackage_bundle_keystore() {
+        use openmls::{
+            credentials::{CredentialBundle, CredentialType},
+            extensions::{Extension, ExternalKeyIdExtension},
+            key_packages::KeyPackageBundle,
+            prelude::Ciphersuite,
+        };
+        use openmls_rust_crypto_provider::OpenMlsRustCrypto;
+        let store = setup("mls-keystore");
+
+        let backend = OpenMlsRustCrypto::default();
+        let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+
+        let key_id: [u8; 16] = rand::random();
+        let key_id = uuid::Uuid::from_bytes(key_id);
 
         let credentials = CredentialBundle::new(
             vec![1, 2, 3],
@@ -57,21 +114,25 @@ mod tests {
 
         keypackage_bundle.key_package().verify(&backend).unwrap();
 
-        let key = {
-            let id = keypackage_bundle.key_package().external_key_id().unwrap();
-            uuid::Uuid::from_slice(id).unwrap()
+        let key_string = key_id.as_hyphenated().to_string();
+
+        let entity = MlsKeypackage {
+            id: key_string.clone(),
+            key: keypackage_bundle.to_key_store_value().unwrap(),
         };
 
-        use openmls_traits::key_store::OpenMlsKeyStore as _;
-        store.store(key.as_bytes(), &keypackage_bundle).unwrap();
-        let bundle2: KeyPackageBundle = store.read(key.as_bytes()).unwrap();
+        store.insert(entity).unwrap();
+
+        let entity2: MlsKeypackage = store.find(key_string.as_bytes()).unwrap().unwrap();
+        let bundle2 = KeyPackageBundle::from_key_store_value(&entity2.key).unwrap();
+
         let (b1_kp, (b1_sk, b1_ls)) = keypackage_bundle.into_parts();
         let (b2_kp, (b2_sk, b2_ls)) = bundle2.into_parts();
         assert_eq!(b1_kp, b2_kp);
         assert_eq!(b1_sk, b2_sk);
         assert_eq!(b1_ls, b2_ls);
 
-        let _ = store.delete(key.as_bytes()).unwrap();
+        let _ = store.remove::<MlsKeypackage, _>(&key_string.as_bytes()).unwrap();
 
         teardown(store);
     }

@@ -17,19 +17,24 @@
 mod common;
 
 #[cfg(all(test, feature = "proteus-keystore"))]
-mod tests {
-    use super::common::*;
+pub mod tests {
+    use crate::common::*;
     use proteus::keys::{PreKey, PreKeyId};
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
 
     #[test]
-    fn can_add_read_delete_prekey() {
+    #[wasm_bindgen_test]
+    pub fn can_add_read_delete_prekey() {
+        use core_crypto_keystore::CryptoKeystoreProteus as _;
         let mut store = setup("proteus");
         let prekey_id = PreKeyId::new(28273);
         let prekey = PreKey::new(prekey_id);
         store.store_prekey(&prekey).unwrap();
         use proteus::session::PreKeyStore as _;
         let _ = store.prekey(prekey_id).unwrap().unwrap();
-        let _ = store.remove(prekey.key_id).unwrap();
+        let _ = proteus::session::PreKeyStore::remove(&mut store, prekey.key_id).unwrap();
         teardown(store);
     }
 }

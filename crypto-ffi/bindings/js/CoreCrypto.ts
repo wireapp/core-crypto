@@ -14,74 +14,226 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-// WIP
+
+// @ts-ignore
+import wasm from "../../../crypto-ffi/Cargo.toml";
+
+import type * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi";
+
+import type { Ciphersuite } from "./wasm/core-crypto-ffi";
+export type { Ciphersuite } from "./wasm/core-crypto-ffi";
+
+let CoreCryptoFfiModule: typeof CoreCryptoFfiTypes;
+
+type Buffer = Uint8Array;
+export interface ConversationConfiguration {
+  admins?: Buffer[];
+  ciphersuite?: Ciphersuite;
+  keyRotationSpan?: number;
+}
+
+export type ConversationId = Buffer;
 
 export interface CoreCryptoParams {
-    path: string;
-    key: string;
-    clientId: string;
+  path: string;
+  key: string;
+  clientId: string;
 }
 
 export interface Invitee {
-    id: string;
-    kp: Uint8Array;
+  id: Buffer;
+  kp: Buffer;
 }
 
-export interface CreateConversationParams {
-    extraMembers: Invitee[],
-    admins: string[],
-    ciphersuite: string;
-    keyRotationSpan: number;
+export interface MemberAddedMessages {
+  message: Buffer;
+  welcome: Buffer;
 }
 
-interface __FFICreateConversationParams {
-    extra_members: Invitee[],
-    admins: string[],
-    ciphersuite: string;
-    key_rotation_span: number;
+export interface ConversationLeaveMessages {
+  self_removal_proposal: Buffer;
+  other_clients_removal_commit: Buffer;
 }
 
-interface RustCoreCryptoFfi {
-    create_conversation(conversationUuid: string, params: __FFICreateConversationParams): Uint8Array;
-    decrypt_message(conversationUuid: string, payload: Uint8Array): Uint8Array;
-    encrypt_message(conversationUuid: string, message: Uint8Array): Uint8Array;
+export const enum ProposalType {
+  Add,
+  Remove,
+  Update,
+}
+
+export interface ProposalArgs {
+  conversationId: string;
+}
+
+export interface AddProposalArgs extends ProposalArgs {
+  kp: Buffer;
+}
+
+export interface RemoveProposalArgs extends ProposalArgs {
+  clientId: string;
 }
 
 export class CoreCrypto {
-    #module: WebAssembly.WebAssemblyInstantiatedSource;
-    #cc: RustCoreCryptoFfi;
+  #cc: CoreCryptoFfiTypes.CoreCrypto;
+  #encoder: TextEncoder;
 
-    static async init(wasmFile: string, params: CoreCryptoParams): Promise<CoreCrypto> {
-        const wasmModule = await WebAssembly.instantiateStreaming(fetch(wasmFile), {})
-        const self = new CoreCrypto({ wasmModule, ...params });
-        return self;
+  static async init(params: CoreCryptoParams): Promise<CoreCrypto> {
+    const exports = (await wasm()) as typeof CoreCryptoFfiTypes;
+    CoreCryptoFfiModule = exports;
+    return new CoreCrypto(params);
+  }
+
+  constructor({ path, key, clientId }: CoreCryptoParams) {
+    if (!CoreCryptoFfiModule) {
+      throw new Error(
+        "Internal module hasn't been initialized. Please use `await CoreCrypto.init(params)`!"
+      );
+    }
+    this.#cc = new CoreCryptoFfiModule.CoreCrypto(path, key, clientId);
+    this.#encoder = new TextEncoder();
+  }
+
+  createConversation(
+    conversationId: string,
+    { ciphersuite, keyRotationSpan }: ConversationConfiguration
+  ) {
+    const config = new CoreCryptoFfiModule.ConversationConfiguration(
+      ciphersuite,
+      keyRotationSpan
+    );
+    this.#cc.create_conversation(this.#encoder.encode(conversationId), config);
+  }
+
+  decryptMessage(conversationId: string, payload: Buffer): Buffer | undefined {
+    return this.#cc.decrypt_message(
+      this.#encoder.encode(conversationId),
+      payload
+    );
+  }
+
+  encryptMessage(conversationId: string, message: Buffer): Buffer {
+    return this.#cc.encrypt_message(
+      this.#encoder.encode(conversationId),
+      message
+    );
+  }
+
+  processWelcomeMessage(welcomeMessage: Buffer): ConversationId {
+    return this.#cc.process_welcome_message(welcomeMessage);
+  }
+
+  clientPublicKey(): Buffer {
+    return this.#cc.client_public_key();
+  }
+
+  clientKeypackages(amountRequested: number): Array<Buffer> {
+    return this.#cc.client_keypackages(amountRequested);
+  }
+
+  addClientsToConversation(
+    conversationId: string,
+    clients: Invitee[]
+  ): MemberAddedMessages | undefined {
+    const ffiClients = clients.map(
+      (invitee) => new CoreCryptoFfiModule.Invitee(invitee.id, invitee.kp)
+    );
+    const ffiRet = this.#cc.add_clients_to_conversation(
+      this.#encoder.encode(conversationId),
+      ffiClients
+    );
+
+    if (!ffiRet) {
+      return;
     }
 
-    constructor({ wasmModule, path, key, clientId }: CoreCryptoParams & {
-        wasmModule: WebAssembly.WebAssemblyInstantiatedSource
-    }) {
-        this.#module = wasmModule;
-        this.#cc = (this.#module.instance.exports.init_with_path_and_key as CallableFunction)(path, key, clientId);
-    }
+    const ret: MemberAddedMessages = {
+      welcome: ffiRet.welcome,
+      message: ffiRet.message,
+    };
 
-    createConversation(conversationUuid: string, { extraMembers, admins, ciphersuite, keyRotationSpan }: CreateConversationParams) {
-        return this.#cc.create_conversation(conversationUuid, {
-            extra_members: extraMembers,
-            admins,
-            ciphersuite,
-            key_rotation_span: keyRotationSpan
-        });
-    }
+    ffiRet.free();
 
-    decryptMessage(conversationUuid: string, payload: Uint8Array): Uint8Array {
-        return this.#cc.decrypt_message(conversationUuid, payload);
-    }
+    return ret;
+  }
 
-    encryptMessage(conversationUuid: string, message: Uint8Array): Uint8Array {
-        return this.#cc.encrypt_message(conversationUuid, message);
-    }
+  removeClientsFromConversation(
+    conversationId: string,
+    clientIds: string[]
+  ): Buffer | undefined {
+    const ffiClientsIds = clientIds.map((cid) => this.#encoder.encode(cid));
+    return this.#cc.remove_clients_from_conversation(
+      this.#encoder.encode(conversationId),
+      ffiClientsIds
+    );
+  }
 
-    version(): string {
-        return (this.#module.instance.exports.version as CallableFunction)();
+  conversationExists(conversationId: ConversationId): boolean {
+    return this.#cc.conversation_exists(conversationId);
+  }
+
+  leaveConversation(
+    conversationId: ConversationId,
+    otherClients: Buffer[]
+  ): ConversationLeaveMessages {
+    const retFfi = this.#cc.leave_conversation(conversationId, otherClients);
+    const ret: ConversationLeaveMessages = {
+      self_removal_proposal: retFfi.self_removal_proposal,
+      other_clients_removal_commit: retFfi.self_removal_proposal,
+    };
+    retFfi.free();
+    return ret;
+  }
+
+  newProposal(
+    proposalType: ProposalType,
+    args: ProposalArgs | AddProposalArgs | RemoveProposalArgs
+  ): Buffer {
+    switch (proposalType) {
+      case ProposalType.Add: {
+        if (!(args as AddProposalArgs).kp) {
+          throw new Error("kp is not contained in the proposal arguments");
+        }
+        return this.#cc.new_add_proposal(
+          this.#encoder.encode(args.conversationId),
+          (args as AddProposalArgs).kp
+        );
+      }
+      case ProposalType.Remove: {
+        if (!(args as RemoveProposalArgs).clientId) {
+          throw new Error(
+            "clientId is not contained in the proposal arguments"
+          );
+        }
+        return this.#cc.new_remove_proposal(
+          this.#encoder.encode(args.conversationId),
+          this.#encoder.encode((args as RemoveProposalArgs).clientId)
+        );
+      }
+      case ProposalType.Update: {
+        return this.#cc.new_update_proposal(
+          this.#encoder.encode(args.conversationId)
+        );
+      }
+      default:
+        throw new Error("Invalid proposal type!");
     }
+  }
+
+  wipe() {
+    this.#cc.wipe();
+    this.#cc.free();
+  }
+
+  close() {
+    this.#cc.free();
+  }
+
+  static version(): string {
+    if (!CoreCryptoFfiModule) {
+      throw new Error(
+        "Internal module hasn't been initialized. Please use `await CoreCrypto.init(params)`!"
+      );
+    }
+    return CoreCryptoFfiModule.version();
+  }
 }

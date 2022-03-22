@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{CryptoError, CryptoResult, MlsCiphersuite, MlsError};
-use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreResult};
+use core_crypto_keystore::{entities::MlsIdentity, CryptoKeystoreError, CryptoKeystoreResult};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::credentials::CredentialType;
 use openmls::prelude::KeyPackageRef;
@@ -24,7 +24,10 @@ use openmls::{
     extensions::{Extension, ExternalKeyIdExtension},
     prelude::{KeyPackageBundle, TlsSerializeTrait},
 };
-use openmls_traits::{key_store::OpenMlsKeyStore, OpenMlsCryptoProvider};
+use openmls_traits::{
+    key_store::{FromKeyStoreValue, OpenMlsKeyStore, ToKeyStoreValue},
+    OpenMlsCryptoProvider,
+};
 
 pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 
@@ -50,6 +53,19 @@ impl From<Vec<u8>> for ClientId {
     }
 }
 
+impl From<Box<[u8]>> for ClientId {
+    fn from(value: Box<[u8]>) -> Self {
+        Self(value.into())
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<Vec<u8>> for ClientId {
+    fn into(self) -> Vec<u8> {
+        self.0
+    }
+}
+
 impl std::fmt::Display for ClientId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", hex::encode(self.0.as_slice()))
@@ -60,7 +76,9 @@ impl std::str::FromStr for ClientId {
     type Err = CryptoError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.as_bytes().to_vec()))
+        Ok(Self(
+            hex::decode(s).map_or_else(|_| s.as_bytes().to_vec(), std::convert::identity),
+        ))
     }
 }
 
@@ -82,22 +100,17 @@ fn identity_key(credentials: &CredentialBundle) -> Result<Vec<u8>, MlsError> {
 
 impl Client {
     pub fn init(id: ClientId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
+        use core_crypto_keystore::CryptoKeystoreMls as _;
         let id_str: String = id.to_string();
-        let (client, generated) = if let Some(signature) = backend.key_store().mls_load_identity_signature(&id_str)? {
+        let client = if let Some(signature) = backend.key_store().mls_load_identity_signature(&id_str)? {
             match Self::load(id.clone(), &signature, backend) {
-                Ok(client) => (client, false),
-                Err(CryptoError::ClientSignatureNotFound) => (Self::generate(id, backend, true)?, true),
+                Ok(client) => client,
+                Err(CryptoError::ClientSignatureNotFound) => Self::generate(id, backend, true)?,
                 Err(e) => return Err(e),
             }
         } else {
-            (Self::generate(id, backend, true)?, true)
+            Self::generate(id, backend, true)?
         };
-
-        if generated {
-            backend
-                .key_store()
-                .mls_save_identity_signature(&id_str, &identity_key(&client.credentials)?)?;
-        }
 
         Ok(client)
     }
@@ -112,10 +125,15 @@ impl Client {
         )
         .map_err(MlsError::from)?;
 
-        backend
-            .key_store()
-            .store(&identity_key(&credentials)?, &credentials)
-            .map_err(eyre::Report::msg)?;
+        let identity = MlsIdentity {
+            id: id.to_string(),
+            signature: identity_key(&credentials)?,
+            credential: credentials
+                .to_key_store_value()
+                .map_err(|e| MlsError::MlsErrorString(e.into()))?,
+        };
+
+        backend.key_store().insert(identity)?;
 
         let client = Self {
             id,
@@ -132,10 +150,17 @@ impl Client {
 
     pub(crate) fn load(id: ClientId, signature_public_key: &[u8], backend: &MlsCryptoProvider) -> CryptoResult<Self> {
         let ciphersuite = MlsCiphersuite::default();
-        let credentials: CredentialBundle = backend
+        let identity: MlsIdentity = backend
             .key_store()
-            .read(signature_public_key)
+            .find(id.to_string())?
             .ok_or(CryptoError::ClientSignatureNotFound)?;
+
+        if signature_public_key != identity.signature {
+            return Err(CryptoError::ClientSignatureMismatch);
+        }
+
+        let credentials: CredentialBundle = CredentialBundle::from_key_store_value(&identity.credential)
+            .map_err(|e| MlsError::MlsErrorString(e.into()))?;
 
         Ok(Self {
             id,
@@ -172,13 +197,14 @@ impl Client {
         &self.ciphersuite
     }
 
-    /// This method returns the hash of the oldest available KeyPackageBundle for the Client
-    /// and if necessary regenerates a new keypackage for immediate use
     pub fn keypackage_raw_hash(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
         Ok(self.keypackage_hash(backend)?.value().to_vec())
     }
 
+    /// This method returns the hash of the oldest available KeyPackageBundle for the Client
+    /// and if necessary regenerates a new keypackage for immediate use
     pub fn keypackage_hash(&self, backend: &MlsCryptoProvider) -> CryptoResult<KeyPackageRef> {
+        use core_crypto_keystore::CryptoKeystoreMls as _;
         let kpb_result: CryptoKeystoreResult<KeyPackageBundle> = backend.key_store().mls_get_keypackage();
         match kpb_result {
             Ok(kpb) => Ok(kpb.key_package().hash_ref(backend.crypto()).map_err(MlsError::from)?),
@@ -204,7 +230,7 @@ impl Client {
         backend
             .key_store()
             .store(href.value(), &kpb)
-            .map_err(eyre::Report::msg)?;
+            .map_err(|e| MlsError::MlsErrorString(e.into()))?;
 
         Ok(kpb)
     }
@@ -225,6 +251,7 @@ impl Client {
         count: usize,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<KeyPackageBundle>> {
+        use core_crypto_keystore::CryptoKeystoreMls as _;
         let kpb_count = backend.key_store().mls_keypackagebundle_count()?;
         if count > kpb_count {
             let to_generate = count - kpb_count;
@@ -233,10 +260,7 @@ impl Client {
             }
         }
 
-        let kpbs: Vec<KeyPackageBundle> = backend
-            .key_store()
-            .mls_fetch_keypackage_bundles(count as u32)?
-            .collect();
+        let kpbs: Vec<KeyPackageBundle> = backend.key_store().mls_fetch_keypackage_bundles(count as u32)?;
 
         Ok(kpbs)
     }
@@ -265,30 +289,38 @@ impl Client {
     }
 
     pub fn keypackages(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<openmls::prelude::KeyPackage>> {
-        let kps = backend.key_store().mls_fetch_keypackage_bundles(u32::MAX)?.try_fold(
-            vec![],
-            |mut acc, kpb: KeyPackageBundle| -> CryptoResult<_> {
+        use core_crypto_keystore::CryptoKeystoreMls as _;
+        let kps = backend
+            .key_store()
+            .mls_fetch_keypackage_bundles(u32::MAX)?
+            .into_iter()
+            .try_fold(vec![], |mut acc, kpb: KeyPackageBundle| -> CryptoResult<_> {
                 acc.push(kpb.key_package().clone());
                 Ok(acc)
-            },
-        )?;
+            })?;
 
         Ok(kps)
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+pub mod tests {
+    use mls_crypto_provider::MlsCryptoProvider;
+    use wasm_bindgen_test::wasm_bindgen_test;
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
+    use super::Client;
 
     #[test]
-    fn can_generate_client() {
+    #[wasm_bindgen_test]
+    pub fn can_generate_client() {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
         assert!(Client::random_generate(&backend, false).is_ok());
     }
 
     #[test]
-    fn client_never_runs_out_of_keypackages() {
+    #[wasm_bindgen_test]
+    pub fn client_never_runs_out_of_keypackages() {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
         let client = Client::random_generate(&backend, true).unwrap();
         for _ in 0..100 {
@@ -297,7 +329,8 @@ mod tests {
     }
 
     #[test]
-    fn client_generates_correct_number_of_kpbs() {
+    #[wasm_bindgen_test]
+    pub fn client_generates_correct_number_of_kpbs() {
         // use openmls_traits::OpenMlsCryptoProvider as _;
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
         let client = Client::random_generate(&backend, true).unwrap();

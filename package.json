@@ -1,0 +1,63 @@
+{
+    "name": "@otak/core-crypto",
+    "version": "0.2.0-beta-3",
+    "description": "CoreCrypto bindings for the Web - Dev version",
+    "type": "module",
+    "module": "platforms/web/corecrypto.js",
+    "types": "platforms/web/corecrypto.d.js",
+    "scripts": {
+        "prepare": "npm run build",
+        "build": "npm run clean && rollup -c crypto-ffi/bindings/js/rollup.config.js",
+        "build:test": "npm run clean && rollup -c crypto-ffi/bindings/js/rollup.config.test.js",
+        "clean": "rm -f ./platforms/web/*.{js,ts,wasm,html} && rm -rf ./platforms/web/assets",
+        "package": "npm run build && npm pack",
+        "test:raw": "jest -c crypto-ffi/bindings/js/jest.config.js --no-cache --runInBand --silent --verbose --detectOpenHandles",
+        "test": "npm run build:test && npm run test:raw",
+        "test:cov": "npm run build:test && jest -c crypto-ffi/bindings/js/jest.config.js --coverage --no-cache --runInBand --silent --verbose --detectOpenHandles"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "platforms/web"
+    ],
+    "keywords": [
+        "wire",
+        "e2ee",
+        "corecrypto",
+        "mls",
+        "proteus"
+    ],
+    "author": "Mathieu Amiot <amiot.mathieu@gmail.com>",
+    "license": "GPL-3.0",
+    "homepage": "https://github.com/wireapp/core-crypto",
+    "repository": {
+        "type": "git",
+        "url": "git@github.com:wireapp/core-crypto.git"
+    },
+    "bugs": {
+        "url": "https://github.com/wireapp/core-crypto/issues"
+    },
+    "devDependencies": {
+        "@rollup/plugin-html": "^0.2.4",
+        "@types/jest": "^28.1.1",
+        "@types/jest-dev-server": "^5.0.0",
+        "@typescript-eslint/eslint-plugin": "^5.27.1",
+        "@typescript-eslint/parser": "^5.27.1",
+        "@wasm-tool/rollup-plugin-rust": "^2.2.2",
+        "dts-bundle-generator": "^6.11.0",
+        "eslint": "^8.17.0",
+        "eslint-config-prettier": "^8.5.0",
+        "eslint-plugin-prettier": "^4.0.0",
+        "jest": "^28.1.1",
+        "jest-dev-server": "^6.0.3",
+        "prettier": "^2.6.2",
+        "puppeteer": "^14.3.0",
+        "rollup": "^2.75.6",
+        "rollup-jest": "^3.0.0",
+        "rollup-plugin-ts": "^3.0.2",
+        "ts-jest": "^28.0.4",
+        "ts-loader": "^9.3.0",
+        "typescript": "^4.7.3"
+    }
+}

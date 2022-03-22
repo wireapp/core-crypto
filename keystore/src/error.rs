@@ -18,6 +18,10 @@
 pub enum MissingKeyErrorKind {
     #[error("MLS Key Bundle")]
     MlsKeyBundle,
+    #[error("MLS Credential Bundle")]
+    MlsIdentityBundle,
+    #[error("MLS Persisted Group")]
+    MlsGroup,
     #[cfg(feature = "proteus-keystore")]
     #[error("Proteus PreKey")]
     ProteusPrekey,
@@ -28,8 +32,10 @@ pub enum CryptoKeystoreError {
     #[error("The requested {0} is not present in the store")]
     MissingKeyInStore(#[from] MissingKeyErrorKind),
     #[error("The given key doesn't contain valid utf-8")]
-    KeyReprError(std::str::Utf8Error),
-    #[error("One of the locks has been poisoned")]
+    KeyReprError(#[from] std::str::Utf8Error),
+    #[error(transparent)]
+    TryFromSliceError(#[from] std::array::TryFromSliceError),
+    #[error("One of the Keystore locks has been poisoned")]
     LockPoisonError,
     #[error("The keystore has run out of keypackage bundles!")]
     OutOfKeyPackageBundles,
@@ -37,8 +43,22 @@ pub enum CryptoKeystoreError {
     KeyStoreValueTransformError(String),
     #[error(transparent)]
     IoError(#[from] std::io::Error),
+    #[cfg(target_family = "wasm")]
+    #[error(transparent)]
+    ChannelError(#[from] std::sync::mpsc::RecvError),
+    #[cfg(target_family = "wasm")]
+    #[error(transparent)]
+    RexieError(#[from] rexie::Error),
+    #[cfg(target_family = "wasm")]
+    #[error("aead::Error")]
+    AesGcmError,
+    #[cfg(target_family = "wasm")]
+    #[error(transparent)]
+    SerdeWasmBindgenError(#[from] serde_wasm_bindgen::Error),
+    #[cfg(not(target_family = "wasm"))]
     #[error(transparent)]
     DbError(#[from] rusqlite::Error),
+    #[cfg(not(target_family = "wasm"))]
     #[error(transparent)]
     DbMigrationError(#[from] refinery::Error),
     #[cfg(test)]
@@ -49,6 +69,9 @@ pub enum CryptoKeystoreError {
     MlsExtensionError(#[from] openmls::prelude::ExtensionError),
     #[cfg(feature = "proteus-keystore")]
     #[error(transparent)]
+    ParseIntError(#[from] std::num::ParseIntError),
+    #[cfg(feature = "proteus-keystore")]
+    #[error(transparent)]
     PrekeyDecodeError(#[from] proteus::internal::types::DecodeError),
     #[cfg(feature = "proteus-keystore")]
     #[error(transparent)]
@@ -56,15 +79,15 @@ pub enum CryptoKeystoreError {
     #[error("{0}")]
     MlsKeyStoreError(String),
     #[error(transparent)]
-    UuidError(#[from] uuid::Error),
+    HexDecodeError(#[from] hex::FromHexError),
+    #[error(transparent)]
+    FromUtf8Error(#[from] std::string::FromUtf8Error),
     #[cfg(feature = "ios-wal-compat")]
     #[error(transparent)]
-    HexSaltDecodeError(#[from] hex::FromHexError),
+    HexSaltDecodeError(hex::FromHexError),
     #[cfg(feature = "ios-wal-compat")]
     #[error(transparent)]
     SecurityFrameworkError(#[from] security_framework::base::Error),
-    #[error(transparent)]
-    Other(#[from] eyre::Report),
 }
 
 pub type CryptoKeystoreResult<T> = Result<T, CryptoKeystoreError>;
