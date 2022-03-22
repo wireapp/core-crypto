@@ -1,3 +1,4 @@
+/*
 // Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
@@ -13,26 +14,20 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
+*/
 
-use barrel::{backend::Sqlite, types, Migration};
+CREATE TABLE mls_keys (
+    uuid VARCHAR(255) UNIQUE,
+    key BLOB
+);
 
-pub fn migration() -> String {
-    let mut m = Migration::new();
+CREATE TABLE mls_identities (
+    id VARCHAR(255) UNIQUE,
+    signature BLOB
+);
 
-    m.create_table("mls_keys", |t| {
-        t.add_column("uuid", types::varchar(255).unique(true));
-        t.add_column("key", types::binary());
-    });
+CREATE TABLE proteus_prekeys (
+    id INT UNIQUE,
+    key BLOB
+);
 
-    m.create_table("mls_identities", |t| {
-        t.add_column("id", types::varchar(255).unique(true));
-        t.add_column("signature", types::binary());
-    });
-
-    m.create_table("proteus_prekeys", |t| {
-        t.add_column("id", types::integer().unique(true));
-        t.add_column("key", types::binary());
-    });
-
-    m.make::<Sqlite>()
-}

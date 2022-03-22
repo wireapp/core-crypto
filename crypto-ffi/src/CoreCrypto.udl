@@ -28,13 +28,11 @@ enum CryptoError {
     "LockPoisonError",
     "ConversationConfigurationError",
     "MlsError",
-    "UuidError",
     "Utf8Error",
     "StringUtf8Error",
     "ParseIntError",
     "IoError",
-    "Unauthorized",
-    "Other"
+    "Unauthorized"
 };
 
 dictionary MemberAddedMessages {

@@ -15,11 +15,17 @@ args = ["check"]
 
 [tasks.wasm]
 command = "cargo"
-args = ["build", "--target", "wasm32-unknown-emscripten", "${@}"]
+args = ["build", "--target", "wasm32-unknown-emscripten", "--features", "c-api", "${@}"]
 
 [tasks.wasm-xargo]
 command = "rustup"
-args = ["run", "nightly", "xargo", "build", "-Zbuild-std", "--target", "wasm32-unknown-emscripten", "${@}"]
+args = [
+    "run", "nightly", "xargo", "build",
+    "-Zbuild-std",
+    "--target", "wasm32-unknown-emscripten",
+    "--features", "c-api",
+    "${@}"
+]
 
 # [tasks.wasm-debug]
 # private = true
@@ -65,6 +71,7 @@ script = '''
     cd bindings/swift
 
     rm -rf ./out/CoreCrypto.xcframework
+    mkdir -p ./out
 
     #lipo -create -output ./out/libcore_crypto_ffi_iossimulator.a \
     #    ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a

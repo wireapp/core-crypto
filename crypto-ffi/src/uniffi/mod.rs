@@ -14,15 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use barrel::{backend::Sqlite, types, Migration};
+uniffi_macros::include_scaffolding!("CoreCrypto");
 
-pub fn migration() -> String {
-    let mut m = Migration::new();
+mod uniffi_support;
 
-    m.create_table("mls_groups", |t| {
-        t.add_column("id", types::binary());
-        t.add_column("state", types::binary());
-    });
+use std::collections::HashMap;
 
-    m.make::<Sqlite>()
+use core_crypto::prelude::*;
+pub use core_crypto::CryptoError;
+
+pub fn init_with_path_and_key(path: &str, key: &str, client_id: &str) -> CryptoResult<std::sync::Arc<CoreCrypto>> {
+    Ok(std::sync::Arc::new(CoreCrypto::new(path, key, client_id)?))
+}
+
+pub fn version() -> String {
+    crate::VERSION.to_string()
 }

@@ -23,9 +23,7 @@ mod mls;
 #[cfg(feature = "proteus-keystore")]
 mod proteus;
 
-mod migrations {
-    refinery::embed_migrations!("src/migrations");
-}
+refinery::embed_migrations!("src/migrations");
 
 #[cfg(feature = "memory-cache")]
 const LRU_CACHE_CAP: usize = 100;
@@ -126,9 +124,8 @@ impl CryptoKeystore {
         self.cache_enabled.store(enabled, std::sync::atomic::Ordering::SeqCst);
     }
 
-    pub fn run_migrations(&mut self) -> CryptoKeystoreResult<()> {
-        migrations::migrations::runner()
-            .run(&mut *self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?)?;
+    pub fn run_migrations(&mut self) -> error::CryptoKeystoreResult<()> {
+        migrations::runner().run(&mut *self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?)?;
 
         Ok(())
     }

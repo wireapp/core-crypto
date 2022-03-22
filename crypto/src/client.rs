@@ -54,6 +54,12 @@ impl From<Vec<u8>> for ClientId {
     }
 }
 
+impl Into<Vec<u8>> for ClientId {
+    fn into(self) -> Vec<u8> {
+        self.0
+    }
+}
+
 impl std::fmt::Display for ClientId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", hex::encode(self.0.as_slice()))
@@ -124,7 +130,7 @@ impl Client {
         backend
             .key_store()
             .store(&identity_key(&credentials)?, &credentials)
-            .map_err(eyre::Report::msg)?;
+            .map_err(|e| MlsError::MlsErrorString(e.into()))?;
 
         let client = Self {
             id,
@@ -198,7 +204,7 @@ impl Client {
         backend
             .key_store()
             .store(href.value(), &kpb)
-            .map_err(eyre::Report::msg)?;
+            .map_err(|e| MlsError::MlsErrorString(e.into()))?;
 
         Ok(kpb)
     }

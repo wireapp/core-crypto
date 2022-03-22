@@ -22,22 +22,35 @@ const wasiCtx = new WasiContext({
     env: Deno.env.toObject(),
 });
 
+const asm2wasmImports = {
+    "f64-rem": function (x: number, y: number) {
+        return x % y
+    },
+    "debugger": function () {}
+};
+
 CoreCrypto.init = async function init(wasmFile: string, params: CoreCryptoParams): Promise<CoreCrypto> {
     const wasmCode = await Deno.readFile(wasmFile);
     const module = new WebAssembly.Module(wasmCode);
     const instance = new WebAssembly.Instance(module, {
-        env: {
+        "env": {
             __memory_base: 0,
             __table_base: 0,
             memory: new WebAssembly.Memory({ initial: 1 }),
+            STACKTOP: 0,
         },
-        wasi_snapshot_preview1: wasiCtx.exports,
+        "global": {
+            "NaN": NaN,
+            Infinity: Infinity,
+        },
+        "global.Math": Math as any,
+        "wasi_snapshot_preview1": wasiCtx.exports,
     });
 
     return new CoreCrypto({ wasmModule: { module, instance }, ...params });
 }.bind(CoreCrypto);
 
-const coreCrypto = await CoreCrypto.init("./target/wasm32-unknown-emscripten/release/core_crypto_ffi.wasm", {
+const coreCrypto = await CoreCrypto.init("./target/wasm32-unknown-emscripten/debug/core_crypto_ffi.wasm", {
     path: "./test.edb",
     key: "test",
     clientId: "deno-test",

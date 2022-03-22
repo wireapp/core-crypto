@@ -11,12 +11,16 @@ crate-type = ["cdylib", "staticlib"]
 [features]
 default = []
 mobile = ["uniffi", "uniffi_macros", "uniffi_build", "uniffi_bindgen"]
+c-api = ["libc", "wee_alloc"]
 
 [dependencies]
 core-crypto = { version = "0.2", path = "../crypto" }
 # UniFFI - Android + iOS bindings - Runtime support
 uniffi = { version = "0.17", optional = true }
 uniffi_macros = { version = "0.17", optional = true }
+# C-API support
+libc = { version = "0.2", optional = true }
+wee_alloc = { version = "0.4", optional = true }
 
 [build-dependencies]
 # UniFFI - Android + iOS bindings - Build support

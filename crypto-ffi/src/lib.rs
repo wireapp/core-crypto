@@ -14,11 +14,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-#[cfg(feature = "mobile")]
-uniffi_macros::include_scaffolding!("CoreCrypto");
+#[allow(dead_code)]
+pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+#[cfg(feature = "c-api")]
+#[cfg_attr(feature = "c-api", global_allocator)]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[cfg(feature = "mobile")]
-mod uniffi_support;
+mod uniffi;
+
+#[cfg(feature = "mobile")]
+pub use self::uniffi::*;
+
+#[cfg(feature = "c-api")]
+mod c_api;
+
+#[cfg(feature = "c-api")]
+pub use self::c_api::*;
 
 use std::collections::HashMap;
 
@@ -26,6 +39,7 @@ use core_crypto::prelude::*;
 pub use core_crypto::CryptoError;
 
 #[derive(Debug)]
+#[repr(C)]
 pub struct MemberAddedMessages {
     pub welcome: Vec<u8>,
     pub message: Vec<u8>,
@@ -47,6 +61,7 @@ pub struct ConversationLeaveMessages {
 }
 
 #[derive(Debug, Clone)]
+#[repr(C)]
 pub struct Invitee {
     pub id: ClientId,
     pub kp: Vec<u8>,
@@ -82,6 +97,7 @@ impl TryInto<ConversationMember> for Invitee {
 }
 
 #[derive(Debug, Clone)]
+#[repr(C)]
 pub struct ConversationConfiguration {
     pub extra_members: Vec<Invitee>,
     pub admins: Vec<MemberId>,
@@ -92,22 +108,24 @@ pub struct ConversationConfiguration {
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     type Error = CryptoError;
     fn try_into(mut self) -> CryptoResult<MlsConversationConfiguration> {
-        let mut cfg = MlsConversationConfiguration::builder();
         let extra_members = self
             .extra_members
             .into_iter()
             .map(TryInto::try_into)
             .collect::<CryptoResult<Vec<ConversationMember>>>()?;
 
-        cfg.extra_members(extra_members);
-        cfg.admins(self.admins);
-        cfg.key_rotation_span(self.key_rotation_span);
+        let mut cfg = MlsConversationConfiguration {
+            extra_members,
+            admins: self.admins,
+            key_rotation_span: self.key_rotation_span,
+            ..Default::default()
+        };
 
         if let Some(ciphersuite) = self.ciphersuite.take() {
-            cfg.ciphersuite(ciphersuite.into());
+            cfg.ciphersuite = ciphersuite.into();
         }
 
-        Ok(cfg.build()?)
+        Ok(cfg)
     }
 }
 
@@ -119,7 +137,9 @@ pub struct CoreCrypto(MlsCentral);
 impl CoreCrypto {
     pub fn new(path: &str, key: &str, client_id: &str) -> CryptoResult<Self> {
         let configuration = MlsCentralConfiguration::try_new(path.into(), key.into(), client_id.into())?;
-        MlsCentral::try_new(configuration).map(Self)
+
+        let central = MlsCentral::try_new(configuration)?;
+        Ok(CoreCrypto(central))
     }
 
     #[cfg(feature = "mobile")]
@@ -133,7 +153,8 @@ impl CoreCrypto {
 
     pub fn client_keypackages(&self, amount_requested: u32) -> CryptoResult<Vec<Vec<u8>>> {
         use core_crypto::prelude::tls_codec::Serialize as _;
-        self.0
+        Ok(self
+            .0
             .client_keypackages(amount_requested as usize)?
             .into_iter()
             .map(|kpb| {
@@ -142,7 +163,7 @@ impl CoreCrypto {
                     .map_err(MlsError::from)
                     .map_err(CryptoError::from)
             })
-            .collect::<CryptoResult<Vec<Vec<u8>>>>()
+            .collect::<CryptoResult<Vec<Vec<u8>>>>()?)
     }
 
     pub fn create_conversation(
@@ -150,10 +171,11 @@ impl CoreCrypto {
         conversation_id: ConversationId,
         config: ConversationConfiguration,
     ) -> CryptoResult<Option<MemberAddedMessages>> {
-        self.0
+        Ok(self
+            .0
             .new_conversation(conversation_id, config.try_into()?)?
             .map(TryInto::try_into)
-            .transpose()
+            .transpose()?)
     }
 
     pub fn process_welcome_message(&self, welcome_message: &[u8]) -> CryptoResult<ConversationId> {
@@ -167,10 +189,11 @@ impl CoreCrypto {
     ) -> CryptoResult<Option<MemberAddedMessages>> {
         let mut members = Invitee::group_to_conversation_member(clients)?;
 
-        self.0
+        Ok(self
+            .0
             .add_members_to_conversation(&conversation_id, &mut members)?
             .map(TryInto::try_into)
-            .transpose()
+            .transpose()?)
     }
 
     /// Returns a MLS commit message serialized as TLS
@@ -208,48 +231,7 @@ impl CoreCrypto {
         self.0.encrypt_message(conversation_id, message)
     }
 
-    pub fn new_add_proposal(&self, conversation_id: ConversationId, key_package: Vec<u8>) -> CryptoResult<Vec<u8>> {
-        use core_crypto::prelude::tls_codec::Serialize as _;
-        let kp = KeyPackage::try_from(&key_package[..]).map_err(MlsError::from)?;
-        self.0
-            .new_proposal(conversation_id, MlsProposal::Add(kp))?
-            .tls_serialize_detached()
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)
-    }
-
-    pub fn new_update_proposal(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
-        use core_crypto::prelude::tls_codec::Serialize as _;
-        self.0
-            .new_proposal(conversation_id, MlsProposal::Update)?
-            .tls_serialize_detached()
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)
-    }
-
-    pub fn new_remove_proposal(&self, conversation_id: ConversationId, client_id: ClientId) -> CryptoResult<Vec<u8>> {
-        use core_crypto::prelude::tls_codec::Serialize as _;
-        self.0
-            .new_proposal(conversation_id, MlsProposal::Remove(client_id))?
-            .tls_serialize_detached()
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)
-    }
-
     pub fn conversation_exists(&self, conversation_id: ConversationId) -> bool {
         self.0.conversation_exists(&conversation_id)
     }
-}
-
-// #[cfg(not(wasm))]
-#[no_mangle]
-pub fn init_with_path_and_key(path: &str, key: &str, client_id: &str) -> CryptoResult<std::sync::Arc<CoreCrypto>> {
-    Ok(std::sync::Arc::new(CoreCrypto::new(path, key, client_id)?))
-}
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
-
-#[no_mangle]
-pub fn version() -> String {
-    VERSION.to_string()
 }

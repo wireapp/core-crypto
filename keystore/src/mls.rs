@@ -219,10 +219,9 @@ impl CryptoKeystore {
         &self,
         key: openmls::prelude::KeyPackageBundle,
     ) -> crate::CryptoKeystoreResult<()> {
-        let id = uuid::Uuid::from_slice(key.key_package().external_key_id()?)?;
+        let id = key.key_package().external_key_id()?;
         use openmls_traits::key_store::OpenMlsKeyStore as _;
-        self.store(id.as_bytes(), &key)
-            .map_err(CryptoKeystoreError::MlsKeyStoreError)?;
+        self.store(id, &key).map_err(CryptoKeystoreError::MlsKeyStoreError)?;
 
         Ok(())
     }

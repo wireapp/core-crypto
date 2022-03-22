@@ -17,9 +17,9 @@
 use core_crypto_keystore::CryptoKeystore;
 use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion, Throughput};
 use openmls::{
-    ciphersuite::{ciphersuites::CiphersuiteName, Ciphersuite},
+    prelude::Ciphersuite,
     credentials::{CredentialBundle, CredentialType},
-    extensions::{Extension, KeyIdExtension},
+    extensions::{Extension, ExternalKeyIdExtension},
     key_packages::KeyPackageBundle,
 };
 use openmls_rust_crypto_provider::OpenMlsRustCrypto;
@@ -62,36 +62,45 @@ fn benchmark_writes_mls(c: &mut Criterion) {
         b.iter_batched(
             || {
                 let uuid: [u8; 16] = backend.rand().random_array().unwrap();
-                let ciphersuite = Ciphersuite::new(CiphersuiteName::default()).unwrap();
+                let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519;
 
                 let key_id = uuid::Uuid::from_bytes(uuid);
 
                 let credentials = CredentialBundle::new(
                     vec![1, 2, 3],
                     CredentialType::Basic,
-                    ciphersuite.signature_scheme(),
+                    ciphersuite.signature_algorithm(),
                     &backend,
                 )
                 .unwrap();
 
                 let keypackage_bundle = KeyPackageBundle::new(
-                    &[ciphersuite.name()],
+                    &[ciphersuite],
                     &credentials,
                     &backend,
-                    vec![Extension::KeyPackageId(KeyIdExtension::new(key_id.as_bytes()))],
+                    vec![Extension::ExternalKeyId(ExternalKeyIdExtension::new(key_id.as_bytes()))],
                 )
                 .unwrap();
 
                 keypackage_bundle.key_package().verify(&backend).unwrap();
 
                 let key = {
-                    let id = keypackage_bundle.key_package().key_id().unwrap();
+                    let id = keypackage_bundle
+                        .key_package()
+                        .extensions()
+                        .iter()
+                        .find(|e| e.as_external_key_id_extension().is_ok())
+                        .unwrap()
+                        .as_external_key_id_extension()
+                        .unwrap()
+                        .as_slice();
+
                     uuid::Uuid::from_slice(id).unwrap()
                 };
 
                 (key, keypackage_bundle)
             },
-            |(key, bundle)| black_box(store.store(&key, &bundle)),
+            |(key, bundle)| black_box(store.store(key.as_bytes(), &bundle)),
             BatchSize::SmallInput,
         )
     });
@@ -99,7 +108,9 @@ fn benchmark_writes_mls(c: &mut Criterion) {
     group.finish();
     store.delete_database_but_please_be_sure().unwrap();
 }
+
+#[cfg(not(feature = "proteus-keystore"))]
 criterion_group!(benches, benchmark_writes_mls);
-#[cfg(feature = "proteus")]
-criterion_group!(benches, benchmark_writes_proteus);
+#[cfg(feature = "proteus-keystore")]
+criterion_group!(benches, benchmark_writes_mls, benchmark_writes_proteus);
 criterion_main!(benches);

@@ -55,16 +55,12 @@ pub enum CryptoKeystoreError {
     PrekeyEncodeError(#[from] proteus::internal::types::EncodeError),
     #[error("{0}")]
     MlsKeyStoreError(String),
-    #[error(transparent)]
-    UuidError(#[from] uuid::Error),
     #[cfg(feature = "ios-wal-compat")]
     #[error(transparent)]
     HexSaltDecodeError(#[from] hex::FromHexError),
     #[cfg(feature = "ios-wal-compat")]
     #[error(transparent)]
     SecurityFrameworkError(#[from] security_framework::base::Error),
-    #[error(transparent)]
-    Other(#[from] eyre::Report),
 }
 
 pub type CryptoKeystoreResult<T> = Result<T, CryptoKeystoreError>;

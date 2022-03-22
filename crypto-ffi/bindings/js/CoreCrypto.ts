@@ -16,6 +16,11 @@
 
 // WIP
 
+type Buffer = Uint8Array;
+export type ConversationId = Buffer;
+
+type RustCoreCryptoFfiInstance = any;
+
 export interface CoreCryptoParams {
     path: string;
     key: string;
@@ -24,17 +29,22 @@ export interface CoreCryptoParams {
 
 export interface Invitee {
     id: string;
-    kp: Uint8Array;
+    kp: Buffer;
 }
 
-export interface CreateConversationParams {
-    extraMembers: Invitee[],
-    admins: string[],
-    ciphersuite: string;
-    keyRotationSpan: number;
+export interface MemberAddedMessages {
+    welcome: Buffer;
+    message: Buffer;
 }
 
-interface __FFICreateConversationParams {
+export interface ConversationConfiguration {
+    extraMembers?: Invitee[],
+    admins?: string[],
+    ciphersuite?: string;
+    keyRotationSpan?: number;
+}
+
+interface __FFIConversationConfiguration {
     extra_members: Invitee[],
     admins: string[],
     ciphersuite: string;
@@ -42,17 +52,69 @@ interface __FFICreateConversationParams {
 }
 
 interface RustCoreCryptoFfi {
-    create_conversation(conversationUuid: string, params: __FFICreateConversationParams): Uint8Array;
-    decrypt_message(conversationUuid: string, payload: Uint8Array): Uint8Array;
-    encrypt_message(conversationUuid: string, message: Uint8Array): Uint8Array;
+    cc_create_conversation(ptr: RustCoreCryptoFfiInstance, conversationId: string, params: __FFIConversationConfiguration): Buffer;
+    cc_decrypt_message(ptr: RustCoreCryptoFfiInstance, conversationId: string, payload: Buffer): Buffer;
+    cc_encrypt_message(ptr: RustCoreCryptoFfiInstance, conversationId: string, message: Buffer): Buffer;
+    cc_process_welcome_message(ptr: RustCoreCryptoFfiInstance, welcomeMessage: Buffer, config: __FFIConversationConfiguration): ConversationId;
+    cc_client_public_key(ptr: RustCoreCryptoFfiInstance,): Buffer;
+    cc_client_keypackages(ptr: RustCoreCryptoFfiInstance, amountRequested: number): Array<Buffer>;
+    cc_add_clients_to_conversation(ptr: RustCoreCryptoFfiInstance, conversationId: ConversationId, clients: Invitee[]): MemberAddedMessages | null;
+    cc_remove_clients_from_conversation(ptr: RustCoreCryptoFfiInstance, conversationId: ConversationId, clients: Invitee[]): Buffer | null;
+    cc_conversation_exists(ptr: RustCoreCryptoFfiInstance, conversationId: ConversationId): boolean;
+    cc_version(): string;
 }
+
+const stubFfiModule = (): WebAssembly.WebAssemblyInstantiatedSource => ({
+    module: null,
+    instance: {
+        exports: {
+            cc_create_conversation(ptr: RustCoreCryptoFfiInstance, conversationId: string, params: __FFIConversationConfiguration): Buffer {
+                return new Uint8Array();
+            },
+            cc_decrypt_message(ptr: RustCoreCryptoFfiInstance, conversationId: string, payload: Buffer): Buffer {
+                return new Uint8Array();
+            },
+            cc_encrypt_message(ptr: RustCoreCryptoFfiInstance, conversationId: string, message: Buffer): Buffer {
+                return new Uint8Array();
+            },
+            cc_process_welcome_message(ptr: RustCoreCryptoFfiInstance, welcomeMessage: Buffer, config: __FFIConversationConfiguration): ConversationId {
+                return new Uint8Array();
+            },
+            cc_client_public_key(ptr: RustCoreCryptoFfiInstance,): Buffer {
+                return new Uint8Array();
+            },
+            cc_client_keypackages(ptr: RustCoreCryptoFfiInstance, amountRequested: number): Array<Buffer> {
+                return [];
+            },
+            cc_add_clients_to_conversation(ptr: RustCoreCryptoFfiInstance, conversationId: ConversationId, clients: Invitee[]): MemberAddedMessages | null {
+                return null;
+            },
+            cc_remove_clients_from_conversation(ptr: RustCoreCryptoFfiInstance, conversationId: ConversationId, clients: Invitee[]): Buffer | null {
+                return null;
+            },
+            cc_conversation_exists(ptr: RustCoreCryptoFfiInstance, conversationId: ConversationId): boolean {
+                return false;
+            },
+            cc_version(): string {
+                return "0.2.0-stub";
+            }
+        }
+    }
+});
 
 export class CoreCrypto {
     #module: WebAssembly.WebAssemblyInstantiatedSource;
-    #cc: RustCoreCryptoFfi;
+    #ccFFI: RustCoreCryptoFfi;
+    #cc: any;
 
     static async init(wasmFile: string, params: CoreCryptoParams): Promise<CoreCrypto> {
         const wasmModule = await WebAssembly.instantiateStreaming(fetch(wasmFile), {})
+        const self = new CoreCrypto({ wasmModule, ...params });
+        return self;
+    }
+
+    static async initStubbed(_wasmFile: string, params: CoreCryptoParams): Promise<CoreCrypto> {
+        const wasmModule = stubFfiModule();
         const self = new CoreCrypto({ wasmModule, ...params });
         return self;
     }
@@ -62,26 +124,56 @@ export class CoreCrypto {
     }) {
         this.#module = wasmModule;
         this.#cc = (this.#module.instance.exports.init_with_path_and_key as CallableFunction)(path, key, clientId);
+        this.#ccFFI = this.#module.instance.exports as any as RustCoreCryptoFfi;
     }
 
-    createConversation(conversationUuid: string, { extraMembers, admins, ciphersuite, keyRotationSpan }: CreateConversationParams) {
-        return this.#cc.create_conversation(conversationUuid, {
-            extra_members: extraMembers,
-            admins,
+    createConversation(conversationId: string, { extraMembers, admins, ciphersuite, keyRotationSpan }: ConversationConfiguration) {
+        return this.#ccFFI.cc_create_conversation(this.#cc, conversationId, {
+            extra_members: extraMembers ?? [],
+            admins: admins ?? [],
             ciphersuite,
-            key_rotation_span: keyRotationSpan
+            key_rotation_span: keyRotationSpan,
         });
     }
 
-    decryptMessage(conversationUuid: string, payload: Uint8Array): Uint8Array {
-        return this.#cc.decrypt_message(conversationUuid, payload);
+    decryptMessage(conversationId: string, payload: Buffer): Buffer {
+        return this.#ccFFI.cc_decrypt_message(this.#cc, conversationId, payload);
     }
 
-    encryptMessage(conversationUuid: string, message: Uint8Array): Uint8Array {
-        return this.#cc.encrypt_message(conversationUuid, message);
+    encryptMessage(conversationId: string, message: Buffer): Buffer {
+        return this.#ccFFI.cc_encrypt_message(this.#cc, conversationId, message);
+    }
+
+    processWelcomeMessage(welcomeMessage: Buffer, { extraMembers, admins, ciphersuite, keyRotationSpan }: ConversationConfiguration): ConversationId {
+        return this.#ccFFI.cc_process_welcome_message(this.#cc, welcomeMessage, {
+            extra_members: extraMembers ?? [],
+            admins: admins ?? [],
+            ciphersuite,
+            key_rotation_span: keyRotationSpan,
+        });
+    }
+
+    clientPublicKey(): Buffer {
+        return this.#ccFFI.cc_client_public_key(this.#cc,);
+    }
+
+    clientKeypackages(amountRequested: number): Array<Buffer> {
+        return this.#ccFFI.cc_client_keypackages(this.#cc, amountRequested);
+    }
+
+    addClientsToConverastion(conversationId: ConversationId, clients: Invitee[]): MemberAddedMessages | null {
+        return this.#ccFFI.cc_add_clients_to_conversation(this.#cc, conversationId, clients);
+    }
+
+    removeClientsFromConversation(conversationId: ConversationId, clients: Invitee[]): Buffer | null {
+        return this.#ccFFI.cc_remove_clients_from_conversation(this.#cc, conversationId, clients);
+    }
+
+    conversationExists(conversationId: ConversationId): boolean {
+        return this.#ccFFI.cc_conversation_exists(this.#cc, conversationId);
     }
 
     version(): string {
-        return (this.#module.instance.exports.version as CallableFunction)();
+        return (this.#module.instance.exports.cc_version as CallableFunction)();
     }
 }

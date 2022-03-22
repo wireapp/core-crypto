@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::UniffiCustomTypeConverter;
+use super::UniffiCustomTypeConverter;
 
 impl UniffiCustomTypeConverter for core_crypto::prelude::ClientId {
     type Builtin = Vec<u8>;

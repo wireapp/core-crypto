@@ -35,9 +35,6 @@ pub enum CryptoError {
     /// A conversation member is out of local stored keypackages - if it does happen something went wrong
     #[error("Member #{0:x?} is out of keypackages")]
     OutOfKeyPackage(crate::member::MemberId),
-    /// There was an issue when configuring a new conversation
-    #[error(transparent)]
-    ConversationConfigurationError(#[from] crate::conversation::MlsConversationConfigurationBuilderError),
     /// Errors that are sent by our Keystore
     #[error(transparent)]
     KeyStoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
@@ -45,6 +42,7 @@ pub enum CryptoError {
     #[error(transparent)]
     MlsError(#[from] MlsError),
     /// UUID-related errors
+    #[cfg(test)]
     #[error(transparent)]
     UuidError(#[from] uuid::Error),
     /// Error when parsing `str`s that are not UTF-8
@@ -62,9 +60,6 @@ pub enum CryptoError {
     /// Authorization error
     #[error("The current client id isn't authorized to perform this action")]
     Unauthorized,
-    /// Other thingies
-    #[error(transparent)]
-    Other(#[from] eyre::Report),
 }
 
 pub type CryptoResult<T> = Result<T, CryptoError>;
@@ -110,6 +105,8 @@ pub enum MlsError {
     ProposeRemoveMemberError(#[from] openmls::prelude::ProposeRemoveMemberError),
     #[error(transparent)]
     MlsCommitToPendingProposalsError(#[from] openmls::prelude::CommitToPendingProposalsError),
+    #[error(transparent)]
+    MlsExportPublicGroupStateError(#[from] openmls::prelude::ExportPublicGroupStateError),
     #[error(transparent)]
     MlsTlsCodecError(#[from] tls_codec::Error),
     #[error(transparent)]

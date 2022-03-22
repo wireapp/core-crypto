@@ -50,7 +50,7 @@ use openmls::{
 };
 use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::HashMap;
-use tls_codec::Deserialize;
+use tls_codec::{Deserialize, Serialize};
 
 pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     fn authorize(&self, conversation_id: ConversationId, client_id: String) -> bool;
@@ -153,7 +153,22 @@ impl MlsCentral {
         })
     }
 
-    fn restore_groups(backend: &MlsCryptoProvider) -> CryptoResult<HashMap<ConversationId, MlsConversation>> {
+    pub fn try_new_in_memory(configuration: MlsCentralConfiguration) -> crate::error::CryptoResult<Self> {
+        let mls_backend = MlsCryptoProvider::try_new_in_memory(&configuration.store_path)?;
+        let mls_client = Client::init(configuration.client_id.as_bytes().into(), &mls_backend)?.into();
+        let mls_groups = Self::restore_groups(&mls_backend)?.into();
+
+        Ok(Self {
+            mls_backend,
+            mls_client,
+            mls_groups,
+            callbacks: None.into(),
+        })
+    }
+
+    fn restore_groups(
+        backend: &MlsCryptoProvider,
+    ) -> crate::error::CryptoResult<HashMap<ConversationId, MlsConversation>> {
         let states = backend.key_store().mls_groups_restore()?;
         if states.is_empty() {
             return Ok(HashMap::new());
@@ -184,6 +199,17 @@ impl MlsCentral {
             .read()
             .map_err(|_| CryptoError::LockPoisonError)?
             .public_key()
+            .into())
+    }
+
+    /// Returns the client's id as a buffer
+    pub fn client_id(&self) -> CryptoResult<Vec<u8>> {
+        Ok(self
+            .mls_client
+            .read()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .id()
+            .clone()
             .into())
     }
 
@@ -352,6 +378,23 @@ impl MlsCentral {
             .ok_or(CryptoError::ConversationNotFound(conversation_id))?;
 
         conversation.decrypt_message(message.as_ref(), &self.mls_backend)
+    }
+
+    /// Exports a TLS-serialized view of the current group state corresponding to the provided conversation ID.
+    pub fn export_public_group_state(&self, conversation_id: &ConversationId) -> CryptoResult<Vec<u8>> {
+        let groups = self.mls_groups.read().map_err(|_| CryptoError::LockPoisonError)?;
+        let conversation = groups
+            .get(conversation_id)
+            .ok_or_else(|| CryptoError::ConversationNotFound(conversation_id.clone()))?;
+
+        let state = conversation
+            .group
+            .read()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .export_public_group_state(&self.mls_backend)
+            .map_err(MlsError::from)?;
+
+        Ok(state.tls_serialize_detached().map_err(MlsError::from)?)
     }
 
     /// Destroys everything we have, in-memory and on disk.

@@ -16,16 +16,16 @@
 
 use rusqlite::OptionalExtension as _;
 
-use crate::{CryptoKeystoreError, MissingKeyErrorKind};
+use crate::{CryptoKeystore, CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind};
 
-impl crate::CryptoKeystore {
+impl CryptoKeystore {
     #[cfg(feature = "memory-cache")]
     #[inline(always)]
     fn proteus_memory_key<S: std::fmt::Display>(k: S) -> Vec<u8> {
         format!("proteus:{}", k).into_bytes()
     }
 
-    pub fn store_prekey(&self, prekey: &proteus::keys::PreKey) -> crate::CryptoKeystoreResult<()> {
+    pub fn store_prekey(&self, prekey: &proteus::keys::PreKey) -> CryptoKeystoreResult<()> {
         let prekey_buf = prekey.serialise()?;
         let mut db = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
 
