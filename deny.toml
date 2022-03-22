@@ -7,9 +7,7 @@ targets = [
     { triple = "x86_64-apple-darwin" },
     { triple = "x86_64-pc-windows-msvc" },
     # WASM
-    { triple = "wasm32-unknown-emscripten" },
     { triple = "wasm32-unknown-unknown" },
-    { triple = "wasm32-wasi" },
     # iOS
     { triple = "aarch64-apple-ios-sim" },
     { triple = "x86_64-apple-ios" },

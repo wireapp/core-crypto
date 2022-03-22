@@ -63,146 +63,142 @@ impl MlsProposal {
 
 impl MlsCentral {
     /// Generic proposal factory
-    pub fn new_proposal(&self, conversation: ConversationId, proposal: MlsProposal) -> CryptoResult<MlsMessageOut> {
-        let groups = self.mls_groups.read().map_err(|_| CryptoError::LockPoisonError)?;
-        let conversation = groups
-            .get(&conversation)
+    pub fn new_proposal(&mut self, conversation: ConversationId, proposal: MlsProposal) -> CryptoResult<MlsMessageOut> {
+        let conversation = self
+            .mls_groups
+            .get_mut(&conversation)
             .ok_or(CryptoError::ConversationNotFound(conversation))?;
-        let group = conversation.group.write().map_err(|_| CryptoError::LockPoisonError);
-        use std::ops::DerefMut as _;
-        let proposal = proposal.create(&self.mls_backend, group?.deref_mut());
-        proposal
+        let group = &mut conversation.group;
+
+        proposal.create(&self.mls_backend, group)
     }
 }
 
 #[cfg(test)]
-mod proposal_tests {
+pub mod proposal_tests {
     use super::*;
+    use crate::test_utils::run_test_with_central;
     use crate::CryptoError;
     use crate::*;
     use openmls::prelude::*;
+    use wasm_bindgen_test::wasm_bindgen_test;
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
-    mod add {
+    pub mod add {
         use super::*;
 
         #[test]
-        fn should_succeed() {
-            let tmp_dir = tempfile::tempdir().unwrap();
-            let central = MlsCentral::try_new(central_configuration(&tmp_dir)).unwrap();
-            let conversation_id = b"conversation".to_vec();
-            central
-                .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
-                .unwrap();
-            let kp = key_package(&central, MlsCiphersuite::default().0);
-            let proposal = MlsProposal::Add(kp.key_package().to_owned());
-            let add_proposal = central.new_proposal(conversation_id, proposal);
-            assert!(add_proposal.is_ok());
+        #[wasm_bindgen_test]
+        pub fn should_succeed() {
+            run_test_with_central(|mut central| {
+                let conversation_id = b"conversation".to_vec();
+                central
+                    .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                    .unwrap();
+                let kp = key_package(&central, MlsCiphersuite::default().0);
+                let proposal = MlsProposal::Add(kp.key_package().to_owned());
+                let add_proposal = central.new_proposal(conversation_id, proposal);
+                let _ = add_proposal.unwrap();
+            })
         }
 
         #[test]
-        fn should_fail_when_unknown_conversation() {
-            let tmp_dir = tempfile::tempdir().unwrap();
-            let central = MlsCentral::try_new(central_configuration(&tmp_dir)).unwrap();
-            central.mls_groups.write().unwrap().clear();
-            let kp = key_package(&central, MlsCiphersuite::default().0);
-            let conversation_id = b"unknown".to_vec();
-            let proposal = MlsProposal::Add(kp.key_package().to_owned());
-            let add_proposal = central.new_proposal(conversation_id.clone(), proposal);
-            match add_proposal {
-                Err(CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
-                _ => panic!(""),
-            }
+        #[wasm_bindgen_test]
+        pub fn should_fail_when_unknown_conversation() {
+            run_test_with_central(|mut central| {
+                central.mls_groups.clear();
+                let kp = key_package(&central, MlsCiphersuite::default().0);
+                let conversation_id = b"unknown".to_vec();
+                let proposal = MlsProposal::Add(kp.key_package().to_owned());
+                let add_proposal = central.new_proposal(conversation_id.clone(), proposal);
+                match add_proposal {
+                    Err(CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
+                    _ => panic!(""),
+                }
+            })
         }
     }
 
-    mod update {
+    pub mod update {
         use super::*;
 
         #[test]
-        fn should_succeed() {
-            let tmp_dir = tempfile::tempdir().unwrap();
-            let central = MlsCentral::try_new(central_configuration(&tmp_dir)).unwrap();
-            let conversation_id = b"conversation".to_vec();
-            central
-                .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
-                .unwrap();
-            let update_proposal = central.new_proposal(conversation_id, MlsProposal::Update);
-            assert!(update_proposal.is_ok());
+        #[wasm_bindgen_test]
+        pub fn should_succeed() {
+            run_test_with_central(|mut central| {
+                let conversation_id = b"conversation".to_vec();
+                central
+                    .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                    .unwrap();
+                let update_proposal = central.new_proposal(conversation_id, MlsProposal::Update);
+                let _ = update_proposal.unwrap();
+            })
         }
 
         #[test]
-        fn should_fail_when_unknown_conversation() {
-            let tmp_dir = tempfile::tempdir().unwrap();
-            let central = MlsCentral::try_new(central_configuration(&tmp_dir)).unwrap();
-            central.mls_groups.write().unwrap().clear();
-            let conversation_id = b"conversation".to_vec();
-            let update_proposal = central.new_proposal(conversation_id.clone(), MlsProposal::Update);
-            match update_proposal {
-                Err(CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
-                _ => panic!(""),
-            }
+        #[wasm_bindgen_test]
+        pub fn should_fail_when_unknown_conversation() {
+            run_test_with_central(|mut central| {
+                central.mls_groups.clear();
+                let conversation_id = b"conversation".to_vec();
+                let update_proposal = central.new_proposal(conversation_id.clone(), MlsProposal::Update);
+                match update_proposal {
+                    Err(CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
+                    _ => panic!(""),
+                }
+            })
         }
     }
 
-    mod remove {
+    pub mod remove {
         use super::*;
 
         #[test]
-        fn should_succeed() {
-            let tmp_dir = tempfile::tempdir().unwrap();
-            let central = MlsCentral::try_new(central_configuration(&tmp_dir)).unwrap();
-            let conversation_id = b"conversation".to_vec();
-            central
-                .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
-                .unwrap();
-            let groups = central.mls_groups.read().unwrap();
-            let conversation = groups.get(&conversation_id[..]).unwrap();
-            let group = conversation.group.read().unwrap();
-            let client_id = ClientId::from(group.members().get(0).unwrap().credential().identity());
-            // release the lock for conversation group to be mutated in code being tested
-            drop(group);
-            let remove_proposal = central.new_proposal(conversation_id, MlsProposal::Remove(client_id));
-            assert!(remove_proposal.is_ok());
+        #[wasm_bindgen_test]
+        pub fn should_succeed() {
+            run_test_with_central(|mut central| {
+                let conversation_id = b"conversation".to_vec();
+                central
+                    .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                    .unwrap();
+                let conversation = central.mls_groups.get(&conversation_id[..]).unwrap();
+                let client_id = ClientId::from(conversation.group.members().get(0).unwrap().credential().identity());
+                let remove_proposal = central.new_proposal(conversation_id, MlsProposal::Remove(client_id));
+                let _ = remove_proposal.unwrap();
+            })
         }
 
         #[test]
-        fn should_fail_when_unknown_client() {
-            let tmp_dir = tempfile::tempdir().unwrap();
-            let central = MlsCentral::try_new(central_configuration(&tmp_dir)).unwrap();
-            let conversation_id = b"conversation".to_vec();
-            central
-                .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
-                .unwrap();
-            let client_id = ClientId::from(vec![]);
-            let remove_proposal = central.new_proposal(conversation_id, MlsProposal::Remove(client_id.clone()));
-            match remove_proposal {
-                Err(CryptoError::ClientNotFound(cli_id)) => assert_eq!(cli_id, client_id),
-                _ => panic!(""),
-            }
+        #[wasm_bindgen_test]
+        pub fn should_fail_when_unknown_client() {
+            run_test_with_central(|mut central| {
+                let conversation_id = b"conversation".to_vec();
+                central
+                    .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                    .unwrap();
+                let client_id = ClientId::from(vec![]);
+                let remove_proposal = central.new_proposal(conversation_id, MlsProposal::Remove(client_id.clone()));
+                match remove_proposal {
+                    Err(CryptoError::ClientNotFound(cli_id)) => assert_eq!(cli_id, client_id),
+                    _ => panic!(""),
+                }
+            })
         }
 
         #[test]
-        fn should_fail_when_unknown_conversation() {
-            let tmp_dir = tempfile::tempdir().unwrap();
-            let central = MlsCentral::try_new(central_configuration(&tmp_dir)).unwrap();
-            central.mls_groups.write().unwrap().clear();
-            let conversation_id = b"conversation".to_vec();
-            let client_id = ClientId::from(vec![]);
-            let remove_proposal = central.new_proposal(conversation_id.clone(), MlsProposal::Remove(client_id));
-            match remove_proposal {
-                Err(CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
-                _ => panic!(""),
-            }
+        #[wasm_bindgen_test]
+        pub fn should_fail_when_unknown_conversation() {
+            run_test_with_central(|mut central| {
+                central.mls_groups.clear();
+                let conversation_id = b"conversation".to_vec();
+                let client_id = ClientId::from(vec![]);
+                let remove_proposal = central.new_proposal(conversation_id.clone(), MlsProposal::Remove(client_id));
+                match remove_proposal {
+                    Err(CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
+                    _ => panic!(""),
+                }
+            })
         }
-    }
-
-    fn central_configuration(tmp_dir: &tempfile::TempDir) -> MlsCentralConfiguration {
-        MlsCentralConfiguration::try_new(
-            MlsCentralConfiguration::tmp_store_path(tmp_dir),
-            "test".to_string(),
-            "alice".to_string(),
-        )
-        .unwrap()
     }
 
     fn credential_bundle(central: &MlsCentral, ciphersuite: Ciphersuite) -> CredentialBundle {

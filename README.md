@@ -14,7 +14,7 @@ No license is granted to the Wire trademark and its associated logos, all of whi
 
 * CoreCrypto: Abstracts MLS & Proteus in a unified API
 * CoreCryptoFFI: FFI bindings for iOS, Android and WASM
-* Keystore: Encrypted Keystore powered by SQLCipher
+* Keystore: Encrypted Keystore powered by SQLCipher on all platforms except WASM. WASM uses an IndexedDB-backed, encrypted store with AES256-GCM
 * MlsProvider: RustCrypto + Keystore MLS provider
 
 ## Usage
@@ -68,6 +68,12 @@ Install linux targets
 rustup target add x86_64-unknown-linux-gnu
 ```
 
+### WASM
+
+* Install [wasm-pack](https://rustwasm.github.io/wasm-pack/)
+* Install the wasm32-unknown-unknown toolchain `rustup target add wasm32-unknown-unknown`
+* Install node.js (recommended way is via [Volta](https://volta.sh/))
+
 ### Bindings
 
 Build bindings for Android, JVM, iOS and WASM
@@ -85,7 +91,7 @@ cargo make "copy-android-resources"
 cargo make "create-framework"
 
 # builds wasm binary
-cargo make "wasm-release"
+cargo make wasm
 ```
 
 ## Publishing for Android / JVM
@@ -97,3 +103,7 @@ cd kotlin
 ./gradlew :jvm:publishToMavenLocal
 ./gradlew :android:publishToMavenLocal
 ```
+
+## Publishing for JS / WASM
+
+Given that you are logged in NPM and can publish to `@wireapp/core-crypto`, you can just `npm publish` to push a new version

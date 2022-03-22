@@ -14,139 +14,190 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+// use std::sync::{atomic::AtomicBool, Mutex, RwLock};
+
 mod error;
 pub use error::*;
 
-#[cfg(feature = "mls-keystore")]
-mod mls;
+mod connection;
+pub mod entities;
 
-#[cfg(feature = "proteus-keystore")]
-mod proteus;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "mls-keystore")] {
+        mod mls;
+        pub use self::mls::CryptoKeystoreMls;
+    }
+}
 
-mod migrations {
-    refinery::embed_migrations!("src/migrations");
+cfg_if::cfg_if! {
+    if #[cfg(feature = "proteus-keystore")] {
+        mod proteus;
+        pub use self::proteus::CryptoKeystoreProteus;
+    }
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(target_family = "wasm")] {
+        macro_rules! syncify {
+            ($op:expr) => {{
+                let (tx, rx) = std::sync::mpsc::sync_channel(1);
+
+                ::wasm_bindgen_futures::spawn_local(async move {
+                    match $op.await {
+                        Ok(value) => {
+                            let _ = tx.send(Ok(value));
+                        }
+                        Err(e) => {
+                            let _ = tx.send(Err(e));
+                        }
+                    }
+                    ()
+                });
+
+                let result = loop {
+                    if let Some(result) = rx.try_iter().next() {
+                        break result;
+                    }
+                };
+
+                result
+            }};
+        }
+
+        pub(crate) use syncify;
+    }
 }
 
 #[cfg(feature = "memory-cache")]
+#[allow(dead_code)]
 const LRU_CACHE_CAP: usize = 100;
 
-#[derive(Debug)]
-pub struct CryptoKeystore {
-    path: String,
-    conn: std::sync::Mutex<rusqlite::Connection>,
-    #[cfg(feature = "memory-cache")]
-    memory_cache: std::sync::RwLock<lru::LruCache<Vec<u8>, Vec<u8>>>,
-    #[cfg(feature = "memory-cache")]
-    cache_enabled: std::sync::atomic::AtomicBool,
-}
+pub use connection::Connection;
 
-impl CryptoKeystore {
-    pub fn open_with_key<P: AsRef<str>, K: AsRef<str>>(path: P, key: K) -> CryptoKeystoreResult<Self> {
-        let mut store = Self::init_with_key(path, key)?;
-        store.run_migrations()?;
+// #[derive(Debug)]
+// pub struct CryptoKeystore {
+//     path: String,
+//     conn: Mutex<rusqlite::Connection>,
+//     #[cfg(feature = "memory-cache")]
+//     memory_cache: RwLock<lru::LruCache<Vec<u8>, Vec<u8>>>,
+//     #[cfg(feature = "memory-cache")]
+//     cache_enabled: AtomicBool,
+// }
 
-        Ok(store)
-    }
+// impl CryptoKeystore {
+//     pub fn open_with_key<P: AsRef<str>, K: AsRef<str>>(path: P, key: K) -> CryptoKeystoreResult<Self> {
+//         let mut store = Self::init_with_key(path, key)?;
+//         store.run_migrations()?;
 
-    fn init_with_key<P: AsRef<str>, K: AsRef<str>>(path: P, key: K) -> CryptoKeystoreResult<Self> {
-        let path = path.as_ref().into();
-        let conn = rusqlite::Connection::open(&path)?;
+//         Ok(store)
+//     }
 
-        conn.pragma_update(None, "key", key.as_ref())?;
+//     fn init_with_key<P: AsRef<str>, K: AsRef<str>>(path: P, key: K) -> CryptoKeystoreResult<Self> {
+//         let path = path.as_ref().into();
+//         let conn = rusqlite::Connection::open(&path)?;
 
-        // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
-        #[cfg(feature = "ios-wal-compat")]
-        Self::handle_ios_wal_compat(&conn)?;
+//         conn.pragma_update(None, "key", key.as_ref())?;
 
-        // Enable WAL journaling mode
-        conn.pragma_update(None, "journal_mode", "wal")?;
+//         // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
+//         #[cfg(feature = "ios-wal-compat")]
+//         Self::handle_ios_wal_compat(&conn)?;
 
-        let conn = std::sync::Mutex::new(conn);
-        Ok(Self {
-            path,
-            conn,
-            #[cfg(feature = "memory-cache")]
-            memory_cache: std::sync::RwLock::new(lru::LruCache::new(LRU_CACHE_CAP)),
-            #[cfg(feature = "memory-cache")]
-            cache_enabled: true.into(),
-        })
-    }
+//         // Enable WAL journaling mode
+//         conn.pragma_update(None, "journal_mode", "wal")?;
 
-    /// To prevent iOS from killing backgrounded apps using a WAL-journaled file,
-    /// we need to leave the first 32 bytes as plaintext, this way, iOS can see the
-    /// `SQLite Format 3\0` magic bytes and identify the file as a SQLite database
-    /// and when it does so, it treats this file "specially" and avoids killing the app
-    /// when doing background work
-    /// See more: https://github.com/sqlcipher/sqlcipher/issues/255
-    #[cfg(feature = "ios-wal-compat")]
-    fn handle_ios_wal_compat(conn: &rusqlite::Connection) -> CryptoKeystoreResult<()> {
-        const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
-        match security_framework::passwords::get_generic_password("wire.com", "keystore_salt") {
-            Ok(salt) => {
-                conn.pragma_update(None, "cipher_salt", format!("x'{}'", hex::encode(salt)))?;
-            }
-            Err(e) if e.code() == ERR_SEC_ITEM_NOT_FOUND => {
-                let salt = conn.pragma_query_value(None, "cipher_salt", |r| r.get::<_, String>(0))?;
-                let mut bytes = [0u8; 16];
-                hex::decode_to_slice(salt, &mut bytes)?;
-                #[cfg(target_os = "ios")]
-                security_framework::password::set_generic_password("wire.com", "keystore_salt", bytes)?;
-            }
-            Err(e) => return Err(e.into()),
-        }
+//         let conn = conn.into();
+//         Ok(Self {
+//             path,
+//             conn,
+//             #[cfg(feature = "memory-cache")]
+//             memory_cache: lru::LruCache::new(LRU_CACHE_CAP).into(),
+//             #[cfg(feature = "memory-cache")]
+//             cache_enabled: true.into(),
+//         })
+//     }
 
-        const CIPHER_PLAINTEXT_BYTES: u32 = 32;
-        conn.pragma_update(None, "cipher_plaintext_header_size", CIPHER_PLAINTEXT_BYTES)?;
-        conn.pragma_update(None, "user_version", 1u32)?;
+//     /// To prevent iOS from killing backgrounded apps using a WAL-journaled file,
+//     /// we need to leave the first 32 bytes as plaintext, this way, iOS can see the
+//     /// `SQLite Format 3\0` magic bytes and identify the file as a SQLite database
+//     /// and when it does so, it treats this file "specially" and avoids killing the app
+//     /// when doing background work
+//     /// See more: https://github.com/sqlcipher/sqlcipher/issues/255
+//     #[cfg(feature = "ios-wal-compat")]
+//     fn handle_ios_wal_compat(conn: &rusqlite::Connection) -> CryptoKeystoreResult<()> {
+//         const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
+//         match security_framework::passwords::get_generic_password("wire.com", "keystore_salt") {
+//             Ok(salt) => {
+//                 conn.pragma_update(None, "cipher_salt", format!("x'{}'", hex::encode(salt)))?;
+//             }
+//             Err(e) if e.code() == ERR_SEC_ITEM_NOT_FOUND => {
+//                 let salt = conn.pragma_query_value(None, "cipher_salt", |r| r.get::<_, String>(0))?;
+//                 let mut bytes = [0u8; 16];
+//                 hex::decode_to_slice(salt, &mut bytes)?;
+//                 #[cfg(target_os = "ios")]
+//                 security_framework::password::set_generic_password("wire.com", "keystore_salt", bytes)?;
+//             }
+//             Err(e) => return Err(e.into()),
+//         }
 
-        Ok(())
-    }
+//         const CIPHER_PLAINTEXT_BYTES: u32 = 32;
+//         conn.pragma_update(None, "cipher_plaintext_header_size", CIPHER_PLAINTEXT_BYTES)?;
+//         conn.pragma_update(None, "user_version", 1u32)?;
 
-    pub fn open_in_memory_with_key<K: rusqlite::ToSql>(key: K) -> CryptoKeystoreResult<Self> {
-        let conn = rusqlite::Connection::open_in_memory()?;
-        conn.pragma_update(None, "key", key)?;
+//         Ok(())
+//     }
 
-        let conn = std::sync::Mutex::new(conn);
-        let mut store = Self {
-            path: String::new(),
-            conn,
-            #[cfg(feature = "memory-cache")]
-            memory_cache: std::sync::RwLock::new(lru::LruCache::new(LRU_CACHE_CAP)),
-            #[cfg(feature = "memory-cache")]
-            cache_enabled: false.into(),
-        };
+//     pub fn open_in_memory_with_key<K: rusqlite::ToSql>(key: K) -> CryptoKeystoreResult<Self> {
+//         let conn = rusqlite::Connection::open_in_memory()?;
+//         conn.pragma_update(None, "key", key)?;
 
-        store.run_migrations()?;
+//         let conn = conn.into();
+//         let mut store = Self {
+//             path: String::new(),
+//             conn,
+//             #[cfg(feature = "memory-cache")]
+//             memory_cache: lru::LruCache::new(LRU_CACHE_CAP).into(),
+//             #[cfg(feature = "memory-cache")]
+//             cache_enabled: false.into(),
+//         };
 
-        Ok(store)
-    }
+//         store.run_migrations()?;
 
-    #[cfg(feature = "memory-cache")]
-    pub fn cache(&self, enabled: bool) {
-        self.cache_enabled.store(enabled, std::sync::atomic::Ordering::SeqCst);
-    }
+//         Ok(store)
+//     }
 
-    pub fn run_migrations(&mut self) -> CryptoKeystoreResult<()> {
-        migrations::migrations::runner()
-            .run(&mut *self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?)?;
+//     #[cfg(feature = "memory-cache")]
+//     #[inline]
+//     pub fn cache(&self, enabled: bool) {
+//         self.cache_enabled.store(enabled, std::sync::atomic::Ordering::SeqCst);
+//     }
 
-        Ok(())
-    }
+//     #[cfg(feature = "memory-cache")]
+//     #[inline]
+//     pub fn is_cache_enabled(&self) -> bool {
+//         self.cache_enabled.load(std::sync::atomic::Ordering::Relaxed)
+//     }
 
-    pub fn delete_database_but_please_be_sure(self) -> CryptoKeystoreResult<()> {
-        if self.path.is_empty() {
-            return Ok(());
-        }
+//     pub fn run_migrations(&mut self) -> error::CryptoKeystoreResult<()> {
+//         connection::migrations::runner()
+//             .run(&mut *self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?)?;
 
-        let conn = self
-            .conn
-            .into_inner()
-            .map_err(|_| CryptoKeystoreError::LockPoisonError)?;
+//         Ok(())
+//     }
 
-        conn.close().map_err(|(_, e)| e)?;
+//     pub fn delete_database_but_please_be_sure(self) -> CryptoKeystoreResult<()> {
+//         if self.path.is_empty() {
+//             return Ok(());
+//         }
 
-        std::fs::remove_file(&self.path)?;
+//         let conn = self
+//             .conn
+//             .into_inner()
+//             .map_err(|_| CryptoKeystoreError::LockPoisonError)?;
 
-        Ok(())
-    }
-}
+//         conn.close().map_err(|(_, e)| e)?;
+
+//         std::fs::remove_file(&self.path)?;
+
+//         Ok(())
+//     }
+// }

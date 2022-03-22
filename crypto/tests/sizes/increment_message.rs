@@ -1,3 +1,19 @@
+// Wire
+// Copyright (C) 2022 Wire Swiss GmbH
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see http://www.gnu.org/licenses/.
+
 #[cfg(test)]
 mod tests {
     use core_crypto::{
@@ -11,10 +27,9 @@ mod tests {
     fn increment_message() {
         let user_uuid = uuid::Uuid::new_v4().hyphenated();
         let client_id = format!("{user_uuid}:1234@members.wire.com");
-        let config =
-            MlsCentralConfiguration::try_new("increment_message.edb".into(), "test1234".into(), client_id).unwrap();
+        let config = MlsCentralConfiguration::try_new("increment_message.edb", "test1234", &client_id).unwrap();
 
-        let central = MlsCentral::try_new(config).unwrap();
+        let mut central = MlsCentral::try_new(config).unwrap();
         let _ = central.client_keypackages(100).unwrap();
 
         let conversation_id = uuid::Uuid::new_v4();

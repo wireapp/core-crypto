@@ -1,3 +1,4 @@
+/*
 // Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
@@ -13,10 +14,27 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
+*/
 
-#include "unwind.h"
-#include "stdint.h"
+CREATE TABLE mls_keys (
+    id VARCHAR(255) UNIQUE,
+    key BLOB
+);
 
-extern "C" _Unwind_Reason_Code __gxx_personality_v0 (int version, _Unwind_Action actions, uint64_t exceptionClass, _Unwind_Exception* unwind_exception, _Unwind_Context* context) {
-    return  _URC_NO_REASON;
-}
+CREATE TABLE mls_identities (
+    id VARCHAR(255) UNIQUE,
+    signature BLOB,
+    credential BLOB
+);
+
+CREATE TABLE mls_groups (
+    id BLOB,
+    state BLOB
+);
+
+CREATE TABLE proteus_prekeys (
+    id INT UNIQUE,
+    key BLOB
+);
+
+

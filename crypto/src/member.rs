@@ -121,36 +121,42 @@ impl ConversationMember {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use crate::{prelude::INITIAL_KEYING_MATERIAL_COUNT, ClientId};
     use mls_crypto_provider::MlsCryptoProvider;
     use openmls::prelude::*;
+    use wasm_bindgen_test::wasm_bindgen_test;
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
     use super::ConversationMember;
 
     #[test]
-    fn can_generate_member() {
+    #[wasm_bindgen_test]
+    pub fn can_generate_member() {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
         assert!(ConversationMember::random_generate(&backend).is_ok());
     }
 
     #[test]
-    #[should_panic]
-    fn member_can_run_out_of_keypackage_hashes() {
+    #[wasm_bindgen_test]
+    pub fn member_can_run_out_of_keypackage_hashes() {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
         let mut member = ConversationMember::random_generate(&backend).unwrap();
         let client_id = member.local_client.as_ref().map(|c| c.id().clone()).unwrap();
-        for _ in 0..INITIAL_KEYING_MATERIAL_COUNT * 2 {
+        let ret = (0..INITIAL_KEYING_MATERIAL_COUNT * 2).all(|_| {
             let ckp = member.keypackages_for_all_clients();
-            assert!(ckp[&client_id].is_some())
-        }
+            ckp[&client_id].is_some()
+        });
+
+        assert_eq!(ret, false);
     }
 
-    mod add_keypackage {
+    pub mod add_keypackage {
         use super::*;
 
         #[test]
-        fn add_valid_keypackage_should_add_it_to_client() {
+        #[wasm_bindgen_test]
+        pub fn add_valid_keypackage_should_add_it_to_client() {
             let mut member = ConversationMember::random_generate_clientless().unwrap();
             let cid = ClientId::from(member.id.as_slice());
             let kp = new_keypackage(&cid);
@@ -163,7 +169,8 @@ mod tests {
         }
 
         #[test]
-        fn add_invalid_keypackage_should_fail() {
+        #[wasm_bindgen_test]
+        pub fn add_invalid_keypackage_should_fail() {
             let mut member = ConversationMember::random_generate_clientless().unwrap();
             let previous_clients = member.clients.clone();
             assert!(member.add_keypackage(b"invalid-keypackage".to_vec()).is_err());

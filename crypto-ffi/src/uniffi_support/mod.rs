@@ -14,9 +14,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::UniffiCustomTypeConverter;
+#[allow(dead_code)]
+pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-impl UniffiCustomTypeConverter for core_crypto::prelude::ClientId {
+use core_crypto::prelude::*;
+
+pub fn init_with_path_and_key(
+    path: &str,
+    key: &str,
+    client_id: &str,
+) -> CryptoResult<std::sync::Arc<crate::CoreCrypto>> {
+    Ok(std::sync::Arc::new(crate::CoreCrypto::new(path, key, client_id)?))
+}
+
+pub fn version() -> String {
+    VERSION.to_string()
+}
+
+impl super::UniffiCustomTypeConverter for core_crypto::prelude::ClientId {
     type Builtin = Vec<u8>;
 
     fn into_custom(val: Self::Builtin) -> uniffi::Result<Self>
@@ -31,7 +46,7 @@ impl UniffiCustomTypeConverter for core_crypto::prelude::ClientId {
     }
 }
 
-impl UniffiCustomTypeConverter for core_crypto::prelude::ConversationId {
+impl crate::UniffiCustomTypeConverter for core_crypto::prelude::ConversationId {
     type Builtin = Vec<u8>;
     fn into_custom(val: Self::Builtin) -> uniffi::Result<Self>
     where

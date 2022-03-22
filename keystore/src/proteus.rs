@@ -16,44 +16,35 @@
 
 use rusqlite::OptionalExtension as _;
 
-use crate::{CryptoKeystoreError, MissingKeyErrorKind};
+use crate::{
+    connection::Connection, entities::ProteusPrekey, CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
+};
 
-impl crate::CryptoKeystore {
+pub trait CryptoKeystoreProteus {
+    fn store_prekey(&self, prekey: &proteus::keys::PreKey) -> CryptoKeystoreResult<()>;
+}
+
+impl CryptoKeystoreProteus for Connection {
+    fn store_prekey(&self, prekey: &proteus::keys::PreKey) -> CryptoKeystoreResult<()> {
+        let prekey_buf = prekey.serialise()?;
+        let entity = ProteusPrekey {
+            id: prekey.key_id.value(),
+            prekey: prekey_buf,
+        };
+        self.insert(entity)?;
+        Ok(())
+    }
+}
+
+impl Connection {
     #[cfg(feature = "memory-cache")]
     #[inline(always)]
     fn proteus_memory_key<S: std::fmt::Display>(k: S) -> Vec<u8> {
         format!("proteus:{}", k).into_bytes()
     }
-
-    pub fn store_prekey(&self, prekey: &proteus::keys::PreKey) -> crate::CryptoKeystoreResult<()> {
-        let prekey_buf = prekey.serialise()?;
-        let mut db = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
-
-        let transaction = db.transaction()?;
-
-        use rusqlite::ToSql as _;
-        transaction.execute(
-            "INSERT INTO proteus_prekeys (id, key) VALUES (?, ?)",
-            [
-                prekey.key_id.value().to_sql()?,
-                rusqlite::blob::ZeroBlob(prekey_buf.len() as i32).to_sql()?,
-            ],
-        )?;
-
-        let row_id = transaction.last_insert_rowid();
-
-        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "proteus_prekeys", "key", row_id, false)?;
-        use std::io::Write as _;
-        blob.write_all(&prekey_buf)?;
-        drop(blob);
-
-        transaction.commit()?;
-
-        Ok(())
-    }
 }
 
-impl proteus::session::PreKeyStore for crate::CryptoKeystore {
+impl proteus::session::PreKeyStore for Connection {
     type Error = CryptoKeystoreError;
 
     fn prekey(&mut self, id: proteus::keys::PreKeyId) -> Result<Option<proteus::keys::PreKey>, Self::Error> {
@@ -61,14 +52,13 @@ impl proteus::session::PreKeyStore for crate::CryptoKeystore {
         let memory_cache_key = Self::proteus_memory_key(id);
 
         #[cfg(feature = "memory-cache")]
-        if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
-            if let Some(buf) = self
+        if self.is_cache_enabled() {
+            if let Ok(Some(buf)) = self
                 .memory_cache
-                .write()
-                .map_err(|_| CryptoKeystoreError::LockPoisonError)?
-                .get(&memory_cache_key)
+                .lock()
+                .map(|mut cache| cache.get(&Self::proteus_memory_key(id)).map(Clone::clone))
             {
-                return Ok(Some(proteus::keys::PreKey::deserialise(buf)?));
+                return Ok(Some(proteus::keys::PreKey::deserialise(&buf)?));
             }
         }
 
@@ -97,9 +87,9 @@ impl proteus::session::PreKeyStore for crate::CryptoKeystore {
             let prekey = proteus::keys::PreKey::deserialise(&buf)?;
 
             #[cfg(feature = "memory-cache")]
-            if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
+            if self.is_cache_enabled() {
                 self.memory_cache
-                    .write()
+                    .lock()
                     .map_err(|_| CryptoKeystoreError::LockPoisonError)?
                     .put(memory_cache_key, buf);
             }
@@ -112,10 +102,10 @@ impl proteus::session::PreKeyStore for crate::CryptoKeystore {
 
     fn remove(&mut self, id: proteus::keys::PreKeyId) -> Result<(), Self::Error> {
         #[cfg(feature = "memory-cache")]
-        if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
+        if self.is_cache_enabled() {
             let _ = self
                 .memory_cache
-                .write()
+                .lock()
                 .map_err(|_| CryptoKeystoreError::LockPoisonError)?
                 .pop(format!("proteus:{}", id).as_bytes());
         }

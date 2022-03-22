@@ -16,12 +16,15 @@
 
 mod common;
 
-#[cfg(test)]
-mod tests {
-    use super::common::*;
+pub mod tests {
+    use crate::common::*;
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
 
     #[test]
-    fn can_create_and_init_store() {
+    #[wasm_bindgen_test]
+    pub fn can_create_and_init_store() {
         let store = setup("general");
         teardown(store);
     }

@@ -13,25 +13,21 @@ args = ["check"]
 
 ##################################### WASM ####################################
 
+[tasks.wasm-build]
+command = "wasm-pack"
+private = true
+args = [
+    "build",
+    "--out-dir", "bindings/js/wasm",
+    "--out-name", "core-crypto-ffi",
+    "--target", "browser",
+    "--mode", "normal"
+]
+
 [tasks.wasm]
-command = "cargo"
-args = ["build", "--target", "wasm32-unknown-emscripten", "${@}"]
-
-[tasks.wasm-xargo]
-command = "rustup"
-args = ["run", "nightly", "xargo", "build", "-Zbuild-std", "--target", "wasm32-unknown-emscripten", "${@}"]
-
-# [tasks.wasm-debug]
-# private = true
-# command = "cargo"
-# args = ["build", "--target", "wasm32-unknown-emscripten"]
-# env = { EMCC_CFLAGS = "--bind" }
-
-# [tasks.wasm-release]
-# private = true
-# command = "cargo"
-# args = ["build", "--target", "wasm32-unknown-emscripten", "--release"]
-# env = { EMCC_CFLAGS = "--bind -O3" }
+dependencies = ["wasm-build"]
+command = "npm"
+args = ["run", "build"]
 
 ##################################### iOS #####################################
 
@@ -65,6 +61,7 @@ script = '''
     cd bindings/swift
 
     rm -rf ./out/CoreCrypto.xcframework
+    mkdir -p ./out
 
     #lipo -create -output ./out/libcore_crypto_ffi_iossimulator.a \
     #    ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a
