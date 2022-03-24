@@ -20,3 +20,80 @@ No license is granted to the Wire trademark and its associated logos, all of whi
 ## Usage
 
 Pre-pre-pre-Alpha WIP - API docs far from ready
+
+## Building
+
+### General Requirements
+
+- rust: https://www.rust-lang.org/tools/install
+- cargo-make: https://sagiegurari.github.io/cargo-make/
+
+### Android
+
+Install Android SDK and Build-Tools for API level 30+
+
+NOTE: If you are building on macOS you'll need to setup $ANDROID_SDK_ROOT path variable manually:
+```
+export ANDROID_SDK_ROOT=~/Android/Sdk
+```
+Install android rust targets
+```
+rustup target add x86_64-linux-android aarch64-linux-android armv7-linux-androideabi i686-linux-android
+```
+
+### iOS
+
+Install Xcode & it's commandline tools: https://developer.apple.com/xcode/
+
+Install iOS rust targets
+
+```
+rustup target add aarch64-apple-ios x86_64-apple-ios aarch64-apple-ios-sim
+```
+
+### MacOS
+
+Install macOS rust targets (M1 macs are currently not supported)
+```
+rustup target add x86_64-apple-darwin
+```
+
+### Linux
+
+If cross-compiling from macOS you'll need install: https://github.com/messense/homebrew-macos-cross-toolchains
+
+Install linux targets
+
+```
+rustup target add x86_64-unknown-linux-gnu
+```
+
+### Bindings
+
+Build bindings for Android, JVM, iOS and WASM
+
+```
+cd crypto-ffi 
+
+# builds bindings and targets for the JVM (macOS / Linux)
+cargo make "copy-jvm-resources"
+
+# builds bindings and targets for Android
+cargo make "copy-android-resources"
+
+# builds iOS framework
+cargo make "create-framework"
+
+# builds wasm binary
+cargo make "wasm-release"
+```
+
+## Publishing for Android / JVM
+
+You can publish the JVM and Android bindings to maven using gradle after you'be build the corresponding target.
+
+```
+cd kotlin
+./gradlew :jvm:publishToMavenLocal
+./gradlew :android:publishToMavenLocal
+```
