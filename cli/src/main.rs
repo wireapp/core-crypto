@@ -80,7 +80,10 @@ fn main() {
                 .unwrap();
         }
         Command::PublicKey { client_id } => public_key(&backend, client_id),
-        Command::Group { client_id, group_id } => group(&backend, client_id, group_id.as_bytes()),
+        Command::Group { client_id, group_id } => {
+            let gid = base64::decode(group_id).expect("Failed to decode group_id as base64");
+            group(&backend, client_id, &gid)
+        }
         Command::Member {
             group,
             command: MemberCommand::Add {
