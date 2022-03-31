@@ -11,6 +11,7 @@ core-crypto = { version = "0.2", path = "../crypto" }
 core-crypto-keystore = { version = "0.2", path = "../keystore" }
 mls-crypto-provider = { version = "0.2", path = "../mls-provider" }
 
+base64 = "0.13.0"
 uuid = "1.0.0-alpha"
 clap = { version = "3", features = ["derive"] }
 
