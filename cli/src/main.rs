@@ -107,6 +107,7 @@ fn path_reader(path: String) -> io::Result<Box<dyn Read>> {
 }
 
 fn main() {
+    eprintln!("I'm slow to build!");
     let cli = Cli::parse();
     let backend = MlsCryptoProvider::try_new(&cli.store, &cli.enc_key).unwrap();
     match cli.command {
