@@ -91,10 +91,23 @@ fn main() {
                 welcome_out,
             },
         } => {
-            let mut group_data = path_reader(group).unwrap();
-            let mut kp_data = path_reader(key_package).unwrap();
-            let wel_data = welcome_out.map(|path| fs::File::create(path).unwrap());
-            add_member(&backend, &mut group_data, &mut kp_data, wel_data);
+            let mut group = {
+                let data = path_reader(group).unwrap();
+                MlsGroup::load(data).unwrap()
+            };
+            let kps = key_packages
+                .into_iter()
+                .map(|kp| {
+                    let mut data = path_reader(kp.clone()).expect(&format!("Could not open key package file: {}", kp));
+                    KeyPackage::tls_deserialize(&mut data).unwrap()
+                })
+                .collect::<Vec<_>>();
+            let (handshake, welcome) = group.add_members(&backend, &kps).unwrap();
+            if let Some(welcome_out) = welcome_out {
+                let mut writer = fs::File::create(welcome_out).unwrap();
+                welcome.tls_serialize(&mut writer).unwrap();
+            }
+            handshake.tls_serialize(&mut io::stdout()).unwrap();
         }
         Command::Message { group, text } => {
             let mut group_data = path_reader(group).unwrap();
