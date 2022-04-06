@@ -56,10 +56,14 @@ enum MemberCommand {
         /// Output for Welcome message
         #[clap(short, long)]
         welcome_out: Option<String>,
+        #[clap(long)]
+        group_out: Option<String>,
+        #[clap(short, long, conflicts_with = "group-out")]
+        in_place: bool,
     },
 }
 
-fn path_reader(path: String) -> io::Result<Box<dyn Read>> {
+fn path_reader(path: &str) -> io::Result<Box<dyn Read>> {
     if path == "-" {
         Ok(Box::new(io::stdin()))
     } else {
@@ -73,7 +77,7 @@ fn main() {
     match cli.command {
         Command::KeyPackage { client_id } => key_package(&backend, client_id),
         Command::KeyPackageRef { key_package } => {
-            let mut kp_data = path_reader(key_package).unwrap();
+            let mut kp_data = path_reader(&key_package).unwrap();
             let kp = KeyPackage::tls_deserialize(&mut kp_data).unwrap();
             io::stdout()
                 .write_all(kp.hash_ref(backend.crypto()).unwrap().value())
@@ -92,25 +96,32 @@ fn main() {
             },
         } => {
             let mut group = {
-                let data = path_reader(group).unwrap();
+                let data = path_reader(&group_in).unwrap();
                 MlsGroup::load(data).unwrap()
             };
             let kps = key_packages
                 .into_iter()
                 .map(|kp| {
-                    let mut data = path_reader(kp.clone()).expect(&format!("Could not open key package file: {}", kp));
+                    let mut data = path_reader(&kp).expect(&format!("Could not open key package file: {}", kp));
                     KeyPackage::tls_deserialize(&mut data).unwrap()
                 })
                 .collect::<Vec<_>>();
             let (handshake, welcome) = group.add_members(&backend, &kps).unwrap();
+
             if let Some(welcome_out) = welcome_out {
                 let mut writer = fs::File::create(welcome_out).unwrap();
                 welcome.tls_serialize(&mut writer).unwrap();
             }
+            let group_out = if in_place { Some(group_in) } else { group_out };
+            if let Some(group_out) = group_out {
+                let mut writer = fs::File::create(group_out).unwrap();
+                group.merge_pending_commit().unwrap();
+                group.save(&mut writer).unwrap();
+            }
             handshake.tls_serialize(&mut io::stdout()).unwrap();
         }
         Command::Message { group, text } => {
-            let mut group_data = path_reader(group).unwrap();
+            let mut group_data = path_reader(&group).unwrap();
             app_message(&backend, &mut group_data, text);
         }
     }
