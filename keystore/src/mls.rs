@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use std::io::Read;
+
+use rusqlite::{OptionalExtension, ToSql};
+
 use crate::{CryptoKeystore, CryptoKeystoreError, MissingKeyErrorKind};
 
 impl CryptoKeystore {
@@ -34,6 +38,7 @@ impl CryptoKeystore {
             use std::io::Read as _;
             let mut buf = vec![];
             blob.read_to_end(&mut buf)?;
+            blob.close()?;
 
             Ok(Some(buf))
         } else {
@@ -62,7 +67,7 @@ impl CryptoKeystore {
 
         use std::io::Write as _;
         blob.write_all(&signature)?;
-        drop(blob);
+        blob.close()?;
 
         transaction.commit()?;
 
@@ -99,6 +104,7 @@ impl CryptoKeystore {
             use std::io::Read as _;
             let mut buf = vec![];
             blob.read_to_end(&mut buf).ok()?;
+            blob.close().ok()?;
 
             match V::from_key_store_value(&buf) {
                 Ok(value) => Some(value),
@@ -125,9 +131,87 @@ impl CryptoKeystore {
         use std::io::Read as _;
         let mut buf = vec![];
         blob.read_to_end(&mut buf)?;
+        blob.close()?;
 
         Ok(V::from_key_store_value(&buf)
             .map_err(|e| crate::CryptoKeystoreError::KeyStoreValueTransformError(e.into()))?)
+    }
+
+    pub fn mls_group_persist(&self, group_id: &[u8], state: &[u8]) -> crate::CryptoKeystoreResult<()> {
+        let mut db = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
+        let transaction = db.transaction()?;
+
+        let rowid: i64 = if let Some(rowid) = transaction
+            .query_row(
+                "SELECT rowid FROM mls_groups WHERE id = ?",
+                [hex::encode(group_id)],
+                |r| r.get(0),
+            )
+            .optional()?
+        {
+            rowid
+        } else {
+            let zb = rusqlite::blob::ZeroBlob(state.len() as i32);
+            let zid = rusqlite::blob::ZeroBlob(group_id.len() as i32);
+            transaction.execute(
+                "INSERT INTO mls_groups (id, state) VALUES(?, ?)",
+                [&zid.to_sql()?, &zb.to_sql()?],
+            )?;
+            let rowid = transaction.last_insert_rowid();
+
+            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "id", rowid, false)?;
+            use std::io::Write as _;
+            blob.write_all(group_id)?;
+            blob.close()?;
+
+            rowid
+        };
+
+        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, false)?;
+        use std::io::Write as _;
+        blob.write_all(state)?;
+        blob.close()?;
+
+        transaction.commit()?;
+
+        Ok(())
+    }
+
+    pub fn mls_groups_restore(&self) -> crate::CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, Vec<u8>>> {
+        let mut db = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
+
+        let mut stmt = db.prepare_cached("SELECT rowid FROM mls_groups ORDER BY rowid ASC")?;
+        let rowids: Vec<i64> = stmt
+            .query_map([], |r| r.get(0))?
+            .map(|r| r.map_err(crate::CryptoKeystoreError::from))
+            .collect::<crate::CryptoKeystoreResult<_>>()?;
+
+        drop(stmt);
+
+        if rowids.is_empty() {
+            return Ok(Default::default());
+        }
+
+        let transaction = db.transaction()?;
+
+        let mut map = std::collections::HashMap::new();
+        for rowid in rowids {
+            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "id", rowid, true)?;
+            let mut group_id = vec![];
+            blob.read_to_end(&mut group_id)?;
+            blob.close()?;
+
+            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, true)?;
+            let mut state = vec![];
+            blob.read_to_end(&mut state)?;
+            blob.close()?;
+
+            map.insert(group_id, state);
+        }
+
+        transaction.commit()?;
+
+        Ok(map)
     }
 
     #[cfg(test)]
@@ -192,7 +276,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
 
         use std::io::Write as _;
         blob.write_all(&data).map_err(|e| e.to_string())?;
-        drop(blob);
+        blob.close().map_err(|e| e.to_string())?;
 
         transaction.commit().map_err(|e| e.to_string())?;
 
@@ -236,6 +320,10 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         use std::io::Read as _;
         let mut buf = vec![];
         blob.read_to_end(&mut buf).map_err(|e| e.to_string()).ok()?;
+        blob.close().map_err(|e| e.to_string()).ok()?;
+
+        transaction.commit().map_err(|e| e.to_string()).ok()?;
+
         let hydrated_ksv = V::from_key_store_value(&buf).ok()?;
 
         #[cfg(feature = "memory-cache")]

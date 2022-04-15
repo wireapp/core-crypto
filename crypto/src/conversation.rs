@@ -33,7 +33,7 @@ use crate::{
 
 pub type ConversationId = Vec<u8>;
 
-#[derive(Debug, Clone, derive_builder::Builder)]
+#[derive(Debug, Default, Clone, derive_builder::Builder)]
 pub struct MlsConversationConfiguration {
     #[builder(default)]
     pub extra_members: Vec<ConversationMember>,
@@ -136,6 +136,10 @@ impl MlsConversation {
             maybe_creation_message = Some(MlsConversationCreationMessage { message, welcome });
         }
 
+        let mut buf = vec![];
+        group.save(&mut buf)?;
+        backend.key_store().mls_group_persist(&id, &buf)?;
+
         let conversation = Self {
             id,
             group: group.into(),
@@ -146,20 +150,44 @@ impl MlsConversation {
         Ok((conversation, maybe_creation_message))
     }
 
-    // FIXME: Do we need to provide the ratchet_tree to the MlsGroup? Does everything crumble down if we can't actually get it?
+    // ? Do we need to provide the ratchet_tree to the MlsGroup? Does everything crumble down if we can't actually get it?
+    /// Create the MLS conversation from an MLS Welcome message
     pub fn from_welcome_message(
         welcome: Welcome,
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
         let mls_group_config = MlsConversationConfiguration::openmls_default_configuration();
-        let group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None).map_err(MlsError::from)?;
+        let mut group =
+            MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None).map_err(MlsError::from)?;
+
+        let id = ConversationId::from(group.group_id().as_slice());
+
+        let mut buf = vec![];
+        group.save(&mut buf)?;
+        backend.key_store().mls_group_persist(&id, &buf)?;
 
         Ok(Self {
-            id: ConversationId::from(group.group_id().as_slice()),
+            id,
             admins: configuration.admins.clone(),
             group: group.into(),
             configuration,
+        })
+    }
+
+    /// Internal API: restore the conversation from a persistence-saved serialized Group State.
+    pub(crate) fn from_serialized_state(buf: Vec<u8>) -> CryptoResult<Self> {
+        let group = MlsGroup::load(&mut &buf[..])?;
+        let id = ConversationId::from(group.group_id().as_slice());
+        let configuration = MlsConversationConfiguration::builder()
+            .ciphersuite(group.ciphersuite().into())
+            .build()?;
+
+        Ok(Self {
+            id,
+            group: group.into(),
+            configuration,
+            admins: Default::default(),
         })
     }
 
@@ -210,6 +238,21 @@ impl MlsConversation {
             .add_members(backend, &keypackages)
             .map_err(MlsError::from)?;
 
+        if self
+            .group
+            .read()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .state_changed()
+            == openmls::group::InnerState::Changed
+        {
+            let mut buf = vec![];
+            self.group
+                .write()
+                .map_err(|_| CryptoError::LockPoisonError)?
+                .save(&mut buf)?;
+            backend.key_store().mls_group_persist(&self.id, &buf)?;
+        }
+
         Ok(MlsConversationCreationMessage { welcome, message })
     }
 
@@ -222,6 +265,7 @@ impl MlsConversation {
     ) -> CryptoResult<MlsMessageOut> {
         let clients = members.iter().flat_map(|m| m.clients()).collect::<Vec<&ClientId>>();
         let crypto = backend.crypto();
+
         let member_kps = self
             .group
             .read()
@@ -244,6 +288,21 @@ impl MlsConversation {
             .map_err(|_| CryptoError::LockPoisonError)?
             .remove_members(backend, &member_kps)
             .map_err(MlsError::from)?;
+
+        if self
+            .group
+            .read()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .state_changed()
+            == openmls::group::InnerState::Changed
+        {
+            let mut buf = vec![];
+            self.group
+                .write()
+                .map_err(|_| CryptoError::LockPoisonError)?
+                .save(&mut buf)?;
+            backend.key_store().mls_group_persist(&self.id, &buf)?;
+        }
 
         Ok(message)
     }
@@ -272,6 +331,12 @@ impl MlsConversation {
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
                 group.merge_staged_commit(*staged_commit).map_err(MlsError::from)?;
             }
+        }
+
+        if group.state_changed() == openmls::group::InnerState::Changed {
+            let mut buf = vec![];
+            group.save(&mut buf)?;
+            backend.key_store().mls_group_persist(&self.id, &buf)?;
         }
 
         Ok(None)

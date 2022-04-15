@@ -35,12 +35,14 @@ pub mod prelude {
 
 use client::{Client, ClientId};
 use conversation::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage};
+use hex::FromHex;
 use member::ConversationMember;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
     messages::Welcome,
     prelude::{Ciphersuite, KeyPackageBundle, MlsMessageOut},
 };
+use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::HashMap;
 use tls_codec::Deserialize;
 
@@ -99,23 +101,48 @@ impl MlsCentral {
     /// Takes a store path (i.e. Disk location of the embedded database, should be consistent between messaging sessions)
     /// And a root identity key (i.e. enclaved encryption key for this device)
     pub fn try_new(configuration: MlsCentralConfiguration) -> crate::error::CryptoResult<Self> {
+        // Init backend (crypto + rand + keystore)
         let mls_backend = MlsCryptoProvider::try_new(&configuration.store_path, &configuration.identity_key)?;
-        let mls_client = Client::init(configuration.client_id.as_bytes().into(), &mls_backend)?;
+        // Init client identity (load or create)
+        let mls_client = Client::init(configuration.client_id.as_bytes().into(), &mls_backend)?.into();
+        // Restore persisted groups if there are any
+        let mls_groups = Self::restore_groups(&mls_backend)?.into();
 
         Ok(Self {
             mls_backend,
-            mls_client: mls_client.into(),
-            mls_groups: HashMap::new().into(),
+            mls_client,
+            mls_groups,
             callbacks: None.into(),
         })
     }
 
+    fn restore_groups(
+        backend: &MlsCryptoProvider,
+    ) -> crate::error::CryptoResult<HashMap<ConversationId, MlsConversation>> {
+        let states = backend.key_store().mls_groups_restore()?;
+        if states.is_empty() {
+            return Ok(HashMap::new());
+        }
+
+        let groups = states.into_iter().try_fold(
+            HashMap::new(),
+            |mut acc, (group_id, state)| -> CryptoResult<HashMap<ConversationId, MlsConversation>> {
+                let conversation = MlsConversation::from_serialized_state(state)?;
+                acc.insert(group_id, conversation);
+                Ok(acc)
+            },
+        )?;
+        Ok(groups)
+    }
+
+    /// Sets the consumer callbacks (i.e authorization callbacks for CoreCrypto to perform authorization calls when needed)
     pub fn callbacks(&self, callbacks: Box<dyn CoreCryptoCallbacks>) -> CryptoResult<()> {
         let mut cb_w = self.callbacks.write().map_err(|_| CryptoError::LockPoisonError)?;
         *cb_w = Some(callbacks);
         Ok(())
     }
 
+    /// Returns the client's public key as a buffer
     pub fn client_public_key(&self) -> CryptoResult<Vec<u8>> {
         Ok(self
             .mls_client
@@ -149,6 +176,14 @@ impl MlsCentral {
         Ok(messages)
     }
 
+    /// Checks if a given conversation id exists locally
+    pub fn conversation_exists(&self, id: &ConversationId) -> bool {
+        self.mls_groups
+            .read()
+            .map(|groups| groups.contains_key(id))
+            .unwrap_or_default()
+    }
+
     /// Create a conversation from a recieved MLS Welcome message
     pub fn process_welcome_message(
         &self,
@@ -165,6 +200,7 @@ impl MlsCentral {
         Ok(conversation_id)
     }
 
+    /// Create a conversation from a recieved MLS Welcome message
     pub fn process_raw_welcome_message(
         &self,
         welcome: Vec<u8>,
@@ -271,7 +307,34 @@ impl MlsCentral {
         conversation.decrypt_message(message.as_ref(), &self.mls_backend)
     }
 
+    /// Destroys everything we have, in-memory and on disk.
     pub fn wipe(self) {
         self.mls_backend.destroy_and_reset();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{prelude::MlsConversationConfiguration, MlsCentral, MlsCentralConfiguration};
+
+    #[test]
+    fn can_persist_group_state() {
+        let configuration = MlsCentralConfiguration::builder()
+            .store_path("can_persist_group_state.edb".to_string())
+            .identity_key("test".to_string())
+            .client_id("potato".to_string())
+            .build()
+            .unwrap();
+
+        let central = MlsCentral::try_new(configuration.clone()).unwrap();
+        let conversation_configuration = MlsConversationConfiguration::builder().build().unwrap();
+        let conversation_id = b"conversation".to_vec();
+        let _ = central.new_conversation(conversation_id.clone(), conversation_configuration);
+
+        drop(central);
+        let central = MlsCentral::try_new(configuration).unwrap();
+        let _ = central.encrypt_message(conversation_id, b"Test".to_vec()).unwrap();
+
+        central.mls_backend.destroy_and_reset();
     }
 }

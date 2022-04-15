@@ -55,6 +55,10 @@ pub enum CryptoError {
     /// Error when trying to coerce ints into Strings
     #[error(transparent)]
     ParseIntError(#[from] std::num::ParseIntError),
+    /// Standard I/O Error
+    #[error(transparent)]
+    IoError(#[from] std::io::Error),
+    /// Authorization error
     #[error("The current client id isn't authorized to perform this action")]
     Unauthorized,
     /// Other thingies
