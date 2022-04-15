@@ -204,6 +204,10 @@ impl CoreCrypto {
     pub fn encrypt_message(&self, conversation_id: ConversationId, message: &[u8]) -> CryptoResult<Vec<u8>> {
         self.0.encrypt_message(conversation_id, message)
     }
+
+    pub fn conversation_exists(&self, conversation_id: &ConversationId) -> bool {
+        self.0.conversation_exists(conversation_id)
+    }
 }
 
 // #[cfg(not(wasm))]

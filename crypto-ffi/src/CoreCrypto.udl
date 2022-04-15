@@ -73,6 +73,8 @@ interface CoreCrypto {
     [Throws=CryptoError]
     MemberAddedMessages? create_conversation(ConversationId conversation_id, ConversationConfiguration config);
 
+    boolean conversation_exists([ByRef] ConversationId conversation_id);
+
     [Throws=CryptoError]
     ConversationId process_welcome_message([ByRef] sequence<u8> welcome_message, ConversationConfiguration config);
 
