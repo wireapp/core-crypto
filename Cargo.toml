@@ -9,5 +9,8 @@ branch = "otak/sodiumoxide-0.2.7"
 [patch.crates-io.openssl-src]
 path = "/home/otak/Dev/OSS/rust/openssl-src-rs"
 
+[patch.crates-io.rusqlite]
+path = "/home/otak/Dev/OSS/rust/rusqlite"
+
 [profile.release]
 lto = true

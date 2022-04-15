@@ -24,7 +24,7 @@ mod mls;
 mod proteus;
 
 mod migrations {
-    refinery::embed_migrations!("src/migrations");
+    // refinery::embed_migrations!("src/migrations");
 }
 
 #[cfg(feature = "memory-cache")]
@@ -127,8 +127,8 @@ impl CryptoKeystore {
     }
 
     pub fn run_migrations(&mut self) -> error::CryptoKeystoreResult<()> {
-        migrations::migrations::runner()
-            .run(&mut *self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?)?;
+        // migrations::migrations::runner()
+        //     .run(&mut *self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?)?;
 
         Ok(())
     }

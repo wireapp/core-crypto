@@ -28,7 +28,7 @@ eyre = "0.6"
 thiserror = "1.0"
 uuid = "1.0.0-alpha"
 lru = { version = "0.7", optional = true }
-refinery = { version = "0.8", default-features = false, features = ["rusqlite"] }
+# refinery = { version = "=0.8.4", default-features = false, features = ["rusqlite"] }
 barrel = { version = "0.7", features = ["sqlite3"] }
 
 # iOS specific things
@@ -39,10 +39,10 @@ openmls_traits = { version = "0.1", optional = true }
 proteus = { version = "1.0", default-features = false, optional = true }
 
 [dependencies.rusqlite]
-version = "0.26"
+version = "0.27"
 default-features = false
 features = [
-    "bundled-sqlcipher",
+    "bundled-sqlcipher-vendored-openssl-300",
     "blob",
     "limits",
     "unlock_notify",
@@ -50,10 +50,10 @@ features = [
 ]
 
 [target.'cfg(target_family = "wasm")'.dependencies.rusqlite]
-version = "0.26"
+version = "0.27"
 default-features = false
 features = [
-    "bundled-sqlcipher-vendored-openssl",
+    "bundled-sqlcipher-vendored-openssl-300",
     "blob",
     "limits",
     "unlock_notify",
@@ -62,10 +62,10 @@ features = [
 ]
 
 [target.'cfg(target = "wasm32-wasi")'.dependencies.rusqlite]
-version = "0.26"
+version = "0.27"
 default-features = false
 features = [
-    "bundled-sqlcipher",
+    "bundled-sqlcipher-vendored-openssl-300",
     "blob",
     "limits",
     "unlock_notify",
