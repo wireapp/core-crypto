@@ -42,7 +42,7 @@ proteus = { version = "1.0", default-features = false, optional = true }
 version = "0.26"
 default-features = false
 features = [
-    "bundled-sqlcipher",
+    "bundled-sqlcipher-vendored-openssl",
     "blob",
     "limits",
     "unlock_notify",

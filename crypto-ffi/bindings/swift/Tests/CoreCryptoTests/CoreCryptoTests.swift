@@ -3,6 +3,6 @@ import XCTest
 
 class CoreCryptoTests: XCTestCase {
     func testVersion() throws {
-        XCTAssertEqual(CoreCryptoSwift.version(), "0.1.0")
+        XCTAssertEqual(CoreCryptoSwift.version(), "0.2.0")
     }
 }

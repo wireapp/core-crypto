@@ -214,7 +214,10 @@ impl Client {
             }
         }
 
-        let kpbs: Vec<KeyPackageBundle> = backend.key_store().mls_all_keypackage_bundles()?.collect();
+        let kpbs: Vec<KeyPackageBundle> = backend
+            .key_store()
+            .mls_fetch_keypackage_bundles(count as u32)?
+            .collect();
 
         Ok(kpbs)
     }
@@ -242,7 +245,7 @@ impl Client {
     }
 
     pub fn keypackages(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<openmls::prelude::KeyPackage>> {
-        let kps = backend.key_store().mls_all_keypackage_bundles()?.try_fold(
+        let kps = backend.key_store().mls_fetch_keypackage_bundles(u32::MAX)?.try_fold(
             vec![],
             |mut acc, kpb: KeyPackageBundle| -> crate::CryptoResult<_> {
                 acc.push(kpb.key_package().clone());
@@ -272,6 +275,32 @@ mod tests {
         let mut client = Client::random_generate(&backend).unwrap();
         for _ in 0..100 {
             assert!(client.keypackage_hash(&backend).is_ok())
+        }
+    }
+
+    #[test]
+    fn client_generates_correct_number_of_kpbs() {
+        // use openmls_traits::OpenMlsCryptoProvider as _;
+        let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
+        let mut client = Client::random_generate(&backend).unwrap();
+
+        const COUNT: usize = 124;
+
+        let mut _prev_kpbs: Option<Vec<openmls::prelude::KeyPackageBundle>> = None;
+        for _ in 0..50 {
+            let kpbs = client.request_keying_material(COUNT, &backend).unwrap();
+            assert_eq!(kpbs.len(), COUNT);
+
+            // FIXME: This part of the test should be enabled after pruning is implemented.
+            // if let Some(pkpbs) = prev_kpbs.take() {
+            //     let crypto = backend.crypto();
+            //     let pkpbs_refs = pkpbs.into_iter().map(|kpb| kpb.key_package().hash_ref(crypto).unwrap());
+            //     let kpbs_refs = kpbs.iter().map(|kpb| kpb.key_package().hash_ref(crypto).unwrap());
+            //     let number_same_kpbs = pkpbs_refs.zip(kpbs_refs).filter(|&(a, b)| a == b).count();
+            //     assert_eq!(number_same_kpbs, 0);
+            // }
+
+            // prev_kpbs = Some(kpbs);
         }
     }
 }

@@ -372,14 +372,14 @@ mod tests {
     use mls_crypto_provider::MlsCryptoProvider;
 
     #[inline(always)]
-    fn init_keystore() -> MlsCryptoProvider {
-        let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
+    fn init_keystore(identifier: &str) -> MlsCryptoProvider {
+        let backend = MlsCryptoProvider::try_new_in_memory(identifier).unwrap();
         backend
     }
 
     #[test]
     fn can_create_self_conversation() {
-        let mut backend = init_keystore();
+        let mut backend = init_keystore("self");
         let mut alice = Client::random_generate(&backend).unwrap();
 
         let uuid = uuid::Uuid::new_v4();
@@ -402,9 +402,10 @@ mod tests {
 
     #[test]
     fn can_create_1_1_conversation() {
-        let mut backend = init_keystore();
-        let mut alice = Client::random_generate(&backend).unwrap();
-        let bob = ConversationMember::random_generate(&backend).unwrap();
+        let mut alice_backend = init_keystore("alice");
+        let bob_backend = init_keystore("bob");
+        let mut alice = Client::random_generate(&alice_backend).unwrap();
+        let bob = ConversationMember::random_generate(&bob_backend).unwrap();
 
         let uuid = uuid::Uuid::new_v4();
         let conversation_id = ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()));
@@ -418,7 +419,7 @@ mod tests {
             conversation_id.clone(),
             &mut alice,
             conversation_config.clone(),
-            &mut backend,
+            &mut alice_backend,
         )
         .unwrap();
 
@@ -429,17 +430,20 @@ mod tests {
 
         let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
 
-        assert!(MlsConversation::from_welcome_message(welcome, conversation_config, &backend).is_ok());
+        assert!(MlsConversation::from_welcome_message(welcome, conversation_config, &bob_backend).is_ok());
     }
 
     #[test]
     fn can_create_100_people_conversation() {
-        let mut backend = init_keystore();
-        let mut alice = Client::random_generate(&backend).unwrap();
+        let mut alice_backend = init_keystore("alice");
+        let mut alice = Client::random_generate(&alice_backend).unwrap();
 
         let bob_and_friends = (0..99).fold(Vec::with_capacity(100), |mut acc, _| {
+            let uuid = uuid::Uuid::new_v4();
+            let backend = init_keystore(&uuid.hyphenated().to_string());
+
             let member = ConversationMember::random_generate(&backend).unwrap();
-            acc.push(member);
+            acc.push((backend, member));
             acc
         });
 
@@ -449,7 +453,7 @@ mod tests {
         let conversation_id = ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()));
 
         let conversation_config = MlsConversationConfiguration::builder()
-            .extra_members(bob_and_friends.clone())
+            .extra_members(bob_and_friends.iter().map(|(_, m)| m.clone()).collect())
             .build()
             .unwrap();
 
@@ -457,7 +461,7 @@ mod tests {
             conversation_id.clone(),
             &mut alice,
             conversation_config.clone(),
-            &mut backend,
+            &mut alice_backend,
         )
         .unwrap();
 
@@ -470,7 +474,7 @@ mod tests {
 
         let bob_and_friends_groups: Vec<MlsConversation> = bob_and_friends
             .iter()
-            .map(|_| {
+            .map(|(backend, _)| {
                 MlsConversation::from_welcome_message(welcome.clone(), conversation_config.clone(), &backend).unwrap()
             })
             .collect();
@@ -480,10 +484,11 @@ mod tests {
 
     #[test]
     fn can_roundtrip_message_in_1_1_conversation() {
-        let mut backend = init_keystore();
+        let mut alice_backend = init_keystore("alice");
+        let bob_backend = init_keystore("bob");
 
-        let mut alice = Client::random_generate(&backend).unwrap();
-        let bob = ConversationMember::random_generate(&backend).unwrap();
+        let mut alice = Client::random_generate(&alice_backend).unwrap();
+        let bob = ConversationMember::random_generate(&bob_backend).unwrap();
 
         let uuid = uuid::Uuid::new_v4();
         let conversation_id = ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()));
@@ -494,7 +499,7 @@ mod tests {
             .unwrap();
 
         let (alice_group, conversation_creation_message) =
-            MlsConversation::create(conversation_id.clone(), &mut alice, configuration, &mut backend).unwrap();
+            MlsConversation::create(conversation_id.clone(), &mut alice, configuration, &mut alice_backend).unwrap();
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
@@ -506,21 +511,21 @@ mod tests {
         let bob_group = MlsConversation::from_welcome_message(
             welcome,
             MlsConversationConfiguration::builder().build().unwrap(),
-            &backend,
+            &bob_backend,
         )
         .unwrap();
 
         let original_message = b"Hello World!";
 
-        let encrypted_message = alice_group.encrypt_message(original_message, &backend).unwrap();
+        let encrypted_message = alice_group.encrypt_message(original_message, &alice_backend).unwrap();
         let roundtripped_message = bob_group
-            .decrypt_message(&encrypted_message, &backend)
+            .decrypt_message(&encrypted_message, &bob_backend)
             .unwrap()
             .unwrap();
         assert_eq!(original_message, roundtripped_message.as_slice());
-        let encrypted_message = bob_group.encrypt_message(roundtripped_message, &backend).unwrap();
+        let encrypted_message = bob_group.encrypt_message(roundtripped_message, &bob_backend).unwrap();
         let roundtripped_message = alice_group
-            .decrypt_message(&encrypted_message, &backend)
+            .decrypt_message(&encrypted_message, &alice_backend)
             .unwrap()
             .unwrap();
         assert_eq!(original_message, roundtripped_message.as_slice());
