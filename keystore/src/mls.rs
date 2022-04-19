@@ -84,14 +84,15 @@ impl CryptoKeystore {
         Ok(count - 1)
     }
 
-    pub fn mls_all_keypackage_bundles<'a, V: openmls_traits::key_store::FromKeyStoreValue>(
+    pub fn mls_fetch_keypackage_bundles<'a, V: openmls_traits::key_store::FromKeyStoreValue>(
         &'a self,
+        count: u32,
     ) -> crate::CryptoKeystoreResult<impl Iterator<Item = V> + 'a> {
         let db = self.conn.lock().unwrap();
 
-        let mut stmt = db.prepare_cached("SELECT rowid FROM mls_keys ORDER BY rowid ASC")?;
+        let mut stmt = db.prepare_cached("SELECT rowid FROM mls_keys ORDER BY rowid DESC LIMIT ?")?;
         let kpb_ids: Vec<i64> = stmt
-            .query_map([], |r| r.get(0))?
+            .query_map([count], |r| r.get(0))?
             .map(|r| r.map_err(crate::CryptoKeystoreError::from))
             .collect::<crate::CryptoKeystoreResult<Vec<i64>>>()?;
 

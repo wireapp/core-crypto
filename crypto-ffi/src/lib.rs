@@ -205,8 +205,8 @@ impl CoreCrypto {
         self.0.encrypt_message(conversation_id, message)
     }
 
-    pub fn conversation_exists(&self, conversation_id: &ConversationId) -> bool {
-        self.0.conversation_exists(conversation_id)
+    pub fn conversation_exists(&self, conversation_id: ConversationId) -> bool {
+        self.0.conversation_exists(&conversation_id)
     }
 }
 

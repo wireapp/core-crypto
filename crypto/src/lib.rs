@@ -35,7 +35,6 @@ pub mod prelude {
 
 use client::{Client, ClientId};
 use conversation::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage};
-use hex::FromHex;
 use member::ConversationMember;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
