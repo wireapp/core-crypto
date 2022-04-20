@@ -32,6 +32,7 @@ enum CryptoError {
     "Utf8Error",
     "StringUtf8Error",
     "ParseIntError",
+    "IoError",
     "Unauthorized",
     "Other"
 };
