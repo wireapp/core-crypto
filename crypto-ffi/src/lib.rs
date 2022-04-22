@@ -156,13 +156,8 @@ impl CoreCrypto {
             .transpose()
     }
 
-    pub fn process_welcome_message(
-        &self,
-        welcome_message: &[u8],
-        config: ConversationConfiguration,
-    ) -> CryptoResult<ConversationId> {
-        self.0
-            .process_raw_welcome_message(welcome_message.into(), config.try_into()?)
+    pub fn process_welcome_message(&self, welcome_message: &[u8]) -> CryptoResult<ConversationId> {
+        self.0.process_raw_welcome_message(welcome_message.into())
     }
 
     pub fn add_clients_to_conversation(
@@ -182,13 +177,11 @@ impl CoreCrypto {
     pub fn remove_clients_from_conversation(
         &self,
         conversation_id: ConversationId,
-        clients: Vec<Invitee>,
+        clients: Vec<ClientId>,
     ) -> CryptoResult<Option<Vec<u8>>> {
-        let members = Invitee::group_to_conversation_member(clients)?;
-
         Ok(self
             .0
-            .remove_members_from_conversation(&conversation_id, &members)?
+            .remove_members_from_conversation(&conversation_id, &clients)?
             .map(|m| m.to_bytes().map_err(MlsError::from))
             .transpose()?)
     }
@@ -196,7 +189,7 @@ impl CoreCrypto {
     pub fn leave_conversation(
         &self,
         conversation_id: ConversationId,
-        other_clients: Vec<ClientId>,
+        other_clients: &[ClientId],
     ) -> CryptoResult<ConversationLeaveMessages> {
         let messages = self.0.leave_conversation(conversation_id, other_clients)?;
         let ret = ConversationLeaveMessages {

@@ -82,16 +82,16 @@ interface CoreCrypto {
     boolean conversation_exists(ConversationId conversation_id);
 
     [Throws=CryptoError]
-    ConversationId process_welcome_message([ByRef] sequence<u8> welcome_message, ConversationConfiguration config);
+    ConversationId process_welcome_message([ByRef] sequence<u8> welcome_message);
 
     [Throws=CryptoError]
     MemberAddedMessages? add_clients_to_conversation(ConversationId conversation_id, sequence<Invitee> clients);
 
     [Throws=CryptoError]
-    sequence<u8>? remove_clients_from_conversation(ConversationId conversation_id, sequence<Invitee> clients);
+    sequence<u8>? remove_clients_from_conversation(ConversationId conversation_id, sequence<ClientId> clients);
 
     [Throws=CryptoError]
-    ConversationLeaveMessages leave_conversation(ConversationId conversation_id, sequence<ClientId> other_clients);
+    ConversationLeaveMessages leave_conversation(ConversationId conversation_id, [ByRef] sequence<ClientId> other_clients);
 
     [Throws=CryptoError]
     sequence<u8>? decrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> payload);
