@@ -40,6 +40,12 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     }
 }
 
+#[derive(Debug)]
+pub struct ConversationLeaveMessages {
+    pub self_removal_proposal: Vec<u8>,
+    pub other_clients_removal_commit: Option<Vec<u8>>,
+}
+
 #[derive(Debug, Clone)]
 pub struct Invitee {
     pub id: ClientId,
@@ -185,6 +191,20 @@ impl CoreCrypto {
             .remove_members_from_conversation(&conversation_id, &members)?
             .map(|m| m.to_bytes().map_err(MlsError::from))
             .transpose()?)
+    }
+
+    pub fn leave_conversation(
+        &self,
+        conversation_id: ConversationId,
+        other_clients: Vec<ClientId>,
+    ) -> CryptoResult<ConversationLeaveMessages> {
+        let messages = self.0.leave_conversation(conversation_id, other_clients)?;
+        let ret = ConversationLeaveMessages {
+            other_clients_removal_commit: messages.other_clients_removal_commit.and_then(|c| c.to_bytes().ok()),
+            self_removal_proposal: messages.self_removal_proposal.to_bytes().map_err(MlsError::from)?,
+        };
+
+        Ok(ret)
     }
 
     pub fn decrypt_message(&self, conversation_id: ConversationId, payload: &[u8]) -> CryptoResult<Option<Vec<u8>>> {

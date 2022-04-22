@@ -29,6 +29,12 @@ pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ClientId(Vec<u8>);
 
+// impl ClientId {
+//     pub fn as_slice(&self) -> &[u8] {
+//         self.0.as_slice()
+//     }
+// }
+
 impl std::ops::Deref for ClientId {
     type Target = Vec<u8>;
     fn deref(&self) -> &Self::Target {
@@ -101,6 +107,10 @@ impl Client {
     }
 
     pub(crate) fn generate(id: ClientId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
+        Self::generate_opts(id, backend, true)
+    }
+
+    pub(crate) fn generate_opts(id: ClientId, backend: &MlsCryptoProvider, provision: bool) -> CryptoResult<Self> {
         let ciphersuite = MlsCiphersuite::default();
         let id_bytes = &*id;
         let credentials = CredentialBundle::new(
@@ -122,7 +132,10 @@ impl Client {
             ciphersuite,
         };
 
-        client.provision_keying_material(INITIAL_KEYING_MATERIAL_COUNT, backend)?;
+        if provision {
+            client.provision_keying_material(INITIAL_KEYING_MATERIAL_COUNT, backend)?;
+        }
+
         Ok(client)
     }
 
@@ -233,14 +246,15 @@ impl Eq for Client {}
 
 #[cfg(test)]
 impl Client {
-    pub fn random_generate(backend: &MlsCryptoProvider) -> CryptoResult<Self> {
+    pub fn random_generate(backend: &MlsCryptoProvider, provision: bool) -> CryptoResult<Self> {
         let user_uuid = uuid::Uuid::new_v4();
         let client_id = rand::random::<usize>();
-        Self::generate(
+        Self::generate_opts(
             format!("{}:{client_id:x}@members.wire.com", user_uuid.hyphenated())
                 .as_bytes()
                 .into(),
             &backend,
+            provision,
         )
     }
 
@@ -266,13 +280,13 @@ mod tests {
     #[test]
     fn can_generate_client() {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        assert!(Client::random_generate(&backend).is_ok());
+        assert!(Client::random_generate(&backend, false).is_ok());
     }
 
     #[test]
     fn client_never_runs_out_of_keypackages() {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        let client = Client::random_generate(&backend).unwrap();
+        let client = Client::random_generate(&backend, true).unwrap();
         for _ in 0..100 {
             assert!(client.keypackage_hash(&backend).is_ok())
         }
@@ -282,7 +296,7 @@ mod tests {
     fn client_generates_correct_number_of_kpbs() {
         // use openmls_traits::OpenMlsCryptoProvider as _;
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        let client = Client::random_generate(&backend).unwrap();
+        let client = Client::random_generate(&backend, true).unwrap();
 
         const COUNT: usize = 124;
 
