@@ -109,6 +109,8 @@ pub enum MlsError {
     #[error(transparent)]
     ProposeRemoveMemberError(#[from] openmls::prelude::ProposeRemoveMemberError),
     #[error(transparent)]
+    MlsCommitToPendingProposalsError(#[from] openmls::prelude::CommitToPendingProposalsError),
+    #[error(transparent)]
     MlsTlsCodecError(#[from] tls_codec::Error),
     #[error(transparent)]
     MlsErrorString(#[from] openmls::error::ErrorString),

@@ -38,7 +38,10 @@ pub mod prelude {
 
 use client::{Client, ClientId};
 use config::MlsCentralConfiguration;
-use conversation::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage};
+use conversation::{
+    ConversationId, MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage,
+    MlsConversationLeaveMessage,
+};
 use member::ConversationMember;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
@@ -310,6 +313,21 @@ impl MlsCentral {
             Ok(Some(group.remove_members(members, &self.mls_backend)?))
         } else {
             Ok(None)
+        }
+    }
+
+    /// Leaves a conversation with all the clients of the current user
+    pub fn leave_conversation(
+        &self,
+        conversation: ConversationId,
+        // The user's other clients. This can be an empty array
+        other_clients: Vec<ClientId>,
+    ) -> CryptoResult<MlsConversationLeaveMessage> {
+        let mut groups = self.mls_groups.write().map_err(|_| CryptoError::LockPoisonError)?;
+        if let Some(group) = groups.remove(&conversation) {
+            Ok(group.leave(other_clients, &self.mls_backend)?)
+        } else {
+            Err(CryptoError::ConversationNotFound(conversation))
         }
     }
 
