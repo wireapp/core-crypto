@@ -231,12 +231,12 @@ impl MlsConversation {
             .filter_map(|(_, kps)| kps)
             .collect::<Vec<openmls::prelude::KeyPackage>>();
 
-        let (message, welcome) = self
-            .group
-            .write()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .add_members(backend, &keypackages)
-            .map_err(MlsError::from)?;
+        let mut group = self.group.write().map_err(|_| CryptoError::LockPoisonError)?;
+
+        let (message, welcome) = group.add_members(backend, &keypackages).map_err(MlsError::from)?;
+        group.merge_pending_commit().map_err(MlsError::from)?;
+
+        drop(group);
 
         if self
             .group
@@ -282,12 +282,12 @@ impl MlsConversation {
                 Ok(acc)
             })?;
 
-        let (message, _) = self
-            .group
-            .write()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .remove_members(backend, &member_kps)
-            .map_err(MlsError::from)?;
+        let mut group = self.group.write().map_err(|_| CryptoError::LockPoisonError)?;
+
+        let (message, _) = group.remove_members(backend, &member_kps).map_err(MlsError::from)?;
+        group.merge_pending_commit().map_err(MlsError::from)?;
+
+        drop(group);
 
         if self
             .group
@@ -418,7 +418,7 @@ mod tests {
         let (alice_group, conversation_creation_message) = MlsConversation::create(
             conversation_id.clone(),
             &mut alice,
-            conversation_config.clone(),
+            conversation_config,
             &mut alice_backend,
         )
         .unwrap();
@@ -430,7 +430,45 @@ mod tests {
 
         let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
 
-        assert!(MlsConversation::from_welcome_message(welcome, conversation_config, &bob_backend).is_ok());
+        let conversation_config = MlsConversationConfiguration::builder().build().unwrap();
+        let bob_group = MlsConversation::from_welcome_message(welcome, conversation_config, &bob_backend).unwrap();
+
+        assert_eq!(bob_group.id(), alice_group.id());
+    }
+
+    #[test]
+    fn can_add_members_to_conversation() {
+        let mut alice_backend = init_keystore("alice");
+        let bob_backend = init_keystore("bob");
+        let mut alice = Client::random_generate(&alice_backend).unwrap();
+        let bob = ConversationMember::random_generate(&bob_backend).unwrap();
+
+        let uuid = uuid::Uuid::new_v4();
+        let conversation_id = ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()));
+
+        let conversation_config = MlsConversationConfiguration::builder().build().unwrap();
+
+        let (alice_group, _) = MlsConversation::create(
+            conversation_id.clone(),
+            &mut alice,
+            conversation_config,
+            &mut alice_backend,
+        )
+        .unwrap();
+
+        let conversation_creation_message = alice_group.add_members(&mut [bob], &alice_backend).unwrap();
+
+        assert_eq!(alice_group.id, conversation_id);
+        assert_eq!(alice_group.group.read().unwrap().group_id().as_slice(), conversation_id);
+        assert_eq!(alice_group.members().unwrap().len(), 2);
+
+        let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message;
+
+        let conversation_config = MlsConversationConfiguration::builder().build().unwrap();
+
+        let bob_group = MlsConversation::from_welcome_message(welcome, conversation_config, &bob_backend).unwrap();
+
+        assert_eq!(bob_group.id(), alice_group.id());
     }
 
     #[test]
