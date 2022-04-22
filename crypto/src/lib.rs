@@ -236,11 +236,8 @@ impl MlsCentral {
     }
 
     /// Create a conversation from a recieved MLS Welcome message
-    pub fn process_raw_welcome_message(
-        &self,
-        welcome: Vec<u8>,
-        configuration: MlsConversationConfiguration,
-    ) -> CryptoResult<ConversationId> {
+    pub fn process_raw_welcome_message(&self, welcome: Vec<u8>) -> crate::error::CryptoResult<ConversationId> {
+        let configuration = MlsConversationConfiguration::builder().build()?;
         let mut cursor = std::io::Cursor::new(welcome);
         let welcome = Welcome::tls_deserialize(&mut cursor).map_err(MlsError::from)?;
         self.process_welcome_message(welcome, configuration)
@@ -284,7 +281,7 @@ impl MlsCentral {
     pub fn remove_members_from_conversation(
         &self,
         id: &ConversationId,
-        members: &[ConversationMember],
+        clients: &[ClientId],
     ) -> CryptoResult<Option<MlsMessageOut>> {
         if let Some(callbacks) = self
             .callbacks
@@ -310,7 +307,7 @@ impl MlsCentral {
             .map_err(|_| CryptoError::LockPoisonError)?
             .get_mut(id)
         {
-            Ok(Some(group.remove_members(members, &self.mls_backend)?))
+            Ok(Some(group.remove_members(clients, &self.mls_backend)?))
         } else {
             Ok(None)
         }
@@ -321,7 +318,7 @@ impl MlsCentral {
         &self,
         conversation: ConversationId,
         // The user's other clients. This can be an empty array
-        other_clients: Vec<ClientId>,
+        other_clients: &[ClientId],
     ) -> CryptoResult<MlsConversationLeaveMessage> {
         let mut groups = self.mls_groups.write().map_err(|_| CryptoError::LockPoisonError)?;
         if let Some(group) = groups.remove(&conversation) {

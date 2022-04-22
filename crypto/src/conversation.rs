@@ -246,10 +246,9 @@ impl MlsConversation {
     /// Note: this is not exposed publicly because authorization isn't handled at this level
     pub(crate) fn remove_members(
         &self,
-        members: &[ConversationMember],
+        clients: &[ClientId],
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsMessageOut> {
-        let clients = members.iter().flat_map(|m| m.clients()).collect::<Vec<&ClientId>>();
         let crypto = backend.crypto();
 
         let member_kps = self
@@ -358,7 +357,7 @@ impl MlsConversation {
 
     pub(crate) fn leave(
         &self,
-        other_clients: Vec<ClientId>,
+        other_clients: &[ClientId],
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsConversationLeaveMessage> {
         let crypto = backend.crypto();
@@ -587,7 +586,9 @@ mod tests {
             )
             .unwrap();
 
-            let remove_result = alice_group.remove_members(&[bob], &alice_backend).unwrap();
+            let remove_result = alice_group
+                .remove_members(bob.clients().cloned().collect::<Vec<_>>().as_slice(), &alice_backend)
+                .unwrap();
 
             bob_group
                 .decrypt_message(remove_result.to_bytes().unwrap(), &bob_backend)
@@ -725,7 +726,7 @@ mod tests {
         assert_eq!(charlie_group.members().unwrap().len(), 4);
 
         let message = alice2_group
-            .leave(vec![alice.id().clone().into()], &alice2_backend)
+            .leave(&[alice.id().clone().into()], &alice2_backend)
             .unwrap();
 
         // Only the `other_clients` have been effectively removed as of now
