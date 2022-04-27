@@ -53,7 +53,7 @@ afterEvaluate {
 
                 groupId = "com.wire"
                 artifactId = "core-crypto-jvm"
-                version = "0.0.1"
+                version = "0.2.1"
 
                 from(components["java"])
 
