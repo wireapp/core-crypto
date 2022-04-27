@@ -91,22 +91,22 @@ plugin = "android-env"
 
 [tasks.android-armv7]
 command = "cargo"
-args = ["build", "--target", "armv7-linux-androideabi", "--features", "mobile", "${@}"]
+args = ["build", "--target", "armv7-linux-androideabi", "--features", "mobile", "--release", "${@}"]
 dependencies = ["android-env"]
 
 [tasks.android-armv8]
 command = "cargo"
-args = ["build", "--target", "aarch64-linux-android", "--features", "mobile", "${@}"]
+args = ["build", "--target", "aarch64-linux-android", "--features", "mobile", "--release", "${@}"]
 dependencies = ["android-env"]
 
 [tasks.android-x86]
 command = "cargo"
-args = ["build", "--target", "x86_64-linux-android", "--features", "mobile", "${@}"]
+args = ["build", "--target", "x86_64-linux-android", "--features", "mobile", "--release", "${@}"]
 dependencies = ["android-env"]
 
 [tasks.android-i686]
 command = "cargo"
-args = ["build", "--target", "i686-linux-android", "--features", "mobile", "${@}"]
+args = ["build", "--target", "i686-linux-android", "--features", "mobile", "--release", "${@}"]
 dependencies = ["android-env"]
 
 [tasks.android]
@@ -152,7 +152,7 @@ libname = set "libcore_crypto_ffi.so"
 for rust_target in ${keys}
     android_target = map_get ${handle} ${rust_target}
     println -c bright_blue "cp rust-${rust_target}/${libname} -> android-jniLibs/${android_target}/${libname}"
-    from = canonicalize "../target/${rust_target}/debug/${libname}"
+    from = canonicalize "../target/${rust_target}/release/${libname}"
     to = canonicalize "../kotlin/android/src/main/jniLibs/${android_target}/${libname}"
     mkdir dirname ${to}
     cp ${from} ${to}
@@ -168,10 +168,14 @@ cp ${from} ${to}
 
 [tasks.jvm-x86-darwin]
 command = "cargo"
-args = ["build", "--target", "x86_64-apple-darwin", "--features", "mobile", "${@}"]
+args = ["build", "--target", "x86_64-apple-darwin", "--features", "mobile", "--release", "${@}"]
+
+[tasks.jvm-x86-linux]
+command = "cargo"
+args = ["build", "--target", "x86_64-unknown-linux-gnu", "--features", "mobile", "--release", "${@}"]
 
 [tasks.jvm]
-dependencies = ["jvm-x86-darwin"]
+dependencies = ["jvm-x86-darwin", "jvm-x86-linux"]
 
 [tasks.copy-jvm-resources]
 dependencies = ["jvm"]
@@ -179,12 +183,16 @@ script_runner = "@duckscript"
 script = '''
 handle = map
 map_put ${handle} "x86_64-apple-darwin" "darwin-x86-64"
+map_put ${handle} "x86_64-unknown-linux-gnu" "linux-x86-64"
+lib_handle = map
+map_put ${lib_handle} "x86_64-apple-darwin" "libcore_crypto_ffi.dylib"
+map_put ${lib_handle} "x86_64-unknown-linux-gnu" "libcore_crypto_ffi.so"
 keys = map_keys ${handle}
-libname = set "libcore_crypto_ffi.dylib"
 for rust_target in ${keys}
     jvm_target = map_get ${handle} ${rust_target}
+    libname = map_get ${lib_handle} ${rust_target}
     println -c bright_blue "cp rust-${rust_target}/${libname} -> resources/${jvm_target}/${libname}"
-    from = canonicalize "../target/${rust_target}/debug/${libname}"
+    from = canonicalize "../target/${rust_target}/release/${libname}"
     to = canonicalize "../kotlin/jvm/src/main/resources/${jvm_target}/${libname}"
     mkdir dirname ${to}
     cp ${from} ${to}
