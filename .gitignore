@@ -29,3 +29,10 @@ sample-projects/ios/.swiftpm
 .DS_Store
 
 Cargo.lock
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
