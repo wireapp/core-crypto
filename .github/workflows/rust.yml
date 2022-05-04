@@ -12,11 +12,12 @@ jobs:
       with:
         profile: minimal
         toolchain: stable
+    - uses: taiki-e/install-action@cargo-hack
     - uses: Swatinem/rust-cache@v1
-    - name: Run cargo check
+    - name: Run cargo check and verify features combination
       uses: actions-rs/cargo@v1
       with:
-        command: check
+        command: hack check --each-feature --no-dev-deps
     - name: Run build
       uses: actions-rs/cargo@v1
       with:
