@@ -204,7 +204,7 @@ impl MlsConversation {
             .iter()
             .try_fold(std::collections::HashMap::new(), |mut acc, kp| -> CryptoResult<_> {
                 let credential = kp.credential();
-                let client_id: crate::client::ClientId = credential.identity().into();
+                let client_id: ClientId = credential.identity().into();
                 let member_id: MemberId = client_id.to_vec();
                 acc.entry(member_id)
                     .or_insert_with(|| vec![])
@@ -229,7 +229,7 @@ impl MlsConversation {
             .iter_mut()
             .flat_map(|member| member.keypackages_for_all_clients())
             .filter_map(|(_, kps)| kps)
-            .collect::<Vec<openmls::prelude::KeyPackage>>();
+            .collect::<Vec<KeyPackage>>();
 
         let mut group = self.group.write().map_err(|_| CryptoError::LockPoisonError)?;
 

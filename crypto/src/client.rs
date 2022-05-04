@@ -247,7 +247,7 @@ impl Client {
     pub fn keypackages(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<openmls::prelude::KeyPackage>> {
         let kps = backend.key_store().mls_fetch_keypackage_bundles(u32::MAX)?.try_fold(
             vec![],
-            |mut acc, kpb: KeyPackageBundle| -> crate::CryptoResult<_> {
+            |mut acc, kpb: KeyPackageBundle| -> CryptoResult<_> {
                 acc.push(kpb.key_package().clone());
                 Ok(acc)
             },
