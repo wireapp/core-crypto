@@ -116,7 +116,7 @@ impl Client {
             .store(&identity_key(&credentials)?, &credentials)
             .map_err(eyre::Report::msg)?;
 
-        let mut client = Self {
+        let client = Self {
             id,
             credentials,
             ciphersuite,
@@ -154,7 +154,7 @@ impl Client {
 
     /// This method returns the hash of the oldest available KeyPackageBundle for the Client
     /// and if necessary regenerates a new keypackage for immediate use
-    pub fn keypackage_hash(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
+    pub fn keypackage_hash(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
         let kpb_result: CryptoKeystoreResult<KeyPackageBundle> = backend.key_store().mls_get_keypackage();
 
         match kpb_result {
@@ -171,7 +171,7 @@ impl Client {
         }
     }
 
-    pub fn gen_keypackage(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<KeyPackageBundle> {
+    pub fn gen_keypackage(&self, backend: &MlsCryptoProvider) -> CryptoResult<KeyPackageBundle> {
         let kpb = KeyPackageBundle::new(
             &[*self.ciphersuite],
             &self.credentials,
@@ -193,7 +193,7 @@ impl Client {
     /// Requests `count` keying material to be present and returns
     /// a reference to it for the consumer to copy/clone.
     pub fn request_keying_material(
-        &mut self,
+        &self,
         count: usize,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<KeyPackageBundle>> {
@@ -202,7 +202,7 @@ impl Client {
     }
 
     fn provision_keying_material(
-        &mut self,
+        &self,
         count: usize,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<KeyPackageBundle>> {
@@ -272,7 +272,7 @@ mod tests {
     #[test]
     fn client_never_runs_out_of_keypackages() {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        let mut client = Client::random_generate(&backend).unwrap();
+        let client = Client::random_generate(&backend).unwrap();
         for _ in 0..100 {
             assert!(client.keypackage_hash(&backend).is_ok())
         }
@@ -282,7 +282,7 @@ mod tests {
     fn client_generates_correct_number_of_kpbs() {
         // use openmls_traits::OpenMlsCryptoProvider as _;
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        let mut client = Client::random_generate(&backend).unwrap();
+        let client = Client::random_generate(&backend).unwrap();
 
         const COUNT: usize = 124;
 
