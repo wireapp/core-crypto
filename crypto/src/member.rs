@@ -92,7 +92,7 @@ impl ConversationMember {
         let client_id: ClientId = format!("{}:{:x}@members.wire.com", uuid.hyphenated(), rand::random::<usize>())
             .as_bytes()
             .into();
-        let mut client = Client::generate(client_id.clone(), backend)?;
+        let client = Client::generate(client_id.clone(), backend)?;
         client.gen_keypackage(backend)?;
 
         let member = Self {
