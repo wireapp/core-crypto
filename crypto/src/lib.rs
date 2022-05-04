@@ -67,7 +67,7 @@ impl From<Ciphersuite> for MlsCiphersuite {
 }
 
 impl std::ops::Deref for MlsCiphersuite {
-    type Target = openmls::prelude::Ciphersuite;
+    type Target = Ciphersuite;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -99,7 +99,7 @@ impl MlsCentral {
     /// Tries to initialize the MLS Central object.
     /// Takes a store path (i.e. Disk location of the embedded database, should be consistent between messaging sessions)
     /// And a root identity key (i.e. enclaved encryption key for this device)
-    pub fn try_new(configuration: MlsCentralConfiguration) -> crate::error::CryptoResult<Self> {
+    pub fn try_new(configuration: MlsCentralConfiguration) -> CryptoResult<Self> {
         // Init backend (crypto + rand + keystore)
         let mls_backend = MlsCryptoProvider::try_new(&configuration.store_path, &configuration.identity_key)?;
         // Init client identity (load or create)
@@ -117,7 +117,7 @@ impl MlsCentral {
 
     fn restore_groups(
         backend: &MlsCryptoProvider,
-    ) -> crate::error::CryptoResult<HashMap<ConversationId, MlsConversation>> {
+    ) -> CryptoResult<HashMap<ConversationId, MlsConversation>> {
         let states = backend.key_store().mls_groups_restore()?;
         if states.is_empty() {
             return Ok(HashMap::new());
@@ -163,7 +163,7 @@ impl MlsCentral {
         &self,
         id: ConversationId,
         config: MlsConversationConfiguration,
-    ) -> crate::error::CryptoResult<Option<MlsConversationCreationMessage>> {
+    ) -> CryptoResult<Option<MlsConversationCreationMessage>> {
         let mut client = self.mls_client.write().map_err(|_| CryptoError::LockPoisonError)?;
         let (conversation, messages) = MlsConversation::create(id.clone(), &mut client, config, &self.mls_backend)?;
 
@@ -188,7 +188,7 @@ impl MlsCentral {
         &self,
         welcome: Welcome,
         configuration: MlsConversationConfiguration,
-    ) -> crate::error::CryptoResult<ConversationId> {
+    ) -> CryptoResult<ConversationId> {
         let conversation = MlsConversation::from_welcome_message(welcome, configuration, &self.mls_backend)?;
         let conversation_id = conversation.id().clone();
         self.mls_groups
@@ -204,7 +204,7 @@ impl MlsCentral {
         &self,
         welcome: Vec<u8>,
         configuration: MlsConversationConfiguration,
-    ) -> crate::error::CryptoResult<ConversationId> {
+    ) -> CryptoResult<ConversationId> {
         let mut cursor = std::io::Cursor::new(welcome);
         let welcome = Welcome::tls_deserialize(&mut cursor).map_err(MlsError::from)?;
         self.process_welcome_message(welcome, configuration)
