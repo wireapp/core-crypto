@@ -57,7 +57,7 @@ impl ConversationMember {
         &self.id
     }
 
-    pub fn clients(&self) -> impl std::iter::Iterator<Item = &ClientId> {
+    pub fn clients(&self) -> impl Iterator<Item=&ClientId> {
         self.clients.keys()
     }
 
@@ -107,7 +107,8 @@ impl ConversationMember {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::INITIAL_KEYING_MATERIAL_COUNT;
+    use openmls::prelude::*;
+    use crate::{prelude::INITIAL_KEYING_MATERIAL_COUNT, ClientId};
     use mls_crypto_provider::MlsCryptoProvider;
 
     use super::ConversationMember;
@@ -127,6 +128,48 @@ mod tests {
         for _ in 0..INITIAL_KEYING_MATERIAL_COUNT * 2 {
             let ckp = member.keypackages_for_all_clients();
             assert!(ckp[&client_id].is_some())
+        }
+    }
+
+    mod add_keypackage {
+        use super::*;
+
+        #[test]
+        fn add_valid_keypackage_should_add_it_to_client() {
+            let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
+            let mut member = ConversationMember::random_generate(&backend).unwrap();
+            let cid = ClientId::from(member.id.as_slice());
+            let kp = new_keypackage(&cid);
+            let mut kp_raw = vec![];
+            use tls_codec::Serialize as _;
+            kp.tls_serialize(&mut kp_raw).unwrap();
+            assert!(member.clients.get(&cid).is_none());
+            assert!(member.add_keypackage(kp_raw).is_ok());
+            assert!(member.clients.get(&cid).is_some());
+        }
+
+        #[test]
+        fn add_invalid_keypackage_should_fail() {
+            let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
+            let mut member = ConversationMember::random_generate(&backend).unwrap();
+            let previous_clients = member.clients.clone();
+            assert!(member.add_keypackage(b"invalid-keypackage".to_vec()).is_err());
+            // ensure clients are not altered in the process
+            assert_eq!(member.clients, previous_clients);
+        }
+
+        fn new_keypackage(identity: &[u8]) -> KeyPackage {
+            let ciphersuite = crate::MlsCiphersuite::default().0;
+            let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
+            let credential = CredentialBundle::new(
+                identity.to_vec(),
+                CredentialType::Basic,
+                ciphersuite.into(),
+                &backend,
+            ).unwrap();
+            let (kp, _) = KeyPackageBundle::new(&[ciphersuite], &credential, &backend, vec![])
+                .unwrap().into_parts();
+            kp
         }
     }
 }
