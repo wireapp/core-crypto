@@ -16,7 +16,6 @@
 
 use core_crypto_keystore::{CryptoKeystore, CryptoKeystoreResult};
 use openmls_rust_crypto::RustCrypto as OpenMlsRustCrypto;
-use openmls_traits::OpenMlsCryptoProvider;
 
 #[derive(Debug)]
 pub struct MlsCryptoProvider {
@@ -25,13 +24,13 @@ pub struct MlsCryptoProvider {
 }
 
 impl MlsCryptoProvider {
-    pub fn try_new<S: AsRef<str>, K: AsRef<str>>(db_path: S, identity_key: K) -> CryptoKeystoreResult<Self> {
+    pub fn try_new(db_path: impl AsRef<str>, identity_key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
         let crypto = OpenMlsRustCrypto::default();
         let key_store = CryptoKeystore::open_with_key(db_path, identity_key.as_ref())?;
         Ok(Self { crypto, key_store })
     }
 
-    pub fn try_new_in_memory<K: AsRef<str>>(identity_key: K) -> CryptoKeystoreResult<Self> {
+    pub fn try_new_in_memory(identity_key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
         let crypto = OpenMlsRustCrypto::default();
         let key_store = CryptoKeystore::open_in_memory_with_key(identity_key.as_ref())?;
         Ok(Self { crypto, key_store })
@@ -42,7 +41,7 @@ impl MlsCryptoProvider {
     }
 }
 
-impl OpenMlsCryptoProvider for MlsCryptoProvider {
+impl openmls_traits::OpenMlsCryptoProvider for MlsCryptoProvider {
     type CryptoProvider = OpenMlsRustCrypto;
     type RandProvider = OpenMlsRustCrypto;
     type KeyStoreProvider = CryptoKeystore;

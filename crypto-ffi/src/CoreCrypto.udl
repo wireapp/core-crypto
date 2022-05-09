@@ -20,6 +20,7 @@ enum CiphersuiteName {
 [Error]
 enum CryptoError {
     "ConversationNotFound",
+    "ClientNotFound",
     "MalformedIdentifier",
     "KeyStoreError",
     "ClientSignatureNotFound",
@@ -90,6 +91,15 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     sequence<u8> encrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> message);
+
+    [Throws=CryptoError]
+    sequence<u8> new_add_proposal(ConversationId conversation_id, sequence<u8> key_package);
+
+    [Throws=CryptoError]
+    sequence<u8> new_update_proposal(ConversationId conversation_id);
+
+    [Throws=CryptoError]
+    sequence<u8> new_remove_proposal(ConversationId conversation_id, ClientId client_id);
 };
 
 namespace CoreCrypto {

@@ -31,3 +31,4 @@ path = "../mls-provider"
 [dev-dependencies]
 uuid = { version = "1.0.0-alpha", features = ["v4", "v5"] }
 rand = "0.8"
+tempfile = "3.3.0"

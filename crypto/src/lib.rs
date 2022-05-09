@@ -21,6 +21,7 @@ mod client;
 mod conversation;
 // pub mod identifiers;
 mod member;
+mod proposal;
 
 pub mod prelude {
     pub use crate::client::*;
@@ -29,7 +30,9 @@ pub mod prelude {
     pub use crate::member::*;
     pub use crate::CoreCryptoCallbacks;
     pub use crate::{MlsCentral, MlsCentralConfiguration, MlsCiphersuite};
+    pub use crate::proposal::MlsProposal;
     pub use openmls::prelude::Ciphersuite as CiphersuiteName;
+    pub use openmls::prelude::KeyPackage;
     pub use tls_codec;
 }
 
@@ -85,6 +88,14 @@ impl MlsCentralConfiguration {
     pub fn builder() -> MlsCentralConfigurationBuilder {
         MlsCentralConfigurationBuilder::default()
     }
+
+    #[cfg(test)]
+    /// Creates temporary file to prevent test collisions which would happen with hardcoded file path
+    pub(crate) fn tmp_store_path(tmp_dir: &tempfile::TempDir) -> String {
+        let path = tmp_dir.path().join("store.edb");
+        std::fs::File::create(&path).unwrap();
+        path.to_str().unwrap().to_string()
+    }
 }
 
 #[derive(Debug)]
@@ -115,9 +126,7 @@ impl MlsCentral {
         })
     }
 
-    fn restore_groups(
-        backend: &MlsCryptoProvider,
-    ) -> CryptoResult<HashMap<ConversationId, MlsConversation>> {
+    fn restore_groups(backend: &MlsCryptoProvider) -> CryptoResult<HashMap<ConversationId, MlsConversation>> {
         let states = backend.key_store().mls_groups_restore()?;
         if states.is_empty() {
             return Ok(HashMap::new());
@@ -183,7 +192,7 @@ impl MlsCentral {
             .unwrap_or_default()
     }
 
-    /// Create a conversation from a recieved MLS Welcome message
+    /// Create a conversation from a received MLS Welcome message
     pub fn process_welcome_message(
         &self,
         welcome: Welcome,
@@ -318,8 +327,9 @@ mod tests {
 
     #[test]
     fn can_persist_group_state() {
+        let tmp_dir = tempfile::tempdir().unwrap();
         let configuration = MlsCentralConfiguration::builder()
-            .store_path("can_persist_group_state.edb".to_string())
+            .store_path(MlsCentralConfiguration::tmp_store_path(&tmp_dir))
             .identity_key("test".to_string())
             .client_id("potato".to_string())
             .build()
