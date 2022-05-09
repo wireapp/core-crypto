@@ -93,7 +93,7 @@ impl CryptoKeystore {
         let mut stmt = db.prepare_cached("SELECT rowid FROM mls_keys ORDER BY rowid DESC LIMIT ?")?;
         let kpb_ids: Vec<i64> = stmt
             .query_map([count], |r| r.get(0))?
-            .map(|r| r.map_err(crate::CryptoKeystoreError::from))
+            .map(|r| r.map_err(CryptoKeystoreError::from))
             .collect::<crate::CryptoKeystoreResult<Vec<i64>>>()?;
 
         drop(stmt);
@@ -118,7 +118,7 @@ impl CryptoKeystore {
         &self,
     ) -> crate::CryptoKeystoreResult<V> {
         if self.mls_keypackagebundle_count()? == 0 {
-            return Err(crate::CryptoKeystoreError::OutOfKeyPackageBundles);
+            return Err(CryptoKeystoreError::OutOfKeyPackageBundles);
         }
 
         let db = self.conn.lock().unwrap();
@@ -135,7 +135,7 @@ impl CryptoKeystore {
         blob.close()?;
 
         Ok(V::from_key_store_value(&buf)
-            .map_err(|e| crate::CryptoKeystoreError::KeyStoreValueTransformError(e.into()))?)
+            .map_err(|e| CryptoKeystoreError::KeyStoreValueTransformError(e.into()))?)
     }
 
     pub fn mls_group_persist(&self, group_id: &[u8], state: &[u8]) -> crate::CryptoKeystoreResult<()> {
@@ -184,7 +184,7 @@ impl CryptoKeystore {
         let mut stmt = db.prepare_cached("SELECT rowid FROM mls_groups ORDER BY rowid ASC")?;
         let rowids: Vec<i64> = stmt
             .query_map([], |r| r.get(0))?
-            .map(|r| r.map_err(crate::CryptoKeystoreError::from))
+            .map(|r| r.map_err(CryptoKeystoreError::from))
             .collect::<crate::CryptoKeystoreResult<_>>()?;
 
         drop(stmt);

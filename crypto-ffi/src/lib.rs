@@ -205,6 +205,34 @@ impl CoreCrypto {
         self.0.encrypt_message(conversation_id, message)
     }
 
+    pub fn new_add_proposal(&self, conversation_id: ConversationId, key_package: Vec<u8>) -> CryptoResult<Vec<u8>> {
+        use core_crypto::prelude::tls_codec::Serialize as _;
+        let kp = KeyPackage::try_from(&key_package[..]).map_err(MlsError::from)?;
+        self.0
+            .new_proposal(conversation_id, MlsProposal::Add(kp))?
+            .tls_serialize_detached()
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)
+    }
+
+    pub fn new_update_proposal(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
+        use core_crypto::prelude::tls_codec::Serialize as _;
+        self.0
+            .new_proposal(conversation_id, MlsProposal::Update)?
+            .tls_serialize_detached()
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)
+    }
+
+    pub fn new_remove_proposal(&self, conversation_id: ConversationId, client_id: ClientId) -> CryptoResult<Vec<u8>> {
+        use core_crypto::prelude::tls_codec::Serialize as _;
+        self.0
+            .new_proposal(conversation_id, MlsProposal::Remove(client_id))?
+            .tls_serialize_detached()
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)
+    }
+
     pub fn conversation_exists(&self, conversation_id: ConversationId) -> bool {
         self.0.conversation_exists(&conversation_id)
     }

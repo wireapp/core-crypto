@@ -20,6 +20,9 @@ pub enum CryptoError {
     /// This error is emitted when the requested conversation couldn't be found in our store
     #[error("Couldn't find conversation")]
     ConversationNotFound(crate::ConversationId),
+    /// This error is emitted when the requested client couldn't be found in MLS group
+    #[error("Couldn't find client")]
+    ClientNotFound(crate::ClientId),
     /// This error is emitted when we find a malformed (i.e. not uuid) or empty identifier
     #[error("Malformed identifier found: {0}")]
     MalformedIdentifier(String),
@@ -101,6 +104,12 @@ pub enum MlsError {
     MlsMlsGroupStateError(#[from] openmls::prelude::MlsGroupStateError),
     #[error(transparent)]
     MlsMessageError(#[from] openmls::framing::errors::MlsMessageError),
+    #[error(transparent)]
+    ProposeAddMemberError(#[from] openmls::prelude::ProposeAddMemberError),
+    #[error(transparent)]
+    ProposeSelfUpdateError(#[from] openmls::prelude::ProposeSelfUpdateError),
+    #[error(transparent)]
+    ProposeRemoveMemberError(#[from] openmls::prelude::ProposeRemoveMemberError),
     #[error(transparent)]
     MlsTlsCodecError(#[from] tls_codec::Error),
     #[error(transparent)]
