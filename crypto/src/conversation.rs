@@ -102,7 +102,7 @@ impl MlsConversation {
     pub fn create(
         id: ConversationId,
         author_client: &mut Client,
-        config: MlsConversationConfiguration,
+        mut config: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<(Self, Option<MlsConversationCreationMessage>)> {
         let mls_group_config = MlsConversationConfiguration::openmls_default_configuration();
@@ -117,17 +117,15 @@ impl MlsConversation {
 
         let mut maybe_creation_message = None;
         if !config.extra_members.is_empty() {
-            let kps: Vec<KeyPackage> = config
+            let kps = config
                 .extra_members
-                .clone()
-                .into_iter()
-                .flat_map(|mut m| {
+                .iter_mut()
+                .flat_map(|m| {
                     m.keypackages_for_all_clients()
                         .into_iter()
-                        .filter_map(|(_cid, maybe_kp)| maybe_kp)
-                        .collect::<Vec<KeyPackage>>()
+                        .filter_map(|(_, maybe_kp)| maybe_kp)
                 })
-                .collect();
+                .collect::<Vec<KeyPackage>>();
 
             let (message, welcome) = group.add_members(backend, &kps).map_err(MlsError::from)?;
 
