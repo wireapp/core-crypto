@@ -71,7 +71,7 @@ impl ConversationMember {
     pub fn add_keypackage(&mut self, kp: Vec<u8>) -> CryptoResult<()> {
         let kp = KeyPackage::tls_deserialize(&mut &kp[..]).map_err(MlsError::from)?;
         let cid = ClientId::from(kp.credential().identity());
-        self.clients.entry(cid).or_insert_with(|| vec![]).push(kp);
+        self.clients.entry(cid).or_insert_with(Vec::new).push(kp);
         Ok(())
     }
 }
