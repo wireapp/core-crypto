@@ -68,7 +68,7 @@ impl CryptoKeystore {
         )?;
 
         use std::io::Write as _;
-        blob.write_all(&signature)?;
+        blob.write_all(signature)?;
         blob.close()?;
 
         transaction.commit()?;
@@ -86,7 +86,7 @@ impl CryptoKeystore {
         Ok(count - 1)
     }
 
-    pub fn mls_fetch_keypackage_bundles<'a, V: FromKeyStoreValue>(&'a self, count: u32) -> crate::CryptoKeystoreResult<impl Iterator<Item = V> + 'a> {
+    pub fn mls_fetch_keypackage_bundles<V: FromKeyStoreValue>(&self, count: u32) -> crate::CryptoKeystoreResult<impl Iterator<Item = V> + '_> {
         let db = self.conn.lock().unwrap();
 
         let mut stmt = db.prepare_cached("SELECT rowid FROM mls_keys ORDER BY rowid DESC LIMIT ?")?;
@@ -133,8 +133,8 @@ impl CryptoKeystore {
         blob.read_to_end(&mut buf)?;
         blob.close()?;
 
-        Ok(V::from_key_store_value(&buf)
-            .map_err(|e| CryptoKeystoreError::KeyStoreValueTransformError(e.into()))?)
+        V::from_key_store_value(&buf)
+            .map_err(|e| CryptoKeystoreError::KeyStoreValueTransformError(e.into()))
     }
 
     pub fn mls_group_persist(&self, group_id: &[u8], state: &[u8]) -> crate::CryptoKeystoreResult<()> {
@@ -244,7 +244,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
     where
         Self: Sized,
     {
-        if k.len() == 0 {
+        if k.is_empty() {
             return Err("The provided key is empty".into());
         }
 
@@ -287,7 +287,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
     where
         Self: Sized,
     {
-        if k.len() == 0 {
+        if k.is_empty() {
             return None;
         }
 
@@ -337,7 +337,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
     }
 
     fn delete(&self, k: &[u8]) -> Result<(), Self::Error> {
-        if k.len() == 0 {
+        if k.is_empty() {
             return Ok(());
         }
 

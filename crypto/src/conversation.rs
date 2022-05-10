@@ -194,8 +194,7 @@ impl MlsConversation {
     }
 
     pub fn members(&self) -> CryptoResult<std::collections::HashMap<MemberId, Vec<openmls::credentials::Credential>>> {
-        Ok(self
-            .group
+        self.group
             .read()
             .map_err(|_| CryptoError::LockPoisonError)?
             .members()
@@ -205,11 +204,11 @@ impl MlsConversation {
                 let client_id: ClientId = credential.identity().into();
                 let member_id: MemberId = client_id.to_vec();
                 acc.entry(member_id)
-                    .or_insert_with(|| vec![])
+                    .or_insert_with(Vec::new)
                     .push((*credential).clone());
 
                 Ok(acc)
-            })?)
+            })
     }
 
     pub fn can_user_act(&self, uuid: MemberId) -> bool {
@@ -381,8 +380,13 @@ mod tests {
         fn create_self_conversation_should_succeed() {
             let conversation_id = conversation_id();
             let (mut alice_backend, mut alice) = alice();
-            let (alice_group, conversation_creation_message) =
-                MlsConversation::create(conversation_id.clone(), &mut alice, MlsConversationConfiguration::default(), &mut alice_backend).unwrap();
+            let (alice_group, conversation_creation_message) = MlsConversation::create(
+                conversation_id.clone(),
+                &mut alice,
+                MlsConversationConfiguration::default(),
+                &mut alice_backend,
+            )
+            .unwrap();
 
             assert!(conversation_creation_message.is_none());
             assert_eq!(alice_group.id, conversation_id);
@@ -402,8 +406,13 @@ mod tests {
                 .build()
                 .unwrap();
 
-            let (alice_group, conversation_creation_message) =
-                MlsConversation::create(conversation_id.clone(), &mut alice, conversation_config, &mut alice_backend).unwrap();
+            let (alice_group, conversation_creation_message) = MlsConversation::create(
+                conversation_id.clone(),
+                &mut alice,
+                conversation_config,
+                &mut alice_backend,
+            )
+            .unwrap();
 
             assert!(conversation_creation_message.is_some());
             assert_eq!(alice_group.id, conversation_id);
