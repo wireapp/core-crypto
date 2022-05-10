@@ -22,10 +22,7 @@ mod tests {
         let cid_bytes = conversation_id.as_bytes().to_vec();
 
         central
-            .new_conversation(
-                cid_bytes.clone(),
-                MlsConversationConfiguration::builder().build().unwrap(),
-            )
+            .new_conversation(cid_bytes.clone(), MlsConversationConfiguration::default())
             .unwrap();
 
         let mut lengths = Vec::with_capacity(MSG.len());

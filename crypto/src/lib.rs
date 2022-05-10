@@ -336,7 +336,7 @@ mod tests {
             .unwrap();
 
         let central = MlsCentral::try_new(configuration.clone()).unwrap();
-        let conversation_configuration = MlsConversationConfiguration::builder().build().unwrap();
+        let conversation_configuration = MlsConversationConfiguration::default();
         let conversation_id = b"conversation".to_vec();
         let _ = central.new_conversation(conversation_id.clone(), conversation_configuration);
 
