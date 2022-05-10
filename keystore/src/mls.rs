@@ -15,12 +15,14 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use std::io::Read;
+use openmls_traits::key_store::FromKeyStoreValue;
 
 use rusqlite::{OptionalExtension, ToSql};
 
 use crate::{CryptoKeystore, CryptoKeystoreError, MissingKeyErrorKind};
 
 impl CryptoKeystore {
+
     pub fn mls_load_identity_signature(&self, id: &str) -> crate::CryptoKeystoreResult<Option<Vec<u8>>> {
         let mut conn_lock = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
         let transaction = conn_lock.transaction()?;
@@ -84,10 +86,7 @@ impl CryptoKeystore {
         Ok(count - 1)
     }
 
-    pub fn mls_fetch_keypackage_bundles<'a, V: openmls_traits::key_store::FromKeyStoreValue>(
-        &'a self,
-        count: u32,
-    ) -> crate::CryptoKeystoreResult<impl Iterator<Item = V> + 'a> {
+    pub fn mls_fetch_keypackage_bundles<'a, V: FromKeyStoreValue>(&'a self, count: u32) -> crate::CryptoKeystoreResult<impl Iterator<Item = V> + 'a> {
         let db = self.conn.lock().unwrap();
 
         let mut stmt = db.prepare_cached("SELECT rowid FROM mls_keys ORDER BY rowid DESC LIMIT ?")?;
@@ -114,7 +113,7 @@ impl CryptoKeystore {
         }))
     }
 
-    pub fn mls_get_keypackage<V: openmls_traits::key_store::FromKeyStoreValue>(
+    pub fn mls_get_keypackage<V: FromKeyStoreValue>(
         &self,
     ) -> crate::CryptoKeystoreResult<V> {
         if self.mls_keypackagebundle_count()? == 0 {
@@ -284,7 +283,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         Ok(())
     }
 
-    fn read<V: openmls_traits::key_store::FromKeyStoreValue>(&self, k: &[u8]) -> Option<V>
+    fn read<V: FromKeyStoreValue>(&self, k: &[u8]) -> Option<V>
     where
         Self: Sized,
     {

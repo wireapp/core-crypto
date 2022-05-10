@@ -30,6 +30,7 @@ uuid = "1.0.0-alpha"
 lru = { version = "0.7", optional = true }
 refinery = { version = "0.8", default-features = false, features = ["rusqlite"] }
 barrel = { version = "0.7", features = ["sqlite3"] }
+openmls = "0.4"
 
 # iOS specific things
 security-framework = { version = "2.5.0-alpha", optional = true }
