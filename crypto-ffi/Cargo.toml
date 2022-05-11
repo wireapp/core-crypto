@@ -20,5 +20,5 @@ uniffi_macros = { version = "0.17", optional = true }
 
 [build-dependencies]
 # UniFFI - Android + iOS bindings - Build support
-uniffi_build = { version = "0.17", features = ["builtin-bindgen"], optional = true }
+uniffi_build = { version = "0.18", features = ["builtin-bindgen"], optional = true }
 uniffi_bindgen = { version = "0.17", optional = true }
