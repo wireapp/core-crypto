@@ -493,9 +493,10 @@ mod tests {
 
             assert_eq!(bob_group.id(), alice_group.id());
 
-            let alice_can_send_message = alice_group.encrypt_message(b"me", &alice_backend);
+            let msg = b"Hello";
+            let alice_can_send_message = alice_group.encrypt_message(msg, &alice_backend);
             assert!(alice_can_send_message.is_ok());
-            let bob_can_send_message = bob_group.encrypt_message(b"me", &bob_backend);
+            let bob_can_send_message = bob_group.encrypt_message(msg, &bob_backend);
             assert!(bob_can_send_message.is_ok());
         }
     }
@@ -535,44 +536,54 @@ mod tests {
         }
     }
 
-    #[test]
-    fn can_roundtrip_message_in_1_1_conversation() {
-        let conversation_id = conversation_id();
-        let (mut alice_backend, mut alice) = alice();
-        let (bob_backend, bob) = bob();
-        let configuration = MlsConversationConfiguration {
-            extra_members: vec![bob.clone()],
-            ..Default::default()
-        };
+    mod encrypting_messages {
+        use super::*;
 
-        let (alice_group, conversation_creation_message) =
-            MlsConversation::create(conversation_id.clone(), &mut alice, configuration, &mut alice_backend).unwrap();
+        #[test]
+        fn can_roundtrip_message_in_1_1_conversation() {
+            let conversation_id = conversation_id();
+            let (mut alice_backend, mut alice) = alice();
+            let (bob_backend, bob) = bob();
+            let configuration = MlsConversationConfiguration {
+                extra_members: vec![bob.clone()],
+                ..Default::default()
+            };
 
-        assert!(conversation_creation_message.is_some());
-        assert_eq!(alice_group.id, conversation_id);
-        assert_eq!(alice_group.group.read().unwrap().group_id().as_slice(), conversation_id);
-        assert_eq!(alice_group.members().unwrap().len(), 2);
+            let (alice_group, conversation_creation_message) =
+                MlsConversation::create(conversation_id.clone(), &mut alice, configuration, &mut alice_backend)
+                    .unwrap();
 
-        let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
+            assert!(conversation_creation_message.is_some());
+            assert_eq!(alice_group.id, conversation_id);
+            assert_eq!(alice_group.group.read().unwrap().group_id().as_slice(), conversation_id);
+            assert_eq!(alice_group.members().unwrap().len(), 2);
 
-        let bob_group =
-            MlsConversation::from_welcome_message(welcome, MlsConversationConfiguration::default(), &bob_backend)
+            let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
+
+            let bob_group =
+                MlsConversation::from_welcome_message(welcome, MlsConversationConfiguration::default(), &bob_backend)
+                    .unwrap();
+
+            let original_message = b"Hello World!";
+
+            // alice -> bob
+            let encrypted_message = alice_group.encrypt_message(original_message, &alice_backend).unwrap();
+            assert_ne!(&encrypted_message, original_message);
+            let roundtripped_message = bob_group
+                .decrypt_message(&encrypted_message, &bob_backend)
+                .unwrap()
                 .unwrap();
+            assert_eq!(original_message, roundtripped_message.as_slice());
 
-        let original_message = b"Hello World!";
-
-        let encrypted_message = alice_group.encrypt_message(original_message, &alice_backend).unwrap();
-        let roundtripped_message = bob_group
-            .decrypt_message(&encrypted_message, &bob_backend)
-            .unwrap()
-            .unwrap();
-        assert_eq!(original_message, roundtripped_message.as_slice());
-        let encrypted_message = bob_group.encrypt_message(roundtripped_message, &bob_backend).unwrap();
-        let roundtripped_message = alice_group
-            .decrypt_message(&encrypted_message, &alice_backend)
-            .unwrap()
-            .unwrap();
-        assert_eq!(original_message, roundtripped_message.as_slice());
+            // bob -> alice
+            let encrypted_message = bob_group.encrypt_message(roundtripped_message, &bob_backend).unwrap();
+            assert_ne!(&encrypted_message, original_message);
+            let roundtripped_message = alice_group
+                .decrypt_message(&encrypted_message, &alice_backend)
+                .unwrap()
+                .unwrap();
+            assert_eq!(original_message, roundtripped_message.as_slice());
+        }
     }
 
     fn conversation_id() -> Vec<u8> {
