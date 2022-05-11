@@ -200,9 +200,7 @@ impl MlsConversation {
                 let credential = kp.credential();
                 let client_id: ClientId = credential.identity().into();
                 let member_id: MemberId = client_id.to_vec();
-                acc.entry(member_id)
-                    .or_insert_with(Vec::new)
-                    .push(credential.clone());
+                acc.entry(member_id).or_insert_with(Vec::new).push(credential.clone());
 
                 Ok(acc)
             },
@@ -233,11 +231,7 @@ impl MlsConversation {
 
         drop(group);
 
-        if self.read_group()?.state_changed() == openmls::group::InnerState::Changed {
-            let mut buf = vec![];
-            self.write_group()?.save(&mut buf)?;
-            backend.key_store().mls_group_persist(&self.id, &buf)?;
-        }
+        self.persist_group_when_changed(backend)?;
 
         Ok(MlsConversationCreationMessage { welcome, message })
     }
@@ -273,11 +267,7 @@ impl MlsConversation {
 
         drop(group);
 
-        if self.read_group()?.state_changed() == openmls::group::InnerState::Changed {
-            let mut buf = vec![];
-            self.write_group()?.save(&mut buf)?;
-            backend.key_store().mls_group_persist(&self.id, &buf)?;
-        }
+        self.persist_group_when_changed(backend)?;
 
         Ok(message)
     }
@@ -308,11 +298,7 @@ impl MlsConversation {
             }
         }
 
-        if group.state_changed() == openmls::group::InnerState::Changed {
-            let mut buf = vec![];
-            group.save(&mut buf)?;
-            backend.key_store().mls_group_persist(&self.id, &buf)?;
-        }
+        self.persist_group_when_changed(backend)?;
 
         Ok(None)
     }
@@ -331,6 +317,16 @@ impl MlsConversation {
             .self_update(backend, None)
             .map_err(MlsError::from)
             .map(|(message, welcome)| MlsConversationReinitMessage { welcome, message })?)
+    }
+
+    fn persist_group_when_changed(&self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+        if self.read_group()?.state_changed() == openmls::group::InnerState::Changed {
+            let mut buf = vec![];
+            self.write_group()?.save(&mut buf)?;
+            Ok(backend.key_store().mls_group_persist(&self.id, &buf)?)
+        } else {
+            Ok(())
+        }
     }
 
     fn read_group(&self) -> CryptoResult<impl core::ops::Deref<Target = MlsGroup> + '_> {
