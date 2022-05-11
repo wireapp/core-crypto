@@ -202,7 +202,7 @@ impl MlsConversation {
                 let member_id: MemberId = client_id.to_vec();
                 acc.entry(member_id)
                     .or_insert_with(Vec::new)
-                    .push((*credential).clone());
+                    .push(credential.clone());
 
                 Ok(acc)
             },
