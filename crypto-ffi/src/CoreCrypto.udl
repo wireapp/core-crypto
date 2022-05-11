@@ -27,7 +27,6 @@ enum CryptoError {
     "OutOfKeyPackage",
     "LockPoisonError",
     "ConversationConfigurationError",
-    "CentralConfigurationError",
     "MlsError",
     "UuidError",
     "Utf8Error",
