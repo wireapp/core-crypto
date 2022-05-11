@@ -30,13 +30,14 @@ pub mod prelude {
     pub use crate::member::*;
     pub use crate::proposal::MlsProposal;
     pub use crate::CoreCryptoCallbacks;
-    pub use crate::{MlsCentral, MlsCentralConfiguration, MlsCiphersuite};
+    pub use crate::{config::MlsCentralConfiguration, MlsCentral, MlsCiphersuite};
     pub use openmls::prelude::Ciphersuite as CiphersuiteName;
     pub use openmls::prelude::KeyPackage;
     pub use tls_codec;
 }
 
 use client::{Client, ClientId};
+use config::MlsCentralConfiguration;
 use conversation::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage};
 use member::ConversationMember;
 use mls_crypto_provider::MlsCryptoProvider;
@@ -77,24 +78,44 @@ impl std::ops::Deref for MlsCiphersuite {
     }
 }
 
-#[derive(Debug, Clone, derive_builder::Builder)]
-pub struct MlsCentralConfiguration {
-    pub(crate) store_path: String,
-    pub(crate) identity_key: String,
-    pub(crate) client_id: String,
-}
+/// Prevents direct instantiation of [MlsCentralConfiguration]
+mod config {
+    use super::*;
 
-impl MlsCentralConfiguration {
-    pub fn builder() -> MlsCentralConfigurationBuilder {
-        MlsCentralConfigurationBuilder::default()
+    #[derive(Debug, Clone)]
+    pub struct MlsCentralConfiguration {
+        pub store_path: String,
+        pub identity_key: String,
+        pub client_id: String,
+        _private: (), // allow other fields access but prevent instantiation
     }
 
-    #[cfg(test)]
-    /// Creates temporary file to prevent test collisions which would happen with hardcoded file path
-    pub(crate) fn tmp_store_path(tmp_dir: &tempfile::TempDir) -> String {
-        let path = tmp_dir.path().join("store.edb");
-        std::fs::File::create(&path).unwrap();
-        path.to_str().unwrap().to_string()
+    impl MlsCentralConfiguration {
+        pub fn try_new(store_path: String, identity_key: String, client_id: String) -> CryptoResult<Self> {
+            if store_path.trim().is_empty() {
+                return Err(CryptoError::MalformedIdentifier(store_path));
+            }
+            if identity_key.trim().is_empty() {
+                return Err(CryptoError::MalformedIdentifier(identity_key));
+            }
+            if client_id.trim().is_empty() {
+                return Err(CryptoError::MalformedIdentifier(client_id));
+            }
+            Ok(Self {
+                store_path,
+                identity_key,
+                client_id,
+                _private: (),
+            })
+        }
+
+        #[cfg(test)]
+        /// Creates temporary file to prevent test collisions which would happen with hardcoded file path
+        pub(crate) fn tmp_store_path(tmp_dir: &tempfile::TempDir) -> String {
+            let path = tmp_dir.path().join("store.edb");
+            std::fs::File::create(&path).unwrap();
+            path.to_str().unwrap().to_string()
+        }
     }
 }
 
@@ -323,27 +344,88 @@ impl MlsCentral {
 
 #[cfg(test)]
 mod tests {
-    use crate::{prelude::MlsConversationConfiguration, MlsCentral, MlsCentralConfiguration};
+    use crate::{prelude::MlsConversationConfiguration, CryptoError, MlsCentral, MlsCentralConfiguration};
 
-    #[test]
-    fn can_persist_group_state() {
-        let tmp_dir = tempfile::tempdir().unwrap();
-        let configuration = MlsCentralConfiguration::builder()
-            .store_path(MlsCentralConfiguration::tmp_store_path(&tmp_dir))
-            .identity_key("test".to_string())
-            .client_id("potato".to_string())
-            .build()
+    mod invariants {
+        use super::*;
+
+        #[test]
+        fn can_create_from_valid_configuration() {
+            let tmp_dir = tempfile::tempdir().unwrap();
+            let tmp_dir_argument = &tmp_dir;
+            let configuration = MlsCentralConfiguration::try_new(
+                MlsCentralConfiguration::tmp_store_path(&tmp_dir_argument),
+                "test".to_string(),
+                "alice".to_string(),
+            )
             .unwrap();
 
-        let central = MlsCentral::try_new(configuration.clone()).unwrap();
-        let conversation_configuration = MlsConversationConfiguration::default();
-        let conversation_id = b"conversation".to_vec();
-        let _ = central.new_conversation(conversation_id.clone(), conversation_configuration);
+            let central = MlsCentral::try_new(configuration);
+            assert!(central.is_ok())
+        }
 
-        drop(central);
-        let central = MlsCentral::try_new(configuration).unwrap();
-        let _ = central.encrypt_message(conversation_id, b"Test".to_vec()).unwrap();
+        #[test]
+        fn store_path_should_not_be_empty_nor_blank() {
+            let configuration =
+                MlsCentralConfiguration::try_new(" ".to_string(), "test".to_string(), "alice".to_string());
+            match configuration {
+                Err(CryptoError::MalformedIdentifier(value)) => assert_eq!(" ", value),
+                _ => panic!(),
+            }
+        }
 
-        central.mls_backend.destroy_and_reset();
+        #[test]
+        fn identity_key_should_not_be_empty_nor_blank() {
+            let tmp_dir = tempfile::tempdir().unwrap();
+            let configuration = MlsCentralConfiguration::try_new(
+                MlsCentralConfiguration::tmp_store_path(&tmp_dir),
+                " ".to_string(),
+                "alice".to_string(),
+            );
+            match configuration {
+                Err(CryptoError::MalformedIdentifier(value)) => assert_eq!(" ", value),
+                _ => panic!(),
+            }
+        }
+
+        #[test]
+        fn client_id_should_not_be_empty_nor_blank() {
+            let tmp_dir = tempfile::tempdir().unwrap();
+            let configuration = MlsCentralConfiguration::try_new(
+                MlsCentralConfiguration::tmp_store_path(&tmp_dir),
+                "test".to_string(),
+                " ".to_string(),
+            );
+            match configuration {
+                Err(CryptoError::MalformedIdentifier(value)) => assert_eq!(" ", value),
+                _ => panic!(),
+            }
+        }
+    }
+
+    mod persistence {
+        use super::*;
+
+        #[test]
+        fn can_persist_group_state() {
+            let tmp_dir = tempfile::tempdir().unwrap();
+            let configuration = MlsCentralConfiguration::try_new(
+                MlsCentralConfiguration::tmp_store_path(&tmp_dir),
+                "test".to_string(),
+                "potato".to_string(),
+            )
+            .unwrap();
+
+            let central = MlsCentral::try_new(configuration.clone()).unwrap();
+            let conversation_configuration = MlsConversationConfiguration::default();
+            let conversation_id = b"conversation".to_vec();
+            let _ = central.new_conversation(conversation_id.clone(), conversation_configuration);
+
+            drop(central);
+            let central = MlsCentral::try_new(configuration).unwrap();
+            let _ = central.encrypt_message(conversation_id, b"Test".to_vec()).unwrap();
+
+            central.mls_backend.destroy_and_reset();
+        }
     }
 }
