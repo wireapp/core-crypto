@@ -282,9 +282,9 @@ impl MlsConversation {
         Ok(message)
     }
 
-    pub fn decrypt_message<M: AsRef<[u8]>>(
+    pub fn decrypt_message(
         &self,
-        message: M,
+        message: impl AsRef<[u8]>,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Option<Vec<u8>>> {
         let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
@@ -317,13 +317,12 @@ impl MlsConversation {
         Ok(None)
     }
 
-    pub fn encrypt_message<M: AsRef<[u8]>>(&self, message: M, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
-        let message = self
-            .write_group()?
+    pub fn encrypt_message(&self, message: impl AsRef<[u8]>, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
+        self.write_group()?
             .create_message(backend, message.as_ref())
-            .map_err(MlsError::from)?;
-
-        Ok(message.to_bytes().map_err(MlsError::from)?)
+            .map_err(MlsError::from)
+            .and_then(|m| m.to_bytes().map_err(MlsError::from))
+            .map_err(CryptoError::from)
     }
 
     pub fn reinit(&self, backend: &MlsCryptoProvider) -> CryptoResult<MlsConversationReinitMessage> {
