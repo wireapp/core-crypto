@@ -92,12 +92,15 @@ mod config {
 
     impl MlsCentralConfiguration {
         pub fn try_new(store_path: String, identity_key: String, client_id: String) -> CryptoResult<Self> {
+            // TODO: probably more complex rules to enforce
             if store_path.trim().is_empty() {
                 return Err(CryptoError::MalformedIdentifier(store_path));
             }
+            // TODO: probably more complex rules to enforce
             if identity_key.trim().is_empty() {
                 return Err(CryptoError::MalformedIdentifier(identity_key));
             }
+            // TODO: probably more complex rules to enforce
             if client_id.trim().is_empty() {
                 return Err(CryptoError::MalformedIdentifier(client_id));
             }
