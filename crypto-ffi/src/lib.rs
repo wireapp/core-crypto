@@ -122,13 +122,15 @@ impl CoreCrypto {
     }
 
     pub fn client_public_key(&self) -> CryptoResult<Vec<u8>> {
-        self.0.client_public_key()
+        Ok(self.0.client()?.public_key().into())
     }
 
     pub fn client_keypackages(&self, amount_requested: u32) -> CryptoResult<Vec<Vec<u8>>> {
         use core_crypto::prelude::tls_codec::Serialize as _;
-        self.0
-            .client_keypackages(amount_requested as usize)?
+        Ok(self
+            .0
+            .client_mut()?
+            .request_keying_material(amount_requested as usize, self.0.backend())?
             .into_iter()
             .map(|kpb| {
                 kpb.key_package()
@@ -136,7 +138,17 @@ impl CoreCrypto {
                     .map_err(MlsError::from)
                     .map_err(CryptoError::from)
             })
-            .collect::<CryptoResult<Vec<Vec<u8>>>>()
+            .collect::<CryptoResult<Vec<Vec<u8>>>>()?)
+    }
+
+    pub fn client_prune_keypackages(&self, refs: Vec<Vec<u8>>) -> CryptoResult<()> {
+        let refs = refs.into_iter().try_fold(vec![], |mut acc, href| -> CryptoResult<_> {
+            use tls_codec::Deserialize as _;
+            acc.push(KeyPackageRef::tls_deserialize(&mut &href[..]).map_err(MlsError::from)?);
+            Ok(acc)
+        })?;
+
+        Ok(self.0.client_mut()?.prune_keypackages(&refs, self.0.backend())?)
     }
 
     pub fn create_conversation(

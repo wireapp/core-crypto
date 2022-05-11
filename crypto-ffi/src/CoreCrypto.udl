@@ -72,6 +72,9 @@ interface CoreCrypto {
     sequence<sequence<u8>> client_keypackages(u32 amount_requested);
 
     [Throws=CryptoError]
+    void client_prune_keypackages(sequence<sequence<u8>> refs);
+
+    [Throws=CryptoError]
     MemberAddedMessages? create_conversation(ConversationId conversation_id, ConversationConfiguration config);
 
     boolean conversation_exists(ConversationId conversation_id);

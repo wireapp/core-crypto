@@ -32,7 +32,7 @@ pub mod prelude {
     pub use crate::CoreCryptoCallbacks;
     pub use crate::{config::MlsCentralConfiguration, MlsCentral, MlsCiphersuite};
     pub use openmls::prelude::Ciphersuite as CiphersuiteName;
-    pub use openmls::prelude::KeyPackage;
+    pub use openmls::prelude::{KeyPackage, KeyPackageRef};
     pub use tls_codec;
 }
 
@@ -43,11 +43,9 @@ use member::ConversationMember;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
     messages::Welcome,
-    prelude::{Ciphersuite, KeyPackageBundle, MlsMessageOut},
+    prelude::{Ciphersuite, MlsMessageOut},
 };
-use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::HashMap;
-use tls_codec::Deserialize;
 
 pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     fn authorize(&self, conversation_id: ConversationId, client_id: String) -> bool;
@@ -151,6 +149,7 @@ impl MlsCentral {
     }
 
     fn restore_groups(backend: &MlsCryptoProvider) -> CryptoResult<HashMap<ConversationId, MlsConversation>> {
+        use openmls_traits::OpenMlsCryptoProvider as _;
         let states = backend.key_store().mls_groups_restore()?;
         if states.is_empty() {
             return Ok(HashMap::new());
@@ -174,21 +173,16 @@ impl MlsCentral {
         Ok(())
     }
 
-    /// Returns the client's public key as a buffer
-    pub fn client_public_key(&self) -> CryptoResult<Vec<u8>> {
-        Ok(self
-            .mls_client
-            .read()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .public_key()
-            .into())
+    pub fn backend(&self) -> &MlsCryptoProvider {
+        &self.mls_backend
     }
 
-    pub fn client_keypackages(&self, amount_requested: usize) -> CryptoResult<Vec<KeyPackageBundle>> {
-        self.mls_client
-            .write()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .request_keying_material(amount_requested, &self.mls_backend)
+    pub fn client(&self) -> CryptoResult<std::sync::RwLockReadGuard<Client>> {
+        Ok(self.mls_client.read().map_err(|_| CryptoError::LockPoisonError)?)
+    }
+
+    pub fn client_mut(&self) -> CryptoResult<std::sync::RwLockWriteGuard<Client>> {
+        Ok(self.mls_client.write().map_err(|_| CryptoError::LockPoisonError)?)
     }
 
     /// Create a new empty conversation
@@ -197,7 +191,7 @@ impl MlsCentral {
         id: ConversationId,
         config: MlsConversationConfiguration,
     ) -> CryptoResult<Option<MlsConversationCreationMessage>> {
-        let mut client = self.mls_client.write().map_err(|_| CryptoError::LockPoisonError)?;
+        let mut client = self.client_mut()?;
         let (conversation, messages) = MlsConversation::create(id.clone(), &mut client, config, &self.mls_backend)?;
 
         self.mls_groups
@@ -239,6 +233,7 @@ impl MlsCentral {
         configuration: MlsConversationConfiguration,
     ) -> CryptoResult<ConversationId> {
         let mut cursor = std::io::Cursor::new(welcome);
+        use tls_codec::Deserialize as _;
         let welcome = Welcome::tls_deserialize(&mut cursor).map_err(MlsError::from)?;
         self.process_welcome_message(welcome, configuration)
     }

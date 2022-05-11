@@ -15,7 +15,11 @@ mod tests {
             MlsCentralConfiguration::try_new("increment_message.edb".into(), "test1234".into(), client_id).unwrap();
 
         let central = MlsCentral::try_new(config).unwrap();
-        let _ = central.client_keypackages(100).unwrap();
+        let _ = central
+            .client_mut()
+            .unwrap()
+            .request_keying_material(100, central.backend())
+            .unwrap();
 
         let conversation_id = uuid::Uuid::new_v4();
         let cid_bytes = conversation_id.as_bytes().to_vec();
