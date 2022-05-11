@@ -46,7 +46,11 @@ impl MlsProposal {
                 .into_iter()
                 .find(|kp| kp.credential().identity() == client_id.as_slice())
                 .ok_or(CryptoError::ClientNotFound(client_id))
-                .and_then(|kp| kp.hash_ref(backend.crypto()).map_err(MlsError::from).map_err(CryptoError::from))
+                .and_then(|kp| {
+                    kp.hash_ref(backend.crypto())
+                        .map_err(MlsError::from)
+                        .map_err(CryptoError::from)
+                })
                 .and_then(|kpr| {
                     group
                         .propose_remove_member(backend, &kpr)
@@ -193,12 +197,12 @@ mod proposal_tests {
     }
 
     fn central_configuration(tmp_dir: &tempfile::TempDir) -> MlsCentralConfiguration {
-        MlsCentralConfiguration::builder()
-            .store_path(MlsCentralConfiguration::tmp_store_path(tmp_dir))
-            .identity_key("test".to_string())
-            .client_id("alice".to_string())
-            .build()
-            .unwrap()
+        MlsCentralConfiguration::try_new(
+            MlsCentralConfiguration::tmp_store_path(tmp_dir),
+            "test".to_string(),
+            "alice".to_string(),
+        )
+        .unwrap()
     }
 
     fn credential_bundle(central: &MlsCentral, ciphersuite: Ciphersuite) -> CredentialBundle {

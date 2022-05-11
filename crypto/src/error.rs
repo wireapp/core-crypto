@@ -38,8 +38,6 @@ pub enum CryptoError {
     /// There was an issue when configuring a new conversation
     #[error(transparent)]
     ConversationConfigurationError(#[from] crate::conversation::MlsConversationConfigurationBuilderError),
-    #[error(transparent)]
-    CentralConfigurationError(#[from] crate::MlsCentralConfigurationBuilderError),
     /// Errors that are sent by our Keystore
     #[error(transparent)]
     KeyStoreError(#[from] core_crypto_keystore::CryptoKeystoreError),

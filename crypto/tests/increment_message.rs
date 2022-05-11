@@ -1,6 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use core_crypto::{prelude::MlsConversationConfiguration, MlsCentral, MlsCentralConfiguration};
+    use core_crypto::{
+        prelude::{MlsCentralConfiguration, MlsConversationConfiguration},
+        MlsCentral,
+    };
 
     const MSG: &str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum";
 
@@ -8,12 +11,8 @@ mod tests {
     fn increment_message() {
         let user_uuid = uuid::Uuid::new_v4().hyphenated();
         let client_id = format!("{user_uuid}:1234@members.wire.com");
-        let config = MlsCentralConfiguration::builder()
-            .store_path("increment_message.edb".into())
-            .identity_key("test1234".into())
-            .client_id(client_id)
-            .build()
-            .unwrap();
+        let config =
+            MlsCentralConfiguration::try_new("increment_message.edb".into(), "test1234".into(), client_id).unwrap();
 
         let central = MlsCentral::try_new(config).unwrap();
         let _ = central.client_keypackages(100).unwrap();

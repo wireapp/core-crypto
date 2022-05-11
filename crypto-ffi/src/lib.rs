@@ -112,15 +112,8 @@ pub struct CoreCrypto(MlsCentral);
 #[allow(dead_code, unused_variables)]
 impl CoreCrypto {
     pub fn new(path: &str, key: &str, client_id: &str) -> CryptoResult<Self> {
-        let configuration = MlsCentralConfiguration::builder()
-            .store_path(path.into())
-            .identity_key(key.into())
-            .client_id(client_id.into())
-            .build()?;
-
-        let central = MlsCentral::try_new(configuration)?;
-
-        Ok(CoreCrypto(central))
+        let configuration = MlsCentralConfiguration::try_new(path.into(), key.into(), client_id.into())?;
+        MlsCentral::try_new(configuration).map(Self)
     }
 
     #[cfg(feature = "mobile")]
