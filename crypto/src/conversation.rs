@@ -194,12 +194,9 @@ impl MlsConversation {
     }
 
     pub fn members(&self) -> CryptoResult<std::collections::HashMap<MemberId, Vec<openmls::credentials::Credential>>> {
-        self.group
-            .read()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .members()
-            .iter()
-            .try_fold(std::collections::HashMap::new(), |mut acc, kp| -> CryptoResult<_> {
+        self.read_group()?.members().iter().try_fold(
+            std::collections::HashMap::new(),
+            |mut acc, kp| -> CryptoResult<_> {
                 let credential = kp.credential();
                 let client_id: ClientId = credential.identity().into();
                 let member_id: MemberId = client_id.to_vec();
@@ -208,7 +205,8 @@ impl MlsConversation {
                     .push((*credential).clone());
 
                 Ok(acc)
-            })
+            },
+        )
     }
 
     pub fn can_user_act(&self, uuid: MemberId) -> bool {
@@ -228,25 +226,16 @@ impl MlsConversation {
             .filter_map(|(_, kps)| kps)
             .collect::<Vec<KeyPackage>>();
 
-        let mut group = self.group.write().map_err(|_| CryptoError::LockPoisonError)?;
+        let mut group = self.write_group()?;
 
         let (message, welcome) = group.add_members(backend, &keypackages).map_err(MlsError::from)?;
         group.merge_pending_commit().map_err(MlsError::from)?;
 
         drop(group);
 
-        if self
-            .group
-            .read()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .state_changed()
-            == openmls::group::InnerState::Changed
-        {
+        if self.read_group()?.state_changed() == openmls::group::InnerState::Changed {
             let mut buf = vec![];
-            self.group
-                .write()
-                .map_err(|_| CryptoError::LockPoisonError)?
-                .save(&mut buf)?;
+            self.write_group()?.save(&mut buf)?;
             backend.key_store().mls_group_persist(&self.id, &buf)?;
         }
 
@@ -264,9 +253,7 @@ impl MlsConversation {
         let crypto = backend.crypto();
 
         let member_kps = self
-            .group
-            .read()
-            .map_err(|_| CryptoError::LockPoisonError)?
+            .read_group()?
             .members()
             .into_iter()
             .filter(|kp| {
@@ -279,25 +266,16 @@ impl MlsConversation {
                 Ok(acc)
             })?;
 
-        let mut group = self.group.write().map_err(|_| CryptoError::LockPoisonError)?;
+        let mut group = self.write_group()?;
 
         let (message, _) = group.remove_members(backend, &member_kps).map_err(MlsError::from)?;
         group.merge_pending_commit().map_err(MlsError::from)?;
 
         drop(group);
 
-        if self
-            .group
-            .read()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .state_changed()
-            == openmls::group::InnerState::Changed
-        {
+        if self.read_group()?.state_changed() == openmls::group::InnerState::Changed {
             let mut buf = vec![];
-            self.group
-                .write()
-                .map_err(|_| CryptoError::LockPoisonError)?
-                .save(&mut buf)?;
+            self.write_group()?.save(&mut buf)?;
             backend.key_store().mls_group_persist(&self.id, &buf)?;
         }
 
@@ -311,7 +289,7 @@ impl MlsConversation {
     ) -> CryptoResult<Option<Vec<u8>>> {
         let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
 
-        let mut group = self.group.write().map_err(|_| CryptoError::LockPoisonError)?;
+        let mut group = self.write_group()?;
         let parsed_message = group.parse_message(msg_in, backend).map_err(MlsError::from)?;
 
         let message = group
@@ -341,9 +319,7 @@ impl MlsConversation {
 
     pub fn encrypt_message<M: AsRef<[u8]>>(&self, message: M, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
         let message = self
-            .group
-            .write()
-            .map_err(|_| CryptoError::LockPoisonError)?
+            .write_group()?
             .create_message(backend, message.as_ref())
             .map_err(MlsError::from)?;
 
@@ -352,12 +328,18 @@ impl MlsConversation {
 
     pub fn reinit(&self, backend: &MlsCryptoProvider) -> CryptoResult<MlsConversationReinitMessage> {
         Ok(self
-            .group
-            .write()
-            .map_err(|_| CryptoError::LockPoisonError)?
+            .write_group()?
             .self_update(backend, None)
             .map_err(MlsError::from)
             .map(|(message, welcome)| MlsConversationReinitMessage { welcome, message })?)
+    }
+
+    fn read_group(&self) -> CryptoResult<impl core::ops::Deref<Target = MlsGroup> + '_> {
+        self.group.read().map_err(|_| CryptoError::LockPoisonError)
+    }
+
+    fn write_group(&self) -> CryptoResult<impl core::ops::DerefMut<Target = MlsGroup> + '_> {
+        self.group.write().map_err(|_| CryptoError::LockPoisonError)
     }
 }
 
