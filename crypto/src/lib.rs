@@ -28,9 +28,9 @@ pub mod prelude {
     pub use crate::conversation::*;
     pub use crate::error::*;
     pub use crate::member::*;
+    pub use crate::proposal::MlsProposal;
     pub use crate::CoreCryptoCallbacks;
     pub use crate::{MlsCentral, MlsCentralConfiguration, MlsCiphersuite};
-    pub use crate::proposal::MlsProposal;
     pub use openmls::prelude::Ciphersuite as CiphersuiteName;
     pub use openmls::prelude::KeyPackage;
     pub use tls_codec;
@@ -290,7 +290,7 @@ impl MlsCentral {
     }
 
     /// Encrypts a raw payload then serializes it to the TLS wire format
-    pub fn encrypt_message<M: AsRef<[u8]>>(&self, conversation: ConversationId, message: M) -> CryptoResult<Vec<u8>> {
+    pub fn encrypt_message(&self, conversation: ConversationId, message: impl AsRef<[u8]>) -> CryptoResult<Vec<u8>> {
         let groups = self.mls_groups.read().map_err(|_| CryptoError::LockPoisonError)?;
         let conversation = groups
             .get(&conversation)
@@ -302,10 +302,10 @@ impl MlsCentral {
     /// Deserializes a TLS-serialized message, then deciphers it
     /// This method will return None for the message in case the provided payload is
     /// a system message, such as Proposals and Commits
-    pub fn decrypt_message<M: AsRef<[u8]>>(
+    pub fn decrypt_message(
         &self,
         conversation_id: ConversationId,
-        message: M,
+        message: impl AsRef<[u8]>,
     ) -> CryptoResult<Option<Vec<u8>>> {
         let groups = self.mls_groups.read().map_err(|_| CryptoError::LockPoisonError)?;
         let conversation = groups
