@@ -128,6 +128,11 @@ pub unsafe extern "C" fn cc_create_conversation(
     welcome_msg_buffer: *mut u8,
     commit_msg_buffer: *mut u8,
 ) -> CallStatus<2> {
+    if ptr.is_null() {
+        update_last_error(CryptoError::NullPointerGiven);
+        return CallStatus::err();
+    }
+
     let id = std::slice::from_raw_parts(id, id_len);
     let cc = &*ptr;
 
@@ -161,6 +166,11 @@ pub unsafe extern "C" fn cc_decrypt_message(
     payload_len: usize,
     dest_buffer: *mut u8,
 ) -> CallStatus<1> {
+    if ptr.is_null() {
+        update_last_error(CryptoError::NullPointerGiven);
+        return CallStatus::err();
+    }
+
     let conversation_id = std::slice::from_raw_parts(conversation_id, conversation_id_len);
     let payload = std::slice::from_raw_parts(payload, payload_len);
     let cc = &*ptr;
@@ -191,6 +201,11 @@ pub unsafe extern "C" fn cc_encrypt_message(
     payload_len: usize,
     dest_buffer: *mut u8,
 ) -> CallStatus<1> {
+    if ptr.is_null() {
+        update_last_error(CryptoError::NullPointerGiven);
+        return CallStatus::err();
+    }
+
     let conversation_id = std::slice::from_raw_parts(conversation_id, conversation_id_len);
     let payload = std::slice::from_raw_parts(payload, payload_len);
     let cc = &*ptr;
@@ -216,6 +231,11 @@ pub unsafe extern "C" fn cc_process_welcome_message(
     conversation_id_buf: *mut u8,
     config: ConversationConfiguration,
 ) -> CallStatus<1> {
+    if ptr.is_null() {
+        update_last_error(CryptoError::NullPointerGiven);
+        return CallStatus::err();
+    }
+
     let welcome_raw = std::slice::from_raw_parts(welcome, welcome_len);
     let cc = &*ptr;
 
@@ -234,6 +254,11 @@ pub unsafe extern "C" fn cc_process_welcome_message(
 
 #[no_mangle]
 pub unsafe extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, buf: *mut u8) -> CallStatus<1> {
+    if ptr.is_null() {
+        update_last_error(CryptoError::NullPointerGiven);
+        return CallStatus::err();
+    }
+
     let cc = &*ptr;
     match cc.client_public_key() {
         Ok(pk) => {
@@ -254,6 +279,11 @@ pub unsafe extern "C" fn cc_client_keypackages(
     amount_requested: size_t,
     dest: *const [*mut u8],
 ) -> CallStatus<1> {
+    if ptr.is_null() {
+        update_last_error(CryptoError::NullPointerGiven);
+        return CallStatus::err();
+    }
+
     let cc = &*ptr;
     let res = cc
         .client_keypackages(amount_requested as u32)
@@ -279,11 +309,21 @@ pub unsafe extern "C" fn cc_client_keypackages(
 
 #[no_mangle]
 pub extern "C" fn cc_add_clients_to_conversation(ptr: CoreCryptoPtr) {
+    if ptr.is_null() {
+        update_last_error(CryptoError::NullPointerGiven);
+        return CallStatus::err();
+    }
+
     todo!()
 }
 
 #[no_mangle]
 pub extern "C" fn cc_remove_clients_from_conversation(ptr: CoreCryptoPtr) {
+    if ptr.is_null() {
+        update_last_error(CryptoError::NullPointerGiven);
+        return CallStatus::err();
+    }
+
     todo!()
 }
 
@@ -293,6 +333,11 @@ pub unsafe extern "C" fn cc_conversation_exists(
     conversation_id: *mut u8,
     conversation_id_len: usize,
 ) -> c_uchar {
+    if ptr.is_null() {
+        update_last_error(CryptoError::NullPointerGiven);
+        return CallStatus::err();
+    }
+
     let conversation_id = std::slice::from_raw_parts(conversation_id, conversation_id_len);
     let cc = &*ptr;
     if cc.conversation_exists(conversation_id.into()) {

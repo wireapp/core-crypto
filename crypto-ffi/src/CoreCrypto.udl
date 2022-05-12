@@ -32,7 +32,8 @@ enum CryptoError {
     "StringUtf8Error",
     "ParseIntError",
     "IoError",
-    "Unauthorized"
+    "Unauthorized",
+    "NullPointerGiven"
 };
 
 dictionary MemberAddedMessages {

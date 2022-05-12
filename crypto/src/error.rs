@@ -60,6 +60,8 @@ pub enum CryptoError {
     /// Authorization error
     #[error("The current client id isn't authorized to perform this action")]
     Unauthorized,
+    #[error("The consumer has provided a null pointer across the FFI boundary")]
+    NullPointerGiven,
 }
 
 pub type CryptoResult<T> = Result<T, CryptoError>;
