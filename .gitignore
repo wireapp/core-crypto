@@ -36,3 +36,8 @@ Cargo.lock
 *.iml
 *.ipr
 out/
+
+### Gradle ###
+.gradle
+build/
+*.hprof

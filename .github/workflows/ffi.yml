@@ -1,0 +1,31 @@
+name: Builds and verifies FFI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install minimal stable with clippy and rustfmt
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+      - uses: davidB/rust-cargo-make@v1
+      - name: Run FFI tests
+        run: |
+          cd crypto-ffi
+          cargo make --profile development test-ffi

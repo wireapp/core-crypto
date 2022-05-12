@@ -1,3 +1,6 @@
+[env]
+LIB_EXTENSION = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "unknown", mapping = {"linux" = "so", "macos" = "dylib", "windows" = "dll" } }
+
 [tasks.clean]
 command = "cargo"
 args = ["clean"]
@@ -7,9 +10,13 @@ command = "cargo"
 args = ["test"]
 dependencies = ["clean"]
 
+
 [tasks.check]
 command = "cargo"
 args = ["check"]
+
+[tasks.test-ffi]
+dependencies = ["clean", "jvm-test"]
 
 ##################################### WASM ####################################
 
@@ -166,42 +173,45 @@ cp ${from} ${to}
 
 ####################################  JVM  ####################################
 
-[tasks.jvm-x86-darwin]
-command = "cargo"
-args = ["build", "--target", "x86_64-apple-darwin", "--features", "mobile", "--release", "${@}"]
-
-[tasks.jvm-x86-linux]
-command = "cargo"
-args = ["build", "--target", "x86_64-unknown-linux-gnu", "--features", "mobile", "--release", "${@}"]
-
 [tasks.jvm]
-dependencies = ["jvm-x86-darwin", "jvm-x86-linux"]
+dependencies = ["jvm-dev", "jvm-release"]
+
+[tasks.jvm-dev]
+condition = { profiles = ["development"] }
+command = "cargo"
+args = ["build", "--features", "mobile", "${@}"]
+
+[tasks.jvm-release]
+condition = { profiles = ["production"] }
+command = "cargo"
+args = ["build", "--features", "mobile", "--release", "${@}"]
 
 [tasks.copy-jvm-resources]
-dependencies = ["jvm"]
+dependencies = ["jvm", "detect-release"]
 script_runner = "@duckscript"
 script = '''
-handle = map
-map_put ${handle} "x86_64-apple-darwin" "darwin-x86-64"
-map_put ${handle} "x86_64-unknown-linux-gnu" "linux-x86-64"
-lib_handle = map
-map_put ${lib_handle} "x86_64-apple-darwin" "libcore_crypto_ffi.dylib"
-map_put ${lib_handle} "x86_64-unknown-linux-gnu" "libcore_crypto_ffi.so"
-keys = map_keys ${handle}
-for rust_target in ${keys}
-    jvm_target = map_get ${handle} ${rust_target}
-    libname = map_get ${lib_handle} ${rust_target}
-    println -c bright_blue "cp rust-${rust_target}/${libname} -> resources/${jvm_target}/${libname}"
-    from = canonicalize "../target/${rust_target}/release/${libname}"
-    to = canonicalize "../kotlin/jvm/src/main/resources/${jvm_target}/${libname}"
-    mkdir dirname ${to}
-    cp ${from} ${to}
+from = canonicalize "../target/${RELEASE_PATH}/libcore_crypto_ffi.${LIB_EXTENSION}"
+if eq ${CARGO_MAKE_RUST_TARGET_OS} linux
+    jvm_target = set "linux-x86-64"
+else
+    jvm_target = set "darwin-x86-64"
 end
+to = canonicalize "../kotlin/jvm/src/main/resources/${jvm_target}"
+mkdir ${to}
+cp ${from} "${to}/libcore_crypto_ffi.${LIB_EXTENSION}"
 
 println -c bright_blue "cp ./bindings/kt/com/wire/crypto/CoreCrypto.kt -> ../kotlin/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt"
 from = canonicalize "./bindings/kt/com/wire/crypto/CoreCrypto.kt"
 to = canonicalize "../kotlin/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt"
 cp ${from} ${to}
+'''
+
+[tasks.jvm-test]
+dependencies = ["copy-jvm-resources"]
+script = '''
+# println -c bright_blue "Verifies that crypto-core can be used locally by dev teams"
+cd ../kotlin
+./gradlew jvm:check
 '''
 
 #################################### Mobile ###################################
@@ -212,6 +222,18 @@ dependencies = ["android", "ios"]
 [tasks.all]
 dependencies = ["mobile", "wasm"]
 
+################################### Utils ###################################
+# Contrary to a plugin one can set an environment variables here
+[tasks.detect-release]
+script_runner = "@duckscript"
+script = '''
+if eq ${CARGO_MAKE_PROFILE} development
+    set_env RELEASE_PATH "debug"
+else
+    set_env RELEASE_PATH "release"
+end
+'''
+
 ################################### Plugins ###################################
 [plugins.impl.detect-release]
 script = '''
@@ -221,7 +243,7 @@ if index
     println -c bright_blue "Release mode detected!"
 end
 
-release_path = set IS_RELEASE_BUILD or "debug"
+set_env RELEASE_PATH = set IS_RELEASE_BUILD or "debug"
 
 # index_target = array_contains ${task.args} "--target"
 # if index_target
