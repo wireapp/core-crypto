@@ -23,44 +23,69 @@ use crate::{
 use openmls::prelude::KeyPackage;
 use tls_codec::Deserialize;
 
+pub use conversation_member::ConversationMember;
+
 pub type MemberId = Vec<u8>;
 
-#[derive(Debug, Clone)]
-pub struct ConversationMember {
-    id: MemberId,
-    clients: HashMap<ClientId, Vec<KeyPackage>>,
-    #[allow(dead_code)]
-    local_client: Option<Client>,
+/// Prevents direct instantiation of [ConversationMember]
+mod conversation_member {
+
+    use super::*;
+
+    #[derive(Debug, Clone)]
+    pub struct ConversationMember {
+        pub id: MemberId,
+        pub clients: HashMap<ClientId, Vec<KeyPackage>>,
+        #[allow(dead_code)]
+        pub local_client: Option<Client>,
+        _private: (), // allow other fields access but prevent instantiation
+    }
+
+    impl ConversationMember {
+        pub fn new_raw(client_id: ClientId, kp_ser: Vec<u8>) -> CryptoResult<Self> {
+            use openmls::prelude::TlsDeserializeTrait as _;
+            let kp = KeyPackage::tls_deserialize(&mut &kp_ser[..]).map_err(MlsError::from)?;
+
+            Ok(Self {
+                id: client_id.to_vec(),
+                clients: HashMap::from([(client_id, vec![kp])]),
+                local_client: None,
+                _private: (),
+            })
+        }
+
+        pub fn new(client_id: ClientId, kp: KeyPackage) -> Self {
+            Self {
+                id: client_id.to_vec(),
+                clients: HashMap::from([(client_id, vec![kp])]),
+                local_client: None,
+                _private: (),
+            }
+        }
+
+        #[cfg(test)]
+        pub fn random_generate(backend: &mls_crypto_provider::MlsCryptoProvider) -> CryptoResult<Self> {
+            let uuid = uuid::Uuid::new_v4();
+            let id = format!("{}@members.wire.com", uuid.as_hyphenated()).as_bytes().to_vec();
+            let client_id: ClientId = format!("{}:{:x}@members.wire.com", uuid.hyphenated(), rand::random::<usize>())
+                .as_bytes()
+                .into();
+            let client = Client::generate(client_id.clone(), backend)?;
+            client.gen_keypackage(backend)?;
+
+            let member = Self {
+                id,
+                clients: HashMap::from([(client_id, client.keypackages(backend)?)]),
+                local_client: Some(client),
+                _private: (),
+            };
+
+            Ok(member)
+        }
+    }
 }
 
 impl ConversationMember {
-    pub fn new_raw(client_id: ClientId, kp_ser: Vec<u8>) -> CryptoResult<Self> {
-        use openmls::prelude::TlsDeserializeTrait as _;
-        let kp = KeyPackage::tls_deserialize(&mut &kp_ser[..]).map_err(MlsError::from)?;
-
-        Ok(Self {
-            id: client_id.to_vec(),
-            clients: HashMap::from([(client_id, vec![kp])]),
-            local_client: None,
-        })
-    }
-
-    pub fn new(client_id: ClientId, kp: KeyPackage) -> Self {
-        Self {
-            id: client_id.to_vec(),
-            clients: HashMap::from([(client_id, vec![kp])]),
-            local_client: None,
-        }
-    }
-
-    pub fn id(&self) -> &MemberId {
-        &self.id
-    }
-
-    pub fn clients(&self) -> impl Iterator<Item=&ClientId> {
-        self.clients.keys()
-    }
-
     pub fn keypackages_for_all_clients(&mut self) -> HashMap<&ClientId, Option<KeyPackage>> {
         self.clients
             .iter_mut()
@@ -85,33 +110,12 @@ impl PartialEq for ConversationMember {
 impl Eq for ConversationMember {}
 
 #[cfg(test)]
-impl ConversationMember {
-    pub fn random_generate(backend: &mls_crypto_provider::MlsCryptoProvider) -> CryptoResult<Self> {
-        let uuid = uuid::Uuid::new_v4();
-        let id = format!("{}@members.wire.com", uuid.as_hyphenated()).as_bytes().to_vec();
-        let client_id: ClientId = format!("{}:{:x}@members.wire.com", uuid.hyphenated(), rand::random::<usize>())
-            .as_bytes()
-            .into();
-        let client = Client::generate(client_id.clone(), backend)?;
-        client.gen_keypackage(backend)?;
-
-        let member = Self {
-            id,
-            clients: HashMap::from([(client_id, client.keypackages(backend)?)]),
-            local_client: Some(client),
-        };
-
-        Ok(member)
-    }
-}
-
-#[cfg(test)]
 mod tests {
-    use openmls::prelude::*;
     use crate::{prelude::INITIAL_KEYING_MATERIAL_COUNT, ClientId};
     use mls_crypto_provider::MlsCryptoProvider;
+    use openmls::prelude::*;
 
-    use super::ConversationMember;
+    use super::*;
 
     #[test]
     fn can_generate_member() {
@@ -129,6 +133,24 @@ mod tests {
             let ckp = member.keypackages_for_all_clients();
             assert!(ckp[&client_id].is_some())
         }
+    }
+
+    #[test]
+    fn should_be_eq_by_id() {
+        let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
+
+        let client = |id: &[u8]| {
+            Client::generate(id.to_vec().into(), &backend)
+                .and_then(|c| c.gen_keypackage(&backend))
+                .unwrap()
+        };
+
+        let alice_conv = ConversationMember::new(vec![0].into(), client(b"alice").key_package().to_owned());
+        let bob_phone_conv = ConversationMember::new(vec![1].into(), client(b"bob").key_package().to_owned());
+        let bob_desktop_conv = ConversationMember::new(vec![1].into(), client(b"bob").key_package().to_owned());
+        assert_eq!(bob_phone_conv, bob_desktop_conv);
+        assert_ne!(alice_conv, bob_phone_conv);
+        assert_ne!(alice_conv, bob_desktop_conv);
     }
 
     mod add_keypackage {
@@ -161,14 +183,11 @@ mod tests {
         fn new_keypackage(identity: &[u8]) -> KeyPackage {
             let ciphersuite = crate::MlsCiphersuite::default().0;
             let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-            let credential = CredentialBundle::new(
-                identity.to_vec(),
-                CredentialType::Basic,
-                ciphersuite.into(),
-                &backend,
-            ).unwrap();
+            let credential =
+                CredentialBundle::new(identity.to_vec(), CredentialType::Basic, ciphersuite.into(), &backend).unwrap();
             let (kp, _) = KeyPackageBundle::new(&[ciphersuite], &credential, &backend, vec![])
-                .unwrap().into_parts();
+                .unwrap()
+                .into_parts();
             kp
         }
     }

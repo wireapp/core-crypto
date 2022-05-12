@@ -243,7 +243,7 @@ impl MlsConversation {
         members: &[ConversationMember],
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsMessageOut> {
-        let clients = members.iter().flat_map(|m| m.clients()).collect::<Vec<&ClientId>>();
+        let clients = members.iter().flat_map(|m| m.clients.keys()).collect::<Vec<&ClientId>>();
         let crypto = backend.crypto();
 
         let member_kps = self
