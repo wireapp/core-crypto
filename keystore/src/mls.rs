@@ -14,15 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use std::io::Read;
 use openmls_traits::key_store::FromKeyStoreValue;
+use std::io::Read;
 
 use rusqlite::{OptionalExtension, ToSql};
 
 use crate::{CryptoKeystore, CryptoKeystoreError, MissingKeyErrorKind};
 
 impl CryptoKeystore {
-
     pub fn mls_load_identity_signature(&self, id: &str) -> crate::CryptoKeystoreResult<Option<Vec<u8>>> {
         let mut conn_lock = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
         let transaction = conn_lock.transaction()?;
@@ -86,7 +85,10 @@ impl CryptoKeystore {
         Ok(count - 1)
     }
 
-    pub fn mls_fetch_keypackage_bundles<V: FromKeyStoreValue>(&self, count: u32) -> crate::CryptoKeystoreResult<impl Iterator<Item = V> + '_> {
+    pub fn mls_fetch_keypackage_bundles<V: FromKeyStoreValue>(
+        &self,
+        count: u32,
+    ) -> crate::CryptoKeystoreResult<impl Iterator<Item = V> + '_> {
         let db = self.conn.lock().unwrap();
 
         let mut stmt = db.prepare_cached("SELECT rowid FROM mls_keys ORDER BY rowid DESC LIMIT ?")?;
@@ -113,9 +115,7 @@ impl CryptoKeystore {
         }))
     }
 
-    pub fn mls_get_keypackage<V: FromKeyStoreValue>(
-        &self,
-    ) -> crate::CryptoKeystoreResult<V> {
+    pub fn mls_get_keypackage<V: FromKeyStoreValue>(&self) -> crate::CryptoKeystoreResult<V> {
         if self.mls_keypackagebundle_count()? == 0 {
             return Err(CryptoKeystoreError::OutOfKeyPackageBundles);
         }
@@ -133,8 +133,7 @@ impl CryptoKeystore {
         blob.read_to_end(&mut buf)?;
         blob.close()?;
 
-        V::from_key_store_value(&buf)
-            .map_err(|e| CryptoKeystoreError::KeyStoreValueTransformError(e.into()))
+        V::from_key_store_value(&buf).map_err(|e| CryptoKeystoreError::KeyStoreValueTransformError(e.into()))
     }
 
     pub fn mls_group_persist(&self, group_id: &[u8], state: &[u8]) -> crate::CryptoKeystoreResult<()> {

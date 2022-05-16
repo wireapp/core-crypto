@@ -17,6 +17,8 @@
 use crate::{CryptoError, CryptoResult, MlsCiphersuite, MlsError};
 use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreResult};
 use mls_crypto_provider::MlsCryptoProvider;
+use openmls::credentials::CredentialType;
+use openmls::prelude::KeyPackageRef;
 use openmls::{
     credentials::CredentialBundle,
     extensions::{Extension, ExternalKeyIdExtension},
@@ -28,12 +30,6 @@ pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ClientId(Vec<u8>);
-
-// impl ClientId {
-//     pub fn as_slice(&self) -> &[u8] {
-//         self.0.as_slice()
-//     }
-// }
 
 impl std::ops::Deref for ClientId {
     type Target = Vec<u8>;
@@ -90,11 +86,11 @@ impl Client {
         let (client, generated) = if let Some(signature) = backend.key_store().mls_load_identity_signature(&id_str)? {
             match Self::load(id.clone(), &signature, backend) {
                 Ok(client) => (client, false),
-                Err(CryptoError::ClientSignatureNotFound) => (Self::generate(id, backend)?, true),
+                Err(CryptoError::ClientSignatureNotFound) => (Self::generate(id, backend, true)?, true),
                 Err(e) => return Err(e),
             }
         } else {
-            (Self::generate(id, backend)?, true)
+            (Self::generate(id, backend, true)?, true)
         };
 
         if generated {
@@ -106,16 +102,11 @@ impl Client {
         Ok(client)
     }
 
-    pub(crate) fn generate(id: ClientId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
-        Self::generate_opts(id, backend, true)
-    }
-
-    pub(crate) fn generate_opts(id: ClientId, backend: &MlsCryptoProvider, provision: bool) -> CryptoResult<Self> {
+    pub(crate) fn generate(id: ClientId, backend: &MlsCryptoProvider, provision: bool) -> CryptoResult<Self> {
         let ciphersuite = MlsCiphersuite::default();
-        let id_bytes = &*id;
         let credentials = CredentialBundle::new(
-            id_bytes.to_vec(),
-            openmls::credentials::CredentialType::Basic,
+            id.to_vec(),
+            CredentialType::Basic,
             ciphersuite.signature_algorithm(),
             backend,
         )
@@ -153,6 +144,18 @@ impl Client {
         })
     }
 
+    pub(crate) fn load_credential_bundle(
+        &self,
+        signature_public_key: &[u8],
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<CredentialBundle> {
+        let credentials: CredentialBundle = backend
+            .key_store()
+            .read(signature_public_key)
+            .ok_or(CryptoError::ClientSignatureNotFound)?;
+        Ok(credentials)
+    }
+
     pub fn id(&self) -> &ClientId {
         &self.id
     }
@@ -165,17 +168,20 @@ impl Client {
         &self.credentials
     }
 
+    pub fn ciphersuite(&self) -> &MlsCiphersuite {
+        &self.ciphersuite
+    }
+
     /// This method returns the hash of the oldest available KeyPackageBundle for the Client
     /// and if necessary regenerates a new keypackage for immediate use
-    pub fn keypackage_hash(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
-        let kpb_result: CryptoKeystoreResult<KeyPackageBundle> = backend.key_store().mls_get_keypackage();
+    pub fn keypackage_raw_hash(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
+        Ok(self.keypackage_hash(backend)?.value().to_vec())
+    }
 
+    pub fn keypackage_hash(&self, backend: &MlsCryptoProvider) -> CryptoResult<KeyPackageRef> {
+        let kpb_result: CryptoKeystoreResult<KeyPackageBundle> = backend.key_store().mls_get_keypackage();
         match kpb_result {
-            Ok(kpb) => Ok(kpb
-                .key_package()
-                .hash_ref(backend.crypto())
-                .map(|href| href.value().to_vec())
-                .map_err(MlsError::from)?),
+            Ok(kpb) => Ok(kpb.key_package().hash_ref(backend.crypto()).map_err(MlsError::from)?),
             Err(CryptoKeystoreError::OutOfKeyPackageBundles) => {
                 self.gen_keypackage(backend)?;
                 Ok(self.keypackage_hash(backend)?)
@@ -249,7 +255,7 @@ impl Client {
     pub fn random_generate(backend: &MlsCryptoProvider, provision: bool) -> CryptoResult<Self> {
         let user_uuid = uuid::Uuid::new_v4();
         let client_id = rand::random::<usize>();
-        Self::generate_opts(
+        Self::generate(
             format!("{}:{client_id:x}@members.wire.com", user_uuid.hyphenated())
                 .as_bytes()
                 .into(),
@@ -273,9 +279,7 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    use mls_crypto_provider::MlsCryptoProvider;
-
-    use super::Client;
+    use super::*;
 
     #[test]
     fn can_generate_client() {
@@ -288,7 +292,7 @@ mod tests {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
         let client = Client::random_generate(&backend, true).unwrap();
         for _ in 0..100 {
-            assert!(client.keypackage_hash(&backend).is_ok())
+            assert!(client.keypackage_raw_hash(&backend).is_ok())
         }
     }
 
