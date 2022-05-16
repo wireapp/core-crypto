@@ -292,7 +292,7 @@ pub unsafe extern "C" fn cc_client_keypackages(
             for (i, kp) in serialized_kps.into_iter().enumerate() {
                 let kp_len = kp.len();
                 // FIXME: Find the proper type to write into an slice of buffers that are C-allocated
-                // std::ptr::copy_nonoverlapping(kp.as_ptr(), dest[i], kp_len);
+                std::ptr::copy_nonoverlapping(kp.as_ptr(), dest[i], kp_len);
                 bytes_written += kp_len;
             }
             Ok(CallStatus::with_bytes_written(0, [bytes_written]))
@@ -308,7 +308,7 @@ pub unsafe extern "C" fn cc_client_keypackages(
 }
 
 #[no_mangle]
-pub extern "C" fn cc_add_clients_to_conversation(ptr: CoreCryptoPtr) {
+pub extern "C" fn cc_add_clients_to_conversation(ptr: CoreCryptoPtr) -> CallStatus<0> {
     if ptr.is_null() {
         update_last_error(CryptoError::NullPointerGiven);
         return CallStatus::err();
@@ -318,7 +318,7 @@ pub extern "C" fn cc_add_clients_to_conversation(ptr: CoreCryptoPtr) {
 }
 
 #[no_mangle]
-pub extern "C" fn cc_remove_clients_from_conversation(ptr: CoreCryptoPtr) {
+pub extern "C" fn cc_remove_clients_from_conversation(ptr: CoreCryptoPtr) -> CallStatus<0> {
     if ptr.is_null() {
         update_last_error(CryptoError::NullPointerGiven);
         return CallStatus::err();
@@ -334,8 +334,7 @@ pub unsafe extern "C" fn cc_conversation_exists(
     conversation_id_len: usize,
 ) -> c_uchar {
     if ptr.is_null() {
-        update_last_error(CryptoError::NullPointerGiven);
-        return CallStatus::err();
+        return 0;
     }
 
     let conversation_id = std::slice::from_raw_parts(conversation_id, conversation_id_len);
