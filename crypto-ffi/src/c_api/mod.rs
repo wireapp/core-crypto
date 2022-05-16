@@ -2,8 +2,18 @@ use core_crypto::*;
 use std::cell::RefCell;
 
 use libc::{c_char, c_int, c_uchar, size_t};
+use safer_ffi::slice::slice_ref;
 
 use crate::*;
+
+macro_rules! check_nullptr {
+    ($ptr:ident) => {
+        if $ptr.is_null() {
+            update_last_error(CryptoError::NullPointerGiven);
+            return CallStatus::err();
+        }
+    };
+}
 
 type CoreCryptoPtr = *const CoreCrypto;
 
@@ -23,8 +33,8 @@ fn take_last_error() -> Option<CryptoError> {
     CC_LAST_ERROR.with(|prev| prev.borrow_mut().take())
 }
 
-#[derive(Debug, Clone, Copy)]
 #[repr(C)]
+#[derive(Debug, Clone, Copy)]
 pub struct CallStatus<const T: usize> {
     pub status: c_int,
     pub written: [size_t; T],
@@ -85,7 +95,7 @@ pub unsafe extern "C" fn cc_last_error(buf: *mut c_char, len: size_t) -> CallSta
 
     let error_message = last_error.to_string();
     let buffer = std::slice::from_raw_parts_mut(buf as *mut u8, len);
-    if error_message.len() >= buffer.len() {
+    if error_message.len() + 1 >= buffer.len() {
         return CallStatus::err();
     }
 
@@ -128,10 +138,11 @@ pub unsafe extern "C" fn cc_create_conversation(
     welcome_msg_buffer: *mut u8,
     commit_msg_buffer: *mut u8,
 ) -> CallStatus<2> {
-    if ptr.is_null() {
-        update_last_error(CryptoError::NullPointerGiven);
-        return CallStatus::err();
-    }
+    check_nullptr!(ptr);
+    check_nullptr!(id);
+    check_nullptr!(params);
+    check_nullptr!(welcome_msg_buffer);
+    check_nullptr!(commit_msg_buffer);
 
     let id = std::slice::from_raw_parts(id, id_len);
     let cc = &*ptr;
@@ -166,10 +177,10 @@ pub unsafe extern "C" fn cc_decrypt_message(
     payload_len: usize,
     dest_buffer: *mut u8,
 ) -> CallStatus<1> {
-    if ptr.is_null() {
-        update_last_error(CryptoError::NullPointerGiven);
-        return CallStatus::err();
-    }
+    check_nullptr!(ptr);
+    check_nullptr!(conversation_id);
+    check_nullptr!(payload);
+    check_nullptr!(dest_buffer);
 
     let conversation_id = std::slice::from_raw_parts(conversation_id, conversation_id_len);
     let payload = std::slice::from_raw_parts(payload, payload_len);
@@ -201,10 +212,9 @@ pub unsafe extern "C" fn cc_encrypt_message(
     payload_len: usize,
     dest_buffer: *mut u8,
 ) -> CallStatus<1> {
-    if ptr.is_null() {
-        update_last_error(CryptoError::NullPointerGiven);
-        return CallStatus::err();
-    }
+    check_nullptr!(ptr);
+    check_nullptr!(conversation_id);
+    check_nullptr!(payload);
 
     let conversation_id = std::slice::from_raw_parts(conversation_id, conversation_id_len);
     let payload = std::slice::from_raw_parts(payload, payload_len);
@@ -212,6 +222,7 @@ pub unsafe extern "C" fn cc_encrypt_message(
 
     match cc.encrypt_message(conversation_id.into(), &payload) {
         Ok(buf) => {
+            check_nullptr!(dest_buffer);
             let encrypted_message_len = buf.len();
             std::ptr::copy_nonoverlapping(buf.as_ptr(), dest_buffer, encrypted_message_len);
             CallStatus::with_bytes_written(0, [encrypted_message_len])
@@ -229,17 +240,15 @@ pub unsafe extern "C" fn cc_process_welcome_message(
     welcome: *const u8,
     welcome_len: usize,
     conversation_id_buf: *mut u8,
-    config: ConversationConfiguration,
 ) -> CallStatus<1> {
-    if ptr.is_null() {
-        update_last_error(CryptoError::NullPointerGiven);
-        return CallStatus::err();
-    }
+    check_nullptr!(ptr);
+    check_nullptr!(welcome);
+    check_nullptr!(conversation_id_buf);
 
     let welcome_raw = std::slice::from_raw_parts(welcome, welcome_len);
     let cc = &*ptr;
 
-    match cc.process_welcome_message(welcome_raw, config) {
+    match cc.process_welcome_message(welcome_raw) {
         Ok(conversation_id) => {
             let conversation_id_len = conversation_id.len();
             std::ptr::copy_nonoverlapping(conversation_id.as_ptr(), conversation_id_buf, conversation_id_len);
@@ -254,10 +263,8 @@ pub unsafe extern "C" fn cc_process_welcome_message(
 
 #[no_mangle]
 pub unsafe extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, buf: *mut u8) -> CallStatus<1> {
-    if ptr.is_null() {
-        update_last_error(CryptoError::NullPointerGiven);
-        return CallStatus::err();
-    }
+    check_nullptr!(ptr);
+    check_nullptr!(buf);
 
     let cc = &*ptr;
     match cc.client_public_key() {
@@ -274,27 +281,38 @@ pub unsafe extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, buf: *mut u8) 
 }
 
 #[no_mangle]
+/// SAFETY: `dest` should be at least `amount_requested` long
 pub unsafe extern "C" fn cc_client_keypackages(
     ptr: CoreCryptoPtr,
     amount_requested: size_t,
-    dest: *const [*mut u8],
+    dest: *mut *mut u8,
+    dest_item_len: size_t,
 ) -> CallStatus<1> {
-    if ptr.is_null() {
-        update_last_error(CryptoError::NullPointerGiven);
-        return CallStatus::err();
-    }
+    check_nullptr!(ptr);
+    check_nullptr!(dest);
 
     let cc = &*ptr;
     let res = cc
         .client_keypackages(amount_requested as u32)
         .and_then(|serialized_kps| {
             let mut bytes_written = 0;
+
+            // SAFETY: Uh-oh...
+            let s: &mut [*mut u8] = std::slice::from_raw_parts_mut(dest, amount_requested);
+
             for (i, kp) in serialized_kps.into_iter().enumerate() {
                 let kp_len = kp.len();
-                // FIXME: Find the proper type to write into an slice of buffers that are C-allocated
-                std::ptr::copy_nonoverlapping(kp.as_ptr(), dest[i], kp_len);
+                if kp_len > dest_item_len {
+                    return Err(CryptoError::BufferTooSmall {
+                        needed: kp_len,
+                        given: dest_item_len,
+                    });
+                }
+
+                std::ptr::copy_nonoverlapping(kp.as_ptr(), s[i], kp_len);
                 bytes_written += kp_len;
             }
+
             Ok(CallStatus::with_bytes_written(0, [bytes_written]))
         });
 
@@ -307,24 +325,66 @@ pub unsafe extern "C" fn cc_client_keypackages(
     }
 }
 
-#[no_mangle]
-pub extern "C" fn cc_add_clients_to_conversation(ptr: CoreCryptoPtr) -> CallStatus<0> {
-    if ptr.is_null() {
-        update_last_error(CryptoError::NullPointerGiven);
-        return CallStatus::err();
-    }
+// TODO: Refactor this using safer_ffi?
 
-    todo!()
+#[no_mangle]
+pub unsafe extern "C" fn cc_add_clients_to_conversation(
+    ptr: CoreCryptoPtr,
+    conversation_id: slice_ref<u8>,
+    keypackages: slice_ref<Invitee>,
+    dest: *mut MemberAddedMessages,
+) -> CallStatus<1> {
+    check_nullptr!(ptr);
+    check_nullptr!(dest);
+    let cc = &*ptr;
+    let res = cc.add_clients_to_conversation(conversation_id.as_slice().into(), keypackages.as_slice().into());
+
+    match res {
+        Ok(Some(msg)) => {
+            // FIXME: those are Vec<T>s and this doesn't work via FFI since it's pure Rust ABI which is not defined
+            let welcome_len = msg.welcome.len();
+            let message_len = msg.message.len();
+            // std::ptr::copy_nonoverlapping(msg.welcome.as_ptr(), (*dest).welcome, welcome_len);
+            // std::ptr::copy_nonoverlapping(msg.message.as_ptr(), (*dest).message, message_len);
+            CallStatus::with_bytes_written(0, [welcome_len + message_len])
+        }
+        Ok(None) => CallStatus::with_bytes_written(0, [0]),
+        Err(e) => {
+            update_last_error(e);
+            CallStatus::err()
+        }
+    }
 }
 
 #[no_mangle]
-pub extern "C" fn cc_remove_clients_from_conversation(ptr: CoreCryptoPtr) -> CallStatus<0> {
-    if ptr.is_null() {
-        update_last_error(CryptoError::NullPointerGiven);
-        return CallStatus::err();
-    }
+pub unsafe extern "C" fn cc_remove_clients_from_conversation(
+    ptr: CoreCryptoPtr,
+    conversation_id: slice_ref<u8>,
+    client_ids: slice_ref<slice_ref<u8>>,
+    dest_commit: *mut u8,
+) -> CallStatus<1> {
+    check_nullptr!(ptr);
+    check_nullptr!(dest_commit);
 
-    todo!()
+    let cc = &*ptr;
+
+    let res = cc.remove_clients_from_conversation(
+        conversation_id.as_slice().into(),
+        client_ids.as_slice().iter().map(|ids| ids.as_slice().into()).collect(),
+    );
+
+    match res {
+        Ok(Some(commit_message)) => {
+            let commit_msg_len = commit_message.len();
+            std::ptr::copy_nonoverlapping(commit_message.as_ptr(), dest_commit, commit_msg_len);
+            CallStatus::with_bytes_written(0, [commit_msg_len])
+        }
+        Ok(None) => CallStatus::default(),
+        Err(e) => {
+            update_last_error(e);
+            CallStatus::err()
+        }
+    }
 }
 
 #[no_mangle]

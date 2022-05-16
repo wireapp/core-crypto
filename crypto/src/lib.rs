@@ -263,7 +263,7 @@ impl MlsCentral {
 
     /// Create a conversation from a recieved MLS Welcome message
     pub fn process_raw_welcome_message(&self, welcome: Vec<u8>) -> crate::error::CryptoResult<ConversationId> {
-        let configuration = MlsConversationConfiguration::builder().build()?;
+        let configuration = MlsConversationConfiguration::default();
         let mut cursor = std::io::Cursor::new(welcome);
         let welcome = Welcome::tls_deserialize(&mut cursor).map_err(MlsError::from)?;
         self.process_welcome_message(welcome, configuration)

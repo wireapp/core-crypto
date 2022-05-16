@@ -38,8 +38,9 @@ use std::collections::HashMap;
 use core_crypto::prelude::*;
 pub use core_crypto::CryptoError;
 
+// #[cfg_attr(feature = "c-api", safer_ffi::derive_ReprC)]
+#[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
-#[repr(C)]
 pub struct MemberAddedMessages {
     pub welcome: Vec<u8>,
     pub message: Vec<u8>,
@@ -54,14 +55,17 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     }
 }
 
+// #[cfg_attr(feature = "c-api", safer_ffi::derive_ReprC)]
+#[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
 pub struct ConversationLeaveMessages {
     pub self_removal_proposal: Vec<u8>,
     pub other_clients_removal_commit: Option<Vec<u8>>,
 }
 
+// #[cfg_attr(feature = "c-api", safer_ffi::derive_ReprC)]
+#[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug, Clone)]
-#[repr(C)]
 pub struct Invitee {
     pub id: ClientId,
     pub kp: Vec<u8>,
@@ -96,8 +100,9 @@ impl TryInto<ConversationMember> for Invitee {
     }
 }
 
+// #[cfg_attr(feature = "c-api", safer_ffi::derive_ReprC)]
+#[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug, Clone)]
-#[repr(C)]
 pub struct ConversationConfiguration {
     pub extra_members: Vec<Invitee>,
     pub admins: Vec<MemberId>,

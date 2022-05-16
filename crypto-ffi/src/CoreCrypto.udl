@@ -33,7 +33,8 @@ enum CryptoError {
     "ParseIntError",
     "IoError",
     "Unauthorized",
-    "NullPointerGiven"
+    "NullPointerGiven",
+    "BufferTooSmall"
 };
 
 dictionary MemberAddedMessages {

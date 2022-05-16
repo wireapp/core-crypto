@@ -62,6 +62,8 @@ pub enum CryptoError {
     Unauthorized,
     #[error("The consumer has provided a null pointer across the FFI boundary")]
     NullPointerGiven,
+    #[error("The allocated buffer was too small: given = {given} | needed = {needed}")]
+    BufferTooSmall { needed: usize, given: usize },
 }
 
 pub type CryptoResult<T> = Result<T, CryptoError>;
