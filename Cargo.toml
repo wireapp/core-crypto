@@ -6,5 +6,12 @@ exclude = ["extras/anycrypto", "extras/core-ds"]
 git = "https://github.com/wireapp/proteus"
 branch = "otak/sodiumoxide-0.2.7"
 
+[patch.crates-io.openmls]
+git = "https://github.com/wireapp/openmls"
+branch = "develop"
+[patch.crates-io.openmls_traits]
+git = "https://github.com/wireapp/openmls"
+branch = "develop"
+
 [profile.release]
 lto = true

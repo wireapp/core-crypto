@@ -236,6 +236,20 @@ impl CoreCrypto {
             .map_err(CryptoError::from)
     }
 
+    pub fn new_external_add_proposal(
+        &self,
+        conversation_id: ConversationId,
+        epoch: u64,
+        key_package: Vec<u8>,
+    ) -> CryptoResult<Vec<u8>> {
+        let kp = KeyPackage::try_from(&key_package[..]).map_err(MlsError::from)?;
+        self.0
+            .new_external_add_proposal(conversation_id, GroupEpoch::from(epoch), kp)?
+            .to_bytes()
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)
+    }
+
     pub fn conversation_exists(&self, conversation_id: ConversationId) -> bool {
         self.0.conversation_exists(&conversation_id)
     }

@@ -20,6 +20,7 @@ pub use self::error::*;
 mod client;
 mod conversation;
 // pub mod identifiers;
+mod external_proposal;
 mod member;
 mod proposal;
 
@@ -33,6 +34,7 @@ pub mod prelude {
     pub use crate::{config::MlsCentralConfiguration, MlsCentral, MlsCiphersuite};
     pub use openmls::prelude::Ciphersuite as CiphersuiteName;
     pub use openmls::prelude::KeyPackage;
+    pub use openmls::prelude::GroupEpoch;
     pub use tls_codec;
 }
 
@@ -86,6 +88,7 @@ mod config {
     use super::*;
 
     #[derive(Debug, Clone)]
+    #[allow(clippy::manual_non_exhaustive)]
     pub struct MlsCentralConfiguration {
         pub store_path: String,
         pub identity_key: String,
@@ -236,7 +239,7 @@ impl MlsCentral {
     }
 
     /// Create a conversation from a recieved MLS Welcome message
-    pub fn process_raw_welcome_message(&self, welcome: Vec<u8>) -> crate::error::CryptoResult<ConversationId> {
+    pub fn process_raw_welcome_message(&self, welcome: Vec<u8>) -> CryptoResult<ConversationId> {
         let configuration = MlsConversationConfiguration::builder().build()?;
         let mut cursor = std::io::Cursor::new(welcome);
         let welcome = Welcome::tls_deserialize(&mut cursor).map_err(MlsError::from)?;

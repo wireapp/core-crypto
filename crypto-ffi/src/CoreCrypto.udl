@@ -107,6 +107,9 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     sequence<u8> new_remove_proposal(ConversationId conversation_id, ClientId client_id);
+
+    [Throws=CryptoError]
+    sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch, sequence<u8> key_package);
 };
 
 namespace CoreCrypto {

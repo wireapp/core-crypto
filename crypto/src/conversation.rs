@@ -16,12 +16,11 @@
 
 use crate::ClientId;
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::KeyPackageRef;
 use openmls::{
     framing::{MlsMessageOut, ProcessedMessage},
     group::MlsGroup,
     messages::Welcome,
-    prelude::{KeyPackage, SenderRatchetConfiguration},
+    prelude::{KeyPackage, KeyPackageRef, SenderRatchetConfiguration},
 };
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -117,7 +116,7 @@ impl MlsConversation {
             backend,
             &mls_group_config,
             openmls::group::GroupId::from_slice(&id),
-            &author_client.keypackage_hash(backend)?,
+            &author_client.keypackage_raw_hash(backend)?,
         )
         .map_err(MlsError::from)?;
 
@@ -309,14 +308,14 @@ impl MlsConversation {
         Ok(None)
     }
 
-    pub fn commit_pending_proposals(&self, backend: &MlsCryptoProvider) -> CryptoResult<MlsMessageOut> {
+    pub fn commit_pending_proposals(&self, backend: &MlsCryptoProvider) -> CryptoResult<(MlsMessageOut, Option<Welcome>)> {
         let mut group = self.group.write().map_err(|_| CryptoError::LockPoisonError)?;
-        let (message, _) = group.commit_to_pending_proposals(backend).map_err(MlsError::from)?;
+        let (message, welcome) = group.commit_to_pending_proposals(backend).map_err(MlsError::from)?;
         group.merge_pending_commit().map_err(MlsError::from)?;
         drop(group);
         self.persist_group_when_changed(backend)?;
 
-        Ok(message)
+        Ok((message, welcome))
     }
 
     pub fn encrypt_message(&self, message: impl AsRef<[u8]>, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
@@ -779,7 +778,7 @@ mod tests {
             .decrypt_message(message.self_removal_proposal.to_bytes().unwrap(), &bob_backend)
             .unwrap();
 
-        let removal_commit_from_bob = bob_group.commit_pending_proposals(&bob_backend).unwrap();
+        let (removal_commit_from_bob, _) = bob_group.commit_pending_proposals(&bob_backend).unwrap();
 
         charlie_group
             .decrypt_message(message.self_removal_proposal.to_bytes().unwrap(), &bob_backend)
