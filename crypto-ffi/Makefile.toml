@@ -13,31 +13,14 @@ args = ["check"]
 
 ##################################### WASM ####################################
 
-[tasks.wasm]
+[tasks.wasm-build]
 command = "cargo"
-args = ["build", "--target", "wasm32-unknown-emscripten", "--features", "c-api", "${@}"]
+private = true
+args = ["build", "--target", "wasm32-unknown-emscripten", "--features", "c-api", "--release", "${@}"]
 
-[tasks.wasm-xargo]
-command = "rustup"
-args = [
-    "run", "nightly", "xargo", "build",
-    "-Zbuild-std",
-    "--target", "wasm32-unknown-emscripten",
-    "--features", "c-api",
-    "${@}"
-]
-
-# [tasks.wasm-debug]
-# private = true
-# command = "cargo"
-# args = ["build", "--target", "wasm32-unknown-emscripten"]
-# env = { EMCC_CFLAGS = "--bind" }
-
-# [tasks.wasm-release]
-# private = true
-# command = "cargo"
-# args = ["build", "--target", "wasm32-unknown-emscripten", "--release"]
-# env = { EMCC_CFLAGS = "--bind -O3" }
+[tasks.wasm]
+dependencies = ["wasm-build"]
+script = "mv ../corecrypto.mjs ../corecrypto.wasm ../platforms/web/"
 
 ##################################### iOS #####################################
 

@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+#[allow(dead_code)]
+pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 uniffi_macros::include_scaffolding!("CoreCrypto");
 
 mod uniffi_support;

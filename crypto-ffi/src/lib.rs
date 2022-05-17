@@ -14,13 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-#[allow(dead_code)]
-pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
-
-#[cfg(feature = "c-api")]
-#[cfg_attr(feature = "c-api", global_allocator)]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
 #[cfg(feature = "mobile")]
 mod uniffi;
 
@@ -30,6 +23,8 @@ pub use self::uniffi::*;
 #[cfg(feature = "c-api")]
 mod c_api;
 
+use core_crypto::prelude::tls_codec::Deserialize;
+
 #[cfg(feature = "c-api")]
 pub use self::c_api::*;
 
@@ -37,6 +32,9 @@ use std::collections::HashMap;
 
 use core_crypto::prelude::*;
 pub use core_crypto::CryptoError;
+
+// #[cfg(feature = "c-api")]
+// type Vec<T> = safer_ffi::vec::Vec<T>;
 
 // #[cfg_attr(feature = "c-api", safer_ffi::derive_ReprC)]
 #[cfg_attr(feature = "c-api", repr(C))]
@@ -238,5 +236,17 @@ impl CoreCrypto {
 
     pub fn conversation_exists(&self, conversation_id: ConversationId) -> bool {
         self.0.conversation_exists(&conversation_id)
+    }
+
+    pub fn new_add_proposal(&self, conversation_id: ConversationId, keypackage: Vec<u8>) -> CryptoResult<Vec<u8>> {
+        Ok(self.0.new_proposal(conversation_id, MlsProposal::Add(KeyPackage::tls_deserialize(&mut &keypackage[..]).map_err(MlsError::from)?))?.to_bytes().map_err(MlsError::from)?)
+    }
+
+    pub fn new_update_proposal(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
+        Ok(self.0.new_proposal(conversation_id, MlsProposal::Update)?.to_bytes().map_err(MlsError::from)?)
+    }
+
+    pub fn new_remove_proposal(&self, conversation_id: ConversationId, client_id: ClientId) -> CryptoResult<Vec<u8>> {
+        Ok(self.0.new_proposal(conversation_id, MlsProposal::Remove(client_id))?.to_bytes().map_err(MlsError::from)?)
     }
 }

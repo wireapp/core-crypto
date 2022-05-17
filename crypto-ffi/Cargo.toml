@@ -9,9 +9,9 @@ name = "core_crypto_ffi"
 crate-type = ["cdylib", "staticlib"]
 
 [features]
-default = []
+default = ["c-api"]
 mobile = ["uniffi", "uniffi_macros", "uniffi_build", "uniffi_bindgen"]
-c-api = ["libc", "wee_alloc", "safer-ffi"]
+c-api = ["libc", "safer-ffi"]
 
 [dependencies]
 core-crypto = { version = "0.2", path = "../crypto" }
@@ -21,7 +21,6 @@ uniffi_macros = { version = "0.17", optional = true }
 # C-API support
 libc = { version = "0.2", optional = true }
 safer-ffi = { version = "0.0.9", optional = true, features = ["proc_macros", "alloc"] }
-wee_alloc = { version = "0.4", optional = true }
 
 [build-dependencies]
 # UniFFI - Android + iOS bindings - Build support
