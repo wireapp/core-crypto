@@ -20,7 +20,9 @@ args = ["build", "--target", "wasm32-unknown-emscripten", "--features", "c-api",
 
 [tasks.wasm]
 dependencies = ["wasm-build"]
-script = "mv ../corecrypto.mjs ../corecrypto.wasm ../platforms/web/"
+script = '''
+mv ../corecrypto.js ../corecrypto.wasm ../platforms/web/
+'''
 
 ##################################### iOS #####################################
 

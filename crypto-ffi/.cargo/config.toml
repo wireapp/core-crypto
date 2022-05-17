@@ -1,5 +1,5 @@
 [env]
-EMCC_CFLAGS = "-Os -flto --post-js support/wasm/corecrypto.post.js --no-entry -lembind -g0 -sMODULARIZE -sENVIRONMENT=web -mbulk-memory -matomics -sEXPORTED_RUNTIME_METHODS=UTF8ToString -sEXPORT_NAME=initCoreCrypto"
+EMCC_CFLAGS = "-Os -flto --post-js support/wasm/corecrypto.post.js --no-entry -lembind -g0 -sFORCE_FILESYSTEM -sMODULARIZE -mbulk-memory -matomics -sEXPORTED_RUNTIME_METHODS=[UTF8ToString,FS,cwrap,ccall] -sEXPORT_NAME=initCoreCrypto"
 
 [target.wasm32-unknown-emscripten]
 rustflags = [
@@ -7,7 +7,7 @@ rustflags = [
     "-C", "link-args=-flto,--export-dynamic,--closure=1,-g0,-Wl,--no-entry,--bulk-memory,--atomics",
     "-C", "target-feature=+crt-static",
     "-C", "link-arg=-nostartfiles",
-    "-C", "link-arg=-ocorecrypto.mjs",
+    "-C", "link-arg=-ocorecrypto.js",
     "-C", "link-arg=-lidbfs.js",
     "-C", "link-arg=-lembind",
 ]
