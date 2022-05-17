@@ -1,3 +1,19 @@
+// Wire
+// Copyright (C) 2022 Wire Swiss GmbH
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see http://www.gnu.org/licenses/.
+
 #[allow(dead_code)]
 pub(crate) const VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), "\0");
 
@@ -83,6 +99,11 @@ impl<const T: usize> CallStatus<T> {
     fn err() -> Self {
         Self::with_status(-1)
     }
+
+    #[inline(always)]
+    fn ok(written: [size_t; T]) -> Self {
+        Self::with_bytes_written(0, written)
+    }
 }
 
 impl<const T: usize> Default for CallStatus<T> {
@@ -137,6 +158,56 @@ pub extern "C" fn cc_init_with_path_and_key(path: char_p_ref, key: char_p_ref, c
     &*cc
 }
 
+//////////////////////////////////////////// CLIENT APIS ////////////////////////////////////////////
+
+#[no_mangle]
+pub unsafe extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, mut buf: slice_mut<u8>) -> CallStatus<1> {
+    check_nullptr!(ptr);
+
+    let cc = &*ptr;
+    let pk = try_ffi!(cc.client_public_key());
+    let pk_len = pk.len();
+    buf.copy_from_slice(&pk);
+    CallStatus::ok([pk_len])
+}
+
+#[no_mangle]
+/// SAFETY: `dest` should be at least `amount_requested` long
+pub unsafe extern "C" fn cc_client_keypackages(
+    ptr: CoreCryptoPtr,
+    amount_requested: size_t,
+    mut dest: slice_mut<slice_mut<u8>>,
+) -> CallStatus<1> {
+    check_nullptr!(ptr);
+
+    let cc = &*ptr;
+    let res = cc
+        .client_keypackages(amount_requested as u32)
+        .and_then(|serialized_kps| {
+            let mut bytes_written = 0;
+
+            for (i, kp) in serialized_kps.into_iter().enumerate() {
+                let kp_len = kp.len();
+                let dest_item_len = dest[i].len();
+                if kp_len > dest_item_len {
+                    return Err(CryptoError::BufferTooSmall {
+                        needed: kp_len,
+                        given: dest_item_len,
+                    });
+                }
+
+                dest[i].copy_from_slice(&kp);
+                bytes_written += kp_len;
+            }
+
+            Ok(CallStatus::ok([bytes_written]))
+        });
+
+    try_ffi!(res)
+}
+
+///////////////////////////////////////// CONVERSATIONS API /////////////////////////////////////////
+
 #[no_mangle]
 pub extern "C" fn cc_create_conversation(
     ptr: CoreCryptoPtr,
@@ -165,6 +236,109 @@ pub extern "C" fn cc_create_conversation(
         CallStatus::default()
     }
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn cc_process_welcome_message(
+    ptr: CoreCryptoPtr,
+    welcome: slice_ref<u8>,
+    mut conversation_id_buf: slice_mut<u8>,
+) -> CallStatus<1> {
+    check_nullptr!(ptr);
+
+    let cc = &*ptr;
+
+    let conversation_id = try_ffi!(cc.process_welcome_message(welcome.as_slice()));
+    let conversation_id_len = conversation_id.len();
+    conversation_id_buf.copy_from_slice(&conversation_id);
+    CallStatus::ok([conversation_id_len])
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn cc_add_clients_to_conversation(
+    ptr: CoreCryptoPtr,
+    conversation_id: slice_ref<u8>,
+    keypackages: slice_ref<Invitee>,
+    dest: *mut MemberAddedMessages,
+) -> CallStatus<1> {
+    check_nullptr!(ptr);
+    check_nullptr!(dest);
+    let cc = &*ptr;
+    let mut maybe_messages =
+        try_ffi!(cc.add_clients_to_conversation(conversation_id.as_slice().into(), keypackages.as_slice().into()));
+
+    if let Some(msg) = maybe_messages.take() {
+        let welcome_len = msg.welcome.len();
+        let message_len = msg.message.len();
+        (*dest).welcome[..welcome_len].copy_from_slice(&msg.welcome);
+        (*dest).message[..message_len].copy_from_slice(&msg.message);
+        CallStatus::with_bytes_written(0, [welcome_len + message_len])
+    } else {
+        CallStatus::default()
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn cc_remove_clients_from_conversation(
+    ptr: CoreCryptoPtr,
+    conversation_id: slice_ref<u8>,
+    client_ids: slice_ref<slice_ref<u8>>,
+    mut dest_commit: slice_mut<u8>,
+) -> CallStatus<1> {
+    check_nullptr!(ptr);
+
+    let cc = &*ptr;
+
+    let mut maybe_message = try_ffi!(cc.remove_clients_from_conversation(
+        conversation_id.as_slice().into(),
+        client_ids.as_slice().iter().map(|ids| ids.as_slice().into()).collect(),
+    ));
+
+    if let Some(commit_message) = maybe_message.take() {
+        let commit_msg_len = commit_message.len();
+        dest_commit.copy_from_slice(&commit_message);
+        CallStatus::ok([commit_msg_len])
+    } else {
+        CallStatus::default()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn cc_conversation_exists(ptr: CoreCryptoPtr, conversation_id: slice_ref<u8>) -> c_uchar {
+    if ptr.is_null() {
+        return 0;
+    }
+
+    let cc = unsafe { &*ptr };
+    if cc.conversation_exists(conversation_id.as_slice().into()) {
+        1
+    } else {
+        0
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn cc_leave_conversation(
+    ptr: CoreCryptoPtr,
+    conversation_id: slice_ref<u8>,
+    other_clients: slice_ref<ClientId>,
+    mut self_removal_proposal: slice_mut<u8>,
+    mut other_clients_removal_commit: slice_mut<u8>,
+) -> CallStatus<2> {
+    check_nullptr!(ptr);
+    let cc = unsafe { &*ptr };
+    let mut messages = try_ffi!(cc.leave_conversation(conversation_id.as_slice().into(), other_clients.as_slice()));
+
+    let removal_proposal_len = messages.self_removal_proposal.len();
+    let mut commit_len = 0;
+    self_removal_proposal[..removal_proposal_len].copy_from_slice(&messages.self_removal_proposal);
+    if let Some(commit) = messages.other_clients_removal_commit.take() {
+        commit_len = commit.len();
+        other_clients_removal_commit[..commit_len].copy_from_slice(&commit);
+    }
+    CallStatus::ok([removal_proposal_len, commit_len])
+}
+
+//////////////////////////////////////////// MESSAGES API ////////////////////////////////////////////
 
 #[no_mangle]
 pub unsafe extern "C" fn cc_decrypt_message(
@@ -202,212 +376,57 @@ pub unsafe extern "C" fn cc_encrypt_message(
     let buf = try_ffi!(cc.encrypt_message(conversation_id.as_slice().into(), payload.as_slice()));
     let encrypted_message_len = buf.len();
     dest_buffer.copy_from_slice(&buf);
-    CallStatus::with_bytes_written(0, [encrypted_message_len])
+    CallStatus::ok([encrypted_message_len])
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn cc_process_welcome_message(
-    ptr: CoreCryptoPtr,
-    welcome: slice_ref<u8>,
-    mut conversation_id_buf: slice_mut<u8>,
-) -> CallStatus<1> {
-    check_nullptr!(ptr);
-
-    let cc = &*ptr;
-
-    let conversation_id = try_ffi!(cc.process_welcome_message(welcome.as_slice()));
-    let conversation_id_len = conversation_id.len();
-    conversation_id_buf.copy_from_slice(&conversation_id);
-    CallStatus::with_bytes_written(0, [conversation_id_len])
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, mut buf: slice_mut<u8>) -> CallStatus<1> {
-    check_nullptr!(ptr);
-
-    let cc = &*ptr;
-    let pk = try_ffi!(cc.client_public_key());
-    let pk_len = pk.len();
-    buf.copy_from_slice(&pk);
-    CallStatus::with_bytes_written(0, [pk_len])
-}
-
-#[no_mangle]
-/// SAFETY: `dest` should be at least `amount_requested` long
-pub unsafe extern "C" fn cc_client_keypackages(
-    ptr: CoreCryptoPtr,
-    amount_requested: size_t,
-    mut dest: slice_mut<slice_mut<u8>>,
-) -> CallStatus<1> {
-    check_nullptr!(ptr);
-
-    let cc = &*ptr;
-    let res = cc
-        .client_keypackages(amount_requested as u32)
-        .and_then(|serialized_kps| {
-            let mut bytes_written = 0;
-
-            for (i, kp) in serialized_kps.into_iter().enumerate() {
-                let kp_len = kp.len();
-                let dest_item_len = dest[i].len();
-                if kp_len > dest_item_len {
-                    return Err(CryptoError::BufferTooSmall {
-                        needed: kp_len,
-                        given: dest_item_len,
-                    });
-                }
-
-                dest[i].copy_from_slice(&kp);
-                bytes_written += kp_len;
-            }
-
-            Ok(CallStatus::with_bytes_written(0, [bytes_written]))
-        });
-
-    try_ffi!(res)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn cc_add_clients_to_conversation(
-    ptr: CoreCryptoPtr,
-    conversation_id: slice_ref<u8>,
-    keypackages: slice_ref<Invitee>,
-    dest: *mut MemberAddedMessages,
-) -> CallStatus<1> {
-    check_nullptr!(ptr);
-    check_nullptr!(dest);
-    let cc = &*ptr;
-    let res = cc.add_clients_to_conversation(conversation_id.as_slice().into(), keypackages.as_slice().into());
-
-    match res {
-        Ok(Some(msg)) => {
-            // FIXME: those are Vec<T>s and this doesn't work via FFI since it's pure Rust ABI which is not defined
-            let welcome_len = msg.welcome.len();
-            let message_len = msg.message.len();
-            (*dest).welcome[..welcome_len].copy_from_slice(&msg.welcome);
-            (*dest).message[..message_len].copy_from_slice(&msg.message);
-            CallStatus::with_bytes_written(0, [welcome_len + message_len])
-        }
-        Ok(None) => CallStatus::with_bytes_written(0, [0]),
-        Err(e) => {
-            update_last_error(e);
-            CallStatus::err()
-        }
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn cc_remove_clients_from_conversation(
-    ptr: CoreCryptoPtr,
-    conversation_id: slice_ref<u8>,
-    client_ids: slice_ref<slice_ref<u8>>,
-    mut dest_commit: slice_mut<u8>,
-) -> CallStatus<1> {
-    check_nullptr!(ptr);
-
-    let cc = &*ptr;
-
-    let res = cc.remove_clients_from_conversation(
-        conversation_id.as_slice().into(),
-        client_ids.as_slice().iter().map(|ids| ids.as_slice().into()).collect(),
-    );
-
-    match res {
-        Ok(Some(commit_message)) => {
-            let commit_msg_len = commit_message.len();
-            dest_commit.copy_from_slice(&commit_message);
-            CallStatus::with_bytes_written(0, [commit_msg_len])
-        }
-        Ok(None) => CallStatus::default(),
-        Err(e) => {
-            update_last_error(e);
-            CallStatus::err()
-        }
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn cc_conversation_exists(ptr: CoreCryptoPtr, conversation_id: slice_ref<u8>) -> c_uchar {
-    if ptr.is_null() {
-        return 0;
-    }
-
-    let cc = unsafe { &*ptr };
-    if cc.conversation_exists(conversation_id.as_slice().into()) {
-        1
-    } else {
-        0
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn cc_leave_conversation(
-    ptr: CoreCryptoPtr,
-    conversation_id: slice_ref<u8>,
-    other_clients: slice_ref<ClientId>,
-    mut self_removal_proposal: slice_mut<u8>,
-    mut other_clients_removal_commit: slice_mut<u8>,
-) -> CallStatus<2> {
-    check_nullptr!(ptr);
-    let cc = unsafe { &*ptr };
-    let res = cc.leave_conversation(conversation_id.as_slice().into(), other_clients.as_slice());
-
-    match res {
-        Ok(mut messages) => {
-            let removal_proposal_len = messages.self_removal_proposal.len();
-            let mut commit_len = 0;
-            self_removal_proposal[..removal_proposal_len].copy_from_slice(&messages.self_removal_proposal);
-            if let Some(commit) = messages.other_clients_removal_commit.take() {
-                commit_len = commit.len();
-                other_clients_removal_commit[..commit_len].copy_from_slice(&commit);
-            }
-            CallStatus::with_bytes_written(0, [removal_proposal_len, commit_len])
-        }
-        Err(e) => {
-            update_last_error(e);
-            CallStatus::err()
-        }
-    }
-}
+/////////////////////////////////////////// PROPOSALS API ///////////////////////////////////////////
 
 #[no_mangle]
 pub extern "C" fn cc_new_add_proposal(
     ptr: CoreCryptoPtr,
     conversation_id: slice_ref<u8>,
     key_package: slice_ref<u8>,
-    dest: slice_mut<u8>,
+    mut dest: slice_mut<u8>,
 ) -> CallStatus<1> {
     check_nullptr!(ptr);
-    let _cc = unsafe { &*ptr };
-    let res = _cc.new_add_proposal(conversation_id.as_slice().into(), key_package.as_slice().into());
-
-    match res {
-        Err(e) => update_last_error(e),
-    }
-    todo!()
+    let cc = unsafe { &*ptr };
+    let welcome = try_ffi!(cc.new_add_proposal(conversation_id.as_slice().into(), key_package.as_slice().into()));
+    let welcome_len = welcome.len();
+    dest[..welcome_len].copy_from_slice(&welcome);
+    CallStatus::ok([welcome_len])
 }
+
 #[no_mangle]
 pub extern "C" fn cc_new_update_proposal(
     ptr: CoreCryptoPtr,
-    _conversation_id: slice_ref<u8>,
-    _dest: slice_mut<u8>,
+    conversation_id: slice_ref<u8>,
+    mut dest: slice_mut<u8>,
 ) -> CallStatus<1> {
     check_nullptr!(ptr);
-    let _cc = unsafe { &*ptr };
-    todo!()
+    let cc = unsafe { &*ptr };
+    let buf = try_ffi!(cc.new_update_proposal(conversation_id.as_slice().into()));
+    let buf_len = buf.len();
+    dest[..buf_len].copy_from_slice(&buf);
+    CallStatus::ok([buf_len])
 }
+
 #[no_mangle]
 pub extern "C" fn cc_new_remove_proposal(
     ptr: CoreCryptoPtr,
-    _conversation_id: slice_ref<u8>,
-    _client_id: slice_ref<u8>,
-    _dest: slice_mut<u8>,
+    conversation_id: slice_ref<u8>,
+    client_id: slice_ref<u8>,
+    mut dest: slice_mut<u8>,
 ) -> CallStatus<1> {
     check_nullptr!(ptr);
-    let _cc = unsafe { &*ptr };
+    let cc = unsafe { &*ptr };
 
-    todo!()
+    let buf = try_ffi!(cc.new_remove_proposal(conversation_id.to_vec(), client_id.to_vec().into()));
+    let buf_len = buf.len();
+    dest[..buf_len].copy_from_slice(&buf);
+    CallStatus::ok([buf_len])
 }
+
+//////////////////////////////////////////// MISC APIS ////////////////////////////////////////////
 
 #[no_mangle]
 pub extern "C" fn cc_version() -> *const c_uchar {
