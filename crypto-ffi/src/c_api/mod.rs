@@ -161,10 +161,10 @@ pub extern "C" fn cc_init_with_path_and_key(path: char_p_ref, key: char_p_ref, c
 //////////////////////////////////////////// CLIENT APIS ////////////////////////////////////////////
 
 #[no_mangle]
-pub unsafe extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, mut buf: slice_mut<u8>) -> CallStatus<1> {
+pub extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, mut buf: slice_mut<u8>) -> CallStatus<1> {
     check_nullptr!(ptr);
 
-    let cc = &*ptr;
+    let cc = unsafe { &*ptr };
     let pk = try_ffi!(cc.client_public_key());
     let pk_len = pk.len();
     buf.copy_from_slice(&pk);
@@ -173,14 +173,14 @@ pub unsafe extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, mut buf: slice
 
 #[no_mangle]
 /// SAFETY: `dest` should be at least `amount_requested` long
-pub unsafe extern "C" fn cc_client_keypackages(
+pub extern "C" fn cc_client_keypackages(
     ptr: CoreCryptoPtr,
     amount_requested: size_t,
     mut dest: slice_mut<slice_mut<u8>>,
 ) -> CallStatus<1> {
     check_nullptr!(ptr);
 
-    let cc = &*ptr;
+    let cc = unsafe { &*ptr };
     let res = cc
         .client_keypackages(amount_requested as u32)
         .and_then(|serialized_kps| {
@@ -238,14 +238,14 @@ pub extern "C" fn cc_create_conversation(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn cc_process_welcome_message(
+pub extern "C" fn cc_process_welcome_message(
     ptr: CoreCryptoPtr,
     welcome: slice_ref<u8>,
     mut conversation_id_buf: slice_mut<u8>,
 ) -> CallStatus<1> {
     check_nullptr!(ptr);
 
-    let cc = &*ptr;
+    let cc = unsafe { &*ptr };
 
     let conversation_id = try_ffi!(cc.process_welcome_message(welcome.as_slice()));
     let conversation_id_len = conversation_id.len();
@@ -254,23 +254,26 @@ pub unsafe extern "C" fn cc_process_welcome_message(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn cc_add_clients_to_conversation(
+pub extern "C" fn cc_add_clients_to_conversation(
     ptr: CoreCryptoPtr,
     conversation_id: slice_ref<u8>,
     keypackages: slice_ref<Invitee>,
+    // TODO: split welcome & message under their own params? maybe makes it easier
     dest: *mut MemberAddedMessages,
 ) -> CallStatus<1> {
     check_nullptr!(ptr);
     check_nullptr!(dest);
-    let cc = &*ptr;
+    let cc = unsafe { &*ptr };
     let mut maybe_messages =
         try_ffi!(cc.add_clients_to_conversation(conversation_id.as_slice().into(), keypackages.as_slice().into()));
 
     if let Some(msg) = maybe_messages.take() {
         let welcome_len = msg.welcome.len();
         let message_len = msg.message.len();
-        (*dest).welcome[..welcome_len].copy_from_slice(&msg.welcome);
-        (*dest).message[..message_len].copy_from_slice(&msg.message);
+        unsafe {
+            (*dest).welcome[..welcome_len].copy_from_slice(&msg.welcome);
+            (*dest).message[..message_len].copy_from_slice(&msg.message);
+        }
         CallStatus::with_bytes_written(0, [welcome_len + message_len])
     } else {
         CallStatus::default()
@@ -278,7 +281,7 @@ pub unsafe extern "C" fn cc_add_clients_to_conversation(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn cc_remove_clients_from_conversation(
+pub extern "C" fn cc_remove_clients_from_conversation(
     ptr: CoreCryptoPtr,
     conversation_id: slice_ref<u8>,
     client_ids: slice_ref<slice_ref<u8>>,
@@ -286,7 +289,7 @@ pub unsafe extern "C" fn cc_remove_clients_from_conversation(
 ) -> CallStatus<1> {
     check_nullptr!(ptr);
 
-    let cc = &*ptr;
+    let cc = unsafe { &*ptr };
 
     let mut maybe_message = try_ffi!(cc.remove_clients_from_conversation(
         conversation_id.as_slice().into(),
@@ -341,7 +344,7 @@ pub extern "C" fn cc_leave_conversation(
 //////////////////////////////////////////// MESSAGES API ////////////////////////////////////////////
 
 #[no_mangle]
-pub unsafe extern "C" fn cc_decrypt_message(
+pub extern "C" fn cc_decrypt_message(
     ptr: CoreCryptoPtr,
     conversation_id: slice_ref<u8>,
     payload: slice_ref<u8>,
@@ -349,7 +352,7 @@ pub unsafe extern "C" fn cc_decrypt_message(
 ) -> CallStatus<1> {
     check_nullptr!(ptr);
 
-    let cc = &*ptr;
+    let cc = unsafe { &*ptr };
 
     let decrypted_message = try_ffi!(cc.decrypt_message(conversation_id.as_slice().into(), payload.as_slice()));
 
@@ -363,7 +366,7 @@ pub unsafe extern "C" fn cc_decrypt_message(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn cc_encrypt_message(
+pub extern "C" fn cc_encrypt_message(
     ptr: CoreCryptoPtr,
     conversation_id: slice_ref<u8>,
     payload: slice_ref<u8>,
@@ -371,7 +374,7 @@ pub unsafe extern "C" fn cc_encrypt_message(
 ) -> CallStatus<1> {
     check_nullptr!(ptr);
 
-    let cc = &*ptr;
+    let cc = unsafe { &*ptr };
 
     let buf = try_ffi!(cc.encrypt_message(conversation_id.as_slice().into(), payload.as_slice()));
     let encrypted_message_len = buf.len();

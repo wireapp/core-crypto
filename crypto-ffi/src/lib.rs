@@ -23,8 +23,6 @@ pub use self::uniffi::*;
 #[cfg(feature = "c-api")]
 mod c_api;
 
-use core_crypto::prelude::tls_codec::Deserialize;
-
 #[cfg(feature = "c-api")]
 pub use self::c_api::*;
 
@@ -239,14 +237,27 @@ impl CoreCrypto {
     }
 
     pub fn new_add_proposal(&self, conversation_id: ConversationId, keypackage: Vec<u8>) -> CryptoResult<Vec<u8>> {
-        Ok(self.0.new_proposal(conversation_id, MlsProposal::Add(KeyPackage::tls_deserialize(&mut &keypackage[..]).map_err(MlsError::from)?))?.to_bytes().map_err(MlsError::from)?)
+        let kp = KeyPackage::try_from(&keypackage[..]).map_err(MlsError::from)?;
+        Ok(self
+            .0
+            .new_proposal(conversation_id, MlsProposal::Add(kp))?
+            .to_bytes()
+            .map_err(MlsError::from)?)
     }
 
     pub fn new_update_proposal(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
-        Ok(self.0.new_proposal(conversation_id, MlsProposal::Update)?.to_bytes().map_err(MlsError::from)?)
+        Ok(self
+            .0
+            .new_proposal(conversation_id, MlsProposal::Update)?
+            .to_bytes()
+            .map_err(MlsError::from)?)
     }
 
     pub fn new_remove_proposal(&self, conversation_id: ConversationId, client_id: ClientId) -> CryptoResult<Vec<u8>> {
-        Ok(self.0.new_proposal(conversation_id, MlsProposal::Remove(client_id))?.to_bytes().map_err(MlsError::from)?)
+        Ok(self
+            .0
+            .new_proposal(conversation_id, MlsProposal::Remove(client_id))?
+            .to_bytes()
+            .map_err(MlsError::from)?)
     }
 }

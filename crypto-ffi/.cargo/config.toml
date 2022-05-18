@@ -1,13 +1,37 @@
 [env]
-EMCC_CFLAGS = "-Os -flto --post-js support/wasm/corecrypto.post.js --no-entry -lembind -g0 -sFORCE_FILESYSTEM -sMODULARIZE -mbulk-memory -matomics -sEXPORTED_RUNTIME_METHODS=[UTF8ToString,FS,cwrap,ccall] -sEXPORT_NAME=initCoreCrypto"
+EMCC_CFLAGS = '''
+-Os -flto --no-entry -g0 -mbulk-memory -matomics
+-sMALLOC=emmalloc
+-sFORCE_FILESYSTEM
+-sMODULARIZE
+-sEXPORTED_RUNTIME_METHODS=[UTF8ToString,FS,IDBFS,cwrap,ccall,_malloc,_free]
+-sEXPORT_NAME=initCoreCrypto
+-sWASM_BIGINT
+--post-js support/wasm/corecrypto.post.js
+-lidbfs.js
+-lembind
+'''
 
 [target.wasm32-unknown-emscripten]
 rustflags = [
-    "-C", "link-args=./support/wasm/gxx_personality_v0_stub.o",
-    "-C", "link-args=-flto,--export-dynamic,--closure=1,-g0,-Wl,--no-entry,--bulk-memory,--atomics",
     "-C", "target-feature=+crt-static",
+    "-C", "link-args=./support/wasm/gxx_personality_v0_stub.o",
+    "-C", "link-arg=-flto",
+    "-C", "link-arg=--export-dynamic",
+    "-C", "link-arg=-g0",
+    "-C", "link-arg=-Wl",
+    "-C", "link-arg=--no-entry",
+    "-C", "link-arg=--bulk-memory",
+    "-C", "link-arg=--atomics",
     "-C", "link-arg=-nostartfiles",
     "-C", "link-arg=-ocorecrypto.js",
+    "-C", "link-arg=-sMALLOC=emmalloc",
+    "-C", "link-arg=-sFORCE_FILESYSTEM",
+    "-C", "link-arg=-sMODULARIZE",
+    "-C", "link-arg=-sWASM_BIGINT",
+    "-C", "link-arg=-sEXPORTED_RUNTIME_METHODS=[UTF8ToString,FS,IDBFS,cwrap,ccall,_malloc,_free]",
+    "-C", "link-arg=-sEXPORT_NAME=initCoreCrypto",
+    "-C", "link-arg=--post-js support/wasm/corecrypto.post.js",
     "-C", "link-arg=-lidbfs.js",
     "-C", "link-arg=-lembind",
 ]
