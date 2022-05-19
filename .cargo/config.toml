@@ -1,5 +1,5 @@
 [env]
-EMCC_CFLAGS = "-Os -flto --no-entry -lembind -mbulk-memory -matomics"
+EMCC_CFLAGS = "-Os -flto --lto-Os --no-entry -lembind -mbulk-memory -matomics --no-check-features"
 CC_armv7-linux-androideabi = "armv7a-linux-androideabi30-clang"
 CXX_armv7-linux-androideabi = "armv7a-linux-androideabi30-clang++"
 AR_armv7-linux-androideabi = "llvm-ar"
@@ -16,10 +16,14 @@ AR_i686-linux-android = "llvm-ar"
 [target.wasm32-unknown-emscripten]
 rustflags = [
     # "-C", "link-args=./support/wasm/gxx_personality_v0_stub.o",
-    "-C", "link-args=-flto,-lembind,--export-dynamic,-gsource-map,-Wl,--no-entry,--bulk-memory,--atomics",
-    "-C", "target-feature=+crt-static",
-    "-C", "link-arg=-nostartfiles",
+    "-C", "link-args=-Os -flto --lto-Os -g0 -Wl",
+    "-C", "target-feature=+crt-static,+atomics",
+    "-C", "link-arg=--bulk-memory",
+    "-C", "link-arg=--atomics",
+    "-C", "link-args=-nostartfiles --no-entry --export-dynamic",
+    "-C", "link-arg=--no-check-features",
     # "-C", "link-arg=-ocorecrypto.js",
+    "-C", "link-arg=-lembind",
     "-C", "link-arg=-lidbfs.js",
 ]
 

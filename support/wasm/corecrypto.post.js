@@ -1,7 +1,10 @@
 /// <reference types="emscripten" />
-/** Above will import declarations from @types/emscripten, including Module etc. */
-/** It is not .ts file but declaring reference will pass TypeScript Check. */
+/*
+The above snippet will import declarations from @types/emscripten, including Module etc.
+It is not a .ts file but declaring a reference will allow to pass TS typecheck.
+*/
 
+// `cwrap` ALL the things!
 Module["onRuntimeInitialized"] = function () {
     Module["cc_version"] = cwrap("cc_version", "number");
     Module["cc_last_error_len"] = cwrap("cc_last_error_len", "number");
@@ -13,7 +16,7 @@ Module["onRuntimeInitialized"] = function () {
     Module["cc_process_welcome_message"] = cwrap("cc_process_welcome_message", "number", ["number", "array", "number"]);
     Module["cc_client_public_key"] = cwrap("cc_client_public_key", "number", ["number", "number"]);
     Module["cc_client_keypackages"] = cwrap("cc_client_keypackages", "number", ["number", "number", "number"]);
-    Module["cc_add_clients_to_conversation"] = cwrap("cc_add_clients_to_conversation", "number", ["number", "array", "array", "number"]);
+    Module["cc_add_clients_to_conversation"] = cwrap("cc_add_clients_to_conversation", "number", ["number", "array", "array", "number", "number"]);
     Module["cc_remove_clients_from_conversation"] = cwrap("cc_remove_clients_from_conversation", "number", ["number", "array", "array", "number"]);
     Module["cc_conversation_exists"] = cwrap("cc_conversation_exists", "number", ["number", "array"]);
     Module["cc_leave_conversation"] = cwrap("cc_leave_conversation", "number", ["number", "array", "array", "number", "number"]);

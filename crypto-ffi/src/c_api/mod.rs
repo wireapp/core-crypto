@@ -127,7 +127,10 @@ pub fn cc_last_error_len() -> size_t {
 }
 
 #[no_mangle]
-pub extern "C" fn cc_last_error(mut buffer: slice_mut<c_uchar>) -> CallStatus<1> {
+pub extern "C" fn cc_last_error(buffer: *mut c_uchar) -> CallStatus<1> {
+    // check_nullptr!(buffer);
+
+    let old_err_len = cc_last_error_len();
     let last_error = match take_last_error() {
         Some(err) => err,
         None => {
@@ -139,10 +142,11 @@ pub extern "C" fn cc_last_error(mut buffer: slice_mut<c_uchar>) -> CallStatus<1>
     let error_message = CString::new(last_error.to_string()).unwrap();
     let err_bytes = error_message.to_bytes_with_nul();
     let err_len = err_bytes.len();
-    if err_len >= buffer.len() {
-        return CallStatus::err();
-    }
-    buffer.copy_from_slice(err_bytes);
+
+    assert_eq!(old_err_len, err_len);
+
+    // SAFETY: the destination buffer has to be exactly `err_len` big
+    unsafe { std::ptr::copy_nonoverlapping(err_bytes.as_ptr(), buffer, err_len) };
 
     CallStatus::with_bytes_written(0, [err_len])
 }
@@ -161,13 +165,15 @@ pub extern "C" fn cc_init_with_path_and_key(path: char_p_ref, key: char_p_ref, c
 //////////////////////////////////////////// CLIENT APIS ////////////////////////////////////////////
 
 #[no_mangle]
-pub extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, mut buf: slice_mut<u8>) -> CallStatus<1> {
+pub extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, buf: *mut u8) -> CallStatus<1> {
     check_nullptr!(ptr);
+    check_nullptr!(buf);
 
     let cc = unsafe { &*ptr };
     let pk = try_ffi!(cc.client_public_key());
     let pk_len = pk.len();
-    buf.copy_from_slice(&pk);
+    unsafe { std::ptr::copy_nonoverlapping(pk.as_ptr(), buf, pk_len) };
+    // buf.copy_from_slice(&pk);
     CallStatus::ok([pk_len])
 }
 
@@ -258,11 +264,10 @@ pub extern "C" fn cc_add_clients_to_conversation(
     ptr: CoreCryptoPtr,
     conversation_id: slice_ref<u8>,
     keypackages: slice_ref<Invitee>,
-    // TODO: split welcome & message under their own params? maybe makes it easier
-    dest: *mut MemberAddedMessages,
-) -> CallStatus<1> {
+    mut welcome_buffer: slice_mut<u8>,
+    mut commit_buffer: slice_mut<u8>,
+) -> CallStatus<2> {
     check_nullptr!(ptr);
-    check_nullptr!(dest);
     let cc = unsafe { &*ptr };
     let mut maybe_messages =
         try_ffi!(cc.add_clients_to_conversation(conversation_id.as_slice().into(), keypackages.as_slice().into()));
@@ -270,11 +275,9 @@ pub extern "C" fn cc_add_clients_to_conversation(
     if let Some(msg) = maybe_messages.take() {
         let welcome_len = msg.welcome.len();
         let message_len = msg.message.len();
-        unsafe {
-            (*dest).welcome[..welcome_len].copy_from_slice(&msg.welcome);
-            (*dest).message[..message_len].copy_from_slice(&msg.message);
-        }
-        CallStatus::with_bytes_written(0, [welcome_len + message_len])
+        welcome_buffer[..welcome_len].copy_from_slice(&msg.welcome);
+        commit_buffer[..message_len].copy_from_slice(&msg.message);
+        CallStatus::with_bytes_written(0, [welcome_len, message_len])
     } else {
         CallStatus::default()
     }
