@@ -1,13 +1,14 @@
 [env]
 EMCC_CFLAGS = '''
--Os -flto -g0
+-Os -flto -g0 -Wl
+-Wcast-align -Wover-aligned -sWARN_UNALIGNED=1 -sASSERTIONS=1
 --no-entry
 -mbulk-memory
 -matomics
 -sMALLOC=emmalloc
 -sFORCE_FILESYSTEM
 -sMODULARIZE
--sEXPORTED_RUNTIME_METHODS=[UTF8ToString,FS,IDBFS,cwrap,ccall,_malloc,_free]
+-sEXPORTED_RUNTIME_METHODS=[UTF8ToString,stringToUTF8,lengthBytesUTF8,FS,IDBFS,cwrap,ccall,_malloc,_free]
 -sEXPORT_NAME=initCoreCrypto
 -lidbfs.js
 -lembind
@@ -16,9 +17,10 @@ EMCC_CFLAGS = '''
 
 [target.wasm32-unknown-emscripten]
 rustflags = [
-    "-C", "target-feature=+atomics",
+    "-C", "target-feature=+atomics,+bulk-memory",
     "-C", "link-arg=./support/wasm/gxx_personality_v0_stub.o",
     "-C", "link-args=-Os -flto --lto-Os --strip-all -g0 -Wl",
+    "-C", "link-args=-Wcast-align -Wover-aligned -sWARN_UNALIGNED=1 -sASSERTIONS=1",
     "-C", "link-arg=--bulk-memory",
     "-C", "link-arg=--atomics",
     "-C", "link-args=-nostartfiles --no-entry --export-dynamic",
@@ -28,7 +30,7 @@ rustflags = [
     "-C", "link-arg=-sMODULARIZE",
     "-C", "link-arg=--no-check-features",
     "-C", "link-arg=--strip-all",
-    "-C", "link-arg=-sEXPORTED_RUNTIME_METHODS=[UTF8ToString,FS,IDBFS,cwrap,ccall,_malloc,_free]",
+    "-C", "link-arg=-sEXPORTED_RUNTIME_METHODS=[UTF8ToString,stringToUTF8,lengthBytesUTF8,FS,IDBFS,cwrap,ccall,_malloc,_free]",
     "-C", "link-arg=-sEXPORT_NAME=initCoreCrypto",
     "-C", "link-arg=--post-js support/wasm/corecrypto.post.js",
     "-C", "link-arg=-lidbfs.js",

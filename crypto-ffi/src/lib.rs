@@ -31,10 +31,6 @@ use std::collections::HashMap;
 use core_crypto::prelude::*;
 pub use core_crypto::CryptoError;
 
-// #[cfg(feature = "c-api")]
-// type Vec<T> = safer_ffi::vec::Vec<T>;
-
-// #[cfg_attr(feature = "c-api", safer_ffi::derive_ReprC)]
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
 pub struct MemberAddedMessages {
@@ -51,7 +47,6 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     }
 }
 
-// #[cfg_attr(feature = "c-api", safer_ffi::derive_ReprC)]
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
 pub struct ConversationLeaveMessages {
@@ -59,7 +54,6 @@ pub struct ConversationLeaveMessages {
     pub other_clients_removal_commit: Option<Vec<u8>>,
 }
 
-// #[cfg_attr(feature = "c-api", safer_ffi::derive_ReprC)]
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug, Clone)]
 pub struct Invitee {
@@ -96,7 +90,6 @@ impl TryInto<ConversationMember> for Invitee {
     }
 }
 
-// #[cfg_attr(feature = "c-api", safer_ffi::derive_ReprC)]
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug, Clone)]
 pub struct ConversationConfiguration {

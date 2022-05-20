@@ -18,8 +18,20 @@ command = "cargo"
 private = true
 args = ["build", "--target", "wasm32-unknown-emscripten", "--features", "c-api", "--release", "${@}"]
 
+[tasks.wasm-build-std]
+command = "cargo"
+private = true
+args = [
+    "+nightly", "build",
+    "-Zbuild-std=std,panic_abort",
+    "-Zunstable-options",
+    "--target=wasm32-unknown-emscripten",
+    "--release",
+    "--features", "c-api", "${@}"
+]
+
 [tasks.wasm]
-dependencies = ["wasm-build"]
+dependencies = ["wasm-build-std"]
 script = '''
 mv ../corecrypto.js ../corecrypto.wasm ../platforms/web/
 '''
