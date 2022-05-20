@@ -24,6 +24,8 @@ crypto-ffi/bindings/swift/out
 crypto-ffi/bindings/swift/.build
 crypto-ffi/bindings/swift/.swiftpm
 
+platforms/web/corecrypto.*
+
 sample-projects/ios/.build
 sample-projects/ios/.swiftpm
 .DS_Store

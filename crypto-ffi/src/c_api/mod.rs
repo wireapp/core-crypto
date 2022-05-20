@@ -145,8 +145,11 @@ pub extern "C" fn cc_last_error(buffer: *mut c_uchar) -> CallStatus<1> {
 
     assert_eq!(old_err_len, err_len);
 
+    let buffer_slice = unsafe { std::slice::from_raw_parts_mut(buffer, err_len) };
+    buffer_slice.copy_from_slice(err_bytes);
+
     // SAFETY: the destination buffer has to be exactly `err_len` big
-    unsafe { std::ptr::copy_nonoverlapping(err_bytes.as_ptr(), buffer, err_len) };
+    // unsafe { std::ptr::copy_nonoverlapping(err_bytes.as_ptr(), buffer, err_len) };
 
     CallStatus::with_bytes_written(0, [err_len])
 }
@@ -172,7 +175,9 @@ pub extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, buf: *mut u8) -> Call
     let cc = unsafe { &*ptr };
     let pk = try_ffi!(cc.client_public_key());
     let pk_len = pk.len();
-    unsafe { std::ptr::copy_nonoverlapping(pk.as_ptr(), buf, pk_len) };
+    let buf_slice = unsafe { std::slice::from_raw_parts_mut(buf, pk_len) };
+    buf_slice.copy_from_slice(&pk);
+    // unsafe { std::ptr::copy_nonoverlapping(pk.as_ptr(), buf, pk_len) };
     // buf.copy_from_slice(&pk);
     CallStatus::ok([pk_len])
 }

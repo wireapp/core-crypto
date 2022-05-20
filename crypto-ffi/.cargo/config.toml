@@ -1,6 +1,6 @@
 [env]
 EMCC_CFLAGS = '''
--Os -flto --lto-Os --strip-all -g0
+-Os -flto -g0
 --no-entry
 -mbulk-memory
 -matomics
@@ -16,7 +16,7 @@ EMCC_CFLAGS = '''
 
 [target.wasm32-unknown-emscripten]
 rustflags = [
-    "-C", "target-feature=+crt-static,+atomics",
+    "-C", "target-feature=+atomics",
     "-C", "link-arg=./support/wasm/gxx_personality_v0_stub.o",
     "-C", "link-args=-Os -flto --lto-Os --strip-all -g0 -Wl",
     "-C", "link-arg=--bulk-memory",
