@@ -218,7 +218,7 @@ mod proposal_tests {
     fn key_package(central: &MlsCentral, ciphersuite: Ciphersuite) -> KeyPackageBundle {
         KeyPackageBundle::new(
             &[ciphersuite],
-            &credential_bundle(&central, ciphersuite),
+            &credential_bundle(central, ciphersuite),
             &central.mls_backend,
             vec![],
         )

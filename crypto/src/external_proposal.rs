@@ -125,7 +125,7 @@ mod tests {
 
     fn central_config(client_id: &str, tmp_dir: &TempDir) -> MlsCentralConfiguration {
         MlsCentralConfiguration::try_new(
-            MlsCentralConfiguration::tmp_store_path(&tmp_dir),
+            MlsCentralConfiguration::tmp_store_path(tmp_dir),
             "test".to_string(),
             client_id.to_string(),
         )

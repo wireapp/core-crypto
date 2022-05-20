@@ -373,9 +373,8 @@ mod tests {
         #[test]
         fn can_create_from_valid_configuration() {
             let tmp_dir = tempfile::tempdir().unwrap();
-            let tmp_dir_argument = &tmp_dir;
             let configuration = MlsCentralConfiguration::try_new(
-                MlsCentralConfiguration::tmp_store_path(&tmp_dir_argument),
+                MlsCentralConfiguration::tmp_store_path(&tmp_dir),
                 "test".to_string(),
                 "alice".to_string(),
             )
@@ -444,7 +443,7 @@ mod tests {
 
             drop(central);
             let central = MlsCentral::try_new(configuration).unwrap();
-            let _ = central.encrypt_message(conversation_id, b"Test".to_vec()).unwrap();
+            let _ = central.encrypt_message(conversation_id, b"Test").unwrap();
 
             central.mls_backend.destroy_and_reset();
         }

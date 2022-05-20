@@ -308,7 +308,10 @@ impl MlsConversation {
         Ok(None)
     }
 
-    pub fn commit_pending_proposals(&self, backend: &MlsCryptoProvider) -> CryptoResult<(MlsMessageOut, Option<Welcome>)> {
+    pub fn commit_pending_proposals(
+        &self,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<(MlsMessageOut, Option<Welcome>)> {
         let mut group = self.group.write().map_err(|_| CryptoError::LockPoisonError)?;
         let (message, welcome) = group.commit_to_pending_proposals(backend).map_err(MlsError::from)?;
         group.merge_pending_commit().map_err(MlsError::from)?;
@@ -404,8 +407,7 @@ mod tests {
 
     #[inline(always)]
     fn init_keystore(identifier: &str) -> MlsCryptoProvider {
-        let backend = MlsCryptoProvider::try_new_in_memory(identifier).unwrap();
-        backend
+        MlsCryptoProvider::try_new_in_memory(identifier).unwrap()
     }
 
     mod create {
@@ -414,12 +416,12 @@ mod tests {
         #[test]
         fn create_self_conversation_should_succeed() {
             let conversation_id = conversation_id();
-            let (mut alice_backend, mut alice) = alice();
+            let (alice_backend, mut alice) = alice();
             let (alice_group, conversation_creation_message) = MlsConversation::create(
                 conversation_id.clone(),
                 alice.local_client_mut(),
                 MlsConversationConfiguration::default(),
-                &mut alice_backend,
+                &alice_backend,
             )
             .unwrap();
 
@@ -434,7 +436,7 @@ mod tests {
         #[test]
         fn create_1_1_conversation_should_succeed() {
             let conversation_id = conversation_id();
-            let (mut alice_backend, mut alice) = alice();
+            let (alice_backend, mut alice) = alice();
             let (bob_backend, bob) = bob();
             let conversation_config = MlsConversationConfiguration::builder()
                 .extra_members(vec![bob])
@@ -445,7 +447,7 @@ mod tests {
                 conversation_id.clone(),
                 alice.local_client_mut(),
                 conversation_config,
-                &mut alice_backend,
+                &alice_backend,
             )
             .unwrap();
 
@@ -469,7 +471,7 @@ mod tests {
 
         #[test]
         fn create_100_people_conversation() {
-            let (mut alice_backend, mut alice) = alice();
+            let (alice_backend, mut alice) = alice();
             let bob_and_friends = (0..99).fold(Vec::with_capacity(100), |mut acc, _| {
                 let uuid = uuid::Uuid::new_v4();
                 let backend = init_keystore(&uuid.hyphenated().to_string());
@@ -492,7 +494,7 @@ mod tests {
                 conversation_id.clone(),
                 alice.local_client_mut(),
                 conversation_config.clone(),
-                &mut alice_backend,
+                &alice_backend,
             )
             .unwrap();
 
@@ -503,13 +505,9 @@ mod tests {
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
 
-            let bob_and_friends_groups: Vec<MlsConversation> = bob_and_friends
-                .iter()
-                .map(|(backend, _)| {
-                    MlsConversation::from_welcome_message(welcome.clone(), conversation_config.clone(), &backend)
-                        .unwrap()
-                })
-                .collect();
+            let bob_and_friends_groups = bob_and_friends.iter().map(|(backend, _)| {
+                MlsConversation::from_welcome_message(welcome.clone(), conversation_config.clone(), backend).unwrap()
+            });
 
             assert_eq!(bob_and_friends_groups.len(), 99);
         }
@@ -521,14 +519,14 @@ mod tests {
         #[test]
         fn can_add_members_to_conversation() {
             let conversation_id = conversation_id();
-            let (mut alice_backend, mut alice) = alice();
+            let (alice_backend, mut alice) = alice();
             let (bob_backend, bob) = bob();
             let conversation_config = MlsConversationConfiguration::default();
             let (alice_group, _) = MlsConversation::create(
                 conversation_id.clone(),
                 alice.local_client_mut(),
                 conversation_config,
-                &mut alice_backend,
+                &alice_backend,
             )
             .unwrap();
 
@@ -560,7 +558,7 @@ mod tests {
         #[test]
         fn alice_can_remove_bob_from_conversation() {
             let conversation_id = conversation_id();
-            let (mut alice_backend, mut alice) = alice();
+            let (alice_backend, mut alice) = alice();
             let (bob_backend, bob) = bob();
             let conversation_config = MlsConversationConfiguration {
                 extra_members: vec![bob.clone()],
@@ -568,10 +566,10 @@ mod tests {
             };
 
             let (alice_group, messages) = MlsConversation::create(
-                conversation_id.clone(),
+                conversation_id,
                 alice.local_client_mut(),
                 conversation_config,
-                &mut alice_backend,
+                &alice_backend,
             )
             .unwrap();
 
@@ -608,10 +606,10 @@ mod tests {
         #[test]
         fn can_roundtrip_message_in_1_1_conversation() {
             let conversation_id = conversation_id();
-            let (mut alice_backend, mut alice) = alice();
+            let (alice_backend, mut alice) = alice();
             let (bob_backend, bob) = bob();
             let configuration = MlsConversationConfiguration {
-                extra_members: vec![bob.clone()],
+                extra_members: vec![bob],
                 ..Default::default()
             };
 
@@ -619,7 +617,7 @@ mod tests {
                 conversation_id.clone(),
                 alice.local_client_mut(),
                 configuration,
-                &mut alice_backend,
+                &alice_backend,
             )
             .unwrap();
 
@@ -675,7 +673,7 @@ mod tests {
 
     #[test]
     fn can_leave_conversation() {
-        let mut alice_backend = init_keystore("alice");
+        let alice_backend = init_keystore("alice");
         let alice2_backend = init_keystore("alice2");
         let bob_backend = init_keystore("bob");
         let charlie_backend = init_keystore("charlie");
@@ -697,7 +695,7 @@ mod tests {
             conversation_id.clone(),
             alice.local_client_mut(),
             conversation_config,
-            &mut alice_backend,
+            &alice_backend,
         )
         .unwrap();
 

@@ -259,7 +259,7 @@ impl Client {
             format!("{}:{client_id:x}@members.wire.com", user_uuid.hyphenated())
                 .as_bytes()
                 .into(),
-            &backend,
+            backend,
             provision,
         )
     }
