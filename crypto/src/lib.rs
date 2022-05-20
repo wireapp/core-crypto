@@ -192,7 +192,7 @@ impl MlsCentral {
 
     pub fn client_keypackages(&self, amount_requested: usize) -> CryptoResult<Vec<KeyPackageBundle>> {
         self.mls_client
-            .write()
+            .read()
             .map_err(|_| CryptoError::LockPoisonError)?
             .request_keying_material(amount_requested, &self.mls_backend)
     }
