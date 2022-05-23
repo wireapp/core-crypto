@@ -2,10 +2,11 @@
 EMCC_CFLAGS = '''
 -Os -flto -g0 -Wl
 -Wcast-align -Wover-aligned -sWARN_UNALIGNED=1 -sASSERTIONS=1
+-fsanitize=address
 --no-entry
 -mbulk-memory
 -matomics
--sMALLOC=emmalloc
+-sINITIAL_MEMORY=128MB
 -sFORCE_FILESYSTEM
 -sMODULARIZE
 -sEXPORTED_RUNTIME_METHODS=[UTF8ToString,stringToUTF8,lengthBytesUTF8,FS,IDBFS,cwrap,ccall,_malloc,_free]
@@ -25,11 +26,12 @@ rustflags = [
     "-C", "link-arg=--atomics",
     "-C", "link-args=-nostartfiles --no-entry --export-dynamic",
     "-C", "link-arg=-ocorecrypto.js",
-    "-C", "link-arg=-sMALLOC=emmalloc",
-    "-C", "link-arg=-sFORCE_FILESYSTEM",
-    "-C", "link-arg=-sMODULARIZE",
     "-C", "link-arg=--no-check-features",
     "-C", "link-arg=--strip-all",
+    "-C", "link-arg=-fsanitize=address",
+    "-C", "link-arg=-sINITIAL_MEMORY=128MB",
+    "-C", "link-arg=-sFORCE_FILESYSTEM",
+    "-C", "link-arg=-sMODULARIZE",
     "-C", "link-arg=-sEXPORTED_RUNTIME_METHODS=[UTF8ToString,stringToUTF8,lengthBytesUTF8,FS,IDBFS,cwrap,ccall,_malloc,_free]",
     "-C", "link-arg=-sEXPORT_NAME=initCoreCrypto",
     "-C", "link-arg=--post-js support/wasm/corecrypto.post.js",

@@ -10,4 +10,4 @@ branch = "otak/sodiumoxide-0.2.7"
 lto = true
 codegen-units = 1
 opt-level = "s"
-panic = "abort"
+# panic = "abort"

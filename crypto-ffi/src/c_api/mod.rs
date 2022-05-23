@@ -23,7 +23,7 @@ use std::{
     ffi::{CStr, CString},
 };
 
-use libc::{c_char, c_int, c_uchar, size_t};
+use libc::{c_char, c_int, c_uchar, c_void, size_t};
 
 use crate::*;
 
@@ -111,13 +111,15 @@ impl<const T: usize> Default for CallStatus<T> {
     }
 }
 
+const TEST_ERR: &str = "This is a test";
+
 #[no_mangle]
 pub extern "C" fn cc_last_error_len() -> size_t {
     CC_LAST_ERROR.with(|prev| {
         (*prev)
             .borrow()
             .as_ref()
-            .map(|e| e.to_string().len() + 1)
+            .map(|_e| TEST_ERR.len() + 1)
             .unwrap_or_default()
     })
 }
@@ -127,15 +129,16 @@ pub extern "C" fn cc_last_error(buffer: *mut c_uchar) -> CallStatus<1> {
     check_nullptr!(buffer);
 
     let old_err_len = cc_last_error_len();
-    let last_error = match take_last_error() {
-        Some(err) => err,
-        None => {
-            return CallStatus::with_bytes_written(0, [0]);
-        }
-    };
+    // let last_error = match take_last_error() {
+    //     Some(err) => err,
+    //     None => {
+    //         return CallStatus::with_bytes_written(0, [0]);
+    //     }
+    // };
 
     // SAFETY: This unwrap is safe as our errors do not include null bytes - a property of Rust strings in general
-    let error_message = CString::new(last_error.to_string()).unwrap();
+    // let error_message = CString::new(last_error.to_string()).unwrap();
+    let error_message = CString::new(TEST_ERR.to_string()).unwrap();
     let err_bytes = error_message.to_bytes_with_nul();
     let err_len = err_bytes.len();
 
@@ -153,11 +156,12 @@ pub extern "C" fn cc_init_with_path_and_key(
     key: *const c_char,
     client_id: *const c_char,
 ) -> CoreCryptoPtr {
-    let path = unsafe { CStr::from_ptr(path) }.to_str().unwrap();
-    let key = unsafe { CStr::from_ptr(key) }.to_str().unwrap();
-    let client_id = unsafe { CStr::from_ptr(client_id) }.to_str().unwrap();
+    let path = unsafe { CStr::from_ptr(path) }.to_string_lossy();
+    let key = unsafe { CStr::from_ptr(key) }.to_string_lossy();
+    let client_id = unsafe { CStr::from_ptr(client_id) }.to_string_lossy();
 
-    let cc = try_ffi!(CoreCrypto::new(path, key, client_id), std::ptr::null());
+    let cc = try_ffi!(CoreCrypto::new(&path, &key, &client_id), std::ptr::null());
+
     let cc = std::mem::ManuallyDrop::new(cc);
     &*cc
 }
@@ -210,7 +214,7 @@ pub unsafe extern "C" fn cc_client_keypackages(
                     });
                 }
 
-                dest[i].copy_from_slice(&kp);
+                dest[i][..kp_len].copy_from_slice(&kp);
                 bytes_written += kp_len;
             }
 
@@ -537,6 +541,14 @@ pub unsafe extern "C" fn cc_new_remove_proposal(
 }
 
 //////////////////////////////////////////// MISC APIS ////////////////////////////////////////////
+
+#[no_mangle]
+pub unsafe extern "C" fn cc_free(ptr: *mut c_void) {
+    if ptr.is_null() {
+        return;
+    }
+    std::ptr::drop_in_place(ptr);
+}
 
 #[no_mangle]
 pub extern "C" fn cc_version() -> *const c_uchar {
