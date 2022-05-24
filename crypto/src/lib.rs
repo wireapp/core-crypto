@@ -86,11 +86,11 @@ mod config {
     use super::*;
 
     #[derive(Debug, Clone)]
+    #[non_exhaustive]
     pub struct MlsCentralConfiguration {
         pub store_path: String,
         pub identity_key: String,
         pub client_id: String,
-        _private: (), // allow other fields access but prevent instantiation
     }
 
     impl MlsCentralConfiguration {
@@ -111,7 +111,6 @@ mod config {
                 store_path,
                 identity_key,
                 client_id,
-                _private: (),
             })
         }
 

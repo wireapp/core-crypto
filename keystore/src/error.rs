@@ -29,7 +29,7 @@ pub enum CryptoKeystoreError {
     MissingKeyInStore(#[from] MissingKeyErrorKind),
     #[error("The given key doesn't contain valid utf-8")]
     KeyReprError(std::str::Utf8Error),
-    #[error("One of the locks has been poisoned")]
+    #[error("One of the Keystore locks has been poisoned")]
     LockPoisonError,
     #[error("The keystore has run out of keypackage bundles!")]
     OutOfKeyPackageBundles,

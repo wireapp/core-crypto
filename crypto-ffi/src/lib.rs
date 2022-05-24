@@ -31,6 +31,24 @@ use std::collections::HashMap;
 use core_crypto::prelude::*;
 pub use core_crypto::CryptoError;
 
+#[derive(Debug, thiserror::Error)]
+pub enum CoreCryptoFFIError {
+    #[error("NULL_PTR -> The consumer has provided a null pointer across the FFI boundary [{arg} = {ptr:#X}]")]
+    NullPointerGiven { ptr: usize, arg: &'static str },
+    #[error(
+        "BUFFER_OVERFLOW -> The allocated buffer was too small [given = {given} | needed = {needed} | ptr = {ptr:#X}]"
+    )]
+    BufferTooSmall { needed: usize, given: usize, ptr: usize },
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum FfiCryptoError {
+    #[error(transparent)]
+    FfiError(#[from] CoreCryptoFFIError),
+    #[error(transparent)]
+    CryptoError(#[from] CryptoError),
+}
+
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
 pub struct MemberAddedMessages {
@@ -147,8 +165,7 @@ impl CoreCrypto {
 
     pub fn client_keypackages(&self, amount_requested: u32) -> CryptoResult<Vec<Vec<u8>>> {
         use core_crypto::prelude::tls_codec::Serialize as _;
-        Ok(self
-            .0
+        self.0
             .client_keypackages(amount_requested as usize)?
             .into_iter()
             .map(|kpb| {
@@ -157,7 +174,7 @@ impl CoreCrypto {
                     .map_err(MlsError::from)
                     .map_err(CryptoError::from)
             })
-            .collect::<CryptoResult<Vec<Vec<u8>>>>()?)
+            .collect::<CryptoResult<Vec<Vec<u8>>>>()
     }
 
     pub fn create_conversation(
@@ -165,11 +182,10 @@ impl CoreCrypto {
         conversation_id: ConversationId,
         config: ConversationConfiguration,
     ) -> CryptoResult<Option<MemberAddedMessages>> {
-        Ok(self
-            .0
+        self.0
             .new_conversation(conversation_id, config.try_into()?)?
             .map(TryInto::try_into)
-            .transpose()?)
+            .transpose()
     }
 
     pub fn process_welcome_message(&self, welcome_message: &[u8]) -> CryptoResult<ConversationId> {
@@ -183,11 +199,10 @@ impl CoreCrypto {
     ) -> CryptoResult<Option<MemberAddedMessages>> {
         let mut members = Invitee::group_to_conversation_member(clients)?;
 
-        Ok(self
-            .0
+        self.0
             .add_members_to_conversation(&conversation_id, &mut members)?
             .map(TryInto::try_into)
-            .transpose()?)
+            .transpose()
     }
 
     /// Returns a MLS commit message serialized as TLS

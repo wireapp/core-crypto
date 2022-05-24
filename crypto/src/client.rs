@@ -54,6 +54,7 @@ impl From<Vec<u8>> for ClientId {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<Vec<u8>> for ClientId {
     fn into(self) -> Vec<u8> {
         self.0

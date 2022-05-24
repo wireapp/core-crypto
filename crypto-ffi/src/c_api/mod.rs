@@ -14,10 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+#![allow(clippy::missing_safety_doc)]
+
 #[allow(dead_code)]
 pub(crate) const VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), "\0");
 
-use core_crypto::*;
 use std::{
     cell::RefCell,
     ffi::{CStr, CString},
@@ -29,9 +30,19 @@ use crate::*;
 
 macro_rules! check_nullptr {
     ($ptr:ident) => {
+        check_nullptr!($ptr, CallStatus::err())
+    };
+
+    ($ptr:ident, $errval: expr) => {
         if $ptr.is_null() {
-            update_last_error(CryptoError::NullPointerGiven);
-            return CallStatus::err();
+            update_last_error(
+                CoreCryptoFFIError::NullPointerGiven {
+                    ptr: $ptr as usize,
+                    arg: stringify!($ptr),
+                }
+                .into(),
+            );
+            return $errval;
         }
     };
 }
@@ -45,7 +56,7 @@ macro_rules! try_ffi {
         match $res {
             Ok(result) => result,
             Err(e) => {
-                update_last_error(e);
+                update_last_error(e.into());
                 return $errval;
             }
         }
@@ -55,18 +66,18 @@ macro_rules! try_ffi {
 type CoreCryptoPtr = *const CoreCrypto;
 
 thread_local! {
-    static CC_LAST_ERROR: RefCell<Option<CryptoError>> = RefCell::new(None);
+    static CC_LAST_ERROR: RefCell<Option<FfiCryptoError>> = RefCell::new(None);
 }
 
 #[inline]
-fn update_last_error(err: CryptoError) {
-    CC_LAST_ERROR.with(|prev| {
+fn update_last_error(err: FfiCryptoError) {
+    CC_LAST_ERROR.with(move |prev| {
         *prev.borrow_mut() = Some(err);
     });
 }
 
 #[inline]
-fn take_last_error() -> Option<CryptoError> {
+fn take_last_error() -> Option<FfiCryptoError> {
     CC_LAST_ERROR.with(|prev| prev.borrow_mut().take())
 }
 
@@ -111,54 +122,58 @@ impl<const T: usize> Default for CallStatus<T> {
     }
 }
 
-const TEST_ERR: &str = "This is a test";
-
 #[no_mangle]
 pub extern "C" fn cc_last_error_len() -> size_t {
     CC_LAST_ERROR.with(|prev| {
         (*prev)
             .borrow()
             .as_ref()
-            .map(|_e| TEST_ERR.len() + 1)
+            .map(|e| e.to_string().len() + 1)
             .unwrap_or_default()
     })
 }
 
 #[no_mangle]
-pub extern "C" fn cc_last_error(buffer: *mut c_uchar) -> CallStatus<1> {
-    check_nullptr!(buffer);
+/// # SAFETY: `buffer` should be long enough to contain any error, or an overflow might occur.
+pub extern "C" fn cc_last_error(buffer: *mut c_char) -> i32 {
+    check_nullptr!(buffer, -1);
 
     let old_err_len = cc_last_error_len();
-    // let last_error = match take_last_error() {
-    //     Some(err) => err,
-    //     None => {
-    //         return CallStatus::with_bytes_written(0, [0]);
-    //     }
-    // };
+    let last_error = match take_last_error() {
+        Some(err) => err,
+        None => {
+            return 0;
+        }
+    };
 
     // SAFETY: This unwrap is safe as our errors do not include null bytes - a property of Rust strings in general
-    // let error_message = CString::new(last_error.to_string()).unwrap();
-    let error_message = CString::new(TEST_ERR.to_string()).unwrap();
+    let error_message = match CString::new(last_error.to_string()) {
+        Ok(s) => s,
+        Err(_) => unreachable!(),
+    };
     let err_bytes = error_message.to_bytes_with_nul();
     let err_len = err_bytes.len();
 
     assert_eq!(old_err_len, err_len);
 
-    // SAFETY: the destination buffer has to be exactly `err_len` big
-    unsafe { std::ptr::copy_nonoverlapping(err_bytes.as_ptr(), buffer, err_len) };
+    let buffer: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(buffer as *mut u8, err_len) };
 
-    CallStatus::with_bytes_written(0, [err_len])
+    // SAFETY: the destination buffer has to be exactly `err_len` big
+    unsafe { std::ptr::copy_nonoverlapping(err_bytes.as_ptr(), buffer.as_mut_ptr(), err_len) };
+
+    // CallStatus::with_bytes_written(0, [err_len])
+    err_len as i32
 }
 
 #[no_mangle]
-pub extern "C" fn cc_init_with_path_and_key(
+pub unsafe extern "C" fn cc_init_with_path_and_key(
     path: *const c_char,
     key: *const c_char,
     client_id: *const c_char,
 ) -> CoreCryptoPtr {
-    let path = unsafe { CStr::from_ptr(path) }.to_string_lossy();
-    let key = unsafe { CStr::from_ptr(key) }.to_string_lossy();
-    let client_id = unsafe { CStr::from_ptr(client_id) }.to_string_lossy();
+    let path = CStr::from_ptr(path).to_string_lossy();
+    let key = CStr::from_ptr(key).to_string_lossy();
+    let client_id = CStr::from_ptr(client_id).to_string_lossy();
 
     let cc = try_ffi!(CoreCrypto::new(&path, &key, &client_id), std::ptr::null());
 
@@ -166,17 +181,26 @@ pub extern "C" fn cc_init_with_path_and_key(
     &*cc
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn cc_deinit(ptr: *mut CoreCrypto) {
+    check_nullptr!(ptr, ());
+    std::ptr::drop_in_place(ptr);
+    std::alloc::dealloc(ptr as *mut u8, std::alloc::Layout::new::<CoreCrypto>());
+}
+
 //////////////////////////////////////////// CLIENT APIS ////////////////////////////////////////////
 
 #[no_mangle]
-pub unsafe extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, buf: *mut u8) -> CallStatus<1> {
+pub unsafe extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, buf: *mut isize) -> CallStatus<1> {
     check_nullptr!(ptr);
-    check_nullptr!(buf);
+    let bufptr = (buf as usize + isize::MAX as usize) as *mut u8;
+    check_nullptr!(bufptr);
 
     let cc = &*ptr;
     let pk = try_ffi!(cc.client_public_key());
     let pk_len = pk.len();
-    std::ptr::copy_nonoverlapping(pk.as_ptr(), buf, pk_len);
+    let buf = std::slice::from_raw_parts_mut(bufptr as *mut u8, pk_len);
+    std::ptr::copy_nonoverlapping(pk.as_ptr(), buf.as_mut_ptr(), pk_len);
     CallStatus::ok([pk_len])
 }
 
@@ -194,13 +218,14 @@ pub unsafe extern "C" fn cc_client_keypackages(
 
     let dest = std::slice::from_raw_parts_mut(dest, amount_requested);
     let mut dest: Vec<&mut [u8]> = dest
-        .into_iter()
+        .iter()
         .map(|ptr| std::slice::from_raw_parts_mut(*ptr, kp_buf_len))
         .collect();
 
     let cc = &*ptr;
-    let res = cc
+    let res: Result<CallStatus<1>, FfiCryptoError> = cc
         .client_keypackages(amount_requested as u32)
+        .map_err(Into::into)
         .and_then(move |serialized_kps| {
             let mut bytes_written = 0;
 
@@ -208,10 +233,12 @@ pub unsafe extern "C" fn cc_client_keypackages(
                 let kp_len = kp.len();
                 let dest_item_len = dest[i].len();
                 if kp_len > dest_item_len {
-                    return Err(CryptoError::BufferTooSmall {
+                    return Err(CoreCryptoFFIError::BufferTooSmall {
                         needed: kp_len,
                         given: dest_item_len,
-                    });
+                        ptr: dest[i].as_ptr() as usize,
+                    }
+                    .into());
                 }
 
                 dest[i][..kp_len].copy_from_slice(&kp);
@@ -342,8 +369,8 @@ pub unsafe extern "C" fn cc_remove_clients_from_conversation(
     let client_ids = std::slice::from_raw_parts(client_ids, client_ids_amount);
     let client_id_lengths = std::slice::from_raw_parts(client_ids_lengths, client_ids_amount);
     let client_ids: Vec<ClientId> = client_ids
-        .into_iter()
-        .zip(client_id_lengths.into_iter())
+        .iter()
+        .zip(client_id_lengths.iter())
         .map(|(ptr, len)| std::slice::from_raw_parts(*ptr, *len))
         .map(Into::into)
         .collect();
