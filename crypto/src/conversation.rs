@@ -61,7 +61,7 @@ impl MlsConversationConfiguration {
 #[allow(dead_code)]
 pub struct MlsConversation {
     pub(crate) id: ConversationId,
-    pub(crate) group: std::sync::RwLock<MlsGroup>,
+    pub(crate) group: parking_lot::RwLock<MlsGroup>,
     pub(crate) admins: Vec<MemberId>,
     configuration: MlsConversationConfiguration,
 }
@@ -193,7 +193,7 @@ impl MlsConversation {
     }
 
     pub fn members(&self) -> CryptoResult<std::collections::HashMap<MemberId, Vec<openmls::credentials::Credential>>> {
-        self.read_group()?.members().iter().try_fold(
+        self.group.read().members().iter().try_fold(
             std::collections::HashMap::new(),
             |mut acc, kp| -> CryptoResult<_> {
                 let credential = kp.credential();
@@ -223,7 +223,7 @@ impl MlsConversation {
             .filter_map(|(_, kps)| kps)
             .collect::<Vec<KeyPackage>>();
 
-        let mut group = self.write_group()?;
+        let mut group = self.group.write();
 
         let (message, welcome) = group.add_members(backend, &keypackages).map_err(MlsError::from)?;
         group.merge_pending_commit().map_err(MlsError::from)?;
@@ -245,7 +245,8 @@ impl MlsConversation {
         let crypto = backend.crypto();
 
         let member_kps = self
-            .read_group()?
+            .group
+            .read()
             .members()
             .into_iter()
             .filter(|kp| {
@@ -257,7 +258,7 @@ impl MlsConversation {
                 Ok(acc)
             })?;
 
-        let mut group = self.write_group()?;
+        let mut group = self.group.write();
 
         let (message, _) = group.remove_members(backend, &member_kps).map_err(MlsError::from)?;
         group.merge_pending_commit().map_err(MlsError::from)?;
@@ -276,7 +277,7 @@ impl MlsConversation {
     ) -> CryptoResult<Option<Vec<u8>>> {
         let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
 
-        let mut group = self.write_group()?;
+        let mut group = self.group.write();
         let parsed_message = group.parse_message(msg_in, backend).map_err(MlsError::from)?;
 
         let message = group
@@ -303,7 +304,7 @@ impl MlsConversation {
     }
 
     pub fn commit_pending_proposals(&self, backend: &MlsCryptoProvider) -> CryptoResult<MlsMessageOut> {
-        let mut group = self.group.write().map_err(|_| CryptoError::LockPoisonError)?;
+        let mut group = self.group.write();
         let (message, _) = group.commit_to_pending_proposals(backend).map_err(MlsError::from)?;
         group.merge_pending_commit().map_err(MlsError::from)?;
         drop(group);
@@ -313,7 +314,8 @@ impl MlsConversation {
     }
 
     pub fn encrypt_message(&self, message: impl AsRef<[u8]>, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
-        self.write_group()?
+        self.group
+            .write()
             .create_message(backend, message.as_ref())
             .map_err(MlsError::from)
             .and_then(|m| m.to_bytes().map_err(MlsError::from))
@@ -322,30 +324,21 @@ impl MlsConversation {
 
     pub fn update_keying_material(&self, backend: &MlsCryptoProvider) -> CryptoResult<MlsConversationReinitMessage> {
         Ok(self
-            .write_group()?
+            .group
+            .write()
             .self_update(backend, None)
             .map_err(MlsError::from)
             .map(|(message, welcome)| MlsConversationReinitMessage { welcome, message })?)
     }
 
     fn persist_group_when_changed(&self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
-        if self.read_group()?.state_changed() == openmls::group::InnerState::Changed {
+        if self.group.read().state_changed() == openmls::group::InnerState::Changed {
             let mut buf = vec![];
-            self.write_group()?.save(&mut buf)?;
+            self.group.write().save(&mut buf)?;
             Ok(backend.key_store().mls_group_persist(&self.id, &buf)?)
         } else {
             Ok(())
         }
-    }
-
-    #[inline(always)]
-    fn read_group(&self) -> CryptoResult<impl core::ops::Deref<Target = MlsGroup> + '_> {
-        self.group.read().map_err(|_| CryptoError::LockPoisonError)
-    }
-
-    #[inline(always)]
-    fn write_group(&self) -> CryptoResult<impl core::ops::DerefMut<Target = MlsGroup> + '_> {
-        self.group.write().map_err(|_| CryptoError::LockPoisonError)
     }
 
     pub(crate) fn leave(
@@ -358,7 +351,8 @@ impl MlsConversation {
         let other_clients_removal_commit = if !other_clients.is_empty() {
             let other_clients_slice: Vec<&[u8]> = other_clients.iter().map(|c| c.as_slice()).collect();
             let other_keypackages: Vec<_> = self
-                .read_group()?
+                .group
+                .read()
                 .members()
                 .into_iter()
                 .filter(|m| other_clients_slice.contains(&m.credential().identity()))
@@ -366,7 +360,7 @@ impl MlsConversation {
                 .collect();
 
             if !other_keypackages.is_empty() {
-                let mut group = self.write_group()?;
+                let mut group = self.group.write();
                 let (other_clients_removal_commit, _) = group
                     .remove_members(backend, other_keypackages.as_slice())
                     .map_err(MlsError::from)?;
@@ -381,7 +375,7 @@ impl MlsConversation {
             None
         };
 
-        let self_removal_proposal = self.write_group()?.leave_group(backend).map_err(MlsError::from)?;
+        let self_removal_proposal = self.group.write().leave_group(backend).map_err(MlsError::from)?;
 
         Ok(MlsConversationLeaveMessage {
             other_clients_removal_commit,
@@ -393,7 +387,7 @@ impl MlsConversation {
 #[cfg(test)]
 mod tests {
     use super::{ConversationId, MlsConversation, MlsConversationConfiguration};
-    use crate::{member::ConversationMember, prelude::MlsConversationCreationMessage};
+    use crate::{client::Client, member::ConversationMember, prelude::MlsConversationCreationMessage};
     use mls_crypto_provider::MlsCryptoProvider;
 
     #[inline(always)]
@@ -419,7 +413,7 @@ mod tests {
 
             assert!(conversation_creation_message.is_none());
             assert_eq!(alice_group.id, conversation_id);
-            assert_eq!(alice_group.group.read().unwrap().group_id().as_slice(), conversation_id);
+            assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
             assert_eq!(alice_group.members().unwrap().len(), 1);
             let alice_can_send_message = alice_group.encrypt_message(b"me", &alice_backend);
             assert!(alice_can_send_message.is_ok());
@@ -430,10 +424,10 @@ mod tests {
             let conversation_id = conversation_id();
             let (mut alice_backend, mut alice) = alice();
             let (bob_backend, bob) = bob();
-            let conversation_config = MlsConversationConfiguration::builder()
-                .extra_members(vec![bob])
-                .build()
-                .unwrap();
+            let conversation_config = MlsConversationConfiguration {
+                extra_members: vec![bob],
+                ..Default::default()
+            };
 
             let (alice_group, conversation_creation_message) = MlsConversation::create(
                 conversation_id.clone(),
@@ -445,7 +439,7 @@ mod tests {
 
             assert!(conversation_creation_message.is_some());
             assert_eq!(alice_group.id, conversation_id);
-            assert_eq!(alice_group.group.read().unwrap().group_id().as_slice(), conversation_id);
+            assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
             assert_eq!(alice_group.members().unwrap().len(), 2);
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
@@ -477,11 +471,10 @@ mod tests {
 
             let conversation_id = conversation_id();
 
-            let conversation_config = MlsConversationConfiguration::builder()
-                .extra_members(bob_and_friends.iter().map(|(_, m)| m.clone()).collect())
-                .build()
-                .unwrap();
-
+            let conversation_config = MlsConversationConfiguration {
+                extra_members: bob_and_friends.iter().map(|(_, m)| m.clone()).collect(),
+                ..Default::default()
+            };
             let (alice_group, conversation_creation_message) = MlsConversation::create(
                 conversation_id.clone(),
                 alice.local_client_mut(),
@@ -492,7 +485,7 @@ mod tests {
 
             assert!(conversation_creation_message.is_some());
             assert_eq!(alice_group.id, conversation_id);
-            assert_eq!(alice_group.group.read().unwrap().group_id().as_slice(), conversation_id);
+            assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
             assert_eq!(alice_group.members().unwrap().len(), 1 + number_of_friends);
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
@@ -529,7 +522,7 @@ mod tests {
             let conversation_creation_message = alice_group.add_members(&mut [bob], &alice_backend).unwrap();
 
             assert_eq!(alice_group.id, conversation_id);
-            assert_eq!(alice_group.group.read().unwrap().group_id().as_slice(), conversation_id);
+            assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
             assert_eq!(alice_group.members().unwrap().len(), 2);
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message;
@@ -619,7 +612,7 @@ mod tests {
 
             assert!(conversation_creation_message.is_some());
             assert_eq!(alice_group.id, conversation_id);
-            assert_eq!(alice_group.group.read().unwrap().group_id().as_slice(), conversation_id);
+            assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
             assert_eq!(alice_group.members().unwrap().len(), 2);
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
@@ -664,41 +657,14 @@ mod tests {
     fn bob() -> (MlsCryptoProvider, ConversationMember) {
         let bob_backend = init_keystore("bob");
         let bob = ConversationMember::random_generate(&bob_backend).unwrap();
-
-        let uuid = uuid::Uuid::new_v4();
-        let conversation_id = ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()));
-
-        let conversation_config = MlsConversationConfiguration {
-            extra_members: vec![bob],
-            ..Default::default()
-        };
-
-        let (alice_group, conversation_creation_message) = MlsConversation::create(
-            conversation_id.clone(),
-            &mut alice,
-            conversation_config,
-            &mut alice_backend,
-        )
-        .unwrap();
-
-        assert!(conversation_creation_message.is_some());
-        assert_eq!(alice_group.id, conversation_id);
-        assert_eq!(alice_group.group.read().unwrap().group_id().as_slice(), conversation_id);
-        assert_eq!(alice_group.members().unwrap().len(), 2);
-
-        let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
-
-        let conversation_config = MlsConversationConfiguration::default();
-        let bob_group = MlsConversation::from_welcome_message(welcome, conversation_config, &bob_backend).unwrap();
-
-        assert_eq!(bob_group.id(), alice_group.id());
+        (bob_backend, bob)
     }
 
     #[test]
     fn can_add_members_to_conversation() {
         let mut alice_backend = init_keystore("alice");
         let bob_backend = init_keystore("bob");
-        let mut alice = Client::random_generate(&alice_backend).unwrap();
+        let mut alice = Client::random_generate(&alice_backend, true).unwrap();
         let bob = ConversationMember::random_generate(&bob_backend).unwrap();
 
         let uuid = uuid::Uuid::new_v4();
@@ -717,7 +683,7 @@ mod tests {
         let conversation_creation_message = alice_group.add_members(&mut [bob], &alice_backend).unwrap();
 
         assert_eq!(alice_group.id, conversation_id);
-        assert_eq!(alice_group.group.read().unwrap().group_id().as_slice(), conversation_id);
+        assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
         assert_eq!(alice_group.members().unwrap().len(), 2);
 
         let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message;
@@ -732,7 +698,7 @@ mod tests {
     #[test]
     fn can_create_100_people_conversation() {
         let mut alice_backend = init_keystore("alice");
-        let mut alice = Client::random_generate(&alice_backend).unwrap();
+        let mut alice = Client::random_generate(&alice_backend, true).unwrap();
 
         let bob_and_friends = (0..99).fold(Vec::with_capacity(100), |mut acc, _| {
             let uuid = uuid::Uuid::new_v4();
@@ -763,7 +729,7 @@ mod tests {
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
-        assert_eq!(alice_group.group.read().unwrap().group_id().as_slice(), conversation_id);
+        assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
         assert_eq!(alice_group.members().unwrap().len(), 1 + number_of_friends);
 
         let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
@@ -783,7 +749,7 @@ mod tests {
         let mut alice_backend = init_keystore("alice");
         let bob_backend = init_keystore("bob");
 
-        let mut alice = Client::random_generate(&alice_backend).unwrap();
+        let mut alice = Client::random_generate(&alice_backend, true).unwrap();
         let bob = ConversationMember::random_generate(&bob_backend).unwrap();
 
         let uuid = uuid::Uuid::new_v4();
@@ -799,7 +765,7 @@ mod tests {
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
-        assert_eq!(alice_group.group.read().unwrap().group_id().as_slice(), conversation_id);
+        assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
         assert_eq!(alice_group.members().unwrap().len(), 2);
 
         let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
@@ -839,10 +805,10 @@ mod tests {
         let uuid = uuid::Uuid::new_v4();
         let conversation_id = ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()));
 
-        let conversation_config = MlsConversationConfiguration::builder()
-            .extra_members(vec![alice2, bob, charlie])
-            .build()
-            .unwrap();
+        let conversation_config = MlsConversationConfiguration {
+            extra_members: vec![alice2, bob, charlie],
+            ..Default::default()
+        };
 
         let (alice_group, conversation_creation_message) = MlsConversation::create(
             conversation_id.clone(),
@@ -854,12 +820,12 @@ mod tests {
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
-        assert_eq!(alice_group.group.read().unwrap().group_id().as_slice(), conversation_id);
+        assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
         assert_eq!(alice_group.members().unwrap().len(), 4);
 
         let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
 
-        let conversation_config = MlsConversationConfiguration::builder().build().unwrap();
+        let conversation_config = MlsConversationConfiguration::default();
         let bob_group =
             MlsConversation::from_welcome_message(welcome.clone(), conversation_config.clone(), &bob_backend).unwrap();
         let charlie_group =
@@ -923,7 +889,7 @@ mod tests {
 
         // alice_group is now unuseable
         assert!(alice_group.encrypt_message(b"test", &alice_backend).is_err());
-        assert!(!alice_group.group.read().unwrap().is_active());
+        assert!(!alice_group.group.read().is_active());
 
         bob_group
             .decrypt_message(message.self_removal_proposal.to_bytes().unwrap(), &bob_backend)
@@ -943,7 +909,7 @@ mod tests {
             .unwrap();
 
         // Check that alice2 understood that she's not welcome anymore (sorry alice2)
-        assert!(!alice2_group.group.read().unwrap().is_active());
+        assert!(!alice2_group.group.read().is_active());
 
         assert_eq!(charlie_group.members().unwrap().len(), 2);
         assert_eq!(bob_group.members().unwrap().len(), 2);

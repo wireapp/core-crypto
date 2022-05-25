@@ -126,10 +126,10 @@ mod config {
 
 #[derive(Debug)]
 pub struct MlsCentral {
-    mls_client: std::sync::RwLock<Client>,
+    mls_client: parking_lot::RwLock<Client>,
     mls_backend: MlsCryptoProvider,
-    mls_groups: std::sync::RwLock<HashMap<ConversationId, MlsConversation>>,
-    callbacks: std::sync::RwLock<Option<Box<dyn CoreCryptoCallbacks + 'static>>>,
+    mls_groups: parking_lot::RwLock<HashMap<ConversationId, MlsConversation>>,
+    callbacks: parking_lot::RwLock<Option<Box<dyn CoreCryptoCallbacks + 'static>>>,
 }
 
 impl MlsCentral {
@@ -186,36 +186,24 @@ impl MlsCentral {
 
     /// Sets the consumer callbacks (i.e authorization callbacks for CoreCrypto to perform authorization calls when needed)
     pub fn callbacks(&self, callbacks: Box<dyn CoreCryptoCallbacks>) -> CryptoResult<()> {
-        let mut cb_w = self.callbacks.write().map_err(|_| CryptoError::LockPoisonError)?;
+        let mut cb_w = self.callbacks.write();
         *cb_w = Some(callbacks);
         Ok(())
     }
 
     /// Returns the client's public key as a buffer
     pub fn client_public_key(&self) -> CryptoResult<Vec<u8>> {
-        Ok(self
-            .mls_client
-            .read()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .public_key()
-            .into())
+        Ok(self.mls_client.read().public_key().into())
     }
 
     /// Returns the client's id as a buffer
     pub fn client_id(&self) -> CryptoResult<Vec<u8>> {
-        Ok(self
-            .mls_client
-            .read()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .id()
-            .clone()
-            .into())
+        Ok(self.mls_client.read().id().clone().into())
     }
 
     pub fn client_keypackages(&self, amount_requested: usize) -> CryptoResult<Vec<KeyPackageBundle>> {
         self.mls_client
             .write()
-            .map_err(|_| CryptoError::LockPoisonError)?
             .request_keying_material(amount_requested, &self.mls_backend)
     }
 
@@ -225,23 +213,17 @@ impl MlsCentral {
         id: ConversationId,
         config: MlsConversationConfiguration,
     ) -> CryptoResult<Option<MlsConversationCreationMessage>> {
-        let mut client = self.mls_client.write().map_err(|_| CryptoError::LockPoisonError)?;
+        let mut client = self.mls_client.write();
         let (conversation, messages) = MlsConversation::create(id.clone(), &mut client, config, &self.mls_backend)?;
 
-        self.mls_groups
-            .write()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .insert(id, conversation);
+        self.mls_groups.write().insert(id, conversation);
 
         Ok(messages)
     }
 
     /// Checks if a given conversation id exists locally
     pub fn conversation_exists(&self, id: &ConversationId) -> bool {
-        self.mls_groups
-            .read()
-            .map(|groups| groups.contains_key(id))
-            .unwrap_or_default()
+        self.mls_groups.read().contains_key(id)
     }
 
     /// Create a conversation from a received MLS Welcome message
@@ -252,10 +234,7 @@ impl MlsCentral {
     ) -> CryptoResult<ConversationId> {
         let conversation = MlsConversation::from_welcome_message(welcome, configuration, &self.mls_backend)?;
         let conversation_id = conversation.id().clone();
-        self.mls_groups
-            .write()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .insert(conversation_id.clone(), conversation);
+        self.mls_groups.write().insert(conversation_id.clone(), conversation);
 
         Ok(conversation_id)
     }
@@ -273,30 +252,13 @@ impl MlsCentral {
         id: &ConversationId,
         members: &mut [ConversationMember],
     ) -> CryptoResult<Option<MlsConversationCreationMessage>> {
-        if let Some(callbacks) = self
-            .callbacks
-            .read()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .as_ref()
-        {
-            if !callbacks.authorize(
-                id.clone(),
-                self.mls_client
-                    .read()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .id()
-                    .to_string(),
-            ) {
+        if let Some(callbacks) = self.callbacks.read().as_ref() {
+            if !callbacks.authorize(id.clone(), self.mls_client.read().id().to_string()) {
                 return Err(CryptoError::Unauthorized);
             }
         }
 
-        if let Some(group) = self
-            .mls_groups
-            .write()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .get_mut(id)
-        {
+        if let Some(group) = self.mls_groups.write().get_mut(id) {
             Ok(Some(group.add_members(members, &self.mls_backend)?))
         } else {
             Ok(None)
@@ -308,30 +270,13 @@ impl MlsCentral {
         id: &ConversationId,
         clients: &[ClientId],
     ) -> CryptoResult<Option<MlsMessageOut>> {
-        if let Some(callbacks) = self
-            .callbacks
-            .read()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .as_ref()
-        {
-            if !callbacks.authorize(
-                id.clone(),
-                self.mls_client
-                    .read()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .id()
-                    .to_string(),
-            ) {
+        if let Some(callbacks) = self.callbacks.read().as_ref() {
+            if !callbacks.authorize(id.clone(), self.mls_client.read().id().to_string()) {
                 return Err(CryptoError::Unauthorized);
             }
         }
 
-        if let Some(group) = self
-            .mls_groups
-            .write()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .get_mut(id)
-        {
+        if let Some(group) = self.mls_groups.write().get_mut(id) {
             Ok(Some(group.remove_members(clients, &self.mls_backend)?))
         } else {
             Ok(None)
@@ -345,7 +290,7 @@ impl MlsCentral {
         // The user's other clients. This can be an empty array
         other_clients: &[ClientId],
     ) -> CryptoResult<MlsConversationLeaveMessage> {
-        let mut groups = self.mls_groups.write().map_err(|_| CryptoError::LockPoisonError)?;
+        let mut groups = self.mls_groups.write();
         if let Some(group) = groups.remove(&conversation) {
             Ok(group.leave(other_clients, &self.mls_backend)?)
         } else {
@@ -355,7 +300,7 @@ impl MlsCentral {
 
     /// Encrypts a raw payload then serializes it to the TLS wire format
     pub fn encrypt_message(&self, conversation: ConversationId, message: impl AsRef<[u8]>) -> CryptoResult<Vec<u8>> {
-        let groups = self.mls_groups.read().map_err(|_| CryptoError::LockPoisonError)?;
+        let groups = self.mls_groups.read();
         let conversation = groups
             .get(&conversation)
             .ok_or(CryptoError::ConversationNotFound(conversation))?;
@@ -371,7 +316,7 @@ impl MlsCentral {
         conversation_id: ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<Option<Vec<u8>>> {
-        let groups = self.mls_groups.read().map_err(|_| CryptoError::LockPoisonError)?;
+        let groups = self.mls_groups.read();
         let conversation = groups
             .get(&conversation_id)
             .ok_or(CryptoError::ConversationNotFound(conversation_id))?;
@@ -381,7 +326,7 @@ impl MlsCentral {
 
     /// Exports a TLS-serialized view of the current group state corresponding to the provided conversation ID.
     pub fn export_public_group_state(&self, conversation_id: &ConversationId) -> CryptoResult<Vec<u8>> {
-        let groups = self.mls_groups.read().map_err(|_| CryptoError::LockPoisonError)?;
+        let groups = self.mls_groups.read();
         let conversation = groups
             .get(conversation_id)
             .ok_or_else(|| CryptoError::ConversationNotFound(conversation_id.clone()))?;
@@ -389,7 +334,6 @@ impl MlsCentral {
         let state = conversation
             .group
             .read()
-            .map_err(|_| CryptoError::LockPoisonError)?
             .export_public_group_state(&self.mls_backend)
             .map_err(MlsError::from)?;
 

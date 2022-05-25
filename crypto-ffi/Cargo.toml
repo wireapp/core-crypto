@@ -15,10 +15,13 @@ c-api = ["libc"]
 
 [dependencies]
 core-crypto = { version = "0.2", path = "../crypto" }
+parking_lot = "0.12"
 thiserror = "1.0"
+
 # UniFFI - Android + iOS bindings - Runtime support
 uniffi = { version = "0.17", optional = true }
 uniffi_macros = { version = "0.17", optional = true }
+
 # C-API support
 libc = { version = "0.2", optional = true }
 

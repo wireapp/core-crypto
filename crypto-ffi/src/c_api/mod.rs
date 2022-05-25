@@ -28,6 +28,13 @@ use libc::{c_char, c_int, c_uchar, c_void, size_t};
 
 use crate::*;
 
+macro_rules! normalize_ptr {
+    ($ptr:ident) => {
+        #[cfg(target_family = "wasm")]
+        let $ptr = ($ptr as usize + isize::MAX as usize) as *mut u8;
+    };
+}
+
 macro_rules! check_nullptr {
     ($ptr:ident) => {
         check_nullptr!($ptr, CallStatus::err())
@@ -191,15 +198,15 @@ pub unsafe extern "C" fn cc_deinit(ptr: *mut CoreCrypto) {
 //////////////////////////////////////////// CLIENT APIS ////////////////////////////////////////////
 
 #[no_mangle]
-pub unsafe extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, buf: *mut isize) -> CallStatus<1> {
+pub unsafe extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, buf: *mut u8) -> CallStatus<1> {
     check_nullptr!(ptr);
-    let bufptr = (buf as usize + isize::MAX as usize) as *mut u8;
-    check_nullptr!(bufptr);
+    // normalize_ptr!(buf);
+    // check_nullptr!(buf);
 
     let cc = &*ptr;
     let pk = try_ffi!(cc.client_public_key());
     let pk_len = pk.len();
-    let buf = std::slice::from_raw_parts_mut(bufptr as *mut u8, pk_len);
+    let buf = std::slice::from_raw_parts_mut(buf, pk_len);
     std::ptr::copy_nonoverlapping(pk.as_ptr(), buf.as_mut_ptr(), pk_len);
     CallStatus::ok([pk_len])
 }
