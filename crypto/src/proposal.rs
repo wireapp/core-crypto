@@ -64,11 +64,11 @@ impl MlsProposal {
 impl MlsCentral {
     /// Generic proposal factory
     pub fn new_proposal(&self, conversation: ConversationId, proposal: MlsProposal) -> CryptoResult<MlsMessageOut> {
-        let groups = self.mls_groups.read();
+        let groups = self.mls_groups.lock().map_err(|_| CryptoError::LockPoisonError)?;
         let conversation = groups
             .get(&conversation)
             .ok_or(CryptoError::ConversationNotFound(conversation))?;
-        let mut group = conversation.group.write();
+        let mut group = conversation.group.lock().map_err(|_| CryptoError::LockPoisonError)?;
         let proposal = proposal.create(&self.mls_backend, &mut group);
         proposal
     }
@@ -102,7 +102,7 @@ mod proposal_tests {
         fn should_fail_when_unknown_conversation() {
             let tmp_dir = tempfile::tempdir().unwrap();
             let central = MlsCentral::try_new(central_configuration(&tmp_dir)).unwrap();
-            central.mls_groups.write().clear();
+            central.mls_groups.lock().unwrap().clear();
             let kp = key_package(&central, MlsCiphersuite::default().0);
             let conversation_id = b"unknown".to_vec();
             let proposal = MlsProposal::Add(kp.key_package().to_owned());
@@ -133,7 +133,7 @@ mod proposal_tests {
         fn should_fail_when_unknown_conversation() {
             let tmp_dir = tempfile::tempdir().unwrap();
             let central = MlsCentral::try_new(central_configuration(&tmp_dir)).unwrap();
-            central.mls_groups.write().clear();
+            central.mls_groups.lock().unwrap().clear();
             let conversation_id = b"conversation".to_vec();
             let update_proposal = central.new_proposal(conversation_id.clone(), MlsProposal::Update);
             match update_proposal {
@@ -154,9 +154,9 @@ mod proposal_tests {
             central
                 .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
                 .unwrap();
-            let groups = central.mls_groups.read();
+            let groups = central.mls_groups.lock();
             let conversation = groups.get(&conversation_id[..]).unwrap();
-            let group = conversation.group.read();
+            let group = conversation.group.lock();
             let client_id = ClientId::from(group.members().get(0).unwrap().credential().identity());
             // release the lock for conversation group to be mutated in code being tested
             drop(group);
@@ -184,7 +184,7 @@ mod proposal_tests {
         fn should_fail_when_unknown_conversation() {
             let tmp_dir = tempfile::tempdir().unwrap();
             let central = MlsCentral::try_new(central_configuration(&tmp_dir)).unwrap();
-            central.mls_groups.write().clear();
+            central.mls_groups.lock().unwrap().clear();
             let conversation_id = b"conversation".to_vec();
             let client_id = ClientId::from(vec![]);
             let remove_proposal = central.new_proposal(conversation_id.clone(), MlsProposal::Remove(client_id));

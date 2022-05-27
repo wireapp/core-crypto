@@ -61,18 +61,13 @@ impl proteus::session::PreKeyStore for crate::CryptoKeystore {
         let memory_cache_key = Self::proteus_memory_key(id);
 
         #[cfg(feature = "memory-cache")]
-        if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
-            if let Some(buf) = self
-                .memory_cache
-                .write()
-                .map_err(|_| CryptoKeystoreError::LockPoisonError)?
-                .get(&memory_cache_key)
-            {
+        if self.is_cache_enabled() {
+            if let Ok(buf) = self.memory_cache.try_write().map(|cache| cache.get(&memory_cache_key)) {
                 return Ok(Some(proteus::keys::PreKey::deserialise(buf)?));
             }
         }
 
-        let mut db = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
+        let mut db = self.conn.lock();
 
         let transaction = db.transaction()?;
 
@@ -97,7 +92,7 @@ impl proteus::session::PreKeyStore for crate::CryptoKeystore {
             let prekey = proteus::keys::PreKey::deserialise(&buf)?;
 
             #[cfg(feature = "memory-cache")]
-            if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
+            if self.is_cache_enabled() {
                 self.memory_cache
                     .write()
                     .map_err(|_| CryptoKeystoreError::LockPoisonError)?
@@ -112,7 +107,7 @@ impl proteus::session::PreKeyStore for crate::CryptoKeystore {
 
     fn remove(&mut self, id: proteus::keys::PreKeyId) -> Result<(), Self::Error> {
         #[cfg(feature = "memory-cache")]
-        if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
+        if self.is_cache_enabled() {
             let _ = self
                 .memory_cache
                 .write()

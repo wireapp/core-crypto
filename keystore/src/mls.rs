@@ -290,7 +290,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         }
 
         #[cfg(feature = "memory-cache")]
-        if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
+        if self.is_cache_enabled() {
             if let Ok(mut cache) = self.memory_cache.try_write() {
                 if let Some(value) = cache
                     .get(&Self::mls_cache_key(k))
@@ -301,7 +301,12 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
             }
         }
 
-        let mut db = self.conn.lock().ok()?;
+        let mut db = self
+            .conn
+            .lock()
+            .map_err(|_| CryptoKeystoreError::LockPoisonError)
+            .ok()?;
+
         let transaction = db.transaction().ok()?;
         use rusqlite::OptionalExtension as _;
         let row_id = transaction
@@ -325,7 +330,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         let hydrated_ksv = V::from_key_store_value(&buf).ok()?;
 
         #[cfg(feature = "memory-cache")]
-        if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
+        if self.is_cache_enabled() {
             if let Ok(mut cache) = self.memory_cache.try_write() {
                 cache.put(Self::mls_cache_key(k), buf);
             }
@@ -340,7 +345,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for CryptoKeystore {
         }
 
         #[cfg(feature = "memory-cache")]
-        if self.cache_enabled.load(std::sync::atomic::Ordering::SeqCst) {
+        if self.is_cache_enabled() {
             let _ = self
                 .memory_cache
                 .write()

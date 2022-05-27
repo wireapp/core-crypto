@@ -25,6 +25,9 @@ uniffi_macros = { version = "0.17", optional = true }
 # C-API support
 libc = { version = "0.2", optional = true }
 
+[target.'cfg(target = "wasm32-unknown-emscripten")'.dependencies]
+dlmalloc = "0.2"
+
 [build-dependencies]
 # UniFFI - Android + iOS bindings - Build support
 uniffi_build = { version = "0.17", features = ["builtin-bindgen"], optional = true }

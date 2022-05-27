@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+#[cfg(target = "wasm32-unknown-emscripten")]
+static GLOBAL: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
+
 #[cfg(feature = "mobile")]
 mod uniffi;
 
@@ -152,6 +155,10 @@ impl CoreCrypto {
 
         let central = MlsCentral::try_new(configuration)?;
         Ok(CoreCrypto(central))
+    }
+
+    pub fn wipe(self) {
+        self.0.wipe()
     }
 
     #[cfg(feature = "mobile")]

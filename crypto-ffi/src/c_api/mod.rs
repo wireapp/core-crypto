@@ -24,16 +24,22 @@ use std::{
     ffi::{CStr, CString},
 };
 
-use libc::{c_char, c_int, c_uchar, c_void, size_t};
+use libc::{c_char, c_int, c_uchar, size_t};
 
 use crate::*;
 
-macro_rules! normalize_ptr {
-    ($ptr:ident) => {
-        #[cfg(target_family = "wasm")]
-        let $ptr = ($ptr as usize + isize::MAX as usize) as *mut u8;
-    };
-}
+#[cfg(test)]
+mod c_api_tests;
+
+// macro_rules! normalize_ptr {
+//     ($ptr:ident) => {
+//         if cfg!(target_family = "wasm") {
+//             ($ptr as usize + isize::MAX as usize) as *mut u8
+//         } else {
+//             $ptr
+//         }
+//     };
+// }
 
 macro_rules! check_nullptr {
     ($ptr:ident) => {
@@ -71,6 +77,7 @@ macro_rules! try_ffi {
 }
 
 type CoreCryptoPtr = *const CoreCrypto;
+type CoreCryptoPtrMut = *mut CoreCrypto;
 
 thread_local! {
     static CC_LAST_ERROR: RefCell<Option<FfiCryptoError>> = RefCell::new(None);
@@ -129,6 +136,8 @@ impl<const T: usize> Default for CallStatus<T> {
     }
 }
 
+///////////////////////////////////// ERROR MANAGEMENT APIS ///////////////////////////////////////
+
 #[no_mangle]
 pub extern "C" fn cc_last_error_len() -> size_t {
     CC_LAST_ERROR.with(|prev| {
@@ -172,27 +181,38 @@ pub extern "C" fn cc_last_error(buffer: *mut c_char) -> i32 {
     err_len as i32
 }
 
+//////////////////////////////////////////// CORE APIS ////////////////////////////////////////////
+
 #[no_mangle]
 pub unsafe extern "C" fn cc_init_with_path_and_key(
     path: *const c_char,
     key: *const c_char,
     client_id: *const c_char,
-) -> CoreCryptoPtr {
+) -> CoreCryptoPtrMut {
     let path = CStr::from_ptr(path).to_string_lossy();
     let key = CStr::from_ptr(key).to_string_lossy();
     let client_id = CStr::from_ptr(client_id).to_string_lossy();
 
-    let cc = try_ffi!(CoreCrypto::new(&path, &key, &client_id), std::ptr::null());
-
-    let cc = std::mem::ManuallyDrop::new(cc);
-    &*cc
+    let cc = try_ffi!(CoreCrypto::new(&path, &key, &client_id), std::ptr::null_mut());
+    Box::into_raw(Box::new(cc))
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn cc_deinit(ptr: *mut CoreCrypto) {
+pub unsafe extern "C" fn cc_deinit(ptr: CoreCryptoPtrMut) {
     check_nullptr!(ptr, ());
-    std::ptr::drop_in_place(ptr);
-    std::alloc::dealloc(ptr as *mut u8, std::alloc::Layout::new::<CoreCrypto>());
+    Box::from_raw(ptr);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn cc_wipe(ptr: CoreCryptoPtrMut) {
+    check_nullptr!(ptr, ());
+    let cc: Box<CoreCrypto> = Box::from_raw(ptr);
+    cc.wipe()
+}
+
+#[no_mangle]
+pub extern "C" fn cc_version() -> *const c_uchar {
+    VERSION.as_ptr()
 }
 
 //////////////////////////////////////////// CLIENT APIS ////////////////////////////////////////////
@@ -200,8 +220,8 @@ pub unsafe extern "C" fn cc_deinit(ptr: *mut CoreCrypto) {
 #[no_mangle]
 pub unsafe extern "C" fn cc_client_public_key(ptr: CoreCryptoPtr, buf: *mut u8) -> CallStatus<1> {
     check_nullptr!(ptr);
-    // normalize_ptr!(buf);
-    // check_nullptr!(buf);
+    // let buf = normalize_ptr!(buf);
+    check_nullptr!(buf);
 
     let cc = &*ptr;
     let pk = try_ffi!(cc.client_public_key());
@@ -572,19 +592,4 @@ pub unsafe extern "C" fn cc_new_remove_proposal(
     let buf_len = buf.len();
     std::ptr::copy_nonoverlapping(buf.as_ptr(), dest, buf_len);
     CallStatus::ok([buf_len])
-}
-
-//////////////////////////////////////////// MISC APIS ////////////////////////////////////////////
-
-#[no_mangle]
-pub unsafe extern "C" fn cc_free(ptr: *mut c_void) {
-    if ptr.is_null() {
-        return;
-    }
-    std::ptr::drop_in_place(ptr);
-}
-
-#[no_mangle]
-pub extern "C" fn cc_version() -> *const c_uchar {
-    VERSION.as_ptr()
 }

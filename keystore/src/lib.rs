@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use std::sync::{atomic::AtomicBool, Mutex, RwLock};
+
 mod error;
 pub use error::*;
 
@@ -31,11 +33,11 @@ const LRU_CACHE_CAP: usize = 100;
 #[derive(Debug)]
 pub struct CryptoKeystore {
     path: String,
-    conn: std::sync::Mutex<rusqlite::Connection>,
+    conn: Mutex<rusqlite::Connection>,
     #[cfg(feature = "memory-cache")]
-    memory_cache: std::sync::RwLock<lru::LruCache<Vec<u8>, Vec<u8>>>,
+    memory_cache: RwLock<lru::LruCache<Vec<u8>, Vec<u8>>>,
     #[cfg(feature = "memory-cache")]
-    cache_enabled: std::sync::atomic::AtomicBool,
+    cache_enabled: AtomicBool,
 }
 
 impl CryptoKeystore {
@@ -59,12 +61,12 @@ impl CryptoKeystore {
         // Enable WAL journaling mode
         conn.pragma_update(None, "journal_mode", "wal")?;
 
-        let conn = std::sync::Mutex::new(conn);
+        let conn = conn.into();
         Ok(Self {
             path,
             conn,
             #[cfg(feature = "memory-cache")]
-            memory_cache: std::sync::RwLock::new(lru::LruCache::new(LRU_CACHE_CAP)),
+            memory_cache: lru::LruCache::new(LRU_CACHE_CAP).into(),
             #[cfg(feature = "memory-cache")]
             cache_enabled: true.into(),
         })
@@ -104,12 +106,12 @@ impl CryptoKeystore {
         let conn = rusqlite::Connection::open_in_memory()?;
         conn.pragma_update(None, "key", key)?;
 
-        let conn = std::sync::Mutex::new(conn);
+        let conn = conn.into();
         let mut store = Self {
             path: String::new(),
             conn,
             #[cfg(feature = "memory-cache")]
-            memory_cache: std::sync::RwLock::new(lru::LruCache::new(LRU_CACHE_CAP)),
+            memory_cache: lru::LruCache::new(LRU_CACHE_CAP).into(),
             #[cfg(feature = "memory-cache")]
             cache_enabled: false.into(),
         };
@@ -120,8 +122,15 @@ impl CryptoKeystore {
     }
 
     #[cfg(feature = "memory-cache")]
+    #[inline]
     pub fn cache(&self, enabled: bool) {
         self.cache_enabled.store(enabled, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[cfg(feature = "memory-cache")]
+    #[inline]
+    pub fn is_cache_enabled(&self) -> bool {
+        self.cache_enabled.load(std::sync::atomic::Ordering::Relaxed)
     }
 
     pub fn run_migrations(&mut self) -> error::CryptoKeystoreResult<()> {

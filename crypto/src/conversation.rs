@@ -61,7 +61,7 @@ impl MlsConversationConfiguration {
 #[allow(dead_code)]
 pub struct MlsConversation {
     pub(crate) id: ConversationId,
-    pub(crate) group: parking_lot::RwLock<MlsGroup>,
+    pub(crate) group: std::sync::Mutex<MlsGroup>,
     pub(crate) admins: Vec<MemberId>,
     configuration: MlsConversationConfiguration,
 }
@@ -193,17 +193,19 @@ impl MlsConversation {
     }
 
     pub fn members(&self) -> CryptoResult<std::collections::HashMap<MemberId, Vec<openmls::credentials::Credential>>> {
-        self.group.read().members().iter().try_fold(
-            std::collections::HashMap::new(),
-            |mut acc, kp| -> CryptoResult<_> {
+        self.group
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .members()
+            .iter()
+            .try_fold(std::collections::HashMap::new(), |mut acc, kp| -> CryptoResult<_> {
                 let credential = kp.credential();
                 let client_id: ClientId = credential.identity().into();
                 let member_id: MemberId = client_id.to_vec();
                 acc.entry(member_id).or_insert_with(Vec::new).push(credential.clone());
 
                 Ok(acc)
-            },
-        )
+            })
     }
 
     pub fn can_user_act(&self, uuid: MemberId) -> bool {
@@ -223,7 +225,7 @@ impl MlsConversation {
             .filter_map(|(_, kps)| kps)
             .collect::<Vec<KeyPackage>>();
 
-        let mut group = self.group.write();
+        let mut group = self.group.lock().map_err(|_| CryptoError::LockPoisonError)?;
 
         let (message, welcome) = group.add_members(backend, &keypackages).map_err(MlsError::from)?;
         group.merge_pending_commit().map_err(MlsError::from)?;
@@ -244,9 +246,9 @@ impl MlsConversation {
     ) -> CryptoResult<MlsMessageOut> {
         let crypto = backend.crypto();
 
-        let member_kps = self
-            .group
-            .read()
+        let mut group = self.group.lock().map_err(|_| CryptoError::LockPoisonError)?;
+
+        let member_kps = group
             .members()
             .into_iter()
             .filter(|kp| {
@@ -257,8 +259,6 @@ impl MlsConversation {
                 acc.push(kp.hash_ref(crypto).map_err(MlsError::from)?);
                 Ok(acc)
             })?;
-
-        let mut group = self.group.write();
 
         let (message, _) = group.remove_members(backend, &member_kps).map_err(MlsError::from)?;
         group.merge_pending_commit().map_err(MlsError::from)?;
@@ -277,7 +277,7 @@ impl MlsConversation {
     ) -> CryptoResult<Option<Vec<u8>>> {
         let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
 
-        let mut group = self.group.write();
+        let mut group = self.group.lock().map_err(|_| CryptoError::LockPoisonError)?;
         let parsed_message = group.parse_message(msg_in, backend).map_err(MlsError::from)?;
 
         let message = group
@@ -304,7 +304,7 @@ impl MlsConversation {
     }
 
     pub fn commit_pending_proposals(&self, backend: &MlsCryptoProvider) -> CryptoResult<MlsMessageOut> {
-        let mut group = self.group.write();
+        let mut group = self.group.lock().map_err(|_| CryptoError::LockPoisonError)?;
         let (message, _) = group.commit_to_pending_proposals(backend).map_err(MlsError::from)?;
         group.merge_pending_commit().map_err(MlsError::from)?;
         drop(group);
@@ -315,7 +315,8 @@ impl MlsConversation {
 
     pub fn encrypt_message(&self, message: impl AsRef<[u8]>, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
         self.group
-            .write()
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
             .create_message(backend, message.as_ref())
             .map_err(MlsError::from)
             .and_then(|m| m.to_bytes().map_err(MlsError::from))
@@ -325,16 +326,26 @@ impl MlsConversation {
     pub fn update_keying_material(&self, backend: &MlsCryptoProvider) -> CryptoResult<MlsConversationReinitMessage> {
         Ok(self
             .group
-            .write()
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
             .self_update(backend, None)
             .map_err(MlsError::from)
             .map(|(message, welcome)| MlsConversationReinitMessage { welcome, message })?)
     }
 
     fn persist_group_when_changed(&self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
-        if self.group.read().state_changed() == openmls::group::InnerState::Changed {
+        if self
+            .group
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .state_changed()
+            == openmls::group::InnerState::Changed
+        {
             let mut buf = vec![];
-            self.group.write().save(&mut buf)?;
+            self.group
+                .lock()
+                .map_err(|_| CryptoError::LockPoisonError)?
+                .save(&mut buf)?;
             Ok(backend.key_store().mls_group_persist(&self.id, &buf)?)
         } else {
             Ok(())
@@ -352,7 +363,8 @@ impl MlsConversation {
             let other_clients_slice: Vec<&[u8]> = other_clients.iter().map(|c| c.as_slice()).collect();
             let other_keypackages: Vec<_> = self
                 .group
-                .read()
+                .lock()
+                .map_err(|_| CryptoError::LockPoisonError)?
                 .members()
                 .into_iter()
                 .filter(|m| other_clients_slice.contains(&m.credential().identity()))
@@ -360,7 +372,7 @@ impl MlsConversation {
                 .collect();
 
             if !other_keypackages.is_empty() {
-                let mut group = self.group.write();
+                let mut group = self.group.lock().map_err(|_| CryptoError::LockPoisonError)?;
                 let (other_clients_removal_commit, _) = group
                     .remove_members(backend, other_keypackages.as_slice())
                     .map_err(MlsError::from)?;
@@ -375,7 +387,12 @@ impl MlsConversation {
             None
         };
 
-        let self_removal_proposal = self.group.write().leave_group(backend).map_err(MlsError::from)?;
+        let self_removal_proposal = self
+            .group
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .leave_group(backend)
+            .map_err(MlsError::from)?;
 
         Ok(MlsConversationLeaveMessage {
             other_clients_removal_commit,
@@ -413,7 +430,7 @@ mod tests {
 
             assert!(conversation_creation_message.is_none());
             assert_eq!(alice_group.id, conversation_id);
-            assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
+            assert_eq!(alice_group.group.lock().unwrap().group_id().as_slice(), conversation_id);
             assert_eq!(alice_group.members().unwrap().len(), 1);
             let alice_can_send_message = alice_group.encrypt_message(b"me", &alice_backend);
             assert!(alice_can_send_message.is_ok());
@@ -439,7 +456,7 @@ mod tests {
 
             assert!(conversation_creation_message.is_some());
             assert_eq!(alice_group.id, conversation_id);
-            assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
+            assert_eq!(alice_group.group.lock().unwrap().group_id().as_slice(), conversation_id);
             assert_eq!(alice_group.members().unwrap().len(), 2);
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
@@ -485,7 +502,7 @@ mod tests {
 
             assert!(conversation_creation_message.is_some());
             assert_eq!(alice_group.id, conversation_id);
-            assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
+            assert_eq!(alice_group.group.lock().unwrap().group_id().as_slice(), conversation_id);
             assert_eq!(alice_group.members().unwrap().len(), 1 + number_of_friends);
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
@@ -522,7 +539,7 @@ mod tests {
             let conversation_creation_message = alice_group.add_members(&mut [bob], &alice_backend).unwrap();
 
             assert_eq!(alice_group.id, conversation_id);
-            assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
+            assert_eq!(alice_group.group.lock().unwrap().group_id().as_slice(), conversation_id);
             assert_eq!(alice_group.members().unwrap().len(), 2);
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message;
@@ -612,7 +629,7 @@ mod tests {
 
             assert!(conversation_creation_message.is_some());
             assert_eq!(alice_group.id, conversation_id);
-            assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
+            assert_eq!(alice_group.group.lock().unwrap().group_id().as_slice(), conversation_id);
             assert_eq!(alice_group.members().unwrap().len(), 2);
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
@@ -683,7 +700,7 @@ mod tests {
         let conversation_creation_message = alice_group.add_members(&mut [bob], &alice_backend).unwrap();
 
         assert_eq!(alice_group.id, conversation_id);
-        assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
+        assert_eq!(alice_group.group.lock().unwrap().group_id().as_slice(), conversation_id);
         assert_eq!(alice_group.members().unwrap().len(), 2);
 
         let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message;
@@ -729,7 +746,7 @@ mod tests {
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
-        assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
+        assert_eq!(alice_group.group.lock().unwrap().group_id().as_slice(), conversation_id);
         assert_eq!(alice_group.members().unwrap().len(), 1 + number_of_friends);
 
         let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
@@ -765,7 +782,7 @@ mod tests {
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
-        assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
+        assert_eq!(alice_group.group.lock().unwrap().group_id().as_slice(), conversation_id);
         assert_eq!(alice_group.members().unwrap().len(), 2);
 
         let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
@@ -820,7 +837,7 @@ mod tests {
 
         assert!(conversation_creation_message.is_some());
         assert_eq!(alice_group.id, conversation_id);
-        assert_eq!(alice_group.group.read().group_id().as_slice(), conversation_id);
+        assert_eq!(alice_group.group.lock().unwrap().group_id().as_slice(), conversation_id);
         assert_eq!(alice_group.members().unwrap().len(), 4);
 
         let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message.unwrap();
@@ -889,7 +906,7 @@ mod tests {
 
         // alice_group is now unuseable
         assert!(alice_group.encrypt_message(b"test", &alice_backend).is_err());
-        assert!(!alice_group.group.read().is_active());
+        assert!(!alice_group.group.lock().unwrap().is_active());
 
         bob_group
             .decrypt_message(message.self_removal_proposal.to_bytes().unwrap(), &bob_backend)
@@ -909,7 +926,7 @@ mod tests {
             .unwrap();
 
         // Check that alice2 understood that she's not welcome anymore (sorry alice2)
-        assert!(!alice2_group.group.read().is_active());
+        assert!(!alice2_group.group.lock().unwrap().is_active());
 
         assert_eq!(charlie_group.members().unwrap().len(), 2);
         assert_eq!(bob_group.members().unwrap().len(), 2);
