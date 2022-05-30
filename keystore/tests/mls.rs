@@ -16,12 +16,10 @@
 
 mod common;
 
-#[cfg(test)]
 pub mod tests {
     use crate::common::*;
     use core_crypto_keystore::entities::MlsKeypackage;
     use openmls_traits::key_store::{FromKeyStoreValue, ToKeyStoreValue};
-
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -30,27 +28,22 @@ pub mod tests {
     #[wasm_bindgen_test]
     pub fn can_add_read_delete_keypackage_bundle_openmls_traits() {
         use openmls::{
-            credentials::{CredentialBundle, CredentialType},
+            credentials::CredentialBundle,
             extensions::{Extension, ExternalKeyIdExtension},
             key_packages::KeyPackageBundle,
             prelude::Ciphersuite,
         };
         use openmls_rust_crypto_provider::OpenMlsRustCrypto;
+
         let store = setup("mls-traits");
 
         let backend = OpenMlsRustCrypto::default();
         let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
-
         let key_id: [u8; 16] = rand::random();
         let key_id = uuid::Uuid::from_bytes(key_id);
 
-        let credentials = CredentialBundle::new(
-            vec![1, 2, 3],
-            CredentialType::Basic,
-            ciphersuite.signature_algorithm(),
-            &backend,
-        )
-        .unwrap();
+        let credentials =
+            CredentialBundle::new_basic(vec![1, 2, 3], ciphersuite.signature_algorithm(), &backend).unwrap();
 
         let keypackage_bundle = KeyPackageBundle::new(
             &[ciphersuite],
@@ -59,7 +52,6 @@ pub mod tests {
             vec![Extension::ExternalKeyId(ExternalKeyIdExtension::new(key_id.as_bytes()))],
         )
         .unwrap();
-
         let key_string = key_id.as_hyphenated().to_string();
 
         keypackage_bundle.key_package().verify(&backend).unwrap();
@@ -82,7 +74,7 @@ pub mod tests {
     #[wasm_bindgen_test]
     pub fn can_add_read_delete_keypackage_bundle_keystore() {
         use openmls::{
-            credentials::{CredentialBundle, CredentialType},
+            credentials::CredentialBundle,
             extensions::{Extension, ExternalKeyIdExtension},
             key_packages::KeyPackageBundle,
             prelude::Ciphersuite,
@@ -96,13 +88,8 @@ pub mod tests {
         let key_id: [u8; 16] = rand::random();
         let key_id = uuid::Uuid::from_bytes(key_id);
 
-        let credentials = CredentialBundle::new(
-            vec![1, 2, 3],
-            CredentialType::Basic,
-            ciphersuite.signature_algorithm(),
-            &backend,
-        )
-        .unwrap();
+        let credentials =
+            CredentialBundle::new_basic(vec![1, 2, 3], ciphersuite.signature_algorithm(), &backend).unwrap();
 
         let keypackage_bundle = KeyPackageBundle::new(
             &[ciphersuite],

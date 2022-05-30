@@ -132,7 +132,8 @@ impl CoreCrypto {
     pub fn new(path: &str, key: &str, client_id: &str) -> CryptoResult<Self> {
         let configuration = MlsCentralConfiguration::try_new(path.into(), key.into(), client_id.into())?;
 
-        let central = MlsCentral::try_new(configuration)?;
+        // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
+        let central = MlsCentral::try_new(configuration, None)?;
         Ok(CoreCrypto(std::sync::Arc::new(central.into())))
     }
 

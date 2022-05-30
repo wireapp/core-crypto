@@ -14,10 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{CryptoError, CryptoResult, MlsCiphersuite, MlsError};
+use crate::{CertificateBundle, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
 use core_crypto_keystore::{entities::MlsIdentity, CryptoKeystoreError, CryptoKeystoreResult};
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::credentials::CredentialType;
 use openmls::prelude::KeyPackageRef;
 use openmls::{
     credentials::CredentialBundle,
@@ -99,31 +98,39 @@ fn identity_key(credentials: &CredentialBundle) -> Result<Vec<u8>, MlsError> {
 }
 
 impl Client {
-    pub fn init(id: ClientId, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
+    pub fn init(
+        id: ClientId,
+        certificate_bundle: Option<CertificateBundle>,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<Self> {
         use core_crypto_keystore::CryptoKeystoreMls as _;
         let id_str: String = id.to_string();
         let client = if let Some(signature) = backend.key_store().mls_load_identity_signature(&id_str)? {
             match Self::load(id.clone(), &signature, backend) {
                 Ok(client) => client,
-                Err(CryptoError::ClientSignatureNotFound) => Self::generate(id, backend, true)?,
+                Err(CryptoError::ClientSignatureNotFound) => Self::generate(id, certificate_bundle, backend, true)?,
                 Err(e) => return Err(e),
             }
         } else {
-            Self::generate(id, backend, true)?
+            Self::generate(id, certificate_bundle, backend, true)?
         };
 
         Ok(client)
     }
 
-    pub(crate) fn generate(id: ClientId, backend: &MlsCryptoProvider, provision: bool) -> CryptoResult<Self> {
+    pub(crate) fn generate(
+        id: ClientId,
+        certificate_bundle: Option<CertificateBundle>,
+        backend: &MlsCryptoProvider,
+        provision: bool,
+    ) -> CryptoResult<Self> {
         let ciphersuite = MlsCiphersuite::default();
-        let credentials = CredentialBundle::new(
-            id.to_vec(),
-            CredentialType::Basic,
-            ciphersuite.signature_algorithm(),
-            backend,
-        )
-        .map_err(MlsError::from)?;
+
+        let credentials = if let Some(cert) = certificate_bundle {
+            Self::generate_x509_credential_bundle(&id, cert.certificate_chain, cert.private_key)?
+        } else {
+            Self::generate_basic_credential_bundle(&id, backend)?
+        };
 
         let identity = MlsIdentity {
             id: id.to_string(),
@@ -276,16 +283,17 @@ impl Eq for Client {}
 
 #[cfg(test)]
 impl Client {
-    pub fn random_generate(backend: &MlsCryptoProvider, provision: bool) -> CryptoResult<Self> {
+    pub fn random_generate(
+        backend: &MlsCryptoProvider,
+        provision: bool,
+        certificate_bundle: Option<CertificateBundle>,
+    ) -> CryptoResult<Self> {
         let user_uuid = uuid::Uuid::new_v4();
-        let client_id = rand::random::<usize>();
-        Self::generate(
-            format!("{}:{client_id:x}@members.wire.com", user_uuid.hyphenated())
-                .as_bytes()
-                .into(),
-            backend,
-            provision,
-        )
+        let rnd_id = rand::random::<usize>();
+        let client_id = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated())
+            .as_bytes()
+            .into();
+        Self::generate(client_id, certificate_bundle, backend, provision)
     }
 
     pub fn keypackages(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<openmls::prelude::KeyPackage>> {
@@ -305,35 +313,36 @@ impl Client {
 
 #[cfg(test)]
 pub mod tests {
-    use mls_crypto_provider::MlsCryptoProvider;
-    use wasm_bindgen_test::wasm_bindgen_test;
-    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
-
     use super::Client;
+    use crate::{credential::CertificateBundle, credential::CredentialSupplier, test_fixture_utils::*};
+    use mls_crypto_provider::MlsCryptoProvider;
+    use wasm_bindgen_test::*;
 
-    #[test]
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    #[apply(all_credential_types)]
     #[wasm_bindgen_test]
-    pub fn can_generate_client() {
+    pub fn can_generate_client(credential: CredentialSupplier) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        assert!(Client::random_generate(&backend, false).is_ok());
+        assert!(Client::random_generate(&backend, false, credential()).is_ok());
     }
 
-    #[test]
+    #[apply(all_credential_types)]
     #[wasm_bindgen_test]
-    pub fn client_never_runs_out_of_keypackages() {
+    pub fn client_never_runs_out_of_keypackages(credential: CredentialSupplier) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        let client = Client::random_generate(&backend, true).unwrap();
+        let client = Client::random_generate(&backend, true, credential()).unwrap();
         for _ in 0..100 {
             assert!(client.keypackage_raw_hash(&backend).is_ok())
         }
     }
 
-    #[test]
+    #[apply(all_credential_types)]
     #[wasm_bindgen_test]
-    pub fn client_generates_correct_number_of_kpbs() {
+    pub fn client_generates_correct_number_of_kpbs(credential: CredentialSupplier) {
         // use openmls_traits::OpenMlsCryptoProvider as _;
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        let client = Client::random_generate(&backend, true).unwrap();
+        let client = Client::random_generate(&backend, true, credential()).unwrap();
 
         const COUNT: usize = 124;
 
@@ -355,3 +364,4 @@ pub mod tests {
         }
     }
 }
+

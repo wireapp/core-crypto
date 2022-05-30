@@ -14,11 +14,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-mod error;
+#![allow(clippy::single_component_path_imports)]
+#[cfg(test)]
+use rstest_reuse;
+
+#[cfg(test)]
+#[macro_use]
+pub mod test_fixture_utils;
+// both imports above have to be defined at the beginning of the crate for rstest to work
+
 pub use self::error::*;
 
 mod client;
 mod conversation;
+mod credential;
+mod error;
 mod external_proposal;
 mod member;
 mod proposal;
@@ -37,6 +47,7 @@ pub mod prelude {
     pub use tls_codec;
 }
 
+use crate::credential::CertificateBundle;
 use client::{Client, ClientId};
 use config::MlsCentralConfiguration;
 use conversation::{
@@ -138,11 +149,19 @@ impl MlsCentral {
     /// Tries to initialize the MLS Central object.
     /// Takes a store path (i.e. Disk location of the embedded database, should be consistent between messaging sessions)
     /// And a root identity key (i.e. enclaved encryption key for this device)
-    pub fn try_new(configuration: MlsCentralConfiguration) -> CryptoResult<Self> {
+    pub fn try_new(
+        configuration: MlsCentralConfiguration,
+        certificate_bundle: Option<CertificateBundle>,
+    ) -> CryptoResult<Self> {
         // Init backend (crypto + rand + keystore)
         let mls_backend = MlsCryptoProvider::try_new(&configuration.store_path, &configuration.identity_key)?;
+
         // Init client identity (load or create)
-        let mls_client = Client::init(configuration.client_id.as_bytes().into(), &mls_backend)?;
+        let mls_client = Client::init(
+            configuration.client_id.as_bytes().into(),
+            certificate_bundle,
+            &mls_backend,
+        )?;
         // Restore persisted groups if there are any
         let mls_groups = Self::restore_groups(&mls_backend)?;
 
@@ -154,9 +173,16 @@ impl MlsCentral {
         })
     }
 
-    pub fn try_new_in_memory(configuration: MlsCentralConfiguration) -> crate::error::CryptoResult<Self> {
+    pub fn try_new_in_memory(
+        configuration: MlsCentralConfiguration,
+        certificate_bundle: Option<CertificateBundle>,
+    ) -> crate::error::CryptoResult<Self> {
         let mls_backend = MlsCryptoProvider::try_new_in_memory(&configuration.store_path)?;
-        let mls_client = Client::init(configuration.client_id.as_bytes().into(), &mls_backend)?;
+        let mls_client = Client::init(
+            configuration.client_id.as_bytes().into(),
+            certificate_bundle,
+            &mls_backend,
+        )?;
         let mls_groups = Self::restore_groups(&mls_backend)?;
 
         Ok(Self {
@@ -362,7 +388,7 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod test_utils {
-    use crate::{config::MlsCentralConfiguration, MlsCentral};
+    use crate::{credential::CredentialSupplier, config::MlsCentralConfiguration, MlsCentral};
 
     #[cfg(target_family = "wasm")]
     pub fn run_test(test: impl FnOnce(String) -> ()) {
@@ -380,18 +406,22 @@ pub mod test_utils {
         tmp_dir.close().unwrap();
     }
 
-    pub fn run_test_with_central(test: impl FnOnce(MlsCentral) -> ()) {
+    pub fn run_test_with_central(credential: CredentialSupplier, test: impl FnOnce(MlsCentral) -> ()) {
         run_test(move |path| {
             let configuration = MlsCentralConfiguration::try_new(&path, "test", "alice").unwrap();
-            let central = MlsCentral::try_new(configuration).unwrap();
+            let central = MlsCentral::try_new(configuration, credential()).unwrap();
             test(central);
         })
     }
 
-    pub fn run_test_with_client_id(client_id: &str, test: impl FnOnce(MlsCentral) -> ()) {
+    pub fn run_test_with_client_id(
+        credential: CredentialSupplier,
+        client_id: &str,
+        test: impl FnOnce(MlsCentral) -> (),
+    ) {
         run_test(move |path| {
             let configuration = MlsCentralConfiguration::try_new(&path, "test", client_id).unwrap();
-            let central = MlsCentral::try_new(configuration).unwrap();
+            let central = MlsCentral::try_new(configuration, credential()).unwrap();
             test(central);
         })
     }
@@ -399,23 +429,28 @@ pub mod test_utils {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::test_utils::run_test;
-    use crate::{prelude::MlsConversationConfiguration, CryptoError, MlsCentral, MlsCentralConfiguration};
+    use crate::{
+        credential::{CertificateBundle, CredentialSupplier},
+        prelude::MlsConversationConfiguration,
+        test_fixture_utils::*,
+        test_utils::run_test,
+        CryptoError, MlsCentral, MlsCentralConfiguration,
+    };
     use wasm_bindgen_test::wasm_bindgen_test;
+
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
     pub mod invariants {
-        use crate::test_utils::run_test;
 
         use super::*;
 
-        #[test]
+        #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub fn can_create_from_valid_configuration() {
+        pub fn can_create_from_valid_configuration(credential: CredentialSupplier) {
             run_test(|tmp_dir_argument| {
                 let configuration = MlsCentralConfiguration::try_new(&tmp_dir_argument, "test", "alice").unwrap();
 
-                let central = MlsCentral::try_new(configuration);
+                let central = MlsCentral::try_new(configuration, credential());
                 assert!(central.is_ok())
             })
         }
@@ -459,20 +494,20 @@ pub mod tests {
         use super::*;
         use crate::test_utils::run_test;
 
-        #[test]
+        #[apply(all_credential_types)]
         // FIXME: Enable it back once WASM keystore persistence is working
         // #[wasm_bindgen_test]
-        pub fn can_persist_group_state() {
+        pub fn can_persist_group_state(credential: CredentialSupplier) {
             run_test(|tmp_dir_argument| {
                 let configuration = MlsCentralConfiguration::try_new(&tmp_dir_argument, "test", "potato").unwrap();
 
-                let mut central = MlsCentral::try_new(configuration.clone()).unwrap();
+                let mut central = MlsCentral::try_new(configuration.clone(), credential()).unwrap();
                 let conversation_configuration = MlsConversationConfiguration::default();
                 let conversation_id = b"conversation".to_vec();
                 let _ = central.new_conversation(conversation_id.clone(), conversation_configuration);
 
                 drop(central);
-                let mut central = MlsCentral::try_new(configuration).unwrap();
+                let mut central = MlsCentral::try_new(configuration, credential()).unwrap();
                 let _ = central.encrypt_message(conversation_id, b"Test").unwrap();
 
                 central.mls_backend.destroy_and_reset();
@@ -480,13 +515,13 @@ pub mod tests {
         }
     }
 
-    #[test]
+    #[apply(all_credential_types)]
     #[wasm_bindgen_test]
-    pub fn can_fetch_client_public_key() {
+    pub fn can_fetch_client_public_key(credential: CredentialSupplier) {
         run_test(|tmp_dir_argument| {
             let configuration = MlsCentralConfiguration::try_new(&tmp_dir_argument, "test", "potato").unwrap();
 
-            let central = MlsCentral::try_new(configuration.clone()).unwrap();
+            let central = MlsCentral::try_new(configuration.clone(), credential()).unwrap();
             assert!(central.client_public_key().is_ok());
         })
     }

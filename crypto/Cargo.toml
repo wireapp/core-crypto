@@ -13,7 +13,7 @@ crate-type = ["lib", "cdylib"]
 [dependencies]
 thiserror = "1.0"
 hex = "0.4"
-
+#eyre = "0.6"
 openmls = "0.4"
 openmls_traits = "0.1"
 # FIXME: This is being pulled only because of flaky error types from openmls
@@ -32,6 +32,9 @@ uuid = { version = "1.0", features = ["v4", "v5"] }
 rand = "0.8"
 tempfile = "3.3"
 wasm-bindgen-test = "0.3"
+rstest = "0.13"
+rstest_reuse = "0.3"
+rcgen = { version = "0.9", features = ["x509-parser"] }
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-Os", "--enable-mutable-globals", "--enable-threads", "--detect-features"]

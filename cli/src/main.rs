@@ -7,6 +7,7 @@ use io::Read;
 use io::Write;
 use std::fs;
 use std::io;
+use std::str::FromStr;
 
 #[derive(Parser, Debug)]
 #[clap(name = "crypto-cli")]
@@ -24,11 +25,11 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Command {
     /// Generate a new keypackage for existing or new client
-    KeyPackage { client_id: ClientId },
+    KeyPackage { client_id: String },
     /// Get existing or new client signature key
-    PublicKey { client_id: ClientId },
+    PublicKey { client_id: String },
     /// Create a new MLS group
-    Group { client_id: ClientId, group_id: String },
+    Group { client_id: String, group_id: String },
     /// Update an existing MLS group
     Member {
         /// Existing group id
@@ -71,9 +72,9 @@ fn main() {
     let cli = Cli::parse();
     let backend = MlsCryptoProvider::try_new(&cli.store, &cli.enc_key).unwrap();
     match cli.command {
-        Command::KeyPackage { client_id } => key_package(&backend, client_id),
-        Command::PublicKey { client_id } => public_key(&backend, client_id),
-        Command::Group { client_id, group_id } => group(&backend, client_id, group_id.as_bytes()),
+        Command::KeyPackage { client_id } => key_package(&backend, ClientId::from_str(&client_id).unwrap()),
+        Command::PublicKey { client_id } => public_key(&backend, ClientId::from_str(&client_id).unwrap()),
+        Command::Group { client_id, group_id } => group(&backend, ClientId::from_str(&client_id).unwrap(), group_id.as_bytes()),
         Command::Member {
             group,
             command: MemberCommand::Add {
@@ -94,19 +95,19 @@ fn main() {
 }
 
 fn key_package(backend: &MlsCryptoProvider, client_id: ClientId) {
-    let client = Client::init(client_id, &backend).unwrap();
+    let client = Client::init(client_id, None, &backend).unwrap();
     let kpb = client.gen_keypackage(&backend).unwrap();
     kpb.key_package().tls_serialize(&mut io::stdout()).unwrap();
 }
 
 fn public_key(backend: &MlsCryptoProvider, client_id: ClientId) {
-    let client = Client::init(client_id, &backend).unwrap();
+    let client = Client::init(client_id, None, &backend).unwrap();
     let pk = client.public_key();
     io::stdout().write_all(pk).unwrap();
 }
 
 fn group(backend: &MlsCryptoProvider, client_id: ClientId, group_id: &[u8]) {
-    let client = Client::init(client_id, &backend).unwrap();
+    let client = Client::init(client_id, None, &backend).unwrap();
     let group_id = GroupId::from_slice(group_id);
     let group_config = MlsConversationConfiguration::openmls_default_configuration();
     let kp_hash = client.keypackage_hash(&backend).unwrap();

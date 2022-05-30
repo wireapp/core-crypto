@@ -10,17 +10,18 @@ branch = "otak/sodiumoxide-0.2.7"
 [patch.crates-io.openmls]
 git = "https://github.com/wireapp/openmls"
 branch = "develop"
-package = "openmls"
 
 [patch.crates-io.openmls_rust_crypto]
 git = "https://github.com/wireapp/openmls"
 branch = "develop"
-package = "openmls_rust_crypto"
 
 [patch.crates-io.openmls_traits]
 git = "https://github.com/wireapp/openmls"
 branch = "develop"
-package = "openmls_traits"
+
+[patch.crates-io.rcgen]
+git = "https://github.com/wireapp/rcgen"
+branch = "master"
 
 [profile.release]
 lto = true
