@@ -86,8 +86,11 @@ impl Eq for ConversationMember {}
 
 #[cfg(test)]
 impl ConversationMember {
-    pub fn random_generate(backend: &mls_crypto_provider::MlsCryptoProvider) -> CryptoResult<Self> {
-        let client = Client::random_generate(backend, false)?;
+    pub fn random_generate(
+        backend: &mls_crypto_provider::MlsCryptoProvider,
+        credential: crate::credential::CredentialSupplier,
+    ) -> CryptoResult<Self> {
+        let client = Client::random_generate(backend, false, credential())?;
         let id = client.id();
         client.gen_keypackage(backend)?;
 
@@ -122,26 +125,31 @@ impl ConversationMember {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{prelude::INITIAL_KEYING_MATERIAL_COUNT, ClientId};
+    use super::ConversationMember;
+    use crate::{
+        credential::{CertificateBundle, CredentialSupplier},
+        prelude::INITIAL_KEYING_MATERIAL_COUNT,
+        test_fixture_utils::*,
+        ClientId,
+    };
     use mls_crypto_provider::MlsCryptoProvider;
     use openmls::prelude::*;
     use wasm_bindgen_test::wasm_bindgen_test;
+
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
-    use super::ConversationMember;
-
-    #[test]
+    #[apply(all_credential_types)]
     #[wasm_bindgen_test]
-    pub fn can_generate_member() {
+    pub fn can_generate_member(credential: CredentialSupplier) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        assert!(ConversationMember::random_generate(&backend).is_ok());
+        assert!(ConversationMember::random_generate(&backend, credential).is_ok());
     }
 
-    #[test]
+    #[apply(all_credential_types)]
     #[wasm_bindgen_test]
-    pub fn member_can_run_out_of_keypackage_hashes() {
+    pub fn member_can_run_out_of_keypackage_hashes(credential: CredentialSupplier) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        let mut member = ConversationMember::random_generate(&backend).unwrap();
+        let mut member = ConversationMember::random_generate(&backend, credential).unwrap();
         let client_id = member.local_client.as_ref().map(|c| c.id().clone()).unwrap();
         let ret = (0..INITIAL_KEYING_MATERIAL_COUNT * 2).all(|_| {
             let ckp = member.keypackages_for_all_clients();
@@ -153,13 +161,14 @@ pub mod tests {
 
     pub mod add_keypackage {
         use super::*;
+        use crate::Client;
 
-        #[test]
+        #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub fn add_valid_keypackage_should_add_it_to_client() {
+        pub fn add_valid_keypackage_should_add_it_to_client(credential: CredentialSupplier) {
             let mut member = ConversationMember::random_generate_clientless().unwrap();
             let cid = ClientId::from(member.id.as_slice());
-            let kp = new_keypackage(&cid);
+            let kp = new_keypackage(&cid, credential());
             let mut kp_raw = vec![];
             use tls_codec::Serialize as _;
             kp.tls_serialize(&mut kp_raw).unwrap();
@@ -178,11 +187,15 @@ pub mod tests {
             assert_eq!(member.clients, previous_clients);
         }
 
-        fn new_keypackage(identity: &[u8]) -> KeyPackage {
+        fn new_keypackage(identity: &[u8], credential: Option<CertificateBundle>) -> KeyPackage {
             let ciphersuite = crate::MlsCiphersuite::default().0;
             let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-            let credential =
-                CredentialBundle::new(identity.to_vec(), CredentialType::Basic, ciphersuite.into(), &backend).unwrap();
+            let credential = if let Some(cert) = credential {
+                Client::generate_x509_credential_bundle(&identity.into(), cert.certificate_chain, cert.private_key)
+            } else {
+                Client::generate_basic_credential_bundle(&identity.into(), &backend)
+            }
+            .unwrap();
             let (kp, _) = KeyPackageBundle::new(&[ciphersuite], &credential, &backend, vec![])
                 .unwrap()
                 .into_parts();

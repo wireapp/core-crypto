@@ -87,7 +87,10 @@ impl EntityBase for ProteusPrekey {
         Ok(())
     }
 
-    fn delete(conn: &mut Self::ConnectionType, id: &crate::entities::StringEntityId) -> crate::CryptoKeystoreResult<()> {
+    fn delete(
+        conn: &mut Self::ConnectionType,
+        id: &crate::entities::StringEntityId,
+    ) -> crate::CryptoKeystoreResult<()> {
         let id = String::from_utf8(id.as_bytes())?;
         let updated = conn.execute("DELETE FROM proteus_prekeys WHERE id = ?", [id])?;
 

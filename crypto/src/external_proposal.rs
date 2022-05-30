@@ -42,28 +42,32 @@ impl MlsCentral {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::MlsConversationConfiguration;
+    use crate::{
+        credential::{CertificateBundle, CredentialSupplier},
+        test_fixture_utils::*,
+        test_utils::run_test_with_client_id,
+        MlsConversationConfiguration,
+    };
     use openmls_traits::OpenMlsCryptoProvider;
-
     use wasm_bindgen_test::wasm_bindgen_test;
+
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
     mod add {
         use core_crypto_keystore::entities::{MlsIdentity, MlsIdentityExt};
 
         use super::*;
-        use crate::test_utils::run_test_with_client_id;
 
-        #[test]
+        #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        fn should_succeed() {
-            run_test_with_client_id("owner@wire.com", |mut owner_central| {
+        fn should_succeed(credential: CredentialSupplier) {
+            run_test_with_client_id(credential, "owner@wire.com", |mut owner_central| {
                 let conversation_id = b"owner-guest".to_vec();
                 owner_central
                     .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
                     .unwrap();
 
-                run_test_with_client_id("guest@wire.com", move |mut guest_central| {
+                run_test_with_client_id(credential, "guest@wire.com", move |mut guest_central| {
                     let owner_group = owner_central.mls_groups.get_mut(&conversation_id).unwrap();
                     let epoch = owner_group.group.epoch();
 
@@ -105,10 +109,10 @@ mod tests {
             });
         }
 
-        #[test]
+        #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        fn should_fail_when_sender_credential_bundle_absent() {
-            run_test_with_client_id("guest@wire.com", |guest_central| {
+        fn should_fail_when_sender_credential_bundle_absent(credential: CredentialSupplier) {
+            run_test_with_client_id(credential, "guest@wire.com", |guest_central| {
                 let guest_key_packages = guest_central.client_keypackages(1).unwrap();
                 let guest_key_package = guest_key_packages.get(0).unwrap().key_package().to_owned();
 

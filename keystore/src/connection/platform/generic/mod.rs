@@ -95,7 +95,8 @@ impl SqlCipherConnection {
             Err(e) if e.code() == ERR_SEC_ITEM_NOT_FOUND => {
                 let salt = conn.pragma_query_value(None, "cipher_salt", |r| r.get::<_, String>(0))?;
                 let mut bytes = [0u8; 16];
-                hex::decode_to_slice(salt, &mut bytes).map_err(|e| crate::CryptoKeystoreError::HexSaltDecodeError(e))?;
+                hex::decode_to_slice(salt, &mut bytes)
+                    .map_err(|e| crate::CryptoKeystoreError::HexSaltDecodeError(e))?;
                 #[cfg(target_os = "ios")]
                 security_framework::password::set_generic_password("wire.com", "keystore_salt", bytes)?;
             }

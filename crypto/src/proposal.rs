@@ -73,3 +73,152 @@ impl MlsCentral {
         proposal.create(&self.mls_backend, group)
     }
 }
+
+#[cfg(test)]
+pub mod proposal_tests {
+    use super::*;
+    use crate::{
+        credential::{CertificateBundle, CredentialSupplier},
+        test_fixture_utils::*,
+        test_utils::run_test_with_central,
+        CryptoError, *,
+    };
+    use openmls::prelude::*;
+    use wasm_bindgen_test::wasm_bindgen_test;
+
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
+    pub mod add {
+        use super::*;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub fn should_succeed(credential: CredentialSupplier) {
+            run_test_with_central(credential, |mut central| {
+                let conversation_id = b"conversation".to_vec();
+                central
+                    .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                    .unwrap();
+                let kp = key_package(&central, credential);
+                let proposal = MlsProposal::Add(kp.key_package().to_owned());
+                let add_proposal = central.new_proposal(conversation_id, proposal);
+                let _ = add_proposal.unwrap();
+            })
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub fn should_fail_when_unknown_conversation(credential: CredentialSupplier) {
+            run_test_with_central(credential, |mut central| {
+                central.mls_groups.clear();
+                let kp = key_package(&central, credential);
+                let conversation_id = b"unknown".to_vec();
+                let proposal = MlsProposal::Add(kp.key_package().to_owned());
+                let add_proposal = central.new_proposal(conversation_id.clone(), proposal);
+                match add_proposal {
+                    Err(CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
+                    _ => panic!(""),
+                }
+            })
+        }
+    }
+
+    pub mod update {
+        use super::*;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub fn should_succeed(credential: CredentialSupplier) {
+            run_test_with_central(credential, |mut central| {
+                let conversation_id = b"conversation".to_vec();
+                central
+                    .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                    .unwrap();
+                let update_proposal = central.new_proposal(conversation_id, MlsProposal::Update);
+                let _ = update_proposal.unwrap();
+            })
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub fn should_fail_when_unknown_conversation(credential: CredentialSupplier) {
+            run_test_with_central(credential, |mut central| {
+                central.mls_groups.clear();
+                let conversation_id = b"conversation".to_vec();
+                let update_proposal = central.new_proposal(conversation_id.clone(), MlsProposal::Update);
+                match update_proposal {
+                    Err(CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
+                    _ => panic!(""),
+                }
+            })
+        }
+    }
+
+    pub mod remove {
+        use super::*;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub fn should_succeed(credential: CredentialSupplier) {
+            run_test_with_central(credential, |mut central| {
+                let conversation_id = b"conversation".to_vec();
+                central
+                    .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                    .unwrap();
+                let conversation = central.mls_groups.get(&conversation_id[..]).unwrap();
+                let client_id = ClientId::from(conversation.group.members().get(0).unwrap().credential().identity());
+                let remove_proposal = central.new_proposal(conversation_id, MlsProposal::Remove(client_id));
+                let _ = remove_proposal.unwrap();
+            })
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub fn should_fail_when_unknown_client(credential: CredentialSupplier) {
+            run_test_with_central(credential, |mut central| {
+                let conversation_id = b"conversation".to_vec();
+                central
+                    .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                    .unwrap();
+                let client_id = ClientId::from(vec![]);
+                let remove_proposal = central.new_proposal(conversation_id, MlsProposal::Remove(client_id.clone()));
+                match remove_proposal {
+                    Err(CryptoError::ClientNotFound(cli_id)) => assert_eq!(cli_id, client_id),
+                    _ => panic!(""),
+                }
+            })
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub fn should_fail_when_unknown_conversation(credential: CredentialSupplier) {
+            run_test_with_central(credential, |mut central| {
+                central.mls_groups.clear();
+                let conversation_id = b"conversation".to_vec();
+                let client_id = ClientId::from(vec![]);
+                let remove_proposal = central.new_proposal(conversation_id.clone(), MlsProposal::Remove(client_id));
+                match remove_proposal {
+                    Err(CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
+                    _ => panic!(""),
+                }
+            })
+        }
+    }
+
+    fn key_package(central: &MlsCentral, credential: CredentialSupplier) -> KeyPackageBundle {
+        let id = b"test";
+        let credential = if let Some(cert) = credential() {
+            Client::generate_x509_credential_bundle(&id.to_vec().into(), cert.certificate_chain, cert.private_key)
+        } else {
+            Client::generate_basic_credential_bundle(&id.to_vec().into(), &central.mls_backend)
+        }
+        .unwrap();
+        KeyPackageBundle::new(
+            &[MlsCiphersuite::default().0],
+            &credential,
+            &central.mls_backend,
+            vec![],
+        )
+        .unwrap()
+    }
+}

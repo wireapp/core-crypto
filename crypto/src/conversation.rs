@@ -126,6 +126,7 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
         let mls_group_config = MlsConversationConfiguration::openmls_default_configuration();
+
         let mut group =
             MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None).map_err(MlsError::from)?;
 
@@ -355,11 +356,18 @@ impl MlsConversation {
 #[cfg(test)]
 pub mod tests {
     use super::{ConversationId, MlsConversation, MlsConversationConfiguration};
-    use crate::{member::ConversationMember, prelude::MlsConversationCreationMessage};
+    use crate::{
+        credential::{CertificateBundle, CredentialSupplier},
+        test_fixture_utils::*,
+        member::ConversationMember,
+        prelude::MlsConversationCreationMessage,
+        CryptoResult,
+    };
+    use openmls::prelude::KeyPackage;
     use mls_crypto_provider::MlsCryptoProvider;
+    use wasm_bindgen_test::*;
 
-    use wasm_bindgen_test::wasm_bindgen_test;
-    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+    wasm_bindgen_test_configure!(run_in_browser);
 
     #[inline(always)]
     pub fn init_keystore(identifier: &str) -> MlsCryptoProvider {
@@ -367,15 +375,13 @@ pub mod tests {
     }
 
     pub mod create {
-        use crate::CryptoResult;
-
         use super::*;
 
-        #[test]
+        #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub fn create_self_conversation_should_succeed() {
+        pub fn create_self_conversation_should_succeed(credential: CredentialSupplier) {
             let conversation_id = conversation_id();
-            let (alice_backend, mut alice) = alice();
+            let (alice_backend, mut alice) = alice(credential).unwrap();
             let mut alice_group = MlsConversation::create(
                 conversation_id.clone(),
                 alice.local_client_mut(),
@@ -391,12 +397,12 @@ pub mod tests {
             assert!(alice_can_send_message.is_ok());
         }
 
-        #[test]
+        #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub fn create_1_1_conversation_should_succeed() {
+        pub fn create_1_1_conversation_should_succeed(credential: CredentialSupplier) {
             let conversation_id = conversation_id();
-            let (alice_backend, mut alice) = alice();
-            let (bob_backend, bob) = bob();
+            let (alice_backend, mut alice) = alice(credential).unwrap();
+            let (bob_backend, bob) = bob(credential).unwrap();
 
             let mut alice_group = MlsConversation::create(
                 conversation_id.clone(),
@@ -426,15 +432,15 @@ pub mod tests {
             assert!(bob_can_send_message.is_ok());
         }
 
-        #[test]
+        #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub fn create_100_people_conversation() {
-            let (alice_backend, mut alice) = alice();
+        pub fn create_100_people_conversation(credential: CredentialSupplier) {
+            let (alice_backend, mut alice) = alice(credential).unwrap();
             let bob_and_friends = (0..99).fold(Vec::with_capacity(100), |mut acc, _| {
                 let uuid = uuid::Uuid::new_v4();
                 let backend = init_keystore(&uuid.hyphenated().to_string());
 
-                let member = ConversationMember::random_generate(&backend).unwrap();
+                let member = ConversationMember::random_generate(&backend, credential).unwrap();
                 acc.push((backend, member));
                 acc
             });
@@ -480,12 +486,12 @@ pub mod tests {
     pub mod add_members {
         use super::*;
 
-        #[test]
+        #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub fn can_add_members_to_conversation() {
+        pub fn can_add_members_to_conversation(credential: CredentialSupplier) {
             let conversation_id = conversation_id();
-            let (alice_backend, mut alice) = alice();
-            let (bob_backend, bob) = bob();
+            let (alice_backend, mut alice) = alice(credential).unwrap();
+            let (bob_backend, bob) = bob(credential).unwrap();
             let conversation_config = MlsConversationConfiguration::default();
             let mut alice_group = MlsConversation::create(
                 conversation_id.clone(),
@@ -521,12 +527,12 @@ pub mod tests {
     pub mod remove_members {
         use super::*;
 
-        #[test]
+        #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub fn alice_can_remove_bob_from_conversation() {
+        pub fn alice_can_remove_bob_from_conversation(credential: CredentialSupplier) {
             let conversation_id = conversation_id();
-            let (alice_backend, mut alice) = alice();
-            let (bob_backend, bob) = bob();
+            let (alice_backend, mut alice) = alice(credential).unwrap();
+            let (bob_backend, bob) = bob(credential).unwrap();
             let conversation_config = MlsConversationConfiguration::default();
 
             let mut alice_group = MlsConversation::create(
@@ -568,12 +574,12 @@ pub mod tests {
     pub mod encrypting_messages {
         use super::*;
 
-        #[test]
+        #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub fn can_roundtrip_message_in_1_1_conversation() {
+        pub fn can_roundtrip_message_in_1_1_conversation(credential: CredentialSupplier) {
             let conversation_id = conversation_id();
-            let (alice_backend, mut alice) = alice();
-            let (bob_backend, bob) = bob();
+            let (alice_backend, mut alice) = alice(credential).unwrap();
+            let (bob_backend, bob) = bob(credential).unwrap();
             let configuration = MlsConversationConfiguration::default();
 
             let mut alice_group = MlsConversation::create(
@@ -619,18 +625,18 @@ pub mod tests {
     pub mod leave {
         use super::*;
 
-        #[test]
+        #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub fn can_leave_conversation() {
+        pub fn can_leave_conversation(credential: CredentialSupplier) {
             let alice_backend = init_keystore("alice");
             let alice2_backend = init_keystore("alice2");
             let bob_backend = init_keystore("bob");
             let charlie_backend = init_keystore("charlie");
 
-            let mut alice = ConversationMember::random_generate(&alice_backend).unwrap();
-            let alice2 = ConversationMember::random_generate(&alice2_backend).unwrap();
-            let bob = ConversationMember::random_generate(&bob_backend).unwrap();
-            let charlie = ConversationMember::random_generate(&charlie_backend).unwrap();
+            let mut alice = ConversationMember::random_generate(&alice_backend, credential).unwrap();
+            let alice2 = ConversationMember::random_generate(&alice2_backend, credential).unwrap();
+            let bob = ConversationMember::random_generate(&bob_backend, credential).unwrap();
+            let charlie = ConversationMember::random_generate(&charlie_backend, credential).unwrap();
 
             let uuid = uuid::Uuid::new_v4();
             let conversation_id = ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()));
@@ -748,23 +754,15 @@ pub mod tests {
     }
 
     pub mod update_keying_material {
-        use openmls::prelude::KeyPackage;
-        use wasm_bindgen_test::wasm_bindgen_test;
+        use super::*;
 
-        use crate::{
-            conversation::tests::{alice, bob, charlie},
-            prelude::{MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage},
-        };
-
-        use super::conversation_id;
-
-        #[test]
+        #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub fn should_update_keying_material_conversation_group() {
+        pub fn should_update_keying_material_conversation_group(credential: CredentialSupplier) {
             // create bob
             let conversation_id = b"conversation".to_vec();
-            let (alice_backend, mut alice) = alice();
-            let (bob_backend, bob) = bob();
+            let (alice_backend, mut alice) = alice(credential).unwrap();
+            let (bob_backend, bob) = bob(credential).unwrap();
             let bob_key = bob.local_client().keypackages(&bob_backend).unwrap()[0].clone();
 
             let configuration = MlsConversationConfiguration::default();
@@ -850,14 +848,14 @@ pub mod tests {
             assert!(alice_can_send_message.is_ok());
         }
 
-        #[test]
+        #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub fn should_update_keying_material_group_pending_commit() {
+        pub fn should_update_keying_material_group_pending_commit(credential: CredentialSupplier) {
             // create members
             let conversation_id = conversation_id();
-            let (bob_backend, bob) = bob();
-            let (alice_backend, mut alice) = alice();
-            let (charlie_backend, charlie) = charlie();
+            let (alice_backend, mut alice) = alice(credential).unwrap();
+            let (bob_backend, bob) = bob(credential).unwrap();
+            let (charlie_backend, charlie) = charlie(credential).unwrap();
             let bob_key = bob.local_client().keypackages(&bob_backend).unwrap()[0].clone();
             let charlie_key = charlie.local_client().keypackages(&charlie_backend).unwrap()[0].clone();
 
@@ -967,28 +965,5 @@ pub mod tests {
             let charlie_can_send_message = charlie_group.encrypt_message(msg, &charlie_backend);
             assert!(charlie_can_send_message.is_ok());
         }
-    }
-
-    fn conversation_id() -> Vec<u8> {
-        let uuid = uuid::Uuid::new_v4();
-        ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()))
-    }
-
-    fn alice() -> (MlsCryptoProvider, ConversationMember) {
-        let alice_backend = init_keystore("alice");
-        let alice = ConversationMember::random_generate(&alice_backend).unwrap();
-        (alice_backend, alice)
-    }
-
-    fn charlie() -> (MlsCryptoProvider, ConversationMember) {
-        let alice_backend = init_keystore("charlie");
-        let alice = ConversationMember::random_generate(&alice_backend).unwrap();
-        (alice_backend, alice)
-    }
-
-    fn bob() -> (MlsCryptoProvider, ConversationMember) {
-        let bob_backend = init_keystore("bob");
-        let bob = ConversationMember::random_generate(&bob_backend).unwrap();
-        (bob_backend, bob)
     }
 }

@@ -16,7 +16,7 @@
 
 mod common;
 
-#[cfg(all(test, feature = "proteus-keystore"))]
+#[cfg(feature = "proteus-keystore")]
 pub mod tests {
     use crate::common::*;
     use proteus::keys::{PreKey, PreKeyId};
