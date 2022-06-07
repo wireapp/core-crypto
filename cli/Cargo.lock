@@ -253,7 +253,7 @@ checksum = "e4c78c047431fee22c1a7bb92e00ad095a02a983affe4d8a72e2a2c62c1b94f3"
 
 [[package]]
 name = "core-crypto"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "core-crypto-keystore",
  "derive_builder",
@@ -269,10 +269,11 @@ dependencies = [
 
 [[package]]
 name = "core-crypto-keystore"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "barrel",
  "eyre",
+ "hex",
  "openmls_traits",
  "refinery",
  "rusqlite",
@@ -945,7 +946,7 @@ dependencies = [
 
 [[package]]
 name = "mls-crypto-provider"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "core-crypto-keystore",
  "openmls_rust_crypto",
@@ -1055,9 +1056,9 @@ dependencies = [
 
 [[package]]
 name = "openssl-src"
-version = "111.17.0+1.1.1m"
+version = "111.20.0+1.1.1o"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05d6a336abd10814198f66e2a91ccd7336611f30334119ca8ce300536666fcf4"
+checksum = "92892c4f87d56e376e469ace79f1128fdaded07646ddf73aa0be4706ff712dec"
 dependencies = [
  "cc",
 ]
