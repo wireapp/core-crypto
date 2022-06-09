@@ -51,6 +51,9 @@ enum Command {
     Group {
         client_id: ClientId,
         group_id: String,
+        /// A file where to store the key package used by the creator of the group.
+        #[clap(long)]
+        key_package_ref_out: Option<String>,
     },
     Member {
         #[clap(subcommand)]
@@ -99,12 +102,20 @@ fn main() {
                 .unwrap();
         }
         Command::PublicKey { client_id } => public_key(&backend, client_id),
-        Command::Group { client_id, group_id } => {
+        Command::Group {
+            client_id,
+            group_id,
+            key_package_ref_out,
+        } => {
             let group_id = base64::decode(group_id).expect("Failed to decode group_id as base64");
             let group_id = GroupId::from_slice(&group_id);
             let client = Client::init(client_id, &backend).unwrap();
             let group_config = MlsConversationConfiguration::openmls_default_configuration();
             let kp_hash = client.keypackage_hash(&backend).unwrap();
+            if let Some(key_package_ref_out) = key_package_ref_out {
+                let mut file = fs::File::create(key_package_ref_out).unwrap();
+                file.write(kp_hash.value()).unwrap();
+            }
             let mut group = MlsGroup::new(&backend, &group_config, group_id, kp_hash.as_slice()).unwrap();
             group.save(&mut io::stdout()).unwrap();
         }
