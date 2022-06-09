@@ -16,3 +16,10 @@ uuid = "1.0.0-alpha"
 clap = { version = "3", features = ["derive"] }
 
 [workspace]
+
+[patch.crates-io.openmls]
+git = "https://github.com/wireapp/openmls"
+branch = "develop"
+[patch.crates-io.openmls_traits]
+git = "https://github.com/wireapp/openmls"
+branch = "develop"

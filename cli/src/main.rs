@@ -9,7 +9,7 @@ use std::fs;
 use std::io;
 
 fn key_package(backend: &MlsCryptoProvider, client_id: ClientId) {
-    let mut client = Client::init(client_id, &backend).unwrap();
+    let client = Client::init(client_id, &backend).unwrap();
     let kpb = client.gen_keypackage(&backend).unwrap();
     kpb.key_package().tls_serialize(&mut io::stdout()).unwrap();
 }
@@ -18,15 +18,6 @@ fn public_key(backend: &MlsCryptoProvider, client_id: ClientId) {
     let client = Client::init(client_id, &backend).unwrap();
     let pk = client.public_key();
     io::stdout().write_all(pk).unwrap();
-}
-
-fn group(backend: &MlsCryptoProvider, client_id: ClientId, group_id: &[u8]) {
-    let mut client = Client::init(client_id, &backend).unwrap();
-    let group_id = GroupId::from_slice(group_id);
-    let group_config = MlsConversationConfiguration::openmls_default_configuration();
-    let kp_hash = client.keypackage_hash(&backend).unwrap();
-    let mut group = MlsGroup::new(backend, &group_config, group_id, &kp_hash).unwrap();
-    group.save(&mut io::stdout()).unwrap();
 }
 
 fn app_message(backend: &MlsCryptoProvider, group_data: &mut dyn Read, text: String) {
@@ -109,8 +100,13 @@ fn main() {
         }
         Command::PublicKey { client_id } => public_key(&backend, client_id),
         Command::Group { client_id, group_id } => {
-            let gid = base64::decode(group_id).expect("Failed to decode group_id as base64");
-            group(&backend, client_id, &gid)
+            let group_id = base64::decode(group_id).expect("Failed to decode group_id as base64");
+            let group_id = GroupId::from_slice(&group_id);
+            let client = Client::init(client_id, &backend).unwrap();
+            let group_config = MlsConversationConfiguration::openmls_default_configuration();
+            let kp_hash = client.keypackage_hash(&backend).unwrap();
+            let mut group = MlsGroup::new(&backend, &group_config, group_id, kp_hash.as_slice()).unwrap();
+            group.save(&mut io::stdout()).unwrap();
         }
         Command::Member {
             command:
