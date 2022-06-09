@@ -101,6 +101,13 @@ fn main() {
             let mut group = MlsGroup::new(&backend, &group_config, group_id, kp_hash.as_slice()).unwrap();
             group.save(&mut io::stdout()).unwrap();
         }
+        Command::GroupFromWelcome { welcome, group_out } => {
+            let group_config = MlsConversationConfiguration::openmls_default_configuration();
+            let welcome = Welcome::tls_deserialize(&mut fs::File::open(welcome).unwrap()).unwrap();
+            let mut group = MlsGroup::new_from_welcome(&backend, &group_config, welcome, None).unwrap();
+            let mut group_out = fs::File::create(group_out).unwrap();
+            group.save(&mut group_out).unwrap();
+        }
         Command::Member {
             group,
             command: MemberCommand::Add {
