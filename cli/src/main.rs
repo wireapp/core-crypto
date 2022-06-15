@@ -25,11 +25,21 @@ struct Cli {
 enum Command {
     /// Generate a new keypackage for existing or new client
     KeyPackage { client_id: ClientId },
+    /// Generate a hash of a key package
+    KeyPackageRef { key_package: String },
     /// Get existing or new client signature key
     PublicKey { client_id: ClientId },
     /// Create a new MLS group
-    Group { client_id: ClientId, group_id: String },
-    /// Update an existing MLS group
+    Group {
+        client_id: ClientId,
+        group_id: String,
+        key_package_ref_out: Option<String>,
+    },
+    /// Create a group from a welcome message
+    GroupFromWelcome {
+        welcome: String,
+        group_out: String,
+    },
     Member {
         /// Existing group id
         #[clap(short, long)]
@@ -52,7 +62,7 @@ enum MemberCommand {
     /// Add a new member to an existing group
     Add {
         /// New member TLS serialized KeyPackage
-        key_package: String,
+        key_packages: Vec<String>,
         /// Output for Welcome message
         #[clap(short, long)]
         welcome_out: Option<String>,
@@ -109,10 +119,12 @@ fn main() {
             group.save(&mut group_out).unwrap();
         }
         Command::Member {
-            group,
+            group: group_in,
             command: MemberCommand::Add {
-                key_package,
+                key_packages,
                 welcome_out,
+                group_out,
+                in_place,
             },
         } => {
             let mut group = {
