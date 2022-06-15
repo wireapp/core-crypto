@@ -11,7 +11,5 @@ core-crypto = { version = "0.2", path = "../crypto" }
 core-crypto-keystore = { version = "0.2", path = "../keystore" }
 mls-crypto-provider = { version = "0.2", path = "../mls-provider" }
 
-uuid = "1.0.0-alpha"
+uuid = "1.1"
 clap = { version = "3", features = ["derive"] }
-
-[workspace]
