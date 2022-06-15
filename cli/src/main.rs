@@ -36,16 +36,25 @@ enum Command {
         key_package_ref_out: Option<String>,
     },
     /// Create a group from a welcome message
-    GroupFromWelcome {
-        welcome: String,
-        group_out: String,
-    },
+    GroupFromWelcome { welcome: String, group_out: String },
     Member {
         /// Existing group id
         #[clap(short, long)]
         group: String,
         #[clap(subcommand)]
         command: MemberCommand,
+    },
+    Proposal {
+        /// The ID of the client creating the proposal
+        client_id: ClientId,
+        /// Existing group id
+        #[clap(short, long)]
+        group_id: String,
+        /// The output file
+        #[clap(long)]
+        proposal_out: Option<String>,
+        #[clap(subcommand)]
+        command: ProposalCommand,
     },
     /// Send a message in an MLS group
     Message {
@@ -55,6 +64,12 @@ enum Command {
         /// Message to send
         text: String,
     },
+}
+
+#[derive(Subcommand, Debug)]
+enum ProposalCommand {
+    /// Create an add proposal
+    Add { key_package_in: String },
 }
 
 #[derive(Subcommand, Debug)]
@@ -120,12 +135,13 @@ fn main() {
         }
         Command::Member {
             group: group_in,
-            command: MemberCommand::Add {
-                key_packages,
-                welcome_out,
-                group_out,
-                in_place,
-            },
+            command:
+                MemberCommand::Add {
+                    key_packages,
+                    welcome_out,
+                    group_out,
+                    in_place,
+                },
         } => {
             let mut group = {
                 let data = path_reader(&group_in).unwrap();
@@ -151,6 +167,31 @@ fn main() {
                 group.save(&mut writer).unwrap();
             }
             handshake.tls_serialize(&mut io::stdout()).unwrap();
+        }
+        Command::Proposal {
+            client_id,
+            group_id,
+            proposal_out,
+            command: ProposalCommand::Add { key_package_in },
+        } => {
+            let key_package = {
+                let mut data = path_reader(&key_package_in).unwrap();
+                KeyPackage::tls_deserialize(&mut data).unwrap()
+            };
+            let central = MlsCentral::try_new(
+                MlsCentralConfiguration::try_new(cli.store, cli.enc_key, client_id.to_string()).unwrap(),
+            )
+            .unwrap();
+            let prop = central
+                .new_proposal(group_id.as_bytes().to_vec(), MlsProposal::Add(key_package))
+                .unwrap()
+                .to_bytes() // TODO: replace with tls_serialize or an equivalent
+                .unwrap();
+            if let Some(proposal_out) = proposal_out {
+                fs::File::create(proposal_out).unwrap().write(&prop).unwrap();
+            } else {
+                io::stdout().write(&prop).unwrap();
+            }
         }
         Command::Message { group, text } => {
             let mut group_data = path_reader(&group).unwrap();
