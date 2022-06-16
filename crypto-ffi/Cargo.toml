@@ -36,7 +36,7 @@ js-sys = "0.3"
 
 [build-dependencies]
 # UniFFI - Android + iOS bindings - Build support
-uniffi_build = { version = "0.18", features = ["builtin-bindgen"], optional = true }
+uniffi_build = { version = "0.19", features = ["builtin-bindgen"], optional = true }
 uniffi_bindgen = { version = "0.18", optional = true }
 
 [target.wasm32-unknown-unknown.dev-dependencies]
