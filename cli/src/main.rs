@@ -44,6 +44,7 @@ enum Command {
         #[clap(subcommand)]
         command: MemberCommand,
     },
+    /// Create a proposal
     Proposal {
         /// The ID of the client creating the proposal
         client_id: ClientId,
