@@ -67,12 +67,6 @@ enum Command {
 }
 
 #[derive(Subcommand, Debug)]
-enum ProposalCommand {
-    /// Create an add proposal
-    Add { key_package_in: String },
-}
-
-#[derive(Subcommand, Debug)]
 enum MemberCommand {
     /// Add a new member to an existing group
     Add {
@@ -86,6 +80,12 @@ enum MemberCommand {
         #[clap(short, long, conflicts_with = "group-out")]
         in_place: bool,
     },
+}
+
+#[derive(Subcommand, Debug)]
+enum ProposalCommand {
+    /// Create an add proposal
+    Add { key_package_in: String },
 }
 
 fn path_reader(path: &str) -> io::Result<Box<dyn Read>> {
@@ -185,7 +185,7 @@ fn main() {
             let prop = central
                 .new_proposal(group_id.as_bytes().to_vec(), MlsProposal::Add(key_package))
                 .unwrap()
-                .to_bytes() // TODO: replace with tls_serialize or an equivalent
+                .to_bytes()
                 .unwrap();
             if let Some(proposal_out) = proposal_out {
                 fs::File::create(proposal_out).unwrap().write(&prop).unwrap();
