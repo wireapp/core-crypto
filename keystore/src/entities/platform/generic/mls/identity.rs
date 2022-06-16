@@ -26,6 +26,7 @@ use crate::{
 
 impl Entity for MlsIdentity {}
 
+#[async_trait::async_trait(?Send)]
 impl EntityBase for MlsIdentity {
     type ConnectionType = KeystoreDatabaseConnection;
 
@@ -33,7 +34,7 @@ impl EntityBase for MlsIdentity {
         MissingKeyErrorKind::MlsIdentityBundle
     }
 
-    fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
+    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
         let signature = &self.signature;
         let credential = &self.credential;
         let zb_sig = rusqlite::blob::ZeroBlob(signature.len() as i32);
@@ -77,7 +78,10 @@ impl EntityBase for MlsIdentity {
         Ok(())
     }
 
-    fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<Option<Self>> {
+    async fn find_one(
+        conn: &mut Self::ConnectionType,
+        id: &StringEntityId,
+    ) -> crate::CryptoKeystoreResult<Option<Self>> {
         let id: String = id.try_into()?;
         let transaction = conn.transaction()?;
         use rusqlite::OptionalExtension as _;
@@ -118,15 +122,18 @@ impl EntityBase for MlsIdentity {
         }
     }
 
-    fn find_many(_conn: &mut Self::ConnectionType, _ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<Vec<Self>> {
+    async fn find_many(
+        _conn: &mut Self::ConnectionType,
+        _ids: &[StringEntityId],
+    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
         unimplemented!("There is only one identity within a keystore, so this won't be implemented")
     }
 
-    fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
+    async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         Ok(conn.query_row("SELECT COUNT(*) FROM mls_identities", [], |r| r.get(0))?)
     }
 
-    fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
+    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
         let id: String = id.try_into()?;
         let updated = conn.execute("DELETE FROM mls_identities WHERE id = ?", [id])?;
 
@@ -138,8 +145,12 @@ impl EntityBase for MlsIdentity {
     }
 }
 
+#[async_trait::async_trait(?Send)]
 impl MlsIdentityExt for MlsIdentity {
-    fn find_by_signature(conn: &mut Self::ConnectionType, signature: &[u8]) -> CryptoKeystoreResult<Option<Self>> {
+    async fn find_by_signature(
+        conn: &mut Self::ConnectionType,
+        signature: &[u8],
+    ) -> CryptoKeystoreResult<Option<Self>> {
         let transaction = conn.transaction()?;
         use rusqlite::OptionalExtension as _;
         let maybe_rowid = transaction
@@ -179,5 +190,10 @@ impl MlsIdentityExt for MlsIdentity {
         } else {
             Ok(None)
         }
+    }
+
+    async fn delete_by_signature(conn: &mut Self::ConnectionType, signature: &[u8]) -> CryptoKeystoreResult<()> {
+        let _ = conn.execute("DELETE FROM mls_identities WHERE signature = ?", [&signature])?;
+        Ok(())
     }
 }

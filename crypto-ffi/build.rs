@@ -31,9 +31,23 @@ fn main() {
     #[cfg(feature = "mobile")]
     uniffi_build::generate_scaffolding(UDL_FILE).unwrap();
     #[cfg(feature = "mobile")]
-    uniffi_bindgen::generate_bindings(UDL_FILE, None, vec!["kotlin"], Some("./bindings/kt/"), false).unwrap();
+    uniffi_bindgen::generate_bindings(
+        UDL_FILE.into(),
+        None,
+        vec!["kotlin"],
+        Some("./bindings/kt/".into()),
+        false,
+    )
+    .unwrap();
     #[cfg(feature = "mobile")]
-    uniffi_bindgen::generate_bindings(UDL_FILE, None, vec!["swift"], Some("./bindings/swift/include"), false).unwrap();
+    uniffi_bindgen::generate_bindings(
+        UDL_FILE.into(),
+        None,
+        vec!["swift"],
+        Some("./bindings/swift/include".into()),
+        false,
+    )
+    .unwrap();
     if cfg!(feature = "mobile") {
         std::fs::rename(
             "./bindings/swift/include/CoreCrypto.swift",

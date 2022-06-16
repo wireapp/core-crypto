@@ -24,14 +24,15 @@ use crate::{
 
 impl Entity for MlsKeypackage {}
 
+#[async_trait::async_trait(?Send)]
 impl EntityBase for MlsKeypackage {
     type ConnectionType = KeystoreDatabaseConnection;
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
-        MissingKeyErrorKind::MlsKeyBundle
+        MissingKeyErrorKind::MlsKeyPackageBundle
     }
 
-    fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
+    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
         let data = &self.key;
         let id: String = self.id.clone();
 
@@ -53,7 +54,10 @@ impl EntityBase for MlsKeypackage {
         Ok(())
     }
 
-    fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<Option<Self>> {
+    async fn find_one(
+        conn: &mut Self::ConnectionType,
+        id: &StringEntityId,
+    ) -> crate::CryptoKeystoreResult<Option<Self>> {
         let id = String::from_utf8(id.as_bytes())?;
 
         let transaction = conn.transaction()?;
@@ -77,19 +81,19 @@ impl EntityBase for MlsKeypackage {
         }
     }
 
-    fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
+    async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         let count: usize = conn.query_row("SELECT COUNT(*) FROM mls_keys", [], |r| r.get(0))?;
         Ok(count)
     }
 
-    fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
+    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
         let id = String::from_utf8(id.as_bytes())?;
         let updated = conn.execute("DELETE FROM mls_keys WHERE id = ?", [id])?;
 
         if updated != 0 {
             Ok(())
         } else {
-            Err(MissingKeyErrorKind::MlsKeyBundle.into())
+            Err(Self::to_missing_key_err_kind().into())
         }
     }
 }

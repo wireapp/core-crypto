@@ -20,27 +20,30 @@ pub fn conversation_id() -> ConversationId {
 }
 
 /// Typically client creating a conversation
-pub fn alice(credential: CredentialSupplier) -> CryptoResult<(MlsCryptoProvider, ConversationMember)> {
-    new_client("alice", credential)
+pub async fn alice(credential: CredentialSupplier) -> CryptoResult<(MlsCryptoProvider, ConversationMember)> {
+    new_client("alice", credential).await
 }
 
 /// Typically client joining the conversation initiated by [alice]
-pub fn bob(credential: CredentialSupplier) -> CryptoResult<(MlsCryptoProvider, ConversationMember)> {
-    new_client("bob", credential)
+pub async fn bob(credential: CredentialSupplier) -> CryptoResult<(MlsCryptoProvider, ConversationMember)> {
+    new_client("bob", credential).await
 }
 
 /// A third client
-pub fn charlie(credential: CredentialSupplier) -> CryptoResult<(MlsCryptoProvider, ConversationMember)> {
-    new_client("charlie", credential)
+pub async fn charlie(credential: CredentialSupplier) -> CryptoResult<(MlsCryptoProvider, ConversationMember)> {
+    new_client("charlie", credential).await
 }
 
-fn new_client(name: &str, credential: CredentialSupplier) -> CryptoResult<(MlsCryptoProvider, ConversationMember)> {
-    let backend = init_keystore(name);
-    let member = ConversationMember::random_generate(&backend, credential)?;
+async fn new_client(
+    name: &str,
+    credential: CredentialSupplier,
+) -> CryptoResult<(MlsCryptoProvider, ConversationMember)> {
+    let backend = init_keystore(name).await;
+    let member = ConversationMember::random_generate(&backend, credential).await?;
     Ok((backend, member))
 }
 
 #[inline(always)]
-pub fn init_keystore(identifier: &str) -> MlsCryptoProvider {
-    MlsCryptoProvider::try_new_in_memory(identifier).unwrap()
+pub async fn init_keystore(identifier: &str) -> MlsCryptoProvider {
+    MlsCryptoProvider::try_new_in_memory(identifier).await.unwrap()
 }

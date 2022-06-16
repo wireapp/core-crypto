@@ -16,9 +16,9 @@
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum MissingKeyErrorKind {
-    #[error("MLS Key Bundle")]
-    MlsKeyBundle,
-    #[error("MLS Credential Bundle")]
+    #[error("MLS KeyPackageBundle")]
+    MlsKeyPackageBundle,
+    #[error("MLS CredentialBundle")]
     MlsIdentityBundle,
     #[error("MLS Persisted Group")]
     MlsGroup,
@@ -39,22 +39,29 @@ pub enum CryptoKeystoreError {
     LockPoisonError,
     #[error("The keystore has run out of keypackage bundles!")]
     OutOfKeyPackageBundles,
-    #[error("{0}")]
-    KeyStoreValueTransformError(String),
+    #[cfg(feature = "mls-keystore")]
+    #[error(transparent)]
+    KeyStoreValueTransformError(Box<dyn std::error::Error + Send + Sync + 'static>),
     #[error(transparent)]
     IoError(#[from] std::io::Error),
     #[cfg(target_family = "wasm")]
     #[error(transparent)]
-    ChannelError(#[from] std::sync::mpsc::RecvError),
+    ChannelError(#[from] std::sync::mpsc::TryRecvError),
     #[cfg(target_family = "wasm")]
-    #[error(transparent)]
-    RexieError(#[from] rexie::Error),
+    #[error("The task has been canceled")]
+    WasmExecutorError,
+    #[cfg(target_family = "wasm")]
+    #[error("{0}")]
+    RexieError(String),
+    #[cfg(target_family = "wasm")]
+    #[error("An IndexedDB timeout has occured")]
+    RexieTimeoutError,
     #[cfg(target_family = "wasm")]
     #[error("aead::Error")]
     AesGcmError,
     #[cfg(target_family = "wasm")]
-    #[error(transparent)]
-    SerdeWasmBindgenError(#[from] serde_wasm_bindgen::Error),
+    #[error("{0}")]
+    SerdeWasmBindgenError(String),
     #[cfg(not(target_family = "wasm"))]
     #[error(transparent)]
     DbError(#[from] rusqlite::Error),
@@ -88,6 +95,38 @@ pub enum CryptoKeystoreError {
     #[cfg(feature = "ios-wal-compat")]
     #[error(transparent)]
     SecurityFrameworkError(#[from] security_framework::base::Error),
+    #[cfg(target_family = "wasm")]
+    #[error("{0}")]
+    JsError(String),
+}
+
+#[cfg(target_family = "wasm")]
+impl From<wasm_bindgen::JsValue> for CryptoKeystoreError {
+    fn from(jsv: wasm_bindgen::JsValue) -> Self {
+        Self::JsError(jsv.as_string().unwrap())
+    }
+}
+
+#[cfg(target_family = "wasm")]
+impl Into<wasm_bindgen::JsValue> for CryptoKeystoreError {
+    fn into(self) -> wasm_bindgen::JsValue {
+        wasm_bindgen::JsValue::from_str(&self.to_string())
+    }
+}
+
+#[cfg(target_family = "wasm")]
+impl From<serde_wasm_bindgen::Error> for CryptoKeystoreError {
+    fn from(jsv: serde_wasm_bindgen::Error) -> Self {
+        Self::SerdeWasmBindgenError(jsv.to_string())
+    }
+}
+
+
+#[cfg(target_family = "wasm")]
+impl From<rexie::Error> for CryptoKeystoreError {
+    fn from(rexie_err: rexie::Error) -> Self {
+        Self::RexieError(rexie_err.to_string())
+    }
 }
 
 pub type CryptoKeystoreResult<T> = Result<T, CryptoKeystoreError>;

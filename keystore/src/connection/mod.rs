@@ -30,37 +30,48 @@ mod platform {
 pub use self::platform::*;
 use crate::entities::{Entity, StringEntityId};
 
-use crate::{CryptoKeystoreError, CryptoKeystoreResult};
-use std::sync::{Mutex, MutexGuard};
+use crate::CryptoKeystoreResult;
+use async_lock::{Mutex, MutexGuard};
+use async_trait::async_trait;
+use std::sync::Arc;
 
 #[cfg(feature = "memory-cache")]
 const LRU_CACHE_CAP: usize = 100;
 
+#[async_trait(?Send)]
 pub trait DatabaseConnection: Sized {
-    fn open<S: AsRef<str>, S2: AsRef<str>>(name: S, key: S2) -> CryptoKeystoreResult<Self>;
+    async fn open(name: &str, key: &str) -> CryptoKeystoreResult<Self>;
 
-    fn open_in_memory<S: AsRef<str>, S2: AsRef<str>>(name: S, key: S2) -> CryptoKeystoreResult<Self>;
+    async fn open_in_memory(name: &str, key: &str) -> CryptoKeystoreResult<Self>;
 
-    fn close(self) -> CryptoKeystoreResult<()>;
+    async fn close(self) -> CryptoKeystoreResult<()>;
 
     /// Default implementation of wipe
-    fn wipe(self) -> CryptoKeystoreResult<()> {
-        self.close()
+    async fn wipe(self) -> CryptoKeystoreResult<()> {
+        self.close().await
     }
 }
 
 #[derive(Debug)]
 pub struct Connection {
-    pub(crate) conn: Mutex<KeystoreDatabaseConnection>,
+    pub(crate) conn: Arc<Mutex<KeystoreDatabaseConnection>>,
     #[cfg(feature = "memory-cache")]
     pub(crate) memory_cache: Mutex<lru::LruCache<Vec<u8>, Vec<u8>>>,
     #[cfg(feature = "memory-cache")]
     pub(crate) cache_enabled: std::sync::atomic::AtomicBool,
 }
 
+// * SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
+unsafe impl Send for Connection {}
+unsafe impl Sync for Connection {}
+
 impl Connection {
-    pub fn open_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
-        let conn = KeystoreDatabaseConnection::open(name, key)?.into();
+    pub async fn open_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
+        let conn = Arc::new(
+            KeystoreDatabaseConnection::open(name.as_ref(), key.as_ref())
+                .await?
+                .into(),
+        );
         Ok(Self {
             conn,
             #[cfg(feature = "memory-cache")]
@@ -70,8 +81,12 @@ impl Connection {
         })
     }
 
-    pub fn open_in_memory_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
-        let conn = KeystoreDatabaseConnection::open_in_memory(name, key)?.into();
+    pub async fn open_in_memory_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
+        let conn = Arc::new(
+            KeystoreDatabaseConnection::open_in_memory(name.as_ref(), key.as_ref())
+                .await?
+                .into(),
+        );
         Ok(Self {
             conn,
             #[cfg(feature = "memory-cache")]
@@ -81,17 +96,20 @@ impl Connection {
         })
     }
 
-    pub fn borrow_conn(&self) -> CryptoKeystoreResult<MutexGuard<KeystoreDatabaseConnection>> {
-        Ok(self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?)
+    pub async fn borrow_conn(&self) -> CryptoKeystoreResult<MutexGuard<'_, KeystoreDatabaseConnection>> {
+        Ok(self.conn.lock().await)
     }
 
-    pub fn insert<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self, entity: E) -> CryptoKeystoreResult<E> {
-        let mut conn = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
-        entity.save(&mut *conn)?;
+    pub async fn save<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+        entity: E,
+    ) -> CryptoKeystoreResult<E> {
+        let mut conn = self.conn.lock().await;
+        entity.save(&mut *conn).await?;
         Ok(entity)
     }
 
-    pub fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
+    pub async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
         id: impl AsRef<[u8]>,
     ) -> CryptoKeystoreResult<Option<E>> {
@@ -106,41 +124,44 @@ impl Connection {
         //         return cached;
         //     }
         // }
-        let mut conn = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
-        E::find_one(&mut *conn, &id.as_ref().into())
+        let mut conn = self.conn.lock().await;
+        E::find_one(&mut *conn, &id.as_ref().into()).await
     }
 
-    pub fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
+    pub async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
         &self,
         ids: &[S],
     ) -> CryptoKeystoreResult<Vec<E>> {
-        let mut conn = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
-        E::find_many(
-            &mut *conn,
-            &ids.iter().map(|id| id.as_ref().into()).collect::<Vec<StringEntityId>>(),
-        )
+        let entity_ids: Vec<StringEntityId> = ids.iter().map(|id| id.as_ref().into()).collect();
+        let mut conn = self.conn.lock().await;
+        E::find_many(&mut *conn, &entity_ids).await
     }
 
-    pub fn remove<E: Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
+    pub async fn remove<E: Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
         &self,
         id: S,
     ) -> CryptoKeystoreResult<()> {
-        let mut conn = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
-        E::delete(&mut *conn, &id.as_ref().into())
+        let mut conn = self.conn.lock().await;
+        E::delete(&mut *conn, &id.as_ref().into()).await?;
+        Ok(())
     }
 
-    pub fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize> {
-        let mut conn = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
-        E::count(&mut *conn)
+    pub async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize> {
+        let mut conn = self.conn.lock().await;
+        E::count(&mut *conn).await
     }
 
-    pub fn wipe(self) -> CryptoKeystoreResult<()> {
-        let conn = self
-            .conn
-            .into_inner()
-            .map_err(|_| CryptoKeystoreError::LockPoisonError)?;
+    pub async fn wipe(self) -> CryptoKeystoreResult<()> {
+        let conn: KeystoreDatabaseConnection = Arc::try_unwrap(self.conn).unwrap().into_inner();
 
-        conn.wipe()
+        conn.wipe().await?;
+        Ok(())
+    }
+
+    pub async fn close(self) -> CryptoKeystoreResult<()> {
+        let conn: KeystoreDatabaseConnection = Arc::try_unwrap(self.conn).unwrap().into_inner();
+        conn.close().await?;
+        Ok(())
     }
 
     #[cfg(feature = "memory-cache")]

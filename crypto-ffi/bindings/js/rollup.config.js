@@ -14,6 +14,7 @@ const generateDtsBundlePlugin = (entry, output) => ({
           filePath: entry,
           output: {
             noBanner: true,
+            exportReferencedTypes: false,
           },
         },
       ],

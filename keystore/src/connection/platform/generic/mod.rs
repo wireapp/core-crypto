@@ -16,6 +16,7 @@
 
 use crate::connection::DatabaseConnection;
 use crate::CryptoKeystoreResult;
+use blocking::unblock;
 
 refinery::embed_migrations!("src/connection/platform/generic/migrations");
 
@@ -24,6 +25,9 @@ pub struct SqlCipherConnection {
     conn: rusqlite::Connection,
     path: String,
 }
+
+unsafe impl Send for SqlCipherConnection {}
+unsafe impl Sync for SqlCipherConnection {}
 
 impl std::ops::Deref for SqlCipherConnection {
     type Target = rusqlite::Connection;
@@ -59,24 +63,30 @@ impl SqlCipherConnection {
         Ok(conn)
     }
 
-    fn init_with_key(path: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
-        let conn = rusqlite::Connection::open(path.as_ref())?;
-        Self::init_with_connection(conn, path.as_ref(), key.as_ref())
+    fn init_with_key(path: &str, key: &str) -> CryptoKeystoreResult<Self> {
+        let conn = rusqlite::Connection::open(path)?;
+        Self::init_with_connection(conn, path, key)
     }
 
-    fn init_with_key_in_memory(path: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
+    fn init_with_key_in_memory(_path: &str, key: &str) -> CryptoKeystoreResult<Self> {
         let conn = rusqlite::Connection::open_in_memory()?;
-        Self::init_with_connection(conn, path.as_ref(), key.as_ref())
+        Self::init_with_connection(conn, "", key)
     }
 
-    pub fn wipe(self) -> CryptoKeystoreResult<()> {
+    pub async fn wipe(self) -> CryptoKeystoreResult<()> {
         if self.path.is_empty() {
             return Ok(());
         }
 
-        self.conn.close().map_err(|(_, e)| e)?;
-        std::fs::remove_file(&self.path)?;
+        let path = self.path.clone();
+
+        unblock(|| self.close()).await?;
+        async_fs::remove_file(&path).await?;
         Ok(())
+    }
+
+    fn close(self) -> CryptoKeystoreResult<()> {
+        Ok(self.conn.close().map_err(|(_, e)| e)?)
     }
 
     /// To prevent iOS from killing backgrounded apps using a WAL-journaled file,
@@ -117,20 +127,26 @@ impl SqlCipherConnection {
     }
 }
 
+#[async_trait::async_trait(?Send)]
 impl DatabaseConnection for SqlCipherConnection {
-    fn open<S: AsRef<str>, S2: AsRef<str>>(name: S, key: S2) -> CryptoKeystoreResult<Self> {
-        Self::init_with_key(name, key)
+    async fn open(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
+        let name = name.to_string();
+        let key = key.to_string();
+        Ok(unblock(move || Self::init_with_key(&name, &key)).await?)
     }
 
-    fn open_in_memory<S: AsRef<str>, S2: AsRef<str>>(name: S, key: S2) -> CryptoKeystoreResult<Self> {
-        Self::init_with_key_in_memory(name, key)
+    async fn open_in_memory(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
+        let name = name.to_string();
+        let key = key.to_string();
+        Ok(unblock(move || Self::init_with_key_in_memory(&name, &key)).await?)
     }
 
-    fn close(self) -> CryptoKeystoreResult<()> {
-        Ok(self.conn.close().map_err(|(_, e)| e)?)
+    async fn close(self) -> CryptoKeystoreResult<()> {
+        unblock(|| self.close()).await
     }
 
-    fn wipe(self) -> CryptoKeystoreResult<()> {
-        self.wipe()
+    async fn wipe(self) -> CryptoKeystoreResult<()> {
+        self.wipe().await?;
+        Ok(())
     }
 }

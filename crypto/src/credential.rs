@@ -128,38 +128,38 @@ mod tests {
     use crate::{test_fixture_utils::*, MlsConversation, MlsConversationConfiguration};
     use openmls::prelude::{CredentialError, WelcomeError};
 
-    #[test]
-    fn basic_clients_can_send_messages() {
+    #[async_std::test]
+    async fn basic_clients_can_send_messages() {
         let alice_cred = CertificateBundle::rnd_basic();
         let bob_cred = CertificateBundle::rnd_basic();
-        alice_and_bob_send_messages(alice_cred, bob_cred).unwrap();
+        alice_and_bob_send_messages(alice_cred, bob_cred).await.unwrap();
     }
 
-    #[test]
-    fn certificate_clients_can_send_messages() {
+    #[async_std::test]
+    async fn certificate_clients_can_send_messages() {
         let alice_cred = CertificateBundle::rnd_certificate_bundle();
         let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        alice_and_bob_send_messages(alice_cred, bob_cred).unwrap();
+        alice_and_bob_send_messages(alice_cred, bob_cred).await.unwrap();
     }
 
-    #[test]
-    fn heterogeneous_clients_can_send_messages() {
+    #[async_std::test]
+    async fn heterogeneous_clients_can_send_messages() {
         // check that both credentials can initiate/join a group
         {
             let alice_cred = CertificateBundle::rnd_basic();
             let bob_cred = CertificateBundle::rnd_certificate_bundle();
-            alice_and_bob_send_messages(alice_cred, bob_cred).unwrap();
+            alice_and_bob_send_messages(alice_cred, bob_cred).await.unwrap();
             // drop alice & bob key stores
         }
         {
             let alice_cred = CertificateBundle::rnd_certificate_bundle();
             let bob_cred = CertificateBundle::rnd_basic();
-            alice_and_bob_send_messages(alice_cred, bob_cred).unwrap();
+            alice_and_bob_send_messages(alice_cred, bob_cred).await.unwrap();
         }
     }
 
-    #[test]
-    fn should_fail_when_certificate_chain_is_empty() {
+    #[async_std::test]
+    async fn should_fail_when_certificate_chain_is_empty() {
         let alice_cred = || {
             let bundle = CertificateBundle::rnd_certificate_bundle()().unwrap();
             Some(CertificateBundle {
@@ -168,14 +168,14 @@ mod tests {
             })
         };
         let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        match alice_and_bob_send_messages(alice_cred, bob_cred) {
+        match alice_and_bob_send_messages(alice_cred, bob_cred).await {
             Err(CryptoError::MlsError(MlsError::MlsCredentialError(CredentialError::IncompleteCertificateChain))) => {}
             _ => panic!(),
         };
     }
 
-    #[test]
-    fn should_fail_when_certificate_chain_has_a_single_self_signed() {
+    #[async_std::test]
+    async fn should_fail_when_certificate_chain_has_a_single_self_signed() {
         let alice_cred = || {
             let mut bundle = CertificateBundle::rnd_certificate_bundle()().unwrap();
             let root_ca = bundle.certificate_chain.last().unwrap().to_owned();
@@ -183,14 +183,14 @@ mod tests {
             Some(bundle)
         };
         let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        match alice_and_bob_send_messages(alice_cred, bob_cred) {
+        match alice_and_bob_send_messages(alice_cred, bob_cred).await {
             Err(CryptoError::MlsError(MlsError::MlsCredentialError(CredentialError::IncompleteCertificateChain))) => {}
             _ => panic!(),
         };
     }
 
-    #[test]
-    fn should_fail_when_certificate_chain_is_unordered() {
+    #[async_std::test]
+    async fn should_fail_when_certificate_chain_is_unordered() {
         // chain must be [leaf, leaf-issuer, ..., root-ca]
         let alice_cred = || {
             let mut bundle = CertificateBundle::rnd_certificate_bundle()().unwrap();
@@ -198,14 +198,14 @@ mod tests {
             Some(bundle)
         };
         let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        match alice_and_bob_send_messages(alice_cred, bob_cred) {
+        match alice_and_bob_send_messages(alice_cred, bob_cred).await {
             Err(CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))) => {}
             _ => panic!(),
         };
     }
 
-    #[test]
-    fn should_fail_when_signature_key_doesnt_match_certificate_public_key() {
+    #[async_std::test]
+    async fn should_fail_when_signature_key_doesnt_match_certificate_public_key() {
         let alice_cred = || {
             let bundle = CertificateBundle::rnd_certificate_bundle()().unwrap();
             let other_bundle = CertificateBundle::rnd_certificate_bundle()().unwrap();
@@ -215,14 +215,14 @@ mod tests {
             })
         };
         let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        match alice_and_bob_send_messages(alice_cred, bob_cred) {
+        match alice_and_bob_send_messages(alice_cred, bob_cred).await {
             Err(CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))) => {}
             _ => panic!(),
         };
     }
 
-    #[test]
-    fn should_fail_when_certificate_expired() {
+    #[async_std::test]
+    async fn should_fail_when_certificate_expired() {
         let alice_cred = || {
             let (leaf_kp, leaf_sk) = CertificateBundle::key_pair();
             let mut params = rcgen::CertificateParams::new(vec!["wire.com".to_string()]);
@@ -233,14 +233,14 @@ mod tests {
         };
 
         let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        match alice_and_bob_send_messages(alice_cred, bob_cred) {
+        match alice_and_bob_send_messages(alice_cred, bob_cred).await {
             Err(CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))) => {}
             _ => panic!(),
         };
     }
 
-    #[test]
-    fn should_fail_when_certificate_not_valid_yet() {
+    #[async_std::test]
+    async fn should_fail_when_certificate_not_valid_yet() {
         let alice_cred = || {
             let (leaf_kp, leaf_sk) = CertificateBundle::key_pair();
             let mut params = rcgen::CertificateParams::new(vec!["wire.com".to_string()]);
@@ -251,37 +251,47 @@ mod tests {
         };
 
         let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        match alice_and_bob_send_messages(alice_cred, bob_cred) {
+        match alice_and_bob_send_messages(alice_cred, bob_cred).await {
             Err(CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))) => {}
             _ => panic!(),
         };
     }
 
-    fn alice_and_bob_send_messages(alice_cred: CredentialSupplier, bob_cred: CredentialSupplier) -> CryptoResult<()> {
+    async fn alice_and_bob_send_messages(
+        alice_cred: CredentialSupplier,
+        bob_cred: CredentialSupplier,
+    ) -> CryptoResult<()> {
         let conversation_id = conversation_id();
-        let (alice_backend, mut alice) = alice(alice_cred)?;
-        let (bob_backend, bob) = bob(bob_cred)?;
+        let (alice_backend, mut alice) = alice(alice_cred).await?;
+        let (bob_backend, bob) = bob(bob_cred).await?;
         let configuration = MlsConversationConfiguration::default();
         let mut alice_group =
-            MlsConversation::create(conversation_id, alice.local_client_mut(), configuration, &alice_backend)?;
-        let welcome = alice_group.add_members(&mut [bob], &alice_backend).unwrap().welcome;
+            MlsConversation::create(conversation_id, alice.local_client_mut(), configuration, &alice_backend).await?;
+        let welcome = alice_group
+            .add_members(&mut [bob], &alice_backend)
+            .await
+            .unwrap()
+            .welcome;
 
         let mut bob_group =
-            MlsConversation::from_welcome_message(welcome, MlsConversationConfiguration::default(), &bob_backend)?;
+            MlsConversation::from_welcome_message(welcome, MlsConversationConfiguration::default(), &bob_backend)
+                .await?;
 
         let msg = b"Hello World!";
 
         // alice -> bob
-        let encrypted_msg = alice_group.encrypt_message(msg, &alice_backend)?;
+        let encrypted_msg = alice_group.encrypt_message(msg, &alice_backend).await?;
         let decrypted_msg = bob_group
-            .decrypt_message(&encrypted_msg, &bob_backend)?
+            .decrypt_message(&encrypted_msg, &bob_backend)
+            .await?
             .ok_or_else(|| CryptoError::Unauthorized)?;
         assert_eq!(msg, decrypted_msg.as_slice());
 
         // bob -> alice
-        let encrypted_msg = bob_group.encrypt_message(decrypted_msg, &bob_backend)?;
+        let encrypted_msg = bob_group.encrypt_message(decrypted_msg, &bob_backend).await?;
         let decrypted_msg = alice_group
-            .decrypt_message(&encrypted_msg, &alice_backend)?
+            .decrypt_message(&encrypted_msg, &alice_backend)
+            .await?
             .ok_or_else(|| CryptoError::Unauthorized)?;
         assert_eq!(msg, decrypted_msg.as_slice());
         Ok(())

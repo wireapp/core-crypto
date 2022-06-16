@@ -20,7 +20,7 @@ args = [
     "build",
     "--out-dir", "bindings/js/wasm",
     "--out-name", "core-crypto-ffi",
-    "--target", "browser",
+    # "--target", "browser",
     "--mode", "normal"
 ]
 

@@ -23,32 +23,40 @@ mod tests {
 
     const MSG: &str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum";
 
-    #[test]
+    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
+
     fn increment_message() {
         let user_uuid = uuid::Uuid::new_v4().hyphenated();
         let client_id = format!("{user_uuid}:1234@members.wire.com");
         let config = MlsCentralConfiguration::try_new("increment_message.edb", "test1234", &client_id).unwrap();
 
-        let mut central = MlsCentral::try_new(config).unwrap();
-        let _ = central.client_keypackages(100).unwrap();
+        let mut central = MlsCentral::try_new(config).await.unwrap();
+        let _ = central.client_keypackages(100).await.unwrap();
 
         let conversation_id = uuid::Uuid::new_v4();
         let cid_bytes = conversation_id.as_bytes().to_vec();
 
         central
             .new_conversation(cid_bytes.clone(), MlsConversationConfiguration::default())
+            .await
             .unwrap();
 
         let mut lengths = Vec::with_capacity(MSG.len());
 
         for i in 0..MSG.len() {
-            lengths.push(central.encrypt_message(cid_bytes.clone(), &MSG[0..=i]).unwrap().len());
+            lengths.push(
+                central
+                    .encrypt_message(cid_bytes.clone(), &MSG[0..=i])
+                    .await
+                    .unwrap()
+                    .len(),
+            );
         }
 
         lengths.into_iter().enumerate().for_each(|(i, len)| {
             println!("msg.len[{i}] => enc.len[{len}]");
         });
 
-        central.wipe();
+        central.wipe().await.unwrap();
     }
 }

@@ -21,6 +21,7 @@ use crate::{
 };
 use crate::{CryptoKeystoreResult, MissingKeyErrorKind};
 
+#[async_trait::async_trait(?Send)]
 impl EntityBase for PersistedMlsGroup {
     type ConnectionType = KeystoreDatabaseConnection;
 
@@ -28,46 +29,56 @@ impl EntityBase for PersistedMlsGroup {
         MissingKeyErrorKind::MlsGroup
     }
 
-    fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
+    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
 
-        storage.insert("mls_groups", &mut [self.clone()])?;
+        storage.save("mls_groups", &mut [self.clone()]).await?;
 
         Ok(())
     }
 
-    fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<Option<Self>> {
-        conn.storage().get("mls_groups", id.as_bytes())
+    async fn find_one(
+        conn: &mut Self::ConnectionType,
+        id: &StringEntityId,
+    ) -> crate::CryptoKeystoreResult<Option<Self>> {
+        let storage = conn.storage();
+        storage.get("mls_groups", id.as_bytes()).await
     }
 
-    fn find_many(conn: &mut Self::ConnectionType, _ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<Vec<Self>> {
+    async fn find_many(
+        conn: &mut Self::ConnectionType,
+        _ids: &[StringEntityId],
+    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        let storage = conn.storage();
         // Plot twist: we always select ALL the persisted groups. Unsure if we want to make it a real API with selection
-        conn.storage().get_all("mls_groups")
+        storage.get_all("mls_groups").await
     }
 
-    fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        conn.storage().count("mls_groups")
+    async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
+        let storage = conn.storage();
+        storage.count("mls_groups").await
     }
 
-    fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
-        let _ = conn.storage_mut().delete("mls_groups", &[id.as_bytes()])?;
+    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
+        let storage = conn.storage_mut();
+        let _ = storage.delete("mls_groups", &[id.as_bytes()]).await?;
         Ok(())
     }
 }
 
 impl Entity for PersistedMlsGroup {
-    fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
-        Ok(js_sys::Uint8Array::from(self.id.as_slice()).into())
+    fn aad(&self) -> &[u8] {
+        self.id.as_slice()
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.state = Self::encrypt_data(cipher, self.state.as_slice())?;
+        self.state = Self::encrypt_data(cipher, self.state.as_slice(), self.aad())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.state = Self::decrypt_data(cipher, self.state.as_slice())?;
+        self.state = Self::decrypt_data(cipher, self.state.as_slice(), self.aad())?;
 
         Ok(())
     }

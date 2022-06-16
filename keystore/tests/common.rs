@@ -23,25 +23,29 @@ const TEST_ENCRYPTION_KEY: &str = "test1234";
 cfg_if::cfg_if! {
     if #[cfg(target_family = "wasm")] {
         fn get_file_path(name: &str) -> String {
-            format!("./corecrypto.{}.idb", name)
-        }
-
-        pub fn setup(name: &str) -> CryptoKeystore {
-            let store = CryptoKeystore::open_in_memory_with_key(get_file_path(name), TEST_ENCRYPTION_KEY).unwrap();
-            store
+            format!("corecrypto.test.{}.edb", name)
         }
     } else {
         fn get_file_path(name: &str) -> String {
             format!("./test.{}.edb", name)
         }
-
-        pub fn setup(name: &str) -> CryptoKeystore {
-            let store = CryptoKeystore::open_with_key(get_file_path(name), TEST_ENCRYPTION_KEY).unwrap();
-            store
-        }
     }
 }
 
-pub fn teardown(store: CryptoKeystore) {
-    store.wipe().unwrap();
+pub async fn setup(name: &str) -> CryptoKeystore {
+    let store = CryptoKeystore::open_with_key(get_file_path(name), TEST_ENCRYPTION_KEY)
+        .await
+        .unwrap();
+    store
+}
+
+pub async fn setup_in_memory(name: &str) -> CryptoKeystore {
+    let store = CryptoKeystore::open_in_memory_with_key(get_file_path(name), TEST_ENCRYPTION_KEY)
+        .await
+        .unwrap();
+    store
+}
+
+pub async fn teardown(store: CryptoKeystore) {
+    store.wipe().await.unwrap();
 }

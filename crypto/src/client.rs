@@ -98,27 +98,29 @@ fn identity_key(credentials: &CredentialBundle) -> Result<Vec<u8>, MlsError> {
 }
 
 impl Client {
-    pub fn init(
+    pub async fn init(
         id: ClientId,
         certificate_bundle: Option<CertificateBundle>,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
         use core_crypto_keystore::CryptoKeystoreMls as _;
         let id_str: String = id.to_string();
-        let client = if let Some(signature) = backend.key_store().mls_load_identity_signature(&id_str)? {
-            match Self::load(id.clone(), &signature, backend) {
+        let client = if let Some(signature) = backend.key_store().mls_load_identity_signature(&id_str).await? {
+            match Self::load(id.clone(), &signature, backend).await {
                 Ok(client) => client,
-                Err(CryptoError::ClientSignatureNotFound) => Self::generate(id, certificate_bundle, backend, true)?,
+                Err(CryptoError::ClientSignatureNotFound) => {
+                    Self::generate(id, certificate_bundle, backend, true).await?
+                }
                 Err(e) => return Err(e),
             }
         } else {
-            Self::generate(id, certificate_bundle, backend, true)?
+            Self::generate(id, certificate_bundle, backend, true).await?
         };
 
         Ok(client)
     }
 
-    pub(crate) fn generate(
+    pub(crate) async fn generate(
         id: ClientId,
         certificate_bundle: Option<CertificateBundle>,
         backend: &MlsCryptoProvider,
@@ -135,12 +137,10 @@ impl Client {
         let identity = MlsIdentity {
             id: id.to_string(),
             signature: identity_key(&credentials)?,
-            credential: credentials
-                .to_key_store_value()
-                .map_err(|e| MlsError::MlsErrorString(e.into()))?,
+            credential: credentials.to_key_store_value().map_err(MlsError::from)?,
         };
 
-        backend.key_store().insert(identity)?;
+        backend.key_store().save(identity).await?;
 
         let client = Self {
             id,
@@ -149,25 +149,32 @@ impl Client {
         };
 
         if provision {
-            client.provision_keying_material(INITIAL_KEYING_MATERIAL_COUNT, backend)?;
+            client
+                .provision_keying_material(INITIAL_KEYING_MATERIAL_COUNT, backend)
+                .await?;
         }
 
         Ok(client)
     }
 
-    pub(crate) fn load(id: ClientId, signature_public_key: &[u8], backend: &MlsCryptoProvider) -> CryptoResult<Self> {
+    pub(crate) async fn load(
+        id: ClientId,
+        signature_public_key: &[u8],
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<Self> {
         let ciphersuite = MlsCiphersuite::default();
         let identity: MlsIdentity = backend
             .key_store()
-            .find(id.to_string())?
+            .find(id.to_string())
+            .await?
             .ok_or(CryptoError::ClientSignatureNotFound)?;
 
         if signature_public_key != identity.signature {
             return Err(CryptoError::ClientSignatureMismatch);
         }
 
-        let credentials: CredentialBundle = CredentialBundle::from_key_store_value(&identity.credential)
-            .map_err(|e| MlsError::MlsErrorString(e.into()))?;
+        let credentials: CredentialBundle =
+            CredentialBundle::from_key_store_value(&identity.credential).map_err(MlsError::from)?;
 
         Ok(Self {
             id,
@@ -176,7 +183,7 @@ impl Client {
         })
     }
 
-    pub(crate) fn load_credential_bundle(
+    pub(crate) async fn load_credential_bundle(
         &self,
         signature_public_key: &[u8],
         backend: &MlsCryptoProvider,
@@ -184,6 +191,7 @@ impl Client {
         let credentials: CredentialBundle = backend
             .key_store()
             .read(signature_public_key)
+            .await
             .ok_or(CryptoError::ClientSignatureNotFound)?;
         Ok(credentials)
     }
@@ -204,26 +212,27 @@ impl Client {
         &self.ciphersuite
     }
 
-    pub fn keypackage_raw_hash(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
-        Ok(self.keypackage_hash(backend)?.value().to_vec())
+    pub async fn keypackage_raw_hash(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
+        Ok(self.keypackage_hash(backend).await?.value().to_vec())
     }
 
     /// This method returns the hash of the oldest available KeyPackageBundle for the Client
     /// and if necessary regenerates a new keypackage for immediate use
-    pub fn keypackage_hash(&self, backend: &MlsCryptoProvider) -> CryptoResult<KeyPackageRef> {
+    #[async_recursion::async_recursion(?Send)]
+    pub async fn keypackage_hash(&self, backend: &MlsCryptoProvider) -> CryptoResult<KeyPackageRef> {
         use core_crypto_keystore::CryptoKeystoreMls as _;
-        let kpb_result: CryptoKeystoreResult<KeyPackageBundle> = backend.key_store().mls_get_keypackage();
+        let kpb_result: CryptoKeystoreResult<KeyPackageBundle> = backend.key_store().mls_get_keypackage().await;
         match kpb_result {
             Ok(kpb) => Ok(kpb.key_package().hash_ref(backend.crypto()).map_err(MlsError::from)?),
             Err(CryptoKeystoreError::OutOfKeyPackageBundles) => {
-                self.gen_keypackage(backend)?;
-                Ok(self.keypackage_hash(backend)?)
+                self.gen_keypackage(backend).await?;
+                Ok(self.keypackage_hash(backend).await?)
             }
             Err(e) => Err(e.into()),
         }
     }
 
-    pub fn gen_keypackage(&self, backend: &MlsCryptoProvider) -> CryptoResult<KeyPackageBundle> {
+    pub async fn gen_keypackage(&self, backend: &MlsCryptoProvider) -> CryptoResult<KeyPackageBundle> {
         let kpb = KeyPackageBundle::new(
             &[*self.ciphersuite],
             &self.credentials,
@@ -234,40 +243,37 @@ impl Client {
 
         let href = kpb.key_package().hash_ref(backend.crypto()).map_err(MlsError::from)?;
 
-        backend
-            .key_store()
-            .store(href.value(), &kpb)
-            .map_err(|e| MlsError::MlsErrorString(e.into()))?;
+        backend.key_store().store(href.value(), &kpb).await?;
 
         Ok(kpb)
     }
 
     /// Requests `count` keying material to be present and returns
     /// a reference to it for the consumer to copy/clone.
-    pub fn request_keying_material(
+    pub async fn request_keying_material(
         &self,
         count: usize,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<KeyPackageBundle>> {
-        let kpbs = self.provision_keying_material(count, backend)?;
+        let kpbs = self.provision_keying_material(count, backend).await?;
         Ok(kpbs)
     }
 
-    fn provision_keying_material(
+    async fn provision_keying_material(
         &self,
         count: usize,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<KeyPackageBundle>> {
         use core_crypto_keystore::CryptoKeystoreMls as _;
-        let kpb_count = backend.key_store().mls_keypackagebundle_count()?;
+        let kpb_count = backend.key_store().mls_keypackagebundle_count().await?;
         if count > kpb_count {
             let to_generate = count - kpb_count;
             for _ in 0..=to_generate {
-                self.gen_keypackage(backend)?;
+                self.gen_keypackage(backend).await?;
             }
         }
 
-        let kpbs: Vec<KeyPackageBundle> = backend.key_store().mls_fetch_keypackage_bundles(count as u32)?;
+        let kpbs: Vec<KeyPackageBundle> = backend.key_store().mls_fetch_keypackage_bundles(count as u32).await?;
 
         Ok(kpbs)
     }
@@ -283,7 +289,7 @@ impl Eq for Client {}
 
 #[cfg(test)]
 impl Client {
-    pub fn random_generate(
+    pub async fn random_generate(
         backend: &MlsCryptoProvider,
         provision: bool,
         certificate_bundle: Option<CertificateBundle>,
@@ -293,14 +299,15 @@ impl Client {
         let client_id = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated())
             .as_bytes()
             .into();
-        Self::generate(client_id, certificate_bundle, backend, provision)
+        Self::generate(client_id, certificate_bundle, backend, provision).await
     }
 
-    pub fn keypackages(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<openmls::prelude::KeyPackage>> {
+    pub async fn keypackages(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<openmls::prelude::KeyPackage>> {
         use core_crypto_keystore::CryptoKeystoreMls as _;
         let kps = backend
             .key_store()
-            .mls_fetch_keypackage_bundles(u32::MAX)?
+            .mls_fetch_keypackage_bundles(u32::MAX)
+            .await?
             .into_iter()
             .try_fold(vec![], |mut acc, kpb: KeyPackageBundle| -> CryptoResult<_> {
                 acc.push(kpb.key_package().clone());
@@ -322,33 +329,33 @@ pub mod tests {
 
     #[apply(all_credential_types)]
     #[wasm_bindgen_test]
-    pub fn can_generate_client(credential: CredentialSupplier) {
-        let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        assert!(Client::random_generate(&backend, false, credential()).is_ok());
+    pub async fn can_generate_client(credential: CredentialSupplier) {
+        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+        assert!(Client::random_generate(&backend, false, credential()).await.is_ok());
     }
 
     #[apply(all_credential_types)]
     #[wasm_bindgen_test]
-    pub fn client_never_runs_out_of_keypackages(credential: CredentialSupplier) {
-        let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        let client = Client::random_generate(&backend, true, credential()).unwrap();
+    pub async fn client_never_runs_out_of_keypackages(credential: CredentialSupplier) {
+        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+        let client = Client::random_generate(&backend, true, credential()).await.unwrap();
         for _ in 0..100 {
-            assert!(client.keypackage_raw_hash(&backend).is_ok())
+            assert!(client.keypackage_raw_hash(&backend).await.is_ok())
         }
     }
 
     #[apply(all_credential_types)]
     #[wasm_bindgen_test]
-    pub fn client_generates_correct_number_of_kpbs(credential: CredentialSupplier) {
+    pub async fn client_generates_correct_number_of_kpbs(credential: CredentialSupplier) {
         // use openmls_traits::OpenMlsCryptoProvider as _;
-        let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        let client = Client::random_generate(&backend, true, credential()).unwrap();
+        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+        let client = Client::random_generate(&backend, true, credential()).await.unwrap();
 
         const COUNT: usize = 124;
 
         let mut _prev_kpbs: Option<Vec<openmls::prelude::KeyPackageBundle>> = None;
         for _ in 0..50 {
-            let kpbs = client.request_keying_material(COUNT, &backend).unwrap();
+            let kpbs = client.request_keying_material(COUNT, &backend).await.unwrap();
             assert_eq!(kpbs.len(), COUNT);
 
             // FIXME: This part of the test should be enabled after pruning is implemented.
@@ -364,4 +371,3 @@ pub mod tests {
         }
     }
 }
-

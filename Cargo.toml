@@ -3,25 +3,33 @@ members = ["crypto", "crypto-ffi", "keystore", "mls-provider", "cli"]
 exclude = ["extras/anycrypto", "extras/core-ds"]
 resolver = "2"
 
+[patch.crates-io.rexie]
+git = "https://github.com/otak/rexie"
+branch = "feat/api-expansion"
+
 [patch.crates-io.proteus]
 git = "https://github.com/wireapp/proteus"
 branch = "otak/sodiumoxide-0.2.7"
 
 [patch.crates-io.openmls]
 git = "https://github.com/wireapp/openmls"
-branch = "develop"
+branch = "feat/async"
+package = "openmls"
 
-[patch.crates-io.openmls_rust_crypto]
-git = "https://github.com/wireapp/openmls"
-branch = "develop"
-
-[patch.crates-io.openmls_traits]
-git = "https://github.com/wireapp/openmls"
-branch = "develop"
 
 [patch.crates-io.rcgen]
 git = "https://github.com/wireapp/rcgen"
 branch = "master"
+
+[patch.crates-io.openmls_rust_crypto]
+git = "https://github.com/wireapp/openmls"
+branch = "feat/async"
+package = "openmls_rust_crypto"
+
+[patch.crates-io.openmls_traits]
+git = "https://github.com/wireapp/openmls"
+branch = "feat/async"
+package = "openmls_traits"
 
 [profile.release]
 lto = true

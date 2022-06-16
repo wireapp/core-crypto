@@ -19,11 +19,11 @@ pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 use core_crypto::prelude::*;
 
-pub fn init_with_path_and_key(
-    path: &str,
-    key: &str,
-    client_id: &str,
-) -> CryptoResult<std::sync::Arc<crate::CoreCrypto>> {
+pub fn init_with_path_and_key<'a, 'b>(
+    path: &'a str,
+    key: &'a str,
+    client_id: &'a str,
+) -> CryptoResult<std::sync::Arc<crate::CoreCrypto<'b>>> {
     Ok(std::sync::Arc::new(crate::CoreCrypto::new(path, key, client_id)?))
 }
 
@@ -31,7 +31,7 @@ pub fn version() -> String {
     VERSION.to_string()
 }
 
-impl super::UniffiCustomTypeConverter for core_crypto::prelude::ClientId {
+impl crate::UniffiCustomTypeConverter for core_crypto::prelude::ClientId {
     type Builtin = Vec<u8>;
 
     fn into_custom(val: Self::Builtin) -> uniffi::Result<Self>

@@ -99,14 +99,14 @@ mod config {
 
     #[derive(Debug, Clone)]
     #[non_exhaustive]
-    pub struct MlsCentralConfiguration<'a> {
-        pub store_path: &'a str,
-        pub identity_key: &'a str,
-        pub client_id: &'a str,
+    pub struct MlsCentralConfiguration {
+        pub store_path: String,
+        pub identity_key: String,
+        pub client_id: String,
     }
 
-    impl<'a> MlsCentralConfiguration<'a> {
-        pub fn try_new(store_path: &'a str, identity_key: &'a str, client_id: &'a str) -> CryptoResult<Self> {
+    impl MlsCentralConfiguration {
+        pub fn try_new(store_path: String, identity_key: String, client_id: String) -> CryptoResult<Self> {
             // TODO: probably more complex rules to enforce
             if store_path.trim().is_empty() {
                 return Err(CryptoError::MalformedIdentifier(store_path.to_string()));
@@ -149,21 +149,23 @@ impl MlsCentral {
     /// Tries to initialize the MLS Central object.
     /// Takes a store path (i.e. Disk location of the embedded database, should be consistent between messaging sessions)
     /// And a root identity key (i.e. enclaved encryption key for this device)
-    pub fn try_new(
+    pub async fn try_new(
         configuration: MlsCentralConfiguration,
         certificate_bundle: Option<CertificateBundle>,
     ) -> CryptoResult<Self> {
         // Init backend (crypto + rand + keystore)
-        let mls_backend = MlsCryptoProvider::try_new(&configuration.store_path, &configuration.identity_key)?;
+        let mls_backend = MlsCryptoProvider::try_new(&configuration.store_path, &configuration.identity_key).await?;
 
         // Init client identity (load or create)
         let mls_client = Client::init(
             configuration.client_id.as_bytes().into(),
             certificate_bundle,
             &mls_backend,
-        )?;
+        )
+        .await?;
+
         // Restore persisted groups if there are any
-        let mls_groups = Self::restore_groups(&mls_backend)?;
+        let mls_groups = Self::restore_groups(&mls_backend).await?;
 
         Ok(Self {
             mls_backend,
@@ -173,17 +175,18 @@ impl MlsCentral {
         })
     }
 
-    pub fn try_new_in_memory(
+    pub async fn try_new_in_memory(
         configuration: MlsCentralConfiguration,
         certificate_bundle: Option<CertificateBundle>,
     ) -> crate::error::CryptoResult<Self> {
-        let mls_backend = MlsCryptoProvider::try_new_in_memory(&configuration.store_path)?;
+        let mls_backend = MlsCryptoProvider::try_new_in_memory(&configuration.store_path).await?;
         let mls_client = Client::init(
             configuration.client_id.as_bytes().into(),
             certificate_bundle,
             &mls_backend,
-        )?;
-        let mls_groups = Self::restore_groups(&mls_backend)?;
+        )
+        .await?;
+        let mls_groups = Self::restore_groups(&mls_backend).await?;
 
         Ok(Self {
             mls_backend,
@@ -193,11 +196,11 @@ impl MlsCentral {
         })
     }
 
-    fn restore_groups(
+    async fn restore_groups(
         backend: &MlsCryptoProvider,
     ) -> crate::error::CryptoResult<HashMap<ConversationId, MlsConversation>> {
         use core_crypto_keystore::CryptoKeystoreMls as _;
-        let states = backend.key_store().mls_groups_restore()?;
+        let states = backend.key_store().mls_groups_restore().await?;
         if states.is_empty() {
             return Ok(HashMap::new());
         }
@@ -229,14 +232,19 @@ impl MlsCentral {
         Ok(self.mls_client.id().clone().into())
     }
 
-    pub fn client_keypackages(&self, amount_requested: usize) -> CryptoResult<Vec<KeyPackageBundle>> {
+    pub async fn client_keypackages(&self, amount_requested: usize) -> CryptoResult<Vec<KeyPackageBundle>> {
         self.mls_client
             .request_keying_material(amount_requested, &self.mls_backend)
+            .await
     }
 
     /// Create a new empty conversation
-    pub fn new_conversation(&mut self, id: ConversationId, config: MlsConversationConfiguration) -> CryptoResult<()> {
-        let conversation = MlsConversation::create(id.clone(), &mut self.mls_client, config, &self.mls_backend)?;
+    pub async fn new_conversation(
+        &mut self,
+        id: ConversationId,
+        config: MlsConversationConfiguration,
+    ) -> CryptoResult<()> {
+        let conversation = MlsConversation::create(id.clone(), &mut self.mls_client, config, &self.mls_backend).await?;
 
         self.mls_groups.insert(id, conversation);
 
@@ -252,12 +260,12 @@ impl MlsCentral {
     }
 
     /// Create a conversation from a received MLS Welcome message
-    pub fn process_welcome_message(
+    pub async fn process_welcome_message(
         &mut self,
         welcome: Welcome,
         configuration: MlsConversationConfiguration,
     ) -> CryptoResult<ConversationId> {
-        let conversation = MlsConversation::from_welcome_message(welcome, configuration, &self.mls_backend)?;
+        let conversation = MlsConversation::from_welcome_message(welcome, configuration, &self.mls_backend).await?;
         let conversation_id = conversation.id().clone();
         self.mls_groups.insert(conversation_id.clone(), conversation);
 
@@ -265,14 +273,17 @@ impl MlsCentral {
     }
 
     /// Create a conversation from a recieved MLS Welcome message
-    pub fn process_raw_welcome_message(&mut self, welcome: Vec<u8>) -> crate::error::CryptoResult<ConversationId> {
+    pub async fn process_raw_welcome_message(
+        &mut self,
+        welcome: Vec<u8>,
+    ) -> crate::error::CryptoResult<ConversationId> {
         let configuration = MlsConversationConfiguration::default();
         let mut cursor = std::io::Cursor::new(welcome);
         let welcome = Welcome::tls_deserialize(&mut cursor).map_err(MlsError::from)?;
-        self.process_welcome_message(welcome, configuration)
+        self.process_welcome_message(welcome, configuration).await
     }
 
-    pub fn add_members_to_conversation(
+    pub async fn add_members_to_conversation(
         &mut self,
         id: &ConversationId,
         members: &mut [ConversationMember],
@@ -284,13 +295,13 @@ impl MlsCentral {
         }
 
         if let Some(group) = self.mls_groups.get_mut(id) {
-            Ok(Some(group.add_members(members, &self.mls_backend)?))
+            Ok(Some(group.add_members(members, &self.mls_backend).await?))
         } else {
             Ok(None)
         }
     }
 
-    pub fn remove_members_from_conversation(
+    pub async fn remove_members_from_conversation(
         &mut self,
         id: &ConversationId,
         clients: &[ClientId],
@@ -302,28 +313,31 @@ impl MlsCentral {
         }
 
         if let Some(group) = self.mls_groups.get_mut(id) {
-            Ok(Some(group.remove_members(clients, &self.mls_backend)?))
+            Ok(Some(group.remove_members(clients, &self.mls_backend).await?))
         } else {
             Ok(None)
         }
     }
 
     /// Leaves a conversation with all the clients of the current user
-    pub fn leave_conversation(
+    pub async fn leave_conversation(
         &mut self,
         conversation: ConversationId,
         // The user's other clients. This can be an empty array
         other_clients: &[ClientId],
     ) -> CryptoResult<MlsConversationLeaveMessage> {
-        if let Some(mut group) = self.mls_groups.remove(&conversation) {
-            Ok(group.leave(other_clients, &self.mls_backend)?)
+        let messages = if let Some(group) = self.mls_groups.get_mut(&conversation) {
+            group.leave(other_clients, &self.mls_backend).await?
         } else {
-            Err(CryptoError::ConversationNotFound(conversation))
-        }
+            return Err(CryptoError::ConversationNotFound(conversation));
+        };
+
+        let _ = self.mls_groups.remove(&conversation);
+        Ok(messages)
     }
 
     /// Encrypts a raw payload then serializes it to the TLS wire format
-    pub fn encrypt_message(
+    pub async fn encrypt_message(
         &mut self,
         conversation: ConversationId,
         message: impl AsRef<[u8]>,
@@ -333,13 +347,13 @@ impl MlsCentral {
             .get_mut(&conversation)
             .ok_or(CryptoError::ConversationNotFound(conversation))?;
 
-        conversation.encrypt_message(message, &self.mls_backend)
+        conversation.encrypt_message(message, &self.mls_backend).await
     }
 
     /// Deserializes a TLS-serialized message, then deciphers it
     /// This method will return None for the message in case the provided payload is
     /// a system message, such as Proposals and Commits
-    pub fn decrypt_message(
+    pub async fn decrypt_message(
         &mut self,
         conversation_id: ConversationId,
         message: impl AsRef<[u8]>,
@@ -349,11 +363,11 @@ impl MlsCentral {
             .get_mut(&conversation_id)
             .ok_or(CryptoError::ConversationNotFound(conversation_id))?;
 
-        conversation.decrypt_message(message.as_ref(), &self.mls_backend)
+        conversation.decrypt_message(message.as_ref(), &self.mls_backend).await
     }
 
     /// Exports a TLS-serialized view of the current group state corresponding to the provided conversation ID.
-    pub fn export_public_group_state(&self, conversation_id: &ConversationId) -> CryptoResult<Vec<u8>> {
+    pub async fn export_public_group_state(&self, conversation_id: &ConversationId) -> CryptoResult<Vec<u8>> {
         let conversation = self
             .mls_groups
             .get(conversation_id)
@@ -362,18 +376,25 @@ impl MlsCentral {
         let state = conversation
             .group
             .export_public_group_state(&self.mls_backend)
+            .await
             .map_err(MlsError::from)?;
 
         Ok(state.tls_serialize_detached().map_err(MlsError::from)?)
     }
 
+    pub async fn close(self) -> CryptoResult<()> {
+        self.mls_backend.close().await?;
+        Ok(())
+    }
+
     /// Destroys everything we have, in-memory and on disk.
-    pub fn wipe(self) {
-        self.mls_backend.destroy_and_reset();
+    pub async fn wipe(self) -> CryptoResult<()> {
+        self.mls_backend.destroy_and_reset().await?;
+        Ok(())
     }
 
     /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited
-    pub fn update_keying_material(
+    pub async fn update_keying_material(
         &mut self,
         conversation_id: ConversationId,
     ) -> CryptoResult<(MlsMessageOut, Option<Welcome>)> {
@@ -382,48 +403,61 @@ impl MlsCentral {
             .get_mut(&conversation_id)
             .ok_or(CryptoError::ConversationNotFound(conversation_id))?;
 
-        conversation.update_keying_material(&self.mls_backend)
+        conversation.update_keying_material(&self.mls_backend).await
     }
 }
 
 #[cfg(test)]
 pub mod test_utils {
-    use crate::{credential::CredentialSupplier, config::MlsCentralConfiguration, MlsCentral};
+    use crate::{config::MlsCentralConfiguration, credential::CredentialSupplier, MlsCentral};
 
     #[cfg(target_family = "wasm")]
-    pub fn run_test(test: impl FnOnce(String) -> ()) {
+    pub async fn run_test(
+        test: impl FnOnce(String) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+    ) {
         use rand::distributions::{Alphanumeric, DistString};
         let filename = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
         let filename = format!("{filename}.idb");
-        test(filename);
+        test(filename).await;
     }
 
     #[cfg(not(target_family = "wasm"))]
-    pub fn run_test(test: impl FnOnce(String) -> ()) {
+    pub async fn run_test(
+        test: impl FnOnce(String) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+    ) {
         let tmp_dir = tempfile::tempdir().unwrap();
         let tmp_dir_argument = crate::MlsCentralConfiguration::tmp_store_path(&tmp_dir);
-        test(tmp_dir_argument);
+        test(tmp_dir_argument).await;
         tmp_dir.close().unwrap();
     }
 
-    pub fn run_test_with_central(credential: CredentialSupplier, test: impl FnOnce(MlsCentral) -> ()) {
-        run_test(move |path| {
-            let configuration = MlsCentralConfiguration::try_new(&path, "test", "alice").unwrap();
-            let central = MlsCentral::try_new(configuration, credential()).unwrap();
-            test(central);
-        })
-    }
-
-    pub fn run_test_with_client_id(
+    pub async fn run_test_with_central(
         credential: CredentialSupplier,
-        client_id: &str,
-        test: impl FnOnce(MlsCentral) -> (),
+        test: impl FnOnce(MlsCentral) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
     ) {
         run_test(move |path| {
-            let configuration = MlsCentralConfiguration::try_new(&path, "test", client_id).unwrap();
-            let central = MlsCentral::try_new(configuration, credential()).unwrap();
-            test(central);
+            Box::pin(async move {
+                let configuration = MlsCentralConfiguration::try_new(path, "test".into(), "alice".into()).unwrap();
+                let central = MlsCentral::try_new(configuration, credential()).await.unwrap();
+                test(central).await;
+            })
         })
+        .await
+    }
+
+    pub async fn run_test_with_client_id(
+        credential: CredentialSupplier,
+        client_id: String,
+        test: impl FnOnce(MlsCentral) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+    ) {
+        run_test(move |path| {
+            Box::pin(async move {
+                let configuration = MlsCentralConfiguration::try_new(path, "test".into(), client_id).unwrap();
+                let central = MlsCentral::try_new(configuration, credential()).await.unwrap();
+                test(central).await;
+            })
+        })
+        .await
     }
 }
 
@@ -446,47 +480,61 @@ pub mod tests {
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub fn can_create_from_valid_configuration(credential: CredentialSupplier) {
-            run_test(|tmp_dir_argument| {
-                let configuration = MlsCentralConfiguration::try_new(&tmp_dir_argument, "test", "alice").unwrap();
+        pub async fn can_create_from_valid_configuration(credential: CredentialSupplier) {
+            run_test(move |tmp_dir_argument| {
+                Box::pin(async move {
+                    let configuration =
+                        MlsCentralConfiguration::try_new(tmp_dir_argument, "test".to_string(), "alice".to_string())
+                            .unwrap();
 
-                let central = MlsCentral::try_new(configuration, credential());
-                assert!(central.is_ok())
+                    let central = MlsCentral::try_new(configuration, credential()).await;
+                    assert!(central.is_ok())
+                })
             })
+            .await
         }
 
         #[test]
         #[wasm_bindgen_test]
         pub fn store_path_should_not_be_empty_nor_blank() {
-            let configuration = MlsCentralConfiguration::try_new(" ", "test", "alice");
+            let configuration =
+                MlsCentralConfiguration::try_new(" ".to_string(), "test".to_string(), "alice".to_string());
             match configuration {
                 Err(CryptoError::MalformedIdentifier(value)) => assert_eq!(" ", value),
                 _ => panic!(),
             }
         }
 
-        #[test]
+        #[cfg_attr(not(target_family = "wasm"), async_std::test)]
         #[wasm_bindgen_test]
-        pub fn identity_key_should_not_be_empty_nor_blank() {
+        pub async fn identity_key_should_not_be_empty_nor_blank() {
             run_test(|tmp_dir_argument| {
-                let configuration = MlsCentralConfiguration::try_new(&tmp_dir_argument, " ", "alice");
-                match configuration {
-                    Err(CryptoError::MalformedIdentifier(value)) => assert_eq!(" ", value),
-                    _ => panic!(),
-                }
+                Box::pin(async move {
+                    let configuration =
+                        MlsCentralConfiguration::try_new(tmp_dir_argument, " ".to_string(), "alice".to_string());
+                    match configuration {
+                        Err(CryptoError::MalformedIdentifier(value)) => assert_eq!(" ", value),
+                        _ => panic!(),
+                    }
+                })
             })
+            .await
         }
 
-        #[test]
+        #[cfg_attr(not(target_family = "wasm"), async_std::test)]
         #[wasm_bindgen_test]
-        pub fn client_id_should_not_be_empty_nor_blank() {
+        pub async fn client_id_should_not_be_empty_nor_blank() {
             run_test(|tmp_dir_argument| {
-                let configuration = MlsCentralConfiguration::try_new(&tmp_dir_argument, "test", " ");
-                match configuration {
-                    Err(CryptoError::MalformedIdentifier(value)) => assert_eq!(" ", value),
-                    _ => panic!(),
-                }
+                Box::pin(async move {
+                    let configuration =
+                        MlsCentralConfiguration::try_new(tmp_dir_argument, "test".to_string(), " ".to_string());
+                    match configuration {
+                        Err(CryptoError::MalformedIdentifier(value)) => assert_eq!(" ", value),
+                        _ => panic!(),
+                    }
+                })
             })
+            .await
         }
     }
 
@@ -495,34 +543,45 @@ pub mod tests {
         use crate::test_utils::run_test;
 
         #[apply(all_credential_types)]
-        // FIXME: Enable it back once WASM keystore persistence is working
-        // #[wasm_bindgen_test]
-        pub fn can_persist_group_state(credential: CredentialSupplier) {
-            run_test(|tmp_dir_argument| {
-                let configuration = MlsCentralConfiguration::try_new(&tmp_dir_argument, "test", "potato").unwrap();
+        #[wasm_bindgen_test]
+        pub async fn can_persist_group_state(credential: CredentialSupplier) {
+            run_test(move |tmp_dir_argument| {
+                Box::pin(async move {
+                    let configuration =
+                        MlsCentralConfiguration::try_new(tmp_dir_argument, "test".to_string(), "potato".to_string())
+                            .unwrap();
 
-                let mut central = MlsCentral::try_new(configuration.clone(), credential()).unwrap();
-                let conversation_configuration = MlsConversationConfiguration::default();
-                let conversation_id = b"conversation".to_vec();
-                let _ = central.new_conversation(conversation_id.clone(), conversation_configuration);
+                    let mut central = MlsCentral::try_new(configuration.clone(), credential()).await.unwrap();
+                    let conversation_configuration = MlsConversationConfiguration::default();
+                    let conversation_id = b"conversation".to_vec();
+                    let _ = central
+                        .new_conversation(conversation_id.clone(), conversation_configuration)
+                        .await;
 
-                drop(central);
-                let mut central = MlsCentral::try_new(configuration, credential()).unwrap();
-                let _ = central.encrypt_message(conversation_id, b"Test").unwrap();
+                    central.close().await.unwrap();
+                    let mut central = MlsCentral::try_new(configuration, credential()).await.unwrap();
+                    let _ = central.encrypt_message(conversation_id, b"Test").await.unwrap();
 
-                central.mls_backend.destroy_and_reset();
+                    central.mls_backend.destroy_and_reset().await.unwrap();
+                })
             })
+            .await
         }
     }
 
     #[apply(all_credential_types)]
     #[wasm_bindgen_test]
-    pub fn can_fetch_client_public_key(credential: CredentialSupplier) {
-        run_test(|tmp_dir_argument| {
-            let configuration = MlsCentralConfiguration::try_new(&tmp_dir_argument, "test", "potato").unwrap();
+    pub async fn can_fetch_client_public_key(credential: CredentialSupplier) {
+        run_test(move |tmp_dir_argument| {
+            Box::pin(async move {
+                let configuration =
+                    MlsCentralConfiguration::try_new(tmp_dir_argument, "test".to_string(), "potato".to_string())
+                        .unwrap();
 
-            let central = MlsCentral::try_new(configuration.clone(), credential()).unwrap();
-            assert!(central.client_public_key().is_ok());
+                let central = MlsCentral::try_new(configuration.clone(), credential()).await.unwrap();
+                assert!(central.client_public_key().is_ok());
+            })
         })
+        .await
     }
 }

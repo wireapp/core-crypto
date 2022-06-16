@@ -1,6 +1,6 @@
 {
     "name": "@otak/core-crypto",
-    "version": "0.2.0-beta-3",
+    "version": "0.3.0-beta-1",
     "description": "CoreCrypto bindings for the Web - Dev version",
     "type": "module",
     "module": "platforms/web/corecrypto.js",
@@ -11,9 +11,9 @@
         "build:test": "npm run clean && rollup -c crypto-ffi/bindings/js/rollup.config.test.js",
         "clean": "rm -f ./platforms/web/*.{js,ts,wasm,html} && rm -rf ./platforms/web/assets",
         "package": "npm run build && npm pack",
-        "test:raw": "jest -c crypto-ffi/bindings/js/jest.config.js --no-cache --runInBand --silent --verbose --detectOpenHandles",
+        "test:raw": "jest -c crypto-ffi/bindings/js/jest.config.js --no-cache --runInBand --verbose",
         "test": "npm run build:test && npm run test:raw",
-        "test:cov": "npm run build:test && jest -c crypto-ffi/bindings/js/jest.config.js --coverage --no-cache --runInBand --silent --verbose --detectOpenHandles"
+        "test:cov": "npm run build:test && jest -c crypto-ffi/bindings/js/jest.config.js --coverage --no-cache --runInBand --verbose"
     },
     "publishConfig": {
         "access": "public"
@@ -40,24 +40,24 @@
     },
     "devDependencies": {
         "@rollup/plugin-html": "^0.2.4",
-        "@types/jest": "^28.1.1",
+        "@types/jest": "^28.1.3",
         "@types/jest-dev-server": "^5.0.0",
-        "@typescript-eslint/eslint-plugin": "^5.27.1",
-        "@typescript-eslint/parser": "^5.27.1",
+        "@typescript-eslint/eslint-plugin": "^5.29.0",
+        "@typescript-eslint/parser": "^5.29.0",
         "@wasm-tool/rollup-plugin-rust": "^2.2.2",
-        "dts-bundle-generator": "^6.11.0",
-        "eslint": "^8.17.0",
+        "dts-bundle-generator": "^6.12.0",
+        "eslint": "^8.18.0",
         "eslint-config-prettier": "^8.5.0",
         "eslint-plugin-prettier": "^4.0.0",
         "jest": "^28.1.1",
         "jest-dev-server": "^6.0.3",
-        "prettier": "^2.6.2",
-        "puppeteer": "^14.3.0",
-        "rollup": "^2.75.6",
+        "prettier": "^2.7.1",
+        "puppeteer": "^15.0.0",
+        "rollup": "^2.75.7",
         "rollup-jest": "^3.0.0",
         "rollup-plugin-ts": "^3.0.2",
-        "ts-jest": "^28.0.4",
-        "ts-loader": "^9.3.0",
-        "typescript": "^4.7.3"
+        "ts-jest": "^28.0.5",
+        "ts-loader": "^9.3.1",
+        "typescript": "^4.7.4"
     }
 }

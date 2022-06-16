@@ -28,7 +28,6 @@ use libc::{c_char, c_int, c_uchar, size_t};
 
 use crate::*;
 
-
 #[derive(Debug, thiserror::Error)]
 pub enum CoreCryptoFFIError {
     #[error("NULL_PTR -> The consumer has provided a null pointer across the FFI boundary [{arg} = {ptr:#X}]")]
@@ -46,7 +45,6 @@ pub enum FfiCryptoError {
     #[error(transparent)]
     CryptoError(#[from] CryptoError),
 }
-
 
 #[cfg(test)]
 mod c_api_tests;
@@ -96,8 +94,8 @@ macro_rules! try_ffi {
     };
 }
 
-type CoreCryptoPtr = *const CoreCrypto;
-type CoreCryptoPtrMut = *mut CoreCrypto;
+type CoreCryptoPtr<'a> = *const CoreCrypto<'a>;
+type CoreCryptoPtrMut<'a> = *mut CoreCrypto<'a>;
 
 thread_local! {
     static CC_LAST_ERROR: RefCell<Option<FfiCryptoError>> = RefCell::new(None);
@@ -208,7 +206,7 @@ pub unsafe extern "C" fn cc_init_with_path_and_key(
     path: *const c_char,
     key: *const c_char,
     client_id: *const c_char,
-) -> CoreCryptoPtrMut {
+) -> CoreCryptoPtrMut<'static> {
     let path = CStr::from_ptr(path).to_string_lossy();
     let key = CStr::from_ptr(key).to_string_lossy();
     let client_id = CStr::from_ptr(client_id).to_string_lossy();
@@ -227,7 +225,7 @@ pub unsafe extern "C" fn cc_deinit(ptr: CoreCryptoPtrMut) {
 pub unsafe extern "C" fn cc_wipe(ptr: CoreCryptoPtrMut) {
     check_nullptr!(ptr, ());
     let cc: Box<CoreCrypto> = Box::from_raw(ptr);
-    cc.wipe()
+    let _ = cc.wipe();
 }
 
 #[no_mangle]
@@ -306,38 +304,18 @@ pub unsafe extern "C" fn cc_create_conversation(
     id: *const u8,
     id_len: size_t,
     params: *const ConversationConfiguration,
-    welcome_msg_buffer: *mut u8,
-    commit_msg_buffer: *mut u8,
-) -> CallStatus<2> {
+) -> CallStatus<0> {
     check_nullptr!(ptr);
     check_nullptr!(params);
     check_nullptr!(id);
-    check_nullptr!(welcome_msg_buffer);
-    check_nullptr!(commit_msg_buffer);
 
     let cc = &*ptr;
     let params = (&*params).clone();
 
     let id = std::slice::from_raw_parts(id, id_len);
 
-    let maybe_welcome_message = try_ffi!(cc.create_conversation(id.into(), params));
-
-    if let Some(msgs) = maybe_welcome_message {
-        let MemberAddedMessages {
-            welcome,
-            message: commit,
-        } = msgs;
-
-        let welcome_len = welcome.len();
-        let commit_len = commit.len();
-
-        std::ptr::copy_nonoverlapping(welcome.as_ptr(), welcome_msg_buffer, welcome_len);
-        std::ptr::copy_nonoverlapping(commit.as_ptr(), commit_msg_buffer, commit_len);
-
-        CallStatus::with_bytes_written(0, [welcome_len, commit_len])
-    } else {
-        CallStatus::default()
-    }
+    try_ffi!(cc.create_conversation(id.into(), params));
+    CallStatus::default()
 }
 
 #[no_mangle]

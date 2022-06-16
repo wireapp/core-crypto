@@ -1,4 +1,5 @@
 [env]
+# Android build flags
 CC_armv7-linux-androideabi = "armv7a-linux-androideabi30-clang"
 CXX_armv7-linux-androideabi = "armv7a-linux-androideabi30-clang++"
 AR_armv7-linux-androideabi = "llvm-ar"
@@ -11,12 +12,18 @@ AR_x86_64-linux-android = "llvm-ar"
 CC_i686-linux-android = "i686-linux-android30-clang"
 CXX_i686-linux-android = "i686-linux-android30-clang++"
 AR_i686-linux-android = "llvm-ar"
+# ? Ring treats warnings as errors during local development by detecting
+# ? the presence of a `.git` folder
+# ? With us having a git dependency to ring, this triggers this local development behavior, preventing
+# ? release builds on certain platforms. Gotta love build systems that are "UB as a service"
+# TODO: Remove this once we target a crates.io version of ring. Probably never!
+CFLAGS="-Wno-error=inline"
 
 [unstable]
 build-std = ["std", "panic_abort"]
 
-[target.wasm32-unknown-unknown]
-rustflags = "-Ctarget-feature=+atomics"
+# [target.wasm32-unknown-unknown]
+# rustflags = "-C target-feature=+atomics,+bulk-memory,+mutable-globals"
 
 # Android linkage
 [target.armv7-linux-androideabi]
