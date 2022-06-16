@@ -28,7 +28,6 @@ On WebAssembly (TS/JS bindings for the web & electron), the keystore calls into 
 
 ### Status
 
-* The keystore's persistence on WASM isn't finished yet.
 * The keystore's implementation of encryption at rest on WASM isn't validated nor audited so paper cuts expected.
 
 
@@ -43,10 +42,6 @@ Interfacing with the `OpenMLSCryptoProvider` trait to allow `OpenMLS` to call in
 ### Implementation
 
 Just implementing a single trait and instanciating the relevant structs, namely the crypto provider from `RustCrypto` and our `Keystore`
-
-### Status
-
-* The provider currently forces an in-memory keystore for WASM. This will be disabled once the persistence works.
 
 ----------
 

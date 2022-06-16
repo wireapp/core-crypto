@@ -15,8 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{connection::DatabaseConnection, CryptoKeystoreResult};
-use rexie::ObjectStore;
-use wasm_bindgen_futures::spawn_local;
+use rexie::{Index, ObjectStore};
 
 pub mod storage;
 use self::storage::{WasmEncryptedStorage, WasmStorageWrapper};
@@ -30,9 +29,6 @@ pub struct WasmConnection {
 // FIXME: Fix persitent storage's timeout
 // FIXME: Enable the persistent storage in mls-provider
 
-unsafe impl Send for WasmConnection {}
-unsafe impl Sync for WasmConnection {}
-
 impl WasmConnection {
     pub fn storage(&self) -> &WasmEncryptedStorage {
         &self.conn
@@ -43,52 +39,49 @@ impl WasmConnection {
     }
 }
 
+#[async_trait::async_trait(?Send)]
 impl DatabaseConnection for WasmConnection {
-    fn open<S: AsRef<str>, S2: AsRef<str>>(name: S, key: S2) -> CryptoKeystoreResult<Self> {
-        let name = name.as_ref().to_string();
+    async fn open(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
+        let name = name.to_string();
         // ? Maybe find a cleaner way to define the schema
         let rexie_builder = rexie::Rexie::builder(&name)
             .version(1)
-            .add_object_store(ObjectStore::new("mls_keys").key_path("id"))
-            .add_object_store(ObjectStore::new("mls_identities").key_path("id"))
-            .add_object_store(ObjectStore::new("proteus_prekeys").key_path("id"))
-            .add_object_store(ObjectStore::new("mls_groups").key_path("id"));
-
-        let storage = crate::syncify!(async move {
-            CryptoKeystoreResult::Ok(
-                rexie_builder
-                    .build()
-                    .await
-                    .map(|rexie| WasmStorageWrapper::Persistent(rexie))?,
+            .add_object_store(ObjectStore::new("mls_keys").auto_increment(false))
+            .add_object_store(
+                ObjectStore::new("mls_identities")
+                    .auto_increment(false)
+                    .add_index(Index::new("signature", "signature").unique(true)),
             )
-        })?;
+            .add_object_store(ObjectStore::new("proteus_prekeys").auto_increment(false))
+            .add_object_store(ObjectStore::new("mls_groups").auto_increment(false));
 
+        let rexie = rexie_builder.build().await?;
+
+        let storage = WasmStorageWrapper::Persistent(rexie);
         let conn = WasmEncryptedStorage::new(key, storage);
 
         Ok(Self { name, conn })
     }
 
-    fn open_in_memory<S: AsRef<str>, S2: AsRef<str>>(name: S, key: S2) -> CryptoKeystoreResult<Self> {
-        let name = name.as_ref().to_string();
+    async fn open_in_memory(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
+        let name = name.to_string();
         let storage = WasmStorageWrapper::InMemory(Default::default());
         let conn = WasmEncryptedStorage::new(key, storage);
         Ok(Self { name, conn })
     }
 
-    fn close(self) -> CryptoKeystoreResult<()> {
+    async fn close(self) -> CryptoKeystoreResult<()> {
         self.conn.close()?;
 
         Ok(())
     }
 
-    fn wipe(self) -> CryptoKeystoreResult<()> {
+    async fn wipe(self) -> CryptoKeystoreResult<()> {
         let is_persistent = self.conn.is_persistent();
         self.conn.close()?;
 
         if is_persistent {
-            spawn_local(async move {
-                let _ = rexie::Rexie::builder(&self.name).delete().await;
-            });
+            let _ = rexie::Rexie::builder(&self.name).delete().await?;
         }
 
         Ok(())

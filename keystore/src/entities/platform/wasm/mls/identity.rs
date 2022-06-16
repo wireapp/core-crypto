@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use wasm_bindgen::JsValue;
-
 use crate::entities::{MlsIdentity, MlsIdentityExt, StringEntityId};
 use crate::{
     connection::KeystoreDatabaseConnection,
@@ -23,6 +21,7 @@ use crate::{
 };
 use crate::{CryptoKeystoreResult, MissingKeyErrorKind};
 
+#[async_trait::async_trait(?Send)]
 impl EntityBase for MlsIdentity {
     type ConnectionType = KeystoreDatabaseConnection;
 
@@ -30,55 +29,81 @@ impl EntityBase for MlsIdentity {
         MissingKeyErrorKind::MlsIdentityBundle
     }
 
-    fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
+    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
-        storage.insert("mls_identities", &mut [self.clone()])?;
+        storage.save("mls_identities", &mut [self.clone()]).await?;
 
         Ok(())
     }
 
-    fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<Option<Self>> {
-        conn.storage().get("mls_identities", id.as_bytes())
+    async fn find_one(
+        conn: &mut Self::ConnectionType,
+        id: &StringEntityId,
+    ) -> crate::CryptoKeystoreResult<Option<Self>> {
+        conn.storage().get("mls_identities", id.as_bytes()).await
     }
 
-    fn find_many(_conn: &mut Self::ConnectionType, _ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<Vec<Self>> {
+    async fn find_many(
+        _conn: &mut Self::ConnectionType,
+        _ids: &[StringEntityId],
+    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
         unimplemented!("There is only one identity within a keystore, so this won't be implemented")
     }
 
-    fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        conn.storage().count("mls_identities")
+    async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
+        conn.storage().count("mls_identities").await
     }
 
-    fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
-        if let Some(entity) = Self::find_one(conn, id)? {
-            let _ = conn.storage_mut().delete("mls_identities", &[entity.id.as_bytes()])?;
+    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
+        if let Some(entity) = Self::find_one(conn, id).await? {
+            let _ = conn
+                .storage_mut()
+                .delete("mls_identities", &[entity.id.as_bytes()])
+                .await?;
         }
         Ok(())
     }
 }
 
 impl Entity for MlsIdentity {
-    fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
-        Ok(JsValue::from_str(&self.id))
+    fn aad(&self) -> &[u8] {
+        self.id.as_bytes()
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.signature = Self::encrypt_data(cipher, self.signature.as_slice())?;
-        self.credential = Self::encrypt_data(cipher, self.credential.as_slice())?;
+        self.signature = Self::encrypt_data(cipher, self.signature.as_slice(), self.aad())?;
+        self.credential = Self::encrypt_data(cipher, self.credential.as_slice(), self.aad())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.signature = Self::decrypt_data(cipher, self.signature.as_slice())?;
-        self.credential = Self::decrypt_data(cipher, self.credential.as_slice())?;
+        self.signature = Self::decrypt_data(cipher, self.signature.as_slice(), self.aad())?;
+        self.credential = Self::decrypt_data(cipher, self.credential.as_slice(), self.aad())?;
 
         Ok(())
     }
 }
 
+#[async_trait::async_trait(?Send)]
 impl MlsIdentityExt for MlsIdentity {
-    fn find_by_signature(conn: &mut Self::ConnectionType, signature: &[u8]) -> CryptoKeystoreResult<Option<Self>> {
-        conn.storage().get_indexed("mls_identities", "signature", signature)
+    async fn find_by_signature(
+        conn: &mut Self::ConnectionType,
+        signature: &[u8],
+    ) -> CryptoKeystoreResult<Option<Self>> {
+        conn.storage()
+            .get_indexed("mls_identities", "signature", signature)
+            .await
+    }
+
+    async fn delete_by_signature(conn: &mut Self::ConnectionType, signature: &[u8]) -> CryptoKeystoreResult<()> {
+        if let Some(identity) = Self::find_by_signature(conn, signature).await? {
+            let _ = conn
+                .storage_mut()
+                .delete("mls_identities", &[identity.id.as_bytes()])
+                .await?;
+        }
+
+        Ok(())
     }
 }

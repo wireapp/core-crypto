@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+// TODO: Test all methods of all entities (rstest fixtures?)
 cfg_if::cfg_if! {
     if #[cfg(feature = "mls-keystore")] {
         mod mls;
@@ -84,25 +85,27 @@ impl<'a> From<&'a [u8]> for StringEntityId<'a> {
     }
 }
 
-pub trait EntityBase: Sized + Clone + std::fmt::Debug {
+#[async_trait::async_trait(?Send)]
+pub trait EntityBase: Send + Sized + Clone + std::fmt::Debug {
     type ConnectionType: DatabaseConnection;
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind;
 
-    fn save(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()>;
-    fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>>;
-    fn find_many(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<Vec<Self>> {
+    async fn save(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()>;
+    async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>>;
+    async fn find_many(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<Vec<Self>> {
         // Default, inefficient & naive method
-        ids.iter().try_fold(Vec::with_capacity(ids.len()), |mut acc, id| {
-            if let Some(entity) = Self::find_one(conn, id)? {
-                acc.push(entity);
+        let mut ret = Vec::with_capacity(ids.len());
+        for id in ids {
+            if let Some(entity) = Self::find_one(conn, id).await? {
+                ret.push(entity);
             }
+        }
 
-            Ok(acc)
-        })
+        Ok(ret)
     }
-    fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize>;
-    fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<()>;
+    async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize>;
+    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<()>;
 }
 
 cfg_if::cfg_if! {
@@ -110,7 +113,15 @@ cfg_if::cfg_if! {
         const AES_CBC_256_NONCE_SIZE: usize = 12;
 
         pub trait Entity: EntityBase + serde::Serialize + serde::de::DeserializeOwned {
-            fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue>;
+            fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
+                Ok(js_sys::Uint8Array::from(self.id_raw()).into())
+            }
+
+            fn id_raw(&self) -> &[u8] {
+                self.aad()
+            }
+
+            fn aad(&self) -> &[u8];
             // About WASM Encryption:
             // The store key (i.e. passphrase) is hashed using SHA256 to obtain 32 bytes
             // The AES256-GCM cipher is then initialized and is used to encrypt individual values
@@ -119,24 +130,44 @@ cfg_if::cfg_if! {
             // - Cleartext: [u8] bytes
             // - Ciphertext: [12 bytes of nonce..., ...encrypted data]
             fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()>;
-            fn encrypt_data(cipher: &aes_gcm::Aes256Gcm, data: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
+            fn encrypt_with_nonce_and_aad(cipher: &aes_gcm::Aes256Gcm, data: &[u8], nonce: &[u8], aad: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
                 use aes_gcm::aead::Aead as _;
-                let nonce_bytes: [u8; AES_CBC_256_NONCE_SIZE] = rand::random();
-                let nonce = aes_gcm::Nonce::from_slice(&nonce_bytes);
-                let mut encrypted = cipher.encrypt(nonce, data.as_ref()).map_err(|_| CryptoKeystoreError::AesGcmError)?;
+                let nonce = aes_gcm::Nonce::from_slice(nonce);
+                let msg = data;
+                let payload = aes_gcm::aead::Payload {
+                    msg,
+                    aad,
+                };
+
+                let mut encrypted = cipher.encrypt(nonce, payload).map_err(|_| CryptoKeystoreError::AesGcmError)?;
                 let mut message = Vec::with_capacity(nonce.len() + encrypted.len());
                 message.extend_from_slice(nonce);
                 message.append(&mut encrypted);
                 Ok(message)
             }
 
+            fn encrypt_data(cipher: &aes_gcm::Aes256Gcm, data: &[u8], aad: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
+                let nonce_bytes: [u8; AES_CBC_256_NONCE_SIZE] = rand::random();
+                Self::encrypt_with_nonce_and_aad(cipher, data, &nonce_bytes, aad)
+            }
+
+            fn reencrypt_data(cipher: &aes_gcm::Aes256Gcm, encrypted: &[u8], clear: &[u8], aad: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
+                let nonce_bytes = &encrypted[..AES_CBC_256_NONCE_SIZE];
+                Self::encrypt_with_nonce_and_aad(cipher, clear, nonce_bytes, aad)
+            }
+
             fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()>;
-            fn decrypt_data(cipher: &aes_gcm::Aes256Gcm, data: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
+            fn decrypt_data(cipher: &aes_gcm::Aes256Gcm, data: &[u8], aad: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
                 use aes_gcm::aead::Aead as _;
 
                 let nonce_bytes = &data[..AES_CBC_256_NONCE_SIZE];
                 let nonce = aes_gcm::Nonce::from_slice(nonce_bytes);
-                let cleartext = cipher.decrypt(nonce, &data[AES_CBC_256_NONCE_SIZE..]).map_err(|_| CryptoKeystoreError::AesGcmError)?;
+                let msg = &data[AES_CBC_256_NONCE_SIZE..];
+                let payload = aes_gcm::aead::Payload {
+                    msg,
+                    aad,
+                };
+                let cleartext = cipher.decrypt(nonce, payload).map_err(|_| CryptoKeystoreError::AesGcmError)?;
                 Ok(cleartext)
             }
         }

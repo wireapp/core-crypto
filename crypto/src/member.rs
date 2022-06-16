@@ -86,17 +86,17 @@ impl Eq for ConversationMember {}
 
 #[cfg(test)]
 impl ConversationMember {
-    pub fn random_generate(
+    pub async fn random_generate(
         backend: &mls_crypto_provider::MlsCryptoProvider,
         credential: crate::credential::CredentialSupplier,
     ) -> CryptoResult<Self> {
-        let client = Client::random_generate(backend, false, credential())?;
+        let client = Client::random_generate(backend, false, credential()).await?;
         let id = client.id();
-        client.gen_keypackage(backend)?;
+        client.gen_keypackage(backend).await?;
 
         let member = Self {
             id: id.to_vec(),
-            clients: HashMap::from([(id.clone(), client.keypackages(backend)?)]),
+            clients: HashMap::from([(id.clone(), client.keypackages(backend).await?)]),
             local_client: Some(client),
         };
 
@@ -140,16 +140,16 @@ pub mod tests {
 
     #[apply(all_credential_types)]
     #[wasm_bindgen_test]
-    pub fn can_generate_member(credential: CredentialSupplier) {
-        let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        assert!(ConversationMember::random_generate(&backend, credential).is_ok());
+    pub async fn can_generate_member(credential: CredentialSupplier) {
+        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+        assert!(ConversationMember::random_generate(&backend, credential).await.is_ok());
     }
 
     #[apply(all_credential_types)]
     #[wasm_bindgen_test]
-    pub fn member_can_run_out_of_keypackage_hashes(credential: CredentialSupplier) {
-        let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
-        let mut member = ConversationMember::random_generate(&backend, credential).unwrap();
+    pub async fn member_can_run_out_of_keypackage_hashes(credential: CredentialSupplier) {
+        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+        let mut member = ConversationMember::random_generate(&backend, credential).await.unwrap();
         let client_id = member.local_client.as_ref().map(|c| c.id().clone()).unwrap();
         let ret = (0..INITIAL_KEYING_MATERIAL_COUNT * 2).all(|_| {
             let ckp = member.keypackages_for_all_clients();
@@ -165,10 +165,10 @@ pub mod tests {
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub fn add_valid_keypackage_should_add_it_to_client(credential: CredentialSupplier) {
+        pub async fn add_valid_keypackage_should_add_it_to_client(credential: CredentialSupplier) {
             let mut member = ConversationMember::random_generate_clientless().unwrap();
             let cid = ClientId::from(member.id.as_slice());
-            let kp = new_keypackage(&cid, credential());
+            let kp = new_keypackage(&cid, credential()).await;
             let mut kp_raw = vec![];
             use tls_codec::Serialize as _;
             kp.tls_serialize(&mut kp_raw).unwrap();
@@ -187,9 +187,9 @@ pub mod tests {
             assert_eq!(member.clients, previous_clients);
         }
 
-        fn new_keypackage(identity: &[u8], credential: Option<CertificateBundle>) -> KeyPackage {
+        async fn new_keypackage(identity: &[u8], credential: Option<CertificateBundle>) -> KeyPackage {
             let ciphersuite = crate::MlsCiphersuite::default().0;
-            let backend = MlsCryptoProvider::try_new_in_memory("test").unwrap();
+            let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
             let credential = if let Some(cert) = credential {
                 Client::generate_x509_credential_bundle(&identity.into(), cert.certificate_chain, cert.private_key)
             } else {

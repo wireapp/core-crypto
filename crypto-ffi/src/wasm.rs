@@ -20,7 +20,10 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 #[allow(dead_code)]
 pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+use futures_util::future::TryFutureExt;
+use js_sys::{Promise, Uint8Array};
 use wasm_bindgen::prelude::*;
+use wasm_bindgen_futures::future_to_promise;
 
 use std::collections::HashMap;
 
@@ -318,218 +321,342 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
 #[derive(Debug)]
 #[wasm_bindgen]
 #[repr(transparent)]
-pub struct CoreCrypto(MlsCentral);
+pub struct CoreCrypto(std::rc::Rc<std::cell::RefCell<MlsCentral>>);
 
-#[allow(dead_code, unused_variables)]
 #[wasm_bindgen]
 impl CoreCrypto {
-    #[wasm_bindgen(constructor)]
-    pub fn new(path: &str, key: &str, client_id: &str) -> WasmCryptoResult<CoreCrypto> {
-        let configuration = MlsCentralConfiguration::try_new(path.into(), key.into(), client_id.into())?;
+    pub async fn _internal_new(path: String, key: String, client_id: String) -> WasmCryptoResult<CoreCrypto> {
+        let configuration = MlsCentralConfiguration::try_new(path, key, client_id)?;
 
         // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
-        let central = MlsCentral::try_new(configuration, None)?;
-        Ok(CoreCrypto(central))
+        let central = MlsCentral::try_new(configuration, None).await?;
+        Ok(CoreCrypto(std::cell::RefCell::new(central).into()))
     }
 
-    pub fn wipe(self) {
-        self.0.wipe()
+    /// Returns: WasmCryptoResult<()>
+    pub fn close(self) -> Promise {
+        if let Ok(cc) = std::rc::Rc::try_unwrap(self.0).map(std::cell::RefCell::into_inner) {
+            future_to_promise(
+                async move {
+                    cc.close().await?;
+                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
+                }
+                .err_into(),
+            )
+        } else {
+            panic!("There are other outstanding references to this CoreCrypto instance")
+        }
+    }
+
+    /// Returns: WasmCryptoResult<()>
+    pub fn wipe(self) -> Promise {
+        if let Ok(cc) = std::rc::Rc::try_unwrap(self.0).map(std::cell::RefCell::into_inner) {
+            future_to_promise(
+                async move {
+                    cc.wipe().await?;
+                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
+                }
+                .err_into(),
+            )
+        } else {
+            panic!("There are other outstanding references to this CoreCrypto instance")
+        }
     }
 
     pub fn set_callbacks(&mut self, callbacks: CoreCryptoWasmCallbacks) -> WasmCryptoResult<()> {
-        Ok(self.0.callbacks(Box::new(callbacks))?)
+        Ok(self.0.borrow_mut().callbacks(Box::new(callbacks))?)
     }
 
     pub fn client_public_key(&self) -> WasmCryptoResult<Box<[u8]>> {
-        Ok(self.0.client_public_key().map(Into::into)?)
+        Ok(self.0.borrow().client_public_key().map(Into::into)?)
     }
 
-    pub fn client_keypackages(&self, amount_requested: u32) -> WasmCryptoResult<Box<[js_sys::Uint8Array]>> {
-        use core_crypto::prelude::tls_codec::Serialize as _;
-        let kps = self
-            .0
-            .client_keypackages(amount_requested as usize)?
-            .into_iter()
-            .map(|kpb| {
-                kpb.key_package()
+    /// Returns: WasmCryptoResult<js_sys::Array<js_sys::Uint8Array>>>
+    pub fn client_keypackages(&self, amount_requested: u32) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                use core_crypto::prelude::tls_codec::Serialize as _;
+                let kps = this
+                    .borrow_mut()
+                    .client_keypackages(amount_requested as usize)
+                    .await?
+                    .into_iter()
+                    .map(|kpb| {
+                        kpb.key_package()
+                            .tls_serialize_detached()
+                            .map_err(MlsError::from)
+                            .map_err(CryptoError::from)
+                            .map(Into::into)
+                    })
+                    .collect::<CryptoResult<Vec<Vec<u8>>>>()?;
+
+                let js_kps = js_sys::Array::from_iter(
+                    kps.into_iter()
+                        .map(|kp| js_sys::Uint8Array::from(kp.as_slice()))
+                        .map(JsValue::from),
+                );
+
+                WasmCryptoResult::Ok(js_kps.into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: WasmCryptoResult<MlsConversationReinitMessage>
+    pub fn update_keying_material(&mut self, conversation_id: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+
+        future_to_promise(
+            async move {
+                use core_crypto::prelude::tls_codec::Serialize as _;
+
+                let result = this
+                    .borrow_mut()
+                    .update_keying_material(conversation_id.to_vec())
+                    .await?;
+                let message = result
+                    .0
                     .tls_serialize_detached()
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)
-                    .map(Into::into)
-            })
-            .collect::<CryptoResult<Vec<Vec<u8>>>>()?;
+                    .map_err(MlsError::from)?
+                    .into_boxed_slice();
+                let welcome = result
+                    .1
+                    .map(|v| v.tls_serialize_detached().map(|v| v.into_boxed_slice()))
+                    .transpose()
+                    .map_err(MlsError::from)?;
 
-        Ok(kps
-            .into_iter()
-            .map(|kp| js_sys::Uint8Array::from(kp.as_slice()))
-            .collect())
+                let wrapper = MlsConversationReinitMessage { message, welcome };
+
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&wrapper)?)
+            }
+            .err_into(),
+        )
     }
 
-    pub fn update_keying_material(
-        &mut self,
-        conversation_id: ConversationId,
-        key_package: Option<Box<[u8]>>,
-    ) -> WasmCryptoResult<MlsConversationReinitMessage> {
-        use core_crypto::prelude::tls_codec::Serialize as _;
-        let result = self.0.update_keying_material(conversation_id)?;
-        let message = result
-            .0
-            .tls_serialize_detached()
-            .map_err(MlsError::from)?
-            .into_boxed_slice();
-        let welcome = result
-            .1
-            .map(|v| v.tls_serialize_detached().map(|v| v.into_boxed_slice()))
-            .transpose()
-            .map_err(MlsError::from)?;
-        Ok(MlsConversationReinitMessage { message, welcome })
-    }
+    /// Returns: WasmCryptoResult<()>
+    pub fn create_conversation(&self, conversation_id: Box<[u8]>, config: ConversationConfiguration) -> Promise {
+        let this = self.0.clone();
 
-    pub fn create_conversation(
-        &mut self,
-        conversation_id: Box<[u8]>,
-        config: ConversationConfiguration,
-    ) -> WasmCryptoResult<()> {
-        Ok(self.0.new_conversation(conversation_id.to_vec(), config.try_into()?)?)
-    }
-
-    pub fn process_welcome_message(&mut self, welcome_message: Box<[u8]>) -> WasmCryptoResult<Box<[u8]>> {
-        Ok(self
-            .0
-            .process_raw_welcome_message(welcome_message.into())
-            .map(Into::into)?)
-    }
-
-    pub fn add_clients_to_conversation(
-        &mut self,
-        conversation_id: Box<[u8]>,
-        clients: Box<[JsValue]>,
-    ) -> WasmCryptoResult<Option<MemberAddedMessages>> {
-        let invitees = clients
-            .into_iter()
-            .cloned()
-            .map(|js_client| serde_wasm_bindgen::from_value(js_client).unwrap())
-            .collect::<Vec<Invitee>>();
-
-        let mut members = Invitee::group_to_conversation_member(invitees)?;
-
-        self.0
-            .add_members_to_conversation(&conversation_id.into(), &mut members)?
-            .map(TryInto::try_into)
-            .transpose()
-    }
-
-    /// Returns a MLS commit message serialized as TLS
-    pub fn remove_clients_from_conversation(
-        &mut self,
-        conversation_id: Box<[u8]>,
-        clients: Box<[js_sys::Uint8Array]>,
-    ) -> WasmCryptoResult<Option<Box<[u8]>>> {
-        let clients = clients
-            .into_iter()
-            .cloned()
-            .map(|c| c.to_vec().into())
-            .collect::<Vec<ClientId>>();
-        Ok(self
-            .0
-            .remove_members_from_conversation(&conversation_id.into(), &clients)?
-            .map(|m| {
-                m.to_bytes()
-                    .map(Into::into)
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)
-            })
-            .transpose()?)
-    }
-
-    pub fn leave_conversation(
-        &mut self,
-        conversation_id: Box<[u8]>,
-        other_clients: Box<[js_sys::Uint8Array]>,
-    ) -> WasmCryptoResult<ConversationLeaveMessages> {
-        let other_clients = other_clients
-            .into_iter()
-            .cloned()
-            .map(|c| c.to_vec().into())
-            .collect::<Vec<ClientId>>();
-
-        let messages = self.0.leave_conversation(conversation_id.to_vec(), &other_clients)?;
-        let ret = ConversationLeaveMessages {
-            other_clients_removal_commit: messages
-                .other_clients_removal_commit
-                .and_then(|c| c.to_bytes().map(Into::into).ok()),
-            self_removal_proposal: messages
-                .self_removal_proposal
-                .to_bytes()
-                .map(Into::into)
-                .map_err(MlsError::from)
-                .map_err(CryptoError::from)?,
-        };
-
-        Ok(ret)
-    }
-
-    pub fn decrypt_message(
-        &mut self,
-        conversation_id: Box<[u8]>,
-        payload: Box<[u8]>,
-    ) -> WasmCryptoResult<Option<Box<[u8]>>> {
-        Ok(self
-            .0
-            .decrypt_message(conversation_id.to_vec(), payload)
-            .map(|maybe| maybe.map(Into::into))?)
-    }
-
-    pub fn encrypt_message(&mut self, conversation_id: Box<[u8]>, message: Box<[u8]>) -> WasmCryptoResult<Box<[u8]>> {
-        Ok(self
-            .0
-            .encrypt_message(conversation_id.to_vec(), message)
-            .map(Into::into)?)
+        future_to_promise(
+            async move {
+                this.borrow_mut()
+                    .new_conversation(conversation_id.to_vec(), config.try_into()?)
+                    .await?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
+        )
     }
 
     pub fn conversation_exists(&self, conversation_id: Box<[u8]>) -> bool {
-        self.0.conversation_exists(&conversation_id.into())
+        self.0.borrow().conversation_exists(&conversation_id.into())
     }
 
-    pub fn new_add_proposal(
-        &mut self,
+    /// Returns: WasmCryptoResult<Uint8Array>
+    pub fn process_welcome_message(&self, welcome_message: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let conversation_id = this
+                    .borrow_mut()
+                    .process_raw_welcome_message(welcome_message.into())
+                    .await?;
+                WasmCryptoResult::Ok(Uint8Array::from(conversation_id.as_slice()).into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns WasmCryptoResult<Option<MemberAddedMessages>>
+    pub fn add_clients_to_conversation(&self, conversation_id: Box<[u8]>, clients: Box<[JsValue]>) -> Promise {
+        let this = self.0.clone();
+
+        future_to_promise(
+            async move {
+                let invitees = clients
+                    .into_iter()
+                    .cloned()
+                    .map(|js_client| Ok(serde_wasm_bindgen::from_value(js_client)?))
+                    .collect::<WasmCryptoResult<Vec<Invitee>>>()?;
+
+                let mut members = Invitee::group_to_conversation_member(invitees)?;
+                let mut messages_raw = this
+                    .borrow_mut()
+                    .add_members_to_conversation(&conversation_id.into(), &mut members)
+                    .await?;
+
+                if let Some(messages_raw) = messages_raw.take() {
+                    let messages: MemberAddedMessages = messages_raw.try_into()?;
+                    WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&messages)?)
+                } else {
+                    WasmCryptoResult::Ok(JsValue::NULL)
+                }
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns a MLS commit message serialized as TLS
+    /// Returns: WasmCryptoResult<Option<Uint8Array>>
+    pub fn remove_clients_from_conversation(
+        &self,
         conversation_id: Box<[u8]>,
-        keypackage: Box<[u8]>,
-    ) -> WasmCryptoResult<Box<[u8]>> {
-        let kp = KeyPackage::try_from(&keypackage[..])
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)?;
-        Ok(self
-            .0
-            .new_proposal(conversation_id.to_vec(), MlsProposal::Add(kp))?
-            .to_bytes()
-            .map(Into::into)
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)?)
+        clients: Box<[js_sys::Uint8Array]>,
+    ) -> Promise {
+        let this = self.0.clone();
+
+        future_to_promise(
+            async move {
+                let clients = clients
+                    .into_iter()
+                    .cloned()
+                    .map(|c| c.to_vec().into())
+                    .collect::<Vec<ClientId>>();
+
+                let message = this
+                    .borrow_mut()
+                    .remove_members_from_conversation(&conversation_id.into(), &clients)
+                    .await?
+                    .map(|m| m.to_bytes().map_err(MlsError::from).map_err(CryptoError::from))
+                    .transpose()?
+                    .map(|m_bytes| Uint8Array::from(m_bytes.as_slice()));
+
+                WasmCryptoResult::Ok(message.map(Into::into).unwrap_or(JsValue::NULL))
+            }
+            .err_into(),
+        )
     }
 
-    pub fn new_update_proposal(&mut self, conversation_id: Box<[u8]>) -> WasmCryptoResult<Box<[u8]>> {
-        Ok(self
-            .0
-            .new_proposal(conversation_id.to_vec(), MlsProposal::Update)?
-            .to_bytes()
-            .map(Into::into)
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)?)
+    /// Returns: WasmCryptoResult<ConversationLeaveMessages>
+    pub fn leave_conversation(&self, conversation_id: Box<[u8]>, other_clients: Box<[js_sys::Uint8Array]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let other_clients = other_clients
+                    .into_iter()
+                    .cloned()
+                    .map(|c| c.to_vec().into())
+                    .collect::<Vec<ClientId>>();
+
+                let messages = this
+                    .borrow_mut()
+                    .leave_conversation(conversation_id.to_vec(), &other_clients)
+                    .await?;
+
+                let ret = ConversationLeaveMessages {
+                    other_clients_removal_commit: messages
+                        .other_clients_removal_commit
+                        .and_then(|c| c.to_bytes().map(Into::into).ok()),
+                    self_removal_proposal: messages
+                        .self_removal_proposal
+                        .to_bytes()
+                        .map(Into::into)
+                        .map_err(MlsError::from)
+                        .map_err(CryptoError::from)?,
+                };
+
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&ret)?)
+            }
+            .err_into(),
+        )
     }
 
-    pub fn new_remove_proposal(
-        &mut self,
-        conversation_id: Box<[u8]>,
-        client_id: FfiClientId,
-    ) -> WasmCryptoResult<Box<[u8]>> {
-        Ok(self
-            .0
-            .new_proposal(conversation_id.to_vec(), MlsProposal::Remove(client_id.into()))?
-            .to_bytes()
-            .map(Into::into)
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)?)
+    /// Returns: WasmCryptoResult<Option<Uint8Array>>
+    pub fn decrypt_message(&self, conversation_id: Box<[u8]>, payload: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let maybe_cleartext = this
+                    .borrow_mut()
+                    .decrypt_message(conversation_id.to_vec(), payload)
+                    .await?
+                    .map(|cleartext| Uint8Array::from(cleartext.as_slice()));
+
+                WasmCryptoResult::Ok(maybe_cleartext.map(Into::into).unwrap_or(JsValue::NULL))
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: WasmCryptoResult<Uint8Array>
+    pub fn encrypt_message(&self, conversation_id: Box<[u8]>, message: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let ciphertext = this
+                    .borrow_mut()
+                    .encrypt_message(conversation_id.to_vec(), message)
+                    .await
+                    .map(|cleartext| Uint8Array::from(cleartext.as_slice()))?;
+
+                WasmCryptoResult::Ok(ciphertext.into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: WasmCryptoResult<Uint8Array>
+    pub fn new_add_proposal(&self, conversation_id: Box<[u8]>, keypackage: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let kp = KeyPackage::try_from(&keypackage[..])
+                    .map_err(MlsError::from)
+                    .map_err(CryptoError::from)?;
+                let proposal_bytes = this
+                    .borrow_mut()
+                    .new_proposal(conversation_id.to_vec(), MlsProposal::Add(kp))
+                    .await?
+                    .to_bytes()
+                    .map(|bytes| Uint8Array::from(bytes.as_slice()))
+                    .map_err(MlsError::from)
+                    .map_err(CryptoError::from)?;
+
+                WasmCryptoResult::Ok(proposal_bytes.into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: WasmCryptoResult<Uint8Array>
+    pub fn new_update_proposal(&self, conversation_id: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let proposal_bytes = this
+                    .borrow_mut()
+                    .new_proposal(conversation_id.to_vec(), MlsProposal::Update)
+                    .await?
+                    .to_bytes()
+                    .map(|bytes| Uint8Array::from(bytes.as_slice()))
+                    .map_err(MlsError::from)
+                    .map_err(CryptoError::from)?;
+
+                WasmCryptoResult::Ok(proposal_bytes.into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: WasmCryptoResult<Uint8Array>
+    pub fn new_remove_proposal(&self, conversation_id: Box<[u8]>, client_id: FfiClientId) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let proposal_bytes = this
+                    .borrow_mut()
+                    .new_proposal(conversation_id.to_vec(), MlsProposal::Remove(client_id.into()))
+                    .await?
+                    .to_bytes()
+                    .map(|bytes| Uint8Array::from(bytes.as_slice()))
+                    .map_err(MlsError::from)
+                    .map_err(CryptoError::from)?;
+
+                WasmCryptoResult::Ok(proposal_bytes.into())
+            }
+            .err_into(),
+        )
     }
 }
 

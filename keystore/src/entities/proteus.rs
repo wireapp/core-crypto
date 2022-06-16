@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-#[derive(Debug, Clone)]
+use zeroize::Zeroize;
+
+#[derive(Debug, Clone, Zeroize)]
+#[zeroize(drop)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
 pub struct ProteusPrekey {
     pub id: u16,

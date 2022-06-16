@@ -17,24 +17,54 @@
 mod common;
 
 #[cfg(feature = "proteus-keystore")]
-pub mod tests {
+mod test_implementation {
+    use crate::common::*;
+    use core_crypto_keystore::Connection;
+
+    pub async fn can_add_read_delete_prekey_traits(store: Connection) {
+        use core_crypto_keystore::CryptoKeystoreProteus as _;
+
+        let prekey_id = PreKeyId::new(28273);
+        let prekey = PreKey::new(prekey_id);
+
+        store.store_prekey(&prekey).unwrap();
+
+        use proteus::session::PreKeyStore as _;
+        let _ = store.prekey(prekey_id).unwrap().unwrap();
+
+        let _ = proteus::session::PreKeyStore::remove(&mut store, prekey.key_id).unwrap();
+        teardown(store);
+    }
+}
+
+#[cfg(all(test, feature = "proteus-keystore"))]
+pub mod persisted {
     use crate::common::*;
     use proteus::keys::{PreKey, PreKeyId};
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    #[test]
+    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
     #[wasm_bindgen_test]
     pub fn can_add_read_delete_prekey() {
         use core_crypto_keystore::CryptoKeystoreProteus as _;
-        let mut store = setup("proteus");
-        let prekey_id = PreKeyId::new(28273);
-        let prekey = PreKey::new(prekey_id);
-        store.store_prekey(&prekey).unwrap();
-        use proteus::session::PreKeyStore as _;
-        let _ = store.prekey(prekey_id).unwrap().unwrap();
-        let _ = proteus::session::PreKeyStore::remove(&mut store, prekey.key_id).unwrap();
-        teardown(store);
+        let mut store = setup("proteus").await;
+        test_implementation::can_add_read_delete_prekey_traits(store).await;
+    }
+}
+
+#[cfg(all(test, feature = "proteus-keystore"))]
+pub mod in_memory {
+    use crate::common::*;
+    use proteus::keys::{PreKey, PreKeyId};
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
+    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
+    #[wasm_bindgen_test]
+    pub fn can_add_read_delete_prekey() {
+        let mut store = setup_in_memory("proteus").await;
+        test_implementation::can_add_read_delete_prekey_traits(store).await;
     }
 }

@@ -2,7 +2,7 @@
 name = "core-crypto-keystore"
 description = "Encrypted keystore with support for OpenMLS and Proteus"
 repository = "https://github.com/wireapp/core-crypto"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 license = "GPL-3.0-only"
 
@@ -29,14 +29,22 @@ memory-cache = ["lru"]
 thiserror = "1.0"
 cfg-if = "1.0"
 hex = "0.4"
+zeroize = { version = "1.4", features = ["zeroize_derive"] }
+async-trait = "0.1"
+async-lock = "2.5"
+serde_json = "1.0"
 
 lru = { version = "0.7", optional = true }
 
 # iOS specific things
 security-framework = { version = "2.6", optional = true }
 
-openmls_traits = { version = "0.1", optional = true }
+openmls_traits = { version = "0.1", optional = true, features = ["single-threaded"] }
 proteus = { version = "1.0", default-features = false, optional = true }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+async-fs = "1.5"
+blocking = "1.2"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.rusqlite]
 version = "0.27"
@@ -49,16 +57,23 @@ features = [
     "uuid",
 ]
 
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
-refinery = { git = "https://github.com/rust-db/refinery", default-features = false, features = ["rusqlite"] }
+[target.'cfg(not(target_family = "wasm"))'.dependencies.refinery]
+git = "https://github.com/rust-db/refinery"
+# TODO: Target back crates.io once refinery publishes a new version (> 0.8.4)
+# version = "0.8"
+default-features = false
+features = ["rusqlite"]
 
 [target.wasm32-unknown-unknown.dependencies]
 rexie = "0.4"
 js-sys = "0.3"
+web-sys = { version = "0.3", features = ["console"] }
 wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.4"
+# Async WASM stuff
+wasm-bindgen-futures = "0.4"
+# Crypto stuff
 aes-gcm = "0.10.0-pre"
 rand = { version = "0.8", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
@@ -70,8 +85,11 @@ wasm-bindgen-test = "0.3"
 uuid = { version = "1.0", features = ["v4", "js"] }
 rand = { version = "0.8", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
-openmls = { version = "0.4", default-features = false }
-openmls_rust_crypto_provider = { version = "0.1", package = "openmls_rust_crypto", features = ["provider"] }
+openmls = { version = "0.4", default-features = false, features = ["crypto-subtle"] }
+openmls_rust_crypto_provider = { version = "0.1", package = "openmls_rust_crypto", features = ["provider", "single-threaded"] }
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+async-std = { version = "1.12", features = ["attributes"] }
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-Os", "--enable-mutable-globals", "--enable-threads", "--detect-features"]

@@ -68,13 +68,16 @@ fn path_reader(path: String) -> io::Result<Box<dyn Read>> {
     }
 }
 
-fn main() {
+#[tokio::main(flavor = "current_thread")]
+async fn main() {
     let cli = Cli::parse();
-    let backend = MlsCryptoProvider::try_new(&cli.store, &cli.enc_key).unwrap();
+    let backend = MlsCryptoProvider::try_new(&cli.store, &cli.enc_key).await.unwrap();
     match cli.command {
-        Command::KeyPackage { client_id } => key_package(&backend, ClientId::from_str(&client_id).unwrap()),
-        Command::PublicKey { client_id } => public_key(&backend, ClientId::from_str(&client_id).unwrap()),
-        Command::Group { client_id, group_id } => group(&backend, ClientId::from_str(&client_id).unwrap(), group_id.as_bytes()),
+        Command::KeyPackage { client_id } => key_package(&backend, ClientId::from_str(&client_id).unwrap()).await,
+        Command::PublicKey { client_id } => public_key(&backend, ClientId::from_str(&client_id).unwrap()).await,
+        Command::Group { client_id, group_id } => {
+            group(&backend, ClientId::from_str(&client_id).unwrap(), group_id.as_bytes()).await
+        }
         Command::Member {
             group,
             command: MemberCommand::Add {
@@ -85,37 +88,39 @@ fn main() {
             let mut group_data = path_reader(group).unwrap();
             let mut kp_data = path_reader(key_package).unwrap();
             let wel_data = welcome_out.map(|path| fs::File::create(path).unwrap());
-            add_member(&backend, &mut group_data, &mut kp_data, wel_data);
+            add_member(&backend, &mut group_data, &mut kp_data, wel_data).await;
         }
         Command::Message { group, text } => {
             let mut group_data = path_reader(group).unwrap();
-            app_message(&backend, &mut group_data, text);
+            app_message(&backend, &mut group_data, text).await;
         }
     }
 }
 
-fn key_package(backend: &MlsCryptoProvider, client_id: ClientId) {
-    let client = Client::init(client_id, None, &backend).unwrap();
-    let kpb = client.gen_keypackage(&backend).unwrap();
+async fn key_package(backend: &MlsCryptoProvider, client_id: ClientId) {
+    let client = Client::init(client_id, None, &backend).await.unwrap();
+    let kpb = client.gen_keypackage(&backend).await.unwrap();
     kpb.key_package().tls_serialize(&mut io::stdout()).unwrap();
 }
 
-fn public_key(backend: &MlsCryptoProvider, client_id: ClientId) {
-    let client = Client::init(client_id, None, &backend).unwrap();
+async fn public_key(backend: &MlsCryptoProvider, client_id: ClientId) {
+    let client = Client::init(client_id, None, &backend).await.unwrap();
     let pk = client.public_key();
     io::stdout().write_all(pk).unwrap();
 }
 
-fn group(backend: &MlsCryptoProvider, client_id: ClientId, group_id: &[u8]) {
-    let client = Client::init(client_id, None, &backend).unwrap();
+async fn group(backend: &MlsCryptoProvider, client_id: ClientId, group_id: &[u8]) {
+    let client = Client::init(client_id, None, &backend).await.unwrap();
     let group_id = GroupId::from_slice(group_id);
     let group_config = MlsConversationConfiguration::openmls_default_configuration();
-    let kp_hash = client.keypackage_hash(&backend).unwrap();
-    let mut group = MlsGroup::new(backend, &group_config, group_id, kp_hash.as_slice()).unwrap();
+    let kp_hash = client.keypackage_hash(&backend).await.unwrap();
+    let mut group = MlsGroup::new(backend, &group_config, group_id, kp_hash.as_slice())
+        .await
+        .unwrap();
     group.save(&mut io::stdout()).unwrap();
 }
 
-fn add_member<W: Write>(
+async fn add_member<W: Write>(
     backend: &MlsCryptoProvider,
     group_data: &mut dyn Read,
     mut kp_data: &mut dyn Read,
@@ -123,15 +128,15 @@ fn add_member<W: Write>(
 ) {
     let mut group = MlsGroup::load(group_data).unwrap();
     let kp = KeyPackage::tls_deserialize(&mut kp_data).unwrap();
-    let (handshake, welcome) = group.add_members(backend, &[kp]).unwrap();
+    let (handshake, welcome) = group.add_members(backend, &[kp]).await.unwrap();
     handshake.tls_serialize(&mut io::stdout()).unwrap();
     if let Some(mut wel_data) = opt_wel_data {
         welcome.tls_serialize(&mut wel_data).unwrap();
     }
 }
 
-fn app_message(backend: &MlsCryptoProvider, group_data: &mut dyn Read, text: String) {
+async fn app_message(backend: &MlsCryptoProvider, group_data: &mut dyn Read, text: String) {
     let mut group = MlsGroup::load(group_data).unwrap();
-    let message = group.create_message(backend, text.as_bytes()).unwrap();
+    let message = group.create_message(backend, text.as_bytes()).await.unwrap();
     message.tls_serialize(&mut io::stdout()).unwrap();
 }

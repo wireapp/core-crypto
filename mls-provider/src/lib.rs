@@ -24,24 +24,24 @@ pub struct MlsCryptoProvider {
 }
 
 impl MlsCryptoProvider {
-    pub fn try_new(db_path: impl AsRef<str>, identity_key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
+    pub async fn try_new(db_path: impl AsRef<str>, identity_key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
         let crypto = RustCrypto::default();
-        // FIXME: Remove the forced in-memory keystore when WASM persistence stops timing out!
-        #[cfg(target_family = "wasm")]
-        let key_store = CryptoKeystore::open_in_memory_with_key(db_path, identity_key.as_ref())?;
-        #[cfg(not(target_family = "wasm"))]
-        let key_store = CryptoKeystore::open_with_key(db_path, identity_key.as_ref())?;
+        let key_store = CryptoKeystore::open_with_key(db_path, identity_key.as_ref()).await?;
         Ok(Self { crypto, key_store })
     }
 
-    pub fn try_new_in_memory(identity_key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
+    pub async fn try_new_in_memory(identity_key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
         let crypto = RustCrypto::default();
-        let key_store = CryptoKeystore::open_in_memory_with_key("", identity_key.as_ref())?;
+        let key_store = CryptoKeystore::open_in_memory_with_key("", identity_key.as_ref()).await?;
         Ok(Self { crypto, key_store })
     }
 
-    pub fn destroy_and_reset(self) {
-        self.key_store.wipe().unwrap();
+    pub async fn close(self) -> CryptoKeystoreResult<()> {
+        self.key_store.close().await
+    }
+
+    pub async fn destroy_and_reset(self) -> CryptoKeystoreResult<()> {
+        self.key_store.wipe().await
     }
 }
 

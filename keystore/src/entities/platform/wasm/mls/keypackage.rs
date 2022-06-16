@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use wasm_bindgen::JsValue;
-
 use crate::entities::{MlsKeypackage, StringEntityId};
 use crate::{
     connection::KeystoreDatabaseConnection,
@@ -23,47 +21,51 @@ use crate::{
 };
 use crate::{CryptoKeystoreResult, MissingKeyErrorKind};
 
+#[async_trait::async_trait(?Send)]
 impl EntityBase for MlsKeypackage {
     type ConnectionType = KeystoreDatabaseConnection;
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
-        MissingKeyErrorKind::MlsKeyBundle
+        MissingKeyErrorKind::MlsKeyPackageBundle
     }
 
-    fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
+    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
-        storage.insert("mls_keys", &mut [self.clone()])?;
+        storage.save("mls_keys", &mut [self.clone()]).await?;
 
         Ok(())
     }
 
-    fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<Option<Self>> {
-        conn.storage().get("mls_keys", id.as_bytes())
+    async fn find_one(
+        conn: &mut Self::ConnectionType,
+        id: &StringEntityId,
+    ) -> crate::CryptoKeystoreResult<Option<Self>> {
+        conn.storage().get("mls_keys", id.as_bytes()).await
     }
 
-    fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        conn.storage().count("mls_keys")
+    async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
+        conn.storage().count("mls_keys").await
     }
 
-    fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
-        let _ = conn.storage_mut().delete("mls_keys", &[id.as_bytes()])?;
+    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
+        let _ = conn.storage_mut().delete("mls_keys", &[id.as_bytes()]).await?;
         Ok(())
     }
 }
 
 impl Entity for MlsKeypackage {
-    fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
-        Ok(JsValue::from_str(&self.id))
+    fn aad(&self) -> &[u8] {
+        self.id.as_bytes()
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.key = Self::encrypt_data(cipher, self.key.as_slice())?;
+        self.key = Self::encrypt_data(cipher, self.key.as_slice(), self.aad())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.key = Self::decrypt_data(cipher, self.key.as_slice())?;
+        self.key = Self::decrypt_data(cipher, self.key.as_slice(), self.aad())?;
 
         Ok(())
     }

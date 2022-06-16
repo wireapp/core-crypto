@@ -16,22 +16,30 @@
 
 mod common;
 
+#[cfg(test)]
 pub mod tests {
     use crate::common::*;
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    #[test]
+    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
     #[wasm_bindgen_test]
-    pub fn can_create_and_init_store() {
-        let store = setup("general");
-        teardown(store);
+    pub async fn can_create_and_init_store() {
+        let store = setup("general").await;
+        teardown(store).await;
+    }
+
+    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
+    #[wasm_bindgen_test]
+    pub async fn can_create_and_init_store_in_memory() {
+        let store = setup_in_memory("general").await;
+        teardown(store).await;
     }
 
     #[cfg(feature = "ios-wal-compat")]
-    #[test]
-    fn can_preserve_wal_compat_for_ios() {
-        let _store = setup("ios-wal-compat");
+    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
+    async fn can_preserve_wal_compat_for_ios() {
+        let _store = setup("ios-wal-compat").await;
     }
 }

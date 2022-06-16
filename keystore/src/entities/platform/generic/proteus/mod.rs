@@ -23,10 +23,18 @@ use crate::{
 
 impl Entity for ProteusPrekey {}
 
+#[async_trait::async_trait(?Send)]
 impl EntityBase for ProteusPrekey {
     type ConnectionType = KeystoreDatabaseConnection;
 
-    fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<Option<Self>> {
+    fn to_missing_key_err_kind() -> MissingKeyErrorKind {
+        MissingKeyErrorKind::ProteusPrekey
+    }
+
+    async fn find_one(
+        conn: &mut Self::ConnectionType,
+        id: &StringEntityId,
+    ) -> crate::CryptoKeystoreResult<Option<Self>> {
         let id: u16 = id.to_string().parse()?;
         let transaction = conn.transaction()?;
 
@@ -56,15 +64,11 @@ impl EntityBase for ProteusPrekey {
         }
     }
 
-    fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
+    async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         Ok(conn.query_row("SELECT COUNT(*) FROM proteus_prekeys", [], |r| r.get(0))?)
     }
 
-    fn to_missing_key_err_kind() -> MissingKeyErrorKind {
-        MissingKeyErrorKind::ProteusPrekey
-    }
-
-    fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
+    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
         let id = self.id;
         let prekey = &self.prekey;
         let transaction = conn.transaction()?;
@@ -87,7 +91,7 @@ impl EntityBase for ProteusPrekey {
         Ok(())
     }
 
-    fn delete(
+    async fn delete(
         conn: &mut Self::ConnectionType,
         id: &crate::entities::StringEntityId,
     ) -> crate::CryptoKeystoreResult<()> {

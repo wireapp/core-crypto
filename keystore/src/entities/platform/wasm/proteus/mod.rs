@@ -21,41 +21,61 @@ use crate::{
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
+#[async_trait::async_trait(?Send)]
 impl EntityBase for ProteusPrekey {
     type ConnectionType = KeystoreDatabaseConnection;
 
-    fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        conn.storage_mut().insert("proteus_prekeys", &mut [self.clone()])?;
+    fn to_missing_key_err_kind() -> MissingKeyErrorKind {
+        MissingKeyErrorKind::ProteusPrekey
+    }
+
+    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
+        conn.lock()
+            .await
+            .storage_mut()
+            .save("proteus_prekeys", &mut [self.clone()])
+            .await?;
 
         Ok(())
     }
 
-    fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<Option<Self>> {
-        conn.storage().get("proteus_prekeys", id.as_bytes())
+    async fn find_one(
+        conn: &mut Self::ConnectionType,
+        id: &StringEntityId,
+    ) -> crate::CryptoKeystoreResult<Option<Self>> {
+        conn.lock().await.storage().get("proteus_prekeys", id.as_bytes()).await
     }
 
-    fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        conn.storage().count("proteus_prekeys")
+    async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
+        conn.lock().await.storage().count("proteus_prekeys").await
     }
 
-    fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
-        conn.storage_mut().delete("proteus_prekeys", &[id.as_bytes()])
+    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
+        conn.lock()
+            .await
+            .storage_mut()
+            .delete("proteus_prekeys", &[id.as_bytes()])
+            .await
     }
 }
 
 impl Entity for ProteusPrekey {
-    fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
-        Ok(js_sys::Number::from(&self.id).into())
+    // fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
+    //     Ok(js_sys::Number::from(&self.id).into())
+    // }
+
+    fn aad(&self) -> &[u8] {
+        self.id.to_le_bytes().as_slice()
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.prekey = Self::encrypt_data(cipher, self.prekey.as_slice())?;
+        self.prekey = Self::encrypt_data(cipher, self.prekey.as_slice(), self.aad())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes::Aes256) -> CryptoKeystoreResult<()> {
-        self.prekey = Self::decrypt_data(cipher, self.prekey.as_slice())?;
+        self.prekey = Self::decrypt_data(cipher, self.prekey.as_slice(), self.aad())?;
 
         Ok(())
     }

@@ -113,5 +113,7 @@ pub enum MlsError {
     #[error(transparent)]
     MlsTlsCodecError(#[from] tls_codec::Error),
     #[error(transparent)]
+    MlsKeystoreSerializationError(#[from] serde_json::Error),
+    #[error(transparent)]
     MlsErrorString(#[from] openmls::error::ErrorString),
 }

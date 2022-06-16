@@ -2,7 +2,7 @@
 name = "core-crypto-ffi"
 description = "Platform-specific bindings (Android, iOS, WASM) for CoreCrypto"
 repository = "https://github.com/wireapp/core-crypto"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 license = "GPL-3.0-only"
 
@@ -16,19 +16,26 @@ mobile = ["uniffi", "uniffi_macros", "uniffi_build", "uniffi_bindgen"]
 c-api = ["libc"]
 
 [dependencies]
-core-crypto = { version = "0.2", path = "../crypto" }
+core-crypto = { version = "0.3", path = "../crypto" }
 thiserror = "1.0"
 cfg-if = "1.0"
+futures-util = "0.3"
 
 # UniFFI - Android + iOS bindings - Runtime support
-uniffi = { version = "0.18", optional = true }
-uniffi_macros = { version = "0.18", optional = true }
+uniffi = { version = "0.19", optional = true }
+uniffi_macros = { version = "0.19", optional = true }
 
 # C-API support
 libc = { version = "0.2", optional = true }
 
+# Blocking APIs support
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+futures-lite = "1.12"
+async-executor = "1.4"
+
 [target.wasm32-unknown-unknown.dependencies]
 wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
 serde-wasm-bindgen = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 wee_alloc = "0.4"
@@ -36,8 +43,12 @@ js-sys = "0.3"
 
 [build-dependencies]
 # UniFFI - Android + iOS bindings - Build support
-uniffi_build = { version = "0.18", features = ["builtin-bindgen"], optional = true }
-uniffi_bindgen = { version = "0.18", optional = true }
+uniffi_build = { version = "0.19", features = ["builtin-bindgen"], optional = true }
+uniffi_bindgen = { version = "0.19", optional = true }
+
+[dev-dependencies]
+attohttpc = "0.19"
+uniffi = { version = "0.19", features = ["builtin-bindgen"] }
 
 [target.wasm32-unknown-unknown.dev-dependencies]
 wasm-bindgen-test = "0.3"

@@ -16,12 +16,14 @@
 
 cfg_if::cfg_if! {
     if #[cfg(target_family = "wasm")] {
-        // mod wasm;
-        // pub use self::wasm::*;
-        include!("./wasm.rs");
+        mod wasm;
+        pub use self::wasm::*;
     } else {
-        // mod generic;
-        // pub use self::generic::*;
-        include!("./generic.rs");
+        mod generic;
+        pub use self::generic::*;
+
+
+        #[cfg(feature = "mobile")]
+        uniffi_macros::include_scaffolding!("CoreCrypto");
     }
 }
