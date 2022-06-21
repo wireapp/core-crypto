@@ -44,7 +44,7 @@ open class RustBuffer : Structure() {
 
     companion object {
         internal fun alloc(size: Int = 0) = rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_7614_rustbuffer_alloc(size, status).also {
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_14cc_rustbuffer_alloc(size, status).also {
                 if(it.data == null) {
                    throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=${size})")
                }
@@ -52,7 +52,7 @@ open class RustBuffer : Structure() {
         }
 
         internal fun free(buf: RustBuffer.ByValue) = rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_7614_rustbuffer_free(buf, status)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_14cc_rustbuffer_free(buf, status)
         }
     }
 
@@ -264,99 +264,103 @@ internal interface _UniFFILib : Library {
         }
     }
 
-    fun ffi_CoreCrypto_7614_CoreCrypto_object_free(ptr: Pointer,
+    fun ffi_CoreCrypto_14cc_CoreCrypto_object_free(ptr: Pointer,
     _uniffi_out_err: RustCallStatus
     ): Unit
 
-    fun CoreCrypto_7614_CoreCrypto_new(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
+    fun CoreCrypto_14cc_CoreCrypto_new(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): Pointer
 
-    fun CoreCrypto_7614_CoreCrypto_set_callbacks(ptr: Pointer,callbacks: Long,
+    fun CoreCrypto_14cc_CoreCrypto_set_callbacks(ptr: Pointer,callbacks: Long,
     _uniffi_out_err: RustCallStatus
     ): Unit
 
-    fun CoreCrypto_7614_CoreCrypto_client_public_key(ptr: Pointer,
+    fun CoreCrypto_14cc_CoreCrypto_client_public_key(ptr: Pointer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_7614_CoreCrypto_client_keypackages(ptr: Pointer,amount_requested: Int,
+    fun CoreCrypto_14cc_CoreCrypto_client_keypackages(ptr: Pointer,amount_requested: Int,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_7614_CoreCrypto_create_conversation(ptr: Pointer,conversation_id: RustBuffer.ByValue,config: RustBuffer.ByValue,
+    fun CoreCrypto_14cc_CoreCrypto_create_conversation(ptr: Pointer,conversation_id: RustBuffer.ByValue,config: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): Unit
 
-    fun CoreCrypto_7614_CoreCrypto_conversation_exists(ptr: Pointer,conversation_id: RustBuffer.ByValue,
+    fun CoreCrypto_14cc_CoreCrypto_conversation_exists(ptr: Pointer,conversation_id: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): Byte
 
-    fun CoreCrypto_7614_CoreCrypto_process_welcome_message(ptr: Pointer,welcome_message: RustBuffer.ByValue,
+    fun CoreCrypto_14cc_CoreCrypto_process_welcome_message(ptr: Pointer,welcome_message: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_7614_CoreCrypto_add_clients_to_conversation(ptr: Pointer,conversation_id: RustBuffer.ByValue,clients: RustBuffer.ByValue,
+    fun CoreCrypto_14cc_CoreCrypto_add_clients_to_conversation(ptr: Pointer,conversation_id: RustBuffer.ByValue,clients: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_7614_CoreCrypto_remove_clients_from_conversation(ptr: Pointer,conversation_id: RustBuffer.ByValue,clients: RustBuffer.ByValue,
+    fun CoreCrypto_14cc_CoreCrypto_remove_clients_from_conversation(ptr: Pointer,conversation_id: RustBuffer.ByValue,clients: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_7614_CoreCrypto_leave_conversation(ptr: Pointer,conversation_id: RustBuffer.ByValue,other_clients: RustBuffer.ByValue,
+    fun CoreCrypto_14cc_CoreCrypto_leave_conversation(ptr: Pointer,conversation_id: RustBuffer.ByValue,other_clients: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_7614_CoreCrypto_decrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,payload: RustBuffer.ByValue,
+    fun CoreCrypto_14cc_CoreCrypto_decrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,payload: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_7614_CoreCrypto_encrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,message: RustBuffer.ByValue,
+    fun CoreCrypto_14cc_CoreCrypto_encrypt_message(ptr: Pointer,conversation_id: RustBuffer.ByValue,message: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_7614_CoreCrypto_new_add_proposal(ptr: Pointer,conversation_id: RustBuffer.ByValue,key_package: RustBuffer.ByValue,
+    fun CoreCrypto_14cc_CoreCrypto_new_add_proposal(ptr: Pointer,conversation_id: RustBuffer.ByValue,key_package: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_7614_CoreCrypto_new_update_proposal(ptr: Pointer,conversation_id: RustBuffer.ByValue,
+    fun CoreCrypto_14cc_CoreCrypto_new_update_proposal(ptr: Pointer,conversation_id: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_7614_CoreCrypto_new_remove_proposal(ptr: Pointer,conversation_id: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
+    fun CoreCrypto_14cc_CoreCrypto_new_remove_proposal(ptr: Pointer,conversation_id: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun CoreCrypto_7614_CoreCrypto_new_external_add_proposal(ptr: Pointer,conversation_id: RustBuffer.ByValue,epoch: Long,key_package: RustBuffer.ByValue,
+    fun CoreCrypto_14cc_CoreCrypto_new_external_add_proposal(ptr: Pointer,conversation_id: RustBuffer.ByValue,epoch: Long,key_package: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun ffi_CoreCrypto_7614_CoreCryptoCallbacks_init_callback(callback_stub: ForeignCallback,
+    fun CoreCrypto_14cc_CoreCrypto_self_update(ptr: Pointer,conversation_id: RustBuffer.ByValue,key_package: RustBuffer.ByValue,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer.ByValue
+
+    fun ffi_CoreCrypto_14cc_CoreCryptoCallbacks_init_callback(callback_stub: ForeignCallback,
     _uniffi_out_err: RustCallStatus
     ): Unit
 
-    fun CoreCrypto_7614_init_with_path_and_key(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
+    fun CoreCrypto_14cc_init_with_path_and_key(path: RustBuffer.ByValue,key: RustBuffer.ByValue,client_id: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): Pointer
 
-    fun CoreCrypto_7614_version(
+    fun CoreCrypto_14cc_version(
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun ffi_CoreCrypto_7614_rustbuffer_alloc(size: Int,
+    fun ffi_CoreCrypto_14cc_rustbuffer_alloc(size: Int,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun ffi_CoreCrypto_7614_rustbuffer_from_bytes(bytes: ForeignBytes.ByValue,
+    fun ffi_CoreCrypto_14cc_rustbuffer_from_bytes(bytes: ForeignBytes.ByValue,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
-    fun ffi_CoreCrypto_7614_rustbuffer_free(buf: RustBuffer.ByValue,
+    fun ffi_CoreCrypto_14cc_rustbuffer_free(buf: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): Unit
 
-    fun ffi_CoreCrypto_7614_rustbuffer_reserve(buf: RustBuffer.ByValue,additional: Int,
+    fun ffi_CoreCrypto_14cc_rustbuffer_reserve(buf: RustBuffer.ByValue,additional: Int,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
@@ -739,6 +743,9 @@ public interface CoreCryptoInterface {
     @Throws(CryptoException::class)
     fun newExternalAddProposal(conversationId: ConversationId, epoch: ULong, keyPackage: List<UByte>): List<UByte>
     
+    @Throws(CryptoException::class)
+    fun selfUpdate(conversationId: ConversationId, keyPackage: List<UByte>?): SelfUpdateResponse
+    
 }
 
 class CoreCrypto(
@@ -747,7 +754,7 @@ class CoreCrypto(
     constructor(path: String, key: String, clientId: String) :
         this(
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_new(FfiConverterString.lower(path), FfiConverterString.lower(key), FfiConverterString.lower(clientId), _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_new(FfiConverterString.lower(path), FfiConverterString.lower(key), FfiConverterString.lower(clientId), _status)
 })
 
     /**
@@ -760,7 +767,7 @@ class CoreCrypto(
      */
     override protected fun freeRustArcPtr() {
         rustCall() { status ->
-            _UniFFILib.INSTANCE.ffi_CoreCrypto_7614_CoreCrypto_object_free(this.pointer, status)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_14cc_CoreCrypto_object_free(this.pointer, status)
         }
     }
 
@@ -768,7 +775,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun setCallbacks(callbacks: CoreCryptoCallbacks) =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_set_callbacks(it, FfiConverterTypeCoreCryptoCallbacks.lower(callbacks),  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_set_callbacks(it, FfiConverterTypeCoreCryptoCallbacks.lower(callbacks),  _status)
 }
         }
     
@@ -776,7 +783,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun clientPublicKey(): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_client_public_key(it,  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_client_public_key(it,  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -785,7 +792,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun clientKeypackages(amountRequested: UInt): List<List<UByte>> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_client_keypackages(it, FfiConverterUInt.lower(amountRequested),  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_client_keypackages(it, FfiConverterUInt.lower(amountRequested),  _status)
 }
         }.let {
             FfiConverterSequenceSequenceUByte.lift(it)
@@ -794,14 +801,14 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun createConversation(conversationId: ConversationId, config: ConversationConfiguration) =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterTypeConversationConfiguration.lower(config),  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterTypeConversationConfiguration.lower(config),  _status)
 }
         }
     
     override fun conversationExists(conversationId: ConversationId): Boolean =
         callWithPointer {
     rustCall() { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_conversation_exists(it, FfiConverterTypeConversationId.lower(conversationId),  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_conversation_exists(it, FfiConverterTypeConversationId.lower(conversationId),  _status)
 }
         }.let {
             FfiConverterBoolean.lift(it)
@@ -810,7 +817,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun processWelcomeMessage(welcomeMessage: List<UByte>): ConversationId =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_process_welcome_message(it, FfiConverterSequenceUByte.lower(welcomeMessage),  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_process_welcome_message(it, FfiConverterSequenceUByte.lower(welcomeMessage),  _status)
 }
         }.let {
             FfiConverterTypeConversationId.lift(it)
@@ -819,7 +826,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun addClientsToConversation(conversationId: ConversationId, clients: List<Invitee>): MemberAddedMessages? =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceTypeInvitee.lower(clients),  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceTypeInvitee.lower(clients),  _status)
 }
         }.let {
             FfiConverterOptionalTypeMemberAddedMessages.lift(it)
@@ -828,7 +835,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun removeClientsFromConversation(conversationId: ConversationId, clients: List<ClientId>): List<UByte>? =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceTypeClientId.lower(clients),  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceTypeClientId.lower(clients),  _status)
 }
         }.let {
             FfiConverterOptionalSequenceUByte.lift(it)
@@ -837,7 +844,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun leaveConversation(conversationId: ConversationId, otherClients: List<ClientId>): ConversationLeaveMessages =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_leave_conversation(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceTypeClientId.lower(otherClients),  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_leave_conversation(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceTypeClientId.lower(otherClients),  _status)
 }
         }.let {
             FfiConverterTypeConversationLeaveMessages.lift(it)
@@ -846,7 +853,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun decryptMessage(conversationId: ConversationId, payload: List<UByte>): List<UByte>? =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUByte.lower(payload),  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUByte.lower(payload),  _status)
 }
         }.let {
             FfiConverterOptionalSequenceUByte.lift(it)
@@ -855,7 +862,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun encryptMessage(conversationId: ConversationId, message: List<UByte>): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUByte.lower(message),  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUByte.lower(message),  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -864,7 +871,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun newAddProposal(conversationId: ConversationId, keyPackage: List<UByte>): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_new_add_proposal(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUByte.lower(keyPackage),  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_new_add_proposal(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterSequenceUByte.lower(keyPackage),  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -873,7 +880,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun newUpdateProposal(conversationId: ConversationId): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_new_update_proposal(it, FfiConverterTypeConversationId.lower(conversationId),  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_new_update_proposal(it, FfiConverterTypeConversationId.lower(conversationId),  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -882,7 +889,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun newRemoveProposal(conversationId: ConversationId, clientId: ClientId): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_new_remove_proposal(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterTypeClientId.lower(clientId),  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_new_remove_proposal(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterTypeClientId.lower(clientId),  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -891,10 +898,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun newExternalAddProposal(conversationId: ConversationId, epoch: ULong, keyPackage: List<UByte>): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_CoreCrypto_new_external_add_proposal(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterULong.lower(epoch), FfiConverterSequenceUByte.lower(keyPackage),  _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_new_external_add_proposal(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterULong.lower(epoch), FfiConverterSequenceUByte.lower(keyPackage),  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
+        }
+    
+    @Throws(CryptoException::class)override fun selfUpdate(conversationId: ConversationId, keyPackage: List<UByte>?): SelfUpdateResponse =
+        callWithPointer {
+    rustCallWithError(CryptoException) { _status ->
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_CoreCrypto_self_update(it, FfiConverterTypeConversationId.lower(conversationId), FfiConverterOptionalSequenceUByte.lower(keyPackage),  _status)
+}
+        }.let {
+            FfiConverterTypeSelfUpdateResponse.lift(it)
         }
     
 
@@ -1040,6 +1056,35 @@ public object FfiConverterTypeMemberAddedMessages: FfiConverterRustBuffer<Member
     override fun write(value: MemberAddedMessages, buf: ByteBuffer) {
             FfiConverterSequenceUByte.write(value.message, buf)
             FfiConverterSequenceUByte.write(value.welcome, buf)
+    }
+}
+
+
+
+
+data class SelfUpdateResponse (
+    var messageOut: List<UByte>, 
+    var welcome: List<UByte>?
+) {
+    
+}
+
+public object FfiConverterTypeSelfUpdateResponse: FfiConverterRustBuffer<SelfUpdateResponse> {
+    override fun read(buf: ByteBuffer): SelfUpdateResponse {
+        return SelfUpdateResponse(
+            FfiConverterSequenceUByte.read(buf),
+            FfiConverterOptionalSequenceUByte.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SelfUpdateResponse) = (
+            FfiConverterSequenceUByte.allocationSize(value.messageOut) +
+            FfiConverterOptionalSequenceUByte.allocationSize(value.welcome)
+    )
+
+    override fun write(value: SelfUpdateResponse, buf: ByteBuffer) {
+            FfiConverterSequenceUByte.write(value.messageOut, buf)
+            FfiConverterOptionalSequenceUByte.write(value.welcome, buf)
     }
 }
 
@@ -1270,7 +1315,7 @@ public object FfiConverterTypeCoreCryptoCallbacks: FfiConverterCallbackInterface
 ) {
     override fun register(lib: _UniFFILib) {
         rustCall() { status ->
-            lib.ffi_CoreCrypto_7614_CoreCryptoCallbacks_init_callback(this.foreignCallback, status)
+            lib.ffi_CoreCrypto_14cc_CoreCryptoCallbacks_init_callback(this.foreignCallback, status)
         }
     }
 }
@@ -1550,7 +1595,7 @@ public typealias FfiConverterTypeMemberId = FfiConverterSequenceUByte
 fun initWithPathAndKey(path: String, key: String, clientId: String): CoreCrypto {
     return FfiConverterTypeCoreCrypto.lift(
     rustCallWithError(CryptoException) { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_init_with_path_and_key(FfiConverterString.lower(path), FfiConverterString.lower(key), FfiConverterString.lower(clientId), _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_init_with_path_and_key(FfiConverterString.lower(path), FfiConverterString.lower(key), FfiConverterString.lower(clientId), _status)
 })
 }
 
@@ -1559,7 +1604,7 @@ fun initWithPathAndKey(path: String, key: String, clientId: String): CoreCrypto 
 fun version(): String {
     return FfiConverterString.lift(
     rustCall() { _status ->
-    _UniFFILib.INSTANCE.CoreCrypto_7614_version( _status)
+    _UniFFILib.INSTANCE.CoreCrypto_14cc_version( _status)
 })
 }
 

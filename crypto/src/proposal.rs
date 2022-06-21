@@ -15,8 +15,12 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError};
+use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::{KeyPackage, MlsGroup, MlsMessageOut};
+use openmls::{
+    messages::Welcome,
+    prelude::{KeyPackage, KeyPackageBundle, MlsGroup, MlsMessageOut},
+};
 use openmls_traits::OpenMlsCryptoProvider;
 
 /// Internal representation of proposal to ease further additions
@@ -71,6 +75,33 @@ impl MlsCentral {
         let group = &mut conversation.group;
 
         proposal.create(&self.mls_backend, group)
+    }
+
+    /// Creates and commits an update key package
+    pub fn self_update(
+        &mut self,
+        conversation: ConversationId,
+        key_package: Option<KeyPackage>,
+    ) -> CryptoResult<(MlsMessageOut, Option<Welcome>)> {
+        let conversation = self
+            .mls_groups
+            .get_mut(&conversation)
+            .ok_or(CryptoError::ConversationNotFound(conversation))?;
+        let kpb = key_package
+            .map(|kp| {
+                let href = kp.hash_ref(self.mls_backend.crypto()).map_err(MlsError::from)?;
+                self.mls_backend
+                    .key_store()
+                    .mls_fetch_keypackage_bundle_by_ref::<KeyPackageBundle, _>(href.as_slice())
+                    .map_err(CryptoError::KeyStoreError)
+            })
+            .transpose()?
+            .flatten();
+        conversation
+            .group
+            .self_update(&self.mls_backend, kpb)
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)
     }
 }
 
@@ -198,6 +229,94 @@ pub mod proposal_tests {
                     _ => panic!(""),
                 }
             })
+        }
+    }
+
+    mod self_update {
+        use mls_crypto_provider::MlsCryptoProvider;
+        use wasm_bindgen_test::wasm_bindgen_test;
+
+        use crate::{
+            member::ConversationMember,
+            prelude::{MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage},
+            test_utils::run_test_with_central,
+        };
+
+        // if theres a pending proposal to be commited (Charles) the welcome message should
+        // contain the welcome message from Charles
+        // create charles group and should be able to decrypt the welcome message and send messages
+        // to the group
+
+        // create a group with alice and bob
+        // when perform update on alice, bob has to be updated, so check key package from bob
+        #[test]
+        #[wasm_bindgen_test]
+        pub fn should_self_update_conversation_group() {
+            run_test_with_central(|mut central| {
+                central.mls_groups.clear();
+                let conversation_id = b"conversation".to_vec();
+                let (bob_backend, bob) = person("bob");
+
+                let conversation_config = MlsConversationConfiguration::default();
+
+                central
+                    .new_conversation(conversation_id.clone(), conversation_config)
+                    .unwrap();
+
+                let add_message = central
+                    .add_members_to_conversation(&conversation_id, &mut [bob.clone()])
+                    .unwrap()
+                    .unwrap();
+
+                assert_eq!(central.mls_groups[&conversation_id].members().unwrap().len(), 2);
+
+                let MlsConversationCreationMessage { welcome, .. } = add_message;
+
+                let conversation_config = MlsConversationConfiguration::default();
+
+                let mut bob_group =
+                    MlsConversation::from_welcome_message(welcome, conversation_config, &bob_backend).unwrap();
+
+                assert_eq!(bob_group.id(), central.mls_groups[&conversation_id].id());
+
+                let msg = b"Hello";
+                let alice_can_send_message = central.encrypt_message(conversation_id.clone(), msg);
+                assert!(alice_can_send_message.is_ok());
+                let bob_can_send_message = bob_group.encrypt_message(msg, &bob_backend);
+                assert!(bob_can_send_message.is_ok());
+
+                let alice_initial_kp = central.mls_client.keypackage_hash(&central.mls_backend).unwrap();
+                let bob_initial_kp = bob.local_client().keypackage_hash(&bob_backend).unwrap();
+
+                assert!(bob_group.group.member(&alice_initial_kp).is_some());
+
+                let (msg_out, welcome) = central.self_update(conversation_id.clone(), None).unwrap();
+                assert!(welcome.is_none());
+
+                let bob_can_send_message = bob_group.encrypt_message(msg, &bob_backend);
+                assert!(bob_can_send_message.is_ok());
+
+                let alice_can_send_message = central.encrypt_message(conversation_id.clone(), msg);
+                assert!(alice_can_send_message.is_ok());
+
+                let alice_current_kp = central.mls_client.keypackage_hash(&central.mls_backend).unwrap();
+                let bob_current_kp = bob.local_client().keypackage_hash(&bob_backend).unwrap();
+
+                assert!(bob_group.group.member(&alice_initial_kp).is_some());
+
+                assert_ne!(alice_initial_kp, alice_current_kp);
+                assert_ne!(bob_initial_kp, bob_current_kp);
+            })
+        }
+
+        #[test]
+        #[wasm_bindgen_test]
+        pub fn should_fail_self_update_conversation_group() {}
+
+        fn person(name: &str) -> (MlsCryptoProvider, ConversationMember) {
+            let backend = MlsCryptoProvider::try_new_in_memory(name).unwrap();
+            let member = ConversationMember::random_generate(&backend).unwrap();
+            (backend, member)
         }
     }
 

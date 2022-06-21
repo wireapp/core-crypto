@@ -50,6 +50,11 @@ dictionary Invitee {
     sequence<u8> kp;
 };
 
+dictionary SelfUpdateResponse {
+    sequence<u8> message_out;
+    sequence<u8>? welcome;
+};
+
 dictionary ConversationConfiguration {
     sequence<MemberId> admins;
     CiphersuiteName? ciphersuite;
@@ -107,6 +112,9 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch, sequence<u8> key_package);
+
+    [Throws=CryptoError]
+    SelfUpdateResponse self_update(ConversationId conversation_id, sequence<u8>? key_package);
 };
 
 namespace CoreCrypto {
