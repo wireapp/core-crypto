@@ -8,6 +8,8 @@ use io::Write;
 use std::fs;
 use std::io;
 
+mod keystore;
+
 fn key_package(backend: &MlsCryptoProvider, client_id: ClientId) {
     let client = Client::init(client_id, &backend).unwrap();
     let kpb = client.gen_keypackage(&backend).unwrap();
