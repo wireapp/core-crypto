@@ -6,14 +6,14 @@ use std::path::Path;
 
 pub struct TestBackend {
     crypto: RustCrypto,
-    keystore: TestKeyStore,
+    key_store: TestKeyStore,
 }
 
 impl TestBackend {
     pub fn new<P: AsRef<Path>>(path: P) -> std::io::Result<Self> {
         let crypto = RustCrypto::default();
-        let keystore = TestKeyStore::create(path)?;
-        Ok(TestBackend { crypto, keystore })
+        let key_store = TestKeyStore::create(path)?;
+        Ok(TestBackend { crypto, key_store })
     }
 }
 
@@ -31,6 +31,6 @@ impl OpenMlsCryptoProvider for TestBackend {
     }
 
     fn key_store(&self) -> &Self::KeyStoreProvider {
-        &self.keystore
+        &self.key_store
     }
 }

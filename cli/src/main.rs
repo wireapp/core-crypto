@@ -39,7 +39,7 @@ struct Cli {
     #[clap(short, long)]
     store: String,
     #[clap(short, long)]
-    enc_key: String,
+    _enc_key: Option<String>,
     #[clap(subcommand)]
     command: Command,
 }
@@ -109,28 +109,50 @@ fn default_configuration() -> MlsGroupConfig {
         .build()
 }
 
+fn get_credential_bundle(backend: &impl OpenMlsCryptoProvider, client_id: ClientId) -> CredentialBundle {
+    let ks = backend.key_store();
+    match ks.read(b"self") {
+        Some(bundle) => {
+            // TODO: check that the client id matches
+            bundle
+        }
+        None => {
+            let bundle =
+                CredentialBundle::new(client_id.0, CredentialType::Basic, SignatureScheme::ED25519, backend).unwrap();
+            ks.store(b"self", &bundle).unwrap();
+            bundle
+        }
+    }
+}
+
+fn new_key_package(backend: &impl OpenMlsCryptoProvider, client_id: ClientId) -> KeyPackageBundle {
+    let cred_bundle = get_credential_bundle(backend, client_id);
+    let extensions = vec![];
+    let ciphersuites = [Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519];
+    let kp_bundle = KeyPackageBundle::new(&ciphersuites, &cred_bundle, backend, extensions).unwrap();
+
+    // store the key package bundle in the key store
+    let key_package = kp_bundle.key_package();
+    backend
+        .key_store()
+        .store(key_package.hash_ref(backend.crypto()).unwrap().value(), &kp_bundle)
+        .unwrap();
+
+    kp_bundle
+}
+
 fn main() {
     let cli = Cli::parse();
-    // let backend = MlsCryptoProvider::try_new(&cli.store, &cli.enc_key).unwrap();
     let backend = TestBackend::new(&cli.store).unwrap();
     match cli.command {
         Command::KeyPackage { client_id } => {
-            let cred_bundle =
-                CredentialBundle::new(client_id.0, CredentialType::Basic, SignatureScheme::ED25519, &backend).unwrap();
+            let key_package_bundle = new_key_package(&backend, client_id);
 
-            // TODO: fetch the credential bundle from the key store
-            // let credential = cred_bundle.credential().clone();
-            // backend
-            //     .key_store()
-            //     .store(
-            //         &credential.signature_key().tls_serialize_detached().unwrap(),
-            //         &cred_bundle,
-            //     )
-            //     .unwrap();
-
-            let extensions = vec![];
-            let ciphersuites = [Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519];
-            let key_package_bundle = KeyPackageBundle::new(&ciphersuites, &cred_bundle, &backend, extensions).unwrap();
+            // output key package to standard output
+            key_package_bundle
+                .key_package()
+                .tls_serialize(&mut io::stdout())
+                .unwrap();
         }
         Command::KeyPackageRef { key_package } => {
             let mut kp_data = path_reader(&key_package).unwrap();
@@ -140,7 +162,10 @@ fn main() {
                 .unwrap();
         }
         Command::PublicKey { client_id } => {
-            todo!()
+            let cred_bundle = get_credential_bundle(&backend, client_id);
+            let credential = cred_bundle.credential();
+            let bytes = credential.signature_key().as_slice();
+            io::stdout().write_all(bytes).unwrap();
         }
         Command::Group { client_id, group_id } => {
             let group_id = base64::decode(group_id).expect("Failed to decode group_id as base64");
@@ -148,7 +173,10 @@ fn main() {
             let group_config = default_configuration();
 
             // TODO: generate a new key package for the creator
-            let kp_hash: KeyPackageRef = todo!();
+            let kp_bundle = new_key_package(&backend, client_id);
+            let kp = kp_bundle.key_package();
+            let kp_ref = kp.hash_ref(backend.crypto()).unwrap();
+            let kp_hash = kp_ref.value();
 
             let mut group = MlsGroup::new(&backend, &group_config, group_id, kp_hash.as_slice()).unwrap();
             group.save(&mut io::stdout()).unwrap();
@@ -196,7 +224,7 @@ fn main() {
             handshake.tls_serialize(&mut io::stdout()).unwrap();
         }
         Command::Message { group, text } => {
-            let mut group_data = path_reader(&group).unwrap();
+            let group_data = path_reader(&group).unwrap();
             let mut group = MlsGroup::load(group_data).unwrap();
             let message = group.create_message(&backend, text.as_bytes()).unwrap();
             message.tls_serialize(&mut io::stdout()).unwrap();
