@@ -3,14 +3,13 @@ use openmls_traits::key_store::{FromKeyStoreValue, ToKeyStoreValue};
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use tempdir::TempDir;
 
 pub struct TestKeyStore {
     path: PathBuf,
 }
 
 impl TestKeyStore {
-    fn create<P: AsRef<Path>>(path: P) -> Result<Self, std::io::Error> {
+    pub fn create<P: AsRef<Path>>(path: P) -> Result<Self, std::io::Error> {
         std::fs::create_dir_all(&path)?;
         Ok(TestKeyStore {
             path: path.as_ref().to_path_buf(),
@@ -69,7 +68,7 @@ impl OpenMlsKeyStore for TestKeyStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env::temp_dir;
+    use tempdir::TempDir;
 
     #[derive(Debug, PartialEq)]
     struct Value(Vec<u8>);

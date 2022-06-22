@@ -7,9 +7,6 @@ edition = "2021"
 openmls = "0.4"
 openmls_traits = "0.1"
 openmls_rust_crypto = "0.1"
-core-crypto = { version = "0.2", path = "../crypto" }
-core-crypto-keystore = { version = "0.2", path = "../keystore" }
-mls-crypto-provider = { version = "0.2", path = "../mls-provider" }
 
 base64 = "0.13.0"
 uuid = "1.0.0-alpha"
@@ -19,10 +16,3 @@ clap = { version = "3", features = ["derive"] }
 tempdir = "0.3"
 
 [workspace]
-
-[patch.crates-io.openmls]
-git = "https://github.com/wireapp/openmls"
-branch = "develop"
-[patch.crates-io.openmls_traits]
-git = "https://github.com/wireapp/openmls"
-branch = "develop"
