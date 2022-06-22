@@ -234,6 +234,8 @@ pub mod proposal_tests {
 
     mod self_update {
         use mls_crypto_provider::MlsCryptoProvider;
+        use openmls::prelude::KeyPackage;
+        use openmls_traits::OpenMlsCryptoProvider;
         use wasm_bindgen_test::wasm_bindgen_test;
 
         use crate::{
@@ -252,23 +254,23 @@ pub mod proposal_tests {
         #[test]
         #[wasm_bindgen_test]
         pub fn should_self_update_conversation_group() {
-            run_test_with_central(|mut central| {
-                central.mls_groups.clear();
+            run_test_with_central(|mut alice| {
+                alice.mls_groups.clear();
                 let conversation_id = b"conversation".to_vec();
                 let (bob_backend, bob) = person("bob");
 
                 let conversation_config = MlsConversationConfiguration::default();
 
-                central
+                alice
                     .new_conversation(conversation_id.clone(), conversation_config)
                     .unwrap();
 
-                let add_message = central
-                    .add_members_to_conversation(&conversation_id, &mut [bob.clone()])
+                let add_message = alice
+                    .add_members_to_conversation(&conversation_id, &mut [bob])
                     .unwrap()
                     .unwrap();
 
-                assert_eq!(central.mls_groups[&conversation_id].members().unwrap().len(), 2);
+                assert_eq!(alice.mls_groups[&conversation_id].members().unwrap().len(), 2);
 
                 let MlsConversationCreationMessage { welcome, .. } = add_message;
 
@@ -277,35 +279,67 @@ pub mod proposal_tests {
                 let mut bob_group =
                     MlsConversation::from_welcome_message(welcome, conversation_config, &bob_backend).unwrap();
 
-                assert_eq!(bob_group.id(), central.mls_groups[&conversation_id].id());
+                assert_eq!(bob_group.id(), alice.mls_groups[&conversation_id].id());
 
                 let msg = b"Hello";
-                let alice_can_send_message = central.encrypt_message(conversation_id.clone(), msg);
+                let alice_can_send_message = alice.encrypt_message(conversation_id.clone(), msg);
                 assert!(alice_can_send_message.is_ok());
                 let bob_can_send_message = bob_group.encrypt_message(msg, &bob_backend);
                 assert!(bob_can_send_message.is_ok());
 
-                let alice_initial_kp = central.mls_client.keypackage_hash(&central.mls_backend).unwrap();
-                let bob_initial_kp = bob.local_client().keypackage_hash(&bob_backend).unwrap();
+                let bob_keys = bob_group
+                    .group
+                    .members()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<KeyPackage>>();
 
-                assert!(bob_group.group.member(&alice_initial_kp).is_some());
+                let alice_keys = alice
+                    .mls_groups
+                    .get(&conversation_id)
+                    .unwrap()
+                    .group
+                    .members()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<KeyPackage>>();
 
-                let (msg_out, welcome) = central.self_update(conversation_id.clone(), None).unwrap();
+                assert!(alice_keys
+                    .iter()
+                    .all(|a_key| bob_keys.iter().any(|b_key| b_key == a_key)));
+
+                let (msg_out, welcome) = alice.self_update(conversation_id.clone(), None).unwrap();
                 assert!(welcome.is_none());
 
+                let alice_new_keys = alice
+                    .mls_groups
+                    .get(&conversation_id)
+                    .unwrap()
+                    .group
+                    .members()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<KeyPackage>>();
+
+                alice_keys
+                    .iter()
+                    .for_each(|k| println!("{:?}", k.hash_ref(alice.mls_backend.crypto()).unwrap()));
+
+                alice_new_keys
+                    .iter()
+                    .for_each(|k| println!("{:?}", k.hash_ref(alice.mls_backend.crypto()).unwrap()));
+
+                assert!(false);
+                assert!(bob_group
+                    .decrypt_message(&msg_out.to_bytes().unwrap(), &bob_backend)
+                    .unwrap()
+                    .is_none());
+
                 let bob_can_send_message = bob_group.encrypt_message(msg, &bob_backend);
                 assert!(bob_can_send_message.is_ok());
 
-                let alice_can_send_message = central.encrypt_message(conversation_id.clone(), msg);
+                let alice_can_send_message = alice.encrypt_message(conversation_id.clone(), msg);
                 assert!(alice_can_send_message.is_ok());
-
-                let alice_current_kp = central.mls_client.keypackage_hash(&central.mls_backend).unwrap();
-                let bob_current_kp = bob.local_client().keypackage_hash(&bob_backend).unwrap();
-
-                assert!(bob_group.group.member(&alice_initial_kp).is_some());
-
-                assert_ne!(alice_initial_kp, alice_current_kp);
-                assert_ne!(bob_initial_kp, bob_current_kp);
             })
         }
 
