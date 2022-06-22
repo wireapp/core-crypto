@@ -235,7 +235,6 @@ pub mod proposal_tests {
     mod self_update {
         use mls_crypto_provider::MlsCryptoProvider;
         use openmls::prelude::KeyPackage;
-        use openmls_traits::OpenMlsCryptoProvider;
         use wasm_bindgen_test::wasm_bindgen_test;
 
         use crate::{
@@ -258,6 +257,7 @@ pub mod proposal_tests {
                 alice.mls_groups.clear();
                 let conversation_id = b"conversation".to_vec();
                 let (bob_backend, bob) = person("bob");
+                let bob_key = bob.local_client().keypackages(&bob_backend).unwrap()[0].clone();
 
                 let conversation_config = MlsConversationConfiguration::default();
 
@@ -308,8 +308,18 @@ pub mod proposal_tests {
                     .iter()
                     .all(|a_key| bob_keys.iter().any(|b_key| b_key == a_key)));
 
+                let alice_key = alice_keys.into_iter().find(|k| *k != bob_key).unwrap();
+
                 let (msg_out, welcome) = alice.self_update(conversation_id.clone(), None).unwrap();
                 assert!(welcome.is_none());
+
+                alice
+                    .mls_groups
+                    .get_mut(&conversation_id)
+                    .unwrap()
+                    .group
+                    .merge_pending_commit()
+                    .unwrap();
 
                 let alice_new_keys = alice
                     .mls_groups
@@ -321,19 +331,23 @@ pub mod proposal_tests {
                     .cloned()
                     .collect::<Vec<KeyPackage>>();
 
-                alice_keys
-                    .iter()
-                    .for_each(|k| println!("{:?}", k.hash_ref(alice.mls_backend.crypto()).unwrap()));
+                assert!(!alice_new_keys.contains(&alice_key));
 
-                alice_new_keys
-                    .iter()
-                    .for_each(|k| println!("{:?}", k.hash_ref(alice.mls_backend.crypto()).unwrap()));
-
-                assert!(false);
                 assert!(bob_group
                     .decrypt_message(&msg_out.to_bytes().unwrap(), &bob_backend)
                     .unwrap()
                     .is_none());
+
+                let bob_new_keys = bob_group
+                    .group
+                    .members()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<KeyPackage>>();
+
+                assert!(alice_new_keys
+                    .iter()
+                    .all(|a_key| bob_new_keys.iter().any(|b_key| b_key == a_key)));
 
                 let bob_can_send_message = bob_group.encrypt_message(msg, &bob_backend);
                 assert!(bob_can_send_message.is_ok());
