@@ -34,6 +34,9 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    Init {
+        client_id: ClientId,
+    },
     KeyPackage {
         client_id: ClientId,
     },
@@ -97,24 +100,18 @@ fn default_configuration() -> MlsGroupConfig {
         .build()
 }
 
-fn get_credential_bundle(backend: &impl OpenMlsCryptoProvider, client_id: ClientId) -> CredentialBundle {
+fn get_credential_bundle(backend: &impl OpenMlsCryptoProvider) -> CredentialBundle {
     let ks = backend.key_store();
     match ks.read(b"self") {
-        Some(bundle) => {
-            // TODO: check that the client id matches
-            bundle
-        }
+        Some(bundle) => bundle,
         None => {
-            let bundle =
-                CredentialBundle::new(client_id.0, CredentialType::Basic, SignatureScheme::ED25519, backend).unwrap();
-            ks.store(b"self", &bundle).unwrap();
-            bundle
+            panic!("Credential not initialised. Please run `init` first.");
         }
     }
 }
 
-fn new_key_package(backend: &impl OpenMlsCryptoProvider, client_id: ClientId) -> KeyPackageBundle {
-    let cred_bundle = get_credential_bundle(backend, client_id);
+fn new_key_package(backend: &impl OpenMlsCryptoProvider) -> KeyPackageBundle {
+    let cred_bundle = get_credential_bundle(backend);
     let extensions = vec![];
     let ciphersuites = [Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519];
     let kp_bundle = KeyPackageBundle::new(&ciphersuites, &cred_bundle, backend, extensions).unwrap();
@@ -133,8 +130,22 @@ fn main() {
     let cli = Cli::parse();
     let backend = TestBackend::new(&cli.store).unwrap();
     match cli.command {
-        Command::KeyPackage { client_id } => {
-            let key_package_bundle = new_key_package(&backend, client_id);
+        Command::Init { client_id } => {
+            let ks = backend.key_store();
+            match ks.read::<CredentialBundle>(b"self") {
+                Some(_) => {
+                    panic!("Credential already initialised");
+                }
+                None => {
+                    let bundle =
+                        CredentialBundle::new(client_id.0, CredentialType::Basic, SignatureScheme::ED25519, &backend)
+                            .unwrap();
+                    ks.store(b"self", &bundle).unwrap();
+                }
+            }
+        }
+        Command::KeyPackage { client_id: _ } => {
+            let key_package_bundle = new_key_package(&backend);
 
             // output key package to standard output
             key_package_bundle
@@ -149,18 +160,18 @@ fn main() {
                 .write_all(kp.hash_ref(backend.crypto()).unwrap().value())
                 .unwrap();
         }
-        Command::PublicKey { client_id } => {
-            let cred_bundle = get_credential_bundle(&backend, client_id);
+        Command::PublicKey { client_id: _ } => {
+            let cred_bundle = get_credential_bundle(&backend);
             let credential = cred_bundle.credential();
             let bytes = credential.signature_key().as_slice();
             io::stdout().write_all(bytes).unwrap();
         }
-        Command::Group { client_id, group_id } => {
+        Command::Group { client_id: _, group_id } => {
             let group_id = base64::decode(group_id).expect("Failed to decode group_id as base64");
             let group_id = GroupId::from_slice(&group_id);
             let group_config = default_configuration();
 
-            let kp_bundle = new_key_package(&backend, client_id);
+            let kp_bundle = new_key_package(&backend);
             let kp = kp_bundle.key_package();
             let kp_ref = kp.hash_ref(backend.crypto()).unwrap();
             let kp_hash = kp_ref.value();
