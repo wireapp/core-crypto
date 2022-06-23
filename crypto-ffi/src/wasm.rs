@@ -370,10 +370,6 @@ impl CoreCrypto {
         key_package: Option<Box<[u8]>>,
     ) -> WasmCryptoResult<Vec<u8>> {
         use core_crypto::prelude::tls_codec::Serialize as _;
-        let kp = key_package
-            .map(|v| KeyPackage::try_from(v.as_ref()))
-            .transpose()
-            .map_err(MlsError::from)?;
         let result = self.0.propose_self_update(conversation_id)?;
         let message_out = result
             .tls_serialize_detached()
