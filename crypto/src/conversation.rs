@@ -760,7 +760,7 @@ pub mod tests {
 
         #[test]
         #[wasm_bindgen_test]
-        pub fn should_self_update_conversation_group_pending_commit() {
+        pub fn should_update_keying_material_group_pending_commit() {
             let conversation_id = conversation_id();
             let (bob_backend, bob) = bob();
             let (alice_backend, mut alice) = alice();
