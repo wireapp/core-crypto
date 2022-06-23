@@ -26,8 +26,6 @@ impl core::str::FromStr for ClientId {
 struct Cli {
     #[clap(short, long)]
     store: String,
-    #[clap(short, long)]
-    _enc_key: Option<String>,
     #[clap(subcommand)]
     command: Command,
 }
@@ -38,22 +36,13 @@ enum Command {
         client_id: ClientId,
     },
     KeyPackage {
-        client_id: ClientId,
+        #[clap(subcommand)]
+        command: KeyPackageCommand,
     },
-    KeyPackageRef {
-        key_package: String,
-    },
-    PublicKey {
-        client_id: ClientId,
-    },
+    PublicKey,
     Group {
-        client_id: ClientId,
-        group_id: String,
-    },
-    GroupFromWelcome {
-        welcome: String,
-        #[clap(long)]
-        group_out: String,
+        #[clap(subcommand)]
+        command: GroupCommand,
     },
     Member {
         #[clap(subcommand)]
@@ -63,6 +52,26 @@ enum Command {
         #[clap(short, long)]
         group: String,
         text: String,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum KeyPackageCommand {
+    /// Create a new key package and save it in the store.
+    Create,
+    /// Compute the hash of a key package.
+    Ref { key_package: String },
+}
+
+#[derive(Subcommand, Debug)]
+enum GroupCommand {
+    Create {
+        group_id: String,
+    },
+    FromWelcome {
+        welcome: String,
+        #[clap(long)]
+        group_out: String,
     },
 }
 
@@ -144,7 +153,9 @@ fn main() {
                 }
             }
         }
-        Command::KeyPackage { client_id: _ } => {
+        Command::KeyPackage {
+            command: KeyPackageCommand::Create,
+        } => {
             let key_package_bundle = new_key_package(&backend);
 
             // output key package to standard output
@@ -153,20 +164,24 @@ fn main() {
                 .tls_serialize(&mut io::stdout())
                 .unwrap();
         }
-        Command::KeyPackageRef { key_package } => {
+        Command::KeyPackage {
+            command: KeyPackageCommand::Ref { key_package },
+        } => {
             let mut kp_data = path_reader(&key_package).unwrap();
             let kp = KeyPackage::tls_deserialize(&mut kp_data).unwrap();
             io::stdout()
                 .write_all(kp.hash_ref(backend.crypto()).unwrap().value())
                 .unwrap();
         }
-        Command::PublicKey { client_id: _ } => {
+        Command::PublicKey => {
             let cred_bundle = get_credential_bundle(&backend);
             let credential = cred_bundle.credential();
             let bytes = credential.signature_key().as_slice();
             io::stdout().write_all(bytes).unwrap();
         }
-        Command::Group { client_id: _, group_id } => {
+        Command::Group {
+            command: GroupCommand::Create { group_id },
+        } => {
             let group_id = base64::decode(group_id).expect("Failed to decode group_id as base64");
             let group_id = GroupId::from_slice(&group_id);
             let group_config = default_configuration();
@@ -179,7 +194,9 @@ fn main() {
             let mut group = MlsGroup::new(&backend, &group_config, group_id, kp_hash.as_slice()).unwrap();
             group.save(&mut io::stdout()).unwrap();
         }
-        Command::GroupFromWelcome { welcome, group_out } => {
+        Command::Group {
+            command: GroupCommand::FromWelcome { welcome, group_out },
+        } => {
             let group_config = default_configuration();
             let welcome = Welcome::tls_deserialize(&mut fs::File::open(welcome).unwrap()).unwrap();
             let mut group = MlsGroup::new_from_welcome(&backend, &group_config, welcome, None).unwrap();
