@@ -11,18 +11,6 @@ use io::Write;
 use std::fs;
 use std::io;
 
-// fn key_package(backend: &MlsCryptoProvider, client_id: ClientId) {
-//     let client = Client::init(client_id, &backend).unwrap();
-//     let kpb = client.gen_keypackage(&backend).unwrap();
-//     kpb.key_package().tls_serialize(&mut io::stdout()).unwrap();
-// }
-
-// fn public_key(backend: &MlsCryptoProvider, client_id: ClientId) {
-//     let client = Client::init(client_id, &backend).unwrap();
-//     let pk = client.public_key();
-//     io::stdout().write_all(pk).unwrap();
-// }
-
 #[derive(Debug)]
 struct ClientId(Vec<u8>);
 
@@ -172,7 +160,6 @@ fn main() {
             let group_id = GroupId::from_slice(&group_id);
             let group_config = default_configuration();
 
-            // TODO: generate a new key package for the creator
             let kp_bundle = new_key_package(&backend, client_id);
             let kp = kp_bundle.key_package();
             let kp_ref = kp.hash_ref(backend.crypto()).unwrap();
