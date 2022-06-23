@@ -384,10 +384,6 @@ impl CoreCrypto {
         key_package: Option<Box<[u8]>>,
     ) -> WasmCryptoResult<MlsConversationReinitMessage> {
         use core_crypto::prelude::tls_codec::Serialize as _;
-        let kp = key_package
-            .map(|v| KeyPackage::try_from(v.as_ref()))
-            .transpose()
-            .map_err(MlsError::from)?;
         let result = self.0.update_keying_material(conversation_id)?;
         let message = result
             .0
