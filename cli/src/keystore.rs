@@ -18,7 +18,7 @@ impl TestKeyStore {
 
     fn key_path(&self, k: &[u8]) -> PathBuf {
         let mut path = self.path.clone();
-        path.push(base64::encode(k));
+        path.push(base64::encode_config(k, base64::URL_SAFE));
         path
     }
 }
