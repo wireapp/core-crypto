@@ -167,7 +167,7 @@ pub struct MlsConversationReinitMessage {
 #[wasm_bindgen]
 impl MlsConversationReinitMessage {
     #[wasm_bindgen(getter)]
-    pub fn message_out(&self) -> Box<[u8]> {
+    pub fn message(&self) -> Box<[u8]> {
         self.message.clone()
     }
 
