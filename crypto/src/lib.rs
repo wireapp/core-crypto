@@ -345,6 +345,19 @@ impl MlsCentral {
     pub fn wipe(self) {
         self.mls_backend.destroy_and_reset();
     }
+
+    /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited
+    pub fn update_keying_material(
+        &mut self,
+        conversation_id: ConversationId,
+    ) -> CryptoResult<(MlsMessageOut, Option<Welcome>)> {
+        let conversation = self
+            .mls_groups
+            .get_mut(&conversation_id)
+            .ok_or(CryptoError::ConversationNotFound(conversation_id))?;
+
+        conversation.update_keying_material(&self.mls_backend)
+    }
 }
 
 #[cfg(test)]

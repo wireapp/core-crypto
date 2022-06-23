@@ -57,16 +57,16 @@ pub struct ConversationLeaveMessages {
 
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug, Clone)]
-pub struct SelfUpdateResponse {
-    pub message_out: Vec<u8>,
-    pub welcome: Option<Vec<u8>>,
-}
-
-#[cfg_attr(feature = "c-api", repr(C))]
-#[derive(Debug, Clone)]
 pub struct Invitee {
     pub id: ClientId,
     pub kp: Vec<u8>,
+}
+
+#[cfg_attr(feature = "c-api", repr(C))]
+#[derive(Debug)]
+pub struct MlsConversationReinitMessage {
+    pub welcome: Option<Vec<u8>>,
+    pub message: Vec<u8>,
 }
 
 impl Invitee {
@@ -177,23 +177,29 @@ impl CoreCrypto {
             .collect::<CryptoResult<Vec<Vec<u8>>>>()
     }
 
-    pub fn self_update(
-        &self,
-        conversation_id: ConversationId,
-        key_package: Option<Vec<u8>>,
-    ) -> CryptoResult<SelfUpdateResponse> {
+    pub fn propose_self_update(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
         use core_crypto::prelude::tls_codec::Serialize as _;
-        let kp = key_package
-            .map(|v| KeyPackage::try_from(v.as_ref()))
-            .transpose()
-            .map_err(MlsError::from)?;
         let result = self
             .0
             .lock()
             .map_err(|_| CryptoError::LockPoisonError)?
-            .self_update(conversation_id, kp)?;
-        Ok(SelfUpdateResponse {
-            message_out: result.0.tls_serialize_detached().map_err(MlsError::from)?,
+            .propose_self_update(conversation_id)?;
+        Ok(result.tls_serialize_detached().map_err(MlsError::from)?)
+    }
+
+    pub fn update_keying_material(
+        &self,
+        conversation_id: ConversationId,
+    ) -> CryptoResult<MlsConversationReinitMessage> {
+        use core_crypto::prelude::tls_codec::Serialize as _;
+
+        let result = self
+            .0
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .update_keying_material(conversation_id)?;
+        Ok(MlsConversationReinitMessage {
+            message: result.0.tls_serialize_detached().map_err(MlsError::from)?,
             welcome: result
                 .1
                 .map(|v| v.tls_serialize_detached())

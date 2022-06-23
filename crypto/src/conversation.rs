@@ -76,12 +76,6 @@ pub struct MlsConversationLeaveMessage {
     pub other_clients_removal_commit: Option<MlsMessageOut>,
 }
 
-#[derive(Debug)]
-pub struct MlsConversationReinitMessage {
-    pub welcome: Option<Welcome>,
-    pub message: MlsMessageOut,
-}
-
 impl MlsConversationCreationMessage {
     /// Order is (welcome, message)
     pub fn to_bytes_pairs(&self) -> CryptoResult<(Vec<u8>, Vec<u8>)> {
@@ -300,12 +294,8 @@ impl MlsConversation {
     pub fn update_keying_material(
         &mut self,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<MlsConversationReinitMessage> {
-        Ok(self
-            .group
-            .self_update(backend, None)
-            .map_err(MlsError::from)
-            .map(|(message, welcome)| MlsConversationReinitMessage { welcome, message })?)
+    ) -> CryptoResult<(MlsMessageOut, Option<Welcome>)> {
+        Ok(self.group.self_update(backend, None).map_err(MlsError::from)?)
     }
 
     fn persist_group_when_changed(&mut self, backend: &MlsCryptoProvider, force: bool) -> CryptoResult<()> {
@@ -377,6 +367,8 @@ pub mod tests {
     }
 
     pub mod create {
+        use crate::CryptoResult;
+
         use super::*;
 
         #[test]
@@ -473,13 +465,13 @@ pub mod tests {
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message;
 
-            let bob_and_friends_groups: Vec<MlsConversation> = bob_and_friends
+            let bob_and_friends_groups = bob_and_friends
                 .iter()
                 .map(|(backend, _)| {
                     MlsConversation::from_welcome_message(welcome.clone(), conversation_config.clone(), backend)
-                        .unwrap()
                 })
-                .collect();
+                .collect::<CryptoResult<Vec<MlsConversation>>>()
+                .unwrap();
 
             assert_eq!(bob_and_friends_groups.len(), 99);
         }
@@ -755,6 +747,127 @@ pub mod tests {
         }
     }
 
+    pub mod update_keying_material {
+        use openmls::prelude::KeyPackage;
+        use wasm_bindgen_test::wasm_bindgen_test;
+
+        use crate::{
+            conversation::tests::{alice, bob, charlie},
+            prelude::{MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage},
+        };
+
+        use super::conversation_id;
+
+        #[test]
+        #[wasm_bindgen_test]
+        pub fn should_self_update_conversation_group_pending_commit() {
+            let conversation_id = conversation_id();
+            let (bob_backend, bob) = bob();
+            let (alice_backend, mut alice) = alice();
+            let (charlie_backend, charlie) = charlie();
+            let bob_key = bob.local_client().keypackages(&bob_backend).unwrap()[0].clone();
+            let charlie_key = charlie.local_client().keypackages(&charlie_backend).unwrap()[0].clone();
+
+            let configuration = MlsConversationConfiguration::default();
+
+            let mut alice_group =
+                MlsConversation::create(conversation_id, alice.local_client_mut(), configuration, &alice_backend)
+                    .unwrap();
+
+            let add_message = alice_group.add_members(&mut [bob], &alice_backend).unwrap();
+
+            assert_eq!(alice_group.members().unwrap().len(), 2);
+
+            let MlsConversationCreationMessage { welcome, .. } = add_message;
+
+            let conversation_config = MlsConversationConfiguration::default();
+
+            let mut bob_group =
+                MlsConversation::from_welcome_message(welcome, conversation_config.clone(), &bob_backend).unwrap();
+
+            let bob_keys = bob_group
+                .group
+                .members()
+                .into_iter()
+                .cloned()
+                .collect::<Vec<KeyPackage>>();
+
+            let alice_keys = alice_group
+                .group
+                .members()
+                .into_iter()
+                .cloned()
+                .collect::<Vec<KeyPackage>>();
+
+            assert!(alice_keys
+                .iter()
+                .all(|a_key| bob_keys.iter().any(|b_key| b_key == a_key)));
+
+            let alice_key = alice_keys.into_iter().find(|k| *k != bob_key).unwrap();
+
+            let proposal_response = alice_group
+                .group
+                .propose_add_member(&alice_backend, &charlie_key)
+                .unwrap();
+
+            assert!(bob_group
+                .decrypt_message(&proposal_response.to_bytes().unwrap(), &bob_backend)
+                .unwrap()
+                .is_none());
+
+            assert_eq!(alice_group.group.members().len(), 2);
+
+            let (message, welcome) = alice_group.update_keying_material(&alice_backend).unwrap();
+            assert!(welcome.is_some());
+
+            alice_group.group.merge_pending_commit().unwrap();
+
+            let charlie_welcome = welcome.unwrap();
+            let mut charlie_group =
+                MlsConversation::from_welcome_message(charlie_welcome, conversation_config, &charlie_backend).unwrap();
+
+            assert_eq!(alice_group.members().unwrap().len(), 3);
+            assert_eq!(charlie_group.members().unwrap().len(), 3);
+            assert_eq!(bob_group.members().unwrap().len(), 2);
+
+            let alice_new_keys = alice_group
+                .group
+                .members()
+                .into_iter()
+                .cloned()
+                .collect::<Vec<KeyPackage>>();
+
+            assert!(!alice_new_keys.contains(&alice_key));
+
+            assert!(bob_group
+                .decrypt_message(&message.to_bytes().unwrap(), &bob_backend)
+                .unwrap()
+                .is_none());
+            assert_eq!(bob_group.members().unwrap().len(), 3);
+
+            let bob_new_keys = bob_group
+                .group
+                .members()
+                .into_iter()
+                .cloned()
+                .collect::<Vec<KeyPackage>>();
+
+            assert!(alice_new_keys
+                .iter()
+                .all(|a_key| bob_new_keys.iter().any(|b_key| b_key == a_key)));
+
+            let msg = b"Hello World";
+            let bob_can_send_message = bob_group.encrypt_message(msg, &bob_backend);
+            assert!(bob_can_send_message.is_ok());
+
+            let alice_can_send_message = alice_group.encrypt_message(msg, &alice_backend);
+            assert!(alice_can_send_message.is_ok());
+
+            let charlie_can_send_message = charlie_group.encrypt_message(msg, &charlie_backend);
+            assert!(charlie_can_send_message.is_ok());
+        }
+    }
+
     fn conversation_id() -> Vec<u8> {
         let uuid = uuid::Uuid::new_v4();
         ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()))
@@ -762,6 +875,12 @@ pub mod tests {
 
     fn alice() -> (MlsCryptoProvider, ConversationMember) {
         let alice_backend = init_keystore("alice");
+        let alice = ConversationMember::random_generate(&alice_backend).unwrap();
+        (alice_backend, alice)
+    }
+
+    fn charlie() -> (MlsCryptoProvider, ConversationMember) {
+        let alice_backend = init_keystore("charlie");
         let alice = ConversationMember::random_generate(&alice_backend).unwrap();
         (alice_backend, alice)
     }

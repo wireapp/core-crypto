@@ -50,9 +50,9 @@ dictionary Invitee {
     sequence<u8> kp;
 };
 
-dictionary SelfUpdateResponse {
-    sequence<u8> message_out;
+dictionary MlsConversationReinitMessage {
     sequence<u8>? welcome;
+    sequence<u8> message;
 };
 
 dictionary ConversationConfiguration {
@@ -114,7 +114,10 @@ interface CoreCrypto {
     sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch, sequence<u8> key_package);
 
     [Throws=CryptoError]
-    SelfUpdateResponse self_update(ConversationId conversation_id, sequence<u8>? key_package);
+    sequence<u8> propose_self_update(ConversationId conversation_id);
+
+    [Throws=CryptoError]
+    MlsConversationReinitMessage update_keying_material(ConversationId conversation_id);
 };
 
 namespace CoreCrypto {

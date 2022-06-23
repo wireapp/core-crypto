@@ -159,8 +159,8 @@ impl ConversationLeaveMessages {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct SelfUpdateResponse {
-    message_out: Box<[u8]>,
+pub struct MlsConversationReinitMessage {
+    message: Box<[u8]>,
     welcome: Option<Box<[u8]>>,
 }
 
@@ -364,18 +364,36 @@ impl CoreCrypto {
             .collect())
     }
 
-    pub fn self_update(
+    pub fn propose_self_update(
         &mut self,
         conversation_id: ConversationId,
         key_package: Option<Box<[u8]>>,
-    ) -> WasmCryptoResult<SelfUpdateResponse> {
+    ) -> WasmCryptoResult<Vec<u8>> {
         use core_crypto::prelude::tls_codec::Serialize as _;
         let kp = key_package
             .map(|v| KeyPackage::try_from(v.as_ref()))
             .transpose()
             .map_err(MlsError::from)?;
-        let result = self.0.self_update(conversation_id, kp)?;
+        let result = self.0.propose_self_update(conversation_id)?;
         let message_out = result
+            .tls_serialize_detached()
+            .map_err(MlsError::from)?
+            .into_boxed_slice();
+        Ok(message_out)
+    }
+
+    pub fn update_keying_material(
+        &mut self,
+        conversation_id: ConversationId,
+        key_package: Option<Box<[u8]>>,
+    ) -> WasmCryptoResult<MlsConversationReinitMessage> {
+        use core_crypto::prelude::tls_codec::Serialize as _;
+        let kp = key_package
+            .map(|v| KeyPackage::try_from(v.as_ref()))
+            .transpose()
+            .map_err(MlsError::from)?;
+        let result = self.0.update_keying_material(conversation_id)?;
+        let message = result
             .0
             .tls_serialize_detached()
             .map_err(MlsError::from)?
@@ -385,7 +403,7 @@ impl CoreCrypto {
             .map(|v| v.tls_serialize_detached().map(|v| v.into_boxed_slice()))
             .transpose()
             .map_err(MlsError::from)?;
-        Ok(SelfUpdateResponse { message_out, welcome })
+        Ok(MlsConversationReinitMessage { message, welcome })
     }
 
     pub fn create_conversation(

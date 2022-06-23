@@ -30,10 +30,6 @@ pub trait CryptoKeystoreMls {
     fn mls_get_keypackage<V: FromKeyStoreValue>(&self) -> CryptoKeystoreResult<V>;
     fn mls_group_persist(&self, group_id: &[u8], state: &[u8]) -> CryptoKeystoreResult<()>;
     fn mls_groups_restore(&self) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, Vec<u8>>>;
-    fn mls_fetch_keypackage_bundle_by_ref<V: FromKeyStoreValue, K: AsRef<[u8]>>(
-        &self,
-        href: K,
-    ) -> CryptoKeystoreResult<Option<V>>;
 }
 
 impl Connection {
@@ -257,15 +253,6 @@ impl CryptoKeystoreMls for crate::connection::Connection {
             .into_iter()
             .map(|group: PersistedMlsGroup| (group.id, group.state))
             .collect())
-    }
-
-    fn mls_fetch_keypackage_bundle_by_ref<V: FromKeyStoreValue, K: AsRef<[u8]>>(
-        &self,
-        href: K,
-    ) -> CryptoKeystoreResult<Option<V>> {
-        Ok(self
-            .find(href.as_ref())?
-            .and_then(|v: MlsKeypackage| V::from_key_store_value(&v.key).ok()))
     }
 }
 
