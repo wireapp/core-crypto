@@ -236,6 +236,7 @@ pub mod proposal_tests {
         #[wasm_bindgen_test]
         pub fn should_propose_self_update_conversation_group() {
             run_test_with_central(|mut alice| {
+                // create bob
                 alice.mls_groups.clear();
                 let conversation_id = b"conversation".to_vec();
                 let (bob_backend, bob) = person("bob");
@@ -243,6 +244,7 @@ pub mod proposal_tests {
 
                 let conversation_config = MlsConversationConfiguration::default();
 
+                // create new group and add bob
                 alice
                     .new_conversation(conversation_id.clone(), conversation_config)
                     .unwrap();
@@ -258,11 +260,13 @@ pub mod proposal_tests {
 
                 let conversation_config = MlsConversationConfiguration::default();
 
+                // creating group on bob's side
                 let mut bob_group =
                     MlsConversation::from_welcome_message(welcome, conversation_config, &bob_backend).unwrap();
 
                 assert_eq!(bob_group.id(), alice.mls_groups[&conversation_id].id());
 
+                // ensuring both sides can encrypt messages
                 let msg = b"Hello";
                 let alice_can_send_message = alice.encrypt_message(conversation_id.clone(), msg);
                 assert!(alice_can_send_message.is_ok());
@@ -286,19 +290,20 @@ pub mod proposal_tests {
                     .cloned()
                     .collect::<Vec<KeyPackage>>();
 
-                assert!(alice_keys
-                    .iter()
-                    .all(|a_key| bob_keys.iter().any(|b_key| b_key == a_key)));
+                assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
                 let alice_key = alice_keys.into_iter().find(|k| *k != bob_key).unwrap();
 
+                // proposing the key update for alice
                 let msg_out = alice.propose_self_update(conversation_id.clone()).unwrap();
 
+                // receiving the proposal on bob's side
                 assert!(bob_group
                     .decrypt_message(&msg_out.to_bytes().unwrap(), &bob_backend)
                     .unwrap()
                     .is_none());
 
+                // commiting the proposal and merging the commit
                 let (msg_out, _) = alice
                     .mls_groups
                     .get_mut(&conversation_id)
@@ -327,6 +332,7 @@ pub mod proposal_tests {
 
                 assert!(!alice_new_keys.contains(&alice_key));
 
+                // receiving the commit on bob's side (updating key from alice)
                 assert!(bob_group
                     .decrypt_message(&msg_out.to_bytes().unwrap(), &bob_backend)
                     .unwrap()
@@ -339,10 +345,9 @@ pub mod proposal_tests {
                     .cloned()
                     .collect::<Vec<KeyPackage>>();
 
-                assert!(alice_new_keys
-                    .iter()
-                    .all(|a_key| bob_new_keys.iter().any(|b_key| b_key == a_key)));
+                assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
 
+                // ensuring both can encrypt messages
                 let bob_can_send_message = bob_group.encrypt_message(msg, &bob_backend);
                 assert!(bob_can_send_message.is_ok());
 

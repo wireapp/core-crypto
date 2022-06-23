@@ -761,6 +761,7 @@ pub mod tests {
         #[test]
         #[wasm_bindgen_test]
         pub fn should_update_keying_material_group_pending_commit() {
+            // create members
             let conversation_id = conversation_id();
             let (bob_backend, bob) = bob();
             let (alice_backend, mut alice) = alice();
@@ -770,20 +771,24 @@ pub mod tests {
 
             let configuration = MlsConversationConfiguration::default();
 
-            let mut alice_group =
-                MlsConversation::create(conversation_id, alice.local_client_mut(), configuration, &alice_backend)
-                    .unwrap();
+            // create group
+            let mut alice_group = MlsConversation::create(
+                conversation_id,
+                alice.local_client_mut(),
+                configuration.clone(),
+                &alice_backend,
+            )
+            .unwrap();
 
+            // adding bob and creating the group on bob's side
             let add_message = alice_group.add_members(&mut [bob], &alice_backend).unwrap();
 
             assert_eq!(alice_group.members().unwrap().len(), 2);
 
             let MlsConversationCreationMessage { welcome, .. } = add_message;
 
-            let conversation_config = MlsConversationConfiguration::default();
-
             let mut bob_group =
-                MlsConversation::from_welcome_message(welcome, conversation_config.clone(), &bob_backend).unwrap();
+                MlsConversation::from_welcome_message(welcome, configuration.clone(), &bob_backend).unwrap();
 
             let bob_keys = bob_group
                 .group
@@ -799,17 +804,18 @@ pub mod tests {
                 .cloned()
                 .collect::<Vec<KeyPackage>>();
 
-            assert!(alice_keys
-                .iter()
-                .all(|a_key| bob_keys.iter().any(|b_key| b_key == a_key)));
+            // checking that the members on both sides are the same
+            assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
             let alice_key = alice_keys.into_iter().find(|k| *k != bob_key).unwrap();
 
+            // proposing adding charlie
             let proposal_response = alice_group
                 .group
                 .propose_add_member(&alice_backend, &charlie_key)
                 .unwrap();
 
+            // receiving the proposal on bob's side
             assert!(bob_group
                 .decrypt_message(&proposal_response.to_bytes().unwrap(), &bob_backend)
                 .unwrap()
@@ -817,17 +823,20 @@ pub mod tests {
 
             assert_eq!(alice_group.group.members().len(), 2);
 
+            // performing an update on the alice's key. this should generate a welcome for charlie
             let (message, welcome) = alice_group.update_keying_material(&alice_backend).unwrap();
             assert!(welcome.is_some());
 
             alice_group.group.merge_pending_commit().unwrap();
 
+            // create the group on charlie's side
             let charlie_welcome = welcome.unwrap();
             let mut charlie_group =
-                MlsConversation::from_welcome_message(charlie_welcome, conversation_config, &charlie_backend).unwrap();
+                MlsConversation::from_welcome_message(charlie_welcome, configuration, &charlie_backend).unwrap();
 
             assert_eq!(alice_group.members().unwrap().len(), 3);
             assert_eq!(charlie_group.members().unwrap().len(), 3);
+            // bob still didn't receive the message with the updated key and charlie's addition
             assert_eq!(bob_group.members().unwrap().len(), 2);
 
             let alice_new_keys = alice_group
@@ -839,6 +848,7 @@ pub mod tests {
 
             assert!(!alice_new_keys.contains(&alice_key));
 
+            // receiving the key update and the charlie's addition to the group
             assert!(bob_group
                 .decrypt_message(&message.to_bytes().unwrap(), &bob_backend)
                 .unwrap()
@@ -852,10 +862,9 @@ pub mod tests {
                 .cloned()
                 .collect::<Vec<KeyPackage>>();
 
-            assert!(alice_new_keys
-                .iter()
-                .all(|a_key| bob_new_keys.iter().any(|b_key| b_key == a_key)));
+            assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
 
+            // ensure all parties can encrypt messages
             let msg = b"Hello World";
             let bob_can_send_message = bob_group.encrypt_message(msg, &bob_backend);
             assert!(bob_can_send_message.is_ok());
