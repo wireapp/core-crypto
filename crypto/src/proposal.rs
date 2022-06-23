@@ -239,7 +239,7 @@ pub mod proposal_tests {
 
         use crate::{
             member::ConversationMember,
-            prelude::{MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage},
+            prelude::{MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage, MlsProposal},
             test_utils::run_test_with_central,
         };
 
@@ -311,6 +311,242 @@ pub mod proposal_tests {
                 let alice_key = alice_keys.into_iter().find(|k| *k != bob_key).unwrap();
 
                 let (msg_out, welcome) = alice.self_update(conversation_id.clone(), None).unwrap();
+                assert!(welcome.is_none());
+
+                alice
+                    .mls_groups
+                    .get_mut(&conversation_id)
+                    .unwrap()
+                    .group
+                    .merge_pending_commit()
+                    .unwrap();
+
+                let alice_new_keys = alice
+                    .mls_groups
+                    .get(&conversation_id)
+                    .unwrap()
+                    .group
+                    .members()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<KeyPackage>>();
+
+                assert!(!alice_new_keys.contains(&alice_key));
+
+                assert!(bob_group
+                    .decrypt_message(&msg_out.to_bytes().unwrap(), &bob_backend)
+                    .unwrap()
+                    .is_none());
+
+                let bob_new_keys = bob_group
+                    .group
+                    .members()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<KeyPackage>>();
+
+                assert!(alice_new_keys
+                    .iter()
+                    .all(|a_key| bob_new_keys.iter().any(|b_key| b_key == a_key)));
+
+                let bob_can_send_message = bob_group.encrypt_message(msg, &bob_backend);
+                assert!(bob_can_send_message.is_ok());
+
+                let alice_can_send_message = alice.encrypt_message(conversation_id.clone(), msg);
+                assert!(alice_can_send_message.is_ok());
+            })
+        }
+
+        #[test]
+        #[wasm_bindgen_test]
+        pub fn should_self_update_conversation_group_pending_commit() {
+            run_test_with_central(|mut alice| {
+                alice.mls_groups.clear();
+                let conversation_id = b"conversation".to_vec();
+                let (bob_backend, bob) = person("bob");
+                let (charlie_backend, charlie) = person("charlie");
+                let bob_key = bob.local_client().keypackages(&bob_backend).unwrap()[0].clone();
+                let charlie_key = charlie.local_client().keypackages(&charlie_backend).unwrap()[0].clone();
+
+                let conversation_config = MlsConversationConfiguration::default();
+
+                alice
+                    .new_conversation(conversation_id.clone(), conversation_config)
+                    .unwrap();
+
+                let add_message = alice
+                    .add_members_to_conversation(&conversation_id, &mut [bob])
+                    .unwrap()
+                    .unwrap();
+
+                assert_eq!(alice.mls_groups[&conversation_id].members().unwrap().len(), 2);
+
+                let MlsConversationCreationMessage { welcome, .. } = add_message;
+
+                let conversation_config = MlsConversationConfiguration::default();
+
+                let mut bob_group =
+                    MlsConversation::from_welcome_message(welcome, conversation_config.clone(), &bob_backend).unwrap();
+
+                assert_eq!(bob_group.id(), alice.mls_groups[&conversation_id].id());
+
+                let bob_keys = bob_group
+                    .group
+                    .members()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<KeyPackage>>();
+
+                let alice_keys = alice
+                    .mls_groups
+                    .get(&conversation_id)
+                    .unwrap()
+                    .group
+                    .members()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<KeyPackage>>();
+
+                assert!(alice_keys
+                    .iter()
+                    .all(|a_key| bob_keys.iter().any(|b_key| b_key == a_key)));
+
+                let alice_key = alice_keys.into_iter().find(|k| *k != bob_key).unwrap();
+
+                let charlie_proposal = MlsProposal::Add(charlie_key);
+                let proposal_response = alice.new_proposal(conversation_id.clone(), charlie_proposal).unwrap();
+
+                assert!(bob_group
+                    .decrypt_message(&proposal_response.to_bytes().unwrap(), &bob_backend)
+                    .unwrap()
+                    .is_none());
+
+                assert_eq!(alice.mls_groups[&conversation_id].members().unwrap().len(), 2);
+
+                let (msg_out, welcome) = alice.self_update(conversation_id.clone(), None).unwrap();
+                assert!(welcome.is_some());
+
+                alice
+                    .mls_groups
+                    .get_mut(&conversation_id)
+                    .unwrap()
+                    .group
+                    .merge_pending_commit()
+                    .unwrap();
+
+                let charlie_welcome = welcome.unwrap();
+                let mut charlie_group =
+                    MlsConversation::from_welcome_message(charlie_welcome, conversation_config, &charlie_backend)
+                        .unwrap();
+
+                assert_eq!(alice.mls_groups[&conversation_id].members().unwrap().len(), 3);
+                assert_eq!(charlie_group.members().unwrap().len(), 3);
+                assert_eq!(bob_group.members().unwrap().len(), 2);
+
+                let alice_new_keys = alice
+                    .mls_groups
+                    .get(&conversation_id)
+                    .unwrap()
+                    .group
+                    .members()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<KeyPackage>>();
+
+                assert!(!alice_new_keys.contains(&alice_key));
+
+                assert!(bob_group
+                    .decrypt_message(&msg_out.to_bytes().unwrap(), &bob_backend)
+                    .unwrap()
+                    .is_none());
+                assert_eq!(bob_group.members().unwrap().len(), 3);
+
+                let bob_new_keys = bob_group
+                    .group
+                    .members()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<KeyPackage>>();
+
+                assert!(alice_new_keys
+                    .iter()
+                    .all(|a_key| bob_new_keys.iter().any(|b_key| b_key == a_key)));
+
+                let msg = b"Hello World";
+                let bob_can_send_message = bob_group.encrypt_message(msg, &bob_backend);
+                assert!(bob_can_send_message.is_ok());
+
+                let alice_can_send_message = alice.encrypt_message(conversation_id.clone(), msg);
+                assert!(alice_can_send_message.is_ok());
+
+                let charlie_can_send_message = charlie_group.encrypt_message(msg, &charlie_backend);
+                assert!(charlie_can_send_message.is_ok());
+            })
+        }
+
+        #[test]
+        #[wasm_bindgen_test]
+        pub fn should_self_update_conversation_group_with_key() {
+            run_test_with_central(|mut alice| {
+                alice.mls_groups.clear();
+                let conversation_id = b"conversation".to_vec();
+                let (bob_backend, bob) = person("bob");
+                let bob_key = bob.local_client().keypackages(&bob_backend).unwrap()[0].clone();
+
+                let conversation_config = MlsConversationConfiguration::default();
+
+                alice
+                    .new_conversation(conversation_id.clone(), conversation_config)
+                    .unwrap();
+
+                let add_message = alice
+                    .add_members_to_conversation(&conversation_id, &mut [bob])
+                    .unwrap()
+                    .unwrap();
+
+                assert_eq!(alice.mls_groups[&conversation_id].members().unwrap().len(), 2);
+
+                let MlsConversationCreationMessage { welcome, .. } = add_message;
+
+                let conversation_config = MlsConversationConfiguration::default();
+
+                let mut bob_group =
+                    MlsConversation::from_welcome_message(welcome, conversation_config, &bob_backend).unwrap();
+
+                assert_eq!(bob_group.id(), alice.mls_groups[&conversation_id].id());
+
+                let msg = b"Hello";
+                let alice_can_send_message = alice.encrypt_message(conversation_id.clone(), msg);
+                assert!(alice_can_send_message.is_ok());
+                let bob_can_send_message = bob_group.encrypt_message(msg, &bob_backend);
+                assert!(bob_can_send_message.is_ok());
+
+                let bob_keys = bob_group
+                    .group
+                    .members()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<KeyPackage>>();
+
+                let alice_keys = alice
+                    .mls_groups
+                    .get(&conversation_id)
+                    .unwrap()
+                    .group
+                    .members()
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<KeyPackage>>();
+
+                assert!(alice_keys
+                    .iter()
+                    .all(|a_key| bob_keys.iter().any(|b_key| b_key == a_key)));
+
+                let alice_key = alice_keys.into_iter().find(|k| *k != bob_key).unwrap();
+
+                let (msg_out, welcome) = alice
+                    .self_update(conversation_id.clone(), Some(alice_key.clone()))
+                    .unwrap();
                 assert!(welcome.is_none());
 
                 alice
