@@ -296,19 +296,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crypto-cli"
-version = "0.1.0"
-dependencies = [
- "base64",
- "clap",
- "openmls",
- "openmls_rust_crypto",
- "openmls_traits",
- "tempdir",
- "uuid",
-]
-
-[[package]]
 name = "crypto-common"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -731,6 +718,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f5c75688da582b8ffc1f1799e9db273f32133c49e048f614d22ec3256773ccc"
 dependencies = [
  "adler",
+]
+
+[[package]]
+name = "mls-test-cli"
+version = "0.2.0"
+dependencies = [
+ "base64",
+ "clap",
+ "openmls",
+ "openmls_rust_crypto",
+ "openmls_traits",
+ "tempdir",
+ "uuid",
 ]
 
 [[package]]
