@@ -150,6 +150,13 @@ fn main() {
                         CredentialBundle::new(client_id.0, CredentialType::Basic, SignatureScheme::ED25519, &backend)
                             .unwrap();
                     ks.store(b"self", &bundle).unwrap();
+                    // also save credential under its signature key, as openmls assumes it is
+                    // located there
+                    ks.store(
+                        &bundle.credential().signature_key().tls_serialize_detached().unwrap(),
+                        &bundle,
+                    )
+                    .unwrap();
                 }
             }
         }
