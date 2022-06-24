@@ -202,6 +202,7 @@ impl CryptoKeystoreMls for crate::connection::Connection {
         let db = self.conn.lock().map_err(|_| CryptoKeystoreError::LockPoisonError)?;
 
         let mut stmt = db.prepare_cached("SELECT id FROM mls_keys ORDER BY rowid DESC LIMIT ?")?;
+
         let kpb_ids: Vec<String> = stmt
             .query_map([count], |r| r.get(0))?
             .map(|r| r.map_err(CryptoKeystoreError::from))

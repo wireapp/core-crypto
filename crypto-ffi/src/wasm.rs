@@ -159,6 +159,26 @@ impl ConversationLeaveMessages {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct MlsConversationReinitMessage {
+    message: Box<[u8]>,
+    welcome: Option<Box<[u8]>>,
+}
+
+#[wasm_bindgen]
+impl MlsConversationReinitMessage {
+    #[wasm_bindgen(getter)]
+    pub fn message(&self) -> Box<[u8]> {
+        self.message.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn welcome(&self) -> Option<Box<[u8]>> {
+        self.welcome.clone()
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Invitee {
     id: Box<[u8]>,
     kp: Box<[u8]>,
@@ -342,6 +362,26 @@ impl CoreCrypto {
             .into_iter()
             .map(|kp| js_sys::Uint8Array::from(kp.as_slice()))
             .collect())
+    }
+
+    pub fn update_keying_material(
+        &mut self,
+        conversation_id: ConversationId,
+        key_package: Option<Box<[u8]>>,
+    ) -> WasmCryptoResult<MlsConversationReinitMessage> {
+        use core_crypto::prelude::tls_codec::Serialize as _;
+        let result = self.0.update_keying_material(conversation_id)?;
+        let message = result
+            .0
+            .tls_serialize_detached()
+            .map_err(MlsError::from)?
+            .into_boxed_slice();
+        let welcome = result
+            .1
+            .map(|v| v.tls_serialize_detached().map(|v| v.into_boxed_slice()))
+            .transpose()
+            .map_err(MlsError::from)?;
+        Ok(MlsConversationReinitMessage { message, welcome })
     }
 
     pub fn create_conversation(

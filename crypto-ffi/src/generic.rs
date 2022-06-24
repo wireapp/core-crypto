@@ -62,6 +62,13 @@ pub struct Invitee {
     pub kp: Vec<u8>,
 }
 
+#[cfg_attr(feature = "c-api", repr(C))]
+#[derive(Debug)]
+pub struct MlsConversationReinitMessage {
+    pub welcome: Option<Vec<u8>>,
+    pub message: Vec<u8>,
+}
+
 impl Invitee {
     #[inline(always)]
     fn group_to_conversation_member(clients: Vec<Self>) -> CryptoResult<Vec<ConversationMember>> {
@@ -168,6 +175,27 @@ impl CoreCrypto {
                     .map_err(CryptoError::from)
             })
             .collect::<CryptoResult<Vec<Vec<u8>>>>()
+    }
+
+    pub fn update_keying_material(
+        &self,
+        conversation_id: ConversationId,
+    ) -> CryptoResult<MlsConversationReinitMessage> {
+        use core_crypto::prelude::tls_codec::Serialize as _;
+
+        let result = self
+            .0
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .update_keying_material(conversation_id)?;
+        Ok(MlsConversationReinitMessage {
+            message: result.0.tls_serialize_detached().map_err(MlsError::from)?,
+            welcome: result
+                .1
+                .map(|v| v.tls_serialize_detached())
+                .transpose()
+                .map_err(MlsError::from)?,
+        })
     }
 
     pub fn create_conversation(
