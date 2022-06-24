@@ -114,9 +114,6 @@ interface CoreCrypto {
     sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch, sequence<u8> key_package);
 
     [Throws=CryptoError]
-    sequence<u8> propose_self_update(ConversationId conversation_id);
-
-    [Throws=CryptoError]
     MlsConversationReinitMessage update_keying_material(ConversationId conversation_id);
 };
 

@@ -760,6 +760,98 @@ pub mod tests {
 
         #[test]
         #[wasm_bindgen_test]
+        pub fn should_update_keying_material_conversation_group() {
+            // create bob
+            let conversation_id = b"conversation".to_vec();
+            let (alice_backend, mut alice) = alice();
+            let (bob_backend, bob) = bob();
+            let bob_key = bob.local_client().keypackages(&bob_backend).unwrap()[0].clone();
+
+            let configuration = MlsConversationConfiguration::default();
+
+            // create new group and add bob
+            let mut alice_group = MlsConversation::create(
+                conversation_id,
+                alice.local_client_mut(),
+                configuration.clone(),
+                &alice_backend,
+            )
+            .unwrap();
+
+            let add_message = alice_group.add_members(&mut [bob], &alice_backend).unwrap();
+
+            assert_eq!(alice_group.members().unwrap().len(), 2);
+
+            let MlsConversationCreationMessage { welcome, .. } = add_message;
+
+            // creating group on bob's side
+            let mut bob_group = MlsConversation::from_welcome_message(welcome, configuration, &bob_backend).unwrap();
+
+            // ensuring both sides can encrypt messages
+            let msg = b"Hello";
+            let alice_can_send_message = alice_group.encrypt_message(msg, &alice_backend);
+            assert!(alice_can_send_message.is_ok());
+            let bob_can_send_message = bob_group.encrypt_message(msg, &bob_backend);
+            assert!(bob_can_send_message.is_ok());
+
+            let bob_keys = bob_group
+                .group
+                .members()
+                .into_iter()
+                .cloned()
+                .collect::<Vec<KeyPackage>>();
+
+            let alice_keys = alice_group
+                .group
+                .members()
+                .into_iter()
+                .cloned()
+                .collect::<Vec<KeyPackage>>();
+
+            assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
+
+            let alice_key = alice_keys.into_iter().find(|k| *k != bob_key).unwrap();
+
+            // proposing the key update for alice
+            let (msg_out, welcome) = alice_group.update_keying_material(&alice_backend).unwrap();
+            assert!(welcome.is_none());
+
+            alice_group.group.merge_pending_commit().unwrap();
+
+            let alice_new_keys = alice_group
+                .group
+                .members()
+                .into_iter()
+                .cloned()
+                .collect::<Vec<KeyPackage>>();
+
+            assert!(!alice_new_keys.contains(&alice_key));
+
+            // receiving the commit on bob's side (updating key from alice)
+            assert!(bob_group
+                .decrypt_message(&msg_out.to_bytes().unwrap(), &bob_backend)
+                .unwrap()
+                .is_none());
+
+            let bob_new_keys = bob_group
+                .group
+                .members()
+                .into_iter()
+                .cloned()
+                .collect::<Vec<KeyPackage>>();
+
+            assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
+
+            // ensuring both can encrypt messages
+            let bob_can_send_message = bob_group.encrypt_message(msg, &bob_backend);
+            assert!(bob_can_send_message.is_ok());
+
+            let alice_can_send_message = alice_group.encrypt_message(msg, &alice_backend);
+            assert!(alice_can_send_message.is_ok());
+        }
+
+        #[test]
+        #[wasm_bindgen_test]
         pub fn should_update_keying_material_group_pending_commit() {
             // create members
             let conversation_id = conversation_id();

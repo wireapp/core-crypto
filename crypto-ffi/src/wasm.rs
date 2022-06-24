@@ -364,20 +364,6 @@ impl CoreCrypto {
             .collect())
     }
 
-    pub fn propose_self_update(
-        &mut self,
-        conversation_id: ConversationId,
-        key_package: Option<Box<[u8]>>,
-    ) -> WasmCryptoResult<Vec<u8>> {
-        use core_crypto::prelude::tls_codec::Serialize as _;
-        let result = self.0.propose_self_update(conversation_id)?;
-        let message_out = result
-            .tls_serialize_detached()
-            .map_err(MlsError::from)?
-            .into_boxed_slice();
-        Ok(message_out)
-    }
-
     pub fn update_keying_material(
         &mut self,
         conversation_id: ConversationId,

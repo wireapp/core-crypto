@@ -177,16 +177,6 @@ impl CoreCrypto {
             .collect::<CryptoResult<Vec<Vec<u8>>>>()
     }
 
-    pub fn propose_self_update(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
-        use core_crypto::prelude::tls_codec::Serialize as _;
-        let result = self
-            .0
-            .lock()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .propose_self_update(conversation_id)?;
-        Ok(result.tls_serialize_detached().map_err(MlsError::from)?)
-    }
-
     pub fn update_keying_material(
         &self,
         conversation_id: ConversationId,
