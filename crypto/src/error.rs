@@ -119,4 +119,6 @@ pub enum MlsError {
     MlsKeystoreSerializationError(#[from] serde_json::Error),
     #[error(transparent)]
     MlsErrorString(#[from] openmls::error::ErrorString),
+    #[error(transparent)]
+    MlsExternalCommitError(#[from] openmls::prelude::ExternalCommitError),
 }

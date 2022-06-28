@@ -30,6 +30,7 @@ mod conversation;
 mod credential;
 mod error;
 mod external_proposal;
+mod external_commit;
 mod member;
 mod proposal;
 
