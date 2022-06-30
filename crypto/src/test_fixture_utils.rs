@@ -1,6 +1,6 @@
-use crate::credential::CredentialSupplier;
-use crate::{ConversationId, ConversationMember, CryptoResult};
+use crate::{credential::CredentialSupplier, ConversationId, ConversationMember, CryptoResult, MlsCentral};
 use mls_crypto_provider::MlsCryptoProvider;
+use openmls::key_packages::KeyPackage;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
@@ -46,4 +46,17 @@ async fn new_client(
 #[inline(always)]
 pub async fn init_keystore(identifier: &str) -> MlsCryptoProvider {
     MlsCryptoProvider::try_new_in_memory(identifier).await.unwrap()
+}
+
+#[cfg(test)]
+impl MlsCentral {
+    pub async fn get_one_key_package(&self) -> CryptoResult<KeyPackage> {
+        Ok(self
+            .client_keypackages(1)
+            .await?
+            .get(0)
+            .unwrap()
+            .key_package()
+            .to_owned())
+    }
 }

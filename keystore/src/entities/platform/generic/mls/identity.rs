@@ -59,7 +59,7 @@ impl EntityBase for MlsIdentity {
         )?;
 
         use std::io::Write as _;
-        blob.write_all(&signature)?;
+        blob.write_all(signature)?;
         blob.close()?;
 
         let mut blob = transaction.blob_open(
@@ -70,7 +70,7 @@ impl EntityBase for MlsIdentity {
             false,
         )?;
 
-        blob.write_all(&credential)?;
+        blob.write_all(credential)?;
         blob.close()?;
 
         transaction.commit()?;

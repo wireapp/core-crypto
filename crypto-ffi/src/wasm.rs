@@ -21,7 +21,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 use futures_util::future::TryFutureExt;
-use js_sys::{Promise, Uint8Array};
+use js_sys::{Array, Promise, Uint8Array};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
@@ -244,15 +244,22 @@ pub struct ConversationConfiguration {
     // pub admins: Box<[Box<[u8]>]>,
     ciphersuite: Option<Ciphersuite>,
     key_rotation_span: Option<u32>,
+    #[serde(default, skip_serializing, skip_deserializing)]
+    external_senders: js_sys::Array,
 }
 
 #[wasm_bindgen]
 impl ConversationConfiguration {
     #[wasm_bindgen(constructor)]
-    pub fn new(ciphersuite: Option<Ciphersuite>, key_rotation_span: Option<u32>) -> Self {
+    pub fn new(
+        ciphersuite: Option<Ciphersuite>,
+        key_rotation_span: Option<u32>,
+        external_senders: js_sys::Array,
+    ) -> Self {
         Self {
             ciphersuite,
             key_rotation_span,
+            external_senders,
         }
     }
 }
@@ -260,11 +267,22 @@ impl ConversationConfiguration {
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     type Error = WasmCryptoError;
     fn try_into(mut self) -> WasmCryptoResult<MlsConversationConfiguration> {
+        use tls_codec::Deserialize as _;
+        let external_senders = self
+            .external_senders
+            .iter()
+            .map(|s: JsValue| {
+                Ok(Credential::tls_deserialize(&mut &Uint8Array::new(&s).to_vec()[..]).map_err(MlsError::from)?)
+            })
+            .filter_map(|r: CryptoResult<Credential>| r.ok())
+            .collect();
+        let key_rotation_span = self
+            .key_rotation_span
+            .map(|span| std::time::Duration::from_secs(span as u64));
         let mut cfg = MlsConversationConfiguration {
             // admins: self.admins.to_vec().into_iter().map(Into::into).collect(),
-            key_rotation_span: self
-                .key_rotation_span
-                .map(|span| std::time::Duration::from_secs(span as u64)),
+            key_rotation_span,
+            external_senders,
             ..Default::default()
         };
 
@@ -435,9 +453,16 @@ impl CoreCrypto {
     }
 
     /// Returns: WasmCryptoResult<()>
-    pub fn create_conversation(&self, conversation_id: Box<[u8]>, config: ConversationConfiguration) -> Promise {
+    pub fn create_conversation(
+        &self,
+        conversation_id: Box<[u8]>,
+        mut config: ConversationConfiguration,
+        external_senders: Array,
+    ) -> Promise {
         let this = self.0.clone();
-
+        if external_senders.is_null() || external_senders.is_undefined() {
+            config.external_senders = external_senders;
+        }
         future_to_promise(
             async move {
                 this.borrow_mut()
@@ -647,6 +672,58 @@ impl CoreCrypto {
                 let proposal_bytes = this
                     .borrow_mut()
                     .new_proposal(conversation_id.to_vec(), MlsProposal::Remove(client_id.into()))
+                    .await?
+                    .to_bytes()
+                    .map(|bytes| Uint8Array::from(bytes.as_slice()))
+                    .map_err(MlsError::from)
+                    .map_err(CryptoError::from)?;
+
+                WasmCryptoResult::Ok(proposal_bytes.into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: WasmCryptoResult<Uint8Array>
+    pub fn new_external_add_proposal(&self, conversation_id: Box<[u8]>, epoch: u32, keypackage: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let kp = KeyPackage::try_from(&keypackage[..])
+                    .map_err(MlsError::from)
+                    .map_err(CryptoError::from)?;
+                let proposal_bytes = this
+                    .borrow_mut()
+                    .new_external_add_proposal(conversation_id.to_vec(), u64::from(epoch).into(), kp)
+                    .await?
+                    .to_bytes()
+                    .map(|bytes| Uint8Array::from(bytes.as_slice()))
+                    .map_err(MlsError::from)
+                    .map_err(CryptoError::from)?;
+
+                WasmCryptoResult::Ok(proposal_bytes.into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: WasmCryptoResult<Uint8Array>
+    pub fn new_external_remove_proposal(
+        &self,
+        conversation_id: Box<[u8]>,
+        epoch: u32,
+        keypackage_ref: Box<[u8]>,
+    ) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let kpr: Box<[u8; 16]> = keypackage_ref
+                    .try_into()
+                    .map_err(|_| CryptoError::InvalidByteArrayError(16))?;
+                let kpr = KeyPackageRef::from(*kpr);
+                let proposal_bytes = this
+                    .borrow_mut()
+                    .new_external_remove_proposal(conversation_id.to_vec(), u64::from(epoch).into(), kpr)
                     .await?
                     .to_bytes()
                     .map(|bytes| Uint8Array::from(bytes.as_slice()))

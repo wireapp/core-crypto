@@ -102,7 +102,7 @@ pub mod proposal_tests {
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
         pub async fn should_succeed(credential: CredentialSupplier) {
-            run_test_with_central(credential, move |mut central| {
+            run_test_with_central(credential, move |[mut central]| {
                 Box::pin(async move {
                     let conversation_id = b"conversation".to_vec();
                     central
@@ -121,7 +121,7 @@ pub mod proposal_tests {
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_unknown_conversation(credential: CredentialSupplier) {
-            run_test_with_central(credential, move |mut central| {
+            run_test_with_central(credential, move |[mut central]| {
                 Box::pin(async move {
                     central.mls_groups.clear();
                     let kp = key_package(&central, credential);
@@ -144,7 +144,7 @@ pub mod proposal_tests {
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
         pub async fn should_succeed(credential: CredentialSupplier) {
-            run_test_with_central(credential, |mut central| {
+            run_test_with_central(credential, |[mut central]| {
                 Box::pin(async move {
                     let conversation_id = b"conversation".to_vec();
                     central
@@ -161,7 +161,7 @@ pub mod proposal_tests {
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_unknown_conversation(credential: CredentialSupplier) {
-            run_test_with_central(credential, |mut central| {
+            run_test_with_central(credential, |[mut central]| {
                 Box::pin(async move {
                     central.mls_groups.clear();
                     let conversation_id = b"conversation".to_vec();
@@ -182,7 +182,7 @@ pub mod proposal_tests {
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
         pub async fn should_succeed(credential: CredentialSupplier) {
-            run_test_with_central(credential, |mut central| {
+            run_test_with_central(credential, |[mut central]| {
                 Box::pin(async move {
                     let conversation_id = b"conversation".to_vec();
                     central
@@ -204,7 +204,7 @@ pub mod proposal_tests {
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_unknown_client(credential: CredentialSupplier) {
-            run_test_with_central(credential, |mut central| {
+            run_test_with_central(credential, |[mut central]| {
                 Box::pin(async move {
                     let conversation_id = b"conversation".to_vec();
                     central
@@ -227,7 +227,7 @@ pub mod proposal_tests {
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_unknown_conversation(credential: CredentialSupplier) {
-            run_test_with_central(credential, |mut central| {
+            run_test_with_central(credential, |[mut central]| {
                 Box::pin(async move {
                     central.mls_groups.clear();
                     let conversation_id = b"conversation".to_vec();

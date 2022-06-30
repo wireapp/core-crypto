@@ -16,11 +16,6 @@ git = "https://github.com/wireapp/openmls"
 branch = "feat/async"
 package = "openmls"
 
-
-[patch.crates-io.rcgen]
-git = "https://github.com/wireapp/rcgen"
-branch = "master"
-
 [patch.crates-io.openmls_rust_crypto]
 git = "https://github.com/wireapp/openmls"
 branch = "feat/async"
@@ -30,6 +25,10 @@ package = "openmls_rust_crypto"
 git = "https://github.com/wireapp/openmls"
 branch = "feat/async"
 package = "openmls_traits"
+
+[patch.crates-io.rcgen]
+git = "https://github.com/wireapp/rcgen"
+branch = "master"
 
 [profile.release]
 lto = true

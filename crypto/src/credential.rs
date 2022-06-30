@@ -41,8 +41,8 @@ impl CertificateBundle {
         leaf_sk: SignaturePrivateKey,
     ) -> CertificateBundle {
         // those fields are lost when we generate a csr, hence we restore it later
-        let not_after = leaf_params.not_after.clone();
-        let not_before = leaf_params.not_before.clone();
+        let not_after = leaf_params.not_after;
+        let not_before = leaf_params.not_before;
 
         // generate a csr from leaf certificate
         let leaf = rcgen::Certificate::from_params(leaf_params).unwrap();
@@ -284,7 +284,7 @@ mod tests {
         let decrypted_msg = bob_group
             .decrypt_message(&encrypted_msg, &bob_backend)
             .await?
-            .ok_or_else(|| CryptoError::Unauthorized)?;
+            .ok_or(CryptoError::Unauthorized)?;
         assert_eq!(msg, decrypted_msg.as_slice());
 
         // bob -> alice
@@ -292,7 +292,7 @@ mod tests {
         let decrypted_msg = alice_group
             .decrypt_message(&encrypted_msg, &alice_backend)
             .await?
-            .ok_or_else(|| CryptoError::Unauthorized)?;
+            .ok_or(CryptoError::Unauthorized)?;
         assert_eq!(msg, decrypted_msg.as_slice());
         Ok(())
     }

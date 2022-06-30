@@ -57,7 +57,7 @@ impl EntityBase for PersistedMlsGroup {
 
             let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "id", rowid, false)?;
             use std::io::Write as _;
-            blob.write_all(&id_bytes)?;
+            blob.write_all(id_bytes)?;
             blob.close()?;
 
             rowid
@@ -65,7 +65,7 @@ impl EntityBase for PersistedMlsGroup {
 
         let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, false)?;
         use std::io::Write as _;
-        blob.write_all(&state)?;
+        blob.write_all(state)?;
         blob.close()?;
 
         transaction.commit()?;

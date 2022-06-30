@@ -183,19 +183,6 @@ impl Client {
         })
     }
 
-    pub(crate) async fn load_credential_bundle(
-        &self,
-        signature_public_key: &[u8],
-        backend: &MlsCryptoProvider,
-    ) -> CryptoResult<CredentialBundle> {
-        let credentials: CredentialBundle = backend
-            .key_store()
-            .read(signature_public_key)
-            .await
-            .ok_or(CryptoError::ClientSignatureNotFound)?;
-        Ok(credentials)
-    }
-
     pub fn id(&self) -> &ClientId {
         &self.id
     }

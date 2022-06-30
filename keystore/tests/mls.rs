@@ -144,15 +144,15 @@ mod test_implementation {
         keypackage_bundle.key_package().verify(&backend).unwrap();
 
         use openmls_traits::key_store::OpenMlsKeyStore as _;
-        store.store(&key_string.as_bytes(), &keypackage_bundle).await.unwrap();
-        let bundle2: KeyPackageBundle = store.read(&key_string.as_bytes()).await.unwrap();
+        store.store(key_string.as_bytes(), &keypackage_bundle).await.unwrap();
+        let bundle2: KeyPackageBundle = store.read(key_string.as_bytes()).await.unwrap();
         let (b1_kp, (b1_sk, b1_ls)) = keypackage_bundle.into_parts();
         let (b2_kp, (b2_sk, b2_ls)) = bundle2.into_parts();
         assert_eq!(b1_kp, b2_kp);
         assert_eq!(b1_sk, b2_sk);
         assert_eq!(b1_ls, b2_ls);
 
-        store.delete::<KeyPackageBundle>(&key_string.as_bytes()).await.unwrap();
+        store.delete::<KeyPackageBundle>(key_string.as_bytes()).await.unwrap();
 
         teardown(store).await;
     }
@@ -203,7 +203,7 @@ mod test_implementation {
         assert_eq!(b1_sk, b2_sk);
         assert_eq!(b1_ls, b2_ls);
 
-        let _ = store.remove::<MlsKeypackage, _>(key_string.as_bytes()).await.unwrap();
+        store.remove::<MlsKeypackage, _>(key_string.as_bytes()).await.unwrap();
 
         teardown(store).await;
     }

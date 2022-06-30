@@ -104,14 +104,23 @@ pub struct ConversationConfiguration {
     pub admins: Vec<MemberId>,
     pub ciphersuite: Option<CiphersuiteName>,
     pub key_rotation_span: Option<std::time::Duration>,
+    pub external_senders: Vec<Vec<u8>>,
 }
 
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     type Error = CryptoError;
     fn try_into(mut self) -> CryptoResult<MlsConversationConfiguration> {
+        use tls_codec::Deserialize as _;
+        let external_senders = self
+            .external_senders
+            .into_iter()
+            .map(|s| Ok(Credential::tls_deserialize(&mut &s[..]).map_err(MlsError::from)?))
+            .filter_map(|r: CryptoResult<Credential>| r.ok())
+            .collect();
         let mut cfg = MlsConversationConfiguration {
             admins: self.admins,
             key_rotation_span: self.key_rotation_span,
+            external_senders,
             ..Default::default()
         };
 
@@ -394,6 +403,28 @@ impl CoreCrypto<'_> {
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
                     .new_external_add_proposal(conversation_id, epoch.into(), kp),
+            ),
+        )?
+        .to_bytes()
+        .map_err(MlsError::from)?)
+    }
+
+    pub fn new_external_remove_proposal(
+        &self,
+        conversation_id: ConversationId,
+        epoch: u64,
+        keypackage_ref: Vec<u8>,
+    ) -> CryptoResult<Vec<u8>> {
+        let value: [u8; 16] = keypackage_ref
+            .try_into()
+            .map_err(|_| CryptoError::InvalidByteArrayError(16))?;
+        let kpr = KeyPackageRef::from(value);
+        Ok(future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .new_external_remove_proposal(conversation_id, epoch.into(), kpr),
             ),
         )?
         .to_bytes()

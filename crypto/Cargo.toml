@@ -38,7 +38,7 @@ rstest = "0.15"
 rstest_reuse = "0.4"
 rcgen = { version = "0.9", features = ["x509-parser"] }
 async-std = { version = "1.12", features = ["attributes"] }
-futures-util = "0.3"
+futures-util = { version = "0.3", features = ["std", "alloc"] }
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-Os", "--enable-mutable-globals", "--enable-threads", "--detect-features"]
