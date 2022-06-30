@@ -156,7 +156,7 @@ pub mod tests {
             ckp[&client_id].is_some()
         });
 
-        assert_eq!(ret, false);
+        assert!(!ret);
     }
 
     pub mod add_keypackage {

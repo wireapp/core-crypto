@@ -56,10 +56,7 @@ impl proteus::session::PreKeyStore for Connection {
 
         #[cfg(feature = "memory-cache")]
         if self.is_cache_enabled() {
-            let cache = self
-                .memory_cache
-                .lock()
-                .await;
+            let cache = self.memory_cache.lock().await;
 
             if let Some(buf) = cache.get(&Self::proteus_memory_key(id)).map(Clone::clone) {
                 return Ok(Some(proteus::keys::PreKey::deserialise(&buf)?));
@@ -92,10 +89,7 @@ impl proteus::session::PreKeyStore for Connection {
 
             #[cfg(feature = "memory-cache")]
             if self.is_cache_enabled() {
-                self.memory_cache
-                    .lock()
-                    .await
-                    .put(memory_cache_key, buf);
+                self.memory_cache.lock().await.put(memory_cache_key, buf);
             }
 
             return Ok(Some(prekey));
@@ -107,11 +101,7 @@ impl proteus::session::PreKeyStore for Connection {
     async fn remove(&mut self, id: proteus::keys::PreKeyId) -> Result<(), Self::Error> {
         #[cfg(feature = "memory-cache")]
         if self.is_cache_enabled() {
-            let _ = self
-                .memory_cache
-                .lock()
-                .await
-                .pop(format!("proteus:{}", id).as_bytes());
+            let _ = self.memory_cache.lock().await.pop(format!("proteus:{}", id).as_bytes());
         }
 
         let updated = self

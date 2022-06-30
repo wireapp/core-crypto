@@ -57,6 +57,9 @@ pub enum CryptoError {
     /// Error when trying to coerce ints into Strings
     #[error(transparent)]
     ParseIntError(#[from] std::num::ParseIntError),
+    /// Error when trying to coerce a Vec<u8> into a [u8 ; N]
+    #[error("Byte array supplied did not have the expected size {0}")]
+    InvalidByteArrayError(usize),
     /// Standard I/O Error
     #[error(transparent)]
     IoError(#[from] std::io::Error),

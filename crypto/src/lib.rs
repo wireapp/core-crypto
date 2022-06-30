@@ -42,8 +42,10 @@ pub mod prelude {
     pub use crate::CoreCryptoCallbacks;
     pub use crate::{config::MlsCentralConfiguration, MlsCentral, MlsCiphersuite};
     pub use openmls::prelude::Ciphersuite as CiphersuiteName;
+    pub use openmls::prelude::Credential;
     pub use openmls::prelude::GroupEpoch;
     pub use openmls::prelude::KeyPackage;
+    pub use openmls::prelude::KeyPackageRef;
     pub use tls_codec;
 }
 
@@ -109,15 +111,15 @@ mod config {
         pub fn try_new(store_path: String, identity_key: String, client_id: String) -> CryptoResult<Self> {
             // TODO: probably more complex rules to enforce
             if store_path.trim().is_empty() {
-                return Err(CryptoError::MalformedIdentifier(store_path.to_string()));
+                return Err(CryptoError::MalformedIdentifier(store_path));
             }
             // TODO: probably more complex rules to enforce
             if identity_key.trim().is_empty() {
-                return Err(CryptoError::MalformedIdentifier(identity_key.to_string()));
+                return Err(CryptoError::MalformedIdentifier(identity_key));
             }
             // TODO: probably more complex rules to enforce
             if client_id.trim().is_empty() {
-                return Err(CryptoError::MalformedIdentifier(client_id.to_string()));
+                return Err(CryptoError::MalformedIdentifier(client_id));
             }
             Ok(Self {
                 store_path,
@@ -411,53 +413,55 @@ impl MlsCentral {
 pub mod test_utils {
     use crate::{config::MlsCentralConfiguration, credential::CredentialSupplier, MlsCentral};
 
-    #[cfg(target_family = "wasm")]
-    pub async fn run_test(
-        test: impl FnOnce(String) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+    pub async fn run_test_with_central(
+        credential: CredentialSupplier,
+        test: impl FnOnce([MlsCentral; 1]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
     ) {
-        use rand::distributions::{Alphanumeric, DistString};
-        let filename = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
-        let filename = format!("{filename}.idb");
-        test(filename).await;
+        run_test_with_client_ids(credential, ["alice"], test).await
+    }
+
+    pub async fn run_test_with_client_ids<const N: usize>(
+        credential: CredentialSupplier,
+        client_id: [&'static str; N],
+        test: impl FnOnce([MlsCentral; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+    ) {
+        run_tests(move |paths: [String; N]| {
+            Box::pin(async move {
+                let stream = paths.into_iter().enumerate().map(|(i, p)| async move {
+                    let client_id = client_id[i].to_string();
+                    let configuration = MlsCentralConfiguration::try_new(p, "test".into(), client_id).unwrap();
+                    MlsCentral::try_new(configuration, credential()).await.unwrap()
+                });
+                let centrals: [MlsCentral; N] = futures_util::future::join_all(stream).await.try_into().unwrap();
+                test(centrals).await;
+            })
+        })
+        .await
     }
 
     #[cfg(not(target_family = "wasm"))]
-    pub async fn run_test(
-        test: impl FnOnce(String) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+    pub async fn run_tests<const N: usize>(
+        test: impl FnOnce([String; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
     ) {
-        let tmp_dir = tempfile::tempdir().unwrap();
-        let tmp_dir_argument = crate::MlsCentralConfiguration::tmp_store_path(&tmp_dir);
-        test(tmp_dir_argument).await;
-        tmp_dir.close().unwrap();
+        let dirs = (0..N)
+            .map(|_| tempfile::tempdir().unwrap())
+            .collect::<Vec<tempfile::TempDir>>();
+        let paths: [String; N] = dirs
+            .iter()
+            .map(MlsCentralConfiguration::tmp_store_path)
+            .collect::<Vec<String>>()
+            .try_into()
+            .unwrap();
+        test(paths).await;
     }
 
-    pub async fn run_test_with_central(
-        credential: CredentialSupplier,
-        test: impl FnOnce(MlsCentral) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+    #[cfg(target_family = "wasm")]
+    pub async fn run_tests<const N: usize>(
+        test: impl FnOnce([String; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
     ) {
-        run_test(move |path| {
-            Box::pin(async move {
-                let configuration = MlsCentralConfiguration::try_new(path, "test".into(), "alice".into()).unwrap();
-                let central = MlsCentral::try_new(configuration, credential()).await.unwrap();
-                test(central).await;
-            })
-        })
-        .await
-    }
-
-    pub async fn run_test_with_client_id(
-        credential: CredentialSupplier,
-        client_id: String,
-        test: impl FnOnce(MlsCentral) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
-    ) {
-        run_test(move |path| {
-            Box::pin(async move {
-                let configuration = MlsCentralConfiguration::try_new(path, "test".into(), client_id).unwrap();
-                let central = MlsCentral::try_new(configuration, credential()).await.unwrap();
-                test(central).await;
-            })
-        })
-        .await
+        use rand::distributions::{Alphanumeric, DistString};
+        let paths = [0; N].map(|_| format!("{}.idb", Alphanumeric.sample_string(&mut rand::thread_rng(), 16)));
+        test(paths).await;
     }
 }
 
@@ -467,12 +471,12 @@ pub mod tests {
         credential::{CertificateBundle, CredentialSupplier},
         prelude::MlsConversationConfiguration,
         test_fixture_utils::*,
-        test_utils::run_test,
+        test_utils::*,
         CryptoError, MlsCentral, MlsCentralConfiguration,
     };
-    use wasm_bindgen_test::wasm_bindgen_test;
+    use wasm_bindgen_test::*;
 
-    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+    wasm_bindgen_test_configure!(run_in_browser);
 
     pub mod invariants {
 
@@ -481,7 +485,7 @@ pub mod tests {
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
         pub async fn can_create_from_valid_configuration(credential: CredentialSupplier) {
-            run_test(move |tmp_dir_argument| {
+            run_tests(move |[tmp_dir_argument]| {
                 Box::pin(async move {
                     let configuration =
                         MlsCentralConfiguration::try_new(tmp_dir_argument, "test".to_string(), "alice".to_string())
@@ -508,7 +512,7 @@ pub mod tests {
         #[cfg_attr(not(target_family = "wasm"), async_std::test)]
         #[wasm_bindgen_test]
         pub async fn identity_key_should_not_be_empty_nor_blank() {
-            run_test(|tmp_dir_argument| {
+            run_tests(|[tmp_dir_argument]| {
                 Box::pin(async move {
                     let configuration =
                         MlsCentralConfiguration::try_new(tmp_dir_argument, " ".to_string(), "alice".to_string());
@@ -524,7 +528,7 @@ pub mod tests {
         #[cfg_attr(not(target_family = "wasm"), async_std::test)]
         #[wasm_bindgen_test]
         pub async fn client_id_should_not_be_empty_nor_blank() {
-            run_test(|tmp_dir_argument| {
+            run_tests(|[tmp_dir_argument]| {
                 Box::pin(async move {
                     let configuration =
                         MlsCentralConfiguration::try_new(tmp_dir_argument, "test".to_string(), " ".to_string());
@@ -540,12 +544,11 @@ pub mod tests {
 
     pub mod persistence {
         use super::*;
-        use crate::test_utils::run_test;
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
         pub async fn can_persist_group_state(credential: CredentialSupplier) {
-            run_test(move |tmp_dir_argument| {
+            run_tests(move |[tmp_dir_argument]| {
                 Box::pin(async move {
                     let configuration =
                         MlsCentralConfiguration::try_new(tmp_dir_argument, "test".to_string(), "potato".to_string())
@@ -572,7 +575,7 @@ pub mod tests {
     #[apply(all_credential_types)]
     #[wasm_bindgen_test]
     pub async fn can_fetch_client_public_key(credential: CredentialSupplier) {
-        run_test(move |tmp_dir_argument| {
+        run_tests(move |[tmp_dir_argument]| {
             Box::pin(async move {
                 let configuration =
                     MlsCentralConfiguration::try_new(tmp_dir_argument, "test".to_string(), "potato".to_string())

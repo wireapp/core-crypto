@@ -121,7 +121,6 @@ impl From<serde_wasm_bindgen::Error> for CryptoKeystoreError {
     }
 }
 
-
 #[cfg(target_family = "wasm")]
 impl From<rexie::Error> for CryptoKeystoreError {
     fn from(rexie_err: rexie::Error) -> Self {

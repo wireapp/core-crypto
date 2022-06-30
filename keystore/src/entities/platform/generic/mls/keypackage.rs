@@ -46,7 +46,7 @@ impl EntityBase for MlsKeypackage {
         let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_keys", "key", row_id, false)?;
 
         use std::io::Write as _;
-        blob.write_all(&data)?;
+        blob.write_all(data)?;
         blob.close()?;
 
         transaction.commit()?;

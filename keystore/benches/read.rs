@@ -68,12 +68,7 @@ fn benchmark_reads_mls(c: &mut Criterion) {
 
     let key_id = uuid::Uuid::from_bytes(uuid);
 
-    let credentials = CredentialBundle::new_basic(
-        vec![1, 2, 3],
-        ciphersuite.signature_algorithm(),
-        &backend,
-    )
-    .unwrap();
+    let credentials = CredentialBundle::new_basic(vec![1, 2, 3], ciphersuite.signature_algorithm(), &backend).unwrap();
 
     let keypackage_bundle = KeyPackageBundle::new(
         &[ciphersuite],

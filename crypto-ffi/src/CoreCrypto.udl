@@ -31,6 +31,7 @@ enum CryptoError {
     "Utf8Error",
     "StringUtf8Error",
     "ParseIntError",
+    "InvalidByteArrayError",
     "IoError",
     "Unauthorized"
 };
@@ -59,6 +60,7 @@ dictionary ConversationConfiguration {
     sequence<MemberId> admins;
     CiphersuiteName? ciphersuite;
     duration? key_rotation_span;
+    sequence<sequence<u8>> external_senders;
 };
 
 callback interface CoreCryptoCallbacks {
@@ -112,6 +114,9 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch, sequence<u8> key_package);
+
+    [Throws=CryptoError]
+    sequence<u8> new_external_remove_proposal(ConversationId conversation_id, u64 epoch, sequence<u8> key_package_ref);
 
     [Throws=CryptoError]
     MlsConversationReinitMessage update_keying_material(ConversationId conversation_id);

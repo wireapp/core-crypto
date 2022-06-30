@@ -47,7 +47,6 @@ uniffi_build = { version = "0.19", features = ["builtin-bindgen"], optional = tr
 uniffi_bindgen = { version = "0.19", optional = true }
 
 [dev-dependencies]
-attohttpc = "0.19"
 uniffi = { version = "0.19", features = ["builtin-bindgen"] }
 
 [target.wasm32-unknown-unknown.dev-dependencies]

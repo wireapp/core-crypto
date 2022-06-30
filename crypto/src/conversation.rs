@@ -16,6 +16,7 @@
 
 use crate::ClientId;
 use mls_crypto_provider::MlsCryptoProvider;
+use openmls::prelude::Credential;
 use openmls::{
     framing::{MlsMessageOut, ProcessedMessage},
     group::MlsGroup,
@@ -38,11 +39,14 @@ pub struct MlsConversationConfiguration {
     pub ciphersuite: MlsCiphersuite,
     // TODO: Implement the key rotation manually instead.
     pub key_rotation_span: Option<std::time::Duration>,
+    // Delivery service credential
+    pub external_senders: Vec<Credential>,
 }
 
 impl MlsConversationConfiguration {
     #[inline(always)]
-    pub fn openmls_default_configuration() -> openmls::group::MlsGroupConfig {
+    pub fn as_openmls_default_configuration(&self) -> openmls::group::MlsGroupConfig {
+        let external_senders = self.external_senders.clone();
         openmls::group::MlsGroupConfig::builder()
             .wire_format_policy(openmls::group::MIXED_PLAINTEXT_WIRE_FORMAT_POLICY)
             .max_past_epochs(3)
@@ -50,6 +54,7 @@ impl MlsConversationConfiguration {
             .number_of_resumtion_secrets(1)
             .sender_ratchet_configuration(SenderRatchetConfiguration::new(2, 1000))
             .use_ratchet_tree_extension(true)
+            .external_senders(external_senders)
             .build()
     }
 }
@@ -94,12 +99,11 @@ impl MlsConversation {
         config: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
-        let mls_group_config = MlsConversationConfiguration::openmls_default_configuration();
         let kp_hash = author_client.keypackage_raw_hash(backend).await?;
 
         let group = MlsGroup::new(
             backend,
-            &mls_group_config,
+            &config.as_openmls_default_configuration(),
             openmls::group::GroupId::from_slice(&id),
             &kp_hash,
         )
@@ -125,7 +129,7 @@ impl MlsConversation {
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
-        let mls_group_config = MlsConversationConfiguration::openmls_default_configuration();
+        let mls_group_config = configuration.as_openmls_default_configuration();
         let mut group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None)
             .await
             .map_err(MlsError::from)?;
