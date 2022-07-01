@@ -28,7 +28,7 @@ pub mod platform {
 }
 
 pub use self::platform::*;
-use crate::entities::{Entity, StringEntityId};
+use crate::entities::{Entity, EntityFindParams, StringEntityId};
 
 use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use async_lock::{Mutex, MutexGuard};
@@ -149,6 +149,14 @@ impl Connection {
         E::find_one(&mut *conn, &id.as_ref().into()).await
     }
 
+    pub async fn find_all<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+        params: EntityFindParams,
+    ) -> CryptoKeystoreResult<Vec<E>> {
+        let mut conn = self.conn.lock().await;
+        E::find_all(&mut *conn, params).await
+    }
+
     pub async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
         &self,
         ids: &[S],
@@ -163,7 +171,7 @@ impl Connection {
         id: S,
     ) -> CryptoKeystoreResult<()> {
         let mut conn = self.conn.lock().await;
-        E::delete(&mut *conn, &id.as_ref().into()).await?;
+        E::delete(&mut *conn, &[id.as_ref().into()]).await?;
         Ok(())
     }
 

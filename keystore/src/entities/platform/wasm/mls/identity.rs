@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::{MlsIdentity, MlsIdentityExt, StringEntityId};
+use crate::entities::{EntityFindParams, MlsIdentity, MlsIdentityExt, StringEntityId};
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase},
@@ -27,6 +27,11 @@ impl EntityBase for MlsIdentity {
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
         MissingKeyErrorKind::MlsIdentityBundle
+    }
+
+    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+        let storage = conn.storage();
+        storage.get_all("mls_identities", Some(params)).await
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
@@ -55,14 +60,10 @@ impl EntityBase for MlsIdentity {
         conn.storage().count("mls_identities").await
     }
 
-    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
-        if let Some(entity) = Self::find_one(conn, id).await? {
-            let _ = conn
-                .storage_mut()
-                .delete("mls_identities", &[entity.id.as_bytes()])
-                .await?;
-        }
-        Ok(())
+    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
+        let storage = conn.storage_mut();
+        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::as_bytes).collect();
+        storage.delete("mls_identities", &ids).await
     }
 }
 

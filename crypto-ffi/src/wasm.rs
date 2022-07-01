@@ -73,6 +73,7 @@ impl From<CiphersuiteName> for Ciphersuite {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<CiphersuiteName> for Ciphersuite {
     fn into(self) -> CiphersuiteName {
         match self {
@@ -98,25 +99,28 @@ pub type FfiClientId = Box<[u8]>;
 #[wasm_bindgen]
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct MemberAddedMessages {
-    welcome: Box<[u8]>,
-    message: Box<[u8]>,
+    welcome: Vec<u8>,
+    message: Vec<u8>,
 }
 
 #[wasm_bindgen]
 impl MemberAddedMessages {
     #[wasm_bindgen(constructor)]
-    pub fn new(welcome: Box<[u8]>, message: Box<[u8]>) -> Self {
-        Self { welcome, message }
+    pub fn new(welcome: Uint8Array, message: Uint8Array) -> Self {
+        Self {
+            welcome: welcome.to_vec(),
+            message: message.to_vec(),
+        }
     }
 
     #[wasm_bindgen(getter)]
-    pub fn welcome(&self) -> Box<[u8]> {
-        self.welcome.clone()
+    pub fn welcome(&self) -> Uint8Array {
+        Uint8Array::from(&*self.welcome)
     }
 
     #[wasm_bindgen(getter)]
-    pub fn message(&self) -> Box<[u8]> {
-        self.message.clone()
+    pub fn message(&self) -> Uint8Array {
+        Uint8Array::from(&*self.message)
     }
 }
 
@@ -125,103 +129,103 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
 
     fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
         let (welcome, message) = msg.to_bytes_pairs()?;
-        Ok(Self {
-            welcome: welcome.into(),
-            message: message.into(),
-        })
+        Ok(Self { welcome, message })
     }
 }
 
 #[wasm_bindgen]
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct ConversationLeaveMessages {
-    self_removal_proposal: Box<[u8]>,
-    other_clients_removal_commit: Option<Box<[u8]>>,
+    self_removal_proposal: Vec<u8>,
+    other_clients_removal_commit: Option<Vec<u8>>,
 }
 
 #[wasm_bindgen]
 impl ConversationLeaveMessages {
     #[wasm_bindgen(constructor)]
-    pub fn new(self_removal_proposal: Box<[u8]>, other_clients_removal_commit: Option<Box<[u8]>>) -> Self {
+    pub fn new(self_removal_proposal: Uint8Array, other_clients_removal_commit: Option<Uint8Array>) -> Self {
         Self {
-            self_removal_proposal,
-            other_clients_removal_commit,
+            self_removal_proposal: self_removal_proposal.to_vec(),
+            other_clients_removal_commit: other_clients_removal_commit.map(|a| a.to_vec()),
         }
     }
 
     #[wasm_bindgen(getter)]
-    pub fn self_removal_proposal(&self) -> Box<[u8]> {
-        self.self_removal_proposal.clone()
+    pub fn self_removal_proposal(&self) -> Uint8Array {
+        Uint8Array::from(&*self.self_removal_proposal)
     }
 
     #[wasm_bindgen(getter)]
-    pub fn other_clients_removal_commit(&self) -> Option<Box<[u8]>> {
-        self.other_clients_removal_commit.clone()
+    pub fn other_clients_removal_commit(&self) -> Option<Uint8Array> {
+        self.other_clients_removal_commit.clone().map(|c| Uint8Array::from(&*c))
     }
 }
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CommitBundle {
-    message: Box<[u8]>,
-    welcome: Option<Box<[u8]>>,
-}
-
-#[wasm_bindgen]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct MlsConversationInitMessage {
-    group: Box<[u8]>,
-    message: Box<[u8]>,
+    message: Vec<u8>,
+    welcome: Option<Vec<u8>>,
 }
 
 #[wasm_bindgen]
 impl CommitBundle {
     #[wasm_bindgen(getter)]
-    pub fn message(&self) -> Box<[u8]> {
-        self.message.clone()
+    pub fn message(&self) -> Uint8Array {
+        Uint8Array::from(&*self.message)
     }
 
     #[wasm_bindgen(getter)]
-    pub fn welcome(&self) -> Option<Box<[u8]>> {
-        self.welcome.clone()
+    pub fn welcome(&self) -> Option<Uint8Array> {
+        self.welcome.as_ref().map(|buf| Uint8Array::from(buf.as_slice()))
     }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct MlsConversationInitMessage {
+    group: Vec<u8>,
+    message: Vec<u8>,
 }
 
 #[wasm_bindgen]
 impl MlsConversationInitMessage {
     #[wasm_bindgen(getter)]
-    pub fn message(&self) -> Box<[u8]> {
-        self.message.clone()
+    pub fn message(&self) -> Uint8Array {
+        Uint8Array::from(&*self.message)
     }
 
     #[wasm_bindgen(getter)]
-    pub fn group(&self) -> Box<[u8]> {
-        self.group.clone()
+    pub fn group(&self) -> Uint8Array {
+        Uint8Array::from(&*self.group)
     }
 }
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Invitee {
-    id: Box<[u8]>,
-    kp: Box<[u8]>,
+    id: Vec<u8>,
+    kp: Vec<u8>,
 }
 
 #[wasm_bindgen]
 impl Invitee {
     #[wasm_bindgen(constructor)]
-    pub fn new(id: Box<[u8]>, kp: Box<[u8]>) -> Self {
-        Self { id, kp }
+    pub fn new(id: Uint8Array, kp: Uint8Array) -> Self {
+        Self {
+            id: id.to_vec(),
+            kp: kp.to_vec(),
+        }
     }
 
     #[wasm_bindgen(getter)]
-    pub fn id(&self) -> Box<[u8]> {
-        self.id.clone()
+    pub fn id(&self) -> Uint8Array {
+        Uint8Array::from(&*self.id)
     }
 
     #[wasm_bindgen(getter)]
-    pub fn kp(&self) -> Box<[u8]> {
-        self.kp.clone()
+    pub fn kp(&self) -> Uint8Array {
+        Uint8Array::from(&*self.kp)
     }
 }
 
@@ -470,8 +474,21 @@ impl CoreCrypto {
         )
     }
 
+    /// Returns: WasmCryptoResult<usize>
+    pub fn client_valid_keypackages_count(&self) -> Promise {
+        let this = self.0.clone();
+
+        future_to_promise(
+            async move {
+                let count = this.read().await.client_valid_keypackages_count().await?;
+                WasmCryptoResult::Ok(count.into())
+            }
+            .err_into(),
+        )
+    }
+
     /// Returns: WasmCryptoResult<CommitBundle>
-    pub fn update_keying_material(&mut self, conversation_id: Box<[u8]>) -> Promise {
+    pub fn update_keying_material(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
 
         future_to_promise(
@@ -483,14 +500,10 @@ impl CoreCrypto {
                     .await
                     .update_keying_material(conversation_id.to_vec())
                     .await?;
-                let message = result
-                    .0
-                    .tls_serialize_detached()
-                    .map_err(MlsError::from)?
-                    .into_boxed_slice();
+                let message = result.0.tls_serialize_detached().map_err(MlsError::from)?;
                 let welcome = result
                     .1
-                    .map(|v| v.tls_serialize_detached().map(|v| v.into_boxed_slice()))
+                    .map(|v| v.tls_serialize_detached())
                     .transpose()
                     .map_err(MlsError::from)?;
 
@@ -563,7 +576,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let invitees = clients
-                    .into_iter()
+                    .iter()
                     .cloned()
                     .map(|js_client| Ok(serde_wasm_bindgen::from_value(js_client)?))
                     .collect::<WasmCryptoResult<Vec<Invitee>>>()?;
@@ -598,7 +611,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let clients = clients
-                    .into_iter()
+                    .iter()
                     .cloned()
                     .map(|c| c.to_vec().into())
                     .collect::<Vec<ClientId>>();
@@ -624,7 +637,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let other_clients = other_clients
-                    .into_iter()
+                    .iter()
                     .cloned()
                     .map(|c| c.to_vec().into())
                     .collect::<Vec<ClientId>>();
@@ -824,6 +837,7 @@ impl CoreCrypto {
         )
     }
 
+    #[allow(clippy::boxed_local)]
     pub fn join_by_external_commit(&self, group_state: Box<[u8]>) -> Promise {
         use core_crypto::prelude::tls_codec::Deserialize as _;
         use core_crypto::prelude::tls_codec::Serialize as _;
@@ -840,13 +854,11 @@ impl CoreCrypto {
                     message: message
                         .tls_serialize_detached()
                         .map_err(MlsError::from)
-                        .map_err(CryptoError::from)?
-                        .into_boxed_slice(),
+                        .map_err(CryptoError::from)?,
                     group: group
                         .tls_serialize_detached()
                         .map_err(MlsError::from)
-                        .map_err(CryptoError::from)?
-                        .into_boxed_slice(),
+                        .map_err(CryptoError::from)?,
                 };
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&result)?)
             }

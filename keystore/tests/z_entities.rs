@@ -19,6 +19,8 @@ pub use rstest_reuse::{self, *};
 
 mod common;
 
+const ENTITY_COUNT: usize = 10;
+
 macro_rules! test_for_entity {
     ($test_name:ident, $entity:ident) => {
         #[apply(all_storage_types)]
@@ -31,7 +33,8 @@ macro_rules! test_for_entity {
             crate::tests_impl::can_update_entity::<$entity>(&store, &mut entity).await;
             crate::tests_impl::can_remove_entity::<$entity>(&store, entity).await;
 
-            crate::tests_impl::can_list_entities::<$entity>(&store).await;
+            crate::tests_impl::can_list_entities_with_find_many::<$entity>(&store).await;
+            crate::tests_impl::can_list_entities_with_find_all::<$entity>(&store).await;
 
             store.wipe().await.unwrap();
         }
@@ -41,8 +44,11 @@ macro_rules! test_for_entity {
 #[cfg(test)]
 mod tests_impl {
     use super::common::*;
-    use crate::utils::EntityTestExt;
-    use core_crypto_keystore::{connection::KeystoreDatabaseConnection, entities::Entity};
+    use crate::{utils::EntityTestExt, ENTITY_COUNT};
+    use core_crypto_keystore::{
+        connection::KeystoreDatabaseConnection,
+        entities::{Entity, EntityFindParams},
+    };
 
     pub async fn can_save_entity<R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>>(
         store: &CryptoKeystore,
@@ -79,10 +85,11 @@ mod tests_impl {
         assert!(entity2.is_none());
     }
 
-    pub async fn can_list_entities<R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>>(
+    pub async fn can_list_entities_with_find_many<
+        R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
+    >(
         store: &CryptoKeystore,
     ) {
-        const ENTITY_COUNT: usize = 10;
         let mut ids: Vec<Vec<u8>> = vec![];
         for _ in 0..ENTITY_COUNT {
             let entity = R::random();
@@ -91,6 +98,15 @@ mod tests_impl {
         }
 
         let entities = store.find_many::<R, _>(&ids).await.unwrap();
+        assert_eq!(entities.len(), ENTITY_COUNT);
+    }
+
+    pub async fn can_list_entities_with_find_all<
+        R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
+    >(
+        store: &CryptoKeystore,
+    ) {
+        let entities = store.find_all::<R>(EntityFindParams::default()).await.unwrap();
         assert_eq!(entities.len(), ENTITY_COUNT);
     }
 }

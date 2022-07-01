@@ -15,6 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::connection::DatabaseConnection;
+use crate::entities::EntityFindParams;
 use crate::entities::MlsKeypackage;
 use crate::entities::StringEntityId;
 use crate::{
@@ -35,6 +36,32 @@ impl EntityBase for MlsKeypackage {
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
         MissingKeyErrorKind::MlsKeyPackageBundle
+    }
+
+    async fn find_all(
+        conn: &mut Self::ConnectionType,
+        params: EntityFindParams,
+    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        let transaction = conn.transaction()?;
+        let query: String = format!("SELECT rowid, id FROM mls_keys {}", params.to_sql());
+
+        let mut stmt = transaction.prepare_cached(&query)?;
+        let mut rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        let entities = rows.try_fold(Vec::new(), |mut acc, rowid_result| {
+            use std::io::Read as _;
+            let (rowid, id) = rowid_result?;
+
+            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_keys", "key", rowid, true)?;
+            let mut buf = vec![];
+            blob.read_to_end(&mut buf)?;
+            blob.close()?;
+
+            acc.push(Self { id, key: buf });
+
+            crate::CryptoKeystoreResult::Ok(acc)
+        })?;
+
+        Ok(entities)
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
@@ -108,13 +135,20 @@ impl EntityBase for MlsKeypackage {
         Ok(count)
     }
 
-    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
-        let id = String::from_utf8(id.as_bytes())?;
-        let updated = conn.execute("DELETE FROM mls_keys WHERE id = ?", [id])?;
+    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
+        let transaction = conn.transaction()?;
+        let len = ids.len();
+        let mut updated = 0;
+        for id in ids {
+            let id = String::from_utf8(id.as_bytes())?;
+            updated += transaction.execute("DELETE FROM mls_keys WHERE id = ?", [id])?;
+        }
 
-        if updated != 0 {
+        if updated == len {
+            transaction.commit()?;
             Ok(())
         } else {
+            transaction.rollback()?;
             Err(Self::to_missing_key_err_kind().into())
         }
     }

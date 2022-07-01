@@ -19,7 +19,10 @@ use rexie::TransactionMode;
 use std::collections::HashMap;
 use wasm_bindgen::JsValue;
 
-use crate::{entities::Entity, CryptoKeystoreResult};
+use crate::{
+    entities::{Entity, EntityFindParams},
+    CryptoKeystoreResult,
+};
 
 use super::WasmConnection;
 
@@ -82,12 +85,14 @@ impl WasmEncryptedStorage {
 
     pub fn close(self) -> CryptoKeystoreResult<()> {
         match self.storage {
-            WasmStorageWrapper::Persistent(rexie) => Ok(rexie.close()),
+            WasmStorageWrapper::Persistent(rexie) => {
+                rexie.close();
+            }
             WasmStorageWrapper::InMemory(mut map) => {
                 map.clear();
-                Ok(())
             }
         }
+        Ok(())
     }
 
     pub async fn get<R: Entity<ConnectionType = WasmConnection> + 'static>(
@@ -212,6 +217,7 @@ impl WasmEncryptedStorage {
     pub async fn get_all<R: Entity<ConnectionType = WasmConnection> + 'static>(
         &self,
         collection: impl AsRef<str>,
+        params: Option<EntityFindParams>,
     ) -> CryptoKeystoreResult<Vec<R>> {
         match &self.storage {
             WasmStorageWrapper::Persistent(rexie) => {
@@ -219,11 +225,26 @@ impl WasmEncryptedStorage {
                 let transaction = rexie.transaction(&[collection], TransactionMode::ReadOnly)?;
                 let store = transaction.store(collection)?;
 
-                let raw_data = store.get_all(None, None, None, None).await?;
+                let params = params.unwrap_or_default();
+                let raw_data = store
+                    .get_all(
+                        None,
+                        params.limit,
+                        params.offset,
+                        if params.reverse {
+                            Some(rexie::Direction::Prev)
+                        } else {
+                            None
+                        },
+                    )
+                    .await?;
+
                 let data: Vec<R> = raw_data
                     .into_iter()
                     .filter_map(|(_, v)| {
-                        if let Some(mut entity) = serde_wasm_bindgen::from_value::<Option<R>>(v).ok().flatten() {
+                        if v.is_null() || v.is_undefined() {
+                            None
+                        } else if let Ok(mut entity) = serde_wasm_bindgen::from_value::<R>(v) {
                             entity.decrypt(&self.cipher).ok()?;
                             Some(entity)
                         } else {
@@ -269,7 +290,7 @@ impl WasmEncryptedStorage {
                 let data = raw_data
                     .into_iter()
                     .filter_map(|(k, v)| {
-                        let js_key = js_sys::Uint8Array::from(k.clone());
+                        let js_key = js_sys::Uint8Array::from(k);
                         let key = js_key.to_vec();
                         if !ids.contains(&key) {
                             return None;
@@ -332,7 +353,7 @@ impl WasmEncryptedStorage {
                 let collection = collection.as_ref();
                 let transaction = rexie.transaction(&[collection], TransactionMode::ReadWrite)?;
                 let store = transaction.store(collection)?;
-                let values: Vec<R> = values.iter().map(|v| v.clone()).collect();
+                let values: Vec<R> = values.to_vec();
 
                 for mut value in values {
                     let key = value.id()?;

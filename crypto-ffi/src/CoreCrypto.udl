@@ -32,6 +32,7 @@ enum CryptoError {
     "Utf8Error",
     "StringUtf8Error",
     "ParseIntError",
+    "ConvertIntError",
     "InvalidByteArrayError",
     "IoError",
     "Unauthorized"
@@ -87,6 +88,9 @@ interface CoreCrypto {
     sequence<sequence<u8>> client_keypackages(u32 amount_requested);
 
     [Throws=CryptoError]
+    u64 client_valid_keypackages_count();
+
+    [Throws=CryptoError]
     void create_conversation(ConversationId conversation_id, ConversationConfiguration config);
 
     boolean conversation_exists(ConversationId conversation_id);
@@ -137,7 +141,7 @@ interface CoreCrypto {
     void merge_pending_group_from_external_commit(ConversationId conversation_id, ConversationConfiguration config);
 
     [Throws=CryptoError]
-    sequence<u8> random_bytes(u64 length);
+    sequence<u8> random_bytes(u32 length);
 
     [Throws=CryptoError]
     void reseed_rng(sequence<u8> seed);

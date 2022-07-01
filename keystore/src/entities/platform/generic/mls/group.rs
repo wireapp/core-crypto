@@ -15,6 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::connection::DatabaseConnection;
+use crate::entities::EntityFindParams;
 use crate::entities::PersistedMlsGroup;
 use crate::entities::PersistedMlsPendingGroup;
 use crate::entities::StringEntityId;
@@ -42,6 +43,36 @@ impl EntityBase for PersistedMlsGroup {
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
         MissingKeyErrorKind::MlsGroup
+    }
+
+    async fn find_all(
+        conn: &mut Self::ConnectionType,
+        params: EntityFindParams,
+    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        let transaction = conn.transaction()?;
+        let query: String = format!("SELECT rowid FROM mls_groups {}", params.to_sql());
+
+        let mut stmt = transaction.prepare_cached(&query)?;
+        let mut rows = stmt.query_map([], |r| r.get(0))?;
+        let entities = rows.try_fold(Vec::new(), |mut acc, rowid_result| {
+            use std::io::Read as _;
+            let rowid = rowid_result?;
+
+            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "id", rowid, true)?;
+            let mut id = vec![];
+            blob.read_to_end(&mut id)?;
+            blob.close()?;
+
+            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, true)?;
+            let mut state = vec![];
+            blob.read_to_end(&mut state)?;
+            blob.close()?;
+
+            acc.push(Self { id, state });
+            crate::CryptoKeystoreResult::Ok(acc)
+        })?;
+
+        Ok(entities)
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
@@ -173,13 +204,20 @@ impl EntityBase for PersistedMlsGroup {
         Ok(conn.query_row("SELECT COUNT(*) FROM mls_groups", [], |r| r.get(0))?)
     }
 
-    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
-        let updated = conn.execute("DELETE FROM mls_groups WHERE id = ?", [id.as_bytes()])?;
+    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
+        let transaction = conn.transaction()?;
+        let len = ids.len();
+        let mut updated = 0;
+        for id in ids {
+            updated += transaction.execute("DELETE FROM mls_groups WHERE id = ?", [id.as_bytes()])?;
+        }
 
-        if updated != 0 {
+        if updated == len {
+            transaction.commit()?;
             Ok(())
         } else {
-            Err(MissingKeyErrorKind::MlsGroup.into())
+            transaction.rollback()?;
+            Err(Self::to_missing_key_err_kind().into())
         }
     }
 }
@@ -282,6 +320,38 @@ impl EntityBase for PersistedMlsPendingGroup {
         }
     }
 
+    async fn find_all(
+        conn: &mut Self::ConnectionType,
+        params: EntityFindParams,
+    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        let transaction = conn.transaction()?;
+        let query: String = format!("SELECT rowid FROM mls_pending_groups {}", params.to_sql());
+
+        let mut stmt = transaction.prepare_cached(&query)?;
+        let mut rows = stmt.query_map([], |r| r.get(0))?;
+        let entities = rows.try_fold(Vec::new(), |mut acc, rowid_result| {
+            use std::io::Read as _;
+            let rowid = rowid_result?;
+
+            let mut blob =
+                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "id", rowid, true)?;
+            let mut id = vec![];
+            blob.read_to_end(&mut id)?;
+            blob.close()?;
+
+            let mut blob =
+                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "state", rowid, true)?;
+            let mut state = vec![];
+            blob.read_to_end(&mut state)?;
+            blob.close()?;
+
+            acc.push(Self { id, state });
+            crate::CryptoKeystoreResult::Ok(acc)
+        })?;
+
+        Ok(entities)
+    }
+
     async fn find_many(
         conn: &mut Self::ConnectionType,
         _ids: &[StringEntityId],
@@ -329,13 +399,20 @@ impl EntityBase for PersistedMlsPendingGroup {
         Ok(conn.query_row("SELECT COUNT(*) FROM mls_pending_groups", [], |r| r.get(0))?)
     }
 
-    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
-        let updated = conn.execute("DELETE FROM mls_pending_groups WHERE id = ?", [id.as_bytes()])?;
+    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
+        let transaction = conn.transaction()?;
+        let len = ids.len();
+        let mut updated = 0;
+        for id in ids {
+            updated += transaction.execute("DELETE FROM mls_pending_groups WHERE id = ?", [id.as_bytes()])?;
+        }
 
-        if updated != 0 {
+        if updated == len {
+            transaction.commit()?;
             Ok(())
         } else {
-            Err(MissingKeyErrorKind::MlsPendingGroup.into())
+            transaction.rollback()?;
+            Err(Self::to_missing_key_err_kind().into())
         }
     }
 }

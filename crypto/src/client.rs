@@ -15,12 +15,14 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{CertificateBundle, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
+use core_crypto_keystore::entities::{EntityFindParams, MlsKeypackage, StringEntityId};
 use core_crypto_keystore::{entities::MlsIdentity, CryptoKeystoreError, CryptoKeystoreResult};
 use mls_crypto_provider::MlsCryptoProvider;
+use openmls::extensions::LifetimeExtension;
 use openmls::prelude::KeyPackageRef;
 use openmls::{
     credentials::CredentialBundle,
-    extensions::{Extension, ExternalKeyIdExtension},
+    extensions::Extension,
     prelude::{KeyPackageBundle, TlsSerializeTrait},
 };
 use openmls_traits::{
@@ -29,6 +31,8 @@ use openmls_traits::{
 };
 
 pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
+
+const KEYPACKAGE_DEFAULT_LIFETIME: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24 * 90); // 3 months
 
 /// A unique identifier for clients. A client is an identifier for each App a user is using, such as desktop,
 /// mobile, etc. Users can have multiple clients.
@@ -90,6 +94,7 @@ pub struct Client {
     id: ClientId,
     credentials: CredentialBundle,
     ciphersuite: MlsCiphersuite,
+    keypackage_lifetime: std::time::Duration,
 }
 
 #[inline(always)]
@@ -102,7 +107,9 @@ fn identity_key(credentials: &CredentialBundle) -> Result<Vec<u8>, MlsError> {
 }
 
 impl Client {
-    /// Initialize a new client.
+    /// Initializes the client.
+    /// If the client's cryptographic material is already stored in the keystore, it loads it
+    /// Otherwise, it is being created.
     ///
     /// # Arguments
     /// * `id` - id of the client
@@ -133,6 +140,7 @@ impl Client {
         Ok(client)
     }
 
+    /// Generates a brand new client from scratch
     pub(crate) async fn generate(
         id: ClientId,
         certificate_bundle: Option<CertificateBundle>,
@@ -159,17 +167,19 @@ impl Client {
             id,
             credentials,
             ciphersuite,
+            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
         };
 
         if provision {
             client
-                .provision_keying_material(INITIAL_KEYING_MATERIAL_COUNT, backend)
+                .request_keying_material(INITIAL_KEYING_MATERIAL_COUNT, backend)
                 .await?;
         }
 
         Ok(client)
     }
 
+    /// Loads the client from the keystore.
     pub(crate) async fn load(
         id: ClientId,
         signature_public_key: &[u8],
@@ -193,10 +203,25 @@ impl Client {
             id,
             credentials,
             ciphersuite,
+            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
         })
     }
 
-    /// Returns the client id
+    #[allow(dead_code)]
+    pub(crate) async fn load_credential_bundle(
+        &self,
+        signature_public_key: &[u8],
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<CredentialBundle> {
+        let credentials: CredentialBundle = backend
+            .key_store()
+            .read(signature_public_key)
+            .await
+            .ok_or(CryptoError::ClientSignatureNotFound)?;
+        Ok(credentials)
+    }
+
+    /// Retrieves the client's client id. This is free-form and not inspected.
     pub fn id(&self) -> &ClientId {
         &self.id
     }
@@ -214,6 +239,12 @@ impl Client {
     /// Returns the Ciphersuite from the client
     pub fn ciphersuite(&self) -> &MlsCiphersuite {
         &self.ciphersuite
+    }
+
+    /// Allows to set the current default keypackage lifetime extension duration.
+    /// It will be embedded in the [openmls::key_packages::KeyPackage]'s [openmls::extensions::LifetimeExtension]
+    pub fn keypackage_lifetime(&mut self, duration: std::time::Duration) {
+        self.keypackage_lifetime = duration;
     }
 
     /// This method returns the hash of the oldest available [KeyPackageBundle] as a byte array for the Client
@@ -250,7 +281,7 @@ impl Client {
         }
     }
 
-    /// Generates a new keypackage
+    /// Generates a single new keypackage
     ///
     /// # Arguments
     /// * `backend` - the KeyStorage to load the keypackages from
@@ -262,7 +293,9 @@ impl Client {
             &[*self.ciphersuite],
             &self.credentials,
             backend,
-            vec![Extension::ExternalKeyId(ExternalKeyIdExtension::new(&self.id))],
+            vec![Extension::LifeTime(LifetimeExtension::new(
+                self.keypackage_lifetime.as_secs(),
+            ))],
         )
         .map_err(MlsError::from)?;
 
@@ -287,20 +320,14 @@ impl Client {
         count: usize,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<KeyPackageBundle>> {
-        let kpbs = self.provision_keying_material(count, backend).await?;
-        Ok(kpbs)
-    }
+        // Auto-prune expired keypackages on request
+        self.prune_keypackages(&[], backend).await?;
 
-    async fn provision_keying_material(
-        &self,
-        count: usize,
-        backend: &MlsCryptoProvider,
-    ) -> CryptoResult<Vec<KeyPackageBundle>> {
         use core_crypto_keystore::CryptoKeystoreMls as _;
         let kpb_count = backend.key_store().mls_keypackagebundle_count().await?;
         if count > kpb_count {
             let to_generate = count - kpb_count;
-            for _ in 0..=to_generate {
+            for _ in 0..to_generate {
                 self.gen_keypackage(backend).await?;
             }
         }
@@ -308,6 +335,89 @@ impl Client {
         let kpbs: Vec<KeyPackageBundle> = backend.key_store().mls_fetch_keypackage_bundles(count as u32).await?;
 
         Ok(kpbs)
+    }
+
+    /// Returns the count of valid, non-expired, unclaimed keypackages in store
+    pub async fn valid_keypackages_count(&self, backend: &MlsCryptoProvider) -> CryptoResult<usize> {
+        use core_crypto_keystore::entities::EntityBase as _;
+        let keystore = backend.key_store();
+
+        let mut conn = keystore.borrow_conn().await?;
+        let kps = MlsKeypackage::find_all(&mut *conn, EntityFindParams::default()).await?;
+
+        let valid_count = kps.into_iter().try_fold(0usize, |mut valid_count, kp| {
+            let kpb = KeyPackageBundle::from_key_store_value(&kp.key).map_err(MlsError::from)?;
+
+            if !Self::is_mls_keypackage_expired(&kpb) {
+                valid_count += 1;
+            }
+
+            CryptoResult::Ok(valid_count)
+        })?;
+
+        Ok(valid_count)
+    }
+
+    /// Checks if a given OpenMLS [`KeyPackageBundle`] is expired by looking through its extensions,
+    /// finding a lifetime extension and checking if it's valid.
+    fn is_mls_keypackage_expired(kpb: &KeyPackageBundle) -> bool {
+        kpb.key_package()
+            .extensions()
+            .iter()
+            .find_map(|e| {
+                if let Extension::LifeTime(lifetime_ext) = e {
+                    if !lifetime_ext.is_valid() {
+                        Some(true)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_default()
+    }
+
+    /// Prune the provided KeyPackageRefs from the keystore
+    ///
+    /// Warning: Despite this API being public, the caller should know what they're doing.
+    /// Provided KeypackageRefs **will** be purged regardless of their expiration state, so please be wary of what you are doing if you directly call this API.
+    /// This could result in still valid, uploaded keypackages being pruned from the system and thus being impossible to find when referenced in a future Welcome message.
+    pub async fn prune_keypackages(&self, refs: &[KeyPackageRef], backend: &MlsCryptoProvider) -> CryptoResult<()> {
+        use core_crypto_keystore::entities::EntityBase as _;
+        let keystore = backend.key_store();
+
+        let mut conn = keystore.borrow_conn().await?;
+
+        let kps = MlsKeypackage::find_all(&mut *conn, EntityFindParams::default()).await?;
+
+        let ids_to_delete = kps.into_iter().try_fold(Vec::new(), |mut acc, kp| {
+            let kpb = KeyPackageBundle::from_key_store_value(&kp.key).map_err(MlsError::from)?;
+            let mut is_expired = Self::is_mls_keypackage_expired(&kpb);
+            if !is_expired && !refs.is_empty() {
+                const HASH_REF_VALUE_LEN: usize = 16;
+                let href: [u8; HASH_REF_VALUE_LEN] = hex::decode(&kp.id)
+                    .map_err(CryptoKeystoreError::from)?
+                    .as_slice()
+                    .try_into()
+                    .map_err(CryptoKeystoreError::from)
+                    .map_err(CryptoError::from)?;
+                let href = KeyPackageRef::from(href);
+                is_expired = refs.contains(&href);
+            }
+
+            if is_expired {
+                acc.push(kp.id.clone());
+            }
+
+            CryptoResult::Ok(acc)
+        })?;
+
+        let entity_ids_to_delete: Vec<StringEntityId> = ids_to_delete.iter().map(|e| e.as_bytes().into()).collect();
+
+        MlsKeypackage::delete(&mut *conn, &entity_ids_to_delete).await?;
+
+        Ok(())
     }
 }
 
@@ -355,9 +465,28 @@ pub mod tests {
     use super::Client;
     use crate::{credential::CertificateBundle, credential::CredentialSupplier, test_fixture_utils::*};
     use mls_crypto_provider::MlsCryptoProvider;
+    use openmls::prelude::{KeyPackageBundle, KeyPackageRef};
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
+
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn can_assess_keypackage_expiration(credential: CredentialSupplier) {
+        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+        let mut client = Client::random_generate(&backend, false, credential()).await.unwrap();
+
+        // 90-day standard expiration
+        let kp_std_exp = client.gen_keypackage(&backend).await.unwrap();
+        assert!(!Client::is_mls_keypackage_expired(&kp_std_exp));
+
+        // 1-second expiration
+        client.keypackage_lifetime(std::time::Duration::from_secs(1));
+        let kp_1s_exp = client.gen_keypackage(&backend).await.unwrap();
+        // Sleep 2 seconds to make sure we make the kp expire
+        async_std::task::sleep(std::time::Duration::from_secs(2)).await;
+        assert!(Client::is_mls_keypackage_expired(&kp_1s_exp));
+    }
 
     #[apply(all_credential_types)]
     #[wasm_bindgen_test]
@@ -379,27 +508,93 @@ pub mod tests {
     #[apply(all_credential_types)]
     #[wasm_bindgen_test]
     pub async fn client_generates_correct_number_of_kpbs(credential: CredentialSupplier) {
-        // use openmls_traits::OpenMlsCryptoProvider as _;
+        use openmls_traits::OpenMlsCryptoProvider as _;
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        let client = Client::random_generate(&backend, true, credential()).await.unwrap();
+        let client = Client::random_generate(&backend, false, credential()).await.unwrap();
 
         const COUNT: usize = 124;
 
-        let mut _prev_kpbs: Option<Vec<openmls::prelude::KeyPackageBundle>> = None;
+        let mut prev_kpbs: Option<Vec<KeyPackageBundle>> = None;
         for _ in 0..50 {
             let kpbs = client.request_keying_material(COUNT, &backend).await.unwrap();
             assert_eq!(kpbs.len(), COUNT);
 
-            // FIXME: This part of the test should be enabled after pruning is implemented.
-            // if let Some(pkpbs) = prev_kpbs.take() {
-            //     let crypto = backend.crypto();
-            //     let pkpbs_refs = pkpbs.into_iter().map(|kpb| kpb.key_package().hash_ref(crypto).unwrap());
-            //     let kpbs_refs = kpbs.iter().map(|kpb| kpb.key_package().hash_ref(crypto).unwrap());
-            //     let number_same_kpbs = pkpbs_refs.zip(kpbs_refs).filter(|&(a, b)| a == b).count();
-            //     assert_eq!(number_same_kpbs, 0);
-            // }
+            let kpbs_refs: Vec<KeyPackageRef> = kpbs
+                .iter()
+                .map(|kpb| kpb.key_package().hash_ref(backend.crypto()).unwrap())
+                .collect();
 
-            // prev_kpbs = Some(kpbs);
+            if let Some(pkpbs) = prev_kpbs.replace(kpbs) {
+                let crypto = backend.crypto();
+                let pkpbs_refs: Vec<KeyPackageRef> = pkpbs
+                    .into_iter()
+                    .map(|kpb| kpb.key_package().hash_ref(crypto).unwrap())
+                    .collect();
+
+                let has_duplicates = kpbs_refs.iter().any(|href| pkpbs_refs.contains(href));
+                // Make sure we have no previous keypackages found (that were pruned) in our new batch of KPs
+                assert!(!has_duplicates);
+            }
+
+            client.prune_keypackages(&kpbs_refs, &backend).await.unwrap();
         }
+    }
+
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn client_automatically_prunes_lifetime_expired_keypackages(credential: CredentialSupplier) {
+        const UNEXPIRED_COUNT: usize = 125;
+        const EXPIRED_COUNT: usize = 200;
+        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+        let mut client = Client::random_generate(&backend, false, credential()).await.unwrap();
+
+        // Generate `UNEXPIRED_COUNT` kpbs that are with default 3 months expiration. We *should* keep them for the duration of the test
+        let unexpired_kpbs = client.request_keying_material(UNEXPIRED_COUNT, &backend).await.unwrap();
+        let len = client.valid_keypackages_count(&backend).await.unwrap();
+        assert_eq!(len, unexpired_kpbs.len());
+        assert_eq!(len, UNEXPIRED_COUNT);
+
+        // Set the keypackage expiration to be in 2 seconds
+        client.keypackage_lifetime(std::time::Duration::from_secs(2));
+
+        // Generate new keypackages that are normally partially expired 2s after they're requested
+        let partially_expired_kpbs = client.request_keying_material(EXPIRED_COUNT, &backend).await.unwrap();
+        assert_eq!(partially_expired_kpbs.len(), EXPIRED_COUNT);
+
+        // Sleep to trigger the expiration
+        async_std::task::sleep(std::time::Duration::from_secs(5)).await;
+
+        // Request the same number of keypackages. The automatic lifetime-based expiration should take
+        // place and remove old expired keypackages and generate fresh ones instead
+        let fresh_kpbs = client.request_keying_material(EXPIRED_COUNT, &backend).await.unwrap();
+        let len = client.valid_keypackages_count(&backend).await.unwrap();
+        assert_eq!(len, fresh_kpbs.len());
+        assert_eq!(len, EXPIRED_COUNT);
+
+        // Try to deep compare and find kps matching expired and non-expired ones
+        let (unexpired_match, expired_match) =
+            fresh_kpbs
+                .iter()
+                .fold((0usize, 0usize), |(mut unexpired_match, mut expired_match), fresh| {
+                    if unexpired_kpbs
+                        .iter()
+                        .find(|kpb| kpb.key_package() == fresh.key_package())
+                        .is_some()
+                    {
+                        unexpired_match += 1;
+                    } else if partially_expired_kpbs
+                        .iter()
+                        .find(|kpb| kpb.key_package() == fresh.key_package())
+                        .is_some()
+                    {
+                        expired_match += 1;
+                    }
+
+                    (unexpired_match, expired_match)
+                });
+
+        // TADA!
+        assert_eq!(unexpired_match, UNEXPIRED_COUNT);
+        assert_eq!(expired_match, 0);
     }
 }

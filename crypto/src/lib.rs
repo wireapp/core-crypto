@@ -328,7 +328,10 @@ impl MlsCentral {
         self.mls_client.id().clone().into()
     }
 
-    /// Loads keypackages from the client and generates `KeyPackageBundle`s to return.
+    /// Returns `amount_requested` OpenMLS [`KeyPackageBundle`]s.
+    /// Will always return the requested amount as it will generate the necessary (lacking) amount on-the-fly
+    ///
+    /// Note: Keypackage pruning is performed as a first step
     ///
     /// # Arguments
     /// * `amount_requested` - number of KeyPackages to request and fill the `KeyPackageBundle`
@@ -342,6 +345,11 @@ impl MlsCentral {
         self.mls_client
             .request_keying_material(amount_requested, &self.mls_backend)
             .await
+    }
+
+    /// Returns the count of valid, non-expired, unclaimed keypackages in store
+    pub async fn client_valid_keypackages_count(&self) -> CryptoResult<usize> {
+        self.mls_client.valid_keypackages_count(&self.mls_backend).await
     }
 
     /// Create a new empty conversation

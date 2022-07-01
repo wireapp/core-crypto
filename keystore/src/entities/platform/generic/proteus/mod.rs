@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::{ProteusPrekey, StringEntityId};
+use crate::entities::{EntityFindParams, ProteusPrekey, StringEntityId};
 use crate::{
     connection::KeystoreDatabaseConnection,
     entities::{Entity, EntityBase},
@@ -33,6 +33,33 @@ impl EntityBase for ProteusPrekey {
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
         MissingKeyErrorKind::ProteusPrekey
+    }
+
+    async fn find_all(
+        conn: &mut Self::ConnectionType,
+        params: EntityFindParams,
+    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        let transaction = conn.transaction()?;
+        let query: String = format!("SELECT rowid, id FROM proteus_prekeys {}", params.to_sql());
+
+        let mut stmt = transaction.prepare_cached(&query)?;
+        let mut rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        let entities = rows.try_fold(Vec::new(), |mut acc, query_result| {
+            use std::io::Read as _;
+            let (rowid, id) = query_result?;
+
+            let mut blob =
+                transaction.blob_open(rusqlite::DatabaseName::Main, "proteus_prekeys", "key", rowid, true)?;
+
+            let mut buf = vec![];
+            blob.read_to_end(&mut buf)?;
+            blob.close()?;
+
+            acc.push(Self { id, prekey: buf });
+            crate::CryptoKeystoreResult::Ok(acc)
+        })?;
+
+        Ok(entities)
     }
 
     async fn find_one(
@@ -98,15 +125,24 @@ impl EntityBase for ProteusPrekey {
 
     async fn delete(
         conn: &mut Self::ConnectionType,
-        id: &crate::entities::StringEntityId,
+        id: &[crate::entities::StringEntityId],
     ) -> crate::CryptoKeystoreResult<()> {
-        let id = String::from_utf8(id.as_bytes())?;
-        let updated = conn.execute("DELETE FROM proteus_prekeys WHERE id = ?", [id])?;
+        let transaction = conn.transaction()?;
+        let len = ids.len();
+        let mut updated = 0;
+        for id in ids {
+            updated += transaction.execute(
+                "DELETE FROM proteus_prekeys WHERE id = ?",
+                [String::from_utf8(id.as_bytes())],
+            )?;
+        }
 
-        if updated != 0 {
+        if updated == len {
+            transaction.commit()?;
             Ok(())
         } else {
-            Err(MissingKeyErrorKind::ProteusPrekey.into())
+            transaction.rollback()?;
+            Err(Self::to_missing_key_err_kind().into())
         }
     }
 }

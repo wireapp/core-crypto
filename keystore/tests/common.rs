@@ -27,7 +27,7 @@ const TEST_ENCRYPTION_KEY: &str = "test1234";
 pub fn store_name() -> String {
     use rand::Rng as _;
     let mut rng = rand::thread_rng();
-    let name: String = (0..6)
+    let name: String = (0usize..12)
         .map(|_| rng.sample(rand::distributions::Alphanumeric) as char)
         .collect();
     cfg_if::cfg_if! {

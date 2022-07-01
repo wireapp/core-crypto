@@ -15,6 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::connection::DatabaseConnection;
+use crate::entities::EntityFindParams;
 use crate::entities::MlsIdentity;
 use crate::entities::MlsIdentityExt;
 use crate::entities::StringEntityId;
@@ -22,7 +23,7 @@ use crate::CryptoKeystoreResult;
 use crate::{
     connection::KeystoreDatabaseConnection,
     entities::{Entity, EntityBase},
-    CryptoKeystoreError, MissingKeyErrorKind,
+    MissingKeyErrorKind,
 };
 
 impl Entity for MlsIdentity {
@@ -37,6 +38,50 @@ impl EntityBase for MlsIdentity {
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
         MissingKeyErrorKind::MlsIdentityBundle
+    }
+
+    async fn find_all(
+        conn: &mut Self::ConnectionType,
+        params: EntityFindParams,
+    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        let transaction = conn.transaction()?;
+        let query: String = format!("SELECT rowid, id FROM mls_identities {}", params.to_sql());
+
+        let mut stmt = transaction.prepare_cached(&query)?;
+        let mut rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        let entities = rows.try_fold(Vec::new(), |mut acc, rowid_result| {
+            use std::io::Read as _;
+            let (rowid, id) = rowid_result?;
+
+            let mut blob =
+                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_identities", "signature", rowid, true)?;
+
+            let mut signature = vec![];
+            blob.read_to_end(&mut signature)?;
+            blob.close()?;
+
+            let mut blob = transaction.blob_open(
+                rusqlite::DatabaseName::Main,
+                "mls_identities",
+                "credential",
+                rowid,
+                true,
+            )?;
+
+            let mut credential = vec![];
+            blob.read_to_end(&mut credential)?;
+            blob.close()?;
+
+            acc.push(Self {
+                id,
+                signature,
+                credential,
+            });
+
+            crate::CryptoKeystoreResult::Ok(acc)
+        })?;
+
+        Ok(entities)
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
@@ -164,14 +209,21 @@ impl EntityBase for MlsIdentity {
         Ok(conn.query_row("SELECT COUNT(*) FROM mls_identities", [], |r| r.get(0))?)
     }
 
-    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
-        let id: String = id.try_into()?;
-        let updated = conn.execute("DELETE FROM mls_identities WHERE id = ?", [id])?;
+    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
+        let transaction = conn.transaction()?;
+        let len = ids.len();
+        let mut updated = 0;
+        for id in ids {
+            let id: String = id.try_into()?;
+            updated += transaction.execute("DELETE FROM mls_identities WHERE id = ?", [id])?;
+        }
 
-        if updated != 0 {
+        if updated == len {
+            transaction.commit()?;
             Ok(())
         } else {
-            Err(CryptoKeystoreError::from(MissingKeyErrorKind::MlsIdentityBundle))
+            transaction.rollback()?;
+            Err(Self::to_missing_key_err_kind().into())
         }
     }
 }

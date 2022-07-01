@@ -229,6 +229,19 @@ impl CoreCrypto<'_> {
             .collect::<CryptoResult<Vec<Vec<u8>>>>()
     }
 
+    pub fn client_valid_keypackages_count(&self) -> CryptoResult<u64> {
+        let count = future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .client_valid_keypackages_count(),
+            ),
+        )?;
+
+        Ok(count.try_into()?)
+    }
+
     pub fn update_keying_material(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
         use core_crypto::prelude::tls_codec::Serialize as _;
 
@@ -500,11 +513,11 @@ impl CoreCrypto<'_> {
         Ok(())
     }
 
-    pub fn random_bytes(&self, len: u64) -> CryptoResult<Vec<u8>> {
+    pub fn random_bytes(&self, len: u32) -> CryptoResult<Vec<u8>> {
         self.central
             .lock()
             .map_err(|_| CryptoError::LockPoisonError)?
-            .random_bytes(len as usize)
+            .random_bytes(len.try_into()?)
     }
 
     pub fn reseed_rng(&self, seed: Vec<u8>) -> CryptoResult<()> {

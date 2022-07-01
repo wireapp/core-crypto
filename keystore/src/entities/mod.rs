@@ -84,6 +84,34 @@ impl<'a> From<&'a [u8]> for StringEntityId<'a> {
     }
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct EntityFindParams {
+    pub limit: Option<u32>,
+    pub offset: Option<u32>,
+    pub reverse: bool,
+}
+
+#[cfg(not(target_family = "wasm"))]
+impl EntityFindParams {
+    pub fn to_sql(&self) -> String {
+        use std::fmt::Write as _;
+        let mut query: String = "".into();
+        if let Some(limit) = self.limit {
+            let _ = write!(query, " LIMIT {limit}");
+        }
+        if let Some(offset) = self.offset {
+            let _ = write!(query, " OFFSET {offset}");
+        }
+        if self.reverse {
+            let _ = write!(query, " ORDER BY rowid DESC");
+        } else {
+            let _ = write!(query, " ORDER BY rowid");
+        }
+
+        query
+    }
+}
+
 #[async_trait::async_trait(?Send)]
 pub trait EntityBase: Send + Sized + Clone + PartialEq + Eq + std::fmt::Debug {
     type ConnectionType: DatabaseConnection;
@@ -91,6 +119,7 @@ pub trait EntityBase: Send + Sized + Clone + PartialEq + Eq + std::fmt::Debug {
     fn to_missing_key_err_kind() -> MissingKeyErrorKind;
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()>;
+    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>>;
     async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>>;
     async fn find_many(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<Vec<Self>> {
         // Default, inefficient & naive method
@@ -104,7 +133,7 @@ pub trait EntityBase: Send + Sized + Clone + PartialEq + Eq + std::fmt::Debug {
         Ok(ret)
     }
     async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize>;
-    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<()>;
+    async fn delete(conn: &mut Self::ConnectionType, id: &[StringEntityId]) -> CryptoKeystoreResult<()>;
 }
 
 cfg_if::cfg_if! {

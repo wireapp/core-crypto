@@ -26,9 +26,6 @@ pub struct WasmConnection {
     conn: WasmEncryptedStorage,
 }
 
-// FIXME: Fix persitent storage's timeout
-// FIXME: Enable the persistent storage in mls-provider
-
 impl WasmConnection {
     pub fn storage(&self) -> &WasmEncryptedStorage {
         &self.conn
