@@ -139,6 +139,10 @@ export class CoreCrypto {
         return await this.#cc.client_public_key();
     }
 
+    async clientValidKeypackagesCount(): Promise<number> {
+        return await this.#cc.client_valid_keypackages_count();
+    }
+
     async clientKeypackages(amountRequested: number): Promise<Array<Uint8Array>> {
         return await this.#cc.client_keypackages(amountRequested);
     }

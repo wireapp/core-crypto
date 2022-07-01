@@ -29,25 +29,33 @@ impl EntityBase for ProteusPrekey {
         MissingKeyErrorKind::ProteusPrekey
     }
 
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        conn.storage_mut().save("proteus_prekeys", &mut [self.clone()]).await?;
+    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+        let storage = conn.storage();
+        storage.get_all("proteus_prekeys", Some(params)).await
+    }
 
-        Ok(())
+    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
+        let storage = conn.storage();
+        storage.save("proteus_prekeys", &mut [self.clone()]).await
     }
 
     async fn find_one(
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        conn.storage().get("proteus_prekeys", id.as_bytes()).await
+        let storage = conn.storage();
+        storage.get("proteus_prekeys", id.as_bytes()).await
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        conn.storage().count("proteus_prekeys").await
+        let storage = conn.storage();
+        storage.count("proteus_prekeys").await
     }
 
-    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
-        conn.storage_mut().delete("proteus_prekeys", &[id.as_bytes()]).await
+    async fn delete(conn: &mut Self::ConnectionType, id: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
+        let storage = conn.storage_mut();
+        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::as_bytes).collect();
+        storage.delete("proteus_prekeys", &ids).await
     }
 }
 

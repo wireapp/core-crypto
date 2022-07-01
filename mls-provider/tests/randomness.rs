@@ -36,15 +36,8 @@ pub mod tests {
     use wasm_bindgen_test::*;
     wasm_bindgen_test_configure!(run_in_browser);
 
-    #[apply(all_storage_types_and_ciphersuites)]
-    #[wasm_bindgen_test]
-    async fn can_generate_sufficient_randomness(
-        backend: MlsCryptoProvider,
-        _ciphersuite: Ciphersuite,
-        entropy_seed: Option<EntropySeed>,
-    ) {
-        let mut backend = backend.await;
-        backend.reseed(entropy_seed);
+    fn test_randomness(backend: &mut MlsCryptoProvider, entropy: Option<EntropySeed>) {
+        backend.reseed(entropy);
 
         let random = backend.rand();
         let mut hashes = Vec::with_capacity(ITER_ROUNDS);
@@ -70,7 +63,21 @@ pub mod tests {
             }
             hashes.push(hash);
         }
+    }
 
+    #[apply(use_provider)]
+    #[wasm_bindgen_test]
+    async fn can_generate_sufficient_randomness_ext_entropy(backend: MlsCryptoProvider) {
+        let mut backend = backend.await;
+        test_randomness(&mut backend, Some(entropy()));
+        teardown(backend).await;
+    }
+
+    #[apply(use_provider)]
+    #[wasm_bindgen_test]
+    async fn can_generate_sufficient_randomness_sys_entropy(backend: MlsCryptoProvider) {
+        let mut backend = backend.await;
+        test_randomness(&mut backend, None);
         teardown(backend).await;
     }
 

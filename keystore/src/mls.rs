@@ -19,7 +19,8 @@ use openmls_traits::key_store::{FromKeyStoreValue, ToKeyStoreValue};
 use crate::{
     connection::Connection,
     entities::{
-        MlsIdentity, MlsIdentityExt, MlsKeypackage, PersistedMlsGroup, PersistedMlsPendingGroup, StringEntityId,
+        EntityFindParams, MlsIdentity, MlsIdentityExt, MlsKeypackage, PersistedMlsGroup, PersistedMlsPendingGroup,
+        StringEntityId,
     },
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
@@ -121,6 +122,11 @@ pub trait CryptoKeystoreMls: Sized {
     async fn mls_pending_groups_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()>;
 }
 
+#[inline(always)]
+fn bytes_to_string_id(raw: &[u8]) -> String {
+    StringEntityId::new(raw).as_hex_string()
+}
+
 impl Connection {
     #[cfg(feature = "memory-cache")]
     #[inline(always)]
@@ -185,7 +191,7 @@ impl CryptoKeystoreMls for crate::connection::Connection {
             WasmStorageWrapper::Persistent(rexie) => {
                 let transaction = rexie.transaction(&["mls_keys"], rexie::TransactionMode::ReadOnly)?;
                 let store = transaction.store("mls_keys")?;
-                let items_fut = store.get_all(None, Some(count), Some(1), Some(rexie::Direction::Next));
+                let items_fut = store.get_all(None, Some(count), None, Some(rexie::Direction::Next));
 
                 let items = items_fut.await?;
 
@@ -197,7 +203,7 @@ impl CryptoKeystoreMls for crate::connection::Connection {
                     .into_iter()
                     .map(|(_k, v)| {
                         let mut kp: MlsKeypackage = serde_wasm_bindgen::from_value(v)?;
-                        kp.decrypt(&cipher)?;
+                        kp.decrypt(cipher)?;
                         Ok(kp)
                     })
                     .collect::<CryptoKeystoreResult<Vec<MlsKeypackage>>>()?;
@@ -211,7 +217,7 @@ impl CryptoKeystoreMls for crate::connection::Connection {
                         .take(count as usize)
                         .map(|(_k, v)| {
                             let mut entity: MlsKeypackage = serde_wasm_bindgen::from_value(v.clone())?;
-                            entity.decrypt(&cipher)?;
+                            entity.decrypt(cipher)?;
                             Ok(entity)
                         })
                         .collect::<CryptoKeystoreResult<Vec<MlsKeypackage>>>()?;
@@ -241,7 +247,7 @@ impl CryptoKeystoreMls for crate::connection::Connection {
                 let transaction = rexie.transaction(&["mls_keys"], rexie::TransactionMode::ReadOnly)?;
                 let store = transaction.store("mls_keys")?;
 
-                let items_fut = store.get_all(None, Some(1), Some(1), Some(rexie::Direction::Next));
+                let items_fut = store.get_all(None, Some(1), None, Some(rexie::Direction::Next));
 
                 let items = items_fut.await?;
 
@@ -332,7 +338,7 @@ impl CryptoKeystoreMls for crate::connection::Connection {
 
     // TODO: Review zero on drop behavior
     async fn mls_groups_restore(&self) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, Vec<u8>>> {
-        let groups = self.find_many::<PersistedMlsGroup, &[u8]>(&[]).await?;
+        let groups = self.find_all::<PersistedMlsGroup>(EntityFindParams::default()).await?;
         Ok(groups
             .into_iter()
             .map(|group: PersistedMlsGroup| (group.id.clone(), group.state.clone()))
@@ -360,7 +366,7 @@ impl CryptoKeystoreMls for crate::connection::Connection {
     }
 
     async fn mls_pending_groups_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()> {
-        self.remove::<PersistedMlsPendingGroup, &[u8]>(group_id).await
+        self.remove::<PersistedMlsPendingGroup, _>(group_id).await
     }
 }
 
@@ -383,8 +389,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
             .map_err(|e| CryptoKeystoreError::KeyStoreValueTransformError(Box::new(e)))?;
         let type_name = std::any::type_name::<V>();
 
-        let id =
-            String::from_utf8(k.into()).map_or_else(|_| StringEntityId::new(k).as_hex_string(), std::convert::identity);
+        let id = bytes_to_string_id(k);
 
         match type_name {
             "openmls::key_packages::KeyPackageBundle" => {
@@ -409,8 +414,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
 
         let hydrated_ksv = match type_name {
             "openmls::key_packages::KeyPackageBundle" => {
-                let keypackage_id = String::from_utf8(k.into())
-                    .map_or_else(|_| StringEntityId::new(k).as_hex_string(), std::convert::identity);
+                let keypackage_id = bytes_to_string_id(k);
 
                 #[cfg(feature = "memory-cache")]
                 if self.is_cache_enabled() {
@@ -452,8 +456,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
         if k.is_empty() {
             return Ok(());
         }
-        let id =
-            String::from_utf8(k.into()).map_or_else(|_| StringEntityId::new(k).as_hex_string(), std::convert::identity);
+        let id = bytes_to_string_id(k);
 
         #[cfg(feature = "memory-cache")]
         if self.is_cache_enabled() {

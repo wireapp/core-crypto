@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::{PersistedMlsGroup, PersistedMlsPendingGroup, StringEntityId};
+use crate::entities::{EntityFindParams, PersistedMlsGroup, PersistedMlsPendingGroup, StringEntityId};
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase},
@@ -29,12 +29,14 @@ impl EntityBase for PersistedMlsGroup {
         MissingKeyErrorKind::MlsGroup
     }
 
+    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+        let storage = conn.storage();
+        storage.get_all("mls_groups", Some(params)).await
+    }
+
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
-
-        storage.save("mls_groups", &mut [self.clone()]).await?;
-
-        Ok(())
+        storage.save("mls_groups", &mut [self.clone()]).await
     }
 
     async fn find_one(
@@ -51,7 +53,7 @@ impl EntityBase for PersistedMlsGroup {
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
         // Plot twist: we always select ALL the persisted groups. Unsure if we want to make it a real API with selection
-        storage.get_all("mls_groups").await
+        storage.get_all("mls_groups", None).await
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
@@ -59,9 +61,10 @@ impl EntityBase for PersistedMlsGroup {
         storage.count("mls_groups").await
     }
 
-    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
+    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
-        let _ = storage.delete("mls_groups", &[id.as_bytes()]).await?;
+        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::as_bytes).collect();
+        let _ = storage.delete("mls_groups", &ids).await?;
         Ok(())
     }
 }
@@ -93,6 +96,11 @@ impl EntityBase for PersistedMlsPendingGroup {
         MissingKeyErrorKind::MlsGroup
     }
 
+    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+        let storage = conn.storage();
+        storage.get_all("mls_pending_groups", Some(params)).await
+    }
+
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
 
@@ -113,18 +121,16 @@ impl EntityBase for PersistedMlsPendingGroup {
         _ids: &[StringEntityId],
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
         // Plot twist: we always select ALL the persisted groups. Unsure if we want to make it a real API with selection
-        conn.storage().get_all("mls_pending_groups").await
+        conn.storage().get_all("mls_pending_groups", None).await
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         conn.storage().count("mls_pending_groups").await
     }
 
-    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
-        let _ = conn
-            .storage_mut()
-            .delete("mls_pending_groups", &[id.as_bytes()])
-            .await?;
+    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
+        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::as_bytes).collect();
+        let _ = conn.storage_mut().delete("mls_pending_groups", &ids).await?;
         Ok(())
     }
 }

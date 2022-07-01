@@ -24,11 +24,10 @@ use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 
 const TEST_ENCRYPTION_KEY: &str = "test1234";
 
-#[fixture]
 pub fn store_name() -> String {
     use rand::Rng as _;
     let mut rng = rand::thread_rng();
-    let name: String = (0..6)
+    let name: String = (0..12)
         .map(|_| rng.sample(rand::distributions::Alphanumeric) as char)
         .collect();
     cfg_if::cfg_if! {
@@ -41,14 +40,12 @@ pub fn store_name() -> String {
 }
 
 #[fixture]
-pub async fn setup(
-    #[default(false)] in_memory: bool,
-    #[default(store_name())] name: impl AsRef<str>,
-) -> MlsCryptoProvider {
+pub async fn setup(#[default(false)] in_memory: bool) -> MlsCryptoProvider {
+    let store_name = store_name();
     let store = if !in_memory {
-        core_crypto_keystore::Connection::open_with_key(name, TEST_ENCRYPTION_KEY).await
+        core_crypto_keystore::Connection::open_with_key(store_name, TEST_ENCRYPTION_KEY).await
     } else {
-        core_crypto_keystore::Connection::open_in_memory_with_key(name, TEST_ENCRYPTION_KEY).await
+        core_crypto_keystore::Connection::open_in_memory_with_key(store_name, TEST_ENCRYPTION_KEY).await
     }
     .unwrap();
 
@@ -59,6 +56,7 @@ pub async fn setup(
 #[rstest]
 async fn use_provider(
     #[from(setup)]
+    #[with(true)]
     #[future]
     backend: MlsCryptoProvider,
 ) {
@@ -74,143 +72,143 @@ pub fn entropy() -> EntropySeed {
 #[template]
 #[rstest]
 #[case::ed25519_aes128__sys_entropy__persistent(
-    setup(false, store_name()),
+    setup(false),
     openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
     None
 )]
 #[case::ed25519_aes128__ext_entropy__persistent(
-    setup(false, store_name()),
+    setup(false),
     openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
     Some(entropy())
 )]
 #[case::ed25519_aes128__sys_entropy__in_memory(
-    setup(true, store_name()),
+    setup(true),
     openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
     None
 )]
 #[case::ed25519_aes128__ext_entropy__in_memory(
-    setup(true, store_name()),
+    setup(true),
     openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
     Some(entropy())
 )]
 #[case::p256_aes128__sys_entropy__persistent(
-    setup(false, store_name()),
+    setup(false),
     openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
     None
 )]
 #[case::p256_aes128__ext_entropy__persistent(
-    setup(false, store_name()),
+    setup(false),
     openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
     Some(entropy())
 )]
 #[case::p256_aes128__sys_entropy__in_memory(
-    setup(true, store_name()),
+    setup(true),
     openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
     None
 )]
 #[case::p256_aes128__ext_entropy__in_memory(
-    setup(true, store_name()),
+    setup(true),
     openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
     Some(entropy())
 )]
 #[case::ed25519_chacha20poly1305__sys_entropy__persistent(
-    setup(false, store_name()),
+    setup(false),
     openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519,
     None
 )]
 #[case::ed25519_chacha20poly1305__ext_entropy__persistent(
-    setup(false, store_name()),
+    setup(false),
     openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519,
     Some(entropy())
 )]
 #[case::ed25519_chacha20poly1305__sys_entropy__in_memory(
-    setup(true, store_name()),
+    setup(true),
     openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519,
     None
 )]
 #[case::ed25519_chacha20poly1305__ext_entropy__in_memory(
-    setup(true, store_name()),
+    setup(true),
     openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519,
     Some(entropy())
 )]
 // TODO: Those 3 next ciphersuites aren't supported because of the lack of both p521 (wip) and ed448 (status unknown) crates
 // #[case::ed448_aes256_sys_entropy__persistent(
-//     setup(false, store_name()),
+//     setup(false),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448,
 //     None
 // )]
 // #[case::ed448_aes256__ext_entropy__persistent(
-//     setup(false, store_name()),
+//     setup(false),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448,
 //     Some(entropy())
 // )]
 // #[case::ed448_aes256__sys_entropy__in_memory(
-//     setup(true, store_name()),
+//     setup(true),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448,
 //     None
 // )]
 // #[case::ed448_aes256__ext_entropy__in_memory(
-//     setup(true, store_name()),
+//     setup(true),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448,
 //     Some(entropy())
 // )]
 // #[case::p521_aes256__sys_entropy__persistent(
-//     setup(false, store_name()),
+//     setup(false),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
 //     None
 // )]
 // #[case::p521_aes256__ext_entropy__persistent(
-//     setup(false, store_name()),
+//     setup(false),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
 //     Some(entropy())
 // )]
 // #[case::p521_aes256__sys_entropy__in_memory(
-//     setup(true, store_name()),
+//     setup(true),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
 //     None
 // )]
 // #[case::p521_aes256__ext_entropy__in_memory(
-//     setup(true, store_name()),
+//     setup(true),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
 //     Some(entropy())
 // )]
 // #[case::ed448_chacha20poly1305_sys_entropy__persistent(
-//     setup(false, store_name()),
+//     setup(false),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448,
 //     None
 // )]
 // #[case::ed448_chacha20poly1305__ext_entropy__persistent(
-//     setup(false, store_name()),
+//     setup(false),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448,
 //     Some(entropy())
 // )]
 // #[case::ed448_chacha20poly1305__sys_entropy__in_memory(
-//     setup(true, store_name()),
+//     setup(true),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448,
 //     None
 // )]
 // #[case::ed448_chacha20poly1305__ext_entropy__in_memory(
-//     setup(true, store_name()),
+//     setup(true),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448,
 //     Some(entropy())
 // )]
 #[case::p384_aes256__sys_entropy__persistent(
-    setup(false, store_name()),
+    setup(false),
     openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
     None
 )]
 #[case::p384_aes256__ext_entropy__persistent(
-    setup(false, store_name()),
+    setup(false),
     openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
     Some(entropy())
 )]
 #[case::p384_aes256__sys_entropy__in_memory(
-    setup(true, store_name()),
+    setup(true),
     openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
     None
 )]
 #[case::p384_aes256__ext_entropy__in_memory(
-    setup(true, store_name()),
+    setup(true),
     openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
     Some(entropy())
 )]

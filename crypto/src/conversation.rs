@@ -275,7 +275,7 @@ impl MlsConversation {
             .members()
             .into_iter()
             .filter(|kp| {
-                let identity = kp.external_key_id().unwrap_or_default();
+                let identity = kp.credential().identity();
                 clients.iter().any(move |client_id| client_id.as_slice() == identity)
             })
             .try_fold(Vec::new(), |mut acc, kp| -> CryptoResult<Vec<KeyPackageRef>> {
@@ -598,6 +598,43 @@ pub mod tests {
             }
 
             assert_eq!(bob_and_friends_groups.len(), 99);
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn conversation_from_welcome_prunes_local_keypackage(credential: CredentialSupplier) {
+            use core_crypto_keystore::CryptoKeystoreMls as _;
+            use openmls_traits::OpenMlsCryptoProvider as _;
+            let (alice_backend, mut alice) = alice(credential).await;
+            let (bob_backend, bob) = bob(credential).await;
+            // Keep track of the whatever amount was initially generated
+            let original_kpb_count = bob_backend.key_store().mls_keypackagebundle_count().await.unwrap();
+
+            // Create a conversation from alice, where she invites bob
+            let conversation_id = conversation_id();
+            let conversation_config = MlsConversationConfiguration::default();
+            let mut alice_group = MlsConversation::create(
+                conversation_id.clone(),
+                alice.local_client_mut(),
+                conversation_config.clone(),
+                &alice_backend,
+            )
+            .await
+            .unwrap();
+
+            let MlsConversationCreationMessage { welcome, .. } = alice_group
+                .add_members(&mut [bob.clone()], &alice_backend)
+                .await
+                .unwrap();
+
+            // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
+            let _bob_group = MlsConversation::from_welcome_message(welcome, conversation_config.clone(), &bob_backend)
+                .await
+                .unwrap();
+
+            // Ensure we're left with 1 less keypackage bundle in the store, because it was consumed with the OpenMLS Welcome message
+            let new_kpb_count = bob_backend.key_store().mls_keypackagebundle_count().await.unwrap();
+            assert_eq!(new_kpb_count, original_kpb_count - 1);
         }
     }
 
