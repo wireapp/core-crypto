@@ -170,8 +170,8 @@ pub struct MlsConversationReinitMessage {
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MlsConversationInitMessage {
-    pub group: Box<[u8]>,
-    pub message: Box<[u8]>,
+    group: Box<[u8]>,
+    message: Box<[u8]>,
 }
 
 #[wasm_bindgen]
@@ -184,6 +184,19 @@ impl MlsConversationReinitMessage {
     #[wasm_bindgen(getter)]
     pub fn welcome(&self) -> Option<Box<[u8]>> {
         self.welcome.clone()
+    }
+}
+
+#[wasm_bindgen]
+impl MlsConversationInitMessage {
+    #[wasm_bindgen(getter)]
+    pub fn message(&self) -> Box<[u8]> {
+        self.message.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn group(&self) -> Box<[u8]> {
+        self.group.clone()
     }
 }
 
@@ -743,47 +756,70 @@ impl CoreCrypto {
         )
     }
 
-    pub fn export_group_state(&self, conversation_id: Box<[u8]>) -> WasmCryptoResult<Box<[u8]>> {
+    pub fn export_group_state(&self, conversation_id: Box<[u8]>) -> Promise {
         use core_crypto::prelude::tls_codec::Serialize as _;
-        let state = self.0.export_group_state(conversation_id.as_slice());
-        Ok(state
-            .tls_serialize_detached()
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)?)
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let state = this.borrow().export_group_state(&conversation_id).await?;
+                WasmCryptoResult::Ok(
+                    state
+                        .tls_serialize_detached()
+                        .map(|bytes| Uint8Array::from(bytes.as_slice()))
+                        .map_err(MlsError::from)
+                        .map_err(CryptoError::from)?
+                        .into(),
+                )
+            }
+            .err_into(),
+        )
     }
 
-    pub fn join_by_external_commit(&self, group_state: Box<[u8]>) -> WasmCryptoResult<MlsConversationInitMessage> {
+    pub fn join_by_external_commit(&self, group_state: Box<[u8]>) -> Promise {
         use core_crypto::prelude::tls_codec::Deserialize as _;
         use core_crypto::prelude::tls_codec::Serialize as _;
 
+        let this = self.0.clone();
         let state = group_state.to_vec();
 
-        let group_state = VerifiablePublicGroupState::tls_deserialize(&mut &state[..]).map_err(MlsError::from)?;
-        let (group, message) = self.0.join_by_external_commit(group_state)?;
-        Ok(MlsConversationInitMessage {
-            message: message
-                .tls_serialize_detached()
-                .map_err(MlsError::from)
-                .map_err(CryptoError::from)?,
-            group: group
-                .tls_serialize_detached()
-                .map_err(MlsError::from)
-                .map_err(CryptoError::from)?,
-        })
-    }
-
-    pub fn export_group_state(&self, group_id: &[u8]) -> CryptoResult<Box<[u8]>> {
-        todo!()
+        future_to_promise(
+            async move {
+                let group_state =
+                    VerifiablePublicGroupState::tls_deserialize(&mut &state[..]).map_err(MlsError::from)?;
+                let (group, message) = this.borrow().join_by_external_commit(group_state).await?;
+                let result = MlsConversationInitMessage {
+                    message: message
+                        .tls_serialize_detached()
+                        .map_err(MlsError::from)
+                        .map_err(CryptoError::from)?
+                        .into_boxed_slice(),
+                    group: group
+                        .tls_serialize_detached()
+                        .map_err(MlsError::from)
+                        .map_err(CryptoError::from)?
+                        .into_boxed_slice(),
+                };
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&result)?)
+            }
+            .err_into(),
+        )
     }
 
     pub fn merge_pending_group_from_external_commit(
         &self,
         conversation_id: ConversationId,
         configuration: ConversationConfiguration,
-    ) -> WasmCryptoResult<()> {
-        self.0
-            .merge_pending_group_from_external_commit(&conversation_id, configuration.try_into()?)?;
-        Ok(())
+    ) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                this.borrow_mut()
+                    .merge_pending_group_from_external_commit(&conversation_id, configuration.try_into()?)
+                    .await?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
+        )
     }
 }
 
