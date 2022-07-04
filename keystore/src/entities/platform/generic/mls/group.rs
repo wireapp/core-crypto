@@ -139,6 +139,7 @@ impl EntityBase for PersistedMlsGroup {
     }
 }
 
+#[async_trait::async_trait(?Send)]
 impl EntityBase for PersistedMlsPendingGroup {
     type ConnectionType = KeystoreDatabaseConnection;
 
@@ -146,7 +147,7 @@ impl EntityBase for PersistedMlsPendingGroup {
         MissingKeyErrorKind::MlsGroup
     }
 
-    fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
+    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
         let group_id = hex::encode(&self.id);
         let state = &self.state;
         let transaction = conn.transaction()?;
@@ -196,11 +197,17 @@ impl EntityBase for PersistedMlsPendingGroup {
         Ok(())
     }
 
-    fn find_one(_conn: &mut Self::ConnectionType, _id: &StringEntityId) -> crate::CryptoKeystoreResult<Option<Self>> {
+    async fn find_one(
+        _conn: &mut Self::ConnectionType,
+        _id: &StringEntityId,
+    ) -> crate::CryptoKeystoreResult<Option<Self>> {
         unimplemented!("not sure we want to implement this")
     }
 
-    fn find_many(conn: &mut Self::ConnectionType, _ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<Vec<Self>> {
+    async fn find_many(
+        conn: &mut Self::ConnectionType,
+        _ids: &[StringEntityId],
+    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
         // Plot twist: we always select ALL the persisted groups. Unsure if we want to make it a real API with selection
         let mut stmt = conn.prepare_cached("SELECT rowid FROM mls_pending_groups ORDER BY rowid ASC")?;
         let rowids: Vec<i64> = stmt
@@ -240,11 +247,11 @@ impl EntityBase for PersistedMlsPendingGroup {
         Ok(res)
     }
 
-    fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
+    async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         Ok(conn.query_row("SELECT COUNT(*) FROM mls_pending_groups", [], |r| r.get(0))?)
     }
 
-    fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
+    async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
         let id = id.as_hex_string();
         let updated = conn.execute("DELETE FROM mls_pending_groups WHERE id = ?", [id])?;
 

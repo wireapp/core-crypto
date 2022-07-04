@@ -440,16 +440,20 @@ impl CoreCrypto<'_> {
 
     pub fn export_group_state(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
         use core_crypto::prelude::tls_codec::Serialize as _;
-        self.0
-            .lock()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .export_group_state(&conversation_id)
-            .map(|state| {
-                state
-                    .tls_serialize_detached()
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)
-            })?
+        future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .export_group_state(&conversation_id),
+            ),
+        )
+        .map(|state| {
+            state
+                .tls_serialize_detached()
+                .map_err(MlsError::from)
+                .map_err(CryptoError::from)
+        })?
     }
 
     pub fn join_by_external_commit(&self, group_state: Vec<u8>) -> CryptoResult<MlsConversationInitMessage> {
@@ -457,11 +461,14 @@ impl CoreCrypto<'_> {
         use core_crypto::prelude::tls_codec::Serialize as _;
 
         let group_state = VerifiablePublicGroupState::tls_deserialize(&mut &group_state[..]).map_err(MlsError::from)?;
-        let (group, message) = self
-            .0
-            .lock()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .join_by_external_commit(group_state)?;
+        let (group, message) = future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .join_by_external_commit(group_state),
+            ),
+        )?;
         Ok(MlsConversationInitMessage {
             message: message
                 .tls_serialize_detached()
@@ -479,10 +486,15 @@ impl CoreCrypto<'_> {
         conversation_id: ConversationId,
         configuration: ConversationConfiguration,
     ) -> CryptoResult<()> {
-        self.0
-            .lock()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .merge_pending_group_from_external_commit(&conversation_id, configuration.try_into()?)?;
+        future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .merge_pending_group_from_external_commit(&conversation_id, configuration.try_into()?),
+            ),
+        )?;
+
         Ok(())
     }
 }

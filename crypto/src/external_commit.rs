@@ -27,7 +27,7 @@ use crate::{
 };
 
 impl MlsCentral {
-    pub fn join_by_external_commit(
+    pub async fn join_by_external_commit(
         &self,
         group_state: VerifiablePublicGroupState,
     ) -> CryptoResult<(GroupId, MlsMessageOut)> {
@@ -40,6 +40,7 @@ impl MlsCentral {
             &[],
             credentials,
         )
+        .await
         .map_err(MlsError::from)
         .map_err(CryptoError::from)?;
         let mut buf = vec![];
@@ -47,24 +48,27 @@ impl MlsCentral {
         self.mls_backend
             .key_store()
             .mls_pending_groups_save(group.group_id().as_slice(), &buf)
+            .await
             .map_err(CryptoError::from)?;
         Ok((group.group_id().clone(), message))
     }
 
-    pub fn export_group_state(&self, group_id: &[u8]) -> CryptoResult<PublicGroupState> {
+    pub async fn export_group_state(&self, group_id: &[u8]) -> CryptoResult<PublicGroupState> {
         let state = self
             .mls_backend
             .key_store()
             .mls_groups_get(group_id)
+            .await
             .map_err(CryptoError::from)?;
         let group = MlsGroup::load(&mut &state[..])?;
         group
             .export_public_group_state(&self.mls_backend)
+            .await
             .map_err(MlsError::from)
             .map_err(CryptoError::from)
     }
 
-    pub fn merge_pending_group_from_external_commit(
+    pub async fn merge_pending_group_from_external_commit(
         &mut self,
         group_id: &[u8],
         configuration: MlsConversationConfiguration,
@@ -73,13 +77,15 @@ impl MlsCentral {
             .mls_backend
             .key_store()
             .mls_pending_groups_load(group_id)
+            .await
             .map_err(CryptoError::from)?;
         let mut mls_group = MlsGroup::load(&mut &buf[..])?;
         mls_group.merge_pending_commit().map_err(MlsError::from)?;
         self.mls_backend
             .key_store()
             .mls_pending_groups_delete(group_id)
+            .await
             .map_err(CryptoError::from)?;
-        MlsConversation::from_mls_group(mls_group, configuration, &self.mls_backend)
+        MlsConversation::from_mls_group(mls_group, configuration, &self.mls_backend).await
     }
 }

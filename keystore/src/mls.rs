@@ -18,7 +18,9 @@ use openmls_traits::key_store::{FromKeyStoreValue, ToKeyStoreValue};
 
 use crate::{
     connection::Connection,
-    entities::{MlsIdentity, MlsKeypackage, PersistedMlsGroup, PersistedMlsPendingGroup, StringEntityId},
+    entities::{
+        MlsIdentity, MlsIdentityExt, MlsKeypackage, PersistedMlsGroup, PersistedMlsPendingGroup, StringEntityId,
+    },
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -264,7 +266,7 @@ impl CryptoKeystoreMls for crate::connection::Connection {
         let group = self
             .find(group_id)
             .await?
-            .map(|group: PersistedMlsGroup| group.state)
+            .map(|group: PersistedMlsGroup| group.state.clone())
             .ok_or(CryptoKeystoreError::MissingKeyInStore(
                 MissingKeyErrorKind::MlsPendingGroup,
             ))?;
@@ -284,7 +286,7 @@ impl CryptoKeystoreMls for crate::connection::Connection {
         let group = self
             .find(group_id)
             .await?
-            .map(|r: PersistedMlsPendingGroup| r.state)
+            .map(|r: PersistedMlsPendingGroup| r.state.clone())
             .ok_or(CryptoKeystoreError::MissingKeyInStore(
                 MissingKeyErrorKind::MlsPendingGroup,
             ))?;
