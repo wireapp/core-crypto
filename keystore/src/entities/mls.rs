@@ -29,6 +29,13 @@ pub struct PersistedMlsGroup {
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+pub struct PersistedMlsPendingGroup {
+    pub id: Vec<u8>,
+    pub state: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
 pub struct MlsIdentity {
     pub id: String,
     pub signature: Vec<u8>,

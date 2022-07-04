@@ -37,4 +37,7 @@ CREATE TABLE proteus_prekeys (
     key BLOB
 );
 
-
+CREATE TABLE mls_pending_groups (
+    id BLOB,
+    state BLOB
+);

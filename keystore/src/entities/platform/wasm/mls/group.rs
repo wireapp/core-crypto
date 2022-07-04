@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::{PersistedMlsGroup, StringEntityId};
+use crate::entities::{PersistedMlsGroup, PersistedMlsPendingGroup, StringEntityId};
 use crate::{
     connection::KeystoreDatabaseConnection,
     entities::{Entity, EntityBase},
@@ -79,6 +79,58 @@ impl Entity for PersistedMlsGroup {
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
         self.state = Self::decrypt_data(cipher, self.state.as_slice(), self.aad())?;
+
+        Ok(())
+    }
+}
+
+impl EntityBase for PersistedMlsPendingGroup {
+    type ConnectionType = KeystoreDatabaseConnection;
+
+    fn to_missing_key_err_kind() -> MissingKeyErrorKind {
+        MissingKeyErrorKind::MlsGroup
+    }
+
+    fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
+        let storage = conn.storage_mut();
+
+        storage.insert("mls_pending_groups", &mut [self.clone()])?;
+
+        Ok(())
+    }
+
+    fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<Option<Self>> {
+        conn.storage().get("mls_pending_groups", id.as_bytes())
+    }
+
+    fn find_many(conn: &mut Self::ConnectionType, _ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        // Plot twist: we always select ALL the persisted groups. Unsure if we want to make it a real API with selection
+        conn.storage().get_all("mls_pending_groups")
+    }
+
+    fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
+        conn.storage().count("mls_pending_groups")
+    }
+
+    fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
+        let _ = conn.storage_mut().delete("mls_pending_groups", &[id.as_bytes()])?;
+        Ok(())
+    }
+}
+
+impl Entity for PersistedMlsPendingGroup {
+    fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
+        Ok(js_sys::Uint8Array::from(self.id.as_slice()).into())
+    }
+
+    fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
+        self.state = Self::encrypt_data(cipher, self.state.as_slice())?;
+
+        Ok(())
+    }
+
+    fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
+        self.state = Self::decrypt_data(cipher, self.state.as_slice())?;
 
         Ok(())
     }

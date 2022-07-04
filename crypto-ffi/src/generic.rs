@@ -69,6 +69,13 @@ pub struct MlsConversationReinitMessage {
     pub message: Vec<u8>,
 }
 
+#[cfg_attr(feature = "c-api", repr(C))]
+#[derive(Debug)]
+pub struct MlsConversationInitMessage {
+    pub group: Vec<u8>,
+    pub message: Vec<u8>,
+}
+
 impl Invitee {
     #[inline(always)]
     fn group_to_conversation_member(clients: Vec<Self>) -> CryptoResult<Vec<ConversationMember>> {
@@ -429,5 +436,53 @@ impl CoreCrypto<'_> {
         )?
         .to_bytes()
         .map_err(MlsError::from)?)
+    }
+
+    pub fn export_group_state(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
+        use core_crypto::prelude::tls_codec::Serialize as _;
+        self.0
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .export_group_state(&conversation_id)
+            .map(|state| {
+                state
+                    .tls_serialize_detached()
+                    .map_err(MlsError::from)
+                    .map_err(CryptoError::from)
+            })?
+    }
+
+    pub fn join_by_external_commit(&self, group_state: Vec<u8>) -> CryptoResult<MlsConversationInitMessage> {
+        use core_crypto::prelude::tls_codec::Deserialize as _;
+        use core_crypto::prelude::tls_codec::Serialize as _;
+
+        let group_state = VerifiablePublicGroupState::tls_deserialize(&mut &group_state[..]).map_err(MlsError::from)?;
+        let (group, message) = self
+            .0
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .join_by_external_commit(group_state)?;
+        Ok(MlsConversationInitMessage {
+            message: message
+                .tls_serialize_detached()
+                .map_err(MlsError::from)
+                .map_err(CryptoError::from)?,
+            group: group
+                .tls_serialize_detached()
+                .map_err(MlsError::from)
+                .map_err(CryptoError::from)?,
+        })
+    }
+
+    pub fn merge_pending_group_from_external_commit(
+        &self,
+        conversation_id: ConversationId,
+        configuration: ConversationConfiguration,
+    ) -> CryptoResult<()> {
+        self.0
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .merge_pending_group_from_external_commit(&conversation_id, configuration.try_into()?)?;
+        Ok(())
     }
 }

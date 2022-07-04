@@ -18,8 +18,8 @@ use openmls_traits::key_store::{FromKeyStoreValue, ToKeyStoreValue};
 
 use crate::{
     connection::Connection,
-    entities::{MlsIdentity, MlsIdentityExt, MlsKeypackage, PersistedMlsGroup, StringEntityId},
-    CryptoKeystoreError, CryptoKeystoreResult,
+    entities::{MlsIdentity, MlsKeypackage, PersistedMlsGroup, PersistedMlsPendingGroup, StringEntityId},
+    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 #[async_trait::async_trait(?Send)]
@@ -36,6 +36,10 @@ pub trait CryptoKeystoreMls: Sized {
     async fn mls_get_keypackage<V: FromKeyStoreValue>(&self) -> CryptoKeystoreResult<V>;
     async fn mls_group_persist(&self, group_id: &[u8], state: &[u8]) -> CryptoKeystoreResult<()>;
     async fn mls_groups_restore(&self) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, Vec<u8>>>;
+    async fn mls_groups_get(&self, group_id: &[u8]) -> CryptoKeystoreResult<Vec<u8>>;
+    async fn mls_pending_groups_save(&self, group_id: &[u8], mls_group: &[u8]) -> CryptoKeystoreResult<()>;
+    async fn mls_pending_groups_load(&self, group_id: &[u8]) -> CryptoKeystoreResult<Vec<u8>>;
+    async fn mls_pending_groups_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()>;
 }
 
 impl Connection {
@@ -254,6 +258,41 @@ impl CryptoKeystoreMls for crate::connection::Connection {
             .into_iter()
             .map(|group: PersistedMlsGroup| (group.id.clone(), group.state.clone()))
             .collect())
+    }
+
+    async fn mls_groups_get(&self, group_id: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
+        let group = self
+            .find(group_id)
+            .await?
+            .map(|group: PersistedMlsGroup| group.state)
+            .ok_or(CryptoKeystoreError::MissingKeyInStore(
+                MissingKeyErrorKind::MlsPendingGroup,
+            ))?;
+        Ok(group)
+    }
+
+    async fn mls_pending_groups_save(&self, group_id: &[u8], mls_group: &[u8]) -> CryptoKeystoreResult<()> {
+        self.save(PersistedMlsPendingGroup {
+            id: group_id.into(),
+            state: mls_group.into(),
+        })
+        .await?;
+        Ok(())
+    }
+
+    async fn mls_pending_groups_load(&self, group_id: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
+        let group = self
+            .find(group_id)
+            .await?
+            .map(|r: PersistedMlsPendingGroup| r.state)
+            .ok_or(CryptoKeystoreError::MissingKeyInStore(
+                MissingKeyErrorKind::MlsPendingGroup,
+            ))?;
+        Ok(group)
+    }
+
+    async fn mls_pending_groups_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()> {
+        self.remove::<PersistedMlsPendingGroup, &[u8]>(group_id).await
     }
 }
 

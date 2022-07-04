@@ -168,6 +168,13 @@ pub struct MlsConversationReinitMessage {
 }
 
 #[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct MlsConversationInitMessage {
+    pub group: Box<[u8]>,
+    pub message: Box<[u8]>,
+}
+
+#[wasm_bindgen]
 impl MlsConversationReinitMessage {
     #[wasm_bindgen(getter)]
     pub fn message(&self) -> Box<[u8]> {
@@ -735,8 +742,53 @@ impl CoreCrypto {
             .err_into(),
         )
     }
+
+    pub fn export_group_state(&self, conversation_id: Box<[u8]>) -> WasmCryptoResult<Box<[u8]>> {
+        use core_crypto::prelude::tls_codec::Serialize as _;
+        let state = self.0.export_group_state(conversation_id.as_slice());
+        Ok(state
+            .tls_serialize_detached()
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)?)
+    }
+
+    pub fn join_by_external_commit(&self, group_state: Box<[u8]>) -> WasmCryptoResult<MlsConversationInitMessage> {
+        use core_crypto::prelude::tls_codec::Deserialize as _;
+        use core_crypto::prelude::tls_codec::Serialize as _;
+
+        let state = group_state.to_vec();
+
+        let group_state = VerifiablePublicGroupState::tls_deserialize(&mut &state[..]).map_err(MlsError::from)?;
+        let (group, message) = self.0.join_by_external_commit(group_state)?;
+        Ok(MlsConversationInitMessage {
+            message: message
+                .tls_serialize_detached()
+                .map_err(MlsError::from)
+                .map_err(CryptoError::from)?,
+            group: group
+                .tls_serialize_detached()
+                .map_err(MlsError::from)
+                .map_err(CryptoError::from)?,
+        })
+    }
+
+    pub fn export_group_state(&self, group_id: &[u8]) -> CryptoResult<Box<[u8]>> {
+        todo!()
+    }
+
+    pub fn merge_pending_group_from_external_commit(
+        &self,
+        conversation_id: ConversationId,
+        configuration: ConversationConfiguration,
+    ) -> WasmCryptoResult<()> {
+        self.0
+            .merge_pending_group_from_external_commit(&conversation_id, configuration.try_into()?)?;
+        Ok(())
+    }
 }
 
+// TODO: write export group state with the ratchet tree in the extensions. check if the existing
+// method already sets the tree if not make it so in our API
 #[wasm_bindgen]
 pub fn version() -> String {
     crate::VERSION.into()
