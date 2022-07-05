@@ -35,7 +35,7 @@ rand = "0.8"
 tempfile = "3.3"
 wasm-bindgen-test = "0.3"
 rstest = "0.15"
-rstest_reuse = "0.3"
+rstest_reuse = "0.4"
 rcgen = { version = "0.9", features = ["x509-parser"] }
 async-std = { version = "1.12", features = ["attributes"] }
 futures-util = "0.3"
