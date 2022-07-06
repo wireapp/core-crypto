@@ -74,7 +74,7 @@ serde-wasm-bindgen = "0.4"
 # Async WASM stuff
 wasm-bindgen-futures = "0.4"
 # Crypto stuff
-aes-gcm = "0.10.0-pre"
+aes-gcm = "=0.10.0-pre.1"
 rand = { version = "0.8", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
 sha2 = "0.10"
@@ -87,8 +87,8 @@ rand = { version = "0.8", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
 openmls = { version = "0.4", default-features = false, features = ["crypto-subtle"] }
 openmls_rust_crypto_provider = { version = "0.1", package = "openmls_rust_crypto", features = ["provider", "single-threaded"] }
-
-[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+rstest = "0.15"
+rstest_reuse = "0.4"
 async-std = { version = "1.12", features = ["attributes"] }
 
 [package.metadata.wasm-pack.profile.release]

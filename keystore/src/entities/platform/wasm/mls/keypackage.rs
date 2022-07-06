@@ -16,7 +16,7 @@
 
 use crate::entities::{MlsKeypackage, StringEntityId};
 use crate::{
-    connection::KeystoreDatabaseConnection,
+    connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase},
 };
 use crate::{CryptoKeystoreResult, MissingKeyErrorKind};
@@ -54,12 +54,13 @@ impl EntityBase for MlsKeypackage {
 }
 
 impl Entity for MlsKeypackage {
-    fn aad(&self) -> &[u8] {
+    fn id_raw(&self) -> &[u8] {
         self.id.as_bytes()
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
         self.key = Self::encrypt_data(cipher, self.key.as_slice(), self.aad())?;
+        Self::ConnectionType::check_buffer_size(self.key.len())?;
 
         Ok(())
     }

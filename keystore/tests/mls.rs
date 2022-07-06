@@ -14,19 +14,50 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+pub use rstest::*;
+pub use rstest_reuse::{self, *};
+
 mod common;
 
-#[cfg(test)]
-mod test_implementation {
+pub mod tests {
     use crate::common::*;
-    use core_crypto_keystore::entities::{MlsIdentity, MlsIdentityExt, MlsKeypackage};
-    use core_crypto_keystore::Connection;
-    use openmls::prelude::TlsSerializeTrait;
-    use openmls_traits::key_store::{FromKeyStoreValue, ToKeyStoreValue};
+    use wasm_bindgen_test::*;
 
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    use core_crypto_keystore::entities::{
+        EntityBase, MlsIdentity, MlsIdentityExt as _, MlsKeypackage, PersistedMlsGroup,
+    };
+    use core_crypto_keystore::{Connection, MissingKeyErrorKind};
+    use openmls::prelude::TlsSerializeTrait as _;
+    use openmls_traits::key_store::{FromKeyStoreValue as _, ToKeyStoreValue as _};
+
+    #[test]
+    #[wasm_bindgen_test]
+    fn mls_entities_have_correct_error_kinds() {
+        assert_eq!(
+            MlsIdentity::to_missing_key_err_kind(),
+            MissingKeyErrorKind::MlsIdentityBundle
+        );
+
+        assert_eq!(
+            MlsKeypackage::to_missing_key_err_kind(),
+            MissingKeyErrorKind::MlsKeyPackageBundle
+        );
+
+        assert_eq!(
+            PersistedMlsGroup::to_missing_key_err_kind(),
+            MissingKeyErrorKind::MlsGroup
+        );
+    }
+
+    #[apply(all_storage_types)]
+    #[wasm_bindgen_test]
     pub async fn can_add_read_delete_credential_bundle_keystore(store: Connection) {
         use openmls::{credentials::CredentialBundle, prelude::Ciphersuite};
         use openmls_rust_crypto_provider::OpenMlsRustCrypto;
+
+        let store = store.await;
 
         let backend = OpenMlsRustCrypto::default();
         let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
@@ -76,9 +107,13 @@ mod test_implementation {
         teardown(store).await;
     }
 
+    #[apply(all_storage_types)]
+    #[wasm_bindgen_test]
     pub async fn can_add_read_delete_credential_bundle_openmls_traits(store: Connection) {
         use openmls::{credentials::CredentialBundle, prelude::Ciphersuite};
         use openmls_rust_crypto_provider::OpenMlsRustCrypto;
+
+        let store = store.await;
 
         let backend = OpenMlsRustCrypto::default();
         let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
@@ -115,6 +150,8 @@ mod test_implementation {
         teardown(store).await;
     }
 
+    #[apply(all_storage_types)]
+    #[wasm_bindgen_test]
     pub async fn can_add_read_delete_keypackage_bundle_openmls_traits(store: Connection) {
         use openmls::{
             credentials::CredentialBundle,
@@ -123,6 +160,8 @@ mod test_implementation {
             prelude::Ciphersuite,
         };
         use openmls_rust_crypto_provider::OpenMlsRustCrypto;
+
+        let store = store.await;
 
         let backend = OpenMlsRustCrypto::default();
         let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
@@ -157,6 +196,8 @@ mod test_implementation {
         teardown(store).await;
     }
 
+    #[apply(all_storage_types)]
+    #[wasm_bindgen_test]
     pub async fn can_add_read_delete_keypackage_bundle_keystore(store: Connection) {
         use openmls::{
             credentials::CredentialBundle,
@@ -165,6 +206,8 @@ mod test_implementation {
             prelude::Ciphersuite,
         };
         use openmls_rust_crypto_provider::OpenMlsRustCrypto;
+
+        let store = store.await;
 
         let backend = OpenMlsRustCrypto::default();
         let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
@@ -206,77 +249,5 @@ mod test_implementation {
         store.remove::<MlsKeypackage, _>(key_string.as_bytes()).await.unwrap();
 
         teardown(store).await;
-    }
-}
-
-#[cfg(test)]
-pub mod persisted {
-    use crate::{common::*, test_implementation};
-
-    use wasm_bindgen_test::*;
-    wasm_bindgen_test_configure!(run_in_browser);
-
-    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
-    #[wasm_bindgen_test]
-    pub async fn can_add_read_delete_credential_bundle_keystore() {
-        let store = setup("mls-credentialbundle-keystore").await;
-        super::test_implementation::can_add_read_delete_credential_bundle_keystore(store).await;
-    }
-
-    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
-    #[wasm_bindgen_test]
-    pub async fn can_add_read_delete_credential_bundle_openmls_traits() {
-        let store = setup("mls-credentialbundle-traits").await;
-        test_implementation::can_add_read_delete_credential_bundle_openmls_traits(store).await;
-    }
-
-    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
-    #[wasm_bindgen_test]
-    pub async fn can_add_read_delete_keypackage_bundle_openmls_traits() {
-        let store = setup("mls-keypackagebundle-traits").await;
-        test_implementation::can_add_read_delete_keypackage_bundle_openmls_traits(store).await;
-    }
-
-    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
-    #[wasm_bindgen_test]
-    pub async fn can_add_read_delete_keypackage_bundle_keystore() {
-        let store = setup("mls-keypackagebundle-keystore").await;
-        test_implementation::can_add_read_delete_keypackage_bundle_keystore(store).await;
-    }
-}
-
-#[cfg(test)]
-pub mod in_memory {
-    use crate::{common::*, test_implementation};
-
-    use wasm_bindgen_test::*;
-    wasm_bindgen_test_configure!(run_in_browser);
-
-    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
-    #[wasm_bindgen_test]
-    pub async fn can_add_read_delete_credential_bundle_keystore() {
-        let store = setup_in_memory("mls-credentialbundle-keystore").await;
-        super::test_implementation::can_add_read_delete_credential_bundle_keystore(store).await;
-    }
-
-    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
-    #[wasm_bindgen_test]
-    pub async fn can_add_read_delete_credential_bundle_openmls_traits() {
-        let store = setup_in_memory("mls-credentialbundle-traits").await;
-        test_implementation::can_add_read_delete_credential_bundle_openmls_traits(store).await;
-    }
-
-    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
-    #[wasm_bindgen_test]
-    pub async fn can_add_read_delete_keypackage_bundle_openmls_traits() {
-        let store = setup_in_memory("mls-keypackagebundle-traits").await;
-        test_implementation::can_add_read_delete_keypackage_bundle_openmls_traits(store).await;
-    }
-
-    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
-    #[wasm_bindgen_test]
-    pub async fn can_add_read_delete_keypackage_bundle_keystore() {
-        let store = setup_in_memory("mls-keypackagebundle-keystore").await;
-        test_implementation::can_add_read_delete_keypackage_bundle_keystore(store).await;
     }
 }

@@ -16,7 +16,7 @@
 
 use crate::entities::{ProteusPrekey, StringEntityId};
 use crate::{
-    connection::KeystoreDatabaseConnection,
+    connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
@@ -30,11 +30,7 @@ impl EntityBase for ProteusPrekey {
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        conn.lock()
-            .await
-            .storage_mut()
-            .save("proteus_prekeys", &mut [self.clone()])
-            .await?;
+        conn.storage_mut().save("proteus_prekeys", &mut [self.clone()]).await?;
 
         Ok(())
     }
@@ -43,33 +39,26 @@ impl EntityBase for ProteusPrekey {
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        conn.lock().await.storage().get("proteus_prekeys", id.as_bytes()).await
+        conn.storage().get("proteus_prekeys", id.as_bytes()).await
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        conn.lock().await.storage().count("proteus_prekeys").await
+        conn.storage().count("proteus_prekeys").await
     }
 
     async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
-        conn.lock()
-            .await
-            .storage_mut()
-            .delete("proteus_prekeys", &[id.as_bytes()])
-            .await
+        conn.storage_mut().delete("proteus_prekeys", &[id.as_bytes()]).await
     }
 }
 
 impl Entity for ProteusPrekey {
-    // fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
-    //     Ok(js_sys::Number::from(&self.id).into())
-    // }
-
-    fn aad(&self) -> &[u8] {
+    fn id_raw(&self) -> &[u8] {
         self.id.to_le_bytes().as_slice()
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
         self.prekey = Self::encrypt_data(cipher, self.prekey.as_slice(), self.aad())?;
+        Self::ConnectionType::check_buffer_size(self.prekey.len())?;
 
         Ok(())
     }

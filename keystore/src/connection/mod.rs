@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-mod platform {
+pub mod platform {
     cfg_if::cfg_if! {
         if #[cfg(target_family = "wasm")] {
             mod wasm;
@@ -30,13 +30,21 @@ mod platform {
 pub use self::platform::*;
 use crate::entities::{Entity, StringEntityId};
 
-use crate::CryptoKeystoreResult;
+use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use async_lock::{Mutex, MutexGuard};
 use async_trait::async_trait;
 use std::sync::Arc;
 
 #[cfg(feature = "memory-cache")]
 const LRU_CACHE_CAP: usize = 100;
+
+/// Limit on the length of a blob to be stored in the database.
+/// This limit applies to both SQLCipher-backed stores and WASM.
+/// This limit is conservative on purpose when targeting WASM, as the lower bound that exists is Safari with a limit of 1GB per origin.
+///
+/// See: [SQLite limits](https://www.sqlite.org/limits.html)
+/// See: [IndexedDB limits](https://stackoverflow.com/a/63019999/1934177)
+pub const MAX_BLOB_LEN: usize = 1_000_000_000;
 
 #[async_trait(?Send)]
 pub trait DatabaseConnection: Sized {
@@ -49,6 +57,19 @@ pub trait DatabaseConnection: Sized {
     /// Default implementation of wipe
     async fn wipe(self) -> CryptoKeystoreResult<()> {
         self.close().await
+    }
+
+    fn check_buffer_size(size: usize) -> CryptoKeystoreResult<()> {
+        #[cfg(not(target_family = "wasm"))]
+        if size > i32::MAX as usize {
+            return Err(CryptoKeystoreError::BlobTooBig);
+        }
+
+        if size >= MAX_BLOB_LEN {
+            return Err(CryptoKeystoreError::BlobTooBig);
+        }
+
+        Ok(())
     }
 }
 

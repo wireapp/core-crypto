@@ -16,7 +16,7 @@
 
 use crate::entities::{MlsIdentity, MlsIdentityExt, StringEntityId};
 use crate::{
-    connection::KeystoreDatabaseConnection,
+    connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase},
 };
 use crate::{CryptoKeystoreResult, MissingKeyErrorKind};
@@ -43,12 +43,13 @@ impl EntityBase for MlsIdentity {
         conn.storage().get("mls_identities", id.as_bytes()).await
     }
 
-    async fn find_many(
-        _conn: &mut Self::ConnectionType,
-        _ids: &[StringEntityId],
-    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        unimplemented!("There is only one identity within a keystore, so this won't be implemented")
-    }
+    // async fn find_many(
+    //     conn: &mut Self::ConnectionType,
+    //     ids: &[StringEntityId],
+    // ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+    //     conn.storage().get_many("mls_identities", ids).await
+    //     // unimplemented!("There is only one identity within a keystore, so this won't be implemented")
+    // }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         conn.storage().count("mls_identities").await
@@ -66,13 +67,15 @@ impl EntityBase for MlsIdentity {
 }
 
 impl Entity for MlsIdentity {
-    fn aad(&self) -> &[u8] {
+    fn id_raw(&self) -> &[u8] {
         self.id.as_bytes()
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
         self.signature = Self::encrypt_data(cipher, self.signature.as_slice(), self.aad())?;
         self.credential = Self::encrypt_data(cipher, self.credential.as_slice(), self.aad())?;
+        Self::ConnectionType::check_buffer_size(self.signature.len())?;
+        Self::ConnectionType::check_buffer_size(self.credential.len())?;
 
         Ok(())
     }
