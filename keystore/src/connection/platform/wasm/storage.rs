@@ -63,7 +63,7 @@ impl WasmEncryptedStorage {
             hasher.finalize()
         };
 
-        use aes_gcm::NewAead as _;
+        use aes_gcm::KeyInit as _;
 
         let cipher = aes_gcm::Aes256Gcm::new(&hashed_key);
         Self { cipher, storage }
