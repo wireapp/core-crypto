@@ -1,5 +1,5 @@
 [workspace]
-members = ["crypto", "crypto-ffi", "keystore", "mls-provider", "cli"]
+members = ["crypto", "crypto-ffi", "keystore", "mls-provider"]
 exclude = ["extras/anycrypto", "extras/core-ds"]
 resolver = "2"
 

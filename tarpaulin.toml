@@ -4,7 +4,6 @@ ignore-tests = true
 run-types = ["Tests"]
 exclude-files = [
     "extras/*",
-    "cli/*",
     # TODO: Un-exclude those when WASM support is added to tarpaulin
     "crypto-ffi/src/wasm.rs",
     "keystore/src/connection/platform/wasm/*",
