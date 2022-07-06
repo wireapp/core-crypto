@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::connection::DatabaseConnection;
 use crate::entities::MlsIdentity;
 use crate::entities::MlsIdentityExt;
 use crate::entities::StringEntityId;
@@ -24,7 +25,11 @@ use crate::{
     CryptoKeystoreError, MissingKeyErrorKind,
 };
 
-impl Entity for MlsIdentity {}
+impl Entity for MlsIdentity {
+    fn id_raw(&self) -> &[u8] {
+        self.id.as_bytes()
+    }
+}
 
 #[async_trait::async_trait(?Send)]
 impl EntityBase for MlsIdentity {
@@ -35,20 +40,44 @@ impl EntityBase for MlsIdentity {
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
+        use rusqlite::OptionalExtension as _;
+
         let signature = &self.signature;
         let credential = &self.credential;
+
+        Self::ConnectionType::check_buffer_size(signature.len())?;
+        Self::ConnectionType::check_buffer_size(credential.len())?;
+
         let zb_sig = rusqlite::blob::ZeroBlob(signature.len() as i32);
         let zb_cred = rusqlite::blob::ZeroBlob(credential.len() as i32);
 
         let transaction = conn.transaction()?;
-        use rusqlite::ToSql as _;
-        let params: [rusqlite::types::ToSqlOutput; 3] = [self.id.to_sql()?, zb_sig.to_sql()?, zb_cred.to_sql()?];
+        let mut existing_rowid = transaction
+            .query_row("SELECT rowid FROM mls_identities WHERE id = ?", [&self.id], |r| {
+                r.get::<_, i64>(0)
+            })
+            .optional()?;
 
-        transaction.execute(
-            "INSERT INTO mls_identities (id, signature, credential) VALUES (?, ?, ?)",
-            params,
-        )?;
-        let row_id = transaction.last_insert_rowid();
+        let row_id = if let Some(rowid) = existing_rowid.take() {
+            let sig_zb = rusqlite::blob::ZeroBlob(self.signature.len() as i32);
+            let cred_zb = rusqlite::blob::ZeroBlob(self.credential.len() as i32);
+
+            use rusqlite::ToSql as _;
+            transaction.execute(
+                "UPDATE mls_identities SET signature = ?, credential = ? WHERE id = ?",
+                [&sig_zb.to_sql()?, &cred_zb.to_sql()?, &self.id.to_sql()?],
+            )?;
+            rowid
+        } else {
+            use rusqlite::ToSql as _;
+            let params: [rusqlite::types::ToSqlOutput; 3] = [self.id.to_sql()?, zb_sig.to_sql()?, zb_cred.to_sql()?];
+
+            transaction.execute(
+                "INSERT INTO mls_identities (id, signature, credential) VALUES (?, ?, ?)",
+                params,
+            )?;
+            transaction.last_insert_rowid()
+        };
 
         let mut blob = transaction.blob_open(
             rusqlite::DatabaseName::Main,
@@ -96,7 +125,7 @@ impl EntityBase for MlsIdentity {
                 transaction.blob_open(rusqlite::DatabaseName::Main, "mls_identities", "signature", rowid, true)?;
 
             use std::io::Read as _;
-            let mut signature = vec![];
+            let mut signature = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut signature)?;
             blob.close()?;
 
@@ -108,7 +137,7 @@ impl EntityBase for MlsIdentity {
                 true,
             )?;
 
-            let mut credential = vec![];
+            let mut credential = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut credential)?;
             blob.close()?;
 
@@ -122,12 +151,14 @@ impl EntityBase for MlsIdentity {
         }
     }
 
-    async fn find_many(
-        _conn: &mut Self::ConnectionType,
-        _ids: &[StringEntityId],
-    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        unimplemented!("There is only one identity within a keystore, so this won't be implemented")
-    }
+    // async fn find_many(
+    //     conn: &mut Self::ConnectionType,
+    //     ids: &[StringEntityId],
+    // ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+    //     let mut stmt = conn.prepare_cached("SELECT id FROM mls_identities ORDER BY rowid")?;
+
+    //     unimplemented!("There is only one identity within a keystore, so this won't be implemented")
+    // }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         Ok(conn.query_row("SELECT COUNT(*) FROM mls_identities", [], |r| r.get(0))?)
@@ -166,7 +197,7 @@ impl MlsIdentityExt for MlsIdentity {
                 transaction.blob_open(rusqlite::DatabaseName::Main, "mls_identities", "signature", rowid, true)?;
 
             use std::io::Read as _;
-            let mut signature = vec![];
+            let mut signature = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut signature)?;
             blob.close()?;
 
@@ -178,7 +209,7 @@ impl MlsIdentityExt for MlsIdentity {
                 true,
             )?;
 
-            let mut credential = vec![];
+            let mut credential = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut credential)?;
             blob.close()?;
 

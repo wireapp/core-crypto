@@ -14,13 +14,34 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+pub use rstest::*;
+pub use rstest_reuse::{self, *};
+
 mod common;
 
 #[cfg(feature = "proteus-keystore")]
-mod test_implementation {
+mod tests {
     use crate::common::*;
-    use core_crypto_keystore::Connection;
+    use core_crypto_keystore::{
+        entities::{EntityBase, ProteusPrekey},
+        Connection,
+    };
+    use proteus::keys::{PreKey, PreKeyId};
+    use wasm_bindgen_test::*;
 
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    #[test]
+    #[wasm_bindgen_test]
+    fn proteus_entities_have_correct_error_kinds() {
+        assert_eq!(
+            ProteusPrekey::to_missing_key_err_kind(),
+            MissingKeyErrorKind::ProteusPrekey
+        );
+    }
+
+    #[apply(all_storage_types)]
+    #[wasm_bindgen_test]
     pub async fn can_add_read_delete_prekey_traits(store: Connection) {
         use core_crypto_keystore::CryptoKeystoreProteus as _;
 
@@ -34,37 +55,5 @@ mod test_implementation {
 
         let _ = proteus::session::PreKeyStore::remove(&mut store, prekey.key_id).unwrap();
         teardown(store);
-    }
-}
-
-#[cfg(all(test, feature = "proteus-keystore"))]
-pub mod persisted {
-    use crate::common::*;
-    use proteus::keys::{PreKey, PreKeyId};
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
-
-    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
-    #[wasm_bindgen_test]
-    pub fn can_add_read_delete_prekey() {
-        use core_crypto_keystore::CryptoKeystoreProteus as _;
-        let mut store = setup("proteus").await;
-        test_implementation::can_add_read_delete_prekey_traits(store).await;
-    }
-}
-
-#[cfg(all(test, feature = "proteus-keystore"))]
-pub mod in_memory {
-    use crate::common::*;
-    use proteus::keys::{PreKey, PreKeyId};
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
-    #[cfg_attr(not(target_family = "wasm"), async_std::test)]
-    #[wasm_bindgen_test]
-    pub fn can_add_read_delete_prekey() {
-        let mut store = setup_in_memory("proteus").await;
-        test_implementation::can_add_read_delete_prekey_traits(store).await;
     }
 }

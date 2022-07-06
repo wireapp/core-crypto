@@ -17,7 +17,7 @@
 mod error;
 pub use error::*;
 
-mod connection;
+pub mod connection;
 pub mod entities;
 
 cfg_if::cfg_if! {

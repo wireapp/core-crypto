@@ -21,7 +21,11 @@ use crate::{
     MissingKeyErrorKind,
 };
 
-impl Entity for ProteusPrekey {}
+impl Entity for ProteusPrekey {
+    fn id_raw(&self) -> &[u8] {
+        self.id.to_le_bytes().as_slice()
+    }
+}
 
 #[async_trait::async_trait(?Send)]
 impl EntityBase for ProteusPrekey {
@@ -55,8 +59,9 @@ impl EntityBase for ProteusPrekey {
             )?;
 
             use std::io::Read as _;
-            let mut buf = vec![];
+            let mut buf = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut buf)?;
+            blob.close()?;
 
             Ok(Some(Self { id, prekey: buf }))
         } else {
