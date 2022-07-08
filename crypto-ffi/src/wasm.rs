@@ -823,8 +823,6 @@ impl CoreCrypto {
     }
 }
 
-// TODO: write export group state with the ratchet tree in the extensions. check if the existing
-// method already sets the tree if not make it so in our API
 #[wasm_bindgen]
 pub fn version() -> String {
     crate::VERSION.into()
