@@ -387,7 +387,6 @@ pub mod tests {
         member::ConversationMember,
         prelude::MlsConversationCreationMessage,
         test_fixture_utils::*,
-        CryptoResult,
     };
     use mls_crypto_provider::MlsCryptoProvider;
     use openmls::prelude::KeyPackage;

@@ -94,20 +94,20 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-mod external_join_tests {
+mod tests {
     use mls_crypto_provider::MlsCryptoProvider;
 
-    use crate::{credential::CredentialSupplier, member::ConversationMember, MlsCentral};
+    use crate::{credential::CredentialSupplier, member::ConversationMember};
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
-    pub mod external {
+    pub mod external_join {
         use super::*;
         use crate::{
             credential::{CertificateBundle, CredentialSupplier},
             test_fixture_utils::*,
             test_utils::run_test_with_central,
-            CryptoError, *,
+            MlsConversation, MlsConversationConfiguration,
         };
         use openmls::prelude::*;
         use wasm_bindgen_test::wasm_bindgen_test;
