@@ -436,21 +436,14 @@ impl CoreCrypto<'_> {
     }
 
     pub fn export_group_state(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
-        use core_crypto::prelude::tls_codec::Serialize as _;
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .export_group_state(&conversation_id),
+                    .export_public_group_state(&conversation_id),
             ),
         )
-        .map(|state| {
-            state
-                .tls_serialize_detached()
-                .map_err(MlsError::from)
-                .map_err(CryptoError::from)
-        })?
     }
 
     pub fn join_by_external_commit(&self, group_state: Vec<u8>) -> CryptoResult<MlsConversationInitMessage> {

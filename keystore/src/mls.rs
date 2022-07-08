@@ -71,10 +71,7 @@ impl Connection {
 impl CryptoKeystoreMls for crate::connection::Connection {
     // TODO: Review zero on drop behavior here
     async fn mls_load_identity_signature(&self, id: &str) -> CryptoKeystoreResult<Option<Vec<u8>>> {
-        Ok(self
-            .find(id.as_bytes())
-            .await?
-            .map(|id: MlsIdentity| id.signature.clone()))
+        Ok(self.find(id.as_bytes()).await?.map(|id: MlsIdentity| id.signature))
     }
 
     async fn mls_save_identity_signature(

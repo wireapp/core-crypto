@@ -17,7 +17,7 @@
 use core_crypto_keystore::CryptoKeystoreMls;
 use openmls::{
     group::{GroupId, MlsGroup},
-    prelude::{MlsMessageOut, PublicGroupState, VerifiablePublicGroupState},
+    prelude::{MlsMessageOut, VerifiablePublicGroupState},
 };
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -52,21 +52,6 @@ impl MlsCentral {
             .await
             .map_err(CryptoError::from)?;
         Ok((group.group_id().clone(), message))
-    }
-
-    pub async fn export_group_state(&self, group_id: &[u8]) -> CryptoResult<PublicGroupState> {
-        let state = self
-            .mls_backend
-            .key_store()
-            .mls_groups_get(group_id)
-            .await
-            .map_err(CryptoError::from)?;
-        let group = MlsGroup::load(&mut &state[..])?;
-        group
-            .export_public_group_state(&self.mls_backend)
-            .await
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)
     }
 
     pub async fn merge_pending_group_from_external_commit(
@@ -117,7 +102,7 @@ mod tests {
         pub async fn test_join_by_external_commit(credential: CredentialSupplier) {
             run_test_with_central(credential, move |mut central| {
                 Box::pin(async move {
-                    central.mls_groups.clear();
+                    let central = &mut central[0];
                     let conversation_id = b"conversation".to_vec();
                     let (alice_backend, mut alice) = person("alice", credential).await;
 
@@ -152,8 +137,6 @@ mod tests {
                         .unwrap();
                     assert_eq!(alice_group.members().unwrap().len(), 2);
 
-                    assert_eq!(central.mls_groups.len(), 0);
-
                     // we merge the commit and update the local state
                     central
                         .merge_pending_group_from_external_commit(
@@ -162,9 +145,8 @@ mod tests {
                         )
                         .await
                         .unwrap();
-                    assert_eq!(central.mls_groups.len(), 1);
 
-                    assert_eq!(central.mls_groups[&conversation_id].members().unwrap().len(), 2);
+                    assert_eq!(central.group(&conversation_id).unwrap().members().unwrap().len(), 2);
                 })
             })
             .await
@@ -175,7 +157,7 @@ mod tests {
         pub async fn test_join_by_external_commit_bad_epoch(credential: CredentialSupplier) {
             run_test_with_central(credential, move |mut central| {
                 Box::pin(async move {
-                    central.mls_groups.clear();
+                    let central = &mut central[0];
                     let conversation_id = b"conversation".to_vec();
                     let (alice_backend, mut alice) = person("alice", credential).await;
                     let (_, bob) = person("bob", credential).await;
@@ -216,8 +198,6 @@ mod tests {
                         .unwrap_err();
                     assert_eq!(alice_group.members().unwrap().len(), 2);
 
-                    assert_eq!(central.mls_groups.len(), 0);
-
                     // lets try again
                     // re-export alice's group
                     let state = alice_group
@@ -247,9 +227,8 @@ mod tests {
                         )
                         .await
                         .unwrap();
-                    assert_eq!(central.mls_groups.len(), 1);
 
-                    assert_eq!(central.mls_groups[&conversation_id].members().unwrap().len(), 3);
+                    assert_eq!(central.group(&conversation_id).unwrap().members().unwrap().len(), 3);
                 })
             })
             .await
