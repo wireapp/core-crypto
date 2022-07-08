@@ -33,6 +33,58 @@ test("init", async () => {
   await ctx.close();
 });
 
+test("external entropy", async () => {
+  const [ctx, page] = await initBrowser();
+
+  // Test vectors 1 and 2 from
+  // https://tools.ietf.org/html/draft-nir-cfrg-chacha20-poly1305-04
+  const vector1 = Uint32Array.from([
+    0xade0b876, 0x903df1a0, 0xe56a5d40, 0x28bd8653,
+    0xb819d2bd, 0x1aed8da0, 0xccef36a8, 0xc70d778b,
+    0x7c5941da, 0x8d485751, 0x3fe02477, 0x374ad8b8,
+    0xf4b8436a, 0x1ca11815, 0x69b687c3, 0x8665eeb2,
+  ]);
+  const vector2 = Uint32Array.from([
+    0xbee7079f, 0x7a385155, 0x7c97ba98, 0x0d082d73,
+    0xa0290fcb, 0x6965e348, 0x3e53c612, 0xed7aee32,
+    0x7621b729, 0x434ee69c, 0xb03371d5, 0xd539d874,
+    0x281fed31, 0x45fb0a51, 0x1f0ae1ac, 0x6f4d794b,
+  ]);
+
+  let [produced1, produced2] = await page.evaluate(async (expected1Length, expected2Length) => {
+    const { CoreCrypto } = await import("./corecrypto.js");
+
+    // Null byte seed
+    const seed = new Uint8Array(32);
+
+    const cc = await CoreCrypto.init({
+      databaseName: "test init",
+      key: "test",
+      clientId: "test",
+      entropySeed: seed,
+    });
+
+    // Reset it because the `init` method performed some RNG calls and made it "dirty"
+    await cc.reseedRng(seed);
+
+    const produced1 = await cc.randomBytes(expected1Length);
+    const produced2 = await cc.randomBytes(expected2Length);
+    return [produced1, produced2];
+  }, vector1.length * vector1.BYTES_PER_ELEMENT, vector2.length * vector2.BYTES_PER_ELEMENT);
+
+  produced1 = Uint8Array.from(Object.values(produced1));
+  produced2 = Uint8Array.from(Object.values(produced2));
+  // Use a DataView to solve endianness issues
+  const produced1AsU32Array = new Uint32Array(produced1.buffer);
+  const produced2AsU32Array = new Uint32Array(produced2.buffer);
+
+  expect(produced1AsU32Array).toStrictEqual(vector1);
+  expect(produced2AsU32Array).toStrictEqual(vector2);
+
+  await page.close();
+  await ctx.close();
+});
+
 test("get client public key", async () => {
   const [ctx, page] = await initBrowser();
 
@@ -45,7 +97,7 @@ test("get client public key", async () => {
       clientId: "test",
     });
 
-    const len = cc.clientPublicKey().length;
+    const len = (await cc.clientPublicKey()).length;
     await cc.wipe();
     return len;
   });

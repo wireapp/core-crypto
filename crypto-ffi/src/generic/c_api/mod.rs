@@ -206,12 +206,22 @@ pub unsafe extern "C" fn cc_init_with_path_and_key(
     path: *const c_char,
     key: *const c_char,
     client_id: *const c_char,
+    entropy_seed: *const u8,
 ) -> CoreCryptoPtrMut<'static> {
     let path = CStr::from_ptr(path).to_string_lossy();
     let key = CStr::from_ptr(key).to_string_lossy();
     let client_id = CStr::from_ptr(client_id).to_string_lossy();
+    let entropy_seed = if entropy_seed.is_null() {
+        None
+    } else {
+        let expected_seed_len = std::mem::size_of::<EntropySeed>() / std::mem::size_of::<u8>();
+        Some(unsafe { std::slice::from_raw_parts(entropy_seed, expected_seed_len) })
+    };
 
-    let cc = try_ffi!(CoreCrypto::new(&path, &key, &client_id), std::ptr::null_mut());
+    let cc = try_ffi!(
+        CoreCrypto::new(&path, &key, &client_id, entropy_seed),
+        std::ptr::null_mut()
+    );
     Box::into_raw(Box::new(cc))
 }
 

@@ -23,8 +23,14 @@ pub fn init_with_path_and_key<'a, 'b>(
     path: &'a str,
     key: &'a str,
     client_id: &'a str,
+    entropy_seed: Option<Vec<u8>>,
 ) -> CryptoResult<std::sync::Arc<crate::CoreCrypto<'b>>> {
-    Ok(std::sync::Arc::new(crate::CoreCrypto::new(path, key, client_id)?))
+    Ok(std::sync::Arc::new(crate::CoreCrypto::new(
+        path,
+        key,
+        client_id,
+        entropy_seed,
+    )?))
 }
 
 pub fn version() -> String {

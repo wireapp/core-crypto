@@ -86,7 +86,8 @@ uuid = { version = "1.0", features = ["v4", "js"] }
 rand = { version = "0.8", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
 openmls = { version = "0.4", default-features = false, features = ["crypto-subtle"] }
-openmls_rust_crypto_provider = { version = "0.1", package = "openmls_rust_crypto", features = ["provider", "single-threaded"] }
+# openmls_rust_crypto_provider = { version = "0.1", package = "openmls_rust_crypto", features = ["provider", "single-threaded"] }
+mls-crypto-provider = { path = "../mls-provider" }
 rstest = "0.15"
 rstest_reuse = "0.4"
 async-std = { version = "1.12", features = ["attributes"] }

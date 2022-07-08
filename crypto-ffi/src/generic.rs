@@ -147,8 +147,18 @@ pub struct CoreCrypto<'a> {
 
 #[allow(dead_code, unused_variables)]
 impl CoreCrypto<'_> {
-    pub fn new<'s>(path: &'s str, key: &'s str, client_id: &'s str) -> CryptoResult<Self> {
-        let configuration = MlsCentralConfiguration::try_new(path.into(), key.into(), client_id.into())?;
+    pub fn new<'s>(
+        path: &'s str,
+        key: &'s str,
+        client_id: &'s str,
+        entropy_seed: Option<Vec<u8>>,
+    ) -> CryptoResult<Self> {
+        let mut configuration = MlsCentralConfiguration::try_new(path.into(), key.into(), client_id.into())?;
+
+        if let Some(seed) = entropy_seed {
+            let owned_seed = EntropySeed::try_from_slice(&seed[..EntropySeed::EXPECTED_LEN])?;
+            configuration.set_entropy(owned_seed);
+        }
 
         let executor = async_executor::Executor::new();
 
@@ -484,6 +494,24 @@ impl CoreCrypto<'_> {
                     .merge_pending_group_from_external_commit(&conversation_id, configuration.try_into()?),
             ),
         )?;
+
+        Ok(())
+    }
+
+    pub fn random_bytes(&self, len: usize) -> CryptoResult<Vec<u8>> {
+        self.central
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .random_bytes(len)
+    }
+
+    pub fn reseed_rng(&self, seed: Vec<u8>) -> CryptoResult<()> {
+        let seed = EntropySeed::try_from_slice(&seed)?;
+        self.central
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .provider_mut()
+            .reseed(Some(seed));
 
         Ok(())
     }

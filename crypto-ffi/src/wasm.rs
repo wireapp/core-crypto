@@ -359,21 +359,31 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
 #[derive(Debug)]
 #[wasm_bindgen]
 #[repr(transparent)]
-pub struct CoreCrypto(std::rc::Rc<std::cell::RefCell<MlsCentral>>);
+pub struct CoreCrypto(std::sync::Arc<async_lock::RwLock<MlsCentral>>);
 
 #[wasm_bindgen]
 impl CoreCrypto {
-    pub async fn _internal_new(path: String, key: String, client_id: String) -> WasmCryptoResult<CoreCrypto> {
-        let configuration = MlsCentralConfiguration::try_new(path, key, client_id)?;
+    pub async fn _internal_new(
+        path: String,
+        key: String,
+        client_id: String,
+        entropy_seed: Option<Box<[u8]>>,
+    ) -> WasmCryptoResult<CoreCrypto> {
+        let mut configuration = MlsCentralConfiguration::try_new(path, key, client_id)?;
+
+        if let Some(seed) = entropy_seed {
+            let owned_seed = EntropySeed::try_from_slice(&seed[..EntropySeed::EXPECTED_LEN])?;
+            configuration.set_entropy(owned_seed);
+        }
 
         // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
         let central = MlsCentral::try_new(configuration, None).await?;
-        Ok(CoreCrypto(std::cell::RefCell::new(central).into()))
+        Ok(CoreCrypto(async_lock::RwLock::new(central).into()))
     }
 
     /// Returns: WasmCryptoResult<()>
     pub fn close(self) -> Promise {
-        if let Ok(cc) = std::rc::Rc::try_unwrap(self.0).map(std::cell::RefCell::into_inner) {
+        if let Ok(cc) = std::sync::Arc::try_unwrap(self.0).map(async_lock::RwLock::into_inner) {
             future_to_promise(
                 async move {
                     cc.close().await?;
@@ -388,7 +398,7 @@ impl CoreCrypto {
 
     /// Returns: WasmCryptoResult<()>
     pub fn wipe(self) -> Promise {
-        if let Ok(cc) = std::rc::Rc::try_unwrap(self.0).map(std::cell::RefCell::into_inner) {
+        if let Ok(cc) = std::sync::Arc::try_unwrap(self.0).map(async_lock::RwLock::into_inner) {
             future_to_promise(
                 async move {
                     cc.wipe().await?;
@@ -401,12 +411,30 @@ impl CoreCrypto {
         }
     }
 
-    pub fn set_callbacks(&mut self, callbacks: CoreCryptoWasmCallbacks) -> WasmCryptoResult<()> {
-        Ok(self.0.borrow_mut().callbacks(Box::new(callbacks))?)
+    /// Returns: WasmCryptoResult<()>
+    pub fn set_callbacks(&self, callbacks: CoreCryptoWasmCallbacks) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                this.write().await.callbacks(Box::new(callbacks))?;
+
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
+        )
     }
 
-    pub fn client_public_key(&self) -> WasmCryptoResult<Box<[u8]>> {
-        Ok(self.0.borrow().client_public_key().map(Into::into)?)
+    /// Returns:: WasmCryptoResult<Uint8Array>
+    pub fn client_public_key(&self) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let cc = this.read().await;
+                let pk = cc.client_public_key()?;
+                WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
+            }
+            .err_into(),
+        )
     }
 
     /// Returns: WasmCryptoResult<js_sys::Array<js_sys::Uint8Array>>>
@@ -416,7 +444,8 @@ impl CoreCrypto {
             async move {
                 use core_crypto::prelude::tls_codec::Serialize as _;
                 let kps = this
-                    .borrow_mut()
+                    .write()
+                    .await
                     .client_keypackages(amount_requested as usize)
                     .await?
                     .into_iter()
@@ -450,7 +479,8 @@ impl CoreCrypto {
                 use core_crypto::prelude::tls_codec::Serialize as _;
 
                 let result = this
-                    .borrow_mut()
+                    .write()
+                    .await
                     .update_keying_material(conversation_id.to_vec())
                     .await?;
                 let message = result
@@ -480,12 +510,13 @@ impl CoreCrypto {
         external_senders: Array,
     ) -> Promise {
         let this = self.0.clone();
-        if external_senders.is_null() || external_senders.is_undefined() {
+        if !external_senders.is_null() && !external_senders.is_undefined() {
             config.external_senders = external_senders;
         }
         future_to_promise(
             async move {
-                this.borrow_mut()
+                this.write()
+                    .await
                     .new_conversation(conversation_id.to_vec(), config.try_into()?)
                     .await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
@@ -494,8 +525,19 @@ impl CoreCrypto {
         )
     }
 
-    pub fn conversation_exists(&self, conversation_id: Box<[u8]>) -> bool {
-        self.0.borrow().conversation_exists(&conversation_id.into())
+    /// Returns: bool
+    pub fn conversation_exists(&self, conversation_id: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                WasmCryptoResult::Ok(if this.read().await.conversation_exists(&conversation_id.into()) {
+                    JsValue::TRUE
+                } else {
+                    JsValue::FALSE
+                })
+            }
+            .err_into(),
+        )
     }
 
     /// Returns: WasmCryptoResult<Uint8Array>
@@ -504,7 +546,8 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let conversation_id = this
-                    .borrow_mut()
+                    .write()
+                    .await
                     .process_raw_welcome_message(welcome_message.into())
                     .await?;
                 WasmCryptoResult::Ok(Uint8Array::from(conversation_id.as_slice()).into())
@@ -527,7 +570,8 @@ impl CoreCrypto {
 
                 let mut members = Invitee::group_to_conversation_member(invitees)?;
                 let mut messages_raw = this
-                    .borrow_mut()
+                    .write()
+                    .await
                     .add_members_to_conversation(&conversation_id.into(), &mut members)
                     .await?;
 
@@ -560,7 +604,8 @@ impl CoreCrypto {
                     .collect::<Vec<ClientId>>();
 
                 let message = this
-                    .borrow_mut()
+                    .write()
+                    .await
                     .remove_members_from_conversation(&conversation_id.into(), &clients)
                     .await?
                     .map(|m| m.to_bytes().map_err(MlsError::from).map_err(CryptoError::from))
@@ -585,7 +630,8 @@ impl CoreCrypto {
                     .collect::<Vec<ClientId>>();
 
                 let messages = this
-                    .borrow_mut()
+                    .write()
+                    .await
                     .leave_conversation(conversation_id.to_vec(), &other_clients)
                     .await?;
 
@@ -613,7 +659,8 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let maybe_cleartext = this
-                    .borrow_mut()
+                    .write()
+                    .await
                     .decrypt_message(conversation_id.to_vec(), payload)
                     .await?
                     .map(|cleartext| Uint8Array::from(cleartext.as_slice()));
@@ -630,7 +677,8 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let ciphertext = this
-                    .borrow_mut()
+                    .write()
+                    .await
                     .encrypt_message(conversation_id.to_vec(), message)
                     .await
                     .map(|cleartext| Uint8Array::from(cleartext.as_slice()))?;
@@ -650,7 +698,8 @@ impl CoreCrypto {
                     .map_err(MlsError::from)
                     .map_err(CryptoError::from)?;
                 let proposal_bytes = this
-                    .borrow_mut()
+                    .write()
+                    .await
                     .new_proposal(conversation_id.to_vec(), MlsProposal::Add(kp))
                     .await?
                     .to_bytes()
@@ -670,7 +719,8 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let proposal_bytes = this
-                    .borrow_mut()
+                    .write()
+                    .await
                     .new_proposal(conversation_id.to_vec(), MlsProposal::Update)
                     .await?
                     .to_bytes()
@@ -690,7 +740,8 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let proposal_bytes = this
-                    .borrow_mut()
+                    .write()
+                    .await
                     .new_proposal(conversation_id.to_vec(), MlsProposal::Remove(client_id.into()))
                     .await?
                     .to_bytes()
@@ -713,7 +764,8 @@ impl CoreCrypto {
                     .map_err(MlsError::from)
                     .map_err(CryptoError::from)?;
                 let proposal_bytes = this
-                    .borrow_mut()
+                    .write()
+                    .await
                     .new_external_add_proposal(conversation_id.to_vec(), u64::from(epoch).into(), kp)
                     .await?
                     .to_bytes()
@@ -742,7 +794,8 @@ impl CoreCrypto {
                     .map_err(|_| CryptoError::InvalidByteArrayError(16))?;
                 let kpr = KeyPackageRef::from(*kpr);
                 let proposal_bytes = this
-                    .borrow_mut()
+                    .write()
+                    .await
                     .new_external_remove_proposal(conversation_id.to_vec(), u64::from(epoch).into(), kpr)
                     .await?
                     .to_bytes()
@@ -761,7 +814,8 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let state = this
-                    .borrow()
+                    .read()
+                    .await
                     .export_public_group_state(&conversation_id.to_vec())
                     .await?;
                 WasmCryptoResult::Ok(Uint8Array::from(state.as_slice()).into())
@@ -781,7 +835,7 @@ impl CoreCrypto {
             async move {
                 let group_state =
                     VerifiablePublicGroupState::tls_deserialize(&mut &state[..]).map_err(MlsError::from)?;
-                let (group, message) = this.borrow().join_by_external_commit(group_state).await?;
+                let (group, message) = this.read().await.join_by_external_commit(group_state).await?;
                 let result = MlsConversationInitMessage {
                     message: message
                         .tls_serialize_detached()
@@ -808,9 +862,35 @@ impl CoreCrypto {
         let this = self.0.clone();
         future_to_promise(
             async move {
-                this.borrow_mut()
+                this.write()
+                    .await
                     .merge_pending_group_from_external_commit(&conversation_id, configuration.try_into()?)
                     .await?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: WasmCryptoResult<ArrayBuffer>
+    pub fn random_bytes(&self, len: usize) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let bytes = this.read().await.random_bytes(len)?;
+                WasmCryptoResult::Ok(Uint8Array::from(bytes.as_slice()).into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns WasmCryptoResult<()>
+    pub fn reseed_rng(&self, seed: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let seed = EntropySeed::try_from_slice(&seed)?;
+                this.write().await.provider_mut().reseed(Some(seed));
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),

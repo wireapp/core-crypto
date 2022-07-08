@@ -38,6 +38,9 @@ pub enum CryptoError {
     /// A conversation member is out of local stored keypackages - if it does happen something went wrong
     #[error("Member #{0:x?} is out of keypackages")]
     OutOfKeyPackage(crate::member::MemberId),
+    /// Errors that are sent by our MLS Provider
+    #[error(transparent)]
+    MlsProviderError(#[from] mls_crypto_provider::MlsProviderError),
     /// Errors that are sent by our Keystore
     #[error(transparent)]
     KeyStoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
