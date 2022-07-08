@@ -19,37 +19,13 @@ fileprivate extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-<<<<<<< HEAD
-<<<<<<< HEAD
-        try! rustCall { ffi_CoreCrypto_61fc_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
-||||||| parent of ce3916d (Add tests)
-        try! rustCall { ffi_CoreCrypto_1e1b_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
-=======
-        try! rustCall { ffi_CoreCrypto_1128_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-        try! rustCall { ffi_CoreCrypto_1128_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
-=======
-        try! rustCall { ffi_CoreCrypto_55fb_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
->>>>>>> 12607bd (Fix udl)
+        try! rustCall { ffi_CoreCrypto_57b9_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-<<<<<<< HEAD
-<<<<<<< HEAD
-        try! rustCall { ffi_CoreCrypto_61fc_rustbuffer_free(self, $0) }
-||||||| parent of ce3916d (Add tests)
-        try! rustCall { ffi_CoreCrypto_1e1b_rustbuffer_free(self, $0) }
-=======
-        try! rustCall { ffi_CoreCrypto_1128_rustbuffer_free(self, $0) }
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-        try! rustCall { ffi_CoreCrypto_1128_rustbuffer_free(self, $0) }
-=======
-        try! rustCall { ffi_CoreCrypto_55fb_rustbuffer_free(self, $0) }
->>>>>>> 12607bd (Fix udl)
+        try! rustCall { ffi_CoreCrypto_57b9_rustbuffer_free(self, $0) }
     }
 }
 
@@ -445,23 +421,9 @@ public protocol CoreCryptoProtocol {
     func newUpdateProposal(conversationId: ConversationId) throws -> [UInt8]
     func newRemoveProposal(conversationId: ConversationId, clientId: ClientId) throws -> [UInt8]
     func newExternalAddProposal(conversationId: ConversationId, epoch: UInt64, keyPackage: [UInt8]) throws -> [UInt8]
-<<<<<<< HEAD
     func newExternalRemoveProposal(conversationId: ConversationId, epoch: UInt64, keyPackageRef: [UInt8]) throws -> [UInt8]
-    func updateKeyingMaterial(conversationId: ConversationId) throws -> MlsConversationReinitMessage
-    func joinByExternalCommit(groupState: [UInt8]) throws -> MlsConversationInitMessage
-||||||| parent of ce3916d (Add tests)
-    func updateKeyingMaterial(conversationId: ConversationId) throws -> MlsConversationReinitMessage
-    func joinByExternalCommit(groupState: [UInt8]) throws -> MlsConversationInitMessage
-=======
     func updateKeyingMaterial(conversationId: ConversationId) throws -> CommitBundle
-<<<<<<< HEAD
-    func joinByExternalCommit(groupState: [UInt8]) throws -> CommitBundle
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    func joinByExternalCommit(groupState: [UInt8]) throws -> CommitBundle
-=======
     func joinByExternalCommit(groupState: [UInt8]) throws -> MlsConversationInitMessage
->>>>>>> 12607bd (Fix udl)
     func exportGroupState(conversationId: ConversationId) throws -> [UInt8]
     func mergePendingGroupFromExternalCommit(conversationId: ConversationId, config: ConversationConfiguration) throws
     
@@ -481,19 +443,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     
     rustCallWithError(FfiConverterTypeCryptoError.self) {
     
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_new(
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_new(
-=======
-    CoreCrypto_1128_CoreCrypto_new(
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_new(
-=======
-    CoreCrypto_55fb_CoreCrypto_new(
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_new(
         FfiConverterString.lower(path), 
         FfiConverterString.lower(key), 
         FfiConverterString.lower(clientId), $0)
@@ -501,19 +451,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     }
 
     deinit {
-<<<<<<< HEAD
-<<<<<<< HEAD
-        try! rustCall { ffi_CoreCrypto_61fc_CoreCrypto_object_free(pointer, $0) }
-||||||| parent of ce3916d (Add tests)
-        try! rustCall { ffi_CoreCrypto_1e1b_CoreCrypto_object_free(pointer, $0) }
-=======
-        try! rustCall { ffi_CoreCrypto_1128_CoreCrypto_object_free(pointer, $0) }
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-        try! rustCall { ffi_CoreCrypto_1128_CoreCrypto_object_free(pointer, $0) }
-=======
-        try! rustCall { ffi_CoreCrypto_55fb_CoreCrypto_object_free(pointer, $0) }
->>>>>>> 12607bd (Fix udl)
+        try! rustCall { ffi_CoreCrypto_57b9_CoreCrypto_object_free(pointer, $0) }
     }
 
     
@@ -522,19 +460,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func setCallbacks(callbacks: CoreCryptoCallbacks) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_set_callbacks(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_set_callbacks(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_set_callbacks(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_set_callbacks(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_set_callbacks(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_set_callbacks(self.pointer, 
         FfiConverterCallbackInterfaceCoreCryptoCallbacks.lower(callbacks), $0
     )
 }
@@ -543,19 +469,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_client_public_key(self.pointer, $0
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_client_public_key(self.pointer, $0
-=======
-    CoreCrypto_1128_CoreCrypto_client_public_key(self.pointer, $0
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_client_public_key(self.pointer, $0
-=======
-    CoreCrypto_55fb_CoreCrypto_client_public_key(self.pointer, $0
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_client_public_key(self.pointer, $0
     )
 }
         )
@@ -564,19 +478,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_client_keypackages(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_client_keypackages(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_client_keypackages(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_client_keypackages(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_client_keypackages(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_client_keypackages(self.pointer, 
         FfiConverterUInt32.lower(amountRequested), $0
     )
 }
@@ -585,19 +487,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func createConversation(conversationId: ConversationId, config: ConversationConfiguration) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_create_conversation(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_create_conversation(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_create_conversation(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_create_conversation(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_create_conversation(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_create_conversation(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterTypeConversationConfiguration.lower(config), $0
     )
@@ -608,19 +498,7 @@ public class CoreCrypto: CoreCryptoProtocol {
             try!
     rustCall() {
     
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_conversation_exists(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_conversation_exists(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_conversation_exists(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_conversation_exists(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_conversation_exists(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_conversation_exists(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -630,19 +508,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeConversationId.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_process_welcome_message(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_process_welcome_message(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_process_welcome_message(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_process_welcome_message(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_process_welcome_message(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_process_welcome_message(self.pointer, 
         FfiConverterSequenceUInt8.lower(welcomeMessage), $0
     )
 }
@@ -652,19 +518,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterOptionTypeMemberAddedMessages.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_add_clients_to_conversation(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_add_clients_to_conversation(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_add_clients_to_conversation(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_add_clients_to_conversation(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_add_clients_to_conversation(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_add_clients_to_conversation(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceTypeInvitee.lower(clients), $0
     )
@@ -675,19 +529,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterOptionSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_remove_clients_from_conversation(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_remove_clients_from_conversation(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_remove_clients_from_conversation(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_remove_clients_from_conversation(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_remove_clients_from_conversation(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_remove_clients_from_conversation(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceTypeClientId.lower(clients), $0
     )
@@ -698,19 +540,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeConversationLeaveMessages.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_leave_conversation(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_leave_conversation(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_leave_conversation(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_leave_conversation(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_leave_conversation(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_leave_conversation(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceTypeClientId.lower(otherClients), $0
     )
@@ -721,19 +551,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterOptionSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_decrypt_message(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_decrypt_message(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_decrypt_message(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_decrypt_message(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_decrypt_message(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_decrypt_message(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceUInt8.lower(payload), $0
     )
@@ -744,19 +562,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_encrypt_message(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_encrypt_message(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_encrypt_message(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_encrypt_message(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_encrypt_message(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_encrypt_message(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceUInt8.lower(message), $0
     )
@@ -767,19 +573,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_new_add_proposal(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_new_add_proposal(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_new_add_proposal(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_new_add_proposal(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_new_add_proposal(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_new_add_proposal(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceUInt8.lower(keyPackage), $0
     )
@@ -790,19 +584,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_new_update_proposal(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_new_update_proposal(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_new_update_proposal(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_new_update_proposal(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_new_update_proposal(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_new_update_proposal(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -812,19 +594,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_new_remove_proposal(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_new_remove_proposal(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_new_remove_proposal(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_new_remove_proposal(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_new_remove_proposal(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_new_remove_proposal(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterTypeClientId.lower(clientId), $0
     )
@@ -835,19 +605,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_new_external_add_proposal(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_new_external_add_proposal(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_new_external_add_proposal(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_new_external_add_proposal(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_new_external_add_proposal(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_new_external_add_proposal(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterUInt64.lower(epoch), 
         FfiConverterSequenceUInt8.lower(keyPackage), $0
@@ -855,13 +613,11 @@ public class CoreCrypto: CoreCryptoProtocol {
 }
         )
     }
-<<<<<<< HEAD
     public func newExternalRemoveProposal(conversationId: ConversationId, epoch: UInt64, keyPackageRef: [UInt8]) throws -> [UInt8] {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_new_external_remove_proposal(self.pointer, 
+    CoreCrypto_57b9_CoreCrypto_new_external_remove_proposal(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterUInt64.lower(epoch), 
         FfiConverterSequenceUInt8.lower(keyPackageRef), $0
@@ -869,29 +625,11 @@ public class CoreCrypto: CoreCryptoProtocol {
 }
         )
     }
-    public func updateKeyingMaterial(conversationId: ConversationId) throws -> MlsConversationReinitMessage {
-        return try FfiConverterTypeMlsConversationReinitMessage.lift(
-||||||| parent of ce3916d (Add tests)
-    public func updateKeyingMaterial(conversationId: ConversationId) throws -> MlsConversationReinitMessage {
-        return try FfiConverterTypeMlsConversationReinitMessage.lift(
-=======
     public func updateKeyingMaterial(conversationId: ConversationId) throws -> CommitBundle {
         return try FfiConverterTypeCommitBundle.lift(
->>>>>>> ce3916d (Add tests)
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_update_keying_material(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_update_keying_material(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_update_keying_material(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_update_keying_material(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_update_keying_material(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_update_keying_material(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -901,19 +639,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeMlsConversationInitMessage.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_join_by_external_commit(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_join_by_external_commit(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_join_by_external_commit(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_join_by_external_commit(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_join_by_external_commit(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_join_by_external_commit(self.pointer, 
         FfiConverterSequenceUInt8.lower(groupState), $0
     )
 }
@@ -923,19 +649,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_export_group_state(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_export_group_state(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_export_group_state(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_export_group_state(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_export_group_state(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_export_group_state(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -944,19 +658,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func mergePendingGroupFromExternalCommit(conversationId: ConversationId, config: ConversationConfiguration) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
-=======
-    CoreCrypto_1128_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
-=======
-    CoreCrypto_55fb_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterTypeConversationConfiguration.lower(config), $0
     )
@@ -1671,19 +1373,7 @@ fileprivate struct FfiConverterCallbackInterfaceCoreCryptoCallbacks {
     private static var callbackInitialized = false
     private static func initCallback() {
         try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
-<<<<<<< HEAD
-<<<<<<< HEAD
-                ffi_CoreCrypto_61fc_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
-||||||| parent of ce3916d (Add tests)
-                ffi_CoreCrypto_1e1b_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
-=======
-                ffi_CoreCrypto_1128_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-                ffi_CoreCrypto_1128_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
-=======
-                ffi_CoreCrypto_55fb_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
->>>>>>> 12607bd (Fix udl)
+                ffi_CoreCrypto_57b9_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
         }
     }
     private static func ensureCallbackinitialized() {
@@ -1954,19 +1644,7 @@ public func initWithPathAndKey(path: String, key: String, clientId: String) thro
     
     rustCallWithError(FfiConverterTypeCryptoError.self) {
     
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_init_with_path_and_key(
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_init_with_path_and_key(
-=======
-    CoreCrypto_1128_init_with_path_and_key(
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_init_with_path_and_key(
-=======
-    CoreCrypto_55fb_init_with_path_and_key(
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_init_with_path_and_key(
         FfiConverterString.lower(path), 
         FfiConverterString.lower(key), 
         FfiConverterString.lower(clientId), $0)
@@ -1982,19 +1660,7 @@ public func version()  -> String {
     
     rustCall() {
     
-<<<<<<< HEAD
-<<<<<<< HEAD
-    CoreCrypto_61fc_version($0)
-||||||| parent of ce3916d (Add tests)
-    CoreCrypto_1e1b_version($0)
-=======
-    CoreCrypto_1128_version($0)
->>>>>>> ce3916d (Add tests)
-||||||| parent of 12607bd (Fix udl)
-    CoreCrypto_1128_version($0)
-=======
-    CoreCrypto_55fb_version($0)
->>>>>>> 12607bd (Fix udl)
+    CoreCrypto_57b9_version($0)
 }
     )
 }

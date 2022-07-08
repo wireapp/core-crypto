@@ -121,16 +121,10 @@ interface CoreCrypto {
     sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch, sequence<u8> key_package);
 
     [Throws=CryptoError]
-<<<<<<< HEAD
     sequence<u8> new_external_remove_proposal(ConversationId conversation_id, u64 epoch, sequence<u8> key_package_ref);
 
     [Throws=CryptoError]
-    MlsConversationReinitMessage update_keying_material(ConversationId conversation_id);
-||||||| parent of ce3916d (Add tests)
-    MlsConversationReinitMessage update_keying_material(ConversationId conversation_id);
-=======
     CommitBundle update_keying_material(ConversationId conversation_id);
->>>>>>> ce3916d (Add tests)
 
     [Throws=CryptoError]
     MlsConversationInitMessage join_by_external_commit(sequence<u8> group_state);
