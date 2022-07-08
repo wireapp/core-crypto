@@ -64,7 +64,7 @@ pub struct Invitee {
 
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
-pub struct MlsConversationReinitMessage {
+pub struct CommitBundle {
     pub welcome: Option<Vec<u8>>,
     pub message: Vec<u8>,
 }
@@ -217,10 +217,7 @@ impl CoreCrypto<'_> {
             .collect::<CryptoResult<Vec<Vec<u8>>>>()
     }
 
-    pub fn update_keying_material(
-        &self,
-        conversation_id: ConversationId,
-    ) -> CryptoResult<MlsConversationReinitMessage> {
+    pub fn update_keying_material(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
         use core_crypto::prelude::tls_codec::Serialize as _;
 
         let result = future::block_on(
@@ -231,7 +228,7 @@ impl CoreCrypto<'_> {
                     .update_keying_material(conversation_id),
             ),
         )?;
-        Ok(MlsConversationReinitMessage {
+        Ok(CommitBundle {
             message: result.0.tls_serialize_detached().map_err(MlsError::from)?,
             welcome: result
                 .1

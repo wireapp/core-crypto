@@ -43,6 +43,7 @@ impl MlsCentral {
         .await
         .map_err(MlsError::from)
         .map_err(CryptoError::from)?;
+
         let mut buf = vec![];
         group.save(&mut buf)?;
         self.mls_backend
@@ -72,7 +73,7 @@ impl MlsCentral {
         &mut self,
         group_id: &[u8],
         configuration: MlsConversationConfiguration,
-    ) -> CryptoResult<MlsConversation> {
+    ) -> CryptoResult<()> {
         let buf = self
             .mls_backend
             .key_store()
@@ -86,6 +87,178 @@ impl MlsCentral {
             .mls_pending_groups_delete(group_id)
             .await
             .map_err(CryptoError::from)?;
-        MlsConversation::from_mls_group(mls_group, configuration, &self.mls_backend).await
+        let conversation = MlsConversation::from_mls_group(mls_group, configuration, &self.mls_backend).await?;
+        self.mls_groups.insert(group_id.to_owned(), conversation);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod external_join_tests {
+    use mls_crypto_provider::MlsCryptoProvider;
+
+    use crate::{credential::CredentialSupplier, member::ConversationMember, MlsCentral};
+
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
+    pub mod external {
+        use super::*;
+        use crate::{
+            credential::{CertificateBundle, CredentialSupplier},
+            test_fixture_utils::*,
+            test_utils::run_test_with_central,
+            CryptoError, *,
+        };
+        use openmls::prelude::*;
+        use wasm_bindgen_test::wasm_bindgen_test;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn test_join_by_external_commit(credential: CredentialSupplier) {
+            run_test_with_central(credential, move |mut central| {
+                Box::pin(async move {
+                    central.mls_groups.clear();
+                    let conversation_id = b"conversation".to_vec();
+                    let (alice_backend, mut alice) = person("alice", credential).await;
+
+                    // create alice's group
+                    let mut alice_group = MlsConversation::create(
+                        conversation_id.clone(),
+                        alice.local_client_mut(),
+                        MlsConversationConfiguration::default(),
+                        &alice_backend,
+                    )
+                    .await
+                    .unwrap();
+
+                    // export the state
+                    let state = alice_group
+                        .group
+                        .export_public_group_state(&alice_backend)
+                        .await
+                        .unwrap();
+                    let pgs_encoded: Vec<u8> = state.tls_serialize_detached().expect("Error serializing PGS");
+
+                    let verifiable_state = VerifiablePublicGroupState::tls_deserialize(&mut pgs_encoded.as_slice())
+                        .expect("Error deserializing PGS");
+
+                    // try to join alice's group
+                    let (_, message) = central.join_by_external_commit(verifiable_state).await.unwrap();
+
+                    // alice acks the request and adds the new member
+                    alice_group
+                        .decrypt_message(&message.to_bytes().unwrap(), &alice_backend)
+                        .await
+                        .unwrap();
+                    assert_eq!(alice_group.members().unwrap().len(), 2);
+
+                    assert_eq!(central.mls_groups.len(), 0);
+
+                    // we merge the commit and update the local state
+                    central
+                        .merge_pending_group_from_external_commit(
+                            &conversation_id,
+                            MlsConversationConfiguration::default(),
+                        )
+                        .await
+                        .unwrap();
+                    assert_eq!(central.mls_groups.len(), 1);
+
+                    assert_eq!(central.mls_groups[&conversation_id].members().unwrap().len(), 2);
+                })
+            })
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn test_join_by_external_commit_bad_epoch(credential: CredentialSupplier) {
+            run_test_with_central(credential, move |mut central| {
+                Box::pin(async move {
+                    central.mls_groups.clear();
+                    let conversation_id = b"conversation".to_vec();
+                    let (alice_backend, mut alice) = person("alice", credential).await;
+                    let (_, bob) = person("bob", credential).await;
+
+                    // create alice group
+                    let mut alice_group = MlsConversation::create(
+                        conversation_id.clone(),
+                        alice.local_client_mut(),
+                        MlsConversationConfiguration::default(),
+                        &alice_backend,
+                    )
+                    .await
+                    .unwrap();
+
+                    // export the group from alice
+                    let state = alice_group
+                        .group
+                        .export_public_group_state(&alice_backend)
+                        .await
+                        .unwrap();
+                    let pgs_encoded: Vec<u8> = state.tls_serialize_detached().expect("Error serializing PGS");
+
+                    let verifiable_state = VerifiablePublicGroupState::tls_deserialize(&mut pgs_encoded.as_slice())
+                        .expect("Error deserializing PGS");
+
+                    // try to make and external join into alice's group
+                    let (_, message) = central.join_by_external_commit(verifiable_state).await.unwrap();
+
+                    // alice adds a new member to the group before receiving an ack from the
+                    // external join
+                    alice_group.add_members(&mut [bob], &alice_backend).await.unwrap();
+
+                    // receive the ack from the external join with outdated epoch
+                    // should fail because of the wrong epoch
+                    alice_group
+                        .decrypt_message(&message.to_bytes().unwrap(), &alice_backend)
+                        .await
+                        .unwrap_err();
+                    assert_eq!(alice_group.members().unwrap().len(), 2);
+
+                    assert_eq!(central.mls_groups.len(), 0);
+
+                    // lets try again
+                    // re-export alice's group
+                    let state = alice_group
+                        .group
+                        .export_public_group_state(&alice_backend)
+                        .await
+                        .unwrap();
+                    let pgs_encoded: Vec<u8> = state.tls_serialize_detached().expect("Error serializing PGS");
+
+                    let verifiable_state = VerifiablePublicGroupState::tls_deserialize(&mut pgs_encoded.as_slice())
+                        .expect("Error deserializing PGS");
+
+                    // try to make and external join into alice's group
+                    let (_, message) = central.join_by_external_commit(verifiable_state).await.unwrap();
+
+                    // now alice should accept the external join request
+                    alice_group
+                        .decrypt_message(&message.to_bytes().unwrap(), &alice_backend)
+                        .await
+                        .unwrap();
+                    assert_eq!(alice_group.members().unwrap().len(), 3);
+
+                    central
+                        .merge_pending_group_from_external_commit(
+                            &conversation_id,
+                            MlsConversationConfiguration::default(),
+                        )
+                        .await
+                        .unwrap();
+                    assert_eq!(central.mls_groups.len(), 1);
+
+                    assert_eq!(central.mls_groups[&conversation_id].members().unwrap().len(), 3);
+                })
+            })
+            .await
+        }
+    }
+
+    async fn person(name: &str, credential: CredentialSupplier) -> (MlsCryptoProvider, ConversationMember) {
+        let backend = MlsCryptoProvider::try_new_in_memory(name).await.unwrap();
+        let member = ConversationMember::random_generate(&backend, credential).await.unwrap();
+        (backend, member)
     }
 }

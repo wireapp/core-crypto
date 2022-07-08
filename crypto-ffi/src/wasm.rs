@@ -162,7 +162,7 @@ impl ConversationLeaveMessages {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct MlsConversationReinitMessage {
+pub struct CommitBundle {
     message: Box<[u8]>,
     welcome: Option<Box<[u8]>>,
 }
@@ -175,7 +175,7 @@ pub struct MlsConversationInitMessage {
 }
 
 #[wasm_bindgen]
-impl MlsConversationReinitMessage {
+impl CommitBundle {
     #[wasm_bindgen(getter)]
     pub fn message(&self) -> Box<[u8]> {
         self.message.clone()
@@ -441,7 +441,7 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<MlsConversationReinitMessage>
+    /// Returns: WasmCryptoResult<CommitBundle>
     pub fn update_keying_material(&mut self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
 
@@ -464,7 +464,7 @@ impl CoreCrypto {
                     .transpose()
                     .map_err(MlsError::from)?;
 
-                let wrapper = MlsConversationReinitMessage { message, welcome };
+                let wrapper = CommitBundle { message, welcome };
 
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&wrapper)?)
             }

@@ -76,10 +76,37 @@ impl EntityBase for PersistedMlsGroup {
     }
 
     async fn find_one(
-        _conn: &mut Self::ConnectionType,
-        _id: &StringEntityId,
+        conn: &mut Self::ConnectionType,
+        id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        unimplemented!("not sure we want to implement this")
+        use rusqlite::OptionalExtension as _;
+        use std::io::Read as _;
+
+        let transaction = conn.transaction()?;
+        let group_id = id.as_hex_string();
+        let rowid: Option<i64> = transaction
+            .query_row(
+                "SELECT rowid, hex(id) FROM mls_groups WHERE hex(id) = ? COLLATE NOCASE",
+                [&group_id],
+                |r| r.get(0),
+            )
+            .optional()?;
+        match rowid {
+            Some(rowid) => {
+                let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "id", rowid, true)?;
+                let mut id = vec![];
+                blob.read_to_end(&mut id)?;
+                blob.close()?;
+
+                let mut blob =
+                    transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, true)?;
+                let mut state = vec![];
+                blob.read_to_end(&mut state)?;
+                blob.close()?;
+                Ok(Some(Self { id, state }))
+            }
+            None => Ok(None),
+        }
     }
 
     async fn find_many(
@@ -155,11 +182,20 @@ impl EntityBase for PersistedMlsPendingGroup {
         use rusqlite::OptionalExtension as _;
 
         let rowid: i64 = if let Some(rowid) = transaction
-            .query_row("SELECT rowid FROM mls_pending_groups WHERE id = ?", [&group_id], |r| {
-                r.get(0)
-            })
+            .query_row(
+                "SELECT rowid FROM mls_pending_groups WHERE hex(id) = ? COLLATE NOCASE",
+                [&group_id],
+                |r| r.get(0),
+            )
             .optional()?
         {
+            // we have to update the size of the blob, otherwise we can have trash in the data
+            let zb = rusqlite::blob::ZeroBlob(state.len() as i32);
+            use rusqlite::ToSql as _;
+            transaction.execute(
+                "UPDATE mls_pending_groups SET state = ? WHERE hex(id) = ? COLLATE NOCASE",
+                [&zb.to_sql()?, &group_id.to_sql()?],
+            )?;
             rowid
         } else {
             let id_bytes = &self.id;
@@ -198,10 +234,38 @@ impl EntityBase for PersistedMlsPendingGroup {
     }
 
     async fn find_one(
-        _conn: &mut Self::ConnectionType,
-        _id: &StringEntityId,
+        conn: &mut Self::ConnectionType,
+        id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        unimplemented!("not sure we want to implement this")
+        use rusqlite::OptionalExtension as _;
+        use std::io::Read as _;
+
+        let transaction = conn.transaction()?;
+        let group_id = id.as_hex_string();
+        let rowid: Option<i64> = transaction
+            .query_row(
+                "SELECT rowid FROM mls_pending_groups WHERE hex(id) = ? COLLATE NOCASE",
+                [&group_id],
+                |r| r.get(0),
+            )
+            .optional()?;
+        match rowid {
+            Some(rowid) => {
+                let mut blob =
+                    transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "id", rowid, true)?;
+                let mut id = vec![];
+                blob.read_to_end(&mut id)?;
+                blob.close()?;
+
+                let mut blob =
+                    transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "state", rowid, true)?;
+                let mut state = vec![];
+                blob.read_to_end(&mut state)?;
+                blob.close()?;
+                Ok(Some(Self { id, state }))
+            }
+            None => Ok(None),
+        }
     }
 
     async fn find_many(
@@ -253,12 +317,12 @@ impl EntityBase for PersistedMlsPendingGroup {
 
     async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
         let id = id.as_hex_string();
-        let updated = conn.execute("DELETE FROM mls_pending_groups WHERE id = ?", [id])?;
+        let updated = conn.execute("DELETE FROM mls_pending_groups WHERE hex(id) = ? COLLATE NOCASE", [id])?;
 
         if updated != 0 {
             Ok(())
         } else {
-            Err(MissingKeyErrorKind::MlsGroup.into())
+            Err(MissingKeyErrorKind::MlsPendingGroup.into())
         }
     }
 }
