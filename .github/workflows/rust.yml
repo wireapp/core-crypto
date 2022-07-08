@@ -13,6 +13,7 @@ jobs:
       with:
         profile: minimal
         toolchain: stable
+        components: clippy
 
     - name: Install wasm-pack
       run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -29,6 +30,12 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: check
+
+    - name: Clippy
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: -- -D warnings
 
     - name: Run build
       uses: actions-rs/cargo@v1
