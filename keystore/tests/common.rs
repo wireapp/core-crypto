@@ -39,26 +39,21 @@ pub fn store_name() -> String {
     }
 }
 
-#[fixture(name = store_name())]
-pub async fn setup(name: impl AsRef<str>) -> core_crypto_keystore::Connection {
-    let store = core_crypto_keystore::Connection::open_with_key(name, TEST_ENCRYPTION_KEY)
-        .await
-        .unwrap();
-    store
-}
-
-#[fixture(name = store_name())]
-pub async fn setup_in_memory(name: impl AsRef<str>) -> core_crypto_keystore::Connection {
-    let store = core_crypto_keystore::Connection::open_in_memory_with_key(name, TEST_ENCRYPTION_KEY)
-        .await
-        .unwrap();
+#[fixture(name = store_name(), in_memory = false)]
+pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> core_crypto_keystore::Connection {
+    let store = if !in_memory {
+        core_crypto_keystore::Connection::open_with_key(name, TEST_ENCRYPTION_KEY).await
+    } else {
+        core_crypto_keystore::Connection::open_in_memory_with_key(name, TEST_ENCRYPTION_KEY).await
+    }
+    .unwrap();
     store
 }
 
 #[template]
 #[rstest]
-#[case::persistent(setup(store_name()))]
-#[case::in_memory(setup_in_memory(store_name()))]
+#[case::persistent(setup(store_name(), false))]
+#[case::in_memory(setup(store_name(), true))]
 pub async fn all_storage_types(
     #[case]
     #[future]

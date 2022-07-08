@@ -5,7 +5,7 @@ fn init() -> CoreCryptoPtrMut {
         let path = CStr::from_bytes_with_nul_unchecked(b"test.edb\0");
         let key = CStr::from_bytes_with_nul_unchecked(b"test\0");
         let client_id = CStr::from_bytes_with_nul_unchecked(b"test12345\0");
-        cc_init_with_path_and_key(path.as_ptr(), key.as_ptr(), client_id.as_ptr())
+        cc_init_with_path_and_key(path.as_ptr(), key.as_ptr(), client_id.as_ptr(), std::ptr::null())
     }
 }
 

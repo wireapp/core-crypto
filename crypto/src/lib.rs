@@ -42,6 +42,7 @@ pub mod prelude {
     pub use crate::proposal::MlsProposal;
     pub use crate::CoreCryptoCallbacks;
     pub use crate::{config::MlsCentralConfiguration, MlsCentral, MlsCiphersuite};
+    pub use mls_crypto_provider::{EntropySeed, RawEntropySeed};
     pub use openmls::group::{MlsGroup, MlsGroupConfig};
     pub use openmls::prelude::Ciphersuite as CiphersuiteName;
     pub use openmls::prelude::Credential;
@@ -61,7 +62,7 @@ use conversation::{
     MlsConversationLeaveMessage,
 };
 use member::ConversationMember;
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
 use openmls::{
     messages::Welcome,
     prelude::{Ciphersuite, KeyPackageBundle, MlsMessageOut},
@@ -101,6 +102,8 @@ impl std::ops::Deref for MlsCiphersuite {
 
 /// Prevents direct instantiation of [MlsCentralConfiguration]
 mod config {
+    use mls_crypto_provider::EntropySeed;
+
     use super::*;
 
     #[derive(Debug, Clone)]
@@ -109,6 +112,8 @@ mod config {
         pub store_path: String,
         pub identity_key: String,
         pub client_id: String,
+        /// Entropy pool seed for the internal PRNG
+        pub external_entropy: Option<EntropySeed>,
     }
 
     impl MlsCentralConfiguration {
@@ -129,7 +134,12 @@ mod config {
                 store_path,
                 identity_key,
                 client_id,
+                external_entropy: None,
             })
+        }
+
+        pub fn set_entropy(&mut self, entropy: EntropySeed) {
+            self.external_entropy = Some(entropy);
         }
 
         #[cfg(test)]
@@ -160,7 +170,13 @@ impl MlsCentral {
         certificate_bundle: Option<CertificateBundle>,
     ) -> CryptoResult<Self> {
         // Init backend (crypto + rand + keystore)
-        let mls_backend = MlsCryptoProvider::try_new(&configuration.store_path, &configuration.identity_key).await?;
+        let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
+            db_path: &configuration.store_path,
+            identity_key: &configuration.identity_key,
+            in_memory: false,
+            entropy_seed: configuration.external_entropy,
+        })
+        .await?;
 
         // Init client identity (load or create)
         let mls_client = Client::init(
@@ -185,7 +201,14 @@ impl MlsCentral {
         configuration: MlsCentralConfiguration,
         certificate_bundle: Option<CertificateBundle>,
     ) -> crate::error::CryptoResult<Self> {
-        let mls_backend = MlsCryptoProvider::try_new_in_memory(&configuration.store_path).await?;
+        let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
+            db_path: &configuration.store_path,
+            identity_key: &configuration.identity_key,
+            in_memory: true,
+            entropy_seed: configuration.external_entropy,
+        })
+        .await?;
+
         let mls_client = Client::init(
             configuration.client_id.as_bytes().into(),
             certificate_bundle,
@@ -410,6 +433,20 @@ impl MlsCentral {
             .ok_or(CryptoError::ConversationNotFound(conversation_id))?;
 
         conversation.update_keying_material(&self.mls_backend).await
+    }
+
+    // Utils
+    pub fn random_bytes(&self, len: usize) -> CryptoResult<Vec<u8>> {
+        use openmls_traits::random::OpenMlsRand as _;
+        Ok(self.mls_backend.rand().random_vec(len)?)
+    }
+
+    pub fn provider(&self) -> &MlsCryptoProvider {
+        &self.mls_backend
+    }
+
+    pub fn provider_mut(&mut self) -> &mut MlsCryptoProvider {
+        &mut self.mls_backend
     }
 }
 

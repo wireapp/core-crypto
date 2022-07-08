@@ -74,7 +74,7 @@ callback interface CoreCryptoCallbacks {
 
 interface CoreCrypto {
     [Throws=CryptoError, Name=new]
-    constructor([ByRef] string path, [ByRef] string key, [ByRef] string client_id);
+    constructor([ByRef] string path, [ByRef] string key, [ByRef] string client_id, sequence<u8>? entropy_seed);
 
     [Throws=CryptoError]
     void set_callbacks(CoreCryptoCallbacks callbacks);
@@ -134,11 +134,17 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     void merge_pending_group_from_external_commit(ConversationId conversation_id, ConversationConfiguration config);
+
+    [Throws=CryptoError]
+    sequence<u8> random_bytes(u64 length);
+
+    [Throws=CryptoError]
+    void reseed_rng(sequence<u8> seed);
 };
 
 namespace CoreCrypto {
     [Throws=CryptoError]
-    CoreCrypto init_with_path_and_key([ByRef] string path, [ByRef] string key, [ByRef] string client_id);
+    CoreCrypto init_with_path_and_key([ByRef] string path, [ByRef] string key, [ByRef] string client_id, sequence<u8>? entropy_seed);
 
     string version();
 };

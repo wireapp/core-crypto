@@ -8,10 +8,44 @@ license = "GPL-3.0-only"
 name = "mls_crypto_provider"
 crate-type = ["lib", "cdylib"]
 
+[features]
+default = []
+raw-rand-access = [] # TESTING ONLY
+
 [dependencies]
-openmls_rust_crypto = "0.1"
-openmls_traits = "0.1"
+openmls_traits = { version = "0.1", features = ["single-threaded"] }
+aes-gcm = "0.9"
+sha2 = "0.10"
+chacha20poly1305 = "0.9"
+hmac = "0.12"
+ed25519-dalek = "1.0"
+ecdsa = { version = "0.14", features = ["der"] }
+p256 = "0.11"
+p384 = "0.11"
+# TODO: Uncomment this once p521 crate is ready
+# p521 = { version = "0.11", git = "https://github.com/RustCrypto/elliptic-curves", package = "p521" }
+hkdf = "0.12"
+rand = { version = "0.8", features = ["getrandom"] }
+getrandom = { version = "0.2", features = ["js"] }
+rand_chacha = "0.3"
+hpke = { version = "0.1", package = "hpke-rs", default-features = false, features = ["hazmat", "serialization"] }
+hpke-rs-crypto = "0.1"
+hpke-rs-rust-crypto = "0.1"
+zeroize = "1.5"
+thiserror = "1.0"
 
 [dependencies.core-crypto-keystore]
 version = "0.3"
 path = "../keystore"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+uuid = { version = "1.0", features = ["v4", "js"] }
+openmls = { version = "0.4", default-features = false }
+rstest = "0.15"
+rstest_reuse = "0.4"
+async-std = { version = "1.12", features = ["attributes"] }
+cfg-if = "1.0"
+sha2 = "0.10"
+hex-literal = "0.3"
+mls-crypto-provider = { path = ".", features = ["raw-rand-access"] }

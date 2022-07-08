@@ -27,6 +27,7 @@ export interface ConversationConfiguration {
     admins?: Uint8Array[];
     ciphersuite?: Ciphersuite;
     keyRotationSpan?: number;
+    externalSenders: Uint8Array[];
 }
 
 export type ConversationId = Uint8Array;
@@ -35,6 +36,8 @@ export interface CoreCryptoParams {
     databaseName: string;
     key: string;
     clientId: string;
+    // This should be exactly 32 bytes
+    entropySeed?: Uint8Array;
     wasmFilePath?: string;
 }
 
@@ -75,13 +78,13 @@ export class CoreCrypto {
     static #module: typeof CoreCryptoFfiTypes;
     #cc: CoreCryptoFfiTypes.CoreCrypto;
 
-    static async init({ databaseName, key, clientId, wasmFilePath }: CoreCryptoParams): Promise<CoreCrypto> {
+    static async init({ databaseName, key, clientId, wasmFilePath, entropySeed }: CoreCryptoParams): Promise<CoreCrypto> {
         if (!this.#module) {
             const wasmImportArgs = wasmFilePath ? { importHook: () => wasmFilePath } : undefined;
             const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
             this.#module = exports;
         }
-        const cc = await this.#module.CoreCrypto._internal_new(databaseName, key, clientId);
+        const cc = await this.#module.CoreCrypto._internal_new(databaseName, key, clientId, entropySeed);
         return new this(cc);
     }
 
@@ -97,19 +100,20 @@ export class CoreCrypto {
         await this.#cc.close();
     }
 
-    conversationExists(conversationId: ConversationId): boolean {
-        return this.#cc.conversation_exists(conversationId);
+    async conversationExists(conversationId: ConversationId): Promise<boolean> {
+        return await this.#cc.conversation_exists(conversationId);
     }
 
     async createConversation(
         conversationId: ConversationId,
-        { ciphersuite, keyRotationSpan }: ConversationConfiguration = {}
+        { ciphersuite, keyRotationSpan, externalSenders }: ConversationConfiguration = { externalSenders: [] }
     ) {
         const config = new CoreCrypto.#module.ConversationConfiguration(
             ciphersuite,
-            keyRotationSpan
+            keyRotationSpan,
+            externalSenders,
         );
-        const ret = await this.#cc.create_conversation(conversationId, config);
+        const ret = await this.#cc.create_conversation(conversationId, config, externalSenders);
         return ret;
     }
 
@@ -131,8 +135,8 @@ export class CoreCrypto {
         return await this.#cc.process_welcome_message(welcomeMessage);
     }
 
-    clientPublicKey(): Uint8Array {
-        return this.#cc.client_public_key();
+    async clientPublicKey(): Promise<Uint8Array> {
+        return await this.#cc.client_public_key();
     }
 
     async clientKeypackages(amountRequested: number): Promise<Array<Uint8Array>> {
@@ -220,6 +224,15 @@ export class CoreCrypto {
             default:
                 throw new Error("Invalid proposal type!");
         }
+    }
+
+    // This should be exactly 32 bytes
+    async reseedRng(seed: Uint8Array): Promise<void> {
+        return await this.#cc.reseed_rng(seed);
+    }
+
+    async randomBytes(length: number): Promise<Uint8Array> {
+        return await this.#cc.random_bytes(length);
     }
 
     static version(): string {

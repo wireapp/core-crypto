@@ -45,7 +45,8 @@ jobs:
 
     - name: Run build (wasm)
       run: |
-        wasm-pack build --release keystore
+        wasm-pack build keystore
+        wasm-pack build mls-provider
         wasm-pack build --release crypto
 
     - name: Run tests
@@ -56,5 +57,6 @@ jobs:
 
     - name: Run tests (wasm)
       run: |
-        wasm-pack test --release --headless --chrome keystore
+        wasm-pack test --headless --chrome keystore
+        wasm-pack test --headless --chrome mls-provider
         wasm-pack test --release --headless --chrome crypto
