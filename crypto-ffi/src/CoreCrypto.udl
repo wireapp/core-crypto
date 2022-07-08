@@ -133,7 +133,7 @@ interface CoreCrypto {
 >>>>>>> ce3916d (Add tests)
 
     [Throws=CryptoError]
-    lsConversationInitMessage join_by_external_commit(sequence<u8> group_state);
+    MlsConversationInitMessage join_by_external_commit(sequence<u8> group_state);
 
     [Throws=CryptoError]
     sequence<u8> export_group_state(ConversationId conversation_id);

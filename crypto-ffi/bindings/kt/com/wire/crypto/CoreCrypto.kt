@@ -45,12 +45,18 @@ open class RustBuffer : Structure() {
     companion object {
         internal fun alloc(size: Int = 0) = rustCall() { status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
             _UniFFILib.INSTANCE.ffi_CoreCrypto_61fc_rustbuffer_alloc(size, status).also {
 ||||||| parent of ce3916d (Add tests)
             _UniFFILib.INSTANCE.ffi_CoreCrypto_1e1b_rustbuffer_alloc(size, status).also {
 =======
             _UniFFILib.INSTANCE.ffi_CoreCrypto_1128_rustbuffer_alloc(size, status).also {
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_1128_rustbuffer_alloc(size, status).also {
+=======
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_55fb_rustbuffer_alloc(size, status).also {
+>>>>>>> 12607bd (Fix udl)
                 if(it.data == null) {
                    throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=${size})")
                }
@@ -59,12 +65,18 @@ open class RustBuffer : Structure() {
 
         internal fun free(buf: RustBuffer.ByValue) = rustCall() { status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
             _UniFFILib.INSTANCE.ffi_CoreCrypto_61fc_rustbuffer_free(buf, status)
 ||||||| parent of ce3916d (Add tests)
             _UniFFILib.INSTANCE.ffi_CoreCrypto_1e1b_rustbuffer_free(buf, status)
 =======
             _UniFFILib.INSTANCE.ffi_CoreCrypto_1128_rustbuffer_free(buf, status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_1128_rustbuffer_free(buf, status)
+=======
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_55fb_rustbuffer_free(buf, status)
+>>>>>>> 12607bd (Fix udl)
         }
     }
 
@@ -277,15 +289,22 @@ internal interface _UniFFILib : Library {
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     fun ffi_CoreCrypto_61fc_CoreCrypto_object_free(`ptr`: Pointer,
 ||||||| parent of ce3916d (Add tests)
     fun ffi_CoreCrypto_1e1b_CoreCrypto_object_free(`ptr`: Pointer,
 =======
     fun ffi_CoreCrypto_1128_CoreCrypto_object_free(`ptr`: Pointer,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun ffi_CoreCrypto_1128_CoreCrypto_object_free(`ptr`: Pointer,
+=======
+    fun ffi_CoreCrypto_55fb_CoreCrypto_object_free(`ptr`: Pointer,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_new(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -293,9 +312,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_new(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_new(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_new(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): Pointer
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_set_callbacks(`ptr`: Pointer,`callbacks`: Long,
 ||||||| parent of ce3916d (Add tests)
@@ -303,9 +328,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_set_callbacks(`ptr`: Pointer,`callbacks`: Long,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_set_callbacks(`ptr`: Pointer,`callbacks`: Long,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_set_callbacks(`ptr`: Pointer,`callbacks`: Long,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_client_public_key(`ptr`: Pointer,
 ||||||| parent of ce3916d (Add tests)
@@ -313,9 +344,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_client_public_key(`ptr`: Pointer,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_client_public_key(`ptr`: Pointer,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_client_public_key(`ptr`: Pointer,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_client_keypackages(`ptr`: Pointer,`amountRequested`: Int,
 ||||||| parent of ce3916d (Add tests)
@@ -323,9 +360,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_client_keypackages(`ptr`: Pointer,`amountRequested`: Int,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_client_keypackages(`ptr`: Pointer,`amountRequested`: Int,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_client_keypackages(`ptr`: Pointer,`amountRequested`: Int,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_create_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -333,9 +376,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_create_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_create_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_create_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_conversation_exists(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -343,9 +392,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_conversation_exists(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_conversation_exists(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_conversation_exists(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): Byte
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_process_welcome_message(`ptr`: Pointer,`welcomeMessage`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -353,9 +408,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_process_welcome_message(`ptr`: Pointer,`welcomeMessage`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_process_welcome_message(`ptr`: Pointer,`welcomeMessage`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_process_welcome_message(`ptr`: Pointer,`welcomeMessage`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -363,9 +424,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -373,9 +440,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_leave_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`otherClients`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -383,9 +456,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_leave_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`otherClients`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_leave_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`otherClients`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_leave_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`otherClients`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_decrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`payload`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -393,9 +472,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_decrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`payload`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_decrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`payload`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_decrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`payload`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_encrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -403,9 +488,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_encrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_encrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_encrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_new_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`keyPackage`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -413,9 +504,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_new_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`keyPackage`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_new_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`keyPackage`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_new_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`keyPackage`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_new_update_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -423,9 +520,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_new_update_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_new_update_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_new_update_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_new_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -433,9 +536,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_new_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_new_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_new_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_new_external_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,`keyPackage`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -443,9 +552,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_new_external_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,`keyPackage`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_new_external_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,`keyPackage`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_new_external_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,`keyPackage`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_new_external_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,`keyPackageRef`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -453,9 +568,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -463,9 +584,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_join_by_external_commit(`ptr`: Pointer,`groupState`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_join_by_external_commit(`ptr`: Pointer,`groupState`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_join_by_external_commit(`ptr`: Pointer,`groupState`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_join_by_external_commit(`ptr`: Pointer,`groupState`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -473,9 +600,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_export_group_state(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_export_group_state(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_export_group_state(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_CoreCrypto_export_group_state(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
@@ -487,9 +620,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_CoreCrypto_merge_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_CoreCrypto_merge_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_CoreCrypto_merge_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun ffi_CoreCrypto_61fc_CoreCryptoCallbacks_init_callback(`callbackStub`: ForeignCallback,
 ||||||| parent of ce3916d (Add tests)
@@ -497,9 +636,15 @@ internal interface _UniFFILib : Library {
 =======
     fun ffi_CoreCrypto_1128_CoreCryptoCallbacks_init_callback(`callbackStub`: ForeignCallback,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun ffi_CoreCrypto_1128_CoreCryptoCallbacks_init_callback(`callbackStub`: ForeignCallback,
+=======
+    fun ffi_CoreCrypto_55fb_CoreCryptoCallbacks_init_callback(`callbackStub`: ForeignCallback,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_init_with_path_and_key(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -507,9 +652,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_init_with_path_and_key(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_init_with_path_and_key(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_55fb_init_with_path_and_key(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): Pointer
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun CoreCrypto_61fc_version(
 ||||||| parent of ce3916d (Add tests)
@@ -517,9 +668,15 @@ internal interface _UniFFILib : Library {
 =======
     fun CoreCrypto_1128_version(
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun CoreCrypto_1128_version(
+=======
+    fun CoreCrypto_55fb_version(
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun ffi_CoreCrypto_61fc_rustbuffer_alloc(`size`: Int,
 ||||||| parent of ce3916d (Add tests)
@@ -527,9 +684,15 @@ internal interface _UniFFILib : Library {
 =======
     fun ffi_CoreCrypto_1128_rustbuffer_alloc(`size`: Int,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun ffi_CoreCrypto_1128_rustbuffer_alloc(`size`: Int,
+=======
+    fun ffi_CoreCrypto_55fb_rustbuffer_alloc(`size`: Int,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun ffi_CoreCrypto_61fc_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -537,9 +700,15 @@ internal interface _UniFFILib : Library {
 =======
     fun ffi_CoreCrypto_1128_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun ffi_CoreCrypto_1128_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,
+=======
+    fun ffi_CoreCrypto_55fb_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun ffi_CoreCrypto_61fc_rustbuffer_free(`buf`: RustBuffer.ByValue,
 ||||||| parent of ce3916d (Add tests)
@@ -547,9 +716,15 @@ internal interface _UniFFILib : Library {
 =======
     fun ffi_CoreCrypto_1128_rustbuffer_free(`buf`: RustBuffer.ByValue,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun ffi_CoreCrypto_1128_rustbuffer_free(`buf`: RustBuffer.ByValue,
+=======
+    fun ffi_CoreCrypto_55fb_rustbuffer_free(`buf`: RustBuffer.ByValue,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     fun ffi_CoreCrypto_61fc_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Int,
 ||||||| parent of ce3916d (Add tests)
@@ -557,6 +732,11 @@ internal interface _UniFFILib : Library {
 =======
     fun ffi_CoreCrypto_1128_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Int,
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    fun ffi_CoreCrypto_1128_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Int,
+=======
+    fun ffi_CoreCrypto_55fb_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Int,
+>>>>>>> 12607bd (Fix udl)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
@@ -952,7 +1132,7 @@ public interface CoreCryptoInterface {
 >>>>>>> ce3916d (Add tests)
     
     @Throws(CryptoException::class)
-    fun `joinByExternalCommit`(`groupState`: List<UByte>): CommitBundle
+    fun `joinByExternalCommit`(`groupState`: List<UByte>): MlsConversationInitMessage
     
     @Throws(CryptoException::class)
     fun `exportGroupState`(`conversationId`: ConversationId): List<UByte>
@@ -969,12 +1149,18 @@ class CoreCrypto(
         this(
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_new(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_new(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_new(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_new(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_new(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), _status)
+>>>>>>> 12607bd (Fix udl)
 })
 
     /**
@@ -988,12 +1174,18 @@ class CoreCrypto(
     override protected fun freeRustArcPtr() {
         rustCall() { status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
             _UniFFILib.INSTANCE.ffi_CoreCrypto_61fc_CoreCrypto_object_free(this.pointer, status)
 ||||||| parent of ce3916d (Add tests)
             _UniFFILib.INSTANCE.ffi_CoreCrypto_1e1b_CoreCrypto_object_free(this.pointer, status)
 =======
             _UniFFILib.INSTANCE.ffi_CoreCrypto_1128_CoreCrypto_object_free(this.pointer, status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_1128_CoreCrypto_object_free(this.pointer, status)
+=======
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_55fb_CoreCrypto_object_free(this.pointer, status)
+>>>>>>> 12607bd (Fix udl)
         }
     }
 
@@ -1002,12 +1194,18 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_set_callbacks(it, FfiConverterTypeCoreCryptoCallbacks.lower(`callbacks`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_set_callbacks(it, FfiConverterTypeCoreCryptoCallbacks.lower(`callbacks`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_set_callbacks(it, FfiConverterTypeCoreCryptoCallbacks.lower(`callbacks`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_set_callbacks(it, FfiConverterTypeCoreCryptoCallbacks.lower(`callbacks`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_set_callbacks(it, FfiConverterTypeCoreCryptoCallbacks.lower(`callbacks`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }
     
@@ -1016,12 +1214,18 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_client_public_key(it,  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_client_public_key(it,  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_client_public_key(it,  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_client_public_key(it,  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_client_public_key(it,  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -1031,12 +1235,18 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_client_keypackages(it, FfiConverterUInt.lower(`amountRequested`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_client_keypackages(it, FfiConverterUInt.lower(`amountRequested`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_client_keypackages(it, FfiConverterUInt.lower(`amountRequested`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_client_keypackages(it, FfiConverterUInt.lower(`amountRequested`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_client_keypackages(it, FfiConverterUInt.lower(`amountRequested`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterSequenceSequenceUByte.lift(it)
@@ -1046,12 +1256,18 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }
     
@@ -1059,12 +1275,18 @@ class CoreCrypto(
         callWithPointer {
     rustCall() { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_conversation_exists(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_conversation_exists(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_conversation_exists(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_conversation_exists(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_conversation_exists(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterBoolean.lift(it)
@@ -1074,12 +1296,18 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_process_welcome_message(it, FfiConverterSequenceUByte.lower(`welcomeMessage`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_process_welcome_message(it, FfiConverterSequenceUByte.lower(`welcomeMessage`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_process_welcome_message(it, FfiConverterSequenceUByte.lower(`welcomeMessage`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_process_welcome_message(it, FfiConverterSequenceUByte.lower(`welcomeMessage`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_process_welcome_message(it, FfiConverterSequenceUByte.lower(`welcomeMessage`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterTypeConversationId.lift(it)
@@ -1089,12 +1317,18 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterOptionalTypeMemberAddedMessages.lift(it)
@@ -1104,12 +1338,18 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterOptionalSequenceUByte.lift(it)
@@ -1119,12 +1359,18 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_leave_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`otherClients`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_leave_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`otherClients`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_leave_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`otherClients`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_leave_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`otherClients`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_leave_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`otherClients`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterTypeConversationLeaveMessages.lift(it)
@@ -1134,12 +1380,18 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`payload`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`payload`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`payload`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`payload`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`payload`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterOptionalSequenceUByte.lift(it)
@@ -1149,12 +1401,18 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`message`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`message`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`message`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`message`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`message`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -1164,12 +1422,18 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_new_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`keyPackage`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_new_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`keyPackage`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_new_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`keyPackage`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_new_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`keyPackage`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_new_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`keyPackage`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -1179,12 +1443,18 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_new_update_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_new_update_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_new_update_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_new_update_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_new_update_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -1194,12 +1464,18 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_new_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeClientId.lower(`clientId`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_new_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeClientId.lower(`clientId`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_new_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeClientId.lower(`clientId`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_new_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeClientId.lower(`clientId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_new_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeClientId.lower(`clientId`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -1208,6 +1484,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `newExternalAddProposal`(`conversationId`: ConversationId, `epoch`: ULong, `keyPackage`: List<UByte>): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
 <<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_new_external_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterULong.lower(`epoch`), FfiConverterSequenceUByte.lower(`keyPackage`),  _status)
 }
@@ -1224,6 +1501,11 @@ class CoreCrypto(
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_new_external_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterULong.lower(`epoch`), FfiConverterSequenceUByte.lower(`keyPackage`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_new_external_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterULong.lower(`epoch`), FfiConverterSequenceUByte.lower(`keyPackage`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_new_external_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterULong.lower(`epoch`), FfiConverterSequenceUByte.lower(`keyPackage`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -1233,20 +1515,27 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterTypeCommitBundle.lift(it)
         }
     
-    @Throws(CryptoException::class)override fun `joinByExternalCommit`(`groupState`: List<UByte>): CommitBundle =
+    @Throws(CryptoException::class)override fun `joinByExternalCommit`(`groupState`: List<UByte>): MlsConversationInitMessage =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
 <<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_join_by_external_commit(it, FfiConverterSequenceUByte.lower(`groupState`),  _status)
 ||||||| parent of ce3916d (Add tests)
@@ -1254,14 +1543,20 @@ class CoreCrypto(
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_join_by_external_commit(it, FfiConverterSequenceUByte.lower(`groupState`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_join_by_external_commit(it, FfiConverterSequenceUByte.lower(`groupState`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_join_by_external_commit(it, FfiConverterSequenceUByte.lower(`groupState`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
-            FfiConverterTypeCommitBundle.lift(it)
+            FfiConverterTypeMlsConversationInitMessage.lift(it)
         }
     
     @Throws(CryptoException::class)override fun `exportGroupState`(`conversationId`: ConversationId): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
 <<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_export_group_state(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
 ||||||| parent of ce3916d (Add tests)
@@ -1269,6 +1564,11 @@ class CoreCrypto(
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_export_group_state(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_export_group_state(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_export_group_state(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -1278,12 +1578,18 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_CoreCrypto_merge_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_CoreCrypto_merge_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_merge_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_CoreCrypto_merge_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_CoreCrypto_merge_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
+>>>>>>> 12607bd (Fix udl)
 }
         }
     
@@ -1726,12 +2032,18 @@ public object FfiConverterTypeCoreCryptoCallbacks: FfiConverterCallbackInterface
     override fun register(lib: _UniFFILib) {
         rustCall() { status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
             lib.ffi_CoreCrypto_61fc_CoreCryptoCallbacks_init_callback(this.foreignCallback, status)
 ||||||| parent of ce3916d (Add tests)
             lib.ffi_CoreCrypto_1e1b_CoreCryptoCallbacks_init_callback(this.foreignCallback, status)
 =======
             lib.ffi_CoreCrypto_1128_CoreCryptoCallbacks_init_callback(this.foreignCallback, status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+            lib.ffi_CoreCrypto_1128_CoreCryptoCallbacks_init_callback(this.foreignCallback, status)
+=======
+            lib.ffi_CoreCrypto_55fb_CoreCryptoCallbacks_init_callback(this.foreignCallback, status)
+>>>>>>> 12607bd (Fix udl)
         }
     }
 }
@@ -2012,12 +2324,18 @@ fun `initWithPathAndKey`(`path`: String, `key`: String, `clientId`: String): Cor
     return FfiConverterTypeCoreCrypto.lift(
     rustCallWithError(CryptoException) { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_init_with_path_and_key(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_init_with_path_and_key(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_init_with_path_and_key(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_init_with_path_and_key(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_init_with_path_and_key(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), _status)
+>>>>>>> 12607bd (Fix udl)
 })
 }
 
@@ -2027,12 +2345,18 @@ fun `version`(): String {
     return FfiConverterString.lift(
     rustCall() { _status ->
 <<<<<<< HEAD
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_61fc_version( _status)
 ||||||| parent of ce3916d (Add tests)
     _UniFFILib.INSTANCE.CoreCrypto_1e1b_version( _status)
 =======
     _UniFFILib.INSTANCE.CoreCrypto_1128_version( _status)
 >>>>>>> ce3916d (Add tests)
+||||||| parent of 12607bd (Fix udl)
+    _UniFFILib.INSTANCE.CoreCrypto_1128_version( _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_55fb_version( _status)
+>>>>>>> 12607bd (Fix udl)
 })
 }
 
