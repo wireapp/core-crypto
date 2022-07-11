@@ -757,19 +757,14 @@ impl CoreCrypto {
     }
 
     pub fn export_group_state(&self, conversation_id: Box<[u8]>) -> Promise {
-        use core_crypto::prelude::tls_codec::Serialize as _;
         let this = self.0.clone();
         future_to_promise(
             async move {
-                let state = this.borrow().export_group_state(&conversation_id).await?;
-                WasmCryptoResult::Ok(
-                    state
-                        .tls_serialize_detached()
-                        .map(|bytes| Uint8Array::from(bytes.as_slice()))
-                        .map_err(MlsError::from)
-                        .map_err(CryptoError::from)?
-                        .into(),
-                )
+                let state = this
+                    .borrow()
+                    .export_public_group_state(&conversation_id.to_vec())
+                    .await?;
+                WasmCryptoResult::Ok(Uint8Array::from(state.as_slice()).into())
             }
             .err_into(),
         )

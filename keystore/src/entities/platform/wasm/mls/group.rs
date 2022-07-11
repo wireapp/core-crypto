@@ -130,6 +130,10 @@ impl EntityBase for PersistedMlsPendingGroup {
 }
 
 impl Entity for PersistedMlsPendingGroup {
+    fn id_raw(&self) -> &[u8] {
+        self.id.as_slice()
+    }
+
     fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
         Ok(js_sys::Uint8Array::from(self.id.as_slice()).into())
     }
