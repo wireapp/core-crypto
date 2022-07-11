@@ -36,7 +36,6 @@ impl Entity for PersistedMlsPendingGroup {
     }
 }
 
-
 #[async_trait::async_trait(?Send)]
 impl EntityBase for PersistedMlsGroup {
     type ConnectionType = KeystoreDatabaseConnection;
