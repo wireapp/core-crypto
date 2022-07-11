@@ -68,6 +68,8 @@ impl MlsCentral {
             .map_err(CryptoError::from)?;
         let mut mls_group = MlsGroup::load(&mut &buf[..])?;
         mls_group.merge_pending_commit().map_err(MlsError::from)?;
+        // TODO: find a way to make the insertion of the MlsGroup and deletion of the pending group
+        // transactional
         let conversation = MlsConversation::from_mls_group(mls_group, configuration, &self.mls_backend).await?;
         self.mls_groups.insert(group_id.to_owned(), conversation);
         self.mls_backend
