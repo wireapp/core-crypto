@@ -41,6 +41,8 @@ pub enum CryptoKeystoreError {
     LockPoisonError,
     #[error("The keystore has run out of keypackage bundles!")]
     OutOfKeyPackageBundles,
+    #[error("The provided buffer is too big to be persisted in the store")]
+    BlobTooBig,
     #[cfg(feature = "mls-keystore")]
     #[error(transparent)]
     KeyStoreValueTransformError(Box<dyn std::error::Error + Send + Sync + 'static>),

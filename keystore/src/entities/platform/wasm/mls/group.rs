@@ -16,7 +16,7 @@
 
 use crate::entities::{PersistedMlsGroup, PersistedMlsPendingGroup, StringEntityId};
 use crate::{
-    connection::KeystoreDatabaseConnection,
+    connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase},
 };
 use crate::{CryptoKeystoreResult, MissingKeyErrorKind};
@@ -67,12 +67,13 @@ impl EntityBase for PersistedMlsGroup {
 }
 
 impl Entity for PersistedMlsGroup {
-    fn aad(&self) -> &[u8] {
+    fn id_raw(&self) -> &[u8] {
         self.id.as_slice()
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
         self.state = Self::encrypt_data(cipher, self.state.as_slice(), self.aad())?;
+        Self::ConnectionType::check_buffer_size(self.state.len())?;
 
         Ok(())
     }

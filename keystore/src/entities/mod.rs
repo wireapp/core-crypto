@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-// TODO: Test all methods of all entities (rstest fixtures?)
 cfg_if::cfg_if! {
     if #[cfg(feature = "mls-keystore")] {
         mod mls;
@@ -86,7 +85,7 @@ impl<'a> From<&'a [u8]> for StringEntityId<'a> {
 }
 
 #[async_trait::async_trait(?Send)]
-pub trait EntityBase: Send + Sized + Clone + std::fmt::Debug {
+pub trait EntityBase: Send + Sized + Clone + PartialEq + Eq + std::fmt::Debug {
     type ConnectionType: DatabaseConnection;
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind;
@@ -117,11 +116,11 @@ cfg_if::cfg_if! {
                 Ok(js_sys::Uint8Array::from(self.id_raw()).into())
             }
 
-            fn id_raw(&self) -> &[u8] {
-                self.aad()
-            }
+            fn id_raw(&self) -> &[u8];
 
-            fn aad(&self) -> &[u8];
+            fn aad(&self) -> &[u8] {
+                self.id_raw()
+            }
             // About WASM Encryption:
             // The store key (i.e. passphrase) is hashed using SHA256 to obtain 32 bytes
             // The AES256-GCM cipher is then initialized and is used to encrypt individual values
@@ -172,6 +171,8 @@ cfg_if::cfg_if! {
             }
         }
     } else {
-        pub trait Entity: EntityBase {}
+        pub trait Entity: EntityBase {
+            fn id_raw(&self) -> &[u8];
+        }
     }
 }

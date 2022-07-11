@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::connection::DatabaseConnection;
 use crate::entities::PersistedMlsGroup;
 use crate::entities::PersistedMlsPendingGroup;
 use crate::entities::StringEntityId;
@@ -23,8 +24,18 @@ use crate::{
     CryptoKeystoreError, MissingKeyErrorKind,
 };
 
-impl Entity for PersistedMlsGroup {}
-impl Entity for PersistedMlsPendingGroup {}
+impl Entity for PersistedMlsGroup {
+    fn id_raw(&self) -> &[u8] {
+        self.id.as_slice()
+    }
+}
+
+impl Entity for PersistedMlsPendingGroup {
+    fn id_raw(&self) -> &[u8] {
+        self.id.as_slice()
+    }
+}
+
 
 #[async_trait::async_trait(?Send)]
 impl EntityBase for PersistedMlsGroup {
@@ -35,22 +46,34 @@ impl EntityBase for PersistedMlsGroup {
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        let group_id = hex::encode(&self.id);
+        use rusqlite::OptionalExtension as _;
+        use rusqlite::ToSql as _;
+
+        let group_id = &self.id;
         let state = &self.state;
         let transaction = conn.transaction()?;
 
-        use rusqlite::OptionalExtension as _;
+        let id_bytes = &self.id;
+
+        Self::ConnectionType::check_buffer_size(state.len())?;
+        Self::ConnectionType::check_buffer_size(id_bytes.len())?;
+
+        let zb = rusqlite::blob::ZeroBlob(state.len() as i32);
+        let zid = rusqlite::blob::ZeroBlob(id_bytes.len() as i32);
 
         let rowid: i64 = if let Some(rowid) = transaction
-            .query_row("SELECT rowid FROM mls_groups WHERE id = ?", [&group_id], |r| r.get(0))
+            .query_row("SELECT rowid FROM mls_groups WHERE id = ?", [group_id], |r| {
+                r.get::<_, i64>(0)
+            })
             .optional()?
         {
+            transaction.execute(
+                "UPDATE mls_groups SET state = ? WHERE rowid = ?",
+                [zb.to_sql()?, rowid.to_sql()?],
+            )?;
+
             rowid
         } else {
-            let id_bytes = &self.id;
-            let zb = rusqlite::blob::ZeroBlob(state.len() as i32);
-            let zid = rusqlite::blob::ZeroBlob(id_bytes.len() as i32);
-            use rusqlite::ToSql as _;
             transaction.execute(
                 "INSERT INTO mls_groups (id, state) VALUES(?, ?)",
                 [&zid.to_sql()?, &zb.to_sql()?],
@@ -76,10 +99,34 @@ impl EntityBase for PersistedMlsGroup {
     }
 
     async fn find_one(
-        _conn: &mut Self::ConnectionType,
-        _id: &StringEntityId,
+        conn: &mut Self::ConnectionType,
+        id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        unimplemented!()
+        use rusqlite::OptionalExtension as _;
+        let transaction = conn.transaction()?;
+        let mut rowid: Option<i64> = transaction
+            .query_row("SELECT rowid FROM mls_groups WHERE id = ?", [id.as_bytes()], |r| {
+                r.get::<_, i64>(0)
+            })
+            .optional()?;
+
+        if let Some(rowid) = rowid.take() {
+            use std::io::Read as _;
+
+            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "id", rowid, true)?;
+            let mut id = Vec::with_capacity(blob.len());
+            blob.read_to_end(&mut id)?;
+            blob.close()?;
+
+            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, true)?;
+            let mut state = Vec::with_capacity(blob.len());
+            blob.read_to_end(&mut state)?;
+            blob.close()?;
+
+            Ok(Some(Self { id, state }))
+        } else {
+            Ok(None)
+        }
     }
 
     async fn find_many(
@@ -106,12 +153,12 @@ impl EntityBase for PersistedMlsGroup {
             use std::io::Read as _;
 
             let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "id", rowid, true)?;
-            let mut id = vec![];
+            let mut id = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut id)?;
             blob.close()?;
 
             let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, true)?;
-            let mut state = vec![];
+            let mut state = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut state)?;
             blob.close()?;
 
@@ -128,8 +175,7 @@ impl EntityBase for PersistedMlsGroup {
     }
 
     async fn delete(conn: &mut Self::ConnectionType, id: &StringEntityId) -> crate::CryptoKeystoreResult<()> {
-        let id = id.as_hex_string();
-        let updated = conn.execute("DELETE FROM mls_groups WHERE id = ?", [id])?;
+        let updated = conn.execute("DELETE FROM mls_groups WHERE id = ?", [id.as_bytes()])?;
 
         if updated != 0 {
             Ok(())

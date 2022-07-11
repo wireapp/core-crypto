@@ -14,38 +14,59 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-#![allow(dead_code)]
+#![allow(dead_code, unused_macros, unused_imports)]
 
-use core_crypto_keystore::Connection as CryptoKeystore;
+pub use core_crypto_keystore::Connection as CryptoKeystore;
+
+pub use rstest::*;
+pub use rstest_reuse::{self, *};
 
 const TEST_ENCRYPTION_KEY: &str = "test1234";
 
-cfg_if::cfg_if! {
-    if #[cfg(target_family = "wasm")] {
-        fn get_file_path(name: &str) -> String {
+#[fixture]
+pub fn store_name() -> String {
+    use rand::Rng as _;
+    let mut rng = rand::thread_rng();
+    let name: String = (0..6)
+        .map(|_| rng.sample(rand::distributions::Alphanumeric) as char)
+        .collect();
+    cfg_if::cfg_if! {
+        if #[cfg(target_family = "wasm")] {
             format!("corecrypto.test.{}.edb", name)
-        }
-    } else {
-        fn get_file_path(name: &str) -> String {
+        } else {
             format!("./test.{}.edb", name)
         }
     }
 }
 
-pub async fn setup(name: &str) -> CryptoKeystore {
-    let store = CryptoKeystore::open_with_key(get_file_path(name), TEST_ENCRYPTION_KEY)
+#[fixture(name = store_name())]
+pub async fn setup(name: impl AsRef<str>) -> core_crypto_keystore::Connection {
+    let store = core_crypto_keystore::Connection::open_with_key(name, TEST_ENCRYPTION_KEY)
         .await
         .unwrap();
     store
 }
 
-pub async fn setup_in_memory(name: &str) -> CryptoKeystore {
-    let store = CryptoKeystore::open_in_memory_with_key(get_file_path(name), TEST_ENCRYPTION_KEY)
+#[fixture(name = store_name())]
+pub async fn setup_in_memory(name: impl AsRef<str>) -> core_crypto_keystore::Connection {
+    let store = core_crypto_keystore::Connection::open_in_memory_with_key(name, TEST_ENCRYPTION_KEY)
         .await
         .unwrap();
     store
 }
 
-pub async fn teardown(store: CryptoKeystore) {
+#[template]
+#[rstest]
+#[case::persistent(setup(store_name()))]
+#[case::in_memory(setup_in_memory(store_name()))]
+pub async fn all_storage_types(
+    #[case]
+    #[future]
+    store: core_crypto_keystore::Connection,
+) {
+}
+
+#[inline(always)]
+pub async fn teardown(store: core_crypto_keystore::Connection) {
     store.wipe().await.unwrap();
 }

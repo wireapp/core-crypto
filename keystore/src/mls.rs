@@ -235,7 +235,7 @@ impl CryptoKeystoreMls for crate::connection::Connection {
 
         let mut blob = db.blob_open(rusqlite::DatabaseName::Main, "mls_keys", "key", rowid, true)?;
         use std::io::Read as _;
-        let mut buf = vec![];
+        let mut buf = Vec::with_capacity(blob.len());
         blob.read_to_end(&mut buf)?;
         blob.close()?;
 

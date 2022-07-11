@@ -14,6 +14,7 @@ sample-projects/ios/.swiftpm
 # Test databases leftovers
 *.edb
 *.edb-salt
+*.edb-wal
 *.db
 
 ### Rust ###

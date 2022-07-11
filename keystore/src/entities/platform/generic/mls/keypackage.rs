@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::connection::DatabaseConnection;
 use crate::entities::MlsKeypackage;
 use crate::entities::StringEntityId;
 use crate::{
@@ -22,7 +23,11 @@ use crate::{
     MissingKeyErrorKind,
 };
 
-impl Entity for MlsKeypackage {}
+impl Entity for MlsKeypackage {
+    fn id_raw(&self) -> &[u8] {
+        self.id.as_bytes()
+    }
+}
 
 #[async_trait::async_trait(?Send)]
 impl EntityBase for MlsKeypackage {
@@ -33,20 +38,37 @@ impl EntityBase for MlsKeypackage {
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        let data = &self.key;
-        let id: String = self.id.clone();
-
+        use rusqlite::OptionalExtension as _;
         use rusqlite::ToSql as _;
-        let zb = rusqlite::blob::ZeroBlob(data.len() as i32);
-        let params: [rusqlite::types::ToSqlOutput; 2] = [id.to_sql()?, zb.to_sql()?];
+
+        Self::ConnectionType::check_buffer_size(self.key.len())?;
+
         let transaction = conn.transaction()?;
-        transaction.execute("INSERT INTO mls_keys (id, key) VALUES (?, ?)", params)?;
-        let row_id = transaction.last_insert_rowid();
+        let mut existing_rowid = transaction
+            .query_row("SELECT rowid FROM mls_keys WHERE id = ?", [&self.id], |r| {
+                r.get::<_, i64>(0)
+            })
+            .optional()?;
+
+        let row_id = if let Some(rowid) = existing_rowid.take() {
+            let zb = rusqlite::blob::ZeroBlob(self.key.len() as i32);
+            transaction.execute(
+                "UPDATE mls_keys SET key = ? WHERE rowid = ?",
+                [zb.to_sql()?, rowid.to_sql()?],
+            )?;
+
+            rowid
+        } else {
+            let zb = rusqlite::blob::ZeroBlob(self.key.len() as i32);
+            let params: [rusqlite::types::ToSqlOutput; 2] = [self.id.to_sql()?, zb.to_sql()?];
+            transaction.execute("INSERT INTO mls_keys (id, key) VALUES (?, ?)", params)?;
+            transaction.last_insert_rowid()
+        };
 
         let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_keys", "key", row_id, false)?;
 
         use std::io::Write as _;
-        blob.write_all(data)?;
+        blob.write_all(&self.key)?;
         blob.close()?;
 
         transaction.commit()?;
@@ -69,7 +91,7 @@ impl EntityBase for MlsKeypackage {
         if let Some(rowid) = row_id.take() {
             let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_keys", "key", rowid, true)?;
             use std::io::Read as _;
-            let mut buf = vec![];
+            let mut buf = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut buf)?;
             blob.close()?;
 
