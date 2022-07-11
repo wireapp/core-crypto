@@ -222,6 +222,40 @@ mod tests {
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
+        pub async fn test_join_by_external_commit_already_in(credential: CredentialSupplier) {
+            run_test_with_central(credential, move |mut central| {
+                Box::pin(async move {
+                    let central = &mut central[0];
+                    let conversation_id = b"conversation".to_vec();
+                    let (_, alice) = person("alice", credential).await;
+
+                    // create group
+                    central
+                        .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                        .await
+                        .unwrap();
+
+                    central
+                        .add_members_to_conversation(&conversation_id, &mut [alice])
+                        .await
+                        .unwrap();
+
+                    // export the state
+                    let pgs_encoded = central.export_public_group_state(&conversation_id).await.unwrap();
+
+                    let verifiable_state = VerifiablePublicGroupState::tls_deserialize(&mut pgs_encoded.as_slice())
+                        .expect("Error deserializing PGS");
+
+                    // try to join alice's group
+                    let result = central.join_by_external_commit(verifiable_state).await;
+                    assert!(result.is_err());
+                })
+            })
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
         pub async fn test_join_by_external_commit_no_pending(credential: CredentialSupplier) {
             run_test_with_central(credential, move |mut central| {
                 Box::pin(async move {
