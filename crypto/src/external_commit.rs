@@ -72,11 +72,12 @@ impl MlsCentral {
         // transactional
         let conversation = MlsConversation::from_mls_group(mls_group, configuration, &self.mls_backend).await?;
         self.mls_groups.insert(group_id.to_owned(), conversation);
-        self.mls_backend
+        let _ = self
+            .mls_backend
             .key_store()
             .mls_pending_groups_delete(group_id)
             .await
-            .map_err(CryptoError::from)?;
+            .map_err(CryptoError::from);
         Ok(())
     }
 }
