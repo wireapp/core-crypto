@@ -96,12 +96,13 @@ mod tests {
             test_utils::run_test_with_central,
             MlsConversation, MlsConversationConfiguration,
         };
+        use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
         use openmls::prelude::*;
         use wasm_bindgen_test::wasm_bindgen_test;
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub async fn bla_test_join_by_external_commit(credential: CredentialSupplier) {
+        pub async fn test_join_by_external_commit(credential: CredentialSupplier) {
             run_test_with_central(credential, move |mut central| {
                 Box::pin(async move {
                     let central = &mut central[0];
@@ -149,6 +150,16 @@ mod tests {
                         .unwrap();
 
                     assert_eq!(central.group(&conversation_id).unwrap().members().unwrap().len(), 2);
+
+                    let error = central
+                        .mls_backend
+                        .key_store()
+                        .mls_pending_groups_load(&conversation_id)
+                        .await;
+                    assert!(matches!(
+                        error.unwrap_err(),
+                        CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsPendingGroup)
+                    ));
                 })
             })
             .await
@@ -204,6 +215,32 @@ mod tests {
                         ))
                     ));
                     assert_eq!(alice_group.members().unwrap().len(), 2);
+                })
+            })
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn test_join_by_external_commit_no_pending(credential: CredentialSupplier) {
+            run_test_with_central(credential, move |mut central| {
+                Box::pin(async move {
+                    let central = &mut central[0];
+                    let conversation_id = b"conversation".to_vec();
+                    // try to merge an inexisting pending group
+                    let result = central
+                        .merge_pending_group_from_external_commit(
+                            &conversation_id,
+                            MlsConversationConfiguration::default(),
+                        )
+                        .await;
+
+                    assert!(matches!(
+                        result.unwrap_err(),
+                        crate::CryptoError::KeyStoreError(CryptoKeystoreError::MissingKeyInStore(
+                            MissingKeyErrorKind::MlsPendingGroup
+                        ))
+                    ));
                 })
             })
             .await
