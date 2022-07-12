@@ -130,10 +130,19 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
         let mls_group_config = configuration.as_openmls_default_configuration();
-        let mut group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None)
+        let group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None)
             .await
             .map_err(MlsError::from)?;
 
+        Self::from_mls_group(group, configuration, backend).await
+    }
+
+    /// Internal API: create a group from an existing conversation. For example by external commit
+    pub(crate) async fn from_mls_group(
+        mut group: MlsGroup,
+        configuration: MlsConversationConfiguration,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<Self> {
         let id = ConversationId::from(group.group_id().as_slice());
 
         let mut buf = vec![];

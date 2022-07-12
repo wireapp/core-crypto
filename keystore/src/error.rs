@@ -22,6 +22,8 @@ pub enum MissingKeyErrorKind {
     MlsIdentityBundle,
     #[error("MLS Persisted Group")]
     MlsGroup,
+    #[error("MLS Persisted Pending Group")]
+    MlsPendingGroup,
     #[cfg(feature = "proteus-keystore")]
     #[error("Proteus PreKey")]
     ProteusPrekey,

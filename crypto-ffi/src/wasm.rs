@@ -162,13 +162,20 @@ impl ConversationLeaveMessages {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct MlsConversationReinitMessage {
+pub struct CommitBundle {
     message: Box<[u8]>,
     welcome: Option<Box<[u8]>>,
 }
 
 #[wasm_bindgen]
-impl MlsConversationReinitMessage {
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct MlsConversationInitMessage {
+    group: Box<[u8]>,
+    message: Box<[u8]>,
+}
+
+#[wasm_bindgen]
+impl CommitBundle {
     #[wasm_bindgen(getter)]
     pub fn message(&self) -> Box<[u8]> {
         self.message.clone()
@@ -177,6 +184,19 @@ impl MlsConversationReinitMessage {
     #[wasm_bindgen(getter)]
     pub fn welcome(&self) -> Option<Box<[u8]>> {
         self.welcome.clone()
+    }
+}
+
+#[wasm_bindgen]
+impl MlsConversationInitMessage {
+    #[wasm_bindgen(getter)]
+    pub fn message(&self) -> Box<[u8]> {
+        self.message.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn group(&self) -> Box<[u8]> {
+        self.group.clone()
     }
 }
 
@@ -421,7 +441,7 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<MlsConversationReinitMessage>
+    /// Returns: WasmCryptoResult<CommitBundle>
     pub fn update_keying_material(&mut self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
 
@@ -444,7 +464,7 @@ impl CoreCrypto {
                     .transpose()
                     .map_err(MlsError::from)?;
 
-                let wrapper = MlsConversationReinitMessage { message, welcome };
+                let wrapper = CommitBundle { message, welcome };
 
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&wrapper)?)
             }
@@ -731,6 +751,67 @@ impl CoreCrypto {
                     .map_err(CryptoError::from)?;
 
                 WasmCryptoResult::Ok(proposal_bytes.into())
+            }
+            .err_into(),
+        )
+    }
+
+    pub fn export_group_state(&self, conversation_id: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let state = this
+                    .borrow()
+                    .export_public_group_state(&conversation_id.to_vec())
+                    .await?;
+                WasmCryptoResult::Ok(Uint8Array::from(state.as_slice()).into())
+            }
+            .err_into(),
+        )
+    }
+
+    pub fn join_by_external_commit(&self, group_state: Box<[u8]>) -> Promise {
+        use core_crypto::prelude::tls_codec::Deserialize as _;
+        use core_crypto::prelude::tls_codec::Serialize as _;
+
+        let this = self.0.clone();
+        let state = group_state.to_vec();
+
+        future_to_promise(
+            async move {
+                let group_state =
+                    VerifiablePublicGroupState::tls_deserialize(&mut &state[..]).map_err(MlsError::from)?;
+                let (group, message) = this.borrow().join_by_external_commit(group_state).await?;
+                let result = MlsConversationInitMessage {
+                    message: message
+                        .tls_serialize_detached()
+                        .map_err(MlsError::from)
+                        .map_err(CryptoError::from)?
+                        .into_boxed_slice(),
+                    group: group
+                        .tls_serialize_detached()
+                        .map_err(MlsError::from)
+                        .map_err(CryptoError::from)?
+                        .into_boxed_slice(),
+                };
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&result)?)
+            }
+            .err_into(),
+        )
+    }
+
+    pub fn merge_pending_group_from_external_commit(
+        &self,
+        conversation_id: ConversationId,
+        configuration: ConversationConfiguration,
+    ) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                this.borrow_mut()
+                    .merge_pending_group_from_external_commit(&conversation_id, configuration.try_into()?)
+                    .await?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )

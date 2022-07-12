@@ -29,6 +29,7 @@ mod client;
 mod conversation;
 mod credential;
 mod error;
+mod external_commit;
 mod external_proposal;
 mod member;
 mod proposal;
@@ -41,11 +42,14 @@ pub mod prelude {
     pub use crate::proposal::MlsProposal;
     pub use crate::CoreCryptoCallbacks;
     pub use crate::{config::MlsCentralConfiguration, MlsCentral, MlsCiphersuite};
+    pub use openmls::group::{MlsGroup, MlsGroupConfig};
     pub use openmls::prelude::Ciphersuite as CiphersuiteName;
     pub use openmls::prelude::Credential;
     pub use openmls::prelude::GroupEpoch;
     pub use openmls::prelude::KeyPackage;
     pub use openmls::prelude::KeyPackageRef;
+    pub use openmls::prelude::Node;
+    pub use openmls::prelude::VerifiablePublicGroupState;
     pub use tls_codec;
 }
 
@@ -238,6 +242,11 @@ impl MlsCentral {
         self.mls_client
             .request_keying_material(amount_requested, &self.mls_backend)
             .await
+    }
+
+    #[cfg(test)]
+    pub(crate) fn group(&self, id: &ConversationId) -> Option<&MlsConversation> {
+        self.mls_groups.get(id)
     }
 
     /// Create a new empty conversation
