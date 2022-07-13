@@ -31,19 +31,25 @@ use crate::{
     CryptoError, CryptoResult, MlsCiphersuite, MlsError,
 };
 
+/// A unique identifier for a group/conversation. The identifier must be unique within a client.
 pub type ConversationId = Vec<u8>;
 
+/// The configuration parameters for a group/conversation
 #[derive(Debug, Default, Clone)]
 pub struct MlsConversationConfiguration {
+    /// Admins of the group/conversation
     pub admins: Vec<MemberId>,
+    /// The `OpenMls` Ciphersuite used in the group
     pub ciphersuite: MlsCiphersuite,
     // TODO: Implement the key rotation manually instead.
+    /// The duration for which a key must be rotated
     pub key_rotation_span: Option<std::time::Duration>,
-    // Delivery service credential
+    /// Delivery service credential
     pub external_senders: Vec<Credential>,
 }
 
 impl MlsConversationConfiguration {
+    /// Generates an `MlsGroupConfig` from this configuration
     #[inline(always)]
     pub fn as_openmls_default_configuration(&self) -> openmls::group::MlsGroupConfig {
         let external_senders = self.external_senders.clone();
@@ -59,6 +65,9 @@ impl MlsConversationConfiguration {
     }
 }
 
+/// This type will store the state of a group. With the [MlsGroup] it holds, it provides all
+/// operations that can be done in a group, such as creating proposals and commits.
+/// More information [here](https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-general-setting)
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct MlsConversation {
@@ -68,20 +77,29 @@ pub struct MlsConversation {
     configuration: MlsConversationConfiguration,
 }
 
+/// Returned when initializing a conversation. Different from conversation created from a [`Welcome`] message or an external commit.
 #[derive(Debug)]
 pub struct MlsConversationCreationMessage {
+    /// A welcome message indicating new members were added by a commit
     pub welcome: Welcome,
+    /// A message that will contain information about the last commit
     pub message: MlsMessageOut,
 }
 
+/// It is a wrapper for the self removal proposal and a message containing a commit with the
+/// removal of other clients. It is returned when calling [crate::MlsCentral::leave_conversation]
 #[derive(Debug)]
 pub struct MlsConversationLeaveMessage {
+    /// A message containing information about the last commit
     pub self_removal_proposal: MlsMessageOut,
+    /// Optional message when other clients were also removed from the group
     pub other_clients_removal_commit: Option<MlsMessageOut>,
 }
 
 impl MlsConversationCreationMessage {
-    /// Order is (welcome, message)
+    /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
+    /// 0 -> welcome
+    /// 1 -> message
     pub fn to_bytes_pairs(&self) -> CryptoResult<(Vec<u8>, Vec<u8>)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self.welcome.tls_serialize_detached().map_err(MlsError::from)?;
@@ -93,6 +111,16 @@ impl MlsConversationCreationMessage {
 }
 
 impl MlsConversation {
+    /// Creates a new group/conversation
+    ///
+    /// # Arguments
+    /// * `id` - group/conversation identifier
+    /// * `author_client` - the client responsible for creating the group
+    /// * `config` - group configuration
+    /// * `backend` - MLS Provider that will be used to persist the group
+    ///
+    /// # Errors
+    /// Errors can happen from OpenMls or from the KeyStore
     pub async fn create(
         id: ConversationId,
         author_client: &mut Client,
@@ -124,6 +152,14 @@ impl MlsConversation {
 
     // ? Do we need to provide the ratchet_tree to the MlsGroup? Does everything crumble down if we can't actually get it?
     /// Create the MLS conversation from an MLS Welcome message
+    ///
+    /// # Arguments
+    /// * `welcome` - welcome message to create the group from
+    /// * `config` - group configuration
+    /// * `backend` - the KeyStore to persiste the group
+    ///
+    /// # Errors
+    /// Errors can happen from OpenMls or from the KeyStore
     pub async fn from_welcome_message(
         welcome: Welcome,
         configuration: MlsConversationConfiguration,
@@ -175,24 +211,27 @@ impl MlsConversation {
         })
     }
 
+    /// Group/conversation id
     pub fn id(&self) -> &ConversationId {
         &self.id
     }
 
-    pub fn members(&self) -> CryptoResult<std::collections::HashMap<MemberId, Vec<openmls::credentials::Credential>>> {
+    /// Returns all members credentials from the group/conversation
+    pub fn members(&self) -> std::collections::HashMap<MemberId, Vec<openmls::credentials::Credential>> {
         self.group
             .members()
             .iter()
-            .try_fold(std::collections::HashMap::new(), |mut acc, kp| -> CryptoResult<_> {
+            .fold(std::collections::HashMap::new(), |mut acc, kp| {
                 let credential = kp.credential();
                 let client_id: ClientId = credential.identity().into();
                 let member_id: MemberId = client_id.to_vec();
                 acc.entry(member_id).or_insert_with(Vec::new).push(credential.clone());
 
-                Ok(acc)
+                acc
             })
     }
 
+    /// Checks if the user can perform an operation (AKA if the user is an admin)
     pub fn can_user_act(&self, uuid: MemberId) -> bool {
         self.admins.contains(&uuid)
     }
@@ -256,6 +295,20 @@ impl MlsConversation {
         Ok(message)
     }
 
+    /// Deserializes a TLS-serialized message, then deciphers it
+    ///
+    /// # Arguments
+    /// * `message` - the encrypted message as a byte array
+    /// * `backend` - the KeyStore to persist possible group changes
+    ///
+    /// # Return type
+    /// This method will return None for the message in case the provided payload is
+    /// a system message, such as Proposals and Commits. Otherwise it will return the message as a
+    /// byte array
+    ///
+    /// # Errors
+    /// KeyStore errors can happen only if it is not an Application Message (hence causing group
+    /// changes). Otherwise OpenMls and deserialization errors can happen
     pub async fn decrypt_message(
         &mut self,
         message: impl AsRef<[u8]>,
@@ -288,6 +341,16 @@ impl MlsConversation {
         Ok(message)
     }
 
+    /// Commits all pending proposals of the group
+    ///
+    /// # Arguments
+    /// * `backend` - the KeyStore to persist group changes
+    ///
+    /// # Return type
+    /// A tuple containing the commit message and a possible welcome (in the case `Add` proposals were pending within the internal MLS Group)
+    ///
+    /// # Errors
+    /// Errors can be provenient from the KeyStore and OpenMls
     pub async fn commit_pending_proposals(
         &mut self,
         backend: &MlsCryptoProvider,
@@ -304,6 +367,17 @@ impl MlsConversation {
         Ok((message, welcome))
     }
 
+    /// Encrypts an Application Message then serializes it to the TLS wire format
+    ///
+    /// # Arguments
+    /// * `message` - the message as a byte array
+    /// * `backend` - the KeyStore to read credentials from
+    ///
+    /// # Return type
+    /// This method will return an encrypted TLS serialized message.
+    ///
+    /// # Errors
+    /// Errors are provenient from OpenMls and the KeyStore
     pub async fn encrypt_message(
         &mut self,
         message: impl AsRef<[u8]>,
@@ -317,6 +391,17 @@ impl MlsConversation {
             .map_err(CryptoError::from)
     }
 
+    /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited
+    ///
+    /// # Arguments
+    /// * `backend` - the KeyStore to read credentials from
+    ///
+    /// # Return type
+    /// A tuple containing the message with the commit this call generated and an optional welcome
+    /// message that will be present if there were pending add proposals to be commited
+    ///
+    /// # Errors
+    /// Errors are provenient from OpenMls and the KeyStore
     pub async fn update_keying_material(
         &mut self,
         backend: &MlsCryptoProvider,

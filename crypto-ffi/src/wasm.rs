@@ -430,7 +430,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let cc = this.read().await;
-                let pk = cc.client_public_key()?;
+                let pk = cc.client_public_key();
                 WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
             }
             .err_into(),

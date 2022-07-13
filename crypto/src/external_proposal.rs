@@ -4,6 +4,17 @@ use openmls::prelude::{ExternalProposal, GroupEpoch, GroupId, KeyPackage, KeyPac
 impl MlsCentral {
     /// Crafts a new external Add proposal. Enables a client outside a group to request addition to this group.
     /// For Wire only, the client must belong to an user already in the group
+    ///
+    /// # Arguments
+    /// * `conversation_id` - the group/conversation id
+    /// * `epoch` - the current epoch of the group. See [openmls::group::GroupEpoch][GroupEpoch]
+    /// * `key_package` - the `KeyPackage` of the client to be added to the group
+    ///
+    /// # Return type
+    /// Returns a message with the proposal to be add a new client
+    ///
+    /// # Errors
+    /// Errors resulting from the creation of the proposal within OpenMls
     pub async fn new_external_add_proposal(
         &self,
         conversation_id: ConversationId,
@@ -24,6 +35,17 @@ impl MlsCentral {
 
     /// Crafts a new external Remove proposal. Enables a client outside a group to request removal
     /// of a client within the group.
+    ///
+    /// # Arguments
+    /// * `conversation_id` - the group/conversation id
+    /// * `epoch` - the current epoch of the group. See [openmls::group::GroupEpoch][GroupEpoch]
+    /// * `key_package_ref` - the `KeyPackageRef` of the client to be added to the group
+    ///
+    /// # Return type
+    /// Returns a message with the proposal to be remove a client
+    ///
+    /// # Errors
+    /// Errors resulting from the creation of the proposal within OpenMls
     pub async fn new_external_remove_proposal(
         &self,
         conversation_id: ConversationId,

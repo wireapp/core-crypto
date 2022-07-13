@@ -18,6 +18,7 @@ use super::Entity;
 use crate::CryptoKeystoreResult;
 use zeroize::Zeroize;
 
+/// Entity representing a persisted `MlsGroup`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
@@ -26,6 +27,7 @@ pub struct PersistedMlsGroup {
     pub state: Vec<u8>,
 }
 
+/// Entity representing a temporary persisted `MlsGroup`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
@@ -34,6 +36,7 @@ pub struct PersistedMlsPendingGroup {
     pub state: Vec<u8>,
 }
 
+/// Entity representing a persisted `MlsIdentity`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
@@ -50,6 +53,7 @@ pub trait MlsIdentityExt: Entity {
     async fn delete_by_signature(conn: &mut Self::ConnectionType, signature: &[u8]) -> CryptoKeystoreResult<()>;
 }
 
+/// Entity representing a persisted `KeyPackage`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]

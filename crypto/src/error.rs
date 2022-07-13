@@ -71,57 +71,84 @@ pub enum CryptoError {
     Unauthorized,
 }
 
+/// A simpler definition for Result types that the Error is a [CryptoError]
 pub type CryptoResult<T> = Result<T, CryptoError>;
 
 /// MLS-specific error wrapper - see github.com/openmls/openmls for details
 #[derive(Debug, thiserror::Error)]
 pub enum MlsError {
+    /// Welcome error
     #[error(transparent)]
     MlsWelcomeError(#[from] openmls::prelude::WelcomeError),
+    /// Generic error type that indicates unrecoverable errors in the library. See [openmls::error::LibraryError]
     #[error(transparent)]
     MlsLibraryError(#[from] openmls::error::LibraryError),
+    /// Create message error
     #[error(transparent)]
     MlsInvalidMessageError(#[from] openmls::prelude::CreateMessageError),
+    /// EmptyInput error
     #[error(transparent)]
     MlsEmptyInputError(#[from] openmls::prelude::EmptyInputError),
+    /// An error that occurs in methods of a [openmls::credentials::Credential].
     #[error(transparent)]
     MlsCredentialError(#[from] openmls::prelude::CredentialError),
+    /// New group error
     #[error(transparent)]
     MlsNewGroupError(#[from] openmls::prelude::NewGroupError),
+    /// Leave group error
     #[error(transparent)]
     MlsLeaveGroupError(#[from] openmls::prelude::LeaveGroupError),
+    /// Add members error
     #[error(transparent)]
     MlsAddMembersError(#[from] openmls::prelude::AddMembersError),
+    /// Remove members error
     #[error(transparent)]
     MlsRemoveMembersError(#[from] openmls::prelude::RemoveMembersError),
+    /// Unverified message error
     #[error(transparent)]
     MlsUnverifiedMessageError(#[from] openmls::prelude::UnverifiedMessageError),
+    /// Parse message error
     #[error(transparent)]
     MlsParseMessageError(#[from] openmls::prelude::ParseMessageError),
+    /// [openmls::key_packages::KeyPackageBundle] new error
     #[error(transparent)]
     MlsKeyPackageBundleNewError(#[from] openmls::prelude::KeyPackageBundleNewError),
+    /// Self update error
     #[error(transparent)]
     MlsSelfUpdateError(#[from] openmls::prelude::SelfUpdateError),
+    /// Group state error
     #[error(transparent)]
     MlsMlsGroupStateError(#[from] openmls::prelude::MlsGroupStateError),
+    /// MlsMessage error
     #[error(transparent)]
     MlsMessageError(#[from] openmls::framing::errors::MlsMessageError),
+    /// Propose add members error
     #[error(transparent)]
     ProposeAddMemberError(#[from] openmls::prelude::ProposeAddMemberError),
+    /// Propose self update error
     #[error(transparent)]
     ProposeSelfUpdateError(#[from] openmls::prelude::ProposeSelfUpdateError),
+    /// Propose remove members error
     #[error(transparent)]
     ProposeRemoveMemberError(#[from] openmls::prelude::ProposeRemoveMemberError),
+    /// Commit to pending proposals error
     #[error(transparent)]
     MlsCommitToPendingProposalsError(#[from] openmls::prelude::CommitToPendingProposalsError),
+    /// Export public group state error
     #[error(transparent)]
     MlsExportPublicGroupStateError(#[from] openmls::prelude::ExportPublicGroupStateError),
+    /// Errors that are thrown by TLS serialization crate.
     #[error(transparent)]
     MlsTlsCodecError(#[from] tls_codec::Error),
+    /// This type represents all possible errors that can occur when serializing or
+    /// deserializing JSON data.
     #[error(transparent)]
     MlsKeystoreSerializationError(#[from] serde_json::Error),
+    /// A wrapper struct for an error string. This can be used when no complex error
+    /// variant is needed.
     #[error(transparent)]
     MlsErrorString(#[from] openmls::error::ErrorString),
+    /// External Commit error
     #[error(transparent)]
     MlsExternalCommitError(#[from] openmls::prelude::ExternalCommitError),
 }

@@ -200,10 +200,11 @@ impl CoreCrypto<'_> {
     }
 
     pub fn client_public_key(&self) -> CryptoResult<Vec<u8>> {
-        self.central
+        Ok(self
+            .central
             .lock()
             .map_err(|_| CryptoError::LockPoisonError)?
-            .client_public_key()
+            .client_public_key())
     }
 
     pub fn client_keypackages(&self, amount_requested: u32) -> CryptoResult<Vec<Vec<u8>>> {
