@@ -176,7 +176,7 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let conv = central.mls_groups.get(&conversation_id).unwrap();
+                    let conv = central.get_conversation(&conversation_id).unwrap();
                     assert_eq!(conv.members().len(), 2);
 
                     let error = central

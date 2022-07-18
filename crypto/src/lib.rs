@@ -449,7 +449,7 @@ impl MlsCentral {
             }
         }
 
-        if let Some(group) = self.mls_groups.get_mut(id) {
+        if let Ok(group) = Self::get_conversation_mut(&mut self.mls_groups, id) {
             Ok(Some(group.add_members(members, &self.mls_backend).await?))
         } else {
             Ok(None)
@@ -480,7 +480,7 @@ impl MlsCentral {
             }
         }
 
-        if let Some(group) = self.mls_groups.get_mut(id) {
+        if let Ok(group) = Self::get_conversation_mut(&mut self.mls_groups, id) {
             Ok(Some(group.remove_members(clients, &self.mls_backend).await?))
         } else {
             Ok(None)
@@ -507,7 +507,7 @@ impl MlsCentral {
         conversation: ConversationId,
         other_clients: &[ClientId],
     ) -> CryptoResult<MlsConversationLeaveMessage> {
-        let messages = if let Some(group) = self.mls_groups.get_mut(&conversation) {
+        let messages = if let Ok(group) = Self::get_conversation_mut(&mut self.mls_groups, &conversation) {
             group.leave(other_clients, &self.mls_backend).await?
         } else {
             return Err(CryptoError::ConversationNotFound(conversation));
@@ -534,11 +534,7 @@ impl MlsCentral {
         conversation: ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<Vec<u8>> {
-        let conversation = self
-            .mls_groups
-            .get_mut(&conversation)
-            .ok_or(CryptoError::ConversationNotFound(conversation))?;
-
+        let conversation = Self::get_conversation_mut(&mut self.mls_groups, &conversation)?;
         conversation.encrypt_message(message, &self.mls_backend).await
     }
 
@@ -561,11 +557,7 @@ impl MlsCentral {
         conversation_id: ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<Option<Vec<u8>>> {
-        let conversation = self
-            .mls_groups
-            .get_mut(&conversation_id)
-            .ok_or(CryptoError::ConversationNotFound(conversation_id))?;
-
+        let conversation = Self::get_conversation_mut(&mut self.mls_groups, &conversation_id)?;
         conversation.decrypt_message(message.as_ref(), &self.mls_backend).await
     }
 
@@ -582,11 +574,7 @@ impl MlsCentral {
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and serialization
     pub async fn export_public_group_state(&self, conversation_id: &ConversationId) -> CryptoResult<Vec<u8>> {
-        let conversation = self
-            .mls_groups
-            .get(conversation_id)
-            .ok_or_else(|| CryptoError::ConversationNotFound(conversation_id.clone()))?;
-
+        let conversation = self.get_conversation(conversation_id)?;
         let state = conversation
             .group
             .export_public_group_state(&self.mls_backend)
@@ -630,11 +618,7 @@ impl MlsCentral {
         &mut self,
         conversation_id: ConversationId,
     ) -> CryptoResult<(MlsMessageOut, Option<Welcome>)> {
-        let conversation = self
-            .mls_groups
-            .get_mut(&conversation_id)
-            .ok_or(CryptoError::ConversationNotFound(conversation_id))?;
-
+        let conversation = Self::get_conversation_mut(&mut self.mls_groups, &conversation_id)?;
         conversation.update_keying_material(&self.mls_backend).await
     }
 

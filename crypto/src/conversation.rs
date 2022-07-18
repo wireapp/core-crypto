@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::ClientId;
+use crate::{ClientId, MlsCentral};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::Credential;
 use openmls::{
@@ -24,6 +24,7 @@ use openmls::{
     prelude::{KeyPackage, KeyPackageRef, SenderRatchetConfiguration},
 };
 use openmls_traits::OpenMlsCryptoProvider;
+use std::collections::HashMap;
 
 use crate::{
     client::Client,
@@ -461,6 +462,23 @@ impl MlsConversation {
             other_clients_removal_commit,
             self_removal_proposal,
         })
+    }
+}
+
+impl MlsCentral {
+    pub(crate) fn get_conversation(&self, id: &ConversationId) -> CryptoResult<&MlsConversation> {
+        self.mls_groups
+            .get(id)
+            .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))
+    }
+
+    pub(crate) fn get_conversation_mut<'a>(
+        groups: &'a mut HashMap<ConversationId, MlsConversation>,
+        id: &ConversationId,
+    ) -> CryptoResult<&'a mut MlsConversation> {
+        groups
+            .get_mut(id)
+            .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))
     }
 }
 

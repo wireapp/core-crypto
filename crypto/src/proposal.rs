@@ -37,13 +37,8 @@ impl MlsProposal {
             MlsProposal::Add(key_package) => group
                 .propose_add_member(backend, &key_package)
                 .await
-                .map_err(MlsError::from)
-                .map_err(CryptoError::from),
-            MlsProposal::Update => group
-                .propose_self_update(backend, None)
-                .await
-                .map_err(MlsError::from)
-                .map_err(CryptoError::from),
+                .map_err(MlsError::from),
+            MlsProposal::Update => group.propose_self_update(backend, None).await.map_err(MlsError::from),
             MlsProposal::Remove(client_id) => {
                 let href = group
                     .members()
@@ -55,14 +50,13 @@ impl MlsProposal {
                             .map_err(MlsError::from)
                             .map_err(CryptoError::from)
                     })?;
-
                 group
                     .propose_remove_member(backend, &href)
                     .await
                     .map_err(MlsError::from)
-                    .map_err(CryptoError::from)
             }
         }
+        .map_err(CryptoError::from)
     }
 }
 
@@ -84,13 +78,8 @@ impl MlsCentral {
         conversation: ConversationId,
         proposal: MlsProposal,
     ) -> CryptoResult<MlsMessageOut> {
-        let conversation = self
-            .mls_groups
-            .get_mut(&conversation)
-            .ok_or(CryptoError::ConversationNotFound(conversation))?;
-        let group = &mut conversation.group;
-
-        proposal.create(&self.mls_backend, group).await
+        let conversation = Self::get_conversation_mut(&mut self.mls_groups, &conversation)?;
+        proposal.create(&self.mls_backend, &mut conversation.group).await
     }
 }
 
@@ -201,7 +190,7 @@ pub mod proposal_tests {
                         .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
                         .await
                         .unwrap();
-                    let conversation = central.mls_groups.get(&conversation_id[..]).unwrap();
+                    let conversation = central.get_conversation(&conversation_id).unwrap();
                     let client_id =
                         ClientId::from(conversation.group.members().get(0).unwrap().credential().identity());
                     let remove_proposal = central
