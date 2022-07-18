@@ -1,6 +1,8 @@
-use crate::{Client, ClientId, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
-use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{CredentialBundle, SignaturePrivateKey};
+
+use mls_crypto_provider::MlsCryptoProvider;
+
+use crate::{Client, ClientId, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
 
 /// For test fixtures (test with basic or x509 credential)
 #[cfg(test)]
@@ -125,9 +127,11 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{test_fixture_utils::*, MlsConversation, MlsConversationConfiguration};
     use openmls::prelude::{CredentialError, WelcomeError};
+
+    use crate::{test_fixture_utils::*, MlsConversation, MlsConversationConfiguration};
+
+    use super::*;
 
     #[async_std::test]
     async fn basic_clients_can_send_messages() {
@@ -269,10 +273,16 @@ mod tests {
         let mut alice_group =
             MlsConversation::create(conversation_id, alice.local_client_mut(), configuration, &alice_backend).await?;
         let welcome = alice_group
+            .as_can_handshake()
             .add_members(&mut [bob], &alice_backend)
             .await
             .unwrap()
             .welcome;
+        alice_group
+            .as_can_merge()
+            .commit_accepted(&alice_backend)
+            .await
+            .unwrap();
 
         let mut bob_group =
             MlsConversation::from_welcome_message(welcome, MlsConversationConfiguration::default(), &bob_backend)
@@ -281,18 +291,28 @@ mod tests {
         let msg = b"Hello World!";
 
         // alice -> bob
-        let encrypted_msg = alice_group.encrypt_message(msg, &alice_backend).await?;
+        let encrypted_msg = alice_group
+            .as_can_encrypt()
+            .encrypt_message(msg, &alice_backend)
+            .await?;
         let decrypted_msg = bob_group
+            .as_can_decrypt()
             .decrypt_message(&encrypted_msg, &bob_backend)
             .await?
+            .0
             .ok_or(CryptoError::Unauthorized)?;
         assert_eq!(msg, decrypted_msg.as_slice());
 
         // bob -> alice
-        let encrypted_msg = bob_group.encrypt_message(decrypted_msg, &bob_backend).await?;
+        let encrypted_msg = bob_group
+            .as_can_encrypt()
+            .encrypt_message(decrypted_msg, &bob_backend)
+            .await?;
         let decrypted_msg = alice_group
+            .as_can_decrypt()
             .decrypt_message(&encrypted_msg, &alice_backend)
             .await?
+            .0
             .ok_or(CryptoError::Unauthorized)?;
         assert_eq!(msg, decrypted_msg.as_slice());
         Ok(())

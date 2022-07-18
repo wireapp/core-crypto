@@ -14,6 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use core_crypto::prelude::*;
+pub use core_crypto::prelude::{CiphersuiteName, ClientId, ConversationId, CoreCryptoCallbacks, MemberId};
+pub use core_crypto::CryptoError;
+use futures_lite::future;
+use futures_util::TryFutureExt;
+use std::collections::HashMap;
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "mobile")] {
         mod uniffi_support;
@@ -23,14 +30,6 @@ cfg_if::cfg_if! {
         pub use self::c_api::*;
     }
 }
-
-use std::collections::HashMap;
-
-use core_crypto::prelude::*;
-pub use core_crypto::prelude::{CiphersuiteName, ClientId, ConversationId, CoreCryptoCallbacks, MemberId};
-pub use core_crypto::CryptoError;
-
-use futures_lite::future;
 
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
@@ -245,18 +244,21 @@ impl CoreCrypto<'_> {
     pub fn update_keying_material(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
         use core_crypto::prelude::tls_codec::Serialize as _;
 
-        let result = future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .update_keying_material(conversation_id),
-            ),
-        )?;
+        let (commit, welcome) = future::block_on({
+            self.executor
+                .lock()
+                .map_err(|_| CryptoError::LockPoisonError)?
+                .run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .update_keying_material(&conversation_id),
+                )
+                .and_then(|r| self.maybe_accept_commit(&conversation_id, Ok(r)))
+        })?;
         Ok(CommitBundle {
-            message: result.0.tls_serialize_detached().map_err(MlsError::from)?,
-            welcome: result
-                .1
+            message: commit.tls_serialize_detached().map_err(MlsError::from)?,
+            welcome: welcome
                 .map(|v| v.tls_serialize_detached())
                 .transpose()
                 .map_err(MlsError::from)?,
@@ -297,12 +299,16 @@ impl CoreCrypto<'_> {
         let mut members = Invitee::group_to_conversation_member(clients)?;
 
         future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .add_members_to_conversation(&conversation_id, &mut members),
-            ),
+            self.executor
+                .lock()
+                .map_err(|_| CryptoError::LockPoisonError)?
+                .run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .add_members_to_conversation(&conversation_id, &mut members),
+                )
+                .and_then(|r| self.maybe_accept_commit(&conversation_id, Ok(r))),
         )?
         .map(TryInto::try_into)
         .transpose()
@@ -315,12 +321,16 @@ impl CoreCrypto<'_> {
         clients: Vec<ClientId>,
     ) -> CryptoResult<Option<Vec<u8>>> {
         Ok(future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .remove_members_from_conversation(&conversation_id, &clients),
-            ),
+            self.executor
+                .lock()
+                .map_err(|_| CryptoError::LockPoisonError)?
+                .run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .remove_members_from_conversation(&conversation_id, &clients),
+                )
+                .and_then(|r| self.maybe_accept_commit(&conversation_id, Ok(r))),
         )?
         .map(|m| m.to_bytes().map_err(MlsError::from))
         .transpose()?)
@@ -328,16 +338,20 @@ impl CoreCrypto<'_> {
 
     pub fn leave_conversation(
         &self,
-        conversation_id: ConversationId,
+        conversation_id: &ConversationId,
         other_clients: &[ClientId],
     ) -> CryptoResult<ConversationLeaveMessages> {
         let messages = future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .leave_conversation(conversation_id, other_clients),
-            ),
+            self.executor
+                .lock()
+                .map_err(|_| CryptoError::LockPoisonError)?
+                .run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .leave_conversation(conversation_id, other_clients),
+                )
+                .and_then(|r| self.maybe_accept_commit(conversation_id, Ok(r))),
         )?;
         let ret = ConversationLeaveMessages {
             other_clients_removal_commit: messages.other_clients_removal_commit.and_then(|c| c.to_bytes().ok()),
@@ -353,7 +367,7 @@ impl CoreCrypto<'_> {
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .decrypt_message(conversation_id, payload),
+                    .decrypt_message(&conversation_id, payload),
             ),
         )
     }
@@ -364,11 +378,13 @@ impl CoreCrypto<'_> {
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .encrypt_message(conversation_id, message),
+                    .encrypt_message(&conversation_id, message),
             ),
         )
     }
 
+    #[deprecated(note = "Will be covered by decrypt_message return type")]
+    #[allow(deprecated)]
     pub fn conversation_exists(&self, conversation_id: ConversationId) -> bool {
         let mut central = self.central.lock().map_err(|_| CryptoError::LockPoisonError).ok();
 
@@ -529,5 +545,28 @@ impl CoreCrypto<'_> {
             .reseed(Some(seed));
 
         Ok(())
+    }
+
+    // Preserves "current" behaviour with auto-merged commits
+    // TODO: remove when backend counterpart implemented
+    #[allow(clippy::await_holding_lock)]
+    async fn maybe_accept_commit<T>(
+        &self,
+        conversation_id: &ConversationId,
+        result: CryptoResult<T>,
+    ) -> CryptoResult<T> {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "strict-consistency")] {
+                result
+            } else {
+                let mut central = self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?;
+                central
+                    .commit_accepted(conversation_id)
+                    .await
+                    .and(result)
+            }
+        }
     }
 }

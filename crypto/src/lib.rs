@@ -21,15 +21,28 @@
 //! groups.
 #![deny(missing_docs)]
 #![allow(clippy::single_component_path_imports)]
+
+use std::collections::HashMap;
+
+use openmls::prelude::{Ciphersuite, KeyPackageBundle, Welcome};
+use openmls_traits::OpenMlsCryptoProvider;
 #[cfg(test)]
 use rstest_reuse;
+use tls_codec::{Deserialize, Serialize};
+
+use client::{Client, ClientId};
+use config::MlsCentralConfiguration;
+use conversation::{ConversationId, MlsConversation, MlsConversationConfiguration};
+use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
+
+use crate::credential::CertificateBundle;
+
+pub use self::error::*;
 
 #[cfg(test)]
 #[macro_use]
 pub mod test_fixture_utils;
 // both imports above have to be defined at the beginning of the crate for rstest to work
-
-pub use self::error::*;
 
 mod client;
 mod conversation;
@@ -42,14 +55,6 @@ mod proposal;
 
 /// Common imports that should be useful for most uses of the crate
 pub mod prelude {
-    pub use crate::client::*;
-    pub use crate::conversation::*;
-    pub use crate::error::*;
-    pub use crate::member::*;
-    pub use crate::proposal::MlsProposal;
-    pub use crate::CoreCryptoCallbacks;
-    pub use crate::{config::MlsCentralConfiguration, MlsCentral, MlsCiphersuite};
-    pub use mls_crypto_provider::{EntropySeed, RawEntropySeed};
     pub use openmls::group::{MlsGroup, MlsGroupConfig};
     pub use openmls::prelude::Ciphersuite as CiphersuiteName;
     pub use openmls::prelude::Credential;
@@ -59,24 +64,18 @@ pub mod prelude {
     pub use openmls::prelude::Node;
     pub use openmls::prelude::VerifiablePublicGroupState;
     pub use tls_codec;
-}
 
-use crate::credential::CertificateBundle;
-use client::{Client, ClientId};
-use config::MlsCentralConfiguration;
-use conversation::{
-    ConversationId, MlsConversation, MlsConversationConfiguration, MlsConversationCreationMessage,
-    MlsConversationLeaveMessage,
-};
-use member::ConversationMember;
-use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
-use openmls::{
-    messages::Welcome,
-    prelude::{Ciphersuite, KeyPackageBundle, MlsMessageOut},
-};
-use openmls_traits::OpenMlsCryptoProvider;
-use std::collections::HashMap;
-use tls_codec::{Deserialize, Serialize};
+    pub use mls_crypto_provider::{EntropySeed, RawEntropySeed};
+
+    pub use crate::client::*;
+    pub use crate::conversation::handshake::*;
+    pub use crate::conversation::*;
+    pub use crate::error::*;
+    pub use crate::member::*;
+    pub use crate::proposal::MlsProposal;
+    pub use crate::CoreCryptoCallbacks;
+    pub use crate::{config::MlsCentralConfiguration, MlsCentral, MlsCiphersuite};
+}
 
 /// This trait is used to provide callback mechanisms for the MlsCentral struct, for example for
 /// operations like adding or removing memebers that can be authorized through a caller provided
@@ -91,7 +90,7 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     fn authorize(&self, conversation_id: ConversationId, client_id: String) -> bool;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_more::Deref)]
 #[repr(transparent)]
 /// A wrapper for the OpenMLS Ciphersuite, so that we are able to provide a default value.
 pub struct MlsCiphersuite(Ciphersuite);
@@ -105,14 +104,6 @@ impl Default for MlsCiphersuite {
 impl From<Ciphersuite> for MlsCiphersuite {
     fn from(value: Ciphersuite) -> Self {
         Self(value)
-    }
-}
-
-impl std::ops::Deref for MlsCiphersuite {
-    type Target = Ciphersuite;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
     }
 }
 
@@ -324,8 +315,8 @@ impl MlsCentral {
     }
 
     /// Returns the client's id as a buffer
-    pub fn client_id(&self) -> Vec<u8> {
-        self.mls_client.id().clone().into()
+    pub fn client_id(&self) -> ClientId {
+        self.mls_client.id().clone()
     }
 
     /// Returns `amount_requested` OpenMLS [`KeyPackageBundle`]s.
@@ -375,6 +366,7 @@ impl MlsCentral {
     }
 
     /// Checks if a given conversation id exists locally
+    #[deprecated(note = "Will be covered by decrypt_message return type")]
     pub fn conversation_exists(&self, id: &ConversationId) -> bool {
         self.mls_groups.contains_key(id)
     }
@@ -424,143 +416,6 @@ impl MlsCentral {
         self.process_welcome_message(welcome, configuration).await
     }
 
-    /// Adds new members to the group/conversation
-    ///
-    /// # Arguments
-    /// * `id` - group/conversation id
-    /// * `members` - members to be added to the group
-    ///
-    /// # Return type
-    /// An optional struct containing a welcome and a message will be returned on successful call.
-    /// The value will be `None` only if the group can't be found locally (no error will be returned
-    /// in this case).
-    ///
-    /// # Errors
-    /// If the authorisation callback is set, an error can be caused when the authorization fails.
-    /// Other errors are KeyStore and OpenMls errors:
-    pub async fn add_members_to_conversation(
-        &mut self,
-        id: &ConversationId,
-        members: &mut [ConversationMember],
-    ) -> CryptoResult<Option<MlsConversationCreationMessage>> {
-        if let Some(callbacks) = self.callbacks.as_ref() {
-            if !callbacks.authorize(id.clone(), self.mls_client.id().to_string()) {
-                return Err(CryptoError::Unauthorized);
-            }
-        }
-
-        if let Ok(group) = Self::get_conversation_mut(&mut self.mls_groups, id) {
-            Ok(Some(group.add_members(members, &self.mls_backend).await?))
-        } else {
-            Ok(None)
-        }
-    }
-
-    /// Removes clients from the group/conversation.
-    ///
-    /// # Arguments
-    /// * `id` - group/conversation id
-    /// * `clients` - list of client ids to be removed from the group
-    ///
-    /// # Return type
-    /// An optional message will be returned on successful call.
-    /// The value will be `None` only if the group can't be found locally (no error will be returned
-    /// in this case).
-    ///
-    /// # Errors
-    /// If the authorisation callback is set, an error can be caused when the authorization fails. Other errors are KeyStore and OpenMls errors.
-    pub async fn remove_members_from_conversation(
-        &mut self,
-        id: &ConversationId,
-        clients: &[ClientId],
-    ) -> CryptoResult<Option<MlsMessageOut>> {
-        if let Some(callbacks) = self.callbacks.as_ref() {
-            if !callbacks.authorize(id.clone(), self.mls_client.id().to_string()) {
-                return Err(CryptoError::Unauthorized);
-            }
-        }
-
-        if let Ok(group) = Self::get_conversation_mut(&mut self.mls_groups, id) {
-            Ok(Some(group.remove_members(clients, &self.mls_backend).await?))
-        } else {
-            Ok(None)
-        }
-    }
-
-    /// Leaves a conversation and provided other clients of the current user
-    /// If the list of other clients is not empty, this will generate a commit to remove the other
-    /// clietns.
-    ///
-    /// # Arguments
-    /// * `id` - group/conversation id
-    /// * `other_clients` - list of other client ids from the user to be removed from the group
-    ///
-    /// # Return type
-    /// A struct containing an optional message for the commit of the removal of the other clients
-    /// and a message containing the proposal to remove the local client.
-    ///
-    /// # Errors
-    /// If the conversation can't be found, an error will be returned. Other errors are originating
-    /// from OpenMls and the KeyStore
-    pub async fn leave_conversation(
-        &mut self,
-        conversation: ConversationId,
-        other_clients: &[ClientId],
-    ) -> CryptoResult<MlsConversationLeaveMessage> {
-        let messages = if let Ok(group) = Self::get_conversation_mut(&mut self.mls_groups, &conversation) {
-            group.leave(other_clients, &self.mls_backend).await?
-        } else {
-            return Err(CryptoError::ConversationNotFound(conversation));
-        };
-
-        let _ = self.mls_groups.remove(&conversation);
-        Ok(messages)
-    }
-
-    /// Encrypts a raw payload then serializes it to the TLS wire format
-    ///
-    /// # Arguments
-    /// * `conversation` - the group/conversation id
-    /// * `message` - the message as a byte array
-    ///
-    /// # Return type
-    /// This method will return an encrypted TLS serialized message.
-    ///
-    /// # Errors
-    /// If the conversation can't be found, an error will be returned. Other errors are originating
-    /// from OpenMls and the KeyStore
-    pub async fn encrypt_message(
-        &mut self,
-        conversation: ConversationId,
-        message: impl AsRef<[u8]>,
-    ) -> CryptoResult<Vec<u8>> {
-        let conversation = Self::get_conversation_mut(&mut self.mls_groups, &conversation)?;
-        conversation.encrypt_message(message, &self.mls_backend).await
-    }
-
-    /// Deserializes a TLS-serialized message, then deciphers it
-    ///
-    /// # Arguments
-    /// * `conversation` - the group/conversation id
-    /// * `message` - the encrypted message as a byte array
-    ///
-    /// # Return type
-    /// This method will return None for the message in case the provided payload is
-    /// a system message, such as Proposals and Commits. Otherwise it will return the message as a
-    /// byte array
-    ///
-    /// # Errors
-    /// If the conversation can't be found, an error will be returned. Other errors are originating
-    /// from OpenMls and the KeyStore
-    pub async fn decrypt_message(
-        &mut self,
-        conversation_id: ConversationId,
-        message: impl AsRef<[u8]>,
-    ) -> CryptoResult<Option<Vec<u8>>> {
-        let conversation = Self::get_conversation_mut(&mut self.mls_groups, &conversation_id)?;
-        conversation.decrypt_message(message.as_ref(), &self.mls_backend).await
-    }
-
     /// Exports a TLS-serialized view of the current group state corresponding to the provided conversation ID.
     ///
     /// # Arguments
@@ -600,26 +455,6 @@ impl MlsCentral {
     pub async fn wipe(self) -> CryptoResult<()> {
         self.mls_backend.destroy_and_reset().await?;
         Ok(())
-    }
-
-    /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited
-    ///
-    /// # Arguments
-    /// * `conversation_id` - the group/conversation id
-    ///
-    /// # Return type
-    /// A tuple containing the message with the commit this call generated and an optional welcome
-    /// message that will be present if there were pending add proposals to be commited
-    ///
-    /// # Errors
-    /// If the conversation can't be found, an error will be returned. Other errors are originating
-    /// from OpenMls and the KeyStore
-    pub async fn update_keying_material(
-        &mut self,
-        conversation_id: ConversationId,
-    ) -> CryptoResult<(MlsMessageOut, Option<Welcome>)> {
-        let conversation = Self::get_conversation_mut(&mut self.mls_groups, &conversation_id)?;
-        conversation.update_keying_material(&self.mls_backend).await
     }
 
     /// Generates a random byte array of the specified size
@@ -697,19 +532,16 @@ pub mod test_utils {
 
 #[cfg(test)]
 pub mod tests {
+    use wasm_bindgen_test::*;
+
     use crate::{
-        credential::{CertificateBundle, CredentialSupplier},
-        prelude::MlsConversationConfiguration,
-        test_fixture_utils::*,
-        test_utils::*,
+        credential::CredentialSupplier, prelude::MlsConversationConfiguration, test_fixture_utils::*, test_utils::*,
         CryptoError, MlsCentral, MlsCentralConfiguration,
     };
-    use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
     pub mod invariants {
-
         use super::*;
 
         #[apply(all_credential_types)]
@@ -793,7 +625,7 @@ pub mod tests {
 
                     central.close().await.unwrap();
                     let mut central = MlsCentral::try_new(configuration, credential()).await.unwrap();
-                    let _ = central.encrypt_message(conversation_id, b"Test").await.unwrap();
+                    let _ = central.encrypt_message(&conversation_id, b"Test").await.unwrap();
 
                     central.mls_backend.destroy_and_reset().await.unwrap();
                 })

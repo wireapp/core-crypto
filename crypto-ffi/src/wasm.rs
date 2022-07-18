@@ -14,21 +14,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-#[allow(dead_code)]
-pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
+use std::collections::HashMap;
 
 use futures_util::future::TryFutureExt;
 use js_sys::{Array, Promise, Uint8Array};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
-use std::collections::HashMap;
-
 use core_crypto::prelude::*;
 pub use core_crypto::CryptoError;
+
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+#[allow(dead_code)]
+pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub type WasmCryptoError = JsError;
 pub type WasmCryptoResult<T> = Result<T, WasmCryptoError>;
@@ -495,14 +495,14 @@ impl CoreCrypto {
             async move {
                 use core_crypto::prelude::tls_codec::Serialize as _;
 
-                let result = this
-                    .write()
-                    .await
-                    .update_keying_material(conversation_id.to_vec())
-                    .await?;
-                let message = result.0.tls_serialize_detached().map_err(MlsError::from)?;
-                let welcome = result
-                    .1
+                let mut central = this.write().await;
+                let conversation_id = conversation_id.into();
+                let result = central.update_keying_material(&conversation_id).await?;
+
+                let (message, welcome) = Self::maybe_accept_commit(&mut central, &conversation_id, Ok(result)).await?;
+
+                let message = message.tls_serialize_detached().map_err(MlsError::from)?;
+                let welcome = welcome
                     .map(|v| v.tls_serialize_detached())
                     .transpose()
                     .map_err(MlsError::from)?;
@@ -539,6 +539,7 @@ impl CoreCrypto {
     }
 
     /// Returns: bool
+    #[deprecated(note = "Will be covered by decrypt_message return type")]
     pub fn conversation_exists(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -582,11 +583,13 @@ impl CoreCrypto {
                     .collect::<WasmCryptoResult<Vec<Invitee>>>()?;
 
                 let mut members = Invitee::group_to_conversation_member(invitees)?;
-                let mut messages_raw = this
-                    .write()
-                    .await
-                    .add_members_to_conversation(&conversation_id.into(), &mut members)
+                let mut central = this.write().await;
+                let conversation_id = conversation_id.into();
+                let messages_raw = central
+                    .add_members_to_conversation(&conversation_id, &mut members)
                     .await?;
+                let mut messages_raw =
+                    Self::maybe_accept_commit(&mut central, &conversation_id, Ok(messages_raw)).await?;
 
                 if let Some(messages_raw) = messages_raw.take() {
                     let messages: MemberAddedMessages = messages_raw.try_into()?;
@@ -616,11 +619,13 @@ impl CoreCrypto {
                     .map(|c| c.to_vec().into())
                     .collect::<Vec<ClientId>>();
 
-                let message = this
-                    .write()
-                    .await
-                    .remove_members_from_conversation(&conversation_id.into(), &clients)
-                    .await?
+                let conversation_id = conversation_id.into();
+                let mut central = this.write().await;
+                let message_raw = central
+                    .remove_members_from_conversation(&conversation_id, &clients)
+                    .await?;
+                let message_raw = Self::maybe_accept_commit(&mut central, &conversation_id, Ok(message_raw)).await?;
+                let message = message_raw
                     .map(|m| m.to_bytes().map_err(MlsError::from).map_err(CryptoError::from))
                     .transpose()?
                     .map(|m_bytes| Uint8Array::from(m_bytes.as_slice()));
@@ -642,18 +647,18 @@ impl CoreCrypto {
                     .map(|c| c.to_vec().into())
                     .collect::<Vec<ClientId>>();
 
-                let messages = this
-                    .write()
-                    .await
-                    .leave_conversation(conversation_id.to_vec(), &other_clients)
-                    .await?;
+                let conversation_id = conversation_id.into();
+                let mut central = this.write().await;
+                let messages = central.leave_conversation(&conversation_id, &other_clients).await?;
+                let MlsConversationLeaveMessage {
+                    self_removal_proposal,
+                    other_clients_removal_commit,
+                } = Self::maybe_accept_commit(&mut central, &conversation_id, Ok(messages)).await?;
 
                 let ret = ConversationLeaveMessages {
-                    other_clients_removal_commit: messages
-                        .other_clients_removal_commit
+                    other_clients_removal_commit: other_clients_removal_commit
                         .and_then(|c| c.to_bytes().map(Into::into).ok()),
-                    self_removal_proposal: messages
-                        .self_removal_proposal
+                    self_removal_proposal: self_removal_proposal
                         .to_bytes()
                         .map(Into::into)
                         .map_err(MlsError::from)
@@ -674,7 +679,7 @@ impl CoreCrypto {
                 let maybe_cleartext = this
                     .write()
                     .await
-                    .decrypt_message(conversation_id.to_vec(), payload)
+                    .decrypt_message(&conversation_id.to_vec(), payload)
                     .await?
                     .map(|cleartext| Uint8Array::from(cleartext.as_slice()));
 
@@ -692,7 +697,7 @@ impl CoreCrypto {
                 let ciphertext = this
                     .write()
                     .await
-                    .encrypt_message(conversation_id.to_vec(), message)
+                    .encrypt_message(&conversation_id.to_vec(), message)
                     .await
                     .map(|cleartext| Uint8Array::from(cleartext.as_slice()))?;
 
@@ -907,6 +912,25 @@ impl CoreCrypto {
             }
             .err_into(),
         )
+    }
+
+    // Preserves "current" behaviour with auto-merged commits
+    // TODO: remove when backend counterpart implemented
+    async fn maybe_accept_commit<T>(
+        central: &mut MlsCentral,
+        conversation_id: &ConversationId,
+        result: CryptoResult<T>,
+    ) -> CryptoResult<T> {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "strict-consistency")] {
+                result
+            } else {
+                central
+                    .commit_accepted(conversation_id)
+                    .await
+                    .and(result)
+            }
+        }
     }
 }
 

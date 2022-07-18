@@ -16,12 +16,13 @@
 
 use std::collections::HashMap;
 
+use openmls::prelude::KeyPackage;
+use tls_codec::Deserialize;
+
 use crate::{
     client::{Client, ClientId},
     CryptoResult, MlsError,
 };
-use openmls::prelude::KeyPackage;
-use tls_codec::Deserialize;
 
 /// Type definition for the identifier of a client in a conversation (aka Member)
 pub type MemberId = Vec<u8>;
@@ -147,16 +148,19 @@ impl ConversationMember {
 
 #[cfg(test)]
 pub mod tests {
-    use super::ConversationMember;
+    use openmls::prelude::*;
+    use wasm_bindgen_test::wasm_bindgen_test;
+
+    use mls_crypto_provider::MlsCryptoProvider;
+
     use crate::{
         credential::{CertificateBundle, CredentialSupplier},
         prelude::INITIAL_KEYING_MATERIAL_COUNT,
         test_fixture_utils::*,
         ClientId,
     };
-    use mls_crypto_provider::MlsCryptoProvider;
-    use openmls::prelude::*;
-    use wasm_bindgen_test::wasm_bindgen_test;
+
+    use super::ConversationMember;
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
@@ -182,8 +186,9 @@ pub mod tests {
     }
 
     pub mod add_keypackage {
-        use super::*;
         use crate::Client;
+
+        use super::*;
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]

@@ -25,6 +25,8 @@ enum CryptoError {
     "ClientSignatureNotFound",
     "ClientSignatureMismatch",
     "LockPoisonError",
+    "ImplementationError",
+    "GroupStateError",
     "OutOfKeyPackage",
     "MlsProviderError",
     "KeyStoreError",

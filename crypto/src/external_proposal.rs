@@ -1,5 +1,6 @@
-use crate::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError};
 use openmls::prelude::{ExternalProposal, GroupEpoch, GroupId, KeyPackage, KeyPackageRef, MlsMessageOut};
+
+use crate::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError};
 
 impl MlsCentral {
     /// Crafts a new external Add proposal. Enables a client outside a group to request addition to this group.
@@ -67,14 +68,13 @@ impl MlsCentral {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        credential::{CertificateBundle, CredentialSupplier},
-        test_fixture_utils::*,
-        test_utils::*,
-        ConversationMember, MlsConversationConfiguration,
-    };
     use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
+
+    use crate::{
+        credential::CredentialSupplier, member::ConversationMember, test_fixture_utils::*, test_utils::*,
+        MlsConversationConfiguration,
+    };
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -108,7 +108,7 @@ mod tests {
 
                         // Owner receives external proposal message from server
                         owner_central
-                            .decrypt_message(conversation_id.clone(), add_message.to_bytes().unwrap().as_slice())
+                            .decrypt_message(&conversation_id, add_message.to_bytes().unwrap().as_slice())
                             .await
                             .unwrap();
 
@@ -119,7 +119,13 @@ mod tests {
 
                         // simulate commit message reception from server
                         let (_, welcome) = owner_group
+                            .as_can_handshake()
                             .commit_pending_proposals(&owner_central.mls_backend)
+                            .await
+                            .unwrap();
+                        owner_group
+                            .as_can_merge()
+                            .commit_accepted(&owner_central.mls_backend)
                             .await
                             .unwrap();
 
@@ -135,7 +141,7 @@ mod tests {
 
                         // guest can send messages in the group
                         assert!(guest_central
-                            .encrypt_message(conversation_id, b"hello owner")
+                            .encrypt_message(&conversation_id, b"hello owner")
                             .await
                             .is_ok());
                     })
@@ -172,7 +178,13 @@ mod tests {
                         let guest = ConversationMember::new(guest_id, guest_kp);
                         let owner_group = owner_central.mls_groups.get_mut(&conversation_id).unwrap();
                         owner_group
+                            .as_can_handshake()
                             .add_members(&mut [guest], &owner_central.mls_backend)
+                            .await
+                            .unwrap();
+                        owner_group
+                            .as_can_merge()
+                            .commit_accepted(&owner_central.mls_backend)
                             .await
                             .unwrap();
                         assert_eq!(owner_group.members().len(), 2);
@@ -189,6 +201,7 @@ mod tests {
                             .unwrap();
 
                         owner_group
+                            .as_can_decrypt()
                             .decrypt_message(
                                 ext_remove_proposal.to_bytes().unwrap().as_slice(),
                                 &owner_central.mls_backend,
@@ -196,10 +209,17 @@ mod tests {
                             .await
                             .unwrap();
                         owner_group
+                            .as_can_handshake()
                             .commit_pending_proposals(&owner_central.mls_backend)
                             .await
                             .unwrap();
-                        owner_group.group.merge_pending_commit().unwrap();
+                        // before merging, commit is not applied
+                        assert_eq!(owner_group.members().len(), 2);
+                        owner_group
+                            .as_can_merge()
+                            .commit_accepted(&owner_central.mls_backend)
+                            .await
+                            .unwrap();
                         assert_eq!(owner_group.members().len(), 1);
                     })
                 },

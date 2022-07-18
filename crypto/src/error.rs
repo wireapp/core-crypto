@@ -35,6 +35,12 @@ pub enum CryptoError {
     /// !!!! Something went very wrong and one of our locks has been poisoned by an in-thread panic !!!!
     #[error("One of the locks has been poisoned")]
     LockPoisonError,
+    /// We have done something terribly wrong
+    #[error("We have done something terribly wrong and it needs to be fixed")]
+    ImplementationError,
+    /// MLS group is in invalid state
+    #[error("MLS group is in invalid state")]
+    GroupStateError(&'static str),
     /// A conversation member is out of local stored keypackages - if it does happen something went wrong
     #[error("Member #{0:x?} is out of keypackages")]
     OutOfKeyPackage(crate::member::MemberId),

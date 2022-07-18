@@ -1,15 +1,17 @@
-use crate::{credential::CredentialSupplier, ConversationId, ConversationMember, CryptoResult, MlsCentral};
-use mls_crypto_provider::MlsCryptoProvider;
 use openmls::key_packages::KeyPackage;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
+
+use mls_crypto_provider::MlsCryptoProvider;
+
+use crate::{credential::CredentialSupplier, member::ConversationMember, ConversationId, CryptoResult, MlsCentral};
 
 #[template]
 #[export]
 #[rstest(
     credential,
-    case::credential_basic(CertificateBundle::rnd_basic()),
-    case::credential_x509(CertificateBundle::rnd_certificate_bundle())
+    case::credential_basic(crate::credential::CertificateBundle::rnd_basic()),
+    case::credential_x509(crate::credential::CertificateBundle::rnd_certificate_bundle())
 )]
 #[allow(non_snake_case)]
 pub fn all_credential_types(credential: crate::credential::CredentialSupplier) {}
@@ -34,7 +36,7 @@ pub async fn charlie(credential: CredentialSupplier) -> CryptoResult<(MlsCryptoP
     new_client("charlie", credential).await
 }
 
-async fn new_client(
+pub async fn new_client(
     name: &str,
     credential: CredentialSupplier,
 ) -> CryptoResult<(MlsCryptoProvider, ConversationMember)> {
