@@ -141,8 +141,8 @@ pub mod utils {
                     rng.fill(&mut key[..]);
 
                     Self {
-                        id: id.into(),
-                        key,
+                        id,
+                        key
                     }
                 }
 
@@ -165,7 +165,7 @@ pub mod utils {
                     rng.fill(&mut credential[..]);
 
                     Self {
-                        id: id.into(),
+                        id,
                         signature,
                         credential,
                     }
@@ -193,7 +193,7 @@ pub mod utils {
 
                     Self {
                         id: id.into(),
-                        state: state.into(),
+                        state,
                     }
                 }
 
