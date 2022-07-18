@@ -244,11 +244,6 @@ impl MlsCentral {
             .await
     }
 
-    #[cfg(test)]
-    pub(crate) fn group(&self, id: &ConversationId) -> Option<&MlsConversation> {
-        self.mls_groups.get(id)
-    }
-
     /// Create a new empty conversation
     pub async fn new_conversation(
         &mut self,

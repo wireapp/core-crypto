@@ -158,7 +158,8 @@ mod tests {
                         .await
                         .unwrap();
 
-                    assert_eq!(central.group(&conversation_id).unwrap().members().unwrap().len(), 2);
+                    let conv = central.mls_groups.get(&conversation_id).unwrap();
+                    assert_eq!(conv.members().unwrap().len(), 2);
 
                     let error = central
                         .mls_backend
