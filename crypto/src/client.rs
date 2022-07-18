@@ -14,21 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{CertificateBundle, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
-use core_crypto_keystore::entities::{EntityFindParams, MlsKeypackage, StringEntityId};
-use core_crypto_keystore::{entities::MlsIdentity, CryptoKeystoreError, CryptoKeystoreResult};
-use mls_crypto_provider::MlsCryptoProvider;
-use openmls::extensions::LifetimeExtension;
-use openmls::prelude::KeyPackageRef;
 use openmls::{
     credentials::CredentialBundle,
     extensions::Extension,
-    prelude::{KeyPackageBundle, TlsSerializeTrait},
+    prelude::{KeyPackageBundle, KeyPackageRef, LifetimeExtension, TlsSerializeTrait},
 };
 use openmls_traits::{
     key_store::{FromKeyStoreValue, OpenMlsKeyStore, ToKeyStoreValue},
     OpenMlsCryptoProvider,
 };
+
+use core_crypto_keystore::{
+    entities::{EntityFindParams, MlsIdentity, MlsKeypackage, StringEntityId},
+    CryptoKeystoreError, CryptoKeystoreResult,
+};
+use mls_crypto_provider::MlsCryptoProvider;
+
+use crate::{CertificateBundle, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
 
 pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 
@@ -37,15 +39,8 @@ const KEYPACKAGE_DEFAULT_LIFETIME: std::time::Duration = std::time::Duration::fr
 /// A unique identifier for clients. A client is an identifier for each App a user is using, such as desktop,
 /// mobile, etc. Users can have multiple clients.
 /// More information [here](https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients)
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Deref)]
 pub struct ClientId(Vec<u8>);
-
-impl std::ops::Deref for ClientId {
-    type Target = Vec<u8>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 impl From<&[u8]> for ClientId {
     fn from(value: &[u8]) -> Self {
@@ -465,11 +460,14 @@ impl Client {
 
 #[cfg(test)]
 pub mod tests {
-    use super::Client;
-    use crate::{credential::CertificateBundle, credential::CredentialSupplier, test_fixture_utils::*};
-    use mls_crypto_provider::MlsCryptoProvider;
     use openmls::prelude::{KeyPackageBundle, KeyPackageRef};
     use wasm_bindgen_test::*;
+
+    use mls_crypto_provider::MlsCryptoProvider;
+
+    use crate::{credential::CredentialSupplier, test_fixture_utils::*};
+
+    use super::Client;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -581,14 +579,12 @@ pub mod tests {
                 .fold((0usize, 0usize), |(mut unexpired_match, mut expired_match), fresh| {
                     if unexpired_kpbs
                         .iter()
-                        .find(|kpb| kpb.key_package() == fresh.key_package())
-                        .is_some()
+                        .any(|kpb| kpb.key_package() == fresh.key_package())
                     {
                         unexpired_match += 1;
                     } else if partially_expired_kpbs
                         .iter()
-                        .find(|kpb| kpb.key_package() == fresh.key_package())
-                        .is_some()
+                        .any(|kpb| kpb.key_package() == fresh.key_package())
                     {
                         expired_match += 1;
                     }

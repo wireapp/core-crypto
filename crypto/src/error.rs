@@ -35,6 +35,9 @@ pub enum CryptoError {
     /// !!!! Something went very wrong and one of our locks has been poisoned by an in-thread panic !!!!
     #[error("One of the locks has been poisoned")]
     LockPoisonError,
+    /// We have done something terribly wrong
+    #[error("We have done something terribly wrong and it needs to be fixed")]
+    ImplementationError,
     /// A conversation member is out of local stored keypackages - if it does happen something went wrong
     #[error("Member #{0:x?} is out of keypackages")]
     OutOfKeyPackage(crate::member::MemberId),
@@ -101,9 +104,6 @@ pub enum MlsError {
     /// New group error
     #[error(transparent)]
     MlsNewGroupError(#[from] openmls::prelude::NewGroupError),
-    /// Leave group error
-    #[error(transparent)]
-    MlsLeaveGroupError(#[from] openmls::prelude::LeaveGroupError),
     /// Add members error
     #[error(transparent)]
     MlsAddMembersError(#[from] openmls::prelude::AddMembersError),

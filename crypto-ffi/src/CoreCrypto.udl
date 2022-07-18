@@ -25,6 +25,7 @@ enum CryptoError {
     "ClientSignatureNotFound",
     "ClientSignatureMismatch",
     "LockPoisonError",
+    "ImplementationError",
     "OutOfKeyPackage",
     "MlsProviderError",
     "KeyStoreError",
@@ -47,11 +48,6 @@ dictionary DecryptedMessage {
 dictionary MemberAddedMessages {
     sequence<u8> message;
     sequence<u8> welcome;
-};
-
-dictionary ConversationLeaveMessages {
-    sequence<u8> self_removal_proposal;
-    sequence<u8>? other_clients_removal_commit;
 };
 
 dictionary Invitee {
@@ -111,9 +107,6 @@ interface CoreCrypto {
     sequence<u8>? remove_clients_from_conversation(ConversationId conversation_id, sequence<ClientId> clients);
 
     [Throws=CryptoError]
-    ConversationLeaveMessages leave_conversation(ConversationId conversation_id, [ByRef] sequence<ClientId> other_clients);
-
-    [Throws=CryptoError]
     DecryptedMessage decrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> payload);
 
     [Throws=CryptoError]
@@ -151,6 +144,12 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     void reseed_rng(sequence<u8> seed);
+
+    [Throws=CryptoError]
+    void commit_accepted(ConversationId conversation_id);
+
+    [Throws=CryptoError]
+    CommitBundle commit_pending_proposals(ConversationId conversation_id);
 };
 
 namespace CoreCrypto {

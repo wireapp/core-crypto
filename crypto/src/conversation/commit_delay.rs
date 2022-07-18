@@ -1,8 +1,38 @@
+use crate::{CryptoError, CryptoResult, MlsConversation};
+use mls_crypto_provider::MlsCryptoProvider;
+use openmls_traits::OpenMlsCryptoProvider;
 use std::num::TryFromIntError;
 
 /// These constants intend to ramp up the delay and flatten the curve for later positions
 const DELAY_RAMP_UP_MULTIPLIER: f32 = 120.0;
 const DELAY_RAMP_UP_SUB: u64 = 106;
+
+impl MlsConversation {
+    /// Returns the tree index of the client owning this instance of the conversation.
+    ///
+    /// # Errors
+    /// [CryptoError::SelfKeypackageNotFound] if the [KeyPackage] can't be found. This shouldn't
+    /// happen and the conversation is in an invalid state.
+    pub fn get_self_tree_index(&self, backend: &MlsCryptoProvider) -> CryptoResult<usize> {
+        let myself = self
+            .group
+            .key_package_ref()
+            .ok_or(CryptoError::SelfKeypackageNotFound)?;
+
+        // TODO: switch to `try_find` when stabilized
+        self.group
+            .members()
+            .iter()
+            .enumerate()
+            .find_map(|(i, kp)| {
+                kp.hash_ref(backend.crypto())
+                    .ok()
+                    .filter(|kpr| kpr == myself)
+                    .map(|_| i)
+            })
+            .ok_or(CryptoError::SelfKeypackageNotFound)
+    }
+}
 
 pub(crate) fn calculate_delay(self_index: usize, epoch: u64, total_members: usize) -> Result<u64, TryFromIntError> {
     let self_index: u64 = self_index.try_into()?;

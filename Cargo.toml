@@ -16,10 +16,10 @@ git = "https://github.com/wireapp/openmls"
 branch = "feat/async"
 package = "openmls"
 
-# [patch.crates-io.openmls_rust_crypto]
-# git = "https://github.com/wireapp/openmls"
-# branch = "feat/async"
-# package = "openmls_rust_crypto"
+[patch.crates-io.openmls_traits]
+git = "https://github.com/wireapp/openmls"
+branch = "feat/async"
+package = "openmls_traits"
 
 [patch.crates-io.hpke-rs]
 git = "https://github.com/wireapp/hpke-rs"
@@ -35,11 +35,6 @@ package = "hpke-rs-crypto"
 git = "https://github.com/wireapp/hpke-rs"
 branch = "fix/updated-deps"
 package = "hpke-rs-rust-crypto"
-
-[patch.crates-io.openmls_traits]
-git = "https://github.com/wireapp/openmls"
-branch = "feat/async"
-package = "openmls_traits"
 
 [patch.crates-io.rcgen]
 git = "https://github.com/wireapp/rcgen"

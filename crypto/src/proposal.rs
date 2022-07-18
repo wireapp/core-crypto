@@ -14,10 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError};
-use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::{KeyPackage, MlsGroup, MlsMessageOut};
+use openmls::prelude::{KeyPackage, MlsMessageOut};
 use openmls_traits::OpenMlsCryptoProvider;
+
+use mls_crypto_provider::MlsCryptoProvider;
+
+use crate::{ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsError};
 
 /// Internal representation of proposal to ease further additions
 pub enum MlsProposal {
@@ -32,35 +34,23 @@ pub enum MlsProposal {
 
 impl MlsProposal {
     /// Creates a new proposal within the specified `MlsGroup`
-    async fn create(self, backend: &MlsCryptoProvider, group: &mut MlsGroup) -> CryptoResult<MlsMessageOut> {
+    async fn create(
+        self,
+        backend: &MlsCryptoProvider,
+        conversation: &mut MlsConversation,
+    ) -> CryptoResult<MlsMessageOut> {
         match self {
-            MlsProposal::Add(key_package) => group
-                .propose_add_member(backend, &key_package)
-                .await
-                .map_err(MlsError::from)
-                .map_err(CryptoError::from),
-            MlsProposal::Update => group
-                .propose_self_update(backend, None)
-                .await
-                .map_err(MlsError::from)
-                .map_err(CryptoError::from),
+            MlsProposal::Add(key_package) => conversation.propose_add_member(backend, &key_package).await,
+            MlsProposal::Update => conversation.propose_self_update(backend).await,
             MlsProposal::Remove(client_id) => {
-                let href = group
+                let href = conversation
+                    .group
                     .members()
                     .into_iter()
                     .find(|kp| kp.credential().identity() == client_id.as_slice())
                     .ok_or(CryptoError::ClientNotFound(client_id))
-                    .and_then(|kp| {
-                        kp.hash_ref(backend.crypto())
-                            .map_err(MlsError::from)
-                            .map_err(CryptoError::from)
-                    })?;
-
-                group
-                    .propose_remove_member(backend, &href)
-                    .await
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)
+                    .and_then(|kp| Ok(kp.hash_ref(backend.crypto()).map_err(MlsError::from)?))?;
+                conversation.propose_remove_member(backend, &href).await
             }
         }
     }
@@ -81,30 +71,22 @@ impl MlsCentral {
     /// returned as well, when for example there's a commit pending to be merged
     pub async fn new_proposal(
         &mut self,
-        conversation: ConversationId,
+        conversation: &ConversationId,
         proposal: MlsProposal,
     ) -> CryptoResult<MlsMessageOut> {
-        let conversation = self
-            .mls_groups
-            .get_mut(&conversation)
-            .ok_or(CryptoError::ConversationNotFound(conversation))?;
-        let group = &mut conversation.group;
-
-        proposal.create(&self.mls_backend, group).await
+        let conversation = Self::get_conversation_mut(&mut self.mls_groups, conversation)?;
+        proposal.create(&self.mls_backend, conversation).await
     }
 }
 
 #[cfg(test)]
 pub mod proposal_tests {
-    use super::*;
-    use crate::{
-        credential::{CertificateBundle, CredentialSupplier},
-        test_fixture_utils::*,
-        test_utils::run_test_with_central,
-        CryptoError, *,
-    };
     use openmls::prelude::*;
     use wasm_bindgen_test::wasm_bindgen_test;
+
+    use crate::{credential::CredentialSupplier, test_fixture_utils::*, test_utils::run_test_with_central, *};
+
+    use super::*;
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
@@ -123,7 +105,7 @@ pub mod proposal_tests {
                         .unwrap();
                     let kp = key_package(&central, credential);
                     let proposal = MlsProposal::Add(kp.key_package().to_owned());
-                    let add_proposal = central.new_proposal(conversation_id, proposal);
+                    let add_proposal = central.new_proposal(&conversation_id, proposal);
                     let _ = add_proposal.await.unwrap();
                 })
             })
@@ -139,9 +121,9 @@ pub mod proposal_tests {
                     let kp = key_package(&central, credential);
                     let conversation_id = b"unknown".to_vec();
                     let proposal = MlsProposal::Add(kp.key_package().to_owned());
-                    let add_proposal = central.new_proposal(conversation_id.clone(), proposal).await;
+                    let add_proposal = central.new_proposal(&conversation_id, proposal).await;
                     match add_proposal {
-                        Err(CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
+                        Err(error::CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
                         _ => panic!(""),
                     }
                 })
@@ -163,7 +145,7 @@ pub mod proposal_tests {
                         .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
                         .await
                         .unwrap();
-                    let update_proposal = central.new_proposal(conversation_id, MlsProposal::Update);
+                    let update_proposal = central.new_proposal(&conversation_id, MlsProposal::Update);
                     let _ = update_proposal.await.unwrap();
                 })
             })
@@ -177,9 +159,9 @@ pub mod proposal_tests {
                 Box::pin(async move {
                     central.mls_groups.clear();
                     let conversation_id = b"conversation".to_vec();
-                    let update_proposal = central.new_proposal(conversation_id.clone(), MlsProposal::Update).await;
+                    let update_proposal = central.new_proposal(&conversation_id, MlsProposal::Update).await;
                     match update_proposal {
-                        Err(CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
+                        Err(error::CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
                         _ => panic!(""),
                     }
                 })
@@ -201,11 +183,11 @@ pub mod proposal_tests {
                         .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
                         .await
                         .unwrap();
-                    let conversation = central.mls_groups.get(&conversation_id[..]).unwrap();
+                    let conversation = central.get_conversation(&conversation_id).unwrap();
                     let client_id =
                         ClientId::from(conversation.group.members().get(0).unwrap().credential().identity());
                     let remove_proposal = central
-                        .new_proposal(conversation_id, MlsProposal::Remove(client_id))
+                        .new_proposal(&conversation_id, MlsProposal::Remove(client_id))
                         .await;
                     let _ = remove_proposal.unwrap();
                 })
@@ -225,10 +207,10 @@ pub mod proposal_tests {
                         .unwrap();
                     let client_id = ClientId::from(vec![]);
                     let remove_proposal = central
-                        .new_proposal(conversation_id, MlsProposal::Remove(client_id.clone()))
+                        .new_proposal(&conversation_id, MlsProposal::Remove(client_id.clone()))
                         .await;
                     match remove_proposal {
-                        Err(CryptoError::ClientNotFound(cli_id)) => assert_eq!(cli_id, client_id),
+                        Err(error::CryptoError::ClientNotFound(cli_id)) => assert_eq!(cli_id, client_id),
                         _ => panic!(""),
                     }
                 })
@@ -245,10 +227,10 @@ pub mod proposal_tests {
                     let conversation_id = b"conversation".to_vec();
                     let client_id = ClientId::from(vec![]);
                     let remove_proposal = central
-                        .new_proposal(conversation_id.clone(), MlsProposal::Remove(client_id))
+                        .new_proposal(&conversation_id, MlsProposal::Remove(client_id))
                         .await;
                     match remove_proposal {
-                        Err(CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
+                        Err(error::CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
                         _ => panic!(""),
                     }
                 })

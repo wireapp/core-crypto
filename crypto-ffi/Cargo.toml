@@ -16,7 +16,7 @@ mobile = ["uniffi", "uniffi_macros", "uniffi_build", "uniffi_bindgen"]
 c-api = ["libc"]
 
 [dependencies]
-core-crypto = { version = "0.3", path = "../crypto" }
+core-crypto = { version = "0.3", path = "../crypto", default-features = false }
 thiserror = "1.0"
 cfg-if = "1.0"
 futures-util = "0.3"

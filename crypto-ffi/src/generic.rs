@@ -14,6 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use core_crypto::prelude::decrypt::MlsConversationDecryptMessage;
+use core_crypto::prelude::handshake::MlsConversationCreationMessage;
+use core_crypto::prelude::*;
+pub use core_crypto::prelude::{CiphersuiteName, ClientId, ConversationId, CoreCryptoCallbacks, MemberId};
+pub use core_crypto::CryptoError;
+use futures_lite::future;
+use futures_util::TryFutureExt;
+use std::collections::HashMap;
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "mobile")] {
         mod uniffi_support;
@@ -23,15 +32,6 @@ cfg_if::cfg_if! {
         pub use self::c_api::*;
     }
 }
-
-use std::collections::HashMap;
-
-use core_crypto::prelude::*;
-pub use core_crypto::prelude::{CiphersuiteName, ClientId, ConversationId, CoreCryptoCallbacks, MemberId};
-pub use core_crypto::CryptoError;
-
-use futures_lite::future;
-use futures_util::TryFutureExt;
 
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
@@ -47,13 +47,6 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
         let (welcome, message) = msg.to_bytes_pairs()?;
         Ok(Self { welcome, message })
     }
-}
-
-#[cfg_attr(feature = "c-api", repr(C))]
-#[derive(Debug)]
-pub struct ConversationLeaveMessages {
-    pub self_removal_proposal: Vec<u8>,
-    pub other_clients_removal_commit: Option<Vec<u8>>,
 }
 
 #[cfg_attr(feature = "c-api", repr(C))]
@@ -82,6 +75,16 @@ pub struct MlsConversationInitMessage {
 pub struct DecryptedMessage {
     pub message: Option<Vec<u8>>,
     pub commit_delay: Option<u64>,
+}
+
+impl From<MlsConversationDecryptMessage> for DecryptedMessage {
+    fn from(from: MlsConversationDecryptMessage) -> Self {
+        // TODO: map other fields in next minor version
+        Self {
+            message: from.app_msg,
+            commit_delay: from.delay,
+        }
+    }
 }
 
 impl Invitee {
@@ -253,18 +256,17 @@ impl CoreCrypto<'_> {
     pub fn update_keying_material(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
         use core_crypto::prelude::tls_codec::Serialize as _;
 
-        let result = future::block_on(
+        let (commit, welcome) = future::block_on({
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .update_keying_material(conversation_id),
-            ),
-        )?;
+                    .update_keying_material(&conversation_id),
+            )
+        })?;
         Ok(CommitBundle {
-            message: result.0.tls_serialize_detached().map_err(MlsError::from)?,
-            welcome: result
-                .1
+            message: commit.tls_serialize_detached().map_err(MlsError::from)?,
+            welcome: welcome
                 .map(|v| v.tls_serialize_detached())
                 .transpose()
                 .map_err(MlsError::from)?,
@@ -334,35 +336,14 @@ impl CoreCrypto<'_> {
         .transpose()?)
     }
 
-    pub fn leave_conversation(
-        &self,
-        conversation_id: ConversationId,
-        other_clients: &[ClientId],
-    ) -> CryptoResult<ConversationLeaveMessages> {
-        let messages = future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .leave_conversation(conversation_id, other_clients),
-            ),
-        )?;
-        let ret = ConversationLeaveMessages {
-            other_clients_removal_commit: messages.other_clients_removal_commit.and_then(|c| c.to_bytes().ok()),
-            self_removal_proposal: messages.self_removal_proposal.to_bytes().map_err(MlsError::from)?,
-        };
-
-        Ok(ret)
-    }
-
     pub fn decrypt_message(&self, conversation_id: ConversationId, payload: &[u8]) -> CryptoResult<DecryptedMessage> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .decrypt_message(conversation_id, payload)
-                    .map_ok(|(message, commit_delay)| DecryptedMessage { message, commit_delay }),
+                    .decrypt_message(&conversation_id, payload)
+                    .map_ok(DecryptedMessage::from),
             ),
         )
     }
@@ -373,7 +354,7 @@ impl CoreCrypto<'_> {
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .encrypt_message(conversation_id, message),
+                    .encrypt_message(&conversation_id, message),
             ),
         )
     }
@@ -395,7 +376,7 @@ impl CoreCrypto<'_> {
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .new_proposal(conversation_id, MlsProposal::Add(kp)),
+                    .new_proposal(&conversation_id, MlsProposal::Add(kp)),
             ),
         )?
         .to_bytes()
@@ -408,7 +389,7 @@ impl CoreCrypto<'_> {
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .new_proposal(conversation_id, MlsProposal::Update),
+                    .new_proposal(&conversation_id, MlsProposal::Update),
             ),
         )?
         .to_bytes()
@@ -421,7 +402,7 @@ impl CoreCrypto<'_> {
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .new_proposal(conversation_id, MlsProposal::Remove(client_id)),
+                    .new_proposal(&conversation_id, MlsProposal::Remove(client_id)),
             ),
         )?
         .to_bytes()
@@ -538,5 +519,36 @@ impl CoreCrypto<'_> {
             .reseed(Some(seed));
 
         Ok(())
+    }
+
+    pub fn commit_accepted(&self, conversation_id: ConversationId) -> CryptoResult<()> {
+        future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .commit_accepted(&conversation_id),
+            ),
+        )
+    }
+
+    pub fn commit_pending_proposals(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
+        use core_crypto::prelude::tls_codec::Serialize as _;
+
+        let (commit, welcome) = future::block_on({
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .commit_pending_proposals(&conversation_id),
+            )
+        })?;
+        Ok(CommitBundle {
+            message: commit.tls_serialize_detached().map_err(MlsError::from)?,
+            welcome: welcome
+                .map(|v| v.tls_serialize_detached())
+                .transpose()
+                .map_err(MlsError::from)?,
+        })
     }
 }
