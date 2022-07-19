@@ -498,11 +498,11 @@ impl CoreCrypto<'_> {
         Ok(())
     }
 
-    pub fn random_bytes(&self, len: usize) -> CryptoResult<Vec<u8>> {
+    pub fn random_bytes(&self, len: u64) -> CryptoResult<Vec<u8>> {
         self.central
             .lock()
             .map_err(|_| CryptoError::LockPoisonError)?
-            .random_bytes(len)
+            .random_bytes(len as usize)
     }
 
     pub fn reseed_rng(&self, seed: Vec<u8>) -> CryptoResult<()> {
