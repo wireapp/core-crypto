@@ -31,6 +31,7 @@ pub enum MlsProposal {
 }
 
 impl MlsProposal {
+    /// Creates a new proposal within the specified `MlsGroup`
     async fn create(self, backend: &MlsCryptoProvider, group: &mut MlsGroup) -> CryptoResult<MlsMessageOut> {
         match self {
             MlsProposal::Add(key_package) => group
@@ -66,7 +67,18 @@ impl MlsProposal {
 }
 
 impl MlsCentral {
-    /// Generic proposal factory
+    /// Creates a new proposal within a group
+    ///
+    /// # Arguments
+    /// * `conversation` - the group/conversation id
+    /// * `proposal` - the proposal do be added in the group
+    ///
+    /// # Return type
+    /// A message will be returned with the proposal that was created
+    ///
+    /// # Errors
+    /// If the conversation is not found, an error will be returned. Errors from OpenMls can be
+    /// returned as well, when for example there's a commit pending to be merged
     pub async fn new_proposal(
         &mut self,
         conversation: ConversationId,

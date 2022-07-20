@@ -416,7 +416,7 @@ impl CoreCrypto {
         let this = self.0.clone();
         future_to_promise(
             async move {
-                this.write().await.callbacks(Box::new(callbacks))?;
+                this.write().await.callbacks(Box::new(callbacks));
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
@@ -430,7 +430,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let cc = this.read().await;
-                let pk = cc.client_public_key()?;
+                let pk = cc.client_public_key();
                 WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
             }
             .err_into(),

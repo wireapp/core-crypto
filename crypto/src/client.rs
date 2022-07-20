@@ -30,6 +30,9 @@ use openmls_traits::{
 
 pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 
+/// A unique identifier for clients. A client is an identifier for each App a user is using, such as desktop,
+/// mobile, etc. Users can have multiple clients.
+/// More information [here](https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ClientId(Vec<u8>);
 
@@ -81,6 +84,7 @@ impl std::str::FromStr for ClientId {
     }
 }
 
+/// Represents a client within a group
 #[derive(Debug, Clone)]
 pub struct Client {
     id: ClientId,
@@ -98,6 +102,15 @@ fn identity_key(credentials: &CredentialBundle) -> Result<Vec<u8>, MlsError> {
 }
 
 impl Client {
+    /// Initialize a new client.
+    ///
+    /// # Arguments
+    /// * `id` - id of the client
+    /// * `certificate_bundle` - an optional x509 certificate
+    /// * `backend` - the KeyStore and crypto provider to read identities from
+    ///
+    /// # Errors
+    /// KeyStore and OpenMls errors can happen
     pub async fn init(
         id: ClientId,
         certificate_bundle: Option<CertificateBundle>,
@@ -183,28 +196,46 @@ impl Client {
         })
     }
 
+    /// Returns the client id
     pub fn id(&self) -> &ClientId {
         &self.id
     }
 
+    /// Returns the client's public signature key from its [openmls::credentials::Credential]
     pub fn public_key(&self) -> &[u8] {
         self.credentials.credential().signature_key().as_slice()
     }
 
+    /// Returns the client's [`CredentialBundle`] ([openmls::credentials::Credential] + private signature key)
     pub fn credentials(&self) -> &CredentialBundle {
         &self.credentials
     }
 
+    /// Returns the Ciphersuite from the client
     pub fn ciphersuite(&self) -> &MlsCiphersuite {
         &self.ciphersuite
     }
 
+    /// This method returns the hash of the oldest available [KeyPackageBundle] as a byte array for the Client
+    /// and if necessary regenerates a new keypackage for immediate use
+    ///
+    /// # Arguments
+    /// * `backend` - the KeyStorage to load the keypackages from
+    ///
+    /// # Errors
+    /// KeyStore errors
     pub async fn keypackage_raw_hash(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<u8>> {
         Ok(self.keypackage_hash(backend).await?.value().to_vec())
     }
 
     /// This method returns the hash of the oldest available KeyPackageBundle for the Client
     /// and if necessary regenerates a new keypackage for immediate use
+    ///
+    /// # Arguments
+    /// * `backend` - the KeyStorage to load the keypackages from
+    ///
+    /// # Errors
+    /// KeyStore errors
     #[async_recursion::async_recursion(?Send)]
     pub async fn keypackage_hash(&self, backend: &MlsCryptoProvider) -> CryptoResult<KeyPackageRef> {
         use core_crypto_keystore::CryptoKeystoreMls as _;
@@ -219,6 +250,13 @@ impl Client {
         }
     }
 
+    /// Generates a new keypackage
+    ///
+    /// # Arguments
+    /// * `backend` - the KeyStorage to load the keypackages from
+    ///
+    /// # Errors
+    /// KeyStore and OpenMls errors
     pub async fn gen_keypackage(&self, backend: &MlsCryptoProvider) -> CryptoResult<KeyPackageBundle> {
         let kpb = KeyPackageBundle::new(
             &[*self.ciphersuite],
@@ -237,6 +275,13 @@ impl Client {
 
     /// Requests `count` keying material to be present and returns
     /// a reference to it for the consumer to copy/clone.
+    ///
+    /// # Arguments
+    /// * `count` - number of [openmls::key_packages::KeyPackage] to generate
+    /// * `backend` - the KeyStorage to load the keypackages from
+    ///
+    /// # Errors
+    /// KeyStore and OpenMls errors
     pub async fn request_keying_material(
         &self,
         count: usize,

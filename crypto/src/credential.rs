@@ -21,6 +21,7 @@ pub struct CertificateBundle {
 #[cfg(test)]
 impl CertificateBundle {
     /// Basic credentials are generated once clients are created
+    /// It will effectively return `None`
     pub fn rnd_basic() -> CredentialSupplier {
         || None
     }

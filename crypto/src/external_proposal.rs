@@ -4,6 +4,17 @@ use openmls::prelude::{ExternalProposal, GroupEpoch, GroupId, KeyPackage, KeyPac
 impl MlsCentral {
     /// Crafts a new external Add proposal. Enables a client outside a group to request addition to this group.
     /// For Wire only, the client must belong to an user already in the group
+    ///
+    /// # Arguments
+    /// * `conversation_id` - the group/conversation id
+    /// * `epoch` - the current epoch of the group. See [openmls::group::GroupEpoch][GroupEpoch]
+    /// * `key_package` - the `KeyPackage` of the client to be added to the group
+    ///
+    /// # Return type
+    /// Returns a message with the proposal to be add a new client
+    ///
+    /// # Errors
+    /// Errors resulting from the creation of the proposal within OpenMls
     pub async fn new_external_add_proposal(
         &self,
         conversation_id: ConversationId,
@@ -24,6 +35,17 @@ impl MlsCentral {
 
     /// Crafts a new external Remove proposal. Enables a client outside a group to request removal
     /// of a client within the group.
+    ///
+    /// # Arguments
+    /// * `conversation_id` - the group/conversation id
+    /// * `epoch` - the current epoch of the group. See [openmls::group::GroupEpoch][GroupEpoch]
+    /// * `key_package_ref` - the `KeyPackageRef` of the client to be added to the group
+    ///
+    /// # Return type
+    /// Returns a message with the proposal to be remove a client
+    ///
+    /// # Errors
+    /// Errors resulting from the creation of the proposal within OpenMls
     pub async fn new_external_remove_proposal(
         &self,
         conversation_id: ConversationId,
@@ -93,7 +115,7 @@ mod tests {
                         let owner_group = owner_central.mls_groups.get_mut(&conversation_id).unwrap();
 
                         // just owner
-                        assert_eq!(owner_group.members().unwrap().len(), 1);
+                        assert_eq!(owner_group.members().len(), 1);
 
                         // simulate commit message reception from server
                         let (_, welcome) = owner_group
@@ -104,7 +126,7 @@ mod tests {
                         let welcome = welcome.unwrap();
 
                         // owner + guest
-                        assert_eq!(owner_group.members().unwrap().len(), 2);
+                        assert_eq!(owner_group.members().len(), 2);
 
                         guest_central
                             .process_welcome_message(welcome, MlsConversationConfiguration::default())
@@ -153,7 +175,7 @@ mod tests {
                             .add_members(&mut [guest], &owner_central.mls_backend)
                             .await
                             .unwrap();
-                        assert_eq!(owner_group.members().unwrap().len(), 2);
+                        assert_eq!(owner_group.members().len(), 2);
 
                         // now, as e.g. a Delivery Service, let's create an external remove proposal
                         // and kick guest out of the conversation
@@ -178,7 +200,7 @@ mod tests {
                             .await
                             .unwrap();
                         owner_group.group.merge_pending_commit().unwrap();
-                        assert_eq!(owner_group.members().unwrap().len(), 1);
+                        assert_eq!(owner_group.members().len(), 1);
                     })
                 },
             )

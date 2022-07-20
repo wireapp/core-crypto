@@ -24,22 +24,100 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
+/// An interface for the specialized queries in the KeyStore
 #[async_trait::async_trait(?Send)]
 pub trait CryptoKeystoreMls: Sized {
+    /// Retrieves an identity signature from a client id
+    ///
+    /// # Arguments
+    /// * `id` - client id
+    ///
+    /// # Errors
+    /// Any common error that can happen during a database connection. IoError being a common error
+    /// for example.
     async fn mls_load_identity_signature(&self, id: &str) -> CryptoKeystoreResult<Option<Vec<u8>>>;
+    /// Saves the signature and credentials for a client id
+    ///
+    /// # Arguments
+    /// * `id` - client id
+    /// * `signature` - the signature to be stored
+    /// * `credential` - the credential to be stored
+    ///
+    /// # Errors
+    /// Any common error that can happen during a database connection. IoError being a common error
+    /// for example.
     async fn mls_save_identity_signature(
         &self,
         id: &str,
         signature: &[u8],
         credential: &[u8],
     ) -> CryptoKeystoreResult<()>;
+    /// Counts how many KeyPackages are stored
+    ///
+    /// # Errors
+    /// Any common error that can happen during a database connection. IoError being a common error
+    /// for example.
     async fn mls_keypackagebundle_count(&self) -> CryptoKeystoreResult<usize>;
+    /// Fetches Keypackages
+    ///
+    /// # Arguments
+    /// * `count` - amount of entries to be returned
+    ///
+    /// # Errors
+    /// Any common error that can happen during a database connection. IoError being a common error
+    /// for example.
     async fn mls_fetch_keypackage_bundles<V: FromKeyStoreValue>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>>;
+    /// Fetches a singles keypackage
+    ///
+    /// # Errors
+    /// Any common error that can happen during a database connection. IoError being a common error
+    /// for example.
     async fn mls_get_keypackage<V: FromKeyStoreValue>(&self) -> CryptoKeystoreResult<V>;
+    /// Persists a `MlsGroup`
+    ///
+    /// # Arguments
+    /// * `group_id` - group/conversation id
+    /// * `state` - the group state
+    ///
+    /// # Errors
+    /// Any common error that can happen during a database connection. IoError being a common error
+    /// for example.
     async fn mls_group_persist(&self, group_id: &[u8], state: &[u8]) -> CryptoKeystoreResult<()>;
+    /// Loads `MlsGroups` from the database. It will be returned as a `HashMap` where the key is
+    /// the group/conversation id and the value the group state
+    ///
+    /// # Errors
+    /// Any common error that can happen during a database connection. IoError being a common error
+    /// for example.
     async fn mls_groups_restore(&self) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, Vec<u8>>>;
+    /// Saves a `MlsGroup` in a temporary table (typically used in scenarios where the group cannot
+    /// be commited until the backend acknowledges it, like external commits)
+    ///
+    /// # Arguments
+    /// * `group_id` - group/conversation id
+    /// * `mls_group` - the group/conversation state
+    ///
+    /// # Errors
+    /// Any common error that can happen during a database connection. IoError being a common error
+    /// for example.
     async fn mls_pending_groups_save(&self, group_id: &[u8], mls_group: &[u8]) -> CryptoKeystoreResult<()>;
+    /// Loads a temporary `MlsGroup` from the database
+    ///
+    /// # Arguments
+    /// * `id` - group/conversation id
+    ///
+    /// # Errors
+    /// Any common error that can happen during a database connection. IoError being a common error
+    /// for example.
     async fn mls_pending_groups_load(&self, group_id: &[u8]) -> CryptoKeystoreResult<Vec<u8>>;
+    /// Deletes a temporary `MlsGroup` from the database
+    ///
+    /// # Arguments
+    /// * `id` - group/conversation id
+    ///
+    /// # Errors
+    /// Any common error that can happen during a database connection. IoError being a common error
+    /// for example.
     async fn mls_pending_groups_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()>;
 }
 

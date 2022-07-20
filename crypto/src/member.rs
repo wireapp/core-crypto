@@ -23,8 +23,10 @@ use crate::{
 use openmls::prelude::KeyPackage;
 use tls_codec::Deserialize;
 
+/// Type definition for the identifier of a client in a conversation (aka Member)
 pub type MemberId = Vec<u8>;
 
+/// Represents a client withing a group
 #[derive(Debug, Clone)]
 pub struct ConversationMember {
     id: MemberId,
@@ -34,6 +36,10 @@ pub struct ConversationMember {
 }
 
 impl ConversationMember {
+    /// Creates a new member from a TLS-serialized keypackage
+    ///
+    /// # Errors
+    /// Deserialization errors
     pub fn new_raw(client_id: ClientId, kp_ser: Vec<u8>) -> CryptoResult<Self> {
         use openmls::prelude::TlsDeserializeTrait as _;
         let kp = KeyPackage::tls_deserialize(&mut &kp_ser[..]).map_err(MlsError::from)?;
@@ -45,6 +51,7 @@ impl ConversationMember {
         })
     }
 
+    /// Creates a new member from a keypackage and client id
     pub fn new(client_id: ClientId, kp: KeyPackage) -> Self {
         Self {
             id: client_id.to_vec(),
@@ -53,14 +60,18 @@ impl ConversationMember {
         }
     }
 
+    /// Returns a reference to the Client/Member id
     pub fn id(&self) -> &MemberId {
         &self.id
     }
 
+    /// Returns an `Iterator` from the clients ids
     pub fn clients(&self) -> impl Iterator<Item = &ClientId> {
         self.clients.keys()
     }
 
+    /// Returns the KeyPackages from all clients, poping the last added KeyPackage from each client
+    /// from the local state as a result
     pub fn keypackages_for_all_clients(&mut self) -> HashMap<&ClientId, Option<KeyPackage>> {
         self.clients
             .iter_mut()
@@ -68,6 +79,13 @@ impl ConversationMember {
             .collect()
     }
 
+    /// Adds a new `KeyPackage` to the internal state.
+    ///
+    /// # Arguments
+    /// * `kp` - `KeyPackage` to be added. It expects a TLS serialized byte array
+    ///
+    /// # Errors
+    /// Deserialization errors
     pub fn add_keypackage(&mut self, kp: Vec<u8>) -> CryptoResult<()> {
         let kp = KeyPackage::tls_deserialize(&mut &kp[..]).map_err(MlsError::from)?;
         let cid = ClientId::from(kp.credential().identity());
@@ -86,6 +104,7 @@ impl Eq for ConversationMember {}
 
 #[cfg(test)]
 impl ConversationMember {
+    /// Generates a random new Member
     pub async fn random_generate(
         backend: &mls_crypto_provider::MlsCryptoProvider,
         credential: crate::credential::CredentialSupplier,
@@ -103,6 +122,7 @@ impl ConversationMember {
         Ok(member)
     }
 
+    /// Generates a random new Member
     pub fn random_generate_clientless() -> CryptoResult<Self> {
         let user_uuid = uuid::Uuid::new_v4();
         let client_id = rand::random::<usize>();
@@ -114,10 +134,12 @@ impl ConversationMember {
         })
     }
 
+    /// Returns a reference for the internal local client
     pub fn local_client(&self) -> &Client {
         self.local_client.as_ref().unwrap()
     }
 
+    /// Returns a mutable reference for the internal local client
     pub fn local_client_mut(&mut self) -> &mut Client {
         self.local_client.as_mut().unwrap()
     }

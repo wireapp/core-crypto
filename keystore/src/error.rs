@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+/// Error to represent when a key is not present in the KeyStore
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum MissingKeyErrorKind {
     #[error("MLS KeyPackageBundle")]
@@ -29,6 +30,7 @@ pub enum MissingKeyErrorKind {
     ProteusPrekey,
 }
 
+/// Error type to represent various errors that can happen in the KeyStore
 #[derive(Debug, thiserror::Error)]
 pub enum CryptoKeystoreError {
     #[error("The requested {0} is not present in the store")]
@@ -132,4 +134,5 @@ impl From<rexie::Error> for CryptoKeystoreError {
     }
 }
 
+/// A specialized Result for the KeyStore functions
 pub type CryptoKeystoreResult<T> = Result<T, CryptoKeystoreError>;
