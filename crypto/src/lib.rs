@@ -185,6 +185,7 @@ mod config {
             })
         }
 
+        /// Sets the entropy seed
         pub fn set_entropy(&mut self, entropy: EntropySeed) {
             self.external_entropy = Some(entropy);
         }
@@ -638,16 +639,18 @@ impl MlsCentral {
         conversation.update_keying_material(&self.mls_backend).await
     }
 
-    // Utils
+    /// Generates a random byte array of the specified size
     pub fn random_bytes(&self, len: usize) -> CryptoResult<Vec<u8>> {
         use openmls_traits::random::OpenMlsRand as _;
         Ok(self.mls_backend.rand().random_vec(len)?)
     }
 
+    /// Returns a reference for the internal Crypto Provider
     pub fn provider(&self) -> &MlsCryptoProvider {
         &self.mls_backend
     }
 
+    /// Returns a mutable reference for the internal Crypto Provider
     pub fn provider_mut(&mut self) -> &mut MlsCryptoProvider {
         &mut self.mls_backend
     }

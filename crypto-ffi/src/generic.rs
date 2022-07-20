@@ -196,7 +196,8 @@ impl CoreCrypto<'_> {
         self.central
             .lock()
             .map_err(|_| CryptoError::LockPoisonError)?
-            .callbacks(callbacks)
+            .callbacks(callbacks);
+        Ok(())
     }
 
     pub fn client_public_key(&self) -> CryptoResult<Vec<u8>> {
