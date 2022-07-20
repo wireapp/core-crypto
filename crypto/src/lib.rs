@@ -390,7 +390,7 @@ impl MlsCentral {
     /// This function will return the conversation/group id
     ///
     /// # Errors
-    /// Errors can be provenient from the KeyStore of from OpenMls:
+    /// Errors can be originating from the KeyStore of from OpenMls:
     /// * if no [KeyPackageBundle] can be read from the KeyStore
     /// * if the message can't be decrypted
     pub async fn process_welcome_message(
@@ -501,7 +501,7 @@ impl MlsCentral {
     /// and a message containing the proposal to remove the local client.
     ///
     /// # Errors
-    /// If the conversation can't be found, an error will be returned. Other errors are provenient
+    /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     pub async fn leave_conversation(
         &mut self,
@@ -528,7 +528,7 @@ impl MlsCentral {
     /// This method will return an encrypted TLS serialized message.
     ///
     /// # Errors
-    /// If the conversation can't be found, an error will be returned. Other errors are provenient
+    /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     pub async fn encrypt_message(
         &mut self,
@@ -555,7 +555,7 @@ impl MlsCentral {
     /// byte array
     ///
     /// # Errors
-    /// If the conversation can't be found, an error will be returned. Other errors are provenient
+    /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     pub async fn decrypt_message(
         &mut self,
@@ -580,7 +580,7 @@ impl MlsCentral {
     /// A TLS serialized byte array of the `PublicGroupState`
     ///
     /// # Errors
-    /// If the conversation can't be found, an error will be returned. Other errors are provenient
+    /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and serialization
     pub async fn export_public_group_state(&self, conversation_id: &ConversationId) -> CryptoResult<Vec<u8>> {
         let conversation = self
@@ -625,7 +625,7 @@ impl MlsCentral {
     /// message that will be present if there were pending add proposals to be commited
     ///
     /// # Errors
-    /// If the conversation can't be found, an error will be returned. Other errors are provenient
+    /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     pub async fn update_keying_material(
         &mut self,

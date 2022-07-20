@@ -350,7 +350,7 @@ impl MlsConversation {
     /// A tuple containing the commit message and a possible welcome (in the case `Add` proposals were pending within the internal MLS Group)
     ///
     /// # Errors
-    /// Errors can be provenient from the KeyStore and OpenMls
+    /// Errors can be originating from the KeyStore and OpenMls
     pub async fn commit_pending_proposals(
         &mut self,
         backend: &MlsCryptoProvider,
@@ -377,7 +377,7 @@ impl MlsConversation {
     /// This method will return an encrypted TLS serialized message.
     ///
     /// # Errors
-    /// Errors are provenient from OpenMls and the KeyStore
+    /// Errors are originating from OpenMls and the KeyStore
     pub async fn encrypt_message(
         &mut self,
         message: impl AsRef<[u8]>,
@@ -401,7 +401,7 @@ impl MlsConversation {
     /// message that will be present if there were pending add proposals to be commited
     ///
     /// # Errors
-    /// Errors are provenient from OpenMls and the KeyStore
+    /// Errors are originating from OpenMls and the KeyStore
     pub async fn update_keying_material(
         &mut self,
         backend: &MlsCryptoProvider,
