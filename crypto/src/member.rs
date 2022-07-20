@@ -26,7 +26,7 @@ use tls_codec::Deserialize;
 /// Type definition for the Client/Member id. It is an array of bytes
 pub type MemberId = Vec<u8>;
 
-/// Represents a member withing a group
+/// Represents a client withing a group
 #[derive(Debug, Clone)]
 pub struct ConversationMember {
     id: MemberId,
