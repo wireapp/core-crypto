@@ -145,7 +145,7 @@ mod config {
         /// * `client_id` - identifier for the client to be used by [MlsCentral]
         ///
         /// # Errors
-        /// Any empty string parameter will result in a `CryptoError::MalformedIdentifier` error.
+        /// Any empty string parameter will result in a [CryptoError::MalformedIdentifier] error.
         ///
         /// # Examples
         ///
@@ -342,15 +342,6 @@ impl MlsCentral {
         self.mls_client
             .request_keying_material(amount_requested, &self.mls_backend)
             .await
-    }
-
-    /// Returns a reference to a group
-    ///
-    /// # Arguments
-    /// * `id` - id of the group
-    #[cfg(test)]
-    pub(crate) fn group(&self, id: &ConversationId) -> Option<&MlsConversation> {
-        self.mls_groups.get(id)
     }
 
     /// Create a new empty conversation
@@ -828,8 +819,8 @@ pub mod tests {
                     MlsCentralConfiguration::try_new(tmp_dir_argument, "test".to_string(), "potato".to_string())
                         .unwrap();
 
-                let central = MlsCentral::try_new(configuration.clone(), credential()).await.unwrap();
-                assert!(central.client_public_key().is_ok());
+                let result = MlsCentral::try_new(configuration.clone(), credential()).await;
+                assert!(result.is_ok());
             })
         })
         .await

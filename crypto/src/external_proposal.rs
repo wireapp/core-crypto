@@ -115,7 +115,7 @@ mod tests {
                         let owner_group = owner_central.mls_groups.get_mut(&conversation_id).unwrap();
 
                         // just owner
-                        assert_eq!(owner_group.members().unwrap().len(), 1);
+                        assert_eq!(owner_group.members().len(), 1);
 
                         // simulate commit message reception from server
                         let (_, welcome) = owner_group
@@ -126,7 +126,7 @@ mod tests {
                         let welcome = welcome.unwrap();
 
                         // owner + guest
-                        assert_eq!(owner_group.members().unwrap().len(), 2);
+                        assert_eq!(owner_group.members().len(), 2);
 
                         guest_central
                             .process_welcome_message(welcome, MlsConversationConfiguration::default())
@@ -175,7 +175,7 @@ mod tests {
                             .add_members(&mut [guest], &owner_central.mls_backend)
                             .await
                             .unwrap();
-                        assert_eq!(owner_group.members().unwrap().len(), 2);
+                        assert_eq!(owner_group.members().len(), 2);
 
                         // now, as e.g. a Delivery Service, let's create an external remove proposal
                         // and kick guest out of the conversation
@@ -200,7 +200,7 @@ mod tests {
                             .await
                             .unwrap();
                         owner_group.group.merge_pending_commit().unwrap();
-                        assert_eq!(owner_group.members().unwrap().len(), 1);
+                        assert_eq!(owner_group.members().len(), 1);
                     })
                 },
             )

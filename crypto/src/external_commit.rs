@@ -165,7 +165,7 @@ mod tests {
                         .decrypt_message(&message.to_bytes().unwrap(), &alice_backend)
                         .await
                         .unwrap();
-                    assert_eq!(alice_group.members().unwrap().len(), 2);
+                    assert_eq!(alice_group.members().len(), 2);
 
                     // we merge the commit and update the local state
                     central
@@ -177,7 +177,7 @@ mod tests {
                         .unwrap();
 
                     let conv = central.mls_groups.get(&conversation_id).unwrap();
-                    assert_eq!(conv.members().unwrap().len(), 2);
+                    assert_eq!(conv.members().len(), 2);
 
                     let error = central
                         .mls_backend
@@ -242,7 +242,7 @@ mod tests {
                             ParseMessageError::ValidationError(ValidationError::WrongEpoch)
                         ))
                     ));
-                    assert_eq!(alice_group.members().unwrap().len(), 2);
+                    assert_eq!(alice_group.members().len(), 2);
                 })
             })
             .await

@@ -504,7 +504,7 @@ pub mod tests {
 
             assert_eq!(alice_group.id, conversation_id);
             assert_eq!(alice_group.group.group_id().as_slice(), conversation_id);
-            assert_eq!(alice_group.members().unwrap().len(), 1);
+            assert_eq!(alice_group.members().len(), 1);
             let alice_can_send_message = alice_group.encrypt_message(b"me", &alice_backend).await;
             assert!(alice_can_send_message.is_ok());
         }
@@ -529,7 +529,7 @@ pub mod tests {
 
             assert_eq!(alice_group.id, conversation_id);
             assert_eq!(alice_group.group.group_id().as_slice(), conversation_id);
-            assert_eq!(alice_group.members().unwrap().len(), 2);
+            assert_eq!(alice_group.members().len(), 2);
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message;
 
@@ -584,7 +584,7 @@ pub mod tests {
 
             assert_eq!(alice_group.id, conversation_id);
             assert_eq!(alice_group.group.group_id().as_slice(), conversation_id);
-            assert_eq!(alice_group.members().unwrap().len(), 1 + number_of_friends);
+            assert_eq!(alice_group.members().len(), 1 + number_of_friends);
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message;
 
@@ -625,7 +625,7 @@ pub mod tests {
 
             assert_eq!(alice_group.id, conversation_id);
             assert_eq!(alice_group.group.group_id().as_slice(), conversation_id);
-            assert_eq!(alice_group.members().unwrap().len(), 2);
+            assert_eq!(alice_group.members().len(), 2);
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message;
 
@@ -671,7 +671,7 @@ pub mod tests {
                 .await
                 .unwrap();
 
-            assert_eq!(alice_group.members().unwrap().len(), 2);
+            assert_eq!(alice_group.members().len(), 2);
 
             let mut bob_group = MlsConversation::from_welcome_message(
                 messages.welcome,
@@ -691,7 +691,7 @@ pub mod tests {
                 .await
                 .unwrap();
 
-            assert_eq!(alice_group.members().unwrap().len(), 1);
+            assert_eq!(alice_group.members().len(), 1);
 
             let alice_can_send_message = alice_group.encrypt_message(b"me", &alice_backend).await;
             assert!(alice_can_send_message.is_ok());
@@ -722,7 +722,7 @@ pub mod tests {
             let conversation_creation_message = alice_group.add_members(&mut [bob], &alice_backend).await.unwrap();
             assert_eq!(alice_group.id, conversation_id);
             assert_eq!(alice_group.group.group_id().as_slice(), conversation_id);
-            assert_eq!(alice_group.members().unwrap().len(), 2);
+            assert_eq!(alice_group.members().len(), 2);
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message;
 
@@ -806,7 +806,7 @@ pub mod tests {
 
             assert_eq!(alice_group.id, conversation_id);
             assert_eq!(alice_group.group.group_id().as_slice(), conversation_id);
-            assert_eq!(alice_group.members().unwrap().len(), 4);
+            assert_eq!(alice_group.members().len(), 4);
 
             let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message;
 
@@ -826,9 +826,9 @@ pub mod tests {
             assert_eq!(bob_group.id(), alice_group.id());
             assert_eq!(alice2_group.id(), alice_group.id());
             assert_eq!(charlie_group.id(), alice_group.id());
-            assert_eq!(alice2_group.members().unwrap().len(), 4);
-            assert_eq!(bob_group.members().unwrap().len(), 4);
-            assert_eq!(charlie_group.members().unwrap().len(), 4);
+            assert_eq!(alice2_group.members().len(), 4);
+            assert_eq!(bob_group.members().len(), 4);
+            assert_eq!(charlie_group.members().len(), 4);
 
             let message = alice2_group
                 .leave(&[alice.id().clone().into()], &alice2_backend)
@@ -837,7 +837,7 @@ pub mod tests {
 
             // Only the `other_clients` have been effectively removed as of now
             // Removing alice2 will only be effective once bob or charlie commit the removal proposal that alice2 leaves
-            assert_eq!(alice2_group.members().unwrap().len(), 3);
+            assert_eq!(alice2_group.members().len(), 3);
             bob_group
                 .decrypt_message(
                     message
@@ -864,8 +864,8 @@ pub mod tests {
                 .await
                 .unwrap();
 
-            assert_eq!(bob_group.members().unwrap().len(), 3);
-            assert_eq!(charlie_group.members().unwrap().len(), 3);
+            assert_eq!(bob_group.members().len(), 3);
+            assert_eq!(charlie_group.members().len(), 3);
 
             alice_group
                 .decrypt_message(
@@ -908,8 +908,8 @@ pub mod tests {
             // Check that alice2 understood that she's not welcome anymore (sorry alice2)
             assert!(!alice2_group.group.is_active());
 
-            assert_eq!(charlie_group.members().unwrap().len(), 2);
-            assert_eq!(bob_group.members().unwrap().len(), 2);
+            assert_eq!(charlie_group.members().len(), 2);
+            assert_eq!(bob_group.members().len(), 2);
         }
     }
 
@@ -940,7 +940,7 @@ pub mod tests {
 
             let add_message = alice_group.add_members(&mut [bob], &alice_backend).await.unwrap();
 
-            assert_eq!(alice_group.members().unwrap().len(), 2);
+            assert_eq!(alice_group.members().len(), 2);
 
             let MlsConversationCreationMessage { welcome, .. } = add_message;
 
@@ -1040,7 +1040,7 @@ pub mod tests {
             // adding bob and creating the group on bob's side
             let add_message = alice_group.add_members(&mut [bob], &alice_backend).await.unwrap();
 
-            assert_eq!(alice_group.members().unwrap().len(), 2);
+            assert_eq!(alice_group.members().len(), 2);
 
             let MlsConversationCreationMessage { welcome, .. } = add_message;
 
@@ -1096,10 +1096,10 @@ pub mod tests {
                     .await
                     .unwrap();
 
-            assert_eq!(alice_group.members().unwrap().len(), 3);
-            assert_eq!(charlie_group.members().unwrap().len(), 3);
+            assert_eq!(alice_group.members().len(), 3);
+            assert_eq!(charlie_group.members().len(), 3);
             // bob still didn't receive the message with the updated key and charlie's addition
-            assert_eq!(bob_group.members().unwrap().len(), 2);
+            assert_eq!(bob_group.members().len(), 2);
 
             let alice_new_keys = alice_group
                 .group
@@ -1116,7 +1116,7 @@ pub mod tests {
                 .await
                 .unwrap()
                 .is_none());
-            assert_eq!(bob_group.members().unwrap().len(), 3);
+            assert_eq!(bob_group.members().len(), 3);
 
             let bob_new_keys = bob_group
                 .group
