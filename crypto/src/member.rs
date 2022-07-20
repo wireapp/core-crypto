@@ -23,7 +23,7 @@ use crate::{
 use openmls::prelude::KeyPackage;
 use tls_codec::Deserialize;
 
-/// Type definition for the Client/Member id. It is an array of bytes
+/// Type definition for the identifier of a client in a conversation (aka Member)
 pub type MemberId = Vec<u8>;
 
 /// Represents a client withing a group
