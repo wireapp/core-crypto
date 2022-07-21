@@ -17,16 +17,18 @@ No license is granted to the Wire trademark and its associated logos, all of whi
 * Keystore: Encrypted Keystore powered by SQLCipher on all platforms except WASM. WASM uses an IndexedDB-backed, encrypted store with AES256-GCM
 * MlsProvider: RustCrypto + Keystore MLS provider
 
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
 ## Usage
 
-Pre-pre-pre-Alpha WIP - API docs far from ready
+### [API Docs](https://wireapp.github.io/core-crypto/core_crypto/)
 
 ## Building
 
 ### General Requirements
 
-- rust: https://www.rust-lang.org/tools/install
-- cargo-make: https://sagiegurari.github.io/cargo-make/
+- rust: [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
+- cargo-make: [https://sagiegurari.github.io/cargo-make/](https://sagiegurari.github.io/cargo-make/)
 
 ### Android
 
@@ -43,7 +45,7 @@ rustup target add x86_64-linux-android aarch64-linux-android armv7-linux-android
 
 ### iOS
 
-Install Xcode & it's commandline tools: https://developer.apple.com/xcode/
+Install Xcode & it's commandline tools: [https://developer.apple.com/xcode/](https://developer.apple.com/xcode/)
 
 Install iOS rust targets
 
@@ -60,7 +62,7 @@ rustup target add x86_64-apple-darwin
 
 ### Linux
 
-If cross-compiling from macOS you'll need install: https://github.com/messense/homebrew-macos-cross-toolchains
+If cross-compiling from macOS you'll need install: [https://github.com/messense/homebrew-macos-cross-toolchains](https://github.com/messense/homebrew-macos-cross-toolchains)
 
 Install linux targets
 

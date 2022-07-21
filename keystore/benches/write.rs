@@ -16,13 +16,13 @@
 
 use core_crypto_keystore::Connection as CryptoKeystore;
 use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion, Throughput};
+use mls_crypto_provider::RustCrypto;
 use openmls::{
     credentials::{CredentialBundle, CredentialType},
     extensions::{Extension, ExternalKeyIdExtension},
     key_packages::KeyPackageBundle,
     prelude::Ciphersuite,
 };
-use openmls_rust_crypto_provider::OpenMlsRustCrypto;
 use openmls_traits::{key_store::OpenMlsKeyStore, random::OpenMlsRand, OpenMlsCryptoProvider};
 
 #[cfg(feature = "proteus")]
@@ -31,7 +31,7 @@ fn benchmark_writes_proteus(c: &mut Criterion) {
     use proteus::keys::{PreKey, PreKeyId};
 
     let store = CryptoKeystore::open_with_key("bench_write", "key").unwrap();
-    let backend = OpenMlsRustCrypto::default();
+    let backend = RustCrypto::default();
 
     let mut group = c.benchmark_group("Proteus Writes");
     group.throughput(Throughput::Elements(1));
@@ -54,7 +54,7 @@ fn benchmark_writes_proteus(c: &mut Criterion) {
 
 fn benchmark_writes_mls(c: &mut Criterion) {
     let store = CryptoKeystore::open_with_key("bench_write", "key").unwrap();
-    let backend = OpenMlsRustCrypto::default();
+    let backend = RustCrypto::default();
 
     let mut group = c.benchmark_group("MLS Writes");
     group.throughput(Throughput::Elements(1));

@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+#![doc = include_str!("../README.md")]
+
 use core_crypto_keystore::Connection as CryptoKeystore;
 
 mod crypto_provider;
@@ -23,10 +25,12 @@ pub use error::{MlsProviderError, MlsProviderResult};
 
 pub use crypto_provider::RustCrypto;
 
+/// 32-byte raw entropy seed
 pub type RawEntropySeed = <rand_chacha::ChaCha20Rng as rand::SeedableRng>::Seed;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, zeroize::ZeroizeOnDrop)]
 #[repr(transparent)]
+/// Wrapped 32-byte entropy seed with bounds check
 pub struct EntropySeed(RawEntropySeed);
 
 impl EntropySeed {
@@ -66,8 +70,11 @@ impl std::ops::DerefMut for EntropySeed {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MlsCryptoProviderConfiguration<'a> {
+    /// File path or database name of the persistent storage
     pub db_path: &'a str,
+    /// Encryption master key of the encrypted-at-rest persistent storage
     pub identity_key: &'a str,
+    /// Dictates whether or not the backend storage is in memory or not
     pub in_memory: bool,
     /// External seed for the ChaCha20 PRNG entropy pool
     pub entropy_seed: Option<EntropySeed>,
@@ -80,6 +87,7 @@ pub struct MlsCryptoProvider {
 }
 
 impl MlsCryptoProvider {
+    /// Initialize a CryptoProvider with a backend following the provided `config` (see: [MlsCryptoProviderConfiguration])
     pub async fn try_new_with_configuration(config: MlsCryptoProviderConfiguration<'_>) -> MlsProviderResult<Self> {
         let crypto = config.entropy_seed.map(RustCrypto::new_with_seed).unwrap_or_default();
         let key_store = if config.in_memory {
@@ -102,23 +110,34 @@ impl MlsCryptoProvider {
         Ok(Self { crypto, key_store })
     }
 
+    /// Initialize a CryptoProvided with an already-configured backing store
     pub fn new_with_store(key_store: CryptoKeystore, entropy_seed: Option<EntropySeed>) -> Self {
         let crypto = entropy_seed.map(RustCrypto::new_with_seed).unwrap_or_default();
         Self { crypto, key_store }
     }
 
+    /// Reseeds the internal CSPRNG entropy pool with a brand new one.
+    ///
+    /// If [None] is provided, the new entropy will be pulled through the current OS target's capabilities
     pub fn reseed(&mut self, entropy_seed: Option<EntropySeed>) {
         self.crypto = entropy_seed.map(RustCrypto::new_with_seed).unwrap_or_default();
     }
 
+    /// Closes this provider, which in turns tears down the backing store
+    ///
+    /// Note: This does **not** destroy the data on-disk in case of persistent backing store
     pub async fn close(self) -> MlsProviderResult<()> {
         Ok(self.key_store.close().await?)
     }
 
+    /// Tears down this provider and **obliterates every single piece of data stored on disk**.
+    ///
+    /// *you have been warned*
     pub async fn destroy_and_reset(self) -> MlsProviderResult<()> {
         Ok(self.key_store.wipe().await?)
     }
 
+    /// Allows to retrieve the underlying key store directly
     pub fn unwrap_keystore(self) -> CryptoKeystore {
         self.key_store
     }

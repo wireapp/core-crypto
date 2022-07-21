@@ -23,7 +23,7 @@ tasks.withType<Wrapper> {
 }
 
 android.libraryVariants.all { variant ->
-    def sourceSet = variant.sourceSets.find { it.name == variant.name }
+    val sourceSet = variant.sourceSets.find { it.name == variant.name }
     sourceSet.java.srcDir new File(buildDir, "generated/source/uniffi/${variant.name}/java")
     // XXX: I've been trying to make this work but I can't, so the compiled bindings will show as "regular sources" in Android Studio.
     idea.module.generatedSourceDirs += file("${buildDir}/generated/source/uniffi/${variant.name}/java/uniffi")

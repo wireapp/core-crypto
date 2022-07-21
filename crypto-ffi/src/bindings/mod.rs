@@ -14,31 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-#![doc = include_str!("../README.md")]
-#![doc = include_str!("../../docs/KEYSTORE_IMPLEMENTATION.md")]
+// The modules below are dummy modules that will be erased with the bindings documentation at build time
+// Yep, we're slaughtering the rustdocs in here
 
-mod error;
-pub use error::*;
+#![doc = include_str!("../../../docs/FFI.md")]
 
-pub mod connection;
-pub mod entities;
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "mls-keystore")] {
-        mod mls;
-        pub use self::mls::CryptoKeystoreMls;
-    }
-}
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "proteus-keystore")] {
-        mod proteus;
-        pub use self::proteus::CryptoKeystoreProteus;
-    }
-}
-
-#[cfg(feature = "memory-cache")]
-#[allow(dead_code)]
-const LRU_CACHE_CAP: usize = 100;
-
-pub use connection::Connection;
+// pub mod swift;
+// pub mod kotlin;
+pub mod typescript {}
