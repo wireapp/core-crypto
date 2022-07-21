@@ -74,7 +74,7 @@ serde-wasm-bindgen = "0.4"
 # Async WASM stuff
 wasm-bindgen-futures = "0.4"
 # Crypto stuff
-aes-gcm = "=0.10.0-pre.1"
+aes-gcm = "=0.10.0-pre.2"
 rand = { version = "0.8", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
 sha2 = "0.10"
