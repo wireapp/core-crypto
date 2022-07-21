@@ -11,7 +11,7 @@ use openmls::{
     },
 };
 
-pub trait ExternalProposalExt {
+pub(crate) trait ExternalProposalExt {
     fn is_external_add_proposal(&self) -> bool;
 }
 impl ExternalProposalExt for QueuedProposal {

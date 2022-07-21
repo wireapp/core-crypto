@@ -6,7 +6,7 @@ use crate::{CryptoError, CryptoResult, MlsConversation};
 
 /// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)
 /// in case another commit has been accepted by the backend instead of ours
-pub struct Renew;
+pub(crate) struct Renew;
 
 impl Renew {
     /// Renews proposals:

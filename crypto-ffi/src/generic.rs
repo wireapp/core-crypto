@@ -35,6 +35,7 @@ cfg_if::cfg_if! {
 
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
+/// see [core_crypto::prelude::handshake::MlsConversationCreationMessage]
 pub struct MemberAddedMessages {
     pub welcome: Vec<u8>,
     pub message: Vec<u8>,
@@ -81,6 +82,7 @@ pub struct MlsConversationInitMessage {
 
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
+/// See [core_crypto::prelude::decrypt::MlsConversationDecryptMessage]
 pub struct DecryptedMessage {
     pub message: Option<Vec<u8>>,
     pub commit_delay: Option<u64>,
@@ -127,6 +129,7 @@ impl TryInto<ConversationMember> for Invitee {
 
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug, Clone)]
+/// See [core_crypto::prelude::MlsConversationConfiguration]
 pub struct ConversationConfiguration {
     pub admins: Vec<MemberId>,
     pub ciphersuite: Option<CiphersuiteName>,
@@ -167,6 +170,7 @@ pub struct CoreCrypto<'a> {
 
 #[allow(dead_code, unused_variables)]
 impl CoreCrypto<'_> {
+    /// See [core_crypto::MlsCentral::try_new]
     pub fn new<'s>(
         path: &'s str,
         key: &'s str,
@@ -191,6 +195,7 @@ impl CoreCrypto<'_> {
         })
     }
 
+    /// See [core_crypto::MlsCentral::close]
     pub fn close(self) -> CryptoResult<()> {
         if let Ok(central_lock) = std::sync::Arc::try_unwrap(self.central) {
             let central = central_lock.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
@@ -201,6 +206,7 @@ impl CoreCrypto<'_> {
         }
     }
 
+    /// See [core_crypto::MlsCentral::wipe]
     pub fn wipe(self) -> CryptoResult<()> {
         if let Ok(central_lock) = std::sync::Arc::try_unwrap(self.central) {
             let central = central_lock.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
@@ -212,6 +218,7 @@ impl CoreCrypto<'_> {
     }
 
     #[cfg(feature = "mobile")]
+    /// See [core_crypto::MlsCentral::callbacks]
     pub fn set_callbacks(&self, callbacks: Box<dyn CoreCryptoCallbacks>) -> CryptoResult<()> {
         self.central
             .lock()
@@ -220,6 +227,7 @@ impl CoreCrypto<'_> {
         Ok(())
     }
 
+    /// See [core_crypto::MlsCentral::client_public_key]
     pub fn client_public_key(&self) -> CryptoResult<Vec<u8>> {
         Ok(self
             .central
@@ -228,6 +236,7 @@ impl CoreCrypto<'_> {
             .client_public_key())
     }
 
+    /// See [core_crypto::MlsCentral::client_keypackages]
     pub fn client_keypackages(&self, amount_requested: u32) -> CryptoResult<Vec<Vec<u8>>> {
         use core_crypto::prelude::tls_codec::Serialize as _;
         let kps = future::block_on(
@@ -249,6 +258,7 @@ impl CoreCrypto<'_> {
             .collect::<CryptoResult<Vec<Vec<u8>>>>()
     }
 
+    /// See [core_crypto::MlsCentral::client_valid_keypackages_count]
     pub fn client_valid_keypackages_count(&self) -> CryptoResult<u64> {
         let count = future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -262,6 +272,7 @@ impl CoreCrypto<'_> {
         Ok(count.try_into()?)
     }
 
+    /// See [core_crypto::MlsCentral::update_keying_material]
     pub fn update_keying_material(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
         future::block_on({
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -274,6 +285,7 @@ impl CoreCrypto<'_> {
         .try_into()
     }
 
+    /// See [core_crypto::MlsCentral::new_conversation]
     pub fn create_conversation(
         &self,
         conversation_id: ConversationId,
@@ -289,6 +301,7 @@ impl CoreCrypto<'_> {
         )
     }
 
+    /// See [core_crypto::MlsCentral::process_raw_welcome_message]
     pub fn process_welcome_message(&self, welcome_message: &[u8]) -> CryptoResult<ConversationId> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -300,6 +313,7 @@ impl CoreCrypto<'_> {
         )
     }
 
+    /// See [core_crypto::MlsCentral::add_members_to_conversation]
     pub fn add_clients_to_conversation(
         &self,
         conversation_id: ConversationId,
@@ -318,7 +332,7 @@ impl CoreCrypto<'_> {
         .try_into()
     }
 
-    /// Returns a MLS commit message serialized as TLS
+    /// See [core_crypto::MlsCentral::remove_members_from_conversation]
     pub fn remove_clients_from_conversation(
         &self,
         conversation_id: ConversationId,
@@ -335,7 +349,7 @@ impl CoreCrypto<'_> {
         .try_into()
     }
 
-    /// wipes group locally
+    /// see [core_crypto::MlsCentral::wipe_conversation]
     pub fn wipe_conversation(&self, conversation_id: ConversationId) -> CryptoResult<()> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -347,6 +361,7 @@ impl CoreCrypto<'_> {
         )
     }
 
+    /// See [core_crypto::MlsCentral::decrypt_message]
     pub fn decrypt_message(&self, conversation_id: ConversationId, payload: &[u8]) -> CryptoResult<DecryptedMessage> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -359,6 +374,7 @@ impl CoreCrypto<'_> {
         )
     }
 
+    /// See [core_crypto::MlsCentral::encrypt_message]
     pub fn encrypt_message(&self, conversation_id: ConversationId, message: &[u8]) -> CryptoResult<Vec<u8>> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -370,6 +386,7 @@ impl CoreCrypto<'_> {
         )
     }
 
+    /// See [core_crypto::MlsCentral::conversation_exists]
     pub fn conversation_exists(&self, conversation_id: ConversationId) -> bool {
         let mut central = self.central.lock().map_err(|_| CryptoError::LockPoisonError).ok();
 
@@ -380,6 +397,7 @@ impl CoreCrypto<'_> {
         }
     }
 
+    /// See [core_crypto::MlsCentral::new_proposal]
     pub fn new_add_proposal(&self, conversation_id: ConversationId, keypackage: Vec<u8>) -> CryptoResult<Vec<u8>> {
         let kp = KeyPackage::try_from(&keypackage[..]).map_err(MlsError::from)?;
         Ok(future::block_on(
@@ -394,6 +412,7 @@ impl CoreCrypto<'_> {
         .map_err(MlsError::from)?)
     }
 
+    /// See [core_crypto::MlsCentral::new_proposal]
     pub fn new_update_proposal(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
         Ok(future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -407,6 +426,7 @@ impl CoreCrypto<'_> {
         .map_err(MlsError::from)?)
     }
 
+    /// See [core_crypto::MlsCentral::new_proposal]
     pub fn new_remove_proposal(&self, conversation_id: ConversationId, client_id: ClientId) -> CryptoResult<Vec<u8>> {
         Ok(future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -420,6 +440,7 @@ impl CoreCrypto<'_> {
         .map_err(MlsError::from)?)
     }
 
+    /// See [core_crypto::MlsCentral::new_external_add_proposal]
     pub fn new_external_add_proposal(
         &self,
         conversation_id: ConversationId,
@@ -439,6 +460,7 @@ impl CoreCrypto<'_> {
         .map_err(MlsError::from)?)
     }
 
+    /// See [core_crypto::MlsCentral::new_external_remove_proposal]
     pub fn new_external_remove_proposal(
         &self,
         conversation_id: ConversationId,
@@ -461,6 +483,7 @@ impl CoreCrypto<'_> {
         .map_err(MlsError::from)?)
     }
 
+    /// See [core_crypto::MlsCentral::export_public_group_state]
     pub fn export_group_state(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -472,6 +495,7 @@ impl CoreCrypto<'_> {
         )
     }
 
+    /// See [core_crypto::MlsCentral::join_by_external_commit]
     pub fn join_by_external_commit(&self, group_state: Vec<u8>) -> CryptoResult<MlsConversationInitMessage> {
         use core_crypto::prelude::tls_codec::Deserialize as _;
         use core_crypto::prelude::tls_codec::Serialize as _;
@@ -497,6 +521,7 @@ impl CoreCrypto<'_> {
         })
     }
 
+    /// See [core_crypto::MlsCentral::merge_pending_group_from_external_commit]
     pub fn merge_pending_group_from_external_commit(
         &self,
         conversation_id: ConversationId,
@@ -514,6 +539,7 @@ impl CoreCrypto<'_> {
         Ok(())
     }
 
+    /// See [core_crypto::MlsCentral::random_bytes]
     pub fn random_bytes(&self, len: u32) -> CryptoResult<Vec<u8>> {
         self.central
             .lock()
@@ -521,6 +547,7 @@ impl CoreCrypto<'_> {
             .random_bytes(len.try_into()?)
     }
 
+    /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
     pub fn reseed_rng(&self, seed: Vec<u8>) -> CryptoResult<()> {
         let seed = EntropySeed::try_from_slice(&seed)?;
         self.central
@@ -532,6 +559,7 @@ impl CoreCrypto<'_> {
         Ok(())
     }
 
+    /// See [core_crypto::MlsCentral::commit_accepted]
     pub fn commit_accepted(&self, conversation_id: ConversationId) -> CryptoResult<()> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -543,6 +571,7 @@ impl CoreCrypto<'_> {
         )
     }
 
+    /// See [core_crypto::MlsCentral::commit_pending_proposals]
     pub fn commit_pending_proposals(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
         future::block_on({
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(

@@ -1,0 +1,51 @@
+name: Publish docs
+on:
+  push:
+    branches:
+    - main
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUSTFLAGS: "-D warnings -W unreachable-pub"
+  RUSTUP_MAX_RETRIES: 10
+
+jobs:
+  docgen:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+
+    steps: 
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install Rust toolchain
+      run: rustup update --no-self-update stable
+
+    - name: Setup cargo-make
+      uses: davidB/rust-cargo-make@v1
+
+    - name: Add WASM target
+      run: rustup target add wasm32-unknown-unknown
+
+    - name: Install wasm-pack
+      uses: jetli/wasm-pack-action@v0.3.0
+      with:
+        version: 'latest'
+
+    - name: Build Rust documentation
+      run: cargo doc --all --no-deps
+
+    - name: Build TypeScript docs
+      run: |
+        cd crypto-ffi
+        cargo make wasm-build
+        cargo make docs-ts
+
+    - name: Deploy Docs
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_branch: gh-pages
+        publish_dir: ./target/doc
+        force_orphan: true

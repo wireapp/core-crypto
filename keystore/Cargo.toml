@@ -58,9 +58,7 @@ features = [
 ]
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.refinery]
-git = "https://github.com/rust-db/refinery"
-# TODO: Target back crates.io once refinery publishes a new version (> 0.8.4)
-# version = "0.8"
+version = "0.8"
 default-features = false
 features = ["rusqlite"]
 

@@ -27,3 +27,6 @@ cfg_if::cfg_if! {
         uniffi_macros::include_scaffolding!("CoreCrypto");
     }
 }
+
+#[cfg(doc)]
+pub mod bindings;

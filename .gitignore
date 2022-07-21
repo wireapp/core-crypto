@@ -32,8 +32,9 @@ Cargo.lock
 
 # End of https://www.toptal.com/de§velopers/gitignore/api/rust
 
-### IntelliJ IDEA ###
+### IntelliJ IDEA & Gradle ###
 .idea
+.gradle
 *.iws
 *.iml
 *.ipr

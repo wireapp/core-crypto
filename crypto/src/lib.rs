@@ -19,6 +19,7 @@
 //!
 //! The goal is provide a easier and less verbose API to create, manage and interact with MLS
 //! groups.
+#![doc = include_str!("../../README.md")]
 #![deny(missing_docs)]
 #![allow(clippy::single_component_path_imports)]
 

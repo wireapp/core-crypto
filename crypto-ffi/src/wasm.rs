@@ -38,6 +38,7 @@ pub type WasmCryptoResult<T> = Result<T, WasmCryptoError>;
 #[allow(non_camel_case_types)]
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+/// see [core_crypto::prelude::CiphersuiteName]
 pub enum Ciphersuite {
     /// DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
     MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 = 0x0001,
@@ -100,6 +101,7 @@ pub type FfiClientId = Box<[u8]>;
 
 #[wasm_bindgen]
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+/// see [core_crypto::prelude::MlsConversationCreationMessage]
 pub struct MemberAddedMessages {
     welcome: Vec<u8>,
     message: Vec<u8>,
@@ -186,6 +188,7 @@ impl MlsConversationInitMessage {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+/// see [core_crypto::prelude::decrypt::MlsConversationDecryptMessage]
 pub struct DecryptedMessage {
     message: Option<Vec<u8>>,
     commit_delay: Option<u64>,
@@ -216,6 +219,7 @@ impl DecryptedMessage {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+/// see [core_crypto::prelude::ConversationMember]
 pub struct Invitee {
     id: Vec<u8>,
     kp: Vec<u8>,
@@ -277,6 +281,7 @@ impl TryInto<ConversationMember> for Invitee {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+/// see [core_crypto::prelude::MlsConversationConfiguration]
 pub struct ConversationConfiguration {
     // pub admins: Box<[Box<[u8]>]>,
     ciphersuite: Option<Ciphersuite>,
@@ -334,6 +339,7 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone)]
+/// see [core_crypto::prelude::CoreCryptoCallbacks]
 pub struct CoreCryptoWasmCallbacks {
     authorize: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
     is_user_in_group: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
@@ -405,6 +411,7 @@ pub struct CoreCrypto(std::sync::Arc<async_lock::RwLock<MlsCentral>>);
 
 #[wasm_bindgen]
 impl CoreCrypto {
+    /// see [core_crypto::MlsCentral::try_new]
     pub async fn _internal_new(
         path: String,
         key: String,
@@ -423,7 +430,9 @@ impl CoreCrypto {
         Ok(CoreCrypto(async_lock::RwLock::new(central).into()))
     }
 
-    /// Returns: WasmCryptoResult<()>
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [core_crypto::MlsCentral::close]
     pub fn close(self) -> Promise {
         if let Ok(cc) = std::sync::Arc::try_unwrap(self.0).map(async_lock::RwLock::into_inner) {
             future_to_promise(
@@ -438,7 +447,9 @@ impl CoreCrypto {
         }
     }
 
-    /// Returns: WasmCryptoResult<()>
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [core_crypto::MlsCentral::wipe]
     pub fn wipe(self) -> Promise {
         if let Ok(cc) = std::sync::Arc::try_unwrap(self.0).map(async_lock::RwLock::into_inner) {
             future_to_promise(
@@ -453,7 +464,9 @@ impl CoreCrypto {
         }
     }
 
-    /// Returns: WasmCryptoResult<()>
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [core_crypto::MlsCentral::callbacks]
     pub fn set_callbacks(&self, callbacks: CoreCryptoWasmCallbacks) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -466,7 +479,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns:: WasmCryptoResult<Uint8Array>
+    /// Returns:: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    ///
+    /// see [core_crypto::MlsCentral::client_public_key]
     pub fn client_public_key(&self) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -479,7 +494,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<js_sys::Array<js_sys::Uint8Array>>>
+    /// Returns: [`WasmCryptoResult<js_sys::Array<js_sys::Uint8Array>>`]
+    ///
+    /// see [core_crypto::MlsCentral::client_keypackages]
     pub fn client_keypackages(&self, amount_requested: u32) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -512,7 +529,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<usize>
+    /// Returns: [`WasmCryptoResult<usize>`]
+    ///
+    /// see [core_crypto::MlsCentral::client_valid_keypackages_count]
     pub fn client_valid_keypackages_count(&self) -> Promise {
         let this = self.0.clone();
 
@@ -525,7 +544,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<CommitBundle>
+    /// Returns: [`WasmCryptoResult<CommitBundle>`]
+    ///
+    /// see [core_crypto::MlsCentral::update_keying_material]
     pub fn update_keying_material(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
 
@@ -541,7 +562,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<()>
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [core_crypto::MlsCentral::new_conversation]
     pub fn create_conversation(
         &self,
         conversation_id: Box<[u8]>,
@@ -564,7 +587,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: bool
+    /// Returns: [`bool`]
+    ///
+    /// see [core_crypto::MlsCentral::conversation_exists]
     pub fn conversation_exists(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -579,7 +604,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<Uint8Array>
+    /// Returns: [`WasmCryptoResult<Uint8Array>`]
+    ///
+    /// see [core_crypto::MlsCentral::process_raw_welcome_message]
     pub fn process_welcome_message(&self, welcome_message: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -595,7 +622,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns WasmCryptoResult<Option<MemberAddedMessages>>
+    /// Returns: [`WasmCryptoResult<Option<MemberAddedMessages>>`]
+    ///
+    /// see [core_crypto::MlsCentral::add_members_to_conversation]
     pub fn add_clients_to_conversation(&self, conversation_id: Box<[u8]>, clients: Box<[JsValue]>) -> Promise {
         let this = self.0.clone();
 
@@ -620,8 +649,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns a MLS commit message serialized as TLS
-    /// Returns: WasmCryptoResult<Option<Uint8Array>>
+    /// Returns: [`WasmCryptoResult<Option<js_sys::Uint8Array>>`]
+    ///
+    /// see [core_crypto::MlsCentral::remove_members_from_conversation]
     pub fn remove_clients_from_conversation(
         &self,
         conversation_id: Box<[u8]>,
@@ -649,7 +679,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns WasmCryptoResult<()>
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [core_crypto::MlsCentral::wipe_conversation]
     pub fn wipe_conversation(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -663,7 +695,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<Option<Uint8Array>>
+    /// Returns: [`WasmCryptoResult<Option<js_sys::Uint8Array>>`]
+    ///
+    /// see [core_crypto::MlsCentral::decrypt_message]
     pub fn decrypt_message(&self, conversation_id: Box<[u8]>, payload: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -681,7 +715,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<Uint8Array>
+    /// Returns: [`WasmCryptoResult<Uint8Array>`]
+    ///
+    /// see [core_crypto::MlsCentral::encrypt_message]
     pub fn encrypt_message(&self, conversation_id: Box<[u8]>, message: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -699,7 +735,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<Uint8Array>
+    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    ///
+    /// see [core_crypto::MlsCentral::new_proposal]
     pub fn new_add_proposal(&self, conversation_id: Box<[u8]>, keypackage: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -723,7 +761,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<Uint8Array>
+    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    ///
+    /// see [core_crypto::MlsCentral::new_proposal]
     pub fn new_update_proposal(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -744,7 +784,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<Uint8Array>
+    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    ///
+    /// see [core_crypto::MlsCentral::new_proposal]
     pub fn new_remove_proposal(&self, conversation_id: Box<[u8]>, client_id: FfiClientId) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -765,7 +807,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<Uint8Array>
+    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    ///
+    /// see [core_crypto::MlsCentral::new_external_add_proposal]
     pub fn new_external_add_proposal(&self, conversation_id: Box<[u8]>, epoch: u32, keypackage: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -789,7 +833,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<Uint8Array>
+    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    ///
+    /// see [core_crypto::MlsCentral::new_external_remove_proposal]
     pub fn new_external_remove_proposal(
         &self,
         conversation_id: Box<[u8]>,
@@ -819,6 +865,7 @@ impl CoreCrypto {
         )
     }
 
+    /// see [core_crypto::MlsCentral::export_public_group_state]
     pub fn export_group_state(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -835,6 +882,7 @@ impl CoreCrypto {
     }
 
     #[allow(clippy::boxed_local)]
+    /// see [core_crypto::MlsCentral::join_by_external_commit]
     pub fn join_by_external_commit(&self, group_state: Box<[u8]>) -> Promise {
         use core_crypto::prelude::tls_codec::Deserialize as _;
         use core_crypto::prelude::tls_codec::Serialize as _;
@@ -863,6 +911,7 @@ impl CoreCrypto {
         )
     }
 
+    /// see [core_crypto::MlsCentral::merge_pending_group_from_external_commit]
     pub fn merge_pending_group_from_external_commit(
         &self,
         conversation_id: ConversationId,
@@ -881,7 +930,9 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: WasmCryptoResult<ArrayBuffer>
+    /// Returns: [`WasmCryptoResult<js_sys::ArrayBuffer>`]
+    ///
+    /// see [core_crypto::MlsCentral::random_bytes]
     pub fn random_bytes(&self, len: usize) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -893,7 +944,10 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns WasmCryptoResult<()>
+    #[allow(rustdoc::broken_intra_doc_links)]
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
     pub fn reseed_rng(&self, seed: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -906,6 +960,7 @@ impl CoreCrypto {
         )
     }
 
+    /// see [core_crypto::MlsCentral::commit_accepted]
     pub fn commit_accepted(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
@@ -918,6 +973,7 @@ impl CoreCrypto {
         )
     }
 
+    /// see [core_crypto::MlsCentral::commit_pending_proposals]
     pub fn commit_pending_proposals(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
 
