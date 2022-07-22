@@ -313,7 +313,7 @@ impl MlsConversation {
         &mut self,
         message: impl AsRef<[u8]>,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<Option<Vec<u8>>> {
+    ) -> CryptoResult<(Option<Vec<u8>>, Option<f32>)> {
         let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
 
         let parsed_message = self.group.parse_message(msg_in, backend).map_err(MlsError::from)?;
@@ -325,20 +325,60 @@ impl MlsConversation {
             .map_err(MlsError::from)?;
 
         let message = match message {
-            ProcessedMessage::ApplicationMessage(app_msg) => Some(app_msg.into_bytes()),
+            ProcessedMessage::ApplicationMessage(app_msg) => (Some(app_msg.into_bytes()), None),
             ProcessedMessage::ProposalMessage(proposal) => {
                 self.group.store_pending_proposal(*proposal);
-                None
+                let delay = self.calculate_delay(backend)?;
+                (None, Some(delay))
             }
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
                 self.group.merge_staged_commit(*staged_commit).map_err(MlsError::from)?;
-                None
+                (None, None)
             }
         };
 
         self.persist_group_when_changed(backend, false).await?;
 
         Ok(message)
+    }
+
+    fn calculate_delay(&self, backend: &MlsCryptoProvider) -> CryptoResult<f32> {
+        let myself = self
+            .group
+            .key_package_ref()
+            .ok_or(CryptoError::SelfKeypackageNotFound)?;
+        let epoch = self.group.epoch().as_u64();
+        let members = self.group.members();
+        let total_members = members.len() as u64;
+        // TODO: switch to `try_find` when stabilized
+        // let self_leaf_index = members
+        //     .into_iter()
+        //     .enumerate()
+        //     .try_find(|(index, member)| {
+        //         let member_ref = member.hash_ref(backend.crypto()).map_err(MlsError::from)?;
+        //         Ok(member_ref == *myself)
+        //     })?
+        //     .map(|(index, _)| index as u64)
+        //     .ok_or(CryptoError::SelfKeypackageNotFound)?;
+        let mut enumeration = members.into_iter().enumerate();
+        let self_leaf_index = loop {
+            if let Some((index, member)) = enumeration.next() {
+                let member_ref = member.hash_ref(backend.crypto()).map_err(MlsError::from)?;
+                if member_ref == *myself {
+                    break index as u64;
+                }
+            } else {
+                return Err(CryptoError::SelfKeypackageNotFound);
+            }
+        };
+        let position = ((epoch + self_leaf_index - 2) % total_members) + 1;
+        let delay = match position {
+            1 => 0.0,
+            2 => 15.0,
+            3 => 30.0,
+            _ => ((position as f32).log10() * 120.0) - 106.0,
+        };
+        Ok(delay)
     }
 
     /// Commits all pending proposals of the group

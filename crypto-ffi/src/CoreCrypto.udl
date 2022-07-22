@@ -38,6 +38,11 @@ enum CryptoError {
     "Unauthorized"
 };
 
+dictionary DecryptedMessage {
+    sequence<u8>? message;
+    float commit_delay;
+};
+
 dictionary MemberAddedMessages {
     sequence<u8> message;
     sequence<u8> welcome;
