@@ -371,7 +371,7 @@ impl MlsConversation {
                 return Err(CryptoError::SelfKeypackageNotFound);
             }
         };
-        let position = ((epoch + self_leaf_index - 2) % total_members) + 1;
+        let position = ((epoch + self_leaf_index).saturating_sub(2) % total_members) + 1;
         let delay = match position {
             1 => 0.0,
             2 => 15.0,
@@ -820,6 +820,7 @@ pub mod tests {
                 .decrypt_message(&encrypted_message, &bob_backend)
                 .await
                 .unwrap()
+                .0
                 .unwrap();
             assert_eq!(original_message, roundtripped_message.as_slice());
 
@@ -833,6 +834,7 @@ pub mod tests {
                 .decrypt_message(&encrypted_message, &alice_backend)
                 .await
                 .unwrap()
+                .0
                 .unwrap();
             assert_eq!(original_message, roundtripped_message.as_slice());
         }
@@ -1071,6 +1073,7 @@ pub mod tests {
                 .decrypt_message(&msg_out.to_bytes().unwrap(), &bob_backend)
                 .await
                 .unwrap()
+                .0
                 .is_none());
 
             let bob_new_keys = bob_group
@@ -1156,6 +1159,7 @@ pub mod tests {
                 .decrypt_message(&proposal_response.to_bytes().unwrap(), &bob_backend)
                 .await
                 .unwrap()
+                .0
                 .is_none());
 
             assert_eq!(alice_group.group.members().len(), 2);
@@ -1192,6 +1196,7 @@ pub mod tests {
                 .decrypt_message(&message.to_bytes().unwrap(), &bob_backend)
                 .await
                 .unwrap()
+                .0
                 .is_none());
             assert_eq!(bob_group.members().len(), 3);
 

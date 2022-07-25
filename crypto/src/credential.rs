@@ -285,6 +285,7 @@ mod tests {
         let decrypted_msg = bob_group
             .decrypt_message(&encrypted_msg, &bob_backend)
             .await?
+            .0
             .ok_or(CryptoError::Unauthorized)?;
         assert_eq!(msg, decrypted_msg.as_slice());
 
@@ -293,6 +294,7 @@ mod tests {
         let decrypted_msg = alice_group
             .decrypt_message(&encrypted_msg, &alice_backend)
             .await?
+            .0
             .ok_or(CryptoError::Unauthorized)?;
         assert_eq!(msg, decrypted_msg.as_slice());
         Ok(())

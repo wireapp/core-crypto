@@ -203,7 +203,7 @@ mod tests {
                     let (alice_backend, mut alice) = person("alice", credential).await;
                     let (_, bob) = person("bob", credential).await;
 
-                    // create alice group
+                    // create Alice group
                     let mut alice_group = MlsConversation::create(
                         conversation_id.clone(),
                         alice.local_client_mut(),
