@@ -5,6 +5,8 @@ on: [ push ]
 jobs:
   coverage:
     runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
       - name: Install rust toolchain
