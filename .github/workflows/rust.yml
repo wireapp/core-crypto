@@ -51,11 +51,13 @@ jobs:
         wasm-pack build mls-provider
         wasm-pack build --release crypto
 
+    - uses: taiki-e/install-action@nextest
+
     - name: Run tests
       uses: actions-rs/cargo@v1
       with:
-        command: test
-        args: --verbose --release
+        command: nextest
+        args: run --verbose --release
 
     - name: Run tests (wasm)
       run: |
