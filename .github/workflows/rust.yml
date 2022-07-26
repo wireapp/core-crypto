@@ -53,10 +53,10 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --verbose
+        args: --verbose --release
 
     - name: Run tests (wasm)
       run: |
-        wasm-pack test --headless --chrome keystore
-        wasm-pack test --headless --chrome mls-provider
+        wasm-pack test --release --headless --chrome keystore
+        wasm-pack test --release --headless --chrome mls-provider
         wasm-pack test --release --headless --chrome crypto
