@@ -46,131 +46,131 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_CoreCrypto_b846_CoreCrypto_object_free(
+void ffi_CoreCrypto_cb14_CoreCrypto_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull CoreCrypto_b846_CoreCrypto_new(
+void*_Nonnull CoreCrypto_cb14_CoreCrypto_new(
       RustBuffer path,RustBuffer key,RustBuffer client_id,RustBuffer entropy_seed,
     RustCallStatus *_Nonnull out_status
     );
-void CoreCrypto_b846_CoreCrypto_set_callbacks(
+void CoreCrypto_cb14_CoreCrypto_set_callbacks(
       void*_Nonnull ptr,uint64_t callbacks,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_client_public_key(
+RustBuffer CoreCrypto_cb14_CoreCrypto_client_public_key(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_client_keypackages(
+RustBuffer CoreCrypto_cb14_CoreCrypto_client_keypackages(
       void*_Nonnull ptr,uint32_t amount_requested,
     RustCallStatus *_Nonnull out_status
     );
-uint64_t CoreCrypto_b846_CoreCrypto_client_valid_keypackages_count(
+uint64_t CoreCrypto_cb14_CoreCrypto_client_valid_keypackages_count(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void CoreCrypto_b846_CoreCrypto_create_conversation(
+void CoreCrypto_cb14_CoreCrypto_create_conversation(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer config,
     RustCallStatus *_Nonnull out_status
     );
-int8_t CoreCrypto_b846_CoreCrypto_conversation_exists(
+int8_t CoreCrypto_cb14_CoreCrypto_conversation_exists(
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_process_welcome_message(
+RustBuffer CoreCrypto_cb14_CoreCrypto_process_welcome_message(
       void*_Nonnull ptr,RustBuffer welcome_message,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_add_clients_to_conversation(
+RustBuffer CoreCrypto_cb14_CoreCrypto_add_clients_to_conversation(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer clients,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_remove_clients_from_conversation(
+RustBuffer CoreCrypto_cb14_CoreCrypto_remove_clients_from_conversation(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer clients,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_leave_conversation(
+RustBuffer CoreCrypto_cb14_CoreCrypto_leave_conversation(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer other_clients,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_decrypt_message(
+RustBuffer CoreCrypto_cb14_CoreCrypto_decrypt_message(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer payload,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_encrypt_message(
+RustBuffer CoreCrypto_cb14_CoreCrypto_encrypt_message(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer message,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_new_add_proposal(
+RustBuffer CoreCrypto_cb14_CoreCrypto_new_add_proposal(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer key_package,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_new_update_proposal(
+RustBuffer CoreCrypto_cb14_CoreCrypto_new_update_proposal(
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_new_remove_proposal(
+RustBuffer CoreCrypto_cb14_CoreCrypto_new_remove_proposal(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer client_id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_new_external_add_proposal(
+RustBuffer CoreCrypto_cb14_CoreCrypto_new_external_add_proposal(
       void*_Nonnull ptr,RustBuffer conversation_id,uint64_t epoch,RustBuffer key_package,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_new_external_remove_proposal(
+RustBuffer CoreCrypto_cb14_CoreCrypto_new_external_remove_proposal(
       void*_Nonnull ptr,RustBuffer conversation_id,uint64_t epoch,RustBuffer key_package_ref,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_update_keying_material(
+RustBuffer CoreCrypto_cb14_CoreCrypto_update_keying_material(
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_join_by_external_commit(
+RustBuffer CoreCrypto_cb14_CoreCrypto_join_by_external_commit(
       void*_Nonnull ptr,RustBuffer group_state,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_export_group_state(
+RustBuffer CoreCrypto_cb14_CoreCrypto_export_group_state(
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
-void CoreCrypto_b846_CoreCrypto_merge_pending_group_from_external_commit(
+void CoreCrypto_cb14_CoreCrypto_merge_pending_group_from_external_commit(
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer config,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_CoreCrypto_random_bytes(
+RustBuffer CoreCrypto_cb14_CoreCrypto_random_bytes(
       void*_Nonnull ptr,uint32_t length,
     RustCallStatus *_Nonnull out_status
     );
-void CoreCrypto_b846_CoreCrypto_reseed_rng(
+void CoreCrypto_cb14_CoreCrypto_reseed_rng(
       void*_Nonnull ptr,RustBuffer seed,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_CoreCrypto_b846_CoreCryptoCallbacks_init_callback(
+void ffi_CoreCrypto_cb14_CoreCryptoCallbacks_init_callback(
       ForeignCallback  _Nonnull callback_stub,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull CoreCrypto_b846_init_with_path_and_key(
+void*_Nonnull CoreCrypto_cb14_init_with_path_and_key(
       RustBuffer path,RustBuffer key,RustBuffer client_id,RustBuffer entropy_seed,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer CoreCrypto_b846_version(
+RustBuffer CoreCrypto_cb14_version(
       
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_CoreCrypto_b846_rustbuffer_alloc(
+RustBuffer ffi_CoreCrypto_cb14_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_CoreCrypto_b846_rustbuffer_from_bytes(
+RustBuffer ffi_CoreCrypto_cb14_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_CoreCrypto_b846_rustbuffer_free(
+void ffi_CoreCrypto_cb14_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_CoreCrypto_b846_rustbuffer_reserve(
+RustBuffer ffi_CoreCrypto_cb14_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );

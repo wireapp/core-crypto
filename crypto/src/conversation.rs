@@ -313,7 +313,7 @@ impl MlsConversation {
         &mut self,
         message: impl AsRef<[u8]>,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<(Option<Vec<u8>>, Option<f32>)> {
+    ) -> CryptoResult<(Option<Vec<u8>>, Option<u64>)> {
         let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
 
         let parsed_message = self.group.parse_message(msg_in, backend).map_err(MlsError::from)?;
@@ -328,7 +328,10 @@ impl MlsConversation {
             ProcessedMessage::ApplicationMessage(app_msg) => (Some(app_msg.into_bytes()), None),
             ProcessedMessage::ProposalMessage(proposal) => {
                 self.group.store_pending_proposal(*proposal);
-                let delay = self.calculate_delay(backend)?;
+                let epoch = self.group.epoch().as_u64();
+                let total_members = self.group.members().len();
+                let self_index = self.get_self_index(backend)?;
+                let delay = Self::calculate_delay(self_index, epoch, total_members);
                 (None, Some(delay))
             }
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
@@ -342,14 +345,12 @@ impl MlsConversation {
         Ok(message)
     }
 
-    fn calculate_delay(&self, backend: &MlsCryptoProvider) -> CryptoResult<f32> {
+    fn get_self_index(&self, backend: &MlsCryptoProvider) -> CryptoResult<usize> {
         let myself = self
             .group
             .key_package_ref()
             .ok_or(CryptoError::SelfKeypackageNotFound)?;
-        let epoch = self.group.epoch().as_u64();
-        let members = self.group.members();
-        let total_members = members.len() as u64;
+
         // TODO: switch to `try_find` when stabilized
         // let self_leaf_index = members
         //     .into_iter()
@@ -360,25 +361,30 @@ impl MlsConversation {
         //     })?
         //     .map(|(index, _)| index as u64)
         //     .ok_or(CryptoError::SelfKeypackageNotFound)?;
-        let mut enumeration = members.into_iter().enumerate();
+        let mut enumeration = self.group.members().into_iter().enumerate();
         let self_leaf_index = loop {
             if let Some((index, member)) = enumeration.next() {
                 let member_ref = member.hash_ref(backend.crypto()).map_err(MlsError::from)?;
                 if member_ref == *myself {
-                    break index as u64;
+                    break index;
                 }
             } else {
                 return Err(CryptoError::SelfKeypackageNotFound);
             }
         };
-        let position = ((epoch + self_leaf_index).saturating_sub(2) % total_members) + 1;
-        let delay = match position {
-            1 => 0.0,
-            2 => 15.0,
-            3 => 30.0,
-            _ => ((position as f32).log10() * 120.0) - 106.0,
-        };
-        Ok(delay)
+        Ok(self_leaf_index)
+    }
+
+    fn calculate_delay(self_index: usize, epoch: u64, total_members: usize) -> u64 {
+        let self_index = self_index as u64;
+        let total_members = total_members as u64;
+        let position = ((epoch + self_index) % total_members) + 1;
+        match position {
+            1 => 0,
+            2 => 15,
+            3 => 30,
+            _ => (((position as f32).ln() * 120.0) as u64).saturating_sub(106),
+        }
     }
 
     /// Commits all pending proposals of the group
@@ -596,7 +602,7 @@ pub mod tests {
                 let uuid = uuid::Uuid::new_v4();
                 let backend = init_keystore(&uuid.hyphenated().to_string()).await;
 
-                let member = ConversationMember::random_generate(&backend, credential).await.unwrap();
+                let (member, _) = ConversationMember::random_generate(&backend, credential).await.unwrap();
                 bob_and_friends.push((backend, member));
             }
 
@@ -840,6 +846,85 @@ pub mod tests {
         }
     }
 
+    pub mod delay {
+        use super::*;
+
+        #[test]
+        pub fn test_calculate_delay_single() {
+            let self_index = 0;
+            let epoch = 0;
+            let total_members = 1;
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            assert_eq!(delay, 0);
+        }
+
+        #[test]
+        pub fn test_calculate_delay_first() {
+            let self_index = 9;
+            let epoch = 1;
+            let total_members = 10;
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            assert_eq!(delay, 0);
+        }
+
+        #[test]
+        pub fn test_calculate_delay_second() {
+            let self_index = 0;
+            let epoch = 1;
+            let total_members = 10;
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            assert_eq!(delay, 15);
+        }
+
+        #[test]
+        pub fn test_calculate_delay_thrird() {
+            let self_index = 1;
+            let epoch = 1;
+            let total_members = 10;
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            assert_eq!(delay, 30);
+        }
+
+        #[test]
+        pub fn test_calculate_delay_n() {
+            let epoch = 1;
+            let total_members = 10;
+
+            let self_index = 2;
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            assert_eq!(delay, 60);
+
+            let self_index = 3;
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            assert_eq!(delay, 87);
+
+            let self_index = 4;
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            assert_eq!(delay, 109);
+
+            let self_index = 5;
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            assert_eq!(delay, 127);
+
+            let self_index = 6;
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            assert_eq!(delay, 143);
+
+            let self_index = 7;
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            assert_eq!(delay, 157);
+
+            let self_index = 8;
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            assert_eq!(delay, 170);
+
+            // wrong but it shouldn't cause problems
+            let self_index = 10;
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            assert_eq!(delay, 15);
+        }
+    }
+
     pub mod leave {
         use super::*;
 
@@ -851,16 +936,16 @@ pub mod tests {
             let bob_backend = init_keystore("bob").await;
             let charlie_backend = init_keystore("charlie").await;
 
-            let mut alice = ConversationMember::random_generate(&alice_backend, credential)
+            let (mut alice, _) = ConversationMember::random_generate(&alice_backend, credential)
                 .await
                 .unwrap();
-            let alice2 = ConversationMember::random_generate(&alice2_backend, credential)
+            let (alice2, _) = ConversationMember::random_generate(&alice2_backend, credential)
                 .await
                 .unwrap();
-            let bob = ConversationMember::random_generate(&bob_backend, credential)
+            let (bob, _) = ConversationMember::random_generate(&bob_backend, credential)
                 .await
                 .unwrap();
-            let charlie = ConversationMember::random_generate(&charlie_backend, credential)
+            let (charlie, _) = ConversationMember::random_generate(&charlie_backend, credential)
                 .await
                 .unwrap();
 
@@ -1229,7 +1314,7 @@ pub mod tests {
 
     async fn alice(credential: CredentialSupplier) -> (MlsCryptoProvider, ConversationMember) {
         let alice_backend = init_keystore("alice").await;
-        let alice = ConversationMember::random_generate(&alice_backend, credential)
+        let (alice, _) = ConversationMember::random_generate(&alice_backend, credential)
             .await
             .unwrap();
         (alice_backend, alice)
@@ -1237,7 +1322,7 @@ pub mod tests {
 
     async fn bob(credential: CredentialSupplier) -> (MlsCryptoProvider, ConversationMember) {
         let bob_backend = init_keystore("bob").await;
-        let bob = ConversationMember::random_generate(&bob_backend, credential)
+        let (bob, _) = ConversationMember::random_generate(&bob_backend, credential)
             .await
             .unwrap();
         (bob_backend, bob)
@@ -1245,7 +1330,7 @@ pub mod tests {
 
     async fn charlie(credential: CredentialSupplier) -> (MlsCryptoProvider, ConversationMember) {
         let charlie_backend = init_keystore("charlie").await;
-        let charlie = ConversationMember::random_generate(&charlie_backend, credential)
+        let (charlie, _) = ConversationMember::random_generate(&charlie_backend, credential)
             .await
             .unwrap();
         (charlie_backend, charlie)

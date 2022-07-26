@@ -560,7 +560,7 @@ impl MlsCentral {
         &mut self,
         conversation_id: ConversationId,
         message: impl AsRef<[u8]>,
-    ) -> CryptoResult<(Option<Vec<u8>>, Option<f32>)> {
+    ) -> CryptoResult<(Option<Vec<u8>>, Option<u64>)> {
         let conversation = self
             .mls_groups
             .get_mut(&conversation_id)

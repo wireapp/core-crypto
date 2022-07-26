@@ -311,7 +311,7 @@ mod tests {
 
     async fn person(name: &str, credential: CredentialSupplier) -> (MlsCryptoProvider, ConversationMember) {
         let backend = MlsCryptoProvider::try_new_in_memory(name).await.unwrap();
-        let member = ConversationMember::random_generate(&backend, credential).await.unwrap();
+        let (member, _) = ConversationMember::random_generate(&backend, credential).await.unwrap();
         (backend, member)
     }
 }

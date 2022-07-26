@@ -81,7 +81,7 @@ pub struct MlsConversationInitMessage {
 #[derive(Debug)]
 pub struct DecryptedMessage {
     pub message: Option<Vec<u8>>,
-    pub commit_delay: Option<f32>,
+    pub commit_delay: Option<u64>,
 }
 
 impl Invitee {

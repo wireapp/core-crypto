@@ -205,7 +205,7 @@ impl MlsConversationInitMessage {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DecryptedMessage {
     message: Option<Vec<u8>>,
-    commit_delay: Option<f32>,
+    commit_delay: Option<u64>,
 }
 
 #[wasm_bindgen]
@@ -216,7 +216,7 @@ impl DecryptedMessage {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn commit_delay(&self) -> Option<f32> {
+    pub fn commit_delay(&self) -> Option<u64> {
         self.commit_delay
     }
 }
