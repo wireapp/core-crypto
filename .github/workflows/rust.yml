@@ -31,17 +31,17 @@ jobs:
       with:
         command: check
 
-    - name: Clippy
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: -- -D warnings
-
     - name: Run build
       uses: actions-rs/cargo@v1
       with:
         command: build
         args: --verbose
+
+    - name: Clippy
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: -- -D warnings
 
     - name: Run build (wasm)
       run: |
