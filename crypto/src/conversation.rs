@@ -874,7 +874,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn test_calculate_delay_thrird() {
+        pub fn test_calculate_delay_third() {
             let self_index = 1;
             let epoch = 1;
             let total_members = 10;
