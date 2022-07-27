@@ -88,7 +88,10 @@ impl std::str::FromStr for ClientId {
     }
 }
 
-/// Represents a client within a group
+/// Represents a MLS client which in our case is the equivalent of a device.
+/// It can be the Android, iOS, web or desktop application which the authenticated user is using.
+/// A user has many client, a client has only one user.
+/// A client can belong to many MLS groups
 #[derive(Debug, Clone)]
 pub struct Client {
     id: ClientId,
