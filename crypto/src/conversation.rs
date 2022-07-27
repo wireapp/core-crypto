@@ -305,7 +305,8 @@ impl MlsConversation {
     /// This method will return a tuple containing an optional message and an optional delay time
     /// for the callers to wait for committing. A message will be `None` in case the provided payload is
     /// a system message, such as Proposals and Commits. Otherwise it will return the message as a
-    /// byte array. The delay will be `Some` only when the message contains a proposal
+    /// byte array. The delay will be `Some` when the message is a proposal. 
+    TODO: It might also be Some in the case the message is a commit and we have local pending proposals not covered by this commit
     ///
     /// # Errors
     /// KeyStore errors can happen only if it is not an Application Message (hence causing group
