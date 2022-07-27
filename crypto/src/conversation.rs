@@ -850,9 +850,7 @@ pub mod tests {
 
         #[test]
         pub fn test_calculate_delay_single() {
-            let self_index = 0;
-            let epoch = 0;
-            let total_members = 1;
+            let (self_index, epoch, total_members) = (0, 0, 1);
             let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
             assert_eq!(delay, 0);
         }
