@@ -302,9 +302,10 @@ impl MlsConversation {
     /// * `backend` - the KeyStore to persist possible group changes
     ///
     /// # Return type
-    /// This method will return None for the message in case the provided payload is
+    /// This method will return a tuple containing an optional message and an optional delay time
+    /// for the callers to wait for committing. A message will be `None` in case the provided payload is
     /// a system message, such as Proposals and Commits. Otherwise it will return the message as a
-    /// byte array
+    /// byte array. The delay will be `Some` only when the message contains a proposal
     ///
     /// # Errors
     /// KeyStore errors can happen only if it is not an Application Message (hence causing group
@@ -331,7 +332,7 @@ impl MlsConversation {
                 let epoch = self.group.epoch().as_u64();
                 let total_members = self.group.members().len();
                 let self_index = self.get_self_index(backend)?;
-                let delay = Self::calculate_delay(self_index, epoch, total_members);
+                let delay = Self::calculate_delay(self_index, epoch, total_members)?;
                 (None, Some(delay))
             }
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
@@ -352,15 +353,6 @@ impl MlsConversation {
             .ok_or(CryptoError::SelfKeypackageNotFound)?;
 
         // TODO: switch to `try_find` when stabilized
-        // let self_leaf_index = members
-        //     .into_iter()
-        //     .enumerate()
-        //     .try_find(|(index, member)| {
-        //         let member_ref = member.hash_ref(backend.crypto()).map_err(MlsError::from)?;
-        //         Ok(member_ref == *myself)
-        //     })?
-        //     .map(|(index, _)| index as u64)
-        //     .ok_or(CryptoError::SelfKeypackageNotFound)?;
         self.group
             .members()
             .iter()
@@ -374,16 +366,17 @@ impl MlsConversation {
             .ok_or(CryptoError::SelfKeypackageNotFound)
     }
 
-    fn calculate_delay(self_index: usize, epoch: u64, total_members: usize) -> u64 {
-        let self_index = self_index as u64;
-        let total_members = total_members as u64;
+    fn calculate_delay(self_index: usize, epoch: u64, total_members: usize) -> CryptoResult<u64> {
+        let self_index: u64 = self_index.try_into().map_err(CryptoError::from)?;
+        let total_members: u64 = total_members.try_into().map_err(CryptoError::from)?;
         let position = ((epoch + self_index) % total_members) + 1;
-        match position {
+        let result = match position {
             1 => 0,
             2 => 15,
             3 => 30,
-            _ => (((position as f32).ln() * 120.0) as u64).saturating_sub(106),
-        }
+            _ => ((TryInto::<f32>::try_into(position).ln() * 120.0) as u64).saturating_sub(106),
+        };
+        Ok(result)
     }
 
     /// Commits all pending proposals of the group
@@ -851,7 +844,7 @@ pub mod tests {
         #[test]
         pub fn test_calculate_delay_single() {
             let (self_index, epoch, total_members) = (0, 0, 1);
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
             assert_eq!(delay, 0);
         }
 
@@ -860,7 +853,7 @@ pub mod tests {
             let self_index = 9;
             let epoch = 1;
             let total_members = 10;
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
             assert_eq!(delay, 0);
         }
 
@@ -869,7 +862,7 @@ pub mod tests {
             let self_index = 0;
             let epoch = 1;
             let total_members = 10;
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
             assert_eq!(delay, 15);
         }
 
@@ -878,7 +871,7 @@ pub mod tests {
             let self_index = 1;
             let epoch = 1;
             let total_members = 10;
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
             assert_eq!(delay, 30);
         }
 
