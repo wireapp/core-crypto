@@ -88,9 +88,9 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - name: WASM build
         run: |
-          wasm-pack build keystore
-          wasm-pack build mls-provider
-          wasm-pack build --release crypto
+          wasm-pack build --dev --target web keystore
+          wasm-pack build --dev --target web mls-provider
+          wasm-pack build --dev --target web crypto
 
   wasm-test:
     runs-on: ubuntu-latest
