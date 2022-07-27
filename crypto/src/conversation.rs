@@ -305,8 +305,8 @@ impl MlsConversation {
     /// This method will return a tuple containing an optional message and an optional delay time
     /// for the callers to wait for committing. A message will be `None` in case the provided payload is
     /// a system message, such as Proposals and Commits. Otherwise it will return the message as a
-    /// byte array. The delay will be `Some` when the message is a proposal. 
-    TODO: It might also be Some in the case the message is a commit and we have local pending proposals not covered by this commit
+    /// byte array. The delay will be `Some` when the message is a proposal.
+    // TODO: It might also be Some in the case the message is a commit and we have local pending proposals not covered by this commit
     ///
     /// # Errors
     /// KeyStore errors can happen only if it is not an Application Message (hence causing group
@@ -332,7 +332,7 @@ impl MlsConversation {
                 self.group.store_pending_proposal(*proposal);
                 let epoch = self.group.epoch().as_u64();
                 let total_members = self.group.members().len();
-                let self_index = self.get_self_index(backend)?;
+                let self_index = self.get_self_tree_index(backend)?;
                 let delay = calculate_delay(self_index, epoch, total_members).map_err(CryptoError::from)?;
                 (None, Some(delay))
             }
@@ -347,7 +347,7 @@ impl MlsConversation {
         Ok(message)
     }
 
-    fn get_self_index(&self, backend: &MlsCryptoProvider) -> CryptoResult<usize> {
+    fn get_self_tree_index(&self, backend: &MlsCryptoProvider) -> CryptoResult<usize> {
         let myself = self
             .group
             .key_package_ref()
@@ -508,6 +508,34 @@ pub mod tests {
     #[inline(always)]
     pub async fn init_keystore(identifier: &str) -> MlsCryptoProvider {
         MlsCryptoProvider::try_new_in_memory(identifier).await.unwrap()
+    }
+
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    async fn test_get_self_tree_index(credential: CredentialSupplier) {
+        let conversation_id = conversation_id();
+        let (alice_backend, mut alice) = alice(credential).await;
+        let (bob_backend, bob) = bob(credential).await;
+
+        let mut alice_group = MlsConversation::create(
+            conversation_id.clone(),
+            alice.local_client_mut(),
+            MlsConversationConfiguration::default(),
+            &alice_backend,
+        )
+        .await
+        .unwrap();
+        let conversation_creation_message = alice_group.add_members(&mut [bob], &alice_backend).await.unwrap();
+        let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message;
+        let bob_group =
+            MlsConversation::from_welcome_message(welcome, MlsConversationConfiguration::default(), &bob_backend)
+                .await
+                .unwrap();
+
+        let index = alice_group.get_self_tree_index(&alice_backend).unwrap();
+        assert_eq!(index, 0);
+        let index = bob_group.get_self_tree_index(&bob_backend).unwrap();
+        assert_eq!(index, 1);
     }
 
     pub mod create {
