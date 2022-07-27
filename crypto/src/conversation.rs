@@ -850,16 +850,14 @@ pub mod tests {
 
         #[test]
         pub fn test_calculate_delay_first() {
-            let self_index = 9;
-            let epoch = 1;
-            let total_members = 10;
+            let (self_index, epoch, total_members) = (9, 1, 10);
             let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
             assert_eq!(delay, 0);
         }
 
         #[test]
         pub fn test_calculate_delay_second() {
-            let self_index = 0;
+            let (self_index, epoch, total_members) = (0, 1, 10);
             let epoch = 1;
             let total_members = 10;
             let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
@@ -868,9 +866,7 @@ pub mod tests {
 
         #[test]
         pub fn test_calculate_delay_third() {
-            let self_index = 1;
-            let epoch = 1;
-            let total_members = 10;
+            let (self_index, epoch, total_members) = (1, 1, 10);
             let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
             assert_eq!(delay, 30);
         }
@@ -880,7 +876,7 @@ pub mod tests {
             let epoch = 1;
             let total_members = 10;
 
-            let table = [
+            let indexes_delays = [
                 (2, 60),
                 (3, 87),
                 (4, 109),
@@ -892,8 +888,8 @@ pub mod tests {
                 (10, 15),
             ];
 
-            for (self_index, expected_delay) in table {
-                let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+            for (self_index, expected_delay) in indexes_delays {
+                let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
                 assert_eq!(delay, expected_delay);
             }
         }
