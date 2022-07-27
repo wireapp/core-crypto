@@ -32,6 +32,7 @@ pub mod test_fixture_utils;
 pub use self::error::*;
 
 mod client;
+mod commit_delay;
 mod conversation;
 mod credential;
 mod error;

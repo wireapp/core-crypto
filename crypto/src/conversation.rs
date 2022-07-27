@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::ClientId;
+use crate::{commit_delay::calculate_delay, ClientId};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::Credential;
 use openmls::{
@@ -30,10 +30,6 @@ use crate::{
     member::{ConversationMember, MemberId},
     CryptoError, CryptoResult, MlsCiphersuite, MlsError,
 };
-
-/// These constants intend to ramp up the delay and flatten the curve for later positions
-const DELAY_RAMP_UP_MULTIPLIER: f32 = 120.0;
-const DELAY_RAMP_UP_SUB: u64 = 106;
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 pub type ConversationId = Vec<u8>;
@@ -336,7 +332,7 @@ impl MlsConversation {
                 let epoch = self.group.epoch().as_u64();
                 let total_members = self.group.members().len();
                 let self_index = self.get_self_index(backend)?;
-                let delay = Self::calculate_delay(self_index, epoch, total_members)?;
+                let delay = calculate_delay(self_index, epoch, total_members).map_err(CryptoError::from)?;
                 (None, Some(delay))
             }
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
@@ -368,19 +364,6 @@ impl MlsConversation {
                     .map(|_| i)
             })
             .ok_or(CryptoError::SelfKeypackageNotFound)
-    }
-
-    fn calculate_delay(self_index: usize, epoch: u64, total_members: usize) -> CryptoResult<u64> {
-        let self_index: u64 = self_index.try_into().map_err(CryptoError::from)?;
-        let total_members: u64 = total_members.try_into().map_err(CryptoError::from)?;
-        let position = ((epoch % total_members) + (self_index % total_members)) % total_members + 1;
-        let result = match position {
-            1 => 0,
-            2 => 15,
-            3 => 30,
-            _ => (((position as f32).ln() * DELAY_RAMP_UP_MULTIPLIER) as u64).saturating_sub(DELAY_RAMP_UP_SUB),
-        };
-        Ok(result)
     }
 
     /// Commits all pending proposals of the group
@@ -839,91 +822,6 @@ pub mod tests {
                 .0
                 .unwrap();
             assert_eq!(original_message, roundtripped_message.as_slice());
-        }
-    }
-
-    pub mod delay {
-        use super::*;
-
-        #[test]
-        pub fn test_calculate_delay_single() {
-            let (self_index, epoch, total_members) = (0, 0, 1);
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
-            assert_eq!(delay, 0);
-        }
-
-        #[test]
-        pub fn test_calculate_delay_max() {
-            let (self_index, epoch, total_members) = (usize::MAX, u64::MAX, usize::MAX);
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
-            assert_eq!(delay, 0);
-        }
-
-        #[test]
-        pub fn test_calculate_delay_min() {
-            let (self_index, epoch, total_members) = (usize::MIN, u64::MIN, usize::MAX);
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
-            assert_eq!(delay, 0);
-        }
-
-        #[test]
-        #[should_panic]
-        pub fn test_calculate_delay_panic() {
-            let (self_index, epoch, total_members) = (0, 0, usize::MIN);
-            // total members can never be 0 as there's no group with 0 members and it will panic
-            // when trying to calculate the remainder of 0
-            MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
-        }
-
-        #[test]
-        pub fn test_calculate_delay_min_max() {
-            let (self_index, epoch, total_members) = (usize::MIN, u64::MAX, usize::MAX);
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
-            assert_eq!(delay, 0);
-        }
-
-        #[test]
-        pub fn test_calculate_delay_first() {
-            let (self_index, epoch, total_members) = (9, 1, 10);
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
-            assert_eq!(delay, 0);
-        }
-
-        #[test]
-        pub fn test_calculate_delay_second() {
-            let (self_index, epoch, total_members) = (0, 1, 10);
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
-            assert_eq!(delay, 15);
-        }
-
-        #[test]
-        pub fn test_calculate_delay_third() {
-            let (self_index, epoch, total_members) = (1, 1, 10);
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
-            assert_eq!(delay, 30);
-        }
-
-        #[test]
-        pub fn test_calculate_delay_n() {
-            let epoch = 1;
-            let total_members = 10;
-
-            let indexes_delays = [
-                (2, 60),
-                (3, 87),
-                (4, 109),
-                (5, 127),
-                (6, 143),
-                (7, 157),
-                (8, 170),
-                // wrong but it shouldn't cause problems
-                (10, 15),
-            ];
-
-            for (self_index, expected_delay) in indexes_delays {
-                let delay = MlsConversation::calculate_delay(self_index, epoch, total_members).unwrap();
-                assert_eq!(delay, expected_delay);
-            }
         }
     }
 
