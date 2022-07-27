@@ -361,18 +361,17 @@ impl MlsConversation {
         //     })?
         //     .map(|(index, _)| index as u64)
         //     .ok_or(CryptoError::SelfKeypackageNotFound)?;
-        let mut enumeration = self.group.members().into_iter().enumerate();
-        let self_leaf_index = loop {
-            if let Some((index, member)) = enumeration.next() {
-                let member_ref = member.hash_ref(backend.crypto()).map_err(MlsError::from)?;
-                if member_ref == *myself {
-                    break index;
-                }
-            } else {
-                return Err(CryptoError::SelfKeypackageNotFound);
-            }
-        };
-        Ok(self_leaf_index)
+        self.group
+            .members()
+            .iter()
+            .enumerate()
+            .find_map(|(i, kp)| {
+                kp.hash_ref(backend.crypto())
+                    .ok()
+                    .filter(|kpr| kpr == myself)
+                    .map(|_| i)
+            })
+            .ok_or(CryptoError::SelfKeypackageNotFound)
     }
 
     fn calculate_delay(self_index: usize, epoch: u64, total_members: usize) -> u64 {
