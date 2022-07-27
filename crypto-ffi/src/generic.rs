@@ -31,6 +31,7 @@ pub use core_crypto::prelude::{CiphersuiteName, ClientId, ConversationId, CoreCr
 pub use core_crypto::CryptoError;
 
 use futures_lite::future;
+use futures_util::TryFutureExt;
 
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
@@ -74,6 +75,13 @@ pub struct CommitBundle {
 pub struct MlsConversationInitMessage {
     pub group: Vec<u8>,
     pub message: Vec<u8>,
+}
+
+#[cfg_attr(feature = "c-api", repr(C))]
+#[derive(Debug)]
+pub struct DecryptedMessage {
+    pub message: Option<Vec<u8>>,
+    pub commit_delay: Option<u64>,
 }
 
 impl Invitee {
@@ -347,13 +355,14 @@ impl CoreCrypto<'_> {
         Ok(ret)
     }
 
-    pub fn decrypt_message(&self, conversation_id: ConversationId, payload: &[u8]) -> CryptoResult<Option<Vec<u8>>> {
+    pub fn decrypt_message(&self, conversation_id: ConversationId, payload: &[u8]) -> CryptoResult<DecryptedMessage> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .decrypt_message(conversation_id, payload),
+                    .decrypt_message(conversation_id, payload)
+                    .map_ok(|(message, commit_delay)| DecryptedMessage { message, commit_delay }),
             ),
         )
     }

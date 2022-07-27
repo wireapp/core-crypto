@@ -203,6 +203,26 @@ impl MlsConversationInitMessage {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct DecryptedMessage {
+    message: Option<Vec<u8>>,
+    commit_delay: Option<u64>,
+}
+
+#[wasm_bindgen]
+impl DecryptedMessage {
+    #[wasm_bindgen(getter)]
+    pub fn message(&self) -> Option<Uint8Array> {
+        self.message.clone().map(|m| Uint8Array::from(&*m))
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn commit_delay(&self) -> Option<u64> {
+        self.commit_delay
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Invitee {
     id: Vec<u8>,
     kp: Vec<u8>,
@@ -671,14 +691,14 @@ impl CoreCrypto {
         let this = self.0.clone();
         future_to_promise(
             async move {
-                let maybe_cleartext = this
+                let decrypted_message = this
                     .write()
                     .await
                     .decrypt_message(conversation_id.to_vec(), payload)
-                    .await?
-                    .map(|cleartext| Uint8Array::from(cleartext.as_slice()));
+                    .await
+                    .map(|(message, commit_delay)| DecryptedMessage { message, commit_delay })?;
 
-                WasmCryptoResult::Ok(maybe_cleartext.map(Into::into).unwrap_or(JsValue::NULL))
+                WasmCryptoResult::Ok(decrypted_message.into())
             }
             .err_into(),
         )

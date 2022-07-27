@@ -203,7 +203,7 @@ mod tests {
                     let (alice_backend, mut alice) = person("alice", credential).await;
                     let (_, bob) = person("bob", credential).await;
 
-                    // create alice group
+                    // create Alice group
                     let mut alice_group = MlsConversation::create(
                         conversation_id.clone(),
                         alice.local_client_mut(),
@@ -311,7 +311,7 @@ mod tests {
 
     async fn person(name: &str, credential: CredentialSupplier) -> (MlsCryptoProvider, ConversationMember) {
         let backend = MlsCryptoProvider::try_new_in_memory(name).await.unwrap();
-        let member = ConversationMember::random_generate(&backend, credential).await.unwrap();
+        let (member, _) = ConversationMember::random_generate(&backend, credential).await.unwrap();
         (backend, member)
     }
 }

@@ -32,6 +32,7 @@ pub mod test_fixture_utils;
 pub use self::error::*;
 
 mod client;
+mod commit_delay;
 mod conversation;
 mod credential;
 mod error;
@@ -549,9 +550,10 @@ impl MlsCentral {
     /// * `message` - the encrypted message as a byte array
     ///
     /// # Return type
-    /// This method will return None for the message in case the provided payload is
-    /// a system message, such as Proposals and Commits. Otherwise it will return the message as a
-    /// byte array
+    /// This method will return a tuple containing an optional message and an optional delay time
+    /// for the callers to wait for committing. A message will be `None` in case the provided payload in
+    /// case of a system message, such as Proposals and Commits. Otherwise it will return the message as a
+    /// byte array. The delay will be `Some` when the message has a proposal
     ///
     /// # Errors
     /// If the conversation can't be found, an error will be returned. Other errors are originating
@@ -560,7 +562,7 @@ impl MlsCentral {
         &mut self,
         conversation_id: ConversationId,
         message: impl AsRef<[u8]>,
-    ) -> CryptoResult<Option<Vec<u8>>> {
+    ) -> CryptoResult<(Option<Vec<u8>>, Option<u64>)> {
         let conversation = self
             .mls_groups
             .get_mut(&conversation_id)

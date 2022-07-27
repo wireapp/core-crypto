@@ -108,10 +108,10 @@ impl ConversationMember {
     pub async fn random_generate(
         backend: &mls_crypto_provider::MlsCryptoProvider,
         credential: crate::credential::CredentialSupplier,
-    ) -> CryptoResult<Self> {
+    ) -> CryptoResult<(Self, openmls::prelude::KeyPackageBundle)> {
         let client = Client::random_generate(backend, false, credential()).await?;
         let id = client.id();
-        client.gen_keypackage(backend).await?;
+        let key_pagkage = client.gen_keypackage(backend).await?;
 
         let member = Self {
             id: id.to_vec(),
@@ -119,7 +119,7 @@ impl ConversationMember {
             local_client: Some(client),
         };
 
-        Ok(member)
+        Ok((member, key_pagkage))
     }
 
     /// Generates a random new Member
@@ -171,7 +171,7 @@ pub mod tests {
     #[wasm_bindgen_test]
     pub async fn member_can_run_out_of_keypackage_hashes(credential: CredentialSupplier) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        let mut member = ConversationMember::random_generate(&backend, credential).await.unwrap();
+        let (mut member, _) = ConversationMember::random_generate(&backend, credential).await.unwrap();
         let client_id = member.local_client.as_ref().map(|c| c.id().clone()).unwrap();
         let ret = (0..INITIAL_KEYING_MATERIAL_COUNT * 2).all(|_| {
             let ckp = member.keypackages_for_all_clients();

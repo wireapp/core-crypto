@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::ClientId;
+use crate::{commit_delay::calculate_delay, ClientId};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::Credential;
 use openmls::{
@@ -302,9 +302,11 @@ impl MlsConversation {
     /// * `backend` - the KeyStore to persist possible group changes
     ///
     /// # Return type
-    /// This method will return None for the message in case the provided payload is
+    /// This method will return a tuple containing an optional message and an optional delay time
+    /// for the callers to wait for committing. A message will be `None` in case the provided payload is
     /// a system message, such as Proposals and Commits. Otherwise it will return the message as a
-    /// byte array
+    /// byte array. The delay will be `Some` when the message is a proposal.
+    // TODO: It might also be Some in the case the message is a commit and we have local pending proposals not covered by this commit
     ///
     /// # Errors
     /// KeyStore errors can happen only if it is not an Application Message (hence causing group
@@ -313,7 +315,7 @@ impl MlsConversation {
         &mut self,
         message: impl AsRef<[u8]>,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<Option<Vec<u8>>> {
+    ) -> CryptoResult<(Option<Vec<u8>>, Option<u64>)> {
         let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
 
         let parsed_message = self.group.parse_message(msg_in, backend).map_err(MlsError::from)?;
@@ -325,20 +327,49 @@ impl MlsConversation {
             .map_err(MlsError::from)?;
 
         let message = match message {
-            ProcessedMessage::ApplicationMessage(app_msg) => Some(app_msg.into_bytes()),
+            ProcessedMessage::ApplicationMessage(app_msg) => (Some(app_msg.into_bytes()), None),
             ProcessedMessage::ProposalMessage(proposal) => {
                 self.group.store_pending_proposal(*proposal);
-                None
+                let epoch = self.group.epoch().as_u64();
+                let total_members = self.group.members().len();
+                let self_index = self.get_self_tree_index(backend)?;
+                let delay = calculate_delay(self_index, epoch, total_members).map_err(CryptoError::from)?;
+                (None, Some(delay))
             }
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
                 self.group.merge_staged_commit(*staged_commit).map_err(MlsError::from)?;
-                None
+                (None, None)
             }
         };
 
         self.persist_group_when_changed(backend, false).await?;
 
         Ok(message)
+    }
+
+    /// Returns the tree index of the client owning this instance of the conversation.
+    ///
+    /// # Errors
+    /// [CryptoError::SelfKeypackageNotFound] if the [KeyPackage] can't be found. This shouldn't
+    /// happen and the conversation is in an invalid state.
+    fn get_self_tree_index(&self, backend: &MlsCryptoProvider) -> CryptoResult<usize> {
+        let myself = self
+            .group
+            .key_package_ref()
+            .ok_or(CryptoError::SelfKeypackageNotFound)?;
+
+        // TODO: switch to `try_find` when stabilized
+        self.group
+            .members()
+            .iter()
+            .enumerate()
+            .find_map(|(i, kp)| {
+                kp.hash_ref(backend.crypto())
+                    .ok()
+                    .filter(|kpr| kpr == myself)
+                    .map(|_| i)
+            })
+            .ok_or(CryptoError::SelfKeypackageNotFound)
     }
 
     /// Commits all pending proposals of the group
@@ -484,6 +515,34 @@ pub mod tests {
         MlsCryptoProvider::try_new_in_memory(identifier).await.unwrap()
     }
 
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    async fn test_get_self_tree_index(credential: CredentialSupplier) {
+        let conversation_id = conversation_id();
+        let (alice_backend, mut alice) = alice(credential).await;
+        let (bob_backend, bob) = bob(credential).await;
+
+        let mut alice_group = MlsConversation::create(
+            conversation_id.clone(),
+            alice.local_client_mut(),
+            MlsConversationConfiguration::default(),
+            &alice_backend,
+        )
+        .await
+        .unwrap();
+        let conversation_creation_message = alice_group.add_members(&mut [bob], &alice_backend).await.unwrap();
+        let MlsConversationCreationMessage { welcome, .. } = conversation_creation_message;
+        let bob_group =
+            MlsConversation::from_welcome_message(welcome, MlsConversationConfiguration::default(), &bob_backend)
+                .await
+                .unwrap();
+
+        let index = alice_group.get_self_tree_index(&alice_backend).unwrap();
+        assert_eq!(index, 0);
+        let index = bob_group.get_self_tree_index(&bob_backend).unwrap();
+        assert_eq!(index, 1);
+    }
+
     pub mod create {
         use super::*;
 
@@ -556,7 +615,7 @@ pub mod tests {
                 let uuid = uuid::Uuid::new_v4();
                 let backend = init_keystore(&uuid.hyphenated().to_string()).await;
 
-                let member = ConversationMember::random_generate(&backend, credential).await.unwrap();
+                let (member, _) = ConversationMember::random_generate(&backend, credential).await.unwrap();
                 bob_and_friends.push((backend, member));
             }
 
@@ -780,6 +839,7 @@ pub mod tests {
                 .decrypt_message(&encrypted_message, &bob_backend)
                 .await
                 .unwrap()
+                .0
                 .unwrap();
             assert_eq!(original_message, roundtripped_message.as_slice());
 
@@ -793,6 +853,7 @@ pub mod tests {
                 .decrypt_message(&encrypted_message, &alice_backend)
                 .await
                 .unwrap()
+                .0
                 .unwrap();
             assert_eq!(original_message, roundtripped_message.as_slice());
         }
@@ -809,16 +870,16 @@ pub mod tests {
             let bob_backend = init_keystore("bob").await;
             let charlie_backend = init_keystore("charlie").await;
 
-            let mut alice = ConversationMember::random_generate(&alice_backend, credential)
+            let (mut alice, _) = ConversationMember::random_generate(&alice_backend, credential)
                 .await
                 .unwrap();
-            let alice2 = ConversationMember::random_generate(&alice2_backend, credential)
+            let (alice2, _) = ConversationMember::random_generate(&alice2_backend, credential)
                 .await
                 .unwrap();
-            let bob = ConversationMember::random_generate(&bob_backend, credential)
+            let (bob, _) = ConversationMember::random_generate(&bob_backend, credential)
                 .await
                 .unwrap();
-            let charlie = ConversationMember::random_generate(&charlie_backend, credential)
+            let (charlie, _) = ConversationMember::random_generate(&charlie_backend, credential)
                 .await
                 .unwrap();
 
@@ -1031,6 +1092,7 @@ pub mod tests {
                 .decrypt_message(&msg_out.to_bytes().unwrap(), &bob_backend)
                 .await
                 .unwrap()
+                .0
                 .is_none());
 
             let bob_new_keys = bob_group
@@ -1116,6 +1178,7 @@ pub mod tests {
                 .decrypt_message(&proposal_response.to_bytes().unwrap(), &bob_backend)
                 .await
                 .unwrap()
+                .0
                 .is_none());
 
             assert_eq!(alice_group.group.members().len(), 2);
@@ -1152,6 +1215,7 @@ pub mod tests {
                 .decrypt_message(&message.to_bytes().unwrap(), &bob_backend)
                 .await
                 .unwrap()
+                .0
                 .is_none());
             assert_eq!(bob_group.members().len(), 3);
 
@@ -1184,7 +1248,7 @@ pub mod tests {
 
     async fn alice(credential: CredentialSupplier) -> (MlsCryptoProvider, ConversationMember) {
         let alice_backend = init_keystore("alice").await;
-        let alice = ConversationMember::random_generate(&alice_backend, credential)
+        let (alice, _) = ConversationMember::random_generate(&alice_backend, credential)
             .await
             .unwrap();
         (alice_backend, alice)
@@ -1192,7 +1256,7 @@ pub mod tests {
 
     async fn bob(credential: CredentialSupplier) -> (MlsCryptoProvider, ConversationMember) {
         let bob_backend = init_keystore("bob").await;
-        let bob = ConversationMember::random_generate(&bob_backend, credential)
+        let (bob, _) = ConversationMember::random_generate(&bob_backend, credential)
             .await
             .unwrap();
         (bob_backend, bob)
@@ -1200,7 +1264,7 @@ pub mod tests {
 
     async fn charlie(credential: CredentialSupplier) -> (MlsCryptoProvider, ConversationMember) {
         let charlie_backend = init_keystore("charlie").await;
-        let charlie = ConversationMember::random_generate(&charlie_backend, credential)
+        let (charlie, _) = ConversationMember::random_generate(&charlie_backend, credential)
             .await
             .unwrap();
         (charlie_backend, charlie)

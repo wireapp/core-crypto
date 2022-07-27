@@ -39,7 +39,7 @@ async fn new_client(
     credential: CredentialSupplier,
 ) -> CryptoResult<(MlsCryptoProvider, ConversationMember)> {
     let backend = init_keystore(name).await;
-    let member = ConversationMember::random_generate(&backend, credential).await?;
+    let (member, _) = ConversationMember::random_generate(&backend, credential).await?;
     Ok((backend, member))
 }
 

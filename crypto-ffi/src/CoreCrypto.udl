@@ -35,7 +35,13 @@ enum CryptoError {
     "ConvertIntError",
     "InvalidByteArrayError",
     "IoError",
-    "Unauthorized"
+    "Unauthorized",
+    "SelfKeypackageNotFound"
+};
+
+dictionary DecryptedMessage {
+    sequence<u8>? message;
+    u64? commit_delay;
 };
 
 dictionary MemberAddedMessages {
@@ -108,7 +114,7 @@ interface CoreCrypto {
     ConversationLeaveMessages leave_conversation(ConversationId conversation_id, [ByRef] sequence<ClientId> other_clients);
 
     [Throws=CryptoError]
-    sequence<u8>? decrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> payload);
+    DecryptedMessage decrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> payload);
 
     [Throws=CryptoError]
     sequence<u8> encrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> message);
