@@ -347,6 +347,11 @@ impl MlsConversation {
         Ok(message)
     }
 
+    /// Returns the tree index of the client owning this instance of the conversation.
+    ///
+    /// # Errors
+    /// [CryptoError::SelfKeypackageNotFound] if the [KeyPackage] can't be found. This shouldn't
+    /// happen and the conversation is in an invalid state.
     fn get_self_tree_index(&self, backend: &MlsCryptoProvider) -> CryptoResult<usize> {
         let myself = self
             .group
