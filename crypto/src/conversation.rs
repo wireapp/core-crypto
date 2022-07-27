@@ -31,6 +31,10 @@ use crate::{
     CryptoError, CryptoResult, MlsCiphersuite, MlsError,
 };
 
+/// These constants intend to ramp up the delay and flatten the curve for later positions
+const DELAY_RAMP_UP_MULTIPLIER: f32 = 120.0;
+const DELAY_RAMP_UP_SUB: u64 = 106;
+
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 pub type ConversationId = Vec<u8>;
 
@@ -374,7 +378,7 @@ impl MlsConversation {
             1 => 0,
             2 => 15,
             3 => 30,
-            _ => (((position as f32).ln() * 120.0) as u64).saturating_sub(106),
+            _ => (((position as f32).ln() * DELAY_RAMP_UP_MULTIPLIER) as u64).saturating_sub(DELAY_RAMP_UP_SUB),
         };
         Ok(result)
     }
