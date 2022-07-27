@@ -890,38 +890,22 @@ pub mod tests {
             let epoch = 1;
             let total_members = 10;
 
-            let self_index = 2;
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
-            assert_eq!(delay, 60);
+            let table = [
+                (2, 60),
+                (3, 87),
+                (4, 109),
+                (5, 127),
+                (6, 143),
+                (7, 157),
+                (8, 170),
+                // wrong but it shouldn't cause problems
+                (10, 15),
+            ];
 
-            let self_index = 3;
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
-            assert_eq!(delay, 87);
-
-            let self_index = 4;
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
-            assert_eq!(delay, 109);
-
-            let self_index = 5;
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
-            assert_eq!(delay, 127);
-
-            let self_index = 6;
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
-            assert_eq!(delay, 143);
-
-            let self_index = 7;
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
-            assert_eq!(delay, 157);
-
-            let self_index = 8;
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
-            assert_eq!(delay, 170);
-
-            // wrong but it shouldn't cause problems
-            let self_index = 10;
-            let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
-            assert_eq!(delay, 15);
+            for (self_index, expected_delay) in table {
+                let delay = MlsConversation::calculate_delay(self_index, epoch, total_members);
+                assert_eq!(delay, expected_delay);
+            }
         }
     }
 
