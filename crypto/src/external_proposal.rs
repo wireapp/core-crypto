@@ -16,12 +16,18 @@ impl MlsCentral {
     ///
     /// # Errors
     /// Errors resulting from the creation of the proposal within OpenMls
+    /// If the `callbacks` is not set, an error will be returned. The identity of the sent [KeyPackage]
+    /// will be validated with the callback and an error will be returned if it fails.
     pub async fn new_external_add_proposal(
         &self,
         conversation_id: ConversationId,
         epoch: GroupEpoch,
         key_package: KeyPackage,
     ) -> CryptoResult<MlsMessageOut> {
+        let callbacks = self.callbacks.as_ref().ok_or(CryptoError::CallbacksNotSet)?;
+        if !callbacks.is_external_proposal_valid(key_package.credential().identity()) {
+            return Err(CryptoError::ExternalProposalError);
+        }
         let group_id = GroupId::from_slice(&conversation_id[..]);
         ExternalProposal::new_add(
             key_package,

@@ -91,6 +91,11 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     /// * `conversation_id` - id of the group/conversation
     /// * `client_id` - id of the client
     fn authorize(&self, conversation_id: ConversationId, client_id: String) -> bool;
+    /// Validates if the external proposal is valid.
+    ///
+    /// # Arguments
+    /// * `identity` - identity of the client within the sent proposal
+    fn is_external_proposal_valid(&self, identity: &[u8]) -> bool;
 }
 
 #[derive(Debug, Clone, derive_more::Deref)]
