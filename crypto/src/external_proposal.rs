@@ -85,7 +85,33 @@ mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     mod add {
+        use crate::{CoreCryptoCallbacks, CryptoError};
+
         use super::*;
+
+        #[derive(Debug)]
+        struct FailValidation;
+        impl CoreCryptoCallbacks for FailValidation {
+            fn authorize(&self, _: crate::prelude::ConversationId, _: String) -> bool {
+                false
+            }
+
+            fn is_external_proposal_valid(&self, _: &[u8]) -> bool {
+                false
+            }
+        }
+
+        #[derive(Debug)]
+        struct SuccessValidation;
+        impl CoreCryptoCallbacks for SuccessValidation {
+            fn authorize(&self, _: crate::prelude::ConversationId, _: String) -> bool {
+                false
+            }
+
+            fn is_external_proposal_valid(&self, _: &[u8]) -> bool {
+                true
+            }
+        }
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
@@ -96,6 +122,7 @@ mod tests {
                 move |[mut owner_central, mut guest_central]| {
                     Box::pin(async move {
                         let conversation_id = b"owner-guest".to_vec();
+                        guest_central.callbacks(Box::new(SuccessValidation));
                         owner_central
                             .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
                             .await
@@ -145,6 +172,69 @@ mod tests {
                             .encrypt_message(&conversation_id, b"hello owner")
                             .await
                             .is_ok());
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        async fn should_succeed_fail_validation(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["owner@wire.com", "guest@wire.com"],
+                move |[mut owner_central, guest_central]| {
+                    Box::pin(async move {
+                        let conversation_id = b"owner-guest".to_vec();
+                        guest_central.callbacks(Box::new(FailValidation));
+                        owner_central
+                            .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        let owner_group = owner_central.mls_groups.get_mut(&conversation_id).unwrap();
+                        let epoch = owner_group.group.epoch();
+
+                        let guest_key_packages = guest_central.client_keypackages(1).await.unwrap();
+                        let guest_key_package = guest_key_packages.get(0).unwrap().key_package().to_owned();
+
+                        // Craft an external proposal from guest
+                        let error = guest_central
+                            .new_external_add_proposal(owner_group.id.clone(), epoch, guest_key_package)
+                            .await
+                            .unwrap_err();
+                        assert!(matches!(error, CryptoError::ExternalProposalError));
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        async fn should_succeed_fail_no_callback(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["owner@wire.com", "guest@wire.com"],
+                move |[mut owner_central, guest_central]| {
+                    Box::pin(async move {
+                        let conversation_id = b"owner-guest".to_vec();
+                        owner_central
+                            .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        let owner_group = owner_central.mls_groups.get_mut(&conversation_id).unwrap();
+                        let epoch = owner_group.group.epoch();
+
+                        let guest_key_packages = guest_central.client_keypackages(1).await.unwrap();
+                        let guest_key_package = guest_key_packages.get(0).unwrap().key_package().to_owned();
+
+                        // Craft an external proposal from guest
+                        let error = guest_central
+                            .new_external_add_proposal(owner_group.id.clone(), epoch, guest_key_package)
+                            .await
+                            .unwrap_err();
+                        assert!(matches!(error, CryptoError::CallbacksNotSet));
                     })
                 },
             )
