@@ -105,7 +105,7 @@ mod tests {
         struct SuccessValidation;
         impl CoreCryptoCallbacks for SuccessValidation {
             fn authorize(&self, _: crate::prelude::ConversationId, _: String) -> bool {
-                false
+                true
             }
 
             fn is_external_proposal_valid(&self, _: &[u8]) -> bool {
