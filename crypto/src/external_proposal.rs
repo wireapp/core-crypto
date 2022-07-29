@@ -184,7 +184,7 @@ mod tests {
             run_test_with_client_ids(
                 credential,
                 ["owner@wire.com", "guest@wire.com"],
-                move |[mut owner_central, guest_central]| {
+                move |[mut owner_central, mut guest_central]| {
                     Box::pin(async move {
                         let conversation_id = b"owner-guest".to_vec();
                         guest_central.callbacks(Box::new(FailValidation));
