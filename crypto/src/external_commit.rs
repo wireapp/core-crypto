@@ -14,13 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use core_crypto_keystore::CryptoKeystoreMls;
 use openmls::{
     group::{GroupId, MlsGroup},
     prelude::{MlsMessageOut, VerifiablePublicGroupState},
 };
 use openmls_traits::OpenMlsCryptoProvider;
-
-use core_crypto_keystore::CryptoKeystoreMls;
 
 use crate::{
     prelude::{MlsConversation, MlsConversationConfiguration},
@@ -117,7 +116,18 @@ mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     pub mod external_join {
+
         use super::*;
+        use crate::{
+            credential::CredentialSupplier,
+            error::MlsError,
+            test_fixture_utils::{SuccessValidationCallbacks, *},
+            test_utils::run_test_with_central,
+            CoreCryptoCallbacks, MlsConversation, MlsConversationConfiguration,
+        };
+        use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
+        use openmls::prelude::*;
+        use wasm_bindgen_test::wasm_bindgen_test;
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
@@ -160,8 +170,36 @@ mod tests {
                         assert_eq!(bob_central[&id].members().len(), 2);
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
 
-                        // Pending group removed from keystore
-                        let error = alice_central.mls_backend.key_store().mls_pending_groups_load(&id).await;
+                        // alice acks the request and adds the new member
+                        let callbacks: Option<Box<dyn CoreCryptoCallbacks>> =
+                            Some(Box::new(SuccessValidationCallbacks));
+                        alice_group
+                            .decrypt_message(
+                                &message.to_bytes().unwrap(),
+                                &alice_backend,
+                                callbacks.as_ref().map(|boxed| boxed.as_ref()),
+                            )
+                            .await
+                            .unwrap();
+                        assert_eq!(alice_group.members().len(), 2);
+
+                        // we merge the commit and update the local state
+                        central
+                            .merge_pending_group_from_external_commit(
+                                &conversation_id,
+                                MlsConversationConfiguration::default(),
+                            )
+                            .await
+                            .unwrap();
+
+                        let conv = central.get_conversation(&conversation_id).unwrap();
+                        assert_eq!(conv.members().len(), 2);
+
+                        let error = central
+                            .mls_backend
+                            .key_store()
+                            .mls_pending_groups_load(&conversation_id)
+                            .await;
                         assert!(matches!(
                             error.unwrap_err(),
                             CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsPendingGroup)
@@ -191,10 +229,20 @@ mod tests {
                     alice_central.update_keying_material(&id).await.unwrap();
                     alice_central.commit_accepted(&id).await.unwrap();
 
-                    // receiving the external join with outdated epoch should fail because of
-                    // the wrong epoch
-                    let result = alice_central
-                        .decrypt_message(&id, &external_commit.to_bytes().unwrap())
+                    // alice adds a new member to the group before receiving an ack from the
+                    // external join
+                    alice_group.add_members(&mut [bob], &alice_backend).await.unwrap();
+                    alice_group.commit_accepted(&alice_backend).await.unwrap();
+
+                    // receive the ack from the external join with outdated epoch
+                    // should fail because of the wrong epoch
+                    let callbacks: Option<Box<dyn CoreCryptoCallbacks>> = Some(Box::new(SuccessValidationCallbacks));
+                    let result = alice_group
+                        .decrypt_message(
+                            &message.to_bytes().unwrap(),
+                            &alice_backend,
+                            callbacks.as_ref().map(|boxed| boxed.as_ref()),
+                        )
                         .await;
                     assert!(matches!(
                         result.unwrap_err(),

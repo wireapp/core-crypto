@@ -132,6 +132,11 @@ pub mod tests {
     use crate::{error::CryptoError, test_utils::*, MlsCentral, MlsCentralConfiguration, MlsConversationConfiguration};
 
     use super::*;
+    use crate::{
+        test_fixture_utils::{SuccessValidationCallbacks, *},
+        CoreCryptoCallbacks, MlsConversation, MlsConversationConfiguration,
+    };
+    use openmls::prelude::{CredentialError, WelcomeError};
 
     use wasm_bindgen_test::*;
 
@@ -295,5 +300,33 @@ pub mod tests {
             .await?;
         alice_central.invite(&id, &mut bob_central).await?;
         alice_central.talk_to(&id, &mut bob_central).await
+        // alice -> bob
+        let encrypted_msg = alice_group.encrypt_message(msg, &alice_backend).await?;
+        let callbacks: Option<Box<dyn CoreCryptoCallbacks>> = Some(Box::new(SuccessValidationCallbacks));
+        let decrypted_msg = bob_group
+            .decrypt_message(
+                &encrypted_msg,
+                &bob_backend,
+                callbacks.as_ref().map(|boxed| boxed.as_ref()),
+            )
+            .await?
+            .app_msg
+            .ok_or(CryptoError::Unauthorized)?;
+        assert_eq!(msg, decrypted_msg.as_slice());
+
+        // bob -> alice
+        let encrypted_msg = bob_group.encrypt_message(decrypted_msg, &bob_backend).await?;
+        let decrypted_msg = alice_group
+            .decrypt_message(
+                &encrypted_msg,
+                &alice_backend,
+                callbacks.as_ref().map(|boxed| boxed.as_ref()),
+            )
+            .await?
+            .app_msg
+            .ok_or(CryptoError::Unauthorized)?;
+        assert_eq!(msg, decrypted_msg.as_slice());
+        Ok(())
+>>>>>>> 783f931 (Adding validation to external proposal)
     }
 }

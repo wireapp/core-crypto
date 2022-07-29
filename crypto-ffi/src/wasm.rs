@@ -336,14 +336,16 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
 #[derive(Debug, Clone)]
 pub struct CoreCryptoWasmCallbacks {
     authorize: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
+    is_user_in_group: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
 }
 
 #[wasm_bindgen]
 impl CoreCryptoWasmCallbacks {
     #[wasm_bindgen(constructor)]
-    pub fn new(authorize: js_sys::Function) -> Self {
+    pub fn new(authorize: js_sys::Function, is_user_in_group: js_sys::Function) -> Self {
         Self {
             authorize: std::sync::Arc::new(authorize.into()),
+            is_user_in_group: std::sync::Arc::new(is_user_in_group.into()),
         }
     }
 }
@@ -360,6 +362,29 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
                     &this,
                     &js_sys::Uint8Array::from(conversation_id.as_slice()),
                     &JsValue::from_str(&client_id),
+                )
+                .map(|jsval| jsval.as_bool())
+            {
+                result
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fn is_user_in_group(&self, identity: Vec<u8>, other_clients: Vec<Vec<u8>>) -> bool {
+        if let Ok(is_user_in_group) = self.is_user_in_group.try_lock() {
+            let this = JsValue::null();
+            if let Ok(Some(result)) = is_user_in_group
+                .call2(
+                    &this,
+                    &js_sys::Uint8Array::from(identity),
+                    &other_clients
+                        .into_iter()
+                        .map(|client| js_sys::Uint8Array::from(client.as_slice()))
+                        .collect::<js_sys::Array>(),
                 )
                 .map(|jsval| jsval.as_bool())
             {

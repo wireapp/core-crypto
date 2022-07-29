@@ -78,6 +78,15 @@ pub enum CryptoError {
     /// Authorization error
     #[error("The current client id isn't authorized to perform this action")]
     Unauthorized,
+    /// Calbacks are not informed
+    #[error("The callback interface in the MlsCentral was not informed")]
+    CallbacksNotSet,
+    /// External Proposal Validation failed
+    #[error("The external proposal validation failed: {0}")]
+    ExternalProposalError(&'static str),
+    /// The proposal type is invalid
+    #[error("The proposal type is not supported by this operation")]
+    InvalidProposalType,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

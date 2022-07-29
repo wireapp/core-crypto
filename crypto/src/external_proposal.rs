@@ -1,6 +1,74 @@
-use openmls::prelude::{ExternalProposal, GroupEpoch, GroupId, KeyPackage, KeyPackageRef, MlsMessageOut};
+use std::collections::HashSet;
 
-use crate::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError};
+use crate::{
+    prelude::MlsConversation, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsError,
+};
+use openmls::{
+    group::QueuedProposal,
+    prelude::{
+        ExternalProposal, GroupEpoch, GroupId, KeyPackage, KeyPackageRef, MlsMessageOut, OpenMlsCrypto, Proposal,
+        Sender,
+    },
+};
+
+pub trait ExternalProposalExt {
+    fn is_external_add_proposal(&self) -> bool;
+}
+impl ExternalProposalExt for QueuedProposal {
+    fn is_external_add_proposal(&self) -> bool {
+        matches!(
+            (self.proposal(), self.sender()),
+            (Proposal::Add(_), Sender::Preconfigured(_) | Sender::NewMember)
+        )
+    }
+}
+
+impl MlsConversation {
+    /// Validates the proposal. If it is external and an `Add` proposal it will call the callback
+    /// interface to validate the proposal, otherwise it will succeed.
+    pub(crate) fn validate_external_proposal(
+        &self,
+        proposal: &QueuedProposal,
+        callbacks: &(impl CoreCryptoCallbacks + ?Sized),
+        backend: &impl OpenMlsCrypto,
+    ) -> CryptoResult<()> {
+        if proposal.is_external_add_proposal() {
+            let pending_removes = self
+                .group
+                .pending_proposals()
+                .filter_map(|proposal| match proposal.proposal() {
+                    Proposal::Remove(ref remove) => Some(remove.removed()),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            let other_clients = self
+                .group
+                .members()
+                .into_iter()
+                .filter_map(|kp| {
+                    if !pending_removes.contains(&&kp.hash_ref(backend).ok()?) {
+                        Some(kp.credential().identity().to_owned())
+                    } else {
+                        None
+                    }
+                })
+                .collect::<HashSet<_>>();
+            let add_proposal = match proposal.proposal() {
+                Proposal::Add(ref add) => add,
+                _ => return Err(CryptoError::InvalidProposalType),
+            };
+            if !callbacks.is_user_in_group(
+                add_proposal.key_package().credential().identity().to_owned(),
+                other_clients.into_iter().collect(),
+            ) {
+                return Err(CryptoError::ExternalProposalError(
+                    "identity validation failure. Only users already in group are allowed.",
+                ));
+            }
+        }
+        Ok(())
+    }
+}
 
 impl MlsCentral {
     /// Crafts a new external Add proposal. Enables a client outside a group to request addition to this group.
@@ -68,6 +136,7 @@ impl MlsCentral {
 
 #[cfg(test)]
 mod tests {
+    use crate::{credential::CredentialSupplier, test_fixture_utils::*, test_utils::*, MlsConversationConfiguration};
     use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
 
@@ -79,6 +148,7 @@ mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     mod add {
+
         use super::*;
 
         #[apply(all_credential_types)]
@@ -89,7 +159,8 @@ mod tests {
                 ["owner", "guest"],
                 move |[mut owner_central, mut guest_central]| {
                     Box::pin(async move {
-                        let id = conversation_id();
+                        owner_central.callbacks(Box::new(SuccessValidationCallbacks));
+                        let conversation_id = b"owner-guest".to_vec();
                         owner_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
@@ -135,6 +206,7 @@ mod tests {
 
     mod remove {
         use super::*;
+        use crate::{member::ConversationMember, test_fixture_utils::SuccessValidationCallbacks, CoreCryptoCallbacks};
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
@@ -164,8 +236,14 @@ mod tests {
                             .await
                             .unwrap();
 
-                        owner_central
-                            .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
+                        let callbacks: Option<Box<dyn CoreCryptoCallbacks>> =
+                            Some(Box::new(SuccessValidationCallbacks));
+                        owner_group
+                            .decrypt_message(
+                                ext_remove_proposal.to_bytes().unwrap().as_slice(),
+                                &owner_central.mls_backend,
+                                callbacks.as_ref().map(|boxed| boxed.as_ref()),
+                            )
                             .await
                             .unwrap();
                         guest_central
