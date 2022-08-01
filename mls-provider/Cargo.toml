@@ -16,7 +16,7 @@ raw-rand-access = [] # TESTING ONLY
 openmls_traits = { version = "0.1", features = ["single-threaded"] }
 aes-gcm = "0.9"
 sha2 = "0.10"
-chacha20poly1305 = "0.9"
+chacha20poly1305 = "0.10"
 hmac = "0.12"
 ed25519-dalek = "1.0"
 ecdsa = { version = "0.14", features = ["der"] }
