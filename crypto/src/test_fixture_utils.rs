@@ -6,6 +6,8 @@ use openmls::{
     key_packages::KeyPackage,
     prelude::{QueuedProposal, StagedCommit},
 };
+
+use mls_crypto_provider::MlsCryptoProvider;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
@@ -119,5 +121,29 @@ impl std::ops::Index<&ConversationId> for MlsCentral {
 impl std::ops::IndexMut<&ConversationId> for MlsCentral {
     fn index_mut(&mut self, index: &ConversationId) -> &mut Self::Output {
         self.mls_groups.get_mut(index).unwrap()
+    }
+}
+
+#[derive(Debug)]
+pub struct FailValidationCallbacks;
+impl CoreCryptoCallbacks for FailValidationCallbacks {
+    fn authorize(&self, _: crate::prelude::ConversationId, _: String) -> bool {
+        false
+    }
+
+    fn is_external_proposal_valid(&self, _: &[u8], _: Vec<&[u8]>) -> bool {
+        false
+    }
+}
+
+#[derive(Debug)]
+pub struct SuccessValidationCallbacks;
+impl CoreCryptoCallbacks for SuccessValidationCallbacks {
+    fn authorize(&self, _: crate::prelude::ConversationId, _: String) -> bool {
+        true
+    }
+
+    fn is_external_proposal_valid(&self, _: &[u8], _: Vec<&[u8]>) -> bool {
+        true
     }
 }

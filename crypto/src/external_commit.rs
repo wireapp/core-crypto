@@ -162,8 +162,14 @@ mod tests {
                     let (_, message) = central.join_by_external_commit(verifiable_state).await.unwrap();
 
                     // alice acks the request and adds the new member
+                    let callbacks: Option<Box<dyn crate::CoreCryptoCallbacks>> =
+                        Some(Box::new(crate::test_fixture_utils::SuccessValidationCallbacks));
                     alice_group
-                        .decrypt_message(&message.to_bytes().unwrap(), &alice_backend)
+                        .decrypt_message(
+                            &message.to_bytes().unwrap(),
+                            &alice_backend,
+                            callbacks.as_ref().map(|boxed| boxed.as_ref()),
+                        )
                         .await
                         .unwrap();
                     assert_eq!(alice_group.members().len(), 2);
@@ -235,8 +241,14 @@ mod tests {
 
                     // receive the ack from the external join with outdated epoch
                     // should fail because of the wrong epoch
+                    let callbacks: Option<Box<dyn crate::CoreCryptoCallbacks>> =
+                        Some(Box::new(crate::test_fixture_utils::SuccessValidationCallbacks));
                     let result = alice_group
-                        .decrypt_message(&message.to_bytes().unwrap(), &alice_backend)
+                        .decrypt_message(
+                            &message.to_bytes().unwrap(),
+                            &alice_backend,
+                            callbacks.as_ref().map(|boxed| boxed.as_ref()),
+                        )
                         .await;
                     assert!(matches!(
                         result.unwrap_err(),

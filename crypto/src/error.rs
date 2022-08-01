@@ -84,6 +84,9 @@ pub enum CryptoError {
     /// External Proposal Validation failed
     #[error("The external proposal validation failed")]
     ExternalProposalError,
+    /// The proposal type is invalid
+    #[error("The proposal type is not supported by this operation")]
+    InvalidProposalType,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

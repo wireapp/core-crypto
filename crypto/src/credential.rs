@@ -286,8 +286,14 @@ mod tests {
 
         // alice -> bob
         let encrypted_msg = alice_group.encrypt_message(msg, &alice_backend).await?;
+        let callbacks: Option<Box<dyn crate::CoreCryptoCallbacks>> =
+            Some(Box::new(crate::test_fixture_utils::SuccessValidationCallbacks));
         let decrypted_msg = bob_group
-            .decrypt_message(&encrypted_msg, &bob_backend)
+            .decrypt_message(
+                &encrypted_msg,
+                &bob_backend,
+                callbacks.as_ref().map(|boxed| boxed.as_ref()),
+            )
             .await?
             .app_msg
             .ok_or(CryptoError::Unauthorized)?;
@@ -296,7 +302,11 @@ mod tests {
         // bob -> alice
         let encrypted_msg = bob_group.encrypt_message(decrypted_msg, &bob_backend).await?;
         let decrypted_msg = alice_group
-            .decrypt_message(&encrypted_msg, &alice_backend)
+            .decrypt_message(
+                &encrypted_msg,
+                &alice_backend,
+                callbacks.as_ref().map(|boxed| boxed.as_ref()),
+            )
             .await?
             .app_msg
             .ok_or(CryptoError::Unauthorized)?;
