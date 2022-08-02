@@ -81,53 +81,44 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod proposal_tests {
-    use openmls::prelude::*;
-    use wasm_bindgen_test::wasm_bindgen_test;
+    use wasm_bindgen_test::*;
 
     use crate::{credential::CredentialSupplier, test_utils::*, *};
 
     use super::*;
 
-    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+    wasm_bindgen_test_configure!(run_in_browser);
 
     pub mod add {
         use super::*;
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub async fn should_succeed(credential: CredentialSupplier) {
-            run_test_with_central(credential, move |[mut central]| {
-                Box::pin(async move {
-                    let conversation_id = b"conversation".to_vec();
-                    central
-                        .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
-                    let kp = key_package(&central, credential);
-                    let proposal = MlsProposal::Add(kp.key_package().to_owned());
-                    let add_proposal = central.new_proposal(&conversation_id, proposal);
-                    let _ = add_proposal.await.unwrap();
-                })
-            })
-            .await
-        }
-
-        #[apply(all_credential_types)]
-        #[wasm_bindgen_test]
-        pub async fn should_fail_when_unknown_conversation(credential: CredentialSupplier) {
-            run_test_with_central(credential, move |[mut central]| {
-                Box::pin(async move {
-                    central.mls_groups.clear();
-                    let kp = key_package(&central, credential);
-                    let conversation_id = b"unknown".to_vec();
-                    let proposal = MlsProposal::Add(kp.key_package().to_owned());
-                    let add_proposal = central.new_proposal(&conversation_id, proposal).await;
-                    match add_proposal {
-                        Err(error::CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
-                        _ => panic!(""),
-                    }
-                })
-            })
+        pub async fn should_add_member(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        let bob_kp = bob_central.get_one_key_package().await;
+                        alice_central.new_proposal(&id, MlsProposal::Add(bob_kp)).await.unwrap();
+                        let (_, welcome) = alice_central.commit_pending_proposals(&id).await.unwrap();
+                        alice_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(alice_central[&id].members().len(), 2);
+                        let new_id = bob_central
+                            .process_welcome_message(welcome.unwrap(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        assert_eq!(id, new_id);
+                        assert!(bob_central.talk_to(&id, &mut alice_central).await.is_ok());
+                    })
+                },
+            )
             .await
         }
     }
@@ -137,33 +128,20 @@ pub mod proposal_tests {
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub async fn should_succeed(credential: CredentialSupplier) {
+        pub async fn should_update_key_package(credential: CredentialSupplier) {
             run_test_with_central(credential, |[mut central]| {
                 Box::pin(async move {
-                    let conversation_id = b"conversation".to_vec();
+                    let id = conversation_id();
                     central
-                        .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
                         .await
                         .unwrap();
-                    let update_proposal = central.new_proposal(&conversation_id, MlsProposal::Update);
-                    let _ = update_proposal.await.unwrap();
-                })
-            })
-            .await
-        }
-
-        #[apply(all_credential_types)]
-        #[wasm_bindgen_test]
-        pub async fn should_fail_when_unknown_conversation(credential: CredentialSupplier) {
-            run_test_with_central(credential, |[mut central]| {
-                Box::pin(async move {
-                    central.mls_groups.clear();
-                    let conversation_id = b"conversation".to_vec();
-                    let update_proposal = central.new_proposal(&conversation_id, MlsProposal::Update).await;
-                    match update_proposal {
-                        Err(error::CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
-                        _ => panic!(""),
-                    }
+                    let before = &(*central[&id].group.members().first().unwrap()).clone();
+                    central.new_proposal(&id, MlsProposal::Update).await.unwrap();
+                    central.commit_pending_proposals(&id).await.unwrap();
+                    central.commit_accepted(&id).await.unwrap();
+                    let after = &(*central[&id].group.members().first().unwrap()).clone();
+                    assert_ne!(before, after)
                 })
             })
             .await
@@ -175,21 +153,38 @@ pub mod proposal_tests {
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub async fn should_succeed(credential: CredentialSupplier) {
-            run_test_with_central(credential, |[mut central]| {
+        pub async fn should_remove_member(credential: CredentialSupplier) {
+            run_test_with_client_ids(credential, ["alice", "bob"], |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
-                    let conversation_id = b"conversation".to_vec();
-                    central
-                        .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
                         .await
                         .unwrap();
-                    let conversation = central.get_conversation(&conversation_id).unwrap();
-                    let client_id =
-                        ClientId::from(conversation.group.members().get(0).unwrap().credential().identity());
-                    let remove_proposal = central
-                        .new_proposal(&conversation_id, MlsProposal::Remove(client_id))
-                        .await;
-                    let _ = remove_proposal.unwrap();
+                    alice_central.invite(&id, &mut bob_central).await.unwrap();
+                    assert_eq!(alice_central[&id].members().len(), 2);
+                    assert_eq!(bob_central[&id].members().len(), 2);
+
+                    let remove_proposal = alice_central
+                        .new_proposal(&id, MlsProposal::Remove(b"bob"[..].into()))
+                        .await
+                        .unwrap();
+                    bob_central
+                        .decrypt_message(&id, remove_proposal.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    let (commit, _) = alice_central.commit_pending_proposals(&id).await.unwrap();
+                    alice_central.commit_accepted(&id).await.unwrap();
+                    assert_eq!(alice_central[&id].members().len(), 1);
+
+                    bob_central
+                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    assert!(matches!(
+                        bob_central.get_conversation(&id).unwrap_err(),
+                        CryptoError::ConversationNotFound(conv_id) if conv_id == id
+                    ));
                 })
             })
             .await
@@ -198,61 +193,53 @@ pub mod proposal_tests {
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_unknown_client(credential: CredentialSupplier) {
-            run_test_with_central(credential, |[mut central]| {
+            run_test_with_client_ids(credential, ["alice"], |[mut alice_central]| {
                 Box::pin(async move {
-                    let conversation_id = b"conversation".to_vec();
-                    central
-                        .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
                         .await
                         .unwrap();
-                    let client_id = ClientId::from(vec![]);
-                    let remove_proposal = central
-                        .new_proposal(&conversation_id, MlsProposal::Remove(client_id.clone()))
-                        .await;
-                    match remove_proposal {
-                        Err(error::CryptoError::ClientNotFound(cli_id)) => assert_eq!(cli_id, client_id),
-                        _ => panic!(""),
-                    }
-                })
-            })
-            .await
-        }
 
-        #[apply(all_credential_types)]
-        #[wasm_bindgen_test]
-        pub async fn should_fail_when_unknown_conversation(credential: CredentialSupplier) {
-            run_test_with_central(credential, |[mut central]| {
-                Box::pin(async move {
-                    central.mls_groups.clear();
-                    let conversation_id = b"conversation".to_vec();
-                    let client_id = ClientId::from(vec![]);
-                    let remove_proposal = central
-                        .new_proposal(&conversation_id, MlsProposal::Remove(client_id))
+                    let remove_proposal = alice_central
+                        .new_proposal(&id, MlsProposal::Remove(b"unknown"[..].into()))
                         .await;
-                    match remove_proposal {
-                        Err(error::CryptoError::ConversationNotFound(conv_id)) => assert_eq!(conv_id, conversation_id),
-                        _ => panic!(""),
-                    }
+                    assert!(matches!(
+                        remove_proposal.unwrap_err(),
+                        CryptoError::ClientNotFound(client_id) if client_id == b"unknown"[..].into()
+                    ));
                 })
             })
             .await
         }
     }
 
-    fn key_package(central: &MlsCentral, credential: CredentialSupplier) -> KeyPackageBundle {
-        let id = b"test";
-        let credential = if let Some(cert) = credential() {
-            Client::generate_x509_credential_bundle(&id.to_vec().into(), cert.certificate_chain, cert.private_key)
-        } else {
-            Client::generate_basic_credential_bundle(&id.to_vec().into(), &central.mls_backend)
-        }
-        .unwrap();
-        KeyPackageBundle::new(
-            &[MlsCiphersuite::default().0],
-            &credential,
-            &central.mls_backend,
-            vec![],
-        )
-        .unwrap()
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn should_fail_when_unknown_conversation(credential: CredentialSupplier) {
+        run_test_with_client_ids(credential, ["alice", "bob"], move |[mut alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                let bob_kp = bob_central.get_one_key_package().await;
+                let add_proposal = alice_central.new_proposal(&id, MlsProposal::Add(bob_kp)).await;
+                assert!(matches!(
+                    add_proposal.unwrap_err(),
+                    CryptoError::ConversationNotFound(conv_id) if conv_id == id
+                ));
+                let update_proposal = alice_central.new_proposal(&id, MlsProposal::Update).await;
+                assert!(matches!(
+                    update_proposal.unwrap_err(),
+                    CryptoError::ConversationNotFound(conv_id) if conv_id == id
+                ));
+                let remove_proposal = alice_central
+                    .new_proposal(&id, MlsProposal::Remove(b"any"[..].into()))
+                    .await;
+                assert!(matches!(
+                    remove_proposal.unwrap_err(),
+                    CryptoError::ConversationNotFound(conv_id) if conv_id == id
+                ));
+            })
+        })
+        .await
     }
 }

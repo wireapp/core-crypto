@@ -1,6 +1,8 @@
-use crate::{Client, ClientId, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
-use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{CredentialBundle, SignaturePrivateKey};
+
+use mls_crypto_provider::MlsCryptoProvider;
+
+use crate::{Client, ClientId, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
 
 /// For test fixtures (test with basic or x509 credential)
 #[cfg(test)]
@@ -124,45 +126,52 @@ impl Client {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use openmls::prelude::{CredentialError, WelcomeError};
 
-    use crate::error::CryptoError;
-    use crate::{test_utils::*, MlsConversation, MlsConversationConfiguration};
+    use crate::{error::CryptoError, test_utils::*, MlsCentral, MlsCentralConfiguration, MlsConversationConfiguration};
 
     use super::*;
 
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
     #[async_std::test]
+    #[wasm_bindgen_test]
     async fn basic_clients_can_send_messages() {
         let alice_cred = CertificateBundle::rnd_basic();
         let bob_cred = CertificateBundle::rnd_basic();
-        alice_and_bob_send_messages(alice_cred, bob_cred).await.unwrap();
+        assert!(alice_and_bob_talk(alice_cred, bob_cred).await.is_ok());
     }
 
     #[async_std::test]
+    #[wasm_bindgen_test]
     async fn certificate_clients_can_send_messages() {
         let alice_cred = CertificateBundle::rnd_certificate_bundle();
         let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        alice_and_bob_send_messages(alice_cred, bob_cred).await.unwrap();
+        assert!(alice_and_bob_talk(alice_cred, bob_cred).await.is_ok());
     }
 
     #[async_std::test]
+    #[wasm_bindgen_test]
     async fn heterogeneous_clients_can_send_messages() {
         // check that both credentials can initiate/join a group
         {
             let alice_cred = CertificateBundle::rnd_basic();
             let bob_cred = CertificateBundle::rnd_certificate_bundle();
-            alice_and_bob_send_messages(alice_cred, bob_cred).await.unwrap();
+            assert!(alice_and_bob_talk(alice_cred, bob_cred).await.is_ok());
             // drop alice & bob key stores
         }
         {
             let alice_cred = CertificateBundle::rnd_certificate_bundle();
             let bob_cred = CertificateBundle::rnd_basic();
-            alice_and_bob_send_messages(alice_cred, bob_cred).await.unwrap();
+            assert!(alice_and_bob_talk(alice_cred, bob_cred).await.is_ok());
         }
     }
 
     #[async_std::test]
+    #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_is_empty() {
         let alice_cred = || {
             let bundle = CertificateBundle::rnd_certificate_bundle()().unwrap();
@@ -172,13 +181,16 @@ mod tests {
             })
         };
         let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        match alice_and_bob_send_messages(alice_cred, bob_cred).await {
-            Err(CryptoError::MlsError(MlsError::MlsCredentialError(CredentialError::IncompleteCertificateChain))) => {}
-            _ => panic!(),
-        };
+        assert!(matches!(
+            alice_and_bob_talk(alice_cred, bob_cred).await.unwrap_err(),
+            CryptoError::MlsError(MlsError::MlsCredentialError(
+                CredentialError::IncompleteCertificateChain
+            ))
+        ));
     }
 
     #[async_std::test]
+    #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_has_a_single_self_signed() {
         let alice_cred = || {
             let mut bundle = CertificateBundle::rnd_certificate_bundle()().unwrap();
@@ -187,13 +199,16 @@ mod tests {
             Some(bundle)
         };
         let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        match alice_and_bob_send_messages(alice_cred, bob_cred).await {
-            Err(CryptoError::MlsError(MlsError::MlsCredentialError(CredentialError::IncompleteCertificateChain))) => {}
-            _ => panic!(),
-        };
+        assert!(matches!(
+            alice_and_bob_talk(alice_cred, bob_cred).await.unwrap_err(),
+            CryptoError::MlsError(MlsError::MlsCredentialError(
+                CredentialError::IncompleteCertificateChain
+            ))
+        ));
     }
 
     #[async_std::test]
+    #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_is_unordered() {
         // chain must be [leaf, leaf-issuer, ..., root-ca]
         let alice_cred = || {
@@ -202,13 +217,14 @@ mod tests {
             Some(bundle)
         };
         let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        match alice_and_bob_send_messages(alice_cred, bob_cred).await {
-            Err(CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))) => {}
-            _ => panic!(),
-        };
+        assert!(matches!(
+            alice_and_bob_talk(alice_cred, bob_cred).await.unwrap_err(),
+            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
+        ));
     }
 
     #[async_std::test]
+    #[wasm_bindgen_test]
     async fn should_fail_when_signature_key_doesnt_match_certificate_public_key() {
         let alice_cred = || {
             let bundle = CertificateBundle::rnd_certificate_bundle()().unwrap();
@@ -219,13 +235,14 @@ mod tests {
             })
         };
         let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        match alice_and_bob_send_messages(alice_cred, bob_cred).await {
-            Err(CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))) => {}
-            _ => panic!(),
-        };
+        assert!(matches!(
+            alice_and_bob_talk(alice_cred, bob_cred).await.unwrap_err(),
+            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
+        ));
     }
 
     #[async_std::test]
+    #[wasm_bindgen_test]
     async fn should_fail_when_certificate_expired() {
         let alice_cred = || {
             let (leaf_kp, leaf_sk) = CertificateBundle::key_pair();
@@ -237,13 +254,14 @@ mod tests {
         };
 
         let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        match alice_and_bob_send_messages(alice_cred, bob_cred).await {
-            Err(CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))) => {}
-            _ => panic!(),
-        };
+        assert!(matches!(
+            alice_and_bob_talk(alice_cred, bob_cred).await.unwrap_err(),
+            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
+        ));
     }
 
     #[async_std::test]
+    #[wasm_bindgen_test]
     async fn should_fail_when_certificate_not_valid_yet() {
         let alice_cred = || {
             let (leaf_kp, leaf_sk) = CertificateBundle::key_pair();
@@ -255,52 +273,27 @@ mod tests {
         };
 
         let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        match alice_and_bob_send_messages(alice_cred, bob_cred).await {
-            Err(CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))) => {}
-            _ => panic!(),
-        };
+        assert!(matches!(
+            alice_and_bob_talk(alice_cred, bob_cred).await.unwrap_err(),
+            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
+        ));
     }
 
-    async fn alice_and_bob_send_messages(
-        alice_cred: CredentialSupplier,
-        bob_cred: CredentialSupplier,
-    ) -> CryptoResult<()> {
-        let conversation_id = conversation_id();
-        let (alice_backend, mut alice) = alice(alice_cred).await?;
-        let (bob_backend, bob) = bob(bob_cred).await?;
-        let configuration = MlsConversationConfiguration::default();
-        let mut alice_group =
-            MlsConversation::create(conversation_id, alice.local_client_mut(), configuration, &alice_backend).await?;
-        let welcome = alice_group
-            .add_members(&mut [bob], &alice_backend)
-            .await
-            .unwrap()
-            .welcome;
-        alice_group.commit_accepted(&alice_backend).await.unwrap();
+    async fn alice_and_bob_talk(alice_cred: CredentialSupplier, bob_cred: CredentialSupplier) -> CryptoResult<()> {
+        let id = conversation_id();
 
-        let mut bob_group =
-            MlsConversation::from_welcome_message(welcome, MlsConversationConfiguration::default(), &bob_backend)
-                .await?;
+        let alice_path = tmp_db_file();
+        let alice_cfg = MlsCentralConfiguration::try_new(alice_path.0, "alice".into(), "alice".into())?;
+        let mut alice_central = MlsCentral::try_new(alice_cfg, alice_cred()).await?;
 
-        let msg = b"Hello World!";
+        let bob_path = tmp_db_file();
+        let bob_cfg = MlsCentralConfiguration::try_new(bob_path.0, "bob".into(), "bob".into())?;
+        let mut bob_central = MlsCentral::try_new(bob_cfg, bob_cred()).await?;
 
-        // alice -> bob
-        let encrypted_msg = alice_group.encrypt_message(msg, &alice_backend).await?;
-        let decrypted_msg = bob_group
-            .decrypt_message(&encrypted_msg, &bob_backend)
-            .await?
-            .app_msg
-            .ok_or(CryptoError::Unauthorized)?;
-        assert_eq!(msg, decrypted_msg.as_slice());
-
-        // bob -> alice
-        let encrypted_msg = bob_group.encrypt_message(decrypted_msg, &bob_backend).await?;
-        let decrypted_msg = alice_group
-            .decrypt_message(&encrypted_msg, &alice_backend)
-            .await?
-            .app_msg
-            .ok_or(CryptoError::Unauthorized)?;
-        assert_eq!(msg, decrypted_msg.as_slice());
-        Ok(())
+        alice_central
+            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+            .await?;
+        alice_central.invite(&id, &mut bob_central).await?;
+        alice_central.talk_to(&id, &mut bob_central).await
     }
 }

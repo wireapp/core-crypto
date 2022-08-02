@@ -71,9 +71,7 @@ mod tests {
     use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
 
-    use crate::{
-        credential::CredentialSupplier, member::ConversationMember, test_utils::*, MlsConversationConfiguration,
-    };
+    use crate::{credential::CredentialSupplier, test_utils::*, MlsConversationConfiguration};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -82,62 +80,48 @@ mod tests {
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        async fn should_succeed(credential: CredentialSupplier) {
+        async fn guest_should_externally_propose_adding_itself_to_owner_group(credential: CredentialSupplier) {
             run_test_with_client_ids(
                 credential,
-                ["owner@wire.com", "guest@wire.com"],
+                ["owner", "guest"],
                 move |[mut owner_central, mut guest_central]| {
                     Box::pin(async move {
-                        let conversation_id = b"owner-guest".to_vec();
+                        let id = conversation_id();
                         owner_central
-                            .new_conversation(conversation_id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
                             .unwrap();
-                        let owner_group = owner_central.mls_groups.get_mut(&conversation_id).unwrap();
-                        let epoch = owner_group.group.epoch();
-
-                        let guest_key_packages = guest_central.client_keypackages(1).await.unwrap();
-                        let guest_key_package = guest_key_packages.get(0).unwrap().key_package().to_owned();
+                        let epoch = owner_central[&id].group.epoch();
+                        let guest_kp = guest_central.get_one_key_package().await;
 
                         // Craft an external proposal from guest
-                        let add_message = guest_central
-                            .new_external_add_proposal(owner_group.id.clone(), epoch, guest_key_package)
+                        let external_add = guest_central
+                            .new_external_add_proposal(id.clone(), epoch, guest_kp)
                             .await
                             .unwrap();
 
                         // Owner receives external proposal message from server
                         owner_central
-                            .decrypt_message(&conversation_id, add_message.to_bytes().unwrap().as_slice())
+                            .decrypt_message(&id, external_add.to_bytes().unwrap())
                             .await
                             .unwrap();
 
-                        let owner_group = owner_central.mls_groups.get_mut(&conversation_id).unwrap();
-
-                        // just owner
-                        assert_eq!(owner_group.members().len(), 1);
+                        // just owner for now
+                        assert_eq!(owner_central[&id].members().len(), 1);
 
                         // simulate commit message reception from server
-                        let (_, welcome) = owner_group
-                            .commit_pending_proposals(&owner_central.mls_backend)
-                            .await
-                            .unwrap();
-                        owner_group.commit_accepted(&owner_central.mls_backend).await.unwrap();
-
-                        let welcome = welcome.unwrap();
-
-                        // owner + guest
-                        assert_eq!(owner_group.members().len(), 2);
+                        let welcome = owner_central.commit_pending_proposals(&id).await.unwrap().1.unwrap();
+                        owner_central.commit_accepted(&id).await.unwrap();
+                        // guest joined the group
+                        assert_eq!(owner_central[&id].members().len(), 2);
 
                         guest_central
                             .process_welcome_message(welcome, MlsConversationConfiguration::default())
                             .await
                             .unwrap();
-
+                        assert_eq!(guest_central[&id].members().len(), 2);
                         // guest can send messages in the group
-                        assert!(guest_central
-                            .encrypt_message(&conversation_id, b"hello owner")
-                            .await
-                            .is_ok());
+                        assert!(guest_central.talk_to(&id, &mut owner_central).await.is_ok());
                     })
                 },
             )
@@ -150,60 +134,53 @@ mod tests {
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        async fn should_succeed(credential: CredentialSupplier) {
+        async fn ds_should_remove_guest_from_conversation(credential: CredentialSupplier) {
             run_test_with_client_ids(
                 credential,
-                ["owner@wire.com", "guest@wire.com", "ds@wire.com"],
-                move |[mut owner_central, guest_central, ds]| {
+                ["owner", "guest", "ds"],
+                move |[mut owner_central, mut guest_central, ds]| {
                     Box::pin(async move {
-                        let conversation_id = b"owner-guest".to_vec();
+                        let id = conversation_id();
                         let cfg = MlsConversationConfiguration {
                             external_senders: vec![ds.mls_client.credentials().credential().to_owned()],
                             ..Default::default()
                         };
-                        owner_central
-                            .new_conversation(conversation_id.clone(), cfg)
-                            .await
-                            .unwrap();
-                        // adding guest to the conversation
-                        let guest_id = guest_central.mls_client.id().to_owned();
-                        let guest_kp = guest_central.get_one_key_package().await.unwrap();
-                        let guest_kp_ref = guest_kp.hash_ref(guest_central.mls_backend.crypto()).unwrap();
-                        let guest = ConversationMember::new(guest_id, guest_kp);
-                        let owner_group = owner_central.mls_groups.get_mut(&conversation_id).unwrap();
-                        owner_group
-                            .add_members(&mut [guest], &owner_central.mls_backend)
-                            .await
-                            .unwrap();
-                        owner_group.commit_accepted(&owner_central.mls_backend).await.unwrap();
-                        assert_eq!(owner_group.members().len(), 2);
+                        owner_central.new_conversation(id.clone(), cfg).await.unwrap();
+
+                        owner_central.invite(&id, &mut guest_central).await.unwrap();
+                        owner_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(owner_central[&id].members().len(), 2);
 
                         // now, as e.g. a Delivery Service, let's create an external remove proposal
                         // and kick guest out of the conversation
+                        let guest_kp = guest_central.key_package_of(&id, "guest");
+                        let guest_kp_ref = guest_kp.hash_ref(guest_central.mls_backend.crypto()).unwrap();
                         let ext_remove_proposal = ds
-                            .new_external_remove_proposal(
-                                owner_group.id.clone(),
-                                owner_group.group.epoch(),
-                                guest_kp_ref,
-                            )
+                            .new_external_remove_proposal(id.clone(), owner_central[&id].group.epoch(), guest_kp_ref)
                             .await
                             .unwrap();
 
-                        owner_group
-                            .decrypt_message(
-                                ext_remove_proposal.to_bytes().unwrap().as_slice(),
-                                &owner_central.mls_backend,
-                            )
+                        owner_central
+                            .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        owner_group
-                            .commit_pending_proposals(&owner_central.mls_backend)
+                        guest_central
+                            .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
+                        let (commit, ..) = owner_central.commit_pending_proposals(&id).await.unwrap();
                         // before merging, commit is not applied
-                        assert_eq!(owner_group.members().len(), 2);
-                        owner_group.commit_accepted(&owner_central.mls_backend).await.unwrap();
-                        assert_eq!(owner_group.members().len(), 1);
+                        assert_eq!(owner_central[&id].members().len(), 2);
+                        owner_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(owner_central[&id].members().len(), 1);
+
+                        // guest can no longer participate
+                        guest_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        assert!(guest_central.get_conversation(&id).is_err());
+                        assert!(guest_central.talk_to(&id, &mut owner_central).await.is_err());
                     })
                 },
             )
