@@ -52,7 +52,7 @@ impl MlsConversation {
             .await
             .map_err(MlsError::from)?;
 
-        Ok(match message {
+        let decrypted = match message {
             ProcessedMessage::ApplicationMessage(app_msg) => MlsConversationDecryptMessage {
                 app_msg: Some(app_msg.into_bytes()),
                 proposals: vec![],
@@ -65,7 +65,6 @@ impl MlsConversation {
                 let total_members = self.group.members().len();
                 let self_index = self.get_self_tree_index(backend)?;
                 let delay = calculate_delay(self_index, epoch, total_members).map_err(CryptoError::from)?;
-                self.persist_group_when_changed(backend, false).await?;
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals: vec![],
@@ -90,7 +89,6 @@ impl MlsConversation {
                     .renew_proposals_for_current_epoch(backend, proposals.into_iter())
                     .await?;
 
-                self.persist_group_when_changed(backend, false).await?;
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals,
@@ -98,7 +96,9 @@ impl MlsConversation {
                     delay: None,
                 }
             }
-        })
+        };
+        self.persist_group_when_changed(backend, false).await?;
+        Ok(decrypted)
     }
 }
 
