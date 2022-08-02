@@ -465,7 +465,7 @@ pub mod tests {
 
     use mls_crypto_provider::MlsCryptoProvider;
 
-    use crate::{credential::CredentialSupplier, test_fixture_utils::*};
+    use crate::{credential::CredentialSupplier, test_utils::*};
 
     use super::Client;
 

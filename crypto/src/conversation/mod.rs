@@ -318,7 +318,7 @@ pub mod tests {
 
     use crate::{
         conversation::handshake::MlsConversationCreationMessage, credential::CredentialSupplier,
-        member::ConversationMember, test_fixture_utils::*, MlsConversationConfiguration,
+        member::ConversationMember, test_utils::*, MlsConversationConfiguration,
     };
 
     use super::*;

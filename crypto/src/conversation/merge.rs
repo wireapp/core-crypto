@@ -52,7 +52,7 @@ impl MlsCentral {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{credential::CredentialSupplier, test_fixture_utils::*, test_utils::*, MlsConversationConfiguration};
+    use crate::{credential::CredentialSupplier, test_utils::*, MlsConversationConfiguration};
 
     wasm_bindgen_test_configure!(run_in_browser);
 

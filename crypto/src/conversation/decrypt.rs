@@ -134,10 +134,7 @@ impl MlsCentral {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{
-        credential::CredentialSupplier, proposal::MlsProposal, test_fixture_utils::*, test_utils::*,
-        MlsConversationConfiguration,
-    };
+    use crate::{credential::CredentialSupplier, proposal::MlsProposal, test_utils::*, MlsConversationConfiguration};
 
     use super::*;
 

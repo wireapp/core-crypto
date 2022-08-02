@@ -292,7 +292,7 @@ pub mod tests {
     use openmls::prelude::KeyPackage;
     use wasm_bindgen_test::*;
 
-    use crate::{credential::CredentialSupplier, test_fixture_utils::*, MlsConversationConfiguration};
+    use crate::{credential::CredentialSupplier, test_utils::*, MlsConversationConfiguration};
 
     use super::*;
 
