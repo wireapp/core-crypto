@@ -11,6 +11,13 @@ dependencies = ["clean"]
 command = "cargo"
 args = ["check"]
 
+##################################### DOCS ####################################
+
+[tasks.docs]
+command = "cargo"
+args = ["doc"]
+# TODO: create docs for WASM AND Generic
+
 ##################################### WASM ####################################
 
 [tasks.wasm-build]
