@@ -52,21 +52,21 @@ pub mod tests {
     use super::*;
 
     #[test]
-    pub fn test_calculate_delay_single() {
+    pub fn calculate_delay_single() {
         let (self_index, epoch, total_members) = (0, 0, 1);
         let delay = calculate_delay(self_index, epoch, total_members).unwrap();
         assert_eq!(delay, 0);
     }
 
     #[test]
-    pub fn test_calculate_delay_max() {
+    pub fn calculate_delay_max() {
         let (self_index, epoch, total_members) = (usize::MAX, u64::MAX, usize::MAX);
         let delay = calculate_delay(self_index, epoch, total_members).unwrap();
         assert_eq!(delay, 0);
     }
 
     #[test]
-    pub fn test_calculate_delay_min() {
+    pub fn calculate_delay_min() {
         let (self_index, epoch, total_members) = (usize::MIN, u64::MIN, usize::MAX);
         let delay = calculate_delay(self_index, epoch, total_members).unwrap();
         assert_eq!(delay, 0);
@@ -74,7 +74,7 @@ pub mod tests {
 
     #[test]
     #[should_panic]
-    pub fn test_calculate_delay_panic() {
+    pub fn calculate_delay_panic() {
         let (self_index, epoch, total_members) = (0, 0, usize::MIN);
         // total members can never be 0 as there's no group with 0 members and it will panic
         // when trying to calculate the remainder of 0
@@ -82,35 +82,35 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_calculate_delay_min_max() {
+    pub fn calculate_delay_min_max() {
         let (self_index, epoch, total_members) = (usize::MIN, u64::MAX, usize::MAX);
         let delay = calculate_delay(self_index, epoch, total_members).unwrap();
         assert_eq!(delay, 0);
     }
 
     #[test]
-    pub fn test_calculate_delay_first() {
+    pub fn calculate_delay_first() {
         let (self_index, epoch, total_members) = (9, 1, 10);
         let delay = calculate_delay(self_index, epoch, total_members).unwrap();
         assert_eq!(delay, 0);
     }
 
     #[test]
-    pub fn test_calculate_delay_second() {
+    pub fn calculate_delay_second() {
         let (self_index, epoch, total_members) = (0, 1, 10);
         let delay = calculate_delay(self_index, epoch, total_members).unwrap();
         assert_eq!(delay, 15);
     }
 
     #[test]
-    pub fn test_calculate_delay_third() {
+    pub fn calculate_delay_third() {
         let (self_index, epoch, total_members) = (1, 1, 10);
         let delay = calculate_delay(self_index, epoch, total_members).unwrap();
         assert_eq!(delay, 30);
     }
 
     #[test]
-    pub fn test_calculate_delay_n() {
+    pub fn calculate_delay_n() {
         let epoch = 1;
         let total_members = 10;
 

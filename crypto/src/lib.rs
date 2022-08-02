@@ -564,14 +564,12 @@ pub mod tests {
 
                     let mut central = MlsCentral::try_new(configuration.clone(), credential()).await.unwrap();
                     let conversation_configuration = MlsConversationConfiguration::default();
-                    let conversation_id = b"conversation".to_vec();
-                    let _ = central
-                        .new_conversation(conversation_id.clone(), conversation_configuration)
-                        .await;
+                    let id = conversation_id();
+                    let _ = central.new_conversation(id.clone(), conversation_configuration).await;
 
                     central.close().await.unwrap();
                     let mut central = MlsCentral::try_new(configuration, credential()).await.unwrap();
-                    let _ = central.encrypt_message(&conversation_id, b"Test").await.unwrap();
+                    let _ = central.encrypt_message(&id, b"Test").await.unwrap();
 
                     central.mls_backend.destroy_and_reset().await.unwrap();
                 })

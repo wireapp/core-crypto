@@ -52,7 +52,7 @@ impl MlsCentral {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{credential::CredentialSupplier, test_utils::*, MlsConversationConfiguration};
+    use crate::{credential::CredentialSupplier, prelude::MlsProposal, test_utils::*, MlsConversationConfiguration};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -62,18 +62,19 @@ pub mod tests {
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
         pub async fn should_clear_pending_commit_and_proposals(credential: CredentialSupplier) {
-            run_test_with_central(credential, move |[mut alice_central]| {
+            run_test_with_client_ids(credential, ["alice", "bob"], move |[mut alice_central, bob_central]| {
                 Box::pin(async move {
-                    let id = b"id".to_vec();
-                    let (_, bob) = bob(credential).await.unwrap();
+                    let id = conversation_id();
                     alice_central
                         .new_conversation(id.clone(), MlsConversationConfiguration::default())
                         .await
                         .unwrap();
+                    alice_central.new_proposal(&id, MlsProposal::Update).await.unwrap();
                     alice_central
-                        .add_members_to_conversation(&id, &mut [bob])
+                        .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
                         .await
                         .unwrap();
+                    assert!(!alice_central.pending_proposals(&id).is_empty());
                     assert!(alice_central.pending_commit(&id).is_some());
                     alice_central.commit_accepted(&id).await.unwrap();
                     assert!(alice_central.pending_commit(&id).is_none());
