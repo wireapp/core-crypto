@@ -1,19 +1,19 @@
 #![cfg(test)]
 
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    ops::{Index, IndexMut},
+};
 
-use openmls::{
-    key_packages::KeyPackage,
-    prelude::{QueuedProposal, StagedCommit},
+use openmls::prelude::{
+    KeyPackage, KeyPackageBundle, PublicGroupState, QueuedProposal, StagedCommit, VerifiablePublicGroupState,
 };
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
-use mls_crypto_provider::MlsCryptoProvider;
-
 use crate::{
     config::MlsCentralConfiguration, credential::CredentialSupplier, member::ConversationMember, ConversationId,
-    CryptoResult, MlsCentral, MlsConversation,
+    CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationConfiguration,
 };
 
 #[template]
@@ -52,29 +52,31 @@ pub async fn run_test_with_client_ids<const N: usize>(
     .await
 }
 
-#[cfg(not(target_family = "wasm"))]
 pub async fn run_tests<const N: usize>(
     test: impl FnOnce([String; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
-    let dirs = (0..N)
-        .map(|_| tempfile::tempdir().unwrap())
-        .collect::<Vec<tempfile::TempDir>>();
-    let paths: [String; N] = dirs
+    let paths: [(String, _); N] = (0..N).map(|_| tmp_db_file()).collect::<Vec<_>>().try_into().unwrap();
+    // We need to store TempDir because they impl Drop which would delete the file before test begins
+    let cloned_paths = paths
         .iter()
-        .map(MlsCentralConfiguration::tmp_store_path)
-        .collect::<Vec<String>>()
+        .map(|(path, _)| path.clone())
+        .collect::<Vec<_>>()
         .try_into()
         .unwrap();
-    test(paths).await;
+    test(cloned_paths).await;
+}
+
+#[cfg(not(target_family = "wasm"))]
+pub fn tmp_db_file() -> (String, tempfile::TempDir) {
+    let file = tempfile::tempdir().unwrap();
+    (MlsCentralConfiguration::tmp_store_path(&file), file)
 }
 
 #[cfg(target_family = "wasm")]
-pub async fn run_tests<const N: usize>(
-    test: impl FnOnce([String; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
-) {
+pub fn tmp_db_file() -> (String, ()) {
     use rand::distributions::{Alphanumeric, DistString};
-    let paths = [0; N].map(|_| format!("{}.idb", Alphanumeric.sample_string(&mut rand::thread_rng(), 16)));
-    test(paths).await;
+    let path = format!("{}.idb", Alphanumeric.sample_string(&mut rand::thread_rng(), 16));
+    (path, ())
 }
 
 pub fn conversation_id() -> ConversationId {
@@ -82,44 +84,13 @@ pub fn conversation_id() -> ConversationId {
     ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()))
 }
 
-/// Typically client creating a conversation
-pub async fn alice(credential: CredentialSupplier) -> CryptoResult<(MlsCryptoProvider, ConversationMember)> {
-    new_client("alice", credential).await
-}
-
-/// Typically client joining the conversation initiated by [alice]
-pub async fn bob(credential: CredentialSupplier) -> CryptoResult<(MlsCryptoProvider, ConversationMember)> {
-    new_client("bob", credential).await
-}
-
-/// A third client
-pub async fn charlie(credential: CredentialSupplier) -> CryptoResult<(MlsCryptoProvider, ConversationMember)> {
-    new_client("charlie", credential).await
-}
-
-pub async fn new_client(
-    name: &str,
-    credential: CredentialSupplier,
-) -> CryptoResult<(MlsCryptoProvider, ConversationMember)> {
-    let backend = init_keystore(name).await;
-    let (member, _) = ConversationMember::random_generate(&backend, credential).await?;
-    Ok((backend, member))
-}
-
-#[inline(always)]
-pub async fn init_keystore(identifier: &str) -> MlsCryptoProvider {
-    MlsCryptoProvider::try_new_in_memory(identifier).await.unwrap()
-}
-
 impl MlsCentral {
-    pub async fn get_one_key_package(&self) -> CryptoResult<KeyPackage> {
-        Ok(self
-            .client_keypackages(1)
-            .await?
-            .get(0)
-            .unwrap()
-            .key_package()
-            .to_owned())
+    pub async fn get_one_key_package(&self) -> KeyPackage {
+        self.get_one_key_package_bundle().await.key_package().clone()
+    }
+
+    pub async fn get_one_key_package_bundle(&self) -> KeyPackageBundle {
+        self.client_keypackages(1).await.unwrap().first().unwrap().clone()
     }
 
     pub async fn rnd_member(&self) -> ConversationMember {
@@ -144,22 +115,74 @@ impl MlsCentral {
         self[id].group.pending_commit()
     }
 
-    pub async fn can_talk_to(&mut self, id: &ConversationId, other: &mut MlsCentral) -> CryptoResult<()> {
+    pub async fn talk_to(&mut self, id: &ConversationId, other: &mut MlsCentral) -> CryptoResult<()> {
         // self --> other
         let msg = b"Hello other";
         let encrypted = self.encrypt_message(id, msg).await?;
-        let decrypted = other.decrypt_message(id, encrypted).await?.app_msg.unwrap();
+        let decrypted = other
+            .decrypt_message(id, encrypted)
+            .await?
+            .app_msg
+            .ok_or(CryptoError::ImplementationError)?;
         assert_eq!(&msg[..], &decrypted[..]);
         // other --> self
         let msg = b"Hello self";
         let encrypted = other.encrypt_message(id, msg).await?;
-        let decrypted = self.decrypt_message(id, encrypted).await?.app_msg.unwrap();
+        let decrypted = self
+            .decrypt_message(id, encrypted)
+            .await?
+            .app_msg
+            .ok_or(CryptoError::ImplementationError)?;
         assert_eq!(&msg[..], &decrypted[..]);
         Ok(())
     }
+
+    /// Streamlines the ceremony of adding a client and process its welcome message
+    pub async fn invite(&mut self, id: &ConversationId, other: &mut MlsCentral) -> CryptoResult<()> {
+        let size_before = self[id].members().len();
+        let welcome = self
+            .add_members_to_conversation(id, &mut [other.rnd_member().await])
+            .await?
+            .ok_or(CryptoError::ImplementationError)?
+            .welcome;
+        other
+            .process_welcome_message(welcome, MlsConversationConfiguration::default())
+            .await?;
+        self.commit_accepted(id).await?;
+        assert_eq!(self[id].members().len(), size_before + 1);
+        assert_eq!(other[id].members().len(), size_before + 1);
+        self.talk_to(id, other).await?;
+        Ok(())
+    }
+
+    pub async fn group_info(&self, id: &ConversationId) -> PublicGroupState {
+        self.get_conversation(id)
+            .unwrap()
+            .group
+            .export_public_group_state(&self.mls_backend)
+            .await
+            .unwrap()
+    }
+
+    pub async fn verifiable_group_info(&self, id: &ConversationId) -> VerifiablePublicGroupState {
+        use tls_codec::{Deserialize as _, Serialize as _};
+        let group_info = self.group_info(id).await.tls_serialize_detached().unwrap();
+        VerifiablePublicGroupState::tls_deserialize(&mut group_info.as_slice()).unwrap()
+    }
+
+    /// Finds the [KeyPackage] of a [Client] within a [MlsGroup]
+    pub fn key_package_of(&self, conv_id: &ConversationId, client_id: &str) -> KeyPackage {
+        self[conv_id]
+            .group
+            .members()
+            .into_iter()
+            .find(|k| k.credential().identity() == client_id.as_bytes())
+            .unwrap()
+            .clone()
+    }
 }
 
-impl std::ops::Index<&ConversationId> for MlsCentral {
+impl Index<&ConversationId> for MlsCentral {
     type Output = MlsConversation;
 
     fn index(&self, index: &ConversationId) -> &Self::Output {
@@ -167,7 +190,7 @@ impl std::ops::Index<&ConversationId> for MlsCentral {
     }
 }
 
-impl std::ops::IndexMut<&ConversationId> for MlsCentral {
+impl IndexMut<&ConversationId> for MlsCentral {
     fn index_mut(&mut self, index: &ConversationId) -> &mut Self::Output {
         self.mls_groups.get_mut(index).unwrap()
     }

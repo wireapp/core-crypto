@@ -151,22 +151,12 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let id = b"id".to_vec();
+                        let id = conversation_id();
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
                             .unwrap();
-                        let welcome = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
-                            .await
-                            .unwrap()
-                            .unwrap()
-                            .welcome;
-                        bob_central
-                            .process_welcome_message(welcome, MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
-                        alice_central.commit_accepted(&id).await.unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         let (commit, _) = bob_central.update_keying_material(&id).await.unwrap();
                         let MlsConversationDecryptMessage { is_active, .. } = alice_central
@@ -190,25 +180,15 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let id = b"id".to_vec();
+                        let id = conversation_id();
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
                             .unwrap();
-                        let welcome = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
-                            .await
-                            .unwrap()
-                            .unwrap()
-                            .welcome;
-                        bob_central
-                            .process_welcome_message(welcome, MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
-                        alice_central.commit_accepted(&id).await.unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         let commit = bob_central
-                            .remove_members_from_conversation(&id, &[b"alice"[..].into()])
+                            .remove_members_from_conversation(&id, &["alice".into()])
                             .await
                             .unwrap()
                             .unwrap();
@@ -235,22 +215,12 @@ pub mod tests {
                 ["alice", "bob", "charlie", "debbie"],
                 move |[mut alice_central, mut bob_central, charlie_central, debbie_central]| {
                     Box::pin(async move {
-                        let id = b"id".to_vec();
+                        let id = conversation_id();
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
                             .unwrap();
-                        let welcome = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
-                            .await
-                            .unwrap()
-                            .unwrap()
-                            .welcome;
-                        bob_central
-                            .process_welcome_message(welcome, MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
-                        alice_central.commit_accepted(&id).await.unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         // Alice creates a commit which will be superseded by Bob's one
                         let charlie = charlie_central.rnd_member().await;
@@ -290,22 +260,12 @@ pub mod tests {
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, mut charlie_central]| {
                     Box::pin(async move {
-                        let id = b"id".to_vec();
+                        let id = conversation_id();
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
                             .unwrap();
-                        let welcome = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
-                            .await
-                            .unwrap()
-                            .unwrap()
-                            .welcome;
-                        bob_central
-                            .process_welcome_message(welcome, MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
-                        alice_central.commit_accepted(&id).await.unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         // Alice will create a commit to add Charlie
                         // Bob will create a commit which will be accepted first by DS so Alice will decrypt it
@@ -362,7 +322,7 @@ pub mod tests {
                             .process_welcome_message(welcome.unwrap(), MlsConversationConfiguration::default())
                             .await
                             .unwrap();
-                        assert!(charlie_central.can_talk_to(&id, &mut alice_central).await.is_ok());
+                        assert!(charlie_central.talk_to(&id, &mut alice_central).await.is_ok());
                     })
                 },
             )
@@ -377,28 +337,18 @@ pub mod tests {
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
-                        let id = b"id".to_vec();
+                        let id = conversation_id();
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
                             .unwrap();
-                        let welcome = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
-                            .await
-                            .unwrap()
-                            .unwrap()
-                            .welcome;
-                        bob_central
-                            .process_welcome_message(welcome, MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
-                        alice_central.commit_accepted(&id).await.unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         // Bob will create a proposal to add Charlie
                         // Alice will decrypt this proposal
                         // Then Bob will create a commit to update
                         // Alice will decrypt the commit but musn't renew the proposal to add Charlie
-                        let charlie_kp = charlie_central.get_one_key_package().await.unwrap();
+                        let charlie_kp = charlie_central.get_one_key_package().await;
 
                         let add_charlie_proposal = bob_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
@@ -429,45 +379,25 @@ pub mod tests {
         pub async fn decrypting_a_commit_should_renew_orphan_pending_proposals(credential: CredentialSupplier) {
             run_test_with_client_ids(
                 credential,
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
+                ["alice", "bob", "charlie"],
+                move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
-                        let id = b"id".to_vec();
+                        let id = conversation_id();
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
                             .unwrap();
-                        let welcome = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
-                            .await
-                            .unwrap()
-                            .unwrap()
-                            .welcome;
-                        bob_central
-                            .process_welcome_message(welcome, MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
-                        alice_central.commit_accepted(&id).await.unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         // Alice will create a proposal to add Charlie
                         // Bob will create a commit which Alice will decrypt
                         // Then Alice will renew her proposal
-                        let (_, charlie) = charlie(credential).await.unwrap();
                         let bob_commit = bob_central.update_keying_material(&id).await.unwrap().0;
                         bob_central.commit_accepted(&id).await.unwrap();
                         let commit_epoch = bob_commit.epoch();
-                        let backend = &alice_central.mls_backend;
-                        let charlie_kp = charlie
-                            .local_client
-                            .as_ref()
-                            .unwrap()
-                            .gen_keypackage(backend)
-                            .await
-                            .unwrap()
-                            .key_package()
-                            .clone();
 
                         // Alice propose to add Charlie
+                        let charlie_kp = charlie_central.get_one_key_package().await;
                         alice_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
                             .await
@@ -480,7 +410,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         // So Charlie has not been added to the group
-                        assert!(alice_central[&id].members().get(&charlie.id).is_none());
+                        assert!(alice_central[&id].members().get(&b"charlie".to_vec()).is_none());
                         // Make sure we are suggesting a commit delay
                         assert!(delay.is_some());
                         // But its proposal to add Charlie has been renewed and is also in store
@@ -501,11 +431,11 @@ pub mod tests {
                             .await
                             .unwrap();
                         // Charlie is now in the group
-                        assert!(alice_central[&id].members().get(&charlie.id).is_some());
+                        assert!(alice_central[&id].members().get(&b"charlie".to_vec()).is_some());
 
                         // Bob also has Charlie in the group
                         bob_central.commit_accepted(&id).await.unwrap();
-                        assert!(bob_central[&id].members().get(&charlie.id).is_some());
+                        assert!(bob_central[&id].members().get(&b"charlie".to_vec()).is_some());
                     })
                 },
             )
@@ -520,28 +450,18 @@ pub mod tests {
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
-                        let id = b"id".to_vec();
+                        let id = conversation_id();
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
                             .unwrap();
-                        let welcome = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
-                            .await
-                            .unwrap()
-                            .unwrap()
-                            .welcome;
-                        alice_central.commit_accepted(&id).await.unwrap();
-                        bob_central
-                            .process_welcome_message(welcome, MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         // DS will create an external proposal to add Charlie
                         // But meanwhile Bob, before receiving the external proposal,
                         // will create a commit and send it to Alice.
                         // Alice will not renew the external proposal
-                        let charlie_kp = charlie_central.get_one_key_package().await.unwrap();
+                        let charlie_kp = charlie_central.get_one_key_package().await;
                         let ext_proposal = charlie_central
                             .new_external_add_proposal(id.clone(), alice_central[&id].group.epoch(), charlie_kp)
                             .await
