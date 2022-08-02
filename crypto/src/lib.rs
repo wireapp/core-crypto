@@ -27,7 +27,7 @@ use rstest_reuse;
 
 #[cfg(test)]
 #[macro_use]
-pub mod test_fixture_utils;
+pub mod test_utils;
 // both imports above have to be defined at the beginning of the crate for rstest to work
 
 use std::collections::HashMap;
@@ -477,68 +477,12 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-pub mod test_utils {
-    use crate::{config::MlsCentralConfiguration, credential::CredentialSupplier, MlsCentral};
-
-    pub async fn run_test_with_central(
-        credential: CredentialSupplier,
-        test: impl FnOnce([MlsCentral; 1]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
-    ) {
-        run_test_with_client_ids(credential, ["alice"], test).await
-    }
-
-    pub async fn run_test_with_client_ids<const N: usize>(
-        credential: CredentialSupplier,
-        client_id: [&'static str; N],
-        test: impl FnOnce([MlsCentral; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
-    ) {
-        run_tests(move |paths: [String; N]| {
-            Box::pin(async move {
-                let stream = paths.into_iter().enumerate().map(|(i, p)| async move {
-                    let client_id = client_id[i].to_string();
-                    let configuration = MlsCentralConfiguration::try_new(p, "test".into(), client_id).unwrap();
-                    MlsCentral::try_new(configuration, credential()).await.unwrap()
-                });
-                let centrals: [MlsCentral; N] = futures_util::future::join_all(stream).await.try_into().unwrap();
-                test(centrals).await;
-            })
-        })
-        .await
-    }
-
-    #[cfg(not(target_family = "wasm"))]
-    pub async fn run_tests<const N: usize>(
-        test: impl FnOnce([String; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
-    ) {
-        let dirs = (0..N)
-            .map(|_| tempfile::tempdir().unwrap())
-            .collect::<Vec<tempfile::TempDir>>();
-        let paths: [String; N] = dirs
-            .iter()
-            .map(MlsCentralConfiguration::tmp_store_path)
-            .collect::<Vec<String>>()
-            .try_into()
-            .unwrap();
-        test(paths).await;
-    }
-
-    #[cfg(target_family = "wasm")]
-    pub async fn run_tests<const N: usize>(
-        test: impl FnOnce([String; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
-    ) {
-        use rand::distributions::{Alphanumeric, DistString};
-        let paths = [0; N].map(|_| format!("{}.idb", Alphanumeric.sample_string(&mut rand::thread_rng(), 16)));
-        test(paths).await;
-    }
-}
-
-#[cfg(test)]
 pub mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{
-        credential::CredentialSupplier, prelude::MlsConversationConfiguration, test_fixture_utils::*, test_utils::*,
-        CryptoError, MlsCentral, MlsCentralConfiguration,
+        credential::CredentialSupplier, prelude::MlsConversationConfiguration, test_utils::*, CryptoError, MlsCentral,
+        MlsCentralConfiguration,
     };
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -620,14 +564,12 @@ pub mod tests {
 
                     let mut central = MlsCentral::try_new(configuration.clone(), credential()).await.unwrap();
                     let conversation_configuration = MlsConversationConfiguration::default();
-                    let conversation_id = b"conversation".to_vec();
-                    let _ = central
-                        .new_conversation(conversation_id.clone(), conversation_configuration)
-                        .await;
+                    let id = conversation_id();
+                    let _ = central.new_conversation(id.clone(), conversation_configuration).await;
 
                     central.close().await.unwrap();
                     let mut central = MlsCentral::try_new(configuration, credential()).await.unwrap();
-                    let _ = central.encrypt_message(&conversation_id, b"Test").await.unwrap();
+                    let _ = central.encrypt_message(&id, b"Test").await.unwrap();
 
                     central.mls_backend.destroy_and_reset().await.unwrap();
                 })

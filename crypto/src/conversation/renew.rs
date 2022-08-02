@@ -90,10 +90,7 @@ impl MlsConversation {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{
-        credential::CredentialSupplier, prelude::MlsProposal, test_fixture_utils::*, test_utils::*,
-        MlsConversationConfiguration,
-    };
+    use crate::{credential::CredentialSupplier, prelude::MlsProposal, test_utils::*, MlsConversationConfiguration};
 
     use super::*;
 
@@ -105,7 +102,7 @@ pub mod tests {
         pub async fn is_renewable_when_commit_absent(credential: CredentialSupplier) {
             run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
-                    let id = b"id".to_vec();
+                    let id = conversation_id();
                     alice_central
                         .new_conversation(id.clone(), MlsConversationConfiguration::default())
                         .await
@@ -125,7 +122,7 @@ pub mod tests {
         pub async fn update_is_always_renewable(credential: CredentialSupplier) {
             run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
-                    let id = b"id".to_vec();
+                    let id = conversation_id();
                     alice_central
                         .new_conversation(id.clone(), MlsConversationConfiguration::default())
                         .await
@@ -147,13 +144,13 @@ pub mod tests {
         pub async fn add_is_not_renewable_when_commit_already_adds_same(credential: CredentialSupplier) {
             run_test_with_client_ids(credential, ["alice", "bob"], move |[mut alice_central, bob_central]| {
                 Box::pin(async move {
-                    let id = b"id".to_vec();
+                    let id = conversation_id();
                     alice_central
                         .new_conversation(id.clone(), MlsConversationConfiguration::default())
                         .await
                         .unwrap();
 
-                    let bob_kp = bob_central.get_one_key_package().await.unwrap();
+                    let bob_kp = bob_central.get_one_key_package().await;
                     alice_central.new_proposal(&id, MlsProposal::Add(bob_kp)).await.unwrap();
                     let proposal = alice_central.pending_proposals(&id).first().unwrap().clone();
                     alice_central[&id].group.clear_pending_proposals();
@@ -178,13 +175,13 @@ pub mod tests {
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, bob_central, charlie_central]| {
                     Box::pin(async move {
-                        let id = b"id".to_vec();
+                        let id = conversation_id();
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
                             .unwrap();
 
-                        let bob_kp = bob_central.get_one_key_package().await.unwrap();
+                        let bob_kp = bob_central.get_one_key_package().await;
                         alice_central.new_proposal(&id, MlsProposal::Add(bob_kp)).await.unwrap();
                         let proposal = alice_central.pending_proposals(&id).first().unwrap().clone();
                         alice_central[&id].group.clear_pending_proposals();
@@ -206,7 +203,7 @@ pub mod tests {
         pub async fn remove_is_not_renewable_when_commit_already_removes_same(credential: CredentialSupplier) {
             run_test_with_client_ids(credential, ["alice", "bob"], move |[mut alice_central, bob_central]| {
                 Box::pin(async move {
-                    let id = b"id".to_vec();
+                    let id = conversation_id();
                     alice_central
                         .new_conversation(id.clone(), MlsConversationConfiguration::default())
                         .await
@@ -226,7 +223,7 @@ pub mod tests {
                     alice_central[&id].group.clear_pending_proposals();
 
                     alice_central
-                        .remove_members_from_conversation(&id, &[b"bob"[..].into()])
+                        .remove_members_from_conversation(&id, &["bob".into()])
                         .await
                         .unwrap();
                     let commit = alice_central.pending_commit(&id).unwrap().clone();
@@ -244,7 +241,7 @@ pub mod tests {
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, bob_central, charlie_central]| {
                     Box::pin(async move {
-                        let id = b"id".to_vec();
+                        let id = conversation_id();
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
@@ -262,7 +259,7 @@ pub mod tests {
                         alice_central[&id].group.clear_pending_proposals();
 
                         alice_central
-                            .remove_members_from_conversation(&id, &[b"charlie"[..].into()])
+                            .remove_members_from_conversation(&id, &["charlie".into()])
                             .await
                             .unwrap();
                         let commit = alice_central.pending_commit(&id).unwrap().clone();

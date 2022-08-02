@@ -60,6 +60,13 @@ impl From<Box<[u8]>> for ClientId {
     }
 }
 
+#[cfg(test)]
+impl From<&str> for ClientId {
+    fn from(value: &str) -> Self {
+        Self(value.as_bytes().into())
+    }
+}
+
 #[allow(clippy::from_over_into)]
 impl Into<Vec<u8>> for ClientId {
     fn into(self) -> Vec<u8> {
@@ -465,7 +472,7 @@ pub mod tests {
 
     use mls_crypto_provider::MlsCryptoProvider;
 
-    use crate::{credential::CredentialSupplier, test_fixture_utils::*};
+    use crate::{credential::CredentialSupplier, test_utils::*};
 
     use super::Client;
 
