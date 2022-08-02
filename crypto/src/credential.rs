@@ -125,12 +125,12 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    use openmls::prelude::{CredentialError, WelcomeError};
-
-    use crate::error::CryptoError;
-    use crate::{test_fixture_utils::*, MlsConversation, MlsConversationConfiguration};
-
     use super::*;
+    use crate::{
+        test_fixture_utils::{SuccessValidationCallbacks, *},
+        CoreCryptoCallbacks, MlsConversation, MlsConversationConfiguration,
+    };
+    use openmls::prelude::{CredentialError, WelcomeError};
 
     #[async_std::test]
     async fn basic_clients_can_send_messages() {
@@ -286,8 +286,13 @@ mod tests {
 
         // alice -> bob
         let encrypted_msg = alice_group.encrypt_message(msg, &alice_backend).await?;
+        let callbacks: Option<Box<dyn CoreCryptoCallbacks>> = Some(Box::new(SuccessValidationCallbacks));
         let decrypted_msg = bob_group
-            .decrypt_message(&encrypted_msg, &bob_backend)
+            .decrypt_message(
+                &encrypted_msg,
+                &bob_backend,
+                callbacks.as_ref().map(|boxed| boxed.as_ref()),
+            )
             .await?
             .app_msg
             .ok_or(CryptoError::Unauthorized)?;
@@ -296,7 +301,11 @@ mod tests {
         // bob -> alice
         let encrypted_msg = bob_group.encrypt_message(decrypted_msg, &bob_backend).await?;
         let decrypted_msg = alice_group
-            .decrypt_message(&encrypted_msg, &alice_backend)
+            .decrypt_message(
+                &encrypted_msg,
+                &alice_backend,
+                callbacks.as_ref().map(|boxed| boxed.as_ref()),
+            )
             .await?
             .app_msg
             .ok_or(CryptoError::Unauthorized)?;
