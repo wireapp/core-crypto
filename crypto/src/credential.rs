@@ -276,6 +276,7 @@ mod tests {
             .await
             .unwrap()
             .welcome;
+        alice_group.commit_accepted(&alice_backend).await.unwrap();
 
         let mut bob_group =
             MlsConversation::from_welcome_message(welcome, MlsConversationConfiguration::default(), &bob_backend)

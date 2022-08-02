@@ -313,6 +313,8 @@ pub mod tests {
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, mut charlie_central]| {
                     Box::pin(async move {
+                        alice_central.callbacks(Box::new(SuccessValidationCallbacks));
+                        bob_central.callbacks(Box::new(SuccessValidationCallbacks));
                         let id = b"id".to_vec();
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
@@ -397,6 +399,7 @@ pub mod tests {
                 credential,
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
+                    alice_central.callbacks(Box::new(SuccessValidationCallbacks));
                     Box::pin(async move {
                         let id = b"id".to_vec();
                         alice_central
@@ -452,6 +455,8 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
+                        alice_central.callbacks(Box::new(SuccessValidationCallbacks));
+                        bob_central.callbacks(Box::new(SuccessValidationCallbacks));
                         let id = b"id".to_vec();
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
@@ -539,6 +544,7 @@ pub mod tests {
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
+                        alice_central.callbacks(Box::new(SuccessValidationCallbacks));
                         let id = b"id".to_vec();
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())

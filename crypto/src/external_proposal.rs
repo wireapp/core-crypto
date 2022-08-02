@@ -175,6 +175,7 @@ mod tests {
                             .commit_pending_proposals(&owner_central.mls_backend)
                             .await
                             .unwrap();
+                        owner_group.commit_accepted(&owner_central.mls_backend).await.unwrap();
 
                         let welcome = welcome.unwrap();
 
@@ -229,6 +230,7 @@ mod tests {
                             .add_members(&mut [guest], &owner_central.mls_backend)
                             .await
                             .unwrap();
+                        owner_group.commit_accepted(&owner_central.mls_backend).await.unwrap();
                         assert_eq!(owner_group.members().len(), 2);
 
                         // now, as e.g. a Delivery Service, let's create an external remove proposal
@@ -256,7 +258,9 @@ mod tests {
                             .commit_pending_proposals(&owner_central.mls_backend)
                             .await
                             .unwrap();
-                        owner_group.group.merge_pending_commit().unwrap();
+                        // before merging, commit is not applied
+                        assert_eq!(owner_group.members().len(), 2);
+                        owner_group.commit_accepted(&owner_central.mls_backend).await.unwrap();
                         assert_eq!(owner_group.members().len(), 1);
                     })
                 },

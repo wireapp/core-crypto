@@ -181,7 +181,7 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let conv = central.mls_groups.get(&conversation_id).unwrap();
+                    let conv = central.get_conversation(&conversation_id).unwrap();
                     assert_eq!(conv.members().len(), 2);
 
                     let error = central
@@ -235,6 +235,7 @@ mod tests {
                     // alice adds a new member to the group before receiving an ack from the
                     // external join
                     alice_group.add_members(&mut [bob], &alice_backend).await.unwrap();
+                    alice_group.commit_accepted(&alice_backend).await.unwrap();
 
                     // receive the ack from the external join with outdated epoch
                     // should fail because of the wrong epoch
