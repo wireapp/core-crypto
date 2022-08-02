@@ -156,7 +156,7 @@ pub mod tests {
     use crate::{
         credential::{CertificateBundle, CredentialSupplier},
         prelude::INITIAL_KEYING_MATERIAL_COUNT,
-        test_fixture_utils::*,
+        test_utils::*,
         ClientId,
     };
 

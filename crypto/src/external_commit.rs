@@ -122,8 +122,8 @@ mod tests {
         use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
 
         use crate::{
-            credential::CredentialSupplier, error::MlsError, test_fixture_utils::*, test_utils::run_test_with_central,
-            MlsConversation, MlsConversationConfiguration,
+            credential::CredentialSupplier, error::MlsError, test_utils::*, MlsConversation,
+            MlsConversationConfiguration,
         };
 
         use super::*;

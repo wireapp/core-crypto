@@ -128,7 +128,7 @@ mod tests {
     use openmls::prelude::{CredentialError, WelcomeError};
 
     use crate::error::CryptoError;
-    use crate::{test_fixture_utils::*, MlsConversation, MlsConversationConfiguration};
+    use crate::{test_utils::*, MlsConversation, MlsConversationConfiguration};
 
     use super::*;
 
