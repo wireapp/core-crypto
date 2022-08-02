@@ -348,6 +348,7 @@ pub mod tests {
 
     pub mod remove_members {
         use super::*;
+        use crate::{test_fixture_utils::SuccessValidationCallbacks, CoreCryptoCallbacks};
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
@@ -391,8 +392,13 @@ pub mod tests {
             assert_eq!(alice_group.members().len(), 2);
             alice_group.commit_accepted(&alice_backend).await.unwrap();
 
+            let callbacks: Option<Box<dyn CoreCryptoCallbacks>> = Some(Box::new(SuccessValidationCallbacks));
             bob_group
-                .decrypt_message(remove_result.to_bytes().unwrap(), &bob_backend)
+                .decrypt_message(
+                    remove_result.to_bytes().unwrap(),
+                    &bob_backend,
+                    callbacks.as_ref().map(|boxed| boxed.as_ref()),
+                )
                 .await
                 .unwrap();
 
@@ -406,6 +412,8 @@ pub mod tests {
     }
 
     pub mod update_keying_material {
+        use crate::CoreCryptoCallbacks;
+
         use super::*;
 
         #[apply(all_credential_types)]
@@ -466,8 +474,13 @@ pub mod tests {
             assert!(!alice_new_keys.contains(&&alice_key));
 
             // receiving the commit on bob's side (updating key from alice)
+            let callbacks: Option<Box<dyn CoreCryptoCallbacks>> = Some(Box::new(SuccessValidationCallbacks));
             assert!(bob_group
-                .decrypt_message(&msg_out.to_bytes().unwrap(), &bob_backend)
+                .decrypt_message(
+                    &msg_out.to_bytes().unwrap(),
+                    &bob_backend,
+                    callbacks.as_ref().map(|boxed| boxed.as_ref()),
+                )
                 .await
                 .unwrap()
                 .app_msg
@@ -541,8 +554,13 @@ pub mod tests {
                 .unwrap();
 
             // receiving the proposal on bob's side
+            let callbacks: Option<Box<dyn CoreCryptoCallbacks>> = Some(Box::new(SuccessValidationCallbacks));
             assert!(bob_group
-                .decrypt_message(&add_charlie_proposal.to_bytes().unwrap(), &bob_backend)
+                .decrypt_message(
+                    &add_charlie_proposal.to_bytes().unwrap(),
+                    &bob_backend,
+                    callbacks.as_ref().map(|boxed| boxed.as_ref()),
+                )
                 .await
                 .unwrap()
                 .app_msg
@@ -575,7 +593,11 @@ pub mod tests {
 
             // receiving the key update and the charlie's addition to the group
             assert!(bob_group
-                .decrypt_message(&commit.to_bytes().unwrap(), &bob_backend)
+                .decrypt_message(
+                    &commit.to_bytes().unwrap(),
+                    &bob_backend,
+                    callbacks.as_ref().map(|boxed| boxed.as_ref()),
+                )
                 .await
                 .unwrap()
                 .app_msg

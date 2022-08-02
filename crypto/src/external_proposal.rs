@@ -71,8 +71,6 @@ impl MlsCentral {
     ///
     /// # Errors
     /// Errors resulting from the creation of the proposal within OpenMls
-    /// If the `callbacks` is not set, an error will be returned. The identity of the sent [KeyPackage]
-    /// will be validated with the callback and an error will be returned if it fails.
     pub async fn new_external_add_proposal(
         &self,
         conversation_id: ConversationId,
@@ -125,12 +123,7 @@ impl MlsCentral {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        credential::{CertificateBundle, CredentialSupplier},
-        test_fixture_utils::*,
-        test_utils::*,
-        ConversationMember, MlsConversationConfiguration,
-    };
+    use crate::{credential::CredentialSupplier, test_fixture_utils::*, test_utils::*, MlsConversationConfiguration};
     use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
 
@@ -168,7 +161,7 @@ mod tests {
 
                         // Owner receives external proposal message from server
                         owner_central
-                            .decrypt_message(conversation_id.clone(), add_message.to_bytes().unwrap().as_slice())
+                            .decrypt_message(&conversation_id, add_message.to_bytes().unwrap().as_slice())
                             .await
                             .unwrap();
 
@@ -195,7 +188,7 @@ mod tests {
 
                         // guest can send messages in the group
                         assert!(guest_central
-                            .encrypt_message(conversation_id, b"hello owner")
+                            .encrypt_message(&conversation_id, b"hello owner")
                             .await
                             .is_ok());
                     })
@@ -207,7 +200,7 @@ mod tests {
 
     mod remove {
         use super::*;
-        use crate::{test_fixture_utils::SuccessValidationCallbacks, CoreCryptoCallbacks};
+        use crate::{member::ConversationMember, test_fixture_utils::SuccessValidationCallbacks, CoreCryptoCallbacks};
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]

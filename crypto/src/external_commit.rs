@@ -117,7 +117,7 @@ mod tests {
     pub mod external_join {
         use super::*;
         use crate::{
-            credential::{CertificateBundle, CredentialSupplier},
+            credential::CredentialSupplier,
             error::MlsError,
             test_fixture_utils::{SuccessValidationCallbacks, *},
             test_utils::run_test_with_central,

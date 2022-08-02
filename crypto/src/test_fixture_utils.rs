@@ -11,11 +11,9 @@ use mls_crypto_provider::MlsCryptoProvider;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
-use mls_crypto_provider::MlsCryptoProvider;
-
 use crate::{
-    credential::CredentialSupplier, member::ConversationMember, ConversationId, CryptoResult, MlsCentral,
-    MlsConversation,
+    credential::CredentialSupplier, member::ConversationMember, ConversationId, CoreCryptoCallbacks, CryptoResult,
+    MlsCentral, MlsConversation,
 };
 
 #[template]

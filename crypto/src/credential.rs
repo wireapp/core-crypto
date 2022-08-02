@@ -293,7 +293,7 @@ mod tests {
                 callbacks.as_ref().map(|boxed| boxed.as_ref()),
             )
             .await?
-            .0
+            .app_msg
             .ok_or(CryptoError::Unauthorized)?;
         assert_eq!(msg, decrypted_msg.as_slice());
 
@@ -306,7 +306,7 @@ mod tests {
                 callbacks.as_ref().map(|boxed| boxed.as_ref()),
             )
             .await?
-            .0
+            .app_msg
             .ok_or(CryptoError::Unauthorized)?;
         assert_eq!(msg, decrypted_msg.as_slice());
         Ok(())

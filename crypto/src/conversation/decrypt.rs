@@ -12,9 +12,10 @@ use openmls::framing::ProcessedMessage;
 use openmls::prelude::MlsMessageOut;
 
 use mls_crypto_provider::MlsCryptoProvider;
+use openmls_traits::OpenMlsCryptoProvider;
 
-use crate::conversation::commit_delay::calculate_delay;
-use crate::conversation::renew::Renew;
+use crate::{conversation::commit_delay::calculate_delay, external_proposal::validate_external_proposal};
+use crate::{conversation::renew::Renew, CoreCryptoCallbacks};
 use crate::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsError};
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
@@ -41,6 +42,7 @@ impl MlsConversation {
         &mut self,
         message: impl AsRef<[u8]>,
         backend: &MlsCryptoProvider,
+        callbacks: Option<&dyn CoreCryptoCallbacks>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
         let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
 
@@ -60,11 +62,20 @@ impl MlsConversation {
                 delay: None,
             },
             ProcessedMessage::ProposalMessage(proposal) => {
-                self.group.store_pending_proposal(*proposal);
+                let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
+
+                validate_external_proposal(
+                    &proposal,
+                    self.group.members().into_iter(),
+                    self.group.pending_proposals(),
+                    callbacks,
+                    backend.crypto(),
+                )?;
                 let epoch = self.group.epoch().as_u64();
                 let total_members = self.group.members().len();
                 let self_index = self.get_self_tree_index(backend)?;
                 let delay = calculate_delay(self_index, epoch, total_members).map_err(CryptoError::from)?;
+                self.group.store_pending_proposal(*proposal);
                 self.persist_group_when_changed(backend, false).await?;
                 MlsConversationDecryptMessage {
                     app_msg: None,
@@ -124,7 +135,11 @@ impl MlsCentral {
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
         let decrypt_message = Self::get_conversation_mut(&mut self.mls_groups, conversation_id)?
-            .decrypt_message(message.as_ref(), &self.mls_backend)
+            .decrypt_message(
+                message.as_ref(),
+                &self.mls_backend,
+                self.callbacks.as_ref().map(|boxed| boxed.as_ref()),
+            )
             .await?;
         if !decrypt_message.is_active {
             self.mls_groups
@@ -569,6 +584,145 @@ pub mod tests {
                 },
             )
             .await
+        }
+    }
+
+    pub mod decrypt_callback {
+        use openmls::{group::GroupId, prelude::ExternalProposal};
+
+        use crate::{
+            member::ConversationMember, test_fixture_utils::SuccessValidationCallbacks, CoreCryptoCallbacks,
+            CryptoError,
+        };
+
+        use super::*;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn can_decrypt_proposal(credential: CredentialSupplier) {
+            let conversation_id = conversation_id();
+            let (alice_backend, mut alice) = alice(credential).await.unwrap();
+            let configuration = MlsConversationConfiguration::default();
+
+            let mut alice_group = MlsConversation::create(
+                conversation_id.clone(),
+                alice.local_client_mut(),
+                configuration,
+                &alice_backend,
+            )
+            .await
+            .unwrap();
+
+            let epoch = alice_group.group.epoch();
+            let alice_backend2 = init_keystore("alice").await;
+            let (alice2, kp) = ConversationMember::random_generate(&alice_backend2, credential)
+                .await
+                .unwrap();
+            let group_id = GroupId::from_slice(&conversation_id[..]);
+            let message = ExternalProposal::new_add(
+                kp.key_package().clone(),
+                group_id,
+                epoch,
+                alice2.local_client().credentials(),
+                &alice_backend2,
+            )
+            .unwrap();
+
+            let callbacks: Option<Box<dyn CoreCryptoCallbacks>> = Some(Box::new(SuccessValidationCallbacks));
+            let decrypted = alice_group
+                .decrypt_message(
+                    &message.to_bytes().unwrap(),
+                    &alice_backend,
+                    callbacks.as_ref().map(|boxed| boxed.as_ref()),
+                )
+                .await
+                .unwrap();
+            assert!(decrypted.app_msg.is_none());
+            assert!(decrypted.delay.is_some());
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn cannot_decrypt_proposal_no_callback(credential: CredentialSupplier) {
+            let conversation_id = conversation_id();
+            let (alice_backend, mut alice) = alice(credential).await.unwrap();
+            let configuration = MlsConversationConfiguration::default();
+
+            let mut alice_group = MlsConversation::create(
+                conversation_id.clone(),
+                alice.local_client_mut(),
+                configuration,
+                &alice_backend,
+            )
+            .await
+            .unwrap();
+
+            let epoch = alice_group.group.epoch();
+            let alice_backend2 = init_keystore("alice").await;
+            let (alice2, kp) = ConversationMember::random_generate(&alice_backend2, credential)
+                .await
+                .unwrap();
+            let group_id = GroupId::from_slice(&conversation_id[..]);
+            let message = ExternalProposal::new_add(
+                kp.key_package().clone(),
+                group_id,
+                epoch,
+                alice2.local_client().credentials(),
+                &alice_backend2,
+            )
+            .unwrap();
+
+            let error = alice_group
+                .decrypt_message(&message.to_bytes().unwrap(), &alice_backend, None)
+                .await
+                .unwrap_err();
+
+            assert!(matches!(error, CryptoError::CallbacksNotSet));
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn cannot_decrypt_proposal_validation(credential: CredentialSupplier) {
+            let conversation_id = conversation_id();
+            let (alice_backend, mut alice) = alice(credential).await.unwrap();
+            let configuration = MlsConversationConfiguration::default();
+
+            let mut alice_group = MlsConversation::create(
+                conversation_id.clone(),
+                alice.local_client_mut(),
+                configuration,
+                &alice_backend,
+            )
+            .await
+            .unwrap();
+
+            let epoch = alice_group.group.epoch();
+            let alice_backend2 = init_keystore("alice").await;
+            let (alice2, kp) = ConversationMember::random_generate(&alice_backend2, credential)
+                .await
+                .unwrap();
+            let group_id = GroupId::from_slice(&conversation_id[..]);
+            let message = ExternalProposal::new_add(
+                kp.key_package().clone(),
+                group_id,
+                epoch,
+                alice2.local_client().credentials(),
+                &alice_backend2,
+            )
+            .unwrap();
+
+            let callbacks: Option<Box<dyn CoreCryptoCallbacks>> =
+                Some(Box::new(crate::test_fixture_utils::FailValidationCallbacks));
+            let error = alice_group
+                .decrypt_message(
+                    &message.to_bytes().unwrap(),
+                    &alice_backend,
+                    callbacks.as_ref().map(|boxed| boxed.as_ref()),
+                )
+                .await
+                .unwrap_err();
+
+            assert!(matches!(error, CryptoError::ExternalProposalError(_)));
         }
     }
 }
