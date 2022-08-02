@@ -72,8 +72,7 @@ mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{
-        credential::CredentialSupplier, member::ConversationMember, test_fixture_utils::*, test_utils::*,
-        MlsConversationConfiguration,
+        credential::CredentialSupplier, member::ConversationMember, test_utils::*, MlsConversationConfiguration,
     };
 
     wasm_bindgen_test_configure!(run_in_browser);

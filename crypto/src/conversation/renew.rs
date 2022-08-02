@@ -90,10 +90,7 @@ impl MlsConversation {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{
-        credential::CredentialSupplier, prelude::MlsProposal, test_fixture_utils::*, test_utils::*,
-        MlsConversationConfiguration,
-    };
+    use crate::{credential::CredentialSupplier, prelude::MlsProposal, test_utils::*, MlsConversationConfiguration};
 
     use super::*;
 

@@ -12,8 +12,8 @@ pub use rstest_reuse::{self, *};
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
-    credential::CredentialSupplier, member::ConversationMember, ConversationId, CryptoResult, MlsCentral,
-    MlsConversation,
+    config::MlsCentralConfiguration, credential::CredentialSupplier, member::ConversationMember, ConversationId,
+    CryptoResult, MlsCentral, MlsConversation,
 };
 
 #[template]
@@ -25,6 +25,57 @@ use crate::{
 )]
 #[allow(non_snake_case)]
 pub fn all_credential_types(credential: crate::credential::CredentialSupplier) {}
+
+pub async fn run_test_with_central(
+    credential: CredentialSupplier,
+    test: impl FnOnce([MlsCentral; 1]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+) {
+    run_test_with_client_ids(credential, ["alice"], test).await
+}
+
+pub async fn run_test_with_client_ids<const N: usize>(
+    credential: CredentialSupplier,
+    client_id: [&'static str; N],
+    test: impl FnOnce([MlsCentral; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+) {
+    run_tests(move |paths: [String; N]| {
+        Box::pin(async move {
+            let stream = paths.into_iter().enumerate().map(|(i, p)| async move {
+                let client_id = client_id[i].to_string();
+                let configuration = MlsCentralConfiguration::try_new(p, "test".into(), client_id).unwrap();
+                MlsCentral::try_new(configuration, credential()).await.unwrap()
+            });
+            let centrals: [MlsCentral; N] = futures_util::future::join_all(stream).await.try_into().unwrap();
+            test(centrals).await;
+        })
+    })
+    .await
+}
+
+#[cfg(not(target_family = "wasm"))]
+pub async fn run_tests<const N: usize>(
+    test: impl FnOnce([String; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+) {
+    let dirs = (0..N)
+        .map(|_| tempfile::tempdir().unwrap())
+        .collect::<Vec<tempfile::TempDir>>();
+    let paths: [String; N] = dirs
+        .iter()
+        .map(MlsCentralConfiguration::tmp_store_path)
+        .collect::<Vec<String>>()
+        .try_into()
+        .unwrap();
+    test(paths).await;
+}
+
+#[cfg(target_family = "wasm")]
+pub async fn run_tests<const N: usize>(
+    test: impl FnOnce([String; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+) {
+    use rand::distributions::{Alphanumeric, DistString};
+    let paths = [0; N].map(|_| format!("{}.idb", Alphanumeric.sample_string(&mut rand::thread_rng(), 16)));
+    test(paths).await;
+}
 
 pub fn conversation_id() -> ConversationId {
     let uuid = uuid::Uuid::new_v4();
