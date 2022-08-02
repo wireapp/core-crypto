@@ -131,7 +131,7 @@ impl CoreCryptoCallbacks for FailValidationCallbacks {
         false
     }
 
-    fn is_external_proposal_valid(&self, _: &[u8], _: Vec<&[u8]>) -> bool {
+    fn is_external_proposal_valid(&self, _: Vec<u8>, _: Vec<Vec<u8>>) -> bool {
         false
     }
 }
@@ -143,7 +143,7 @@ impl CoreCryptoCallbacks for SuccessValidationCallbacks {
         true
     }
 
-    fn is_external_proposal_valid(&self, _: &[u8], _: Vec<&[u8]>) -> bool {
+    fn is_external_proposal_valid(&self, _: Vec<u8>, _: Vec<Vec<u8>>) -> bool {
         true
     }
 }

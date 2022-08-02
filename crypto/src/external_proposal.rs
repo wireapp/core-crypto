@@ -3,7 +3,10 @@ use std::collections::HashSet;
 use crate::{ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsError};
 use openmls::{
     group::QueuedProposal,
-    prelude::{ExternalProposal, GroupEpoch, GroupId, KeyPackage, KeyPackageRef, MlsMessageOut, Proposal, Sender},
+    prelude::{
+        ExternalProposal, GroupEpoch, GroupId, KeyPackage, KeyPackageRef, MlsMessageOut, OpenMlsCrypto, Proposal,
+        Sender,
+    },
 };
 
 fn is_external_add_proposal(queued_proposal: &QueuedProposal) -> bool {
@@ -18,11 +21,25 @@ fn is_external_add_proposal(queued_proposal: &QueuedProposal) -> bool {
 pub(crate) fn validate_external_proposal<'a>(
     proposal: &QueuedProposal,
     members: impl Iterator<Item = &'a KeyPackage>,
+    pending_proposals: impl Iterator<Item = &'a QueuedProposal>,
     callbacks: &(impl CoreCryptoCallbacks + ?Sized),
+    backend: &impl OpenMlsCrypto,
 ) -> CryptoResult<()> {
     if is_external_add_proposal(proposal) {
+        let pending_removes = pending_proposals
+            .filter_map(|proposal| match proposal.proposal() {
+                Proposal::Remove(ref remove) => Some(remove.removed()),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
         let other_clients = members
-            .map(|kp| kp.credential().identity().to_owned())
+            .filter_map(|kp| {
+                if !pending_removes.contains(&&kp.hash_ref(backend).ok()?) {
+                    Some(kp.credential().identity().to_owned())
+                } else {
+                    None
+                }
+            })
             .collect::<HashSet<_>>();
         let add_proposal = match proposal.proposal() {
             Proposal::Add(ref add) => add,
