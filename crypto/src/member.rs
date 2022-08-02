@@ -112,7 +112,7 @@ impl ConversationMember {
     ) -> CryptoResult<(Self, openmls::prelude::KeyPackageBundle)> {
         let client = Client::random_generate(backend, false, credential()).await?;
         let id = client.id();
-        let key_pagkage = client.gen_keypackage(backend).await?;
+        let key_package = client.gen_keypackage(backend).await?;
 
         let member = Self {
             id: id.to_vec(),
@@ -120,7 +120,7 @@ impl ConversationMember {
             local_client: Some(client),
         };
 
-        Ok((member, key_pagkage))
+        Ok((member, key_package))
     }
 
     /// Generates a random new Member

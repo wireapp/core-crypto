@@ -1,24 +1,43 @@
-use crate::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError};
-use openmls::prelude::{ExternalProposal, GroupEpoch, GroupId, KeyPackage, KeyPackageRef, MlsMessageOut};
+use std::collections::HashSet;
+
+use crate::{ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsError};
 use openmls::{
     group::QueuedProposal,
-    prelude::{
-        AddProposal, ExternalProposal, GroupEpoch, GroupId, KeyPackage, KeyPackageRef, MlsMessageOut, Proposal, Sender,
-    },
+    prelude::{ExternalProposal, GroupEpoch, GroupId, KeyPackage, KeyPackageRef, MlsMessageOut, Proposal, Sender},
 };
 
-pub fn is_external_add_proposal(queued_proposal: &QueuedProposal) -> bool {
+fn is_external_add_proposal(queued_proposal: &QueuedProposal) -> bool {
     matches!(
         (queued_proposal.proposal(), queued_proposal.sender()),
-        (Proposal::Add(_), Sender::Preconfigured(_))
+        (Proposal::Add(_), Sender::Preconfigured(_) | Sender::NewMember)
     )
 }
 
-pub fn as_add_proposal(proposal: &Proposal) -> CryptoResult<&AddProposal> {
-    match proposal {
-        Proposal::Add(ref add) => Ok(add),
-        _ => Err(CryptoError::InvalidProposalType),
+/// Validates the proposal. If it is external and an `Add` proposal it will call the callback
+/// interface to validate the proposal, otherwise it will succeed.
+pub(crate) fn validate_external_proposal<'a>(
+    proposal: &QueuedProposal,
+    members: impl Iterator<Item = &'a KeyPackage>,
+    callbacks: &(impl CoreCryptoCallbacks + ?Sized),
+) -> CryptoResult<()> {
+    if is_external_add_proposal(proposal) {
+        let other_clients = members
+            .map(|kp| kp.credential().identity().to_owned())
+            .collect::<HashSet<_>>();
+        let add_proposal = match proposal.proposal() {
+            Proposal::Add(ref add) => add,
+            _ => return Err(CryptoError::InvalidProposalType),
+        };
+        if !callbacks.is_external_proposal_valid(
+            add_proposal.key_package().credential().identity().to_owned(),
+            other_clients.into_iter().collect(),
+        ) {
+            return Err(CryptoError::ExternalProposalError(
+                "identity validation failure. Only users already in group are allowed.",
+            ));
+        }
     }
+    Ok(())
 }
 
 impl MlsCentral {
@@ -89,13 +108,14 @@ impl MlsCentral {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        credential::{CertificateBundle, CredentialSupplier},
+        test_fixture_utils::*,
+        test_utils::*,
+        ConversationMember, MlsConversationConfiguration,
+    };
     use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
-
-    use crate::{
-        credential::CredentialSupplier, member::ConversationMember, test_fixture_utils::*, test_utils::*,
-        MlsConversationConfiguration,
-    };
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -131,7 +151,7 @@ mod tests {
 
                         // Owner receives external proposal message from server
                         owner_central
-                            .decrypt_message(&conversation_id, add_message.to_bytes().unwrap().as_slice())
+                            .decrypt_message(conversation_id.clone(), add_message.to_bytes().unwrap().as_slice())
                             .await
                             .unwrap();
 
@@ -145,7 +165,6 @@ mod tests {
                             .commit_pending_proposals(&owner_central.mls_backend)
                             .await
                             .unwrap();
-                        owner_group.commit_accepted(&owner_central.mls_backend).await.unwrap();
 
                         let welcome = welcome.unwrap();
 
@@ -159,7 +178,7 @@ mod tests {
 
                         // guest can send messages in the group
                         assert!(guest_central
-                            .encrypt_message(&conversation_id, b"hello owner")
+                            .encrypt_message(conversation_id, b"hello owner")
                             .await
                             .is_ok());
                     })
@@ -200,7 +219,6 @@ mod tests {
                             .add_members(&mut [guest], &owner_central.mls_backend)
                             .await
                             .unwrap();
-                        owner_group.commit_accepted(&owner_central.mls_backend).await.unwrap();
                         assert_eq!(owner_group.members().len(), 2);
 
                         // now, as e.g. a Delivery Service, let's create an external remove proposal
@@ -228,9 +246,7 @@ mod tests {
                             .commit_pending_proposals(&owner_central.mls_backend)
                             .await
                             .unwrap();
-                        // before merging, commit is not applied
-                        assert_eq!(owner_group.members().len(), 2);
-                        owner_group.commit_accepted(&owner_central.mls_backend).await.unwrap();
+                        owner_group.group.merge_pending_commit().unwrap();
                         assert_eq!(owner_group.members().len(), 1);
                     })
                 },

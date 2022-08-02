@@ -14,13 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use core_crypto_keystore::CryptoKeystoreMls;
 use openmls::{
     group::{GroupId, MlsGroup},
     prelude::{MlsMessageOut, VerifiablePublicGroupState},
 };
 use openmls_traits::OpenMlsCryptoProvider;
-
-use core_crypto_keystore::CryptoKeystoreMls;
 
 use crate::{
     prelude::{MlsConversation, MlsConversationConfiguration},
@@ -116,17 +115,17 @@ mod tests {
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
     pub mod external_join {
+        use super::*;
+        use crate::{
+            credential::{CertificateBundle, CredentialSupplier},
+            error::MlsError,
+            test_fixture_utils::{SuccessValidationCallbacks, *},
+            test_utils::run_test_with_central,
+            CoreCryptoCallbacks, MlsConversation, MlsConversationConfiguration,
+        };
+        use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
         use openmls::prelude::*;
         use wasm_bindgen_test::wasm_bindgen_test;
-
-        use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
-
-        use crate::{
-            credential::CredentialSupplier, error::MlsError, test_fixture_utils::*, test_utils::run_test_with_central,
-            MlsConversation, MlsConversationConfiguration,
-        };
-
-        use super::*;
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
@@ -162,8 +161,7 @@ mod tests {
                     let (_, message) = central.join_by_external_commit(verifiable_state).await.unwrap();
 
                     // alice acks the request and adds the new member
-                    let callbacks: Option<Box<dyn crate::CoreCryptoCallbacks>> =
-                        Some(Box::new(crate::test_fixture_utils::SuccessValidationCallbacks));
+                    let callbacks: Option<Box<dyn CoreCryptoCallbacks>> = Some(Box::new(SuccessValidationCallbacks));
                     alice_group
                         .decrypt_message(
                             &message.to_bytes().unwrap(),
@@ -183,7 +181,7 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let conv = central.get_conversation(&conversation_id).unwrap();
+                    let conv = central.mls_groups.get(&conversation_id).unwrap();
                     assert_eq!(conv.members().len(), 2);
 
                     let error = central
@@ -237,12 +235,10 @@ mod tests {
                     // alice adds a new member to the group before receiving an ack from the
                     // external join
                     alice_group.add_members(&mut [bob], &alice_backend).await.unwrap();
-                    alice_group.commit_accepted(&alice_backend).await.unwrap();
 
                     // receive the ack from the external join with outdated epoch
                     // should fail because of the wrong epoch
-                    let callbacks: Option<Box<dyn crate::CoreCryptoCallbacks>> =
-                        Some(Box::new(crate::test_fixture_utils::SuccessValidationCallbacks));
+                    let callbacks: Option<Box<dyn CoreCryptoCallbacks>> = Some(Box::new(SuccessValidationCallbacks));
                     let result = alice_group
                         .decrypt_message(
                             &message.to_bytes().unwrap(),
