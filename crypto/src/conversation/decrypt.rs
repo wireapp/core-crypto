@@ -13,7 +13,6 @@ use openmls::prelude::MlsMessageOut;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::conversation::commit_delay::calculate_delay;
 use crate::conversation::renew::Renew;
 use crate::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsError};
 
@@ -61,15 +60,11 @@ impl MlsConversation {
             },
             ProcessedMessage::ProposalMessage(proposal) => {
                 self.group.store_pending_proposal(*proposal);
-                let epoch = self.group.epoch().as_u64();
-                let total_members = self.group.members().len();
-                let self_index = self.get_self_tree_index(backend)?;
-                let delay = calculate_delay(self_index, epoch, total_members).map_err(CryptoError::from)?;
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals: vec![],
                     is_active: true,
-                    delay: Some(delay),
+                    delay: Some(self.compute_next_commit_delay()),
                 }
             }
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
