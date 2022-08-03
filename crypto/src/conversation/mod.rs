@@ -365,7 +365,6 @@ pub mod tests {
                         let MlsConversationCreationMessage { welcome, .. } = alice_central
                             .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
                             .await
-                            .unwrap()
                             .unwrap();
                         // before merging, commit is not applied
                         assert_eq!(alice_central[&id].members().len(), 1);
@@ -421,7 +420,6 @@ pub mod tests {
                     let MlsConversationCreationMessage { welcome, .. } = alice_central
                         .add_members_to_conversation(&id, &mut bob_and_friends_members)
                         .await
-                        .unwrap()
                         .unwrap();
                     // before merging, commit is not applied
                     assert_eq!(alice_central[&id].members().len(), 1);
@@ -476,7 +474,6 @@ pub mod tests {
                         let MlsConversationCreationMessage { welcome, .. } = alice_central
                             .add_members_to_conversation(&id, &mut [bob])
                             .await
-                            .unwrap()
                             .unwrap();
 
                         // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store

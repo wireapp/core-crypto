@@ -143,7 +143,6 @@ impl MlsCentral {
         let welcome = self
             .add_members_to_conversation(id, &mut [other.rnd_member().await])
             .await?
-            .ok_or(CryptoError::ImplementationError)?
             .welcome;
         other
             .process_welcome_message(welcome, MlsConversationConfiguration::default())

@@ -17,13 +17,14 @@ use crate::{member::ConversationMember, ClientId, ConversationId, CryptoError, C
 
 use super::MlsConversation;
 
-/// Returned when initializing a conversation. Different from conversation created from a [`Welcome`] message or an external commit.
+/// Returned when initializing a conversation through a commit.
+/// Different from conversation created from a [`Welcome`] message or an external commit.
 #[derive(Debug)]
 pub struct MlsConversationCreationMessage {
-    /// A welcome message indicating new members were added by a commit
+    /// A welcome message for new members to join the group
     pub welcome: Welcome,
-    /// A message that will contain information about the last commit
-    pub message: MlsMessageOut,
+    /// Commit message adding members to the group
+    pub commit: MlsMessageOut,
 }
 
 impl MlsConversationCreationMessage {
@@ -34,7 +35,33 @@ impl MlsConversationCreationMessage {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self.welcome.tls_serialize_detached().map_err(MlsError::from)?;
 
-        let msg = self.message.to_bytes().map_err(MlsError::from)?;
+        let msg = self.commit.to_bytes().map_err(MlsError::from)?;
+
+        Ok((welcome, msg))
+    }
+}
+
+/// Returned when a commit is created
+#[derive(Debug)]
+pub struct MlsCommitBundle {
+    /// A welcome message if there are pending Add proposals
+    pub welcome: Option<Welcome>,
+    /// The commit message
+    pub commit: MlsMessageOut,
+}
+
+impl MlsCommitBundle {
+    /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
+    /// 0 -> welcome
+    /// 1 -> message
+    pub fn to_bytes_pairs(&self) -> CryptoResult<(Option<Vec<u8>>, Vec<u8>)> {
+        use openmls::prelude::TlsSerializeTrait as _;
+        let welcome = self
+            .welcome
+            .as_ref()
+            .map(|w| w.tls_serialize_detached().map_err(MlsError::from))
+            .transpose()?;
+        let msg = self.commit.to_bytes().map_err(MlsError::from)?;
 
         Ok((welcome, msg))
     }
@@ -93,13 +120,13 @@ impl MlsConversation {
             .filter_map(|(_, kps)| kps)
             .collect::<Vec<KeyPackage>>();
 
-        let (message, welcome) = self
+        let (commit, welcome) = self
             .group
             .add_members(backend, &keypackages)
             .await
             .map_err(MlsError::from)?;
 
-        Ok(MlsConversationCreationMessage { welcome, message })
+        Ok(MlsConversationCreationMessage { welcome, commit })
     }
 
     /// see [MlsCentral::remove_members_from_conversation]
@@ -108,7 +135,7 @@ impl MlsConversation {
         &mut self,
         clients: &[ClientId],
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<MlsMessageOut> {
+    ) -> CryptoResult<MlsCommitBundle> {
         let crypto = backend.crypto();
 
         let member_kps = self
@@ -125,35 +152,33 @@ impl MlsConversation {
                 Ok(acc)
             })?;
 
-        let (message, _) = self
+        let (commit, welcome) = self
             .group
             .remove_members(backend, &member_kps)
             .await
             .map_err(MlsError::from)?;
 
-        Ok(message)
+        Ok(MlsCommitBundle { commit, welcome })
     }
 
     /// see [MlsCentral::update_keying_material]
-    pub async fn update_keying_material(
-        &mut self,
-        backend: &MlsCryptoProvider,
-    ) -> CryptoResult<(MlsMessageOut, Option<Welcome>)> {
-        Ok(self.group.self_update(backend, None).await.map_err(MlsError::from)?)
+    pub async fn update_keying_material(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<MlsCommitBundle> {
+        Ok(self
+            .group
+            .self_update(backend, None)
+            .await
+            .map_err(MlsError::from)
+            .map(|(commit, welcome)| MlsCommitBundle { welcome, commit })?)
     }
 
     /// see [MlsCentral::commit_pending_proposals]
-    pub async fn commit_pending_proposals(
-        &mut self,
-        backend: &MlsCryptoProvider,
-    ) -> CryptoResult<(MlsMessageOut, Option<Welcome>)> {
-        let (message, welcome) = self
+    pub async fn commit_pending_proposals(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<MlsCommitBundle> {
+        Ok(self
             .group
             .commit_to_pending_proposals(backend)
             .await
-            .map_err(MlsError::from)?;
-
-        Ok((message, welcome))
+            .map_err(MlsError::from)
+            .map(|(commit, welcome)| MlsCommitBundle { welcome, commit })?)
     }
 }
 
@@ -176,20 +201,17 @@ impl MlsCentral {
         &mut self,
         id: &ConversationId,
         members: &mut [ConversationMember],
-    ) -> CryptoResult<Option<MlsConversationCreationMessage>> {
+    ) -> CryptoResult<MlsConversationCreationMessage> {
         if let Some(callbacks) = self.callbacks.as_ref() {
             if !callbacks.authorize(id.clone(), self.mls_client.id().to_string()) {
                 return Err(CryptoError::Unauthorized);
             }
         }
-        // TODO: Change method signature to 'CryptoResult<MlsConversationCreationMessage>'. It should fail when conversation not found
-        if let Ok(group) = Self::get_conversation_mut(&mut self.mls_groups, id) {
-            let add = group.add_members(members, &self.mls_backend).await?;
-            self.maybe_accept_commit(id).await?;
-            Ok(Some(add))
-        } else {
-            Ok(None)
-        }
+        let add = Self::get_conversation_mut(&mut self.mls_groups, id)?
+            .add_members(members, &self.mls_backend)
+            .await?;
+        self.maybe_accept_commit(id).await?;
+        Ok(add)
     }
 
     /// Removes clients from the group/conversation.
@@ -209,21 +231,17 @@ impl MlsCentral {
         &mut self,
         id: &ConversationId,
         clients: &[ClientId],
-    ) -> CryptoResult<Option<MlsMessageOut>> {
+    ) -> CryptoResult<MlsCommitBundle> {
         if let Some(callbacks) = self.callbacks.as_ref() {
             if !callbacks.authorize(id.clone(), self.mls_client.id().to_string()) {
                 return Err(CryptoError::Unauthorized);
             }
         }
-
-        // TODO: Change method signature to 'CryptoResult<MlsMessageOut>'. It should fail when conversation not found
-        if let Ok(group) = Self::get_conversation_mut(&mut self.mls_groups, id) {
-            let remove = group.remove_members(clients, &self.mls_backend).await?;
-            self.maybe_accept_commit(id).await?;
-            Ok(Some(remove))
-        } else {
-            Ok(None)
-        }
+        let remove = Self::get_conversation_mut(&mut self.mls_groups, id)?
+            .remove_members(clients, &self.mls_backend)
+            .await?;
+        self.maybe_accept_commit(id).await?;
+        Ok(remove)
     }
 
     /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited
@@ -238,10 +256,7 @@ impl MlsCentral {
     /// # Errors
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
-    pub async fn update_keying_material(
-        &mut self,
-        id: &ConversationId,
-    ) -> CryptoResult<(MlsMessageOut, Option<Welcome>)> {
+    pub async fn update_keying_material(&mut self, id: &ConversationId) -> CryptoResult<MlsCommitBundle> {
         let update = Self::get_conversation_mut(&mut self.mls_groups, id)?
             .update_keying_material(&self.mls_backend)
             .await;
@@ -259,10 +274,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// Errors can be originating from the KeyStore and OpenMls
-    pub async fn commit_pending_proposals(
-        &mut self,
-        id: &ConversationId,
-    ) -> CryptoResult<(MlsMessageOut, Option<Welcome>)> {
+    pub async fn commit_pending_proposals(&mut self, id: &ConversationId) -> CryptoResult<MlsCommitBundle> {
         let commit = Self::get_conversation_mut(&mut self.mls_groups, id)?
             .commit_pending_proposals(&self.mls_backend)
             .await;
@@ -316,7 +328,6 @@ pub mod tests {
                         let MlsConversationCreationMessage { welcome, .. } = alice_central
                             .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
                             .await
-                            .unwrap()
                             .unwrap();
 
                         // before merging, commit is not applied
@@ -360,10 +371,9 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
-                        let commit = alice_central
+                        let MlsCommitBundle { commit, .. } = alice_central
                             .remove_members_from_conversation(&id, &["bob".into()])
                             .await
-                            .unwrap()
                             .unwrap();
 
                         // before merging, commit is not applied
@@ -414,7 +424,8 @@ pub mod tests {
                         let alice_key = alice_central.key_package_of(&id, "alice");
 
                         // proposing the key update for alice
-                        let (commit, welcome) = alice_central.update_keying_material(&id).await.unwrap();
+                        let MlsCommitBundle { commit, welcome } =
+                            alice_central.update_keying_material(&id).await.unwrap();
                         assert!(welcome.is_none());
 
                         // before merging, commit is not applied
@@ -477,7 +488,8 @@ pub mod tests {
                             .unwrap();
 
                         // performing an update on Alice's key. this should generate a welcome for Charlie
-                        let (commit, welcome) = alice_central.update_keying_material(&id).await.unwrap();
+                        let MlsCommitBundle { commit, welcome } =
+                            alice_central.update_keying_material(&id).await.unwrap();
                         assert!(welcome.is_some());
                         assert!(alice_central[&id].group.members().contains(&&alice_key));
                         alice_central.commit_accepted(&id).await.unwrap();

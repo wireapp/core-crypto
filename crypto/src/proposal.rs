@@ -83,7 +83,7 @@ impl MlsCentral {
 pub mod proposal_tests {
     use wasm_bindgen_test::*;
 
-    use crate::{credential::CredentialSupplier, test_utils::*, *};
+    use crate::{credential::CredentialSupplier, prelude::handshake::MlsCommitBundle, test_utils::*, *};
 
     use super::*;
 
@@ -107,7 +107,8 @@ pub mod proposal_tests {
                             .unwrap();
                         let bob_kp = bob_central.get_one_key_package().await;
                         alice_central.new_proposal(&id, MlsProposal::Add(bob_kp)).await.unwrap();
-                        let (_, welcome) = alice_central.commit_pending_proposals(&id).await.unwrap();
+                        let MlsCommitBundle { welcome, .. } =
+                            alice_central.commit_pending_proposals(&id).await.unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(alice_central[&id].members().len(), 2);
                         let new_id = bob_central
@@ -173,7 +174,7 @@ pub mod proposal_tests {
                         .decrypt_message(&id, remove_proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    let (commit, _) = alice_central.commit_pending_proposals(&id).await.unwrap();
+                    let MlsCommitBundle { commit, .. } = alice_central.commit_pending_proposals(&id).await.unwrap();
                     alice_central.commit_accepted(&id).await.unwrap();
                     assert_eq!(alice_central[&id].members().len(), 1);
 

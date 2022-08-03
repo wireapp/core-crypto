@@ -19,13 +19,13 @@ fileprivate extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_CoreCrypto_c408_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_CoreCrypto_bf44_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_CoreCrypto_c408_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_CoreCrypto_bf44_rustbuffer_free(self, $0) }
     }
 }
 
@@ -413,8 +413,8 @@ public protocol CoreCryptoProtocol {
     func createConversation(conversationId: ConversationId, config: ConversationConfiguration) throws
     func conversationExists(conversationId: ConversationId)  -> Bool
     func processWelcomeMessage(welcomeMessage: [UInt8]) throws -> ConversationId
-    func addClientsToConversation(conversationId: ConversationId, clients: [Invitee]) throws -> MemberAddedMessages?
-    func removeClientsFromConversation(conversationId: ConversationId, clients: [ClientId]) throws -> [UInt8]?
+    func addClientsToConversation(conversationId: ConversationId, clients: [Invitee]) throws -> MemberAddedMessages
+    func removeClientsFromConversation(conversationId: ConversationId, clients: [ClientId]) throws -> CommitBundle
     func decryptMessage(conversationId: ConversationId, payload: [UInt8]) throws -> DecryptedMessage
     func encryptMessage(conversationId: ConversationId, message: [UInt8]) throws -> [UInt8]
     func newAddProposal(conversationId: ConversationId, keyPackage: [UInt8]) throws -> [UInt8]
@@ -447,7 +447,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     
     rustCallWithError(FfiConverterTypeCryptoError.self) {
     
-    CoreCrypto_c408_CoreCrypto_new(
+    CoreCrypto_bf44_CoreCrypto_new(
         FfiConverterString.lower(path), 
         FfiConverterString.lower(key), 
         FfiConverterString.lower(clientId), 
@@ -456,7 +456,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_CoreCrypto_c408_CoreCrypto_object_free(pointer, $0) }
+        try! rustCall { ffi_CoreCrypto_bf44_CoreCrypto_object_free(pointer, $0) }
     }
 
     
@@ -465,7 +465,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func setCallbacks(callbacks: CoreCryptoCallbacks) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_set_callbacks(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_set_callbacks(self.pointer, 
         FfiConverterCallbackInterfaceCoreCryptoCallbacks.lower(callbacks), $0
     )
 }
@@ -474,7 +474,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_client_public_key(self.pointer, $0
+    CoreCrypto_bf44_CoreCrypto_client_public_key(self.pointer, $0
     )
 }
         )
@@ -483,7 +483,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_client_keypackages(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_client_keypackages(self.pointer, 
         FfiConverterUInt32.lower(amountRequested), $0
     )
 }
@@ -493,7 +493,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterUInt64.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_client_valid_keypackages_count(self.pointer, $0
+    CoreCrypto_bf44_CoreCrypto_client_valid_keypackages_count(self.pointer, $0
     )
 }
         )
@@ -501,7 +501,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func createConversation(conversationId: ConversationId, config: ConversationConfiguration) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_create_conversation(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_create_conversation(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterTypeConversationConfiguration.lower(config), $0
     )
@@ -512,7 +512,7 @@ public class CoreCrypto: CoreCryptoProtocol {
             try!
     rustCall() {
     
-    CoreCrypto_c408_CoreCrypto_conversation_exists(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_conversation_exists(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -522,28 +522,28 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeConversationId.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_process_welcome_message(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_process_welcome_message(self.pointer, 
         FfiConverterSequenceUInt8.lower(welcomeMessage), $0
     )
 }
         )
     }
-    public func addClientsToConversation(conversationId: ConversationId, clients: [Invitee]) throws -> MemberAddedMessages? {
-        return try FfiConverterOptionTypeMemberAddedMessages.lift(
+    public func addClientsToConversation(conversationId: ConversationId, clients: [Invitee]) throws -> MemberAddedMessages {
+        return try FfiConverterTypeMemberAddedMessages.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_add_clients_to_conversation(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_add_clients_to_conversation(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceTypeInvitee.lower(clients), $0
     )
 }
         )
     }
-    public func removeClientsFromConversation(conversationId: ConversationId, clients: [ClientId]) throws -> [UInt8]? {
-        return try FfiConverterOptionSequenceUInt8.lift(
+    public func removeClientsFromConversation(conversationId: ConversationId, clients: [ClientId]) throws -> CommitBundle {
+        return try FfiConverterTypeCommitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_remove_clients_from_conversation(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_remove_clients_from_conversation(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceTypeClientId.lower(clients), $0
     )
@@ -554,7 +554,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeDecryptedMessage.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_decrypt_message(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_decrypt_message(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceUInt8.lower(payload), $0
     )
@@ -565,7 +565,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_encrypt_message(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_encrypt_message(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceUInt8.lower(message), $0
     )
@@ -576,7 +576,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_new_add_proposal(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_new_add_proposal(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceUInt8.lower(keyPackage), $0
     )
@@ -587,7 +587,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_new_update_proposal(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_new_update_proposal(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -597,7 +597,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_new_remove_proposal(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_new_remove_proposal(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterTypeClientId.lower(clientId), $0
     )
@@ -608,7 +608,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_new_external_add_proposal(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_new_external_add_proposal(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterUInt64.lower(epoch), 
         FfiConverterSequenceUInt8.lower(keyPackage), $0
@@ -620,7 +620,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_new_external_remove_proposal(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_new_external_remove_proposal(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterUInt64.lower(epoch), 
         FfiConverterSequenceUInt8.lower(keyPackageRef), $0
@@ -632,7 +632,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeCommitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_update_keying_material(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_update_keying_material(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -642,7 +642,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeMlsConversationInitMessage.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_join_by_external_commit(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_join_by_external_commit(self.pointer, 
         FfiConverterSequenceUInt8.lower(groupState), $0
     )
 }
@@ -652,7 +652,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_export_group_state(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_export_group_state(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -661,7 +661,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func mergePendingGroupFromExternalCommit(conversationId: ConversationId, config: ConversationConfiguration) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterTypeConversationConfiguration.lower(config), $0
     )
@@ -671,7 +671,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_random_bytes(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_random_bytes(self.pointer, 
         FfiConverterUInt32.lower(length), $0
     )
 }
@@ -680,7 +680,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func reseedRng(seed: [UInt8]) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_reseed_rng(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_reseed_rng(self.pointer, 
         FfiConverterSequenceUInt8.lower(seed), $0
     )
 }
@@ -688,7 +688,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func commitAccepted(conversationId: ConversationId) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_commit_accepted(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_commit_accepted(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -697,7 +697,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeCommitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_c408_CoreCrypto_commit_pending_proposals(self.pointer, 
+    CoreCrypto_bf44_CoreCrypto_commit_pending_proposals(self.pointer, 
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -1452,7 +1452,7 @@ fileprivate struct FfiConverterCallbackInterfaceCoreCryptoCallbacks {
     private static var callbackInitialized = false
     private static func initCallback() {
         try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
-                ffi_CoreCrypto_c408_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
+                ffi_CoreCrypto_bf44_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
         }
     }
     private static func ensureCallbackinitialized() {
@@ -1536,27 +1536,6 @@ fileprivate struct FfiConverterOptionDuration: FfiConverterRustBuffer {
         switch try buf.readInt() as Int8 {
         case 0: return nil
         case 1: return try FfiConverterDuration.read(from: buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
-fileprivate struct FfiConverterOptionTypeMemberAddedMessages: FfiConverterRustBuffer {
-    typealias SwiftType = MemberAddedMessages?
-
-    static func write(_ value: SwiftType, into buf: Writer) {
-        guard let value = value else {
-            buf.writeInt(Int8(0))
-            return
-        }
-        buf.writeInt(Int8(1))
-        FfiConverterTypeMemberAddedMessages.write(value, into: buf)
-    }
-
-    static func read(from buf: Reader) throws -> SwiftType {
-        switch try buf.readInt() as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterTypeMemberAddedMessages.read(from: buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -1744,7 +1723,7 @@ public func initWithPathAndKey(path: String, key: String, clientId: String, entr
     
     rustCallWithError(FfiConverterTypeCryptoError.self) {
     
-    CoreCrypto_c408_init_with_path_and_key(
+    CoreCrypto_bf44_init_with_path_and_key(
         FfiConverterString.lower(path), 
         FfiConverterString.lower(key), 
         FfiConverterString.lower(clientId), 
@@ -1761,7 +1740,7 @@ public func version()  -> String {
     
     rustCall() {
     
-    CoreCrypto_c408_version($0)
+    CoreCrypto_bf44_version($0)
 }
     )
 }

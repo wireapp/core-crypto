@@ -134,7 +134,10 @@ impl MlsCentral {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{credential::CredentialSupplier, proposal::MlsProposal, test_utils::*, MlsConversationConfiguration};
+    use crate::{
+        credential::CredentialSupplier, prelude::handshake::MlsCommitBundle, proposal::MlsProposal, test_utils::*,
+        MlsConversationConfiguration,
+    };
 
     use super::*;
 
@@ -158,7 +161,7 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
-                        let (commit, _) = bob_central.update_keying_material(&id).await.unwrap();
+                        let MlsCommitBundle { commit, .. } = bob_central.update_keying_material(&id).await.unwrap();
                         let MlsConversationDecryptMessage { is_active, .. } = alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
@@ -187,10 +190,9 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
-                        let commit = bob_central
+                        let MlsCommitBundle { commit, .. } = bob_central
                             .remove_members_from_conversation(&id, &["alice".into()])
                             .await
-                            .unwrap()
                             .unwrap();
                         let MlsConversationDecryptMessage { is_active, .. } = alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
@@ -235,8 +237,7 @@ pub mod tests {
                             .add_members_to_conversation(&id, &mut [debbie.clone()])
                             .await
                             .unwrap()
-                            .unwrap()
-                            .message;
+                            .commit;
                         alice_central
                             .decrypt_message(&id, add_debbie_commit.to_bytes().unwrap())
                             .await
@@ -272,7 +273,7 @@ pub mod tests {
                         // Then Alice will renew the proposal in her pending commit
                         let charlie = charlie_central.rnd_member().await;
 
-                        let bob_commit = bob_central.update_keying_material(&id).await.unwrap().0;
+                        let bob_commit = bob_central.update_keying_material(&id).await.unwrap().commit;
                         bob_central.commit_accepted(&id).await.unwrap();
                         let commit_epoch = bob_commit.epoch();
 
@@ -305,7 +306,8 @@ pub mod tests {
                             bob_central.decrypt_message(&id, p.to_bytes().unwrap()).await.unwrap();
                         }
 
-                        let (commit, welcome) = alice_central.commit_pending_proposals(&id).await.unwrap();
+                        let MlsCommitBundle { commit, welcome } =
+                            alice_central.commit_pending_proposals(&id).await.unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
                         // Charlie is now in the group
                         assert!(alice_central[&id].members().get(&charlie.id).is_some());
@@ -359,7 +361,7 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let (commit, _) = bob_central.update_keying_material(&id).await.unwrap();
+                        let MlsCommitBundle { commit, .. } = bob_central.update_keying_material(&id).await.unwrap();
                         let MlsConversationDecryptMessage { proposals, delay, .. } = alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
@@ -392,7 +394,7 @@ pub mod tests {
                         // Alice will create a proposal to add Charlie
                         // Bob will create a commit which Alice will decrypt
                         // Then Alice will renew her proposal
-                        let bob_commit = bob_central.update_keying_material(&id).await.unwrap().0;
+                        let bob_commit = bob_central.update_keying_material(&id).await.unwrap().commit;
                         bob_central.commit_accepted(&id).await.unwrap();
                         let commit_epoch = bob_commit.epoch();
 
@@ -425,7 +427,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         assert_eq!(bob_central.pending_proposals(&id).len(), 1);
-                        let (commit, _) = bob_central.commit_pending_proposals(&id).await.unwrap();
+                        let MlsCommitBundle { commit, .. } = bob_central.commit_pending_proposals(&id).await.unwrap();
                         alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
@@ -473,7 +475,7 @@ pub mod tests {
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).len(), 1);
 
-                        let commit = bob_central.update_keying_material(&id).await.unwrap().0;
+                        let MlsCommitBundle { commit, .. } = bob_central.update_keying_material(&id).await.unwrap();
                         let alice_renewed_proposals = alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
