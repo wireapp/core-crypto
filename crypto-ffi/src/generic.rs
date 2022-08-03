@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use core_crypto::prelude::decrypt::MlsConversationDecryptMessage;
-use core_crypto::prelude::handshake::MlsConversationCreationMessage;
+use core_crypto::prelude::handshake::{MlsCommitBundle, MlsConversationCreationMessage};
 use core_crypto::prelude::*;
 pub use core_crypto::prelude::{CiphersuiteName, ClientId, ConversationId, CoreCryptoCallbacks, MemberId};
 pub use core_crypto::CryptoError;
@@ -61,6 +61,15 @@ pub struct Invitee {
 pub struct CommitBundle {
     pub welcome: Option<Vec<u8>>,
     pub message: Vec<u8>,
+}
+
+impl TryFrom<MlsCommitBundle> for CommitBundle {
+    type Error = CryptoError;
+
+    fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
+        let (welcome, message) = msg.to_bytes_pairs()?;
+        Ok(Self { welcome, message })
+    }
 }
 
 #[cfg_attr(feature = "c-api", repr(C))]
@@ -254,23 +263,15 @@ impl CoreCrypto<'_> {
     }
 
     pub fn update_keying_material(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
-        use core_crypto::prelude::tls_codec::Serialize as _;
-
-        let (commit, welcome) = future::block_on({
+        future::block_on({
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
                     .update_keying_material(&conversation_id),
             )
-        })?;
-        Ok(CommitBundle {
-            message: commit.tls_serialize_detached().map_err(MlsError::from)?,
-            welcome: welcome
-                .map(|v| v.tls_serialize_detached())
-                .transpose()
-                .map_err(MlsError::from)?,
-        })
+        })?
+        .try_into()
     }
 
     pub fn create_conversation(
@@ -303,7 +304,7 @@ impl CoreCrypto<'_> {
         &self,
         conversation_id: ConversationId,
         clients: Vec<Invitee>,
-    ) -> CryptoResult<Option<MemberAddedMessages>> {
+    ) -> CryptoResult<MemberAddedMessages> {
         let mut members = Invitee::group_to_conversation_member(clients)?;
 
         future::block_on(
@@ -314,8 +315,7 @@ impl CoreCrypto<'_> {
                     .add_members_to_conversation(&conversation_id, &mut members),
             ),
         )?
-        .map(TryInto::try_into)
-        .transpose()
+        .try_into()
     }
 
     /// Returns a MLS commit message serialized as TLS
@@ -323,8 +323,8 @@ impl CoreCrypto<'_> {
         &self,
         conversation_id: ConversationId,
         clients: Vec<ClientId>,
-    ) -> CryptoResult<Option<Vec<u8>>> {
-        Ok(future::block_on(
+    ) -> CryptoResult<CommitBundle> {
+        future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
@@ -332,8 +332,7 @@ impl CoreCrypto<'_> {
                     .remove_members_from_conversation(&conversation_id, &clients),
             ),
         )?
-        .map(|m| m.to_bytes().map_err(MlsError::from))
-        .transpose()?)
+        .try_into()
     }
 
     pub fn decrypt_message(&self, conversation_id: ConversationId, payload: &[u8]) -> CryptoResult<DecryptedMessage> {
@@ -533,22 +532,14 @@ impl CoreCrypto<'_> {
     }
 
     pub fn commit_pending_proposals(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
-        use core_crypto::prelude::tls_codec::Serialize as _;
-
-        let (commit, welcome) = future::block_on({
+        future::block_on({
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
                     .commit_pending_proposals(&conversation_id),
             )
-        })?;
-        Ok(CommitBundle {
-            message: commit.tls_serialize_detached().map_err(MlsError::from)?,
-            welcome: welcome
-                .map(|v| v.tls_serialize_detached())
-                .transpose()
-                .map_err(MlsError::from)?,
-        })
+        })?
+        .try_into()
     }
 }

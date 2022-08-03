@@ -71,7 +71,10 @@ mod tests {
     use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
 
-    use crate::{credential::CredentialSupplier, test_utils::*, MlsConversationConfiguration};
+    use crate::{
+        credential::CredentialSupplier, prelude::handshake::MlsCommitBundle, test_utils::*,
+        MlsConversationConfiguration,
+    };
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -110,13 +113,14 @@ mod tests {
                         assert_eq!(owner_central[&id].members().len(), 1);
 
                         // simulate commit message reception from server
-                        let welcome = owner_central.commit_pending_proposals(&id).await.unwrap().1.unwrap();
+                        let MlsCommitBundle { welcome, .. } =
+                            owner_central.commit_pending_proposals(&id).await.unwrap();
                         owner_central.commit_accepted(&id).await.unwrap();
                         // guest joined the group
                         assert_eq!(owner_central[&id].members().len(), 2);
 
                         guest_central
-                            .process_welcome_message(welcome, MlsConversationConfiguration::default())
+                            .process_welcome_message(welcome.unwrap(), MlsConversationConfiguration::default())
                             .await
                             .unwrap();
                         assert_eq!(guest_central[&id].members().len(), 2);
@@ -168,7 +172,7 @@ mod tests {
                             .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        let (commit, ..) = owner_central.commit_pending_proposals(&id).await.unwrap();
+                        let MlsCommitBundle { commit, .. } = owner_central.commit_pending_proposals(&id).await.unwrap();
                         // before merging, commit is not applied
                         assert_eq!(owner_central[&id].members().len(), 2);
                         owner_central.commit_accepted(&id).await.unwrap();

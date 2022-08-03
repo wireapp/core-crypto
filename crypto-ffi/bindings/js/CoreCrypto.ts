@@ -51,9 +51,9 @@ export interface MemberAddedMessages {
     welcome: Uint8Array;
 }
 
-export interface ConversationLeaveMessages {
-    self_removal_proposal: Uint8Array;
-    other_clients_removal_commit: Uint8Array;
+export interface CommitBundle {
+    message: Uint8Array;
+    welcome?: Uint8Array;
 }
 
 export const enum ProposalType {
@@ -150,7 +150,7 @@ export class CoreCrypto {
     async addClientsToConversation(
         conversationId: ConversationId,
         clients: Invitee[]
-    ): Promise<MemberAddedMessages | undefined> {
+    ): Promise<MemberAddedMessages> {
         const ffiClients = clients.map(
             (invitee) => new CoreCrypto.#module.Invitee(invitee.id, invitee.kp)
         );
@@ -160,10 +160,6 @@ export class CoreCrypto {
         );
 
         ffiClients.forEach(c => c.free());
-
-        if (!ffiRet) {
-            return;
-        }
 
         const ret: MemberAddedMessages = {
             welcome: ffiRet.welcome,
@@ -176,23 +172,18 @@ export class CoreCrypto {
     async removeClientsFromConversation(
         conversationId: ConversationId,
         clientIds: Uint8Array[]
-    ): Promise<Uint8Array | undefined> {
-        return await this.#cc.remove_clients_from_conversation(
+    ): Promise<CommitBundle> {
+        const ffiRet: CoreCryptoFfiTypes.CommitBundle = await this.#cc.remove_clients_from_conversation(
             conversationId,
             clientIds
         );
-    }
 
-    async leaveConversation(
-        conversationId: ConversationId,
-        otherClients: Uint8Array[]
-    ): Promise<ConversationLeaveMessages> {
-        const retFfi = await this.#cc.leave_conversation(conversationId, otherClients);
-        const ret: ConversationLeaveMessages = {
-            self_removal_proposal: retFfi.self_removal_proposal,
-            other_clients_removal_commit: retFfi.other_clients_removal_commit,
+        const ret: CommitBundle = {
+            welcome: ffiRet.welcome,
+            message: ffiRet.message,
         };
-        return ret;
+
+        return ret
     }
 
     async newProposal(
