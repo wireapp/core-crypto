@@ -10,11 +10,15 @@ impl MlsConversation {
     /// * `self_index` - ratchet tree index of self client
     /// * `epoch` - current group epoch
     /// * `nb_members` - number of clients in the group
-    pub fn compute_next_commit_delay(&self) -> u64 {
-        let epoch = self.group.epoch().as_u64();
-        let nb_members = self.group.members().len() as u64;
-        let own_index = self.group.own_leaf_index() as u64;
-        Self::calculate_delay(own_index, epoch, nb_members)
+    pub fn compute_next_commit_delay(&self) -> Option<u64> {
+        if self.group.pending_proposals().count() > 0 {
+            let epoch = self.group.epoch().as_u64();
+            let nb_members = self.group.members().len() as u64;
+            let own_index = self.group.own_leaf_index() as u64;
+            Some(Self::calculate_delay(own_index, epoch, nb_members))
+        } else {
+            None
+        }
     }
 
     fn calculate_delay(self_index: u64, epoch: u64, nb_members: u64) -> u64 {
