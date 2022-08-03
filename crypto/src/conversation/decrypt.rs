@@ -64,7 +64,7 @@ impl MlsConversation {
                     app_msg: None,
                     proposals: vec![],
                     is_active: true,
-                    delay: Some(self.compute_next_commit_delay()),
+                    delay: self.compute_next_commit_delay(),
                 }
             }
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
@@ -88,7 +88,7 @@ impl MlsConversation {
                     app_msg: None,
                     proposals,
                     is_active: self.group.is_active(),
-                    delay: None,
+                    delay: self.compute_next_commit_delay(),
                 }
             }
         };
@@ -327,12 +327,14 @@ pub mod tests {
                         assert!(alice_central.pending_commit(&id).is_some());
 
                         // But first she receives Bob commit
-                        let MlsConversationDecryptMessage { proposals, .. } = alice_central
+                        let MlsConversationDecryptMessage { proposals, delay, .. } = alice_central
                             .decrypt_message(&id, bob_commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         // So Charlie has not been added to the group
                         assert!(alice_central[&id].members().get(&charlie.id).is_none());
+                        // Make sure we are suggesting a commit delay
+                        assert!(delay.is_some());
 
                         // But its proposal to add Charlie has been renewed and is also in store
                         assert!(!proposals.is_empty());
@@ -411,11 +413,12 @@ pub mod tests {
                             .unwrap();
 
                         let (commit, _) = bob_central.update_keying_material(&id).await.unwrap();
-                        let MlsConversationDecryptMessage { proposals, .. } = alice_central
+                        let MlsConversationDecryptMessage { proposals, delay, .. } = alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert!(proposals.is_empty());
+                        assert!(delay.is_none());
                         assert!(alice_central.pending_proposals(&id).is_empty());
                     })
                 },
@@ -475,13 +478,14 @@ pub mod tests {
                         assert_eq!(alice_central.pending_proposals(&id).len(), 1);
 
                         // But first she receives Bob commit
-                        let MlsConversationDecryptMessage { proposals, .. } = alice_central
+                        let MlsConversationDecryptMessage { proposals, delay, .. } = alice_central
                             .decrypt_message(&id, bob_commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         // So Charlie has not been added to the group
                         assert!(alice_central[&id].members().get(&charlie.id).is_none());
-
+                        // Make sure we are suggesting a commit delay
+                        assert!(delay.is_some());
                         // But its proposal to add Charlie has been renewed and is also in store
                         assert!(!proposals.is_empty());
                         assert_eq!(alice_central.pending_proposals(&id).len(), 1);
