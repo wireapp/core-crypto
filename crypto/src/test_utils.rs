@@ -99,7 +99,7 @@ impl MlsCentral {
     }
 
     pub fn group(&self, id: &ConversationId) -> &MlsGroup {
-        &self[&id].group
+        &self[id].group
     }
 
     pub async fn rnd_member(&self) -> ConversationMember {

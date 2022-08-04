@@ -1,14 +1,15 @@
 use std::collections::HashSet;
 
-use crate::{
-    prelude::MlsConversation, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsError,
-};
 use openmls::{
     group::QueuedProposal,
     prelude::{
         ExternalProposal, GroupEpoch, GroupId, KeyPackage, KeyPackageRef, MlsMessageOut, OpenMlsCrypto, Proposal,
         Sender,
     },
+};
+
+use crate::{
+    prelude::MlsConversation, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsError,
 };
 
 pub(crate) trait ExternalProposalExt {
@@ -18,7 +19,7 @@ impl ExternalProposalExt for QueuedProposal {
     fn is_external_add_proposal(&self) -> bool {
         matches!(
             (self.proposal(), self.sender()),
-            (Proposal::Add(_), Sender::Preconfigured(_) | Sender::NewMember)
+            (Proposal::Add(_), Sender::External(_) | Sender::NewMember)
         )
     }
 }
@@ -127,6 +128,8 @@ impl MlsCentral {
             group_id,
             epoch,
             self.mls_client.credentials(),
+            // TODO: should inferred from group's extensions
+            0,
             &self.mls_backend,
         )
         .map_err(MlsError::from)
@@ -136,17 +139,19 @@ impl MlsCentral {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        credential::CredentialSupplier, prelude::handshake::MlsCommitBundle, test_utils::*,
-        MlsConversationConfiguration,
-    };
+    use openmls::prelude::{SignaturePublicKey, UnverifiedMessageError};
     use openmls_traits::OpenMlsCryptoProvider;
+
     use wasm_bindgen_test::*;
+
+    use crate::{
+        credential::CredentialSupplier, prelude::handshake::MlsCommitBundle, test_utils::*, CryptoError,
+        MlsConversationConfiguration, MlsError,
+    };
 
     wasm_bindgen_test_configure!(run_in_browser);
 
     mod add {
-
         use super::*;
 
         #[apply(all_credential_types)]
@@ -216,8 +221,10 @@ mod tests {
                         owner_central.callbacks(Box::new(ValidationCallbacks::default()));
                         guest_central.callbacks(Box::new(ValidationCallbacks::default()));
                         let id = conversation_id();
+
+                        let remove_key = ds.mls_client.credentials().credential().signature_key().clone();
                         let cfg = MlsConversationConfiguration {
-                            external_senders: vec![ds.mls_client.credentials().credential().to_owned()],
+                            external_senders: vec![remove_key.as_slice().to_vec()],
                             ..Default::default()
                         };
                         owner_central.new_conversation(id.clone(), cfg).await.unwrap();
@@ -256,6 +263,123 @@ mod tests {
                             .unwrap();
                         assert!(guest_central.get_conversation(&id).is_err());
                         assert!(guest_central.talk_to(&id, &mut owner_central).await.is_err());
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        async fn should_fail_when_invalid_external_sender(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["owner", "guest", "ds", "attacker"],
+                move |[mut owner_central, mut guest_central, ds, attacker]| {
+                    Box::pin(async move {
+                        owner_central.callbacks(Box::new(ValidationCallbacks::default()));
+                        guest_central.callbacks(Box::new(ValidationCallbacks::default()));
+                        let id = conversation_id();
+
+                        // Delivery service key is used in the group..
+                        let remove_key = ds.mls_client.credentials().credential().signature_key().clone();
+                        let cfg = MlsConversationConfiguration {
+                            external_senders: vec![remove_key.as_slice().to_vec()],
+                            ..Default::default()
+                        };
+                        owner_central.new_conversation(id.clone(), cfg).await.unwrap();
+
+                        owner_central.invite(&id, &mut guest_central).await.unwrap();
+                        owner_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(owner_central[&id].members().len(), 2);
+
+                        // now, attacker will try to remove guest from the group, and should fail
+                        let guest_kp = guest_central.key_package_of(&id, "guest");
+                        let guest_kp_ref = guest_kp.hash_ref(guest_central.mls_backend.crypto()).unwrap();
+                        let ext_remove_proposal = attacker
+                            .new_external_remove_proposal(id.clone(), owner_central[&id].group.epoch(), guest_kp_ref)
+                            .await
+                            .unwrap();
+
+                        let owner_decrypt = owner_central
+                            .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
+                            .await;
+                        assert!(matches!(
+                            owner_decrypt.unwrap_err(),
+                            CryptoError::MlsError(MlsError::MlsUnverifiedMessageError(
+                                UnverifiedMessageError::InvalidSignature
+                            ))
+                        ));
+
+                        let guest_decrypt = guest_central
+                            .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
+                            .await;
+                        assert!(matches!(
+                            guest_decrypt.unwrap_err(),
+                            CryptoError::MlsError(MlsError::MlsUnverifiedMessageError(
+                                UnverifiedMessageError::InvalidSignature
+                            ))
+                        ));
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        async fn should_fail_when_invalid_remove_key(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["owner", "guest", "ds"],
+                move |[mut owner_central, mut guest_central, ds]| {
+                    Box::pin(async move {
+                        owner_central.callbacks(Box::new(ValidationCallbacks::default()));
+                        guest_central.callbacks(Box::new(ValidationCallbacks::default()));
+                        let id = conversation_id();
+
+                        let remove_key = ds.mls_client.credentials().credential().signature_key().clone();
+                        let short_remove_key =
+                            SignaturePublicKey::new(remove_key.as_slice()[1..].to_vec(), remove_key.signature_scheme())
+                                .unwrap();
+                        let cfg = MlsConversationConfiguration {
+                            external_senders: vec![short_remove_key.as_slice().to_vec()],
+                            ..Default::default()
+                        };
+                        owner_central.new_conversation(id.clone(), cfg).await.unwrap();
+
+                        owner_central.invite(&id, &mut guest_central).await.unwrap();
+                        owner_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(owner_central[&id].members().len(), 2);
+
+                        // now, as e.g. a Delivery Service, let's create an external remove proposal
+                        // and kick guest out of the conversation
+                        let guest_kp = guest_central.key_package_of(&id, "guest");
+                        let guest_kp_ref = guest_kp.hash_ref(guest_central.mls_backend.crypto()).unwrap();
+                        let ext_remove_proposal = ds
+                            .new_external_remove_proposal(id.clone(), owner_central[&id].group.epoch(), guest_kp_ref)
+                            .await
+                            .unwrap();
+
+                        let owner_decrypt = owner_central
+                            .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
+                            .await;
+                        assert!(matches!(
+                            owner_decrypt.unwrap_err(),
+                            CryptoError::MlsError(MlsError::MlsUnverifiedMessageError(
+                                UnverifiedMessageError::InvalidSignature
+                            ))
+                        ));
+
+                        let guest_decrypt = guest_central
+                            .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
+                            .await;
+                        assert!(matches!(
+                            guest_decrypt.unwrap_err(),
+                            CryptoError::MlsError(MlsError::MlsUnverifiedMessageError(
+                                UnverifiedMessageError::InvalidSignature
+                            ))
+                        ));
                     })
                 },
             )

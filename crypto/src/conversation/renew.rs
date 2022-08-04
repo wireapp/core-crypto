@@ -71,7 +71,7 @@ impl MlsConversation {
         proposals: impl Iterator<Item = QueuedProposal>,
     ) -> CryptoResult<Vec<MlsMessageOut>> {
         let mut result = vec![];
-        let is_external = |p: &QueuedProposal| matches!(p.sender(), Sender::Preconfigured(_) | Sender::NewMember);
+        let is_external = |p: &QueuedProposal| matches!(p.sender(), Sender::External(_) | Sender::NewMember);
         let proposals = proposals.filter(|p| !is_external(p));
         for proposal in proposals {
             let msg = match proposal.proposal() {

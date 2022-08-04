@@ -52,7 +52,7 @@ impl MlsCentral {
             &self.mls_backend,
             None,
             group_state,
-            &MlsConversationConfiguration::default().as_openmls_default_configuration(),
+            &MlsConversationConfiguration::default().as_openmls_default_configuration()?,
             &[],
             credentials,
         )
