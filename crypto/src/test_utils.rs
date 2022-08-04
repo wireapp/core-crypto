@@ -26,6 +26,11 @@ use crate::{
 #[allow(non_snake_case)]
 pub fn all_credential_types(credential: crate::credential::CredentialSupplier) {}
 
+#[cfg(debug_assertions)]
+pub const GROUP_SAMPLE_SIZE: usize = 9;
+#[cfg(not(debug_assertions))]
+pub const GROUP_SAMPLE_SIZE: usize = 99;
+
 pub async fn run_test_with_central(
     credential: CredentialSupplier,
     test: impl FnOnce([MlsCentral; 1]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,

@@ -392,15 +392,14 @@ pub mod tests {
         pub async fn create_100_people_conversation(credential: CredentialSupplier) {
             run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
-                    const NB_FRIENDS: usize = 99;
                     let id = conversation_id();
                     alice_central
                         .new_conversation(id.clone(), MlsConversationConfiguration::default())
                         .await
                         .unwrap();
 
-                    let mut bob_and_friends = Vec::with_capacity(NB_FRIENDS);
-                    for _ in 0..NB_FRIENDS {
+                    let mut bob_and_friends = Vec::with_capacity(GROUP_SAMPLE_SIZE);
+                    for _ in 0..GROUP_SAMPLE_SIZE {
                         let uuid = uuid::Uuid::new_v4();
                         let name = uuid.hyphenated().to_string();
                         let path = tmp_db_file();
@@ -438,7 +437,7 @@ pub mod tests {
                         bob_and_friends_groups.push(c);
                     }
 
-                    assert_eq!(bob_and_friends_groups.len(), NB_FRIENDS);
+                    assert_eq!(bob_and_friends_groups.len(), GROUP_SAMPLE_SIZE);
                 })
             })
             .await;
