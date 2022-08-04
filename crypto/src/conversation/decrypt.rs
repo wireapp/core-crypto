@@ -508,7 +508,7 @@ pub mod tests {
 
     pub mod decrypt_callback {
 
-        use crate::{member::ConversationMember, test_utils::ValidationCallbacks, CryptoError};
+        use crate::{test_utils::ValidationCallbacks, CryptoError};
 
         use super::*;
 
@@ -518,7 +518,7 @@ pub mod tests {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "alice2"],
-                move |[mut alice_central, mut bob_central, alice_central2]| {
+                move |[mut alice_central, mut bob_central, alice2_central]| {
                     Box::pin(async move {
                         alice_central.callbacks(Box::new(ValidationCallbacks::default()));
                         bob_central.callbacks(Box::new(ValidationCallbacks::default()));
@@ -531,13 +531,11 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite(&conversation_id, &mut bob_central).await.unwrap();
 
-                        let (_, kp) = ConversationMember::random_generate(&alice_central2.mls_backend, credential)
-                            .await
-                            .unwrap();
+                        let kp = alice2_central.get_one_key_package().await;
                         let alice_group = alice_central.group(&conversation_id);
                         let epoch = alice_group.epoch();
-                        let message = alice_central2
-                            .new_external_add_proposal(conversation_id.clone(), epoch, kp.key_package().clone())
+                        let message = alice2_central
+                            .new_external_add_proposal(conversation_id.clone(), epoch, kp)
                             .await
                             .unwrap();
 
@@ -566,7 +564,7 @@ pub mod tests {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "alice2"],
-                move |[mut alice_central, mut bob_central, alice_central2]| {
+                move |[mut alice_central, mut bob_central, alice2_central]| {
                     Box::pin(async move {
                         let conversation_id = conversation_id();
                         let configuration = MlsConversationConfiguration::default();
@@ -577,13 +575,11 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite(&conversation_id, &mut bob_central).await.unwrap();
 
-                        let (_, kp) = ConversationMember::random_generate(&alice_central2.mls_backend, credential)
-                            .await
-                            .unwrap();
+                        let kp = alice2_central.get_one_key_package().await;
                         let alice_group = alice_central.group(&conversation_id);
                         let epoch = alice_group.epoch();
-                        let message = alice_central2
-                            .new_external_add_proposal(conversation_id.clone(), epoch, kp.key_package().clone())
+                        let message = alice2_central
+                            .new_external_add_proposal(conversation_id.clone(), epoch, kp)
                             .await
                             .unwrap();
 
@@ -612,7 +608,7 @@ pub mod tests {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "alice2"],
-                move |[mut alice_central, mut bob_central, alice_central2]| {
+                move |[mut alice_central, mut bob_central, alice2_central]| {
                     Box::pin(async move {
                         alice_central.callbacks(Box::new(ValidationCallbacks::new(true, false)));
                         let conversation_id = conversation_id();
@@ -624,13 +620,11 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite(&conversation_id, &mut bob_central).await.unwrap();
 
-                        let (_, kp) = ConversationMember::random_generate(&alice_central2.mls_backend, credential)
-                            .await
-                            .unwrap();
+                        let kp = alice2_central.get_one_key_package().await;
                         let alice_group = alice_central.group(&conversation_id);
                         let epoch = alice_group.epoch();
-                        let message = alice_central2
-                            .new_external_add_proposal(conversation_id.clone(), epoch, kp.key_package().clone())
+                        let message = alice2_central
+                            .new_external_add_proposal(conversation_id.clone(), epoch, kp)
                             .await
                             .unwrap();
 
