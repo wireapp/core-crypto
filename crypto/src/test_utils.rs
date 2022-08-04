@@ -6,7 +6,7 @@ use std::{
 };
 
 use openmls::prelude::{
-    KeyPackage, KeyPackageBundle, PublicGroupState, QueuedProposal, StagedCommit, VerifiablePublicGroupState,
+    KeyPackage, KeyPackageBundle, MlsGroup, PublicGroupState, QueuedProposal, StagedCommit, VerifiablePublicGroupState,
 };
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
@@ -91,6 +91,10 @@ impl MlsCentral {
 
     pub async fn get_one_key_package_bundle(&self) -> KeyPackageBundle {
         self.client_keypackages(1).await.unwrap().first().unwrap().clone()
+    }
+
+    pub fn group(&self, id: &ConversationId) -> &MlsGroup {
+        &self[&id].group
     }
 
     pub async fn rnd_member(&self) -> ConversationMember {
@@ -196,25 +200,35 @@ impl IndexMut<&ConversationId> for MlsCentral {
 }
 
 #[derive(Debug)]
-pub struct FailValidationCallbacks;
-impl CoreCryptoCallbacks for FailValidationCallbacks {
-    fn authorize(&self, _: crate::prelude::ConversationId, _: String) -> bool {
-        false
-    }
+pub struct ValidationCallbacks {
+    authorize: bool,
+    is_user_in_group: bool,
+}
 
-    fn is_user_in_group(&self, _: Vec<u8>, _: Vec<Vec<u8>>) -> bool {
-        false
+impl Default for ValidationCallbacks {
+    fn default() -> Self {
+        Self {
+            authorize: true,
+            is_user_in_group: true,
+        }
     }
 }
 
-#[derive(Debug)]
-pub struct SuccessValidationCallbacks;
-impl CoreCryptoCallbacks for SuccessValidationCallbacks {
+impl ValidationCallbacks {
+    pub fn new(authorize: bool, is_user_in_group: bool) -> Self {
+        Self {
+            authorize,
+            is_user_in_group,
+        }
+    }
+}
+
+impl CoreCryptoCallbacks for ValidationCallbacks {
     fn authorize(&self, _: crate::prelude::ConversationId, _: String) -> bool {
-        true
+        self.authorize
     }
 
     fn is_user_in_group(&self, _: Vec<u8>, _: Vec<Vec<u8>>) -> bool {
-        true
+        self.is_user_in_group
     }
 }

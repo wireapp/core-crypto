@@ -153,7 +153,7 @@ mod tests {
                 ["owner", "guest"],
                 move |[mut owner_central, mut guest_central]| {
                     Box::pin(async move {
-                        owner_central.callbacks(Box::new(SuccessValidationCallbacks));
+                        owner_central.callbacks(Box::new(ValidationCallbacks::default()));
                         let id = conversation_id();
                         owner_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
@@ -209,8 +209,8 @@ mod tests {
                 ["owner", "guest", "ds"],
                 move |[mut owner_central, mut guest_central, ds]| {
                     Box::pin(async move {
-                        owner_central.callbacks(Box::new(SuccessValidationCallbacks));
-                        guest_central.callbacks(Box::new(SuccessValidationCallbacks));
+                        owner_central.callbacks(Box::new(ValidationCallbacks::default()));
+                        guest_central.callbacks(Box::new(ValidationCallbacks::default()));
                         let id = conversation_id();
                         let cfg = MlsConversationConfiguration {
                             external_senders: vec![ds.mls_client.credentials().credential().to_owned()],
