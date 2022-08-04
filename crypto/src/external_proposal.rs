@@ -136,19 +136,13 @@ impl MlsCentral {
 
 #[cfg(test)]
 mod tests {
-    use crate::{credential::CredentialSupplier, test_fixture_utils::*, test_utils::*, MlsConversationConfiguration};
+    use crate::{credential::CredentialSupplier, test_utils::*, MlsConversationConfiguration};
     use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
-
-    use crate::{
-        credential::CredentialSupplier, prelude::handshake::MlsCommitBundle, test_utils::*,
-        MlsConversationConfiguration,
-    };
 
     wasm_bindgen_test_configure!(run_in_browser);
 
     mod add {
-
         use super::*;
 
         #[apply(all_credential_types)]
@@ -160,7 +154,7 @@ mod tests {
                 move |[mut owner_central, mut guest_central]| {
                     Box::pin(async move {
                         owner_central.callbacks(Box::new(SuccessValidationCallbacks));
-                        let conversation_id = b"owner-guest".to_vec();
+                        let id = conversation_id();
                         owner_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
@@ -206,7 +200,6 @@ mod tests {
 
     mod remove {
         use super::*;
-        use crate::{member::ConversationMember, test_fixture_utils::SuccessValidationCallbacks, CoreCryptoCallbacks};
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
@@ -216,6 +209,8 @@ mod tests {
                 ["owner", "guest", "ds"],
                 move |[mut owner_central, mut guest_central, ds]| {
                     Box::pin(async move {
+                        owner_central.callbacks(Box::new(SuccessValidationCallbacks));
+                        guest_central.callbacks(Box::new(SuccessValidationCallbacks));
                         let id = conversation_id();
                         let cfg = MlsConversationConfiguration {
                             external_senders: vec![ds.mls_client.credentials().credential().to_owned()],
@@ -236,14 +231,8 @@ mod tests {
                             .await
                             .unwrap();
 
-                        let callbacks: Option<Box<dyn CoreCryptoCallbacks>> =
-                            Some(Box::new(SuccessValidationCallbacks));
-                        owner_group
-                            .decrypt_message(
-                                ext_remove_proposal.to_bytes().unwrap().as_slice(),
-                                &owner_central.mls_backend,
-                                callbacks.as_ref().map(|boxed| boxed.as_ref()),
-                            )
+                        owner_central
+                            .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         guest_central

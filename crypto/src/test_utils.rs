@@ -13,7 +13,7 @@ pub use rstest_reuse::{self, *};
 
 use crate::{
     config::MlsCentralConfiguration, credential::CredentialSupplier, member::ConversationMember, ConversationId,
-    CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationConfiguration,
+    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationConfiguration,
 };
 
 #[template]
@@ -192,5 +192,29 @@ impl Index<&ConversationId> for MlsCentral {
 impl IndexMut<&ConversationId> for MlsCentral {
     fn index_mut(&mut self, index: &ConversationId) -> &mut Self::Output {
         self.mls_groups.get_mut(index).unwrap()
+    }
+}
+
+#[derive(Debug)]
+pub struct FailValidationCallbacks;
+impl CoreCryptoCallbacks for FailValidationCallbacks {
+    fn authorize(&self, _: crate::prelude::ConversationId, _: String) -> bool {
+        false
+    }
+
+    fn is_user_in_group(&self, _: Vec<u8>, _: Vec<Vec<u8>>) -> bool {
+        false
+    }
+}
+
+#[derive(Debug)]
+pub struct SuccessValidationCallbacks;
+impl CoreCryptoCallbacks for SuccessValidationCallbacks {
+    fn authorize(&self, _: crate::prelude::ConversationId, _: String) -> bool {
+        true
+    }
+
+    fn is_user_in_group(&self, _: Vec<u8>, _: Vec<Vec<u8>>) -> bool {
+        true
     }
 }
