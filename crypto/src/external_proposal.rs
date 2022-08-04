@@ -136,13 +136,17 @@ impl MlsCentral {
 
 #[cfg(test)]
 mod tests {
-    use crate::{credential::CredentialSupplier, test_utils::*, MlsConversationConfiguration};
+    use crate::{
+        credential::CredentialSupplier, prelude::handshake::MlsCommitBundle, test_utils::*,
+        MlsConversationConfiguration,
+    };
     use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
     mod add {
+
         use super::*;
 
         #[apply(all_credential_types)]
