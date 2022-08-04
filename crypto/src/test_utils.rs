@@ -6,14 +6,14 @@ use std::{
 };
 
 use openmls::prelude::{
-    KeyPackage, KeyPackageBundle, PublicGroupState, QueuedProposal, StagedCommit, VerifiablePublicGroupState,
+    KeyPackage, KeyPackageBundle, MlsGroup, PublicGroupState, QueuedProposal, StagedCommit, VerifiablePublicGroupState,
 };
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
 use crate::{
     config::MlsCentralConfiguration, credential::CredentialSupplier, member::ConversationMember, ConversationId,
-    CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationConfiguration,
+    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationConfiguration,
 };
 
 #[template]
@@ -91,6 +91,10 @@ impl MlsCentral {
 
     pub async fn get_one_key_package_bundle(&self) -> KeyPackageBundle {
         self.client_keypackages(1).await.unwrap().first().unwrap().clone()
+    }
+
+    pub fn group(&self, id: &ConversationId) -> &MlsGroup {
+        &self[&id].group
     }
 
     pub async fn rnd_member(&self) -> ConversationMember {
@@ -192,5 +196,39 @@ impl Index<&ConversationId> for MlsCentral {
 impl IndexMut<&ConversationId> for MlsCentral {
     fn index_mut(&mut self, index: &ConversationId) -> &mut Self::Output {
         self.mls_groups.get_mut(index).unwrap()
+    }
+}
+
+#[derive(Debug)]
+pub struct ValidationCallbacks {
+    authorize: bool,
+    is_user_in_group: bool,
+}
+
+impl Default for ValidationCallbacks {
+    fn default() -> Self {
+        Self {
+            authorize: true,
+            is_user_in_group: true,
+        }
+    }
+}
+
+impl ValidationCallbacks {
+    pub fn new(authorize: bool, is_user_in_group: bool) -> Self {
+        Self {
+            authorize,
+            is_user_in_group,
+        }
+    }
+}
+
+impl CoreCryptoCallbacks for ValidationCallbacks {
+    fn authorize(&self, _: crate::prelude::ConversationId, _: String) -> bool {
+        self.authorize
+    }
+
+    fn is_user_in_group(&self, _: Vec<u8>, _: Vec<Vec<u8>>) -> bool {
+        self.is_user_in_group
     }
 }

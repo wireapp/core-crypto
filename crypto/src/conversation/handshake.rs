@@ -459,6 +459,7 @@ pub mod tests {
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, mut charlie_central]| {
                     Box::pin(async move {
+                        bob_central.callbacks(Box::new(ValidationCallbacks::default()));
                         let id = conversation_id();
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())

@@ -91,6 +91,13 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     /// * `conversation_id` - id of the group/conversation
     /// * `client_id` - id of the client
     fn authorize(&self, conversation_id: ConversationId, client_id: String) -> bool;
+    /// Validates if the user is in the group
+    ///
+    /// # Arguments
+    /// * `identity` - identity of the client within the sent proposal
+    /// * `other_clients` - all the clients in the MLS group
+    /// NOTE: uniffi doesn't support &[&[u8]] so we have to receive a copy from the data here
+    fn is_user_in_group(&self, identity: Vec<u8>, other_clients: Vec<Vec<u8>>) -> bool;
 }
 
 #[derive(Debug, Clone, derive_more::Deref)]

@@ -12,8 +12,9 @@ use openmls::framing::ProcessedMessage;
 use openmls::prelude::MlsMessageOut;
 
 use mls_crypto_provider::MlsCryptoProvider;
+use openmls_traits::OpenMlsCryptoProvider;
 
-use crate::conversation::renew::Renew;
+use crate::{conversation::renew::Renew, CoreCryptoCallbacks};
 use crate::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsError};
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
@@ -40,6 +41,7 @@ impl MlsConversation {
         &mut self,
         message: impl AsRef<[u8]>,
         backend: &MlsCryptoProvider,
+        callbacks: Option<&dyn CoreCryptoCallbacks>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
         let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
 
@@ -59,6 +61,9 @@ impl MlsConversation {
                 delay: None,
             },
             ProcessedMessage::ProposalMessage(proposal) => {
+                let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
+
+                self.validate_external_proposal(&proposal, callbacks, backend.crypto())?;
                 self.group.store_pending_proposal(*proposal);
                 MlsConversationDecryptMessage {
                     app_msg: None,
@@ -119,7 +124,11 @@ impl MlsCentral {
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
         let decrypt_message = Self::get_conversation_mut(&mut self.mls_groups, conversation_id)?
-            .decrypt_message(message.as_ref(), &self.mls_backend)
+            .decrypt_message(
+                message.as_ref(),
+                &self.mls_backend,
+                self.callbacks.as_ref().map(|boxed| boxed.as_ref()),
+            )
             .await?;
         if !decrypt_message.is_active {
             self.mls_groups
@@ -261,6 +270,8 @@ pub mod tests {
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, mut charlie_central]| {
                     Box::pin(async move {
+                        alice_central.callbacks(Box::new(ValidationCallbacks::default()));
+                        bob_central.callbacks(Box::new(ValidationCallbacks::default()));
                         let id = conversation_id();
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
@@ -338,6 +349,7 @@ pub mod tests {
                 credential,
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
+                    alice_central.callbacks(Box::new(ValidationCallbacks::default()));
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
@@ -385,6 +397,8 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
+                        alice_central.callbacks(Box::new(ValidationCallbacks::default()));
+                        bob_central.callbacks(Box::new(ValidationCallbacks::default()));
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
@@ -415,6 +429,7 @@ pub mod tests {
                         assert!(alice_central[&id].members().get(&b"charlie".to_vec()).is_none());
                         // Make sure we are suggesting a commit delay
                         assert!(delay.is_some());
+
                         // But its proposal to add Charlie has been renewed and is also in store
                         assert!(!proposals.is_empty());
                         assert_eq!(alice_central.pending_proposals(&id).len(), 1);
@@ -453,6 +468,7 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
+                        alice_central.callbacks(Box::new(ValidationCallbacks::default()));
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
@@ -483,6 +499,148 @@ pub mod tests {
                             .proposals;
                         assert!(alice_renewed_proposals.is_empty());
                         assert!(alice_central.pending_proposals(&id).is_empty());
+                    })
+                },
+            )
+            .await
+        }
+    }
+
+    pub mod decrypt_callback {
+
+        use crate::{test_utils::ValidationCallbacks, CryptoError};
+
+        use super::*;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn can_decrypt_proposal(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "alice2"],
+                move |[mut alice_central, mut bob_central, alice2_central]| {
+                    Box::pin(async move {
+                        alice_central.callbacks(Box::new(ValidationCallbacks::default()));
+                        bob_central.callbacks(Box::new(ValidationCallbacks::default()));
+                        let conversation_id = conversation_id();
+                        let configuration = MlsConversationConfiguration::default();
+
+                        alice_central
+                            .new_conversation(conversation_id.clone(), configuration)
+                            .await
+                            .unwrap();
+                        alice_central.invite(&conversation_id, &mut bob_central).await.unwrap();
+
+                        let kp = alice2_central.get_one_key_package().await;
+                        let alice_group = alice_central.group(&conversation_id);
+                        let epoch = alice_group.epoch();
+                        let message = alice2_central
+                            .new_external_add_proposal(conversation_id.clone(), epoch, kp)
+                            .await
+                            .unwrap();
+
+                        let decrypted = alice_central
+                            .decrypt_message(&conversation_id, &message.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        assert!(decrypted.app_msg.is_none());
+                        assert!(decrypted.delay.is_some());
+
+                        let decrypted = bob_central
+                            .decrypt_message(&conversation_id, &message.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        assert!(decrypted.app_msg.is_none());
+                        assert!(decrypted.delay.is_some());
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn cannot_decrypt_proposal_no_callback(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "alice2"],
+                move |[mut alice_central, mut bob_central, alice2_central]| {
+                    Box::pin(async move {
+                        let conversation_id = conversation_id();
+                        let configuration = MlsConversationConfiguration::default();
+
+                        alice_central
+                            .new_conversation(conversation_id.clone(), configuration)
+                            .await
+                            .unwrap();
+                        alice_central.invite(&conversation_id, &mut bob_central).await.unwrap();
+
+                        let kp = alice2_central.get_one_key_package().await;
+                        let alice_group = alice_central.group(&conversation_id);
+                        let epoch = alice_group.epoch();
+                        let message = alice2_central
+                            .new_external_add_proposal(conversation_id.clone(), epoch, kp)
+                            .await
+                            .unwrap();
+
+                        let error = alice_central
+                            .decrypt_message(&conversation_id, &message.to_bytes().unwrap())
+                            .await
+                            .unwrap_err();
+
+                        assert!(matches!(error, CryptoError::CallbacksNotSet));
+
+                        let error = bob_central
+                            .decrypt_message(&conversation_id, &message.to_bytes().unwrap())
+                            .await
+                            .unwrap_err();
+
+                        assert!(matches!(error, CryptoError::CallbacksNotSet));
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn cannot_decrypt_proposal_validation(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "alice2"],
+                move |[mut alice_central, mut bob_central, alice2_central]| {
+                    Box::pin(async move {
+                        alice_central.callbacks(Box::new(ValidationCallbacks::new(true, false)));
+                        let conversation_id = conversation_id();
+                        let configuration = MlsConversationConfiguration::default();
+
+                        alice_central
+                            .new_conversation(conversation_id.clone(), configuration)
+                            .await
+                            .unwrap();
+                        alice_central.invite(&conversation_id, &mut bob_central).await.unwrap();
+
+                        let kp = alice2_central.get_one_key_package().await;
+                        let alice_group = alice_central.group(&conversation_id);
+                        let epoch = alice_group.epoch();
+                        let message = alice2_central
+                            .new_external_add_proposal(conversation_id.clone(), epoch, kp)
+                            .await
+                            .unwrap();
+
+                        let error = alice_central
+                            .decrypt_message(&conversation_id, &message.to_bytes().unwrap())
+                            .await
+                            .unwrap_err();
+
+                        assert!(matches!(error, CryptoError::ExternalProposalError(_)));
+
+                        let error = bob_central
+                            .decrypt_message(&conversation_id, &message.to_bytes().unwrap())
+                            .await
+                            .unwrap_err();
+
+                        assert!(matches!(error, CryptoError::CallbacksNotSet));
                     })
                 },
             )
