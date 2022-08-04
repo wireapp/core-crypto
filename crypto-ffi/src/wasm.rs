@@ -309,14 +309,10 @@ impl ConversationConfiguration {
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     type Error = WasmCryptoError;
     fn try_into(mut self) -> WasmCryptoResult<MlsConversationConfiguration> {
-        use tls_codec::Deserialize as _;
         let external_senders = self
             .external_senders
             .iter()
-            .map(|s: JsValue| {
-                Ok(Credential::tls_deserialize(&mut &Uint8Array::new(&s).to_vec()[..]).map_err(MlsError::from)?)
-            })
-            .filter_map(|r: CryptoResult<Credential>| r.ok())
+            .map(|s: JsValue| Uint8Array::new(&s).to_vec())
             .collect();
         let key_rotation_span = self
             .key_rotation_span

@@ -140,17 +140,10 @@ pub struct ConversationConfiguration {
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     type Error = CryptoError;
     fn try_into(mut self) -> CryptoResult<MlsConversationConfiguration> {
-        use tls_codec::Deserialize as _;
-        let external_senders = self
-            .external_senders
-            .into_iter()
-            .map(|s| Ok(Credential::tls_deserialize(&mut &s[..]).map_err(MlsError::from)?))
-            .filter_map(|r: CryptoResult<Credential>| r.ok())
-            .collect();
         let mut cfg = MlsConversationConfiguration {
             admins: self.admins,
             key_rotation_span: self.key_rotation_span,
-            external_senders,
+            external_senders: self.external_senders,
             ..Default::default()
         };
 

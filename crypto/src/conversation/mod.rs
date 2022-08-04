@@ -30,7 +30,9 @@
 use std::collections::HashMap;
 
 use core_crypto_keystore::CryptoKeystoreMls;
+use openmls::prelude::{ExternalSender, SignaturePublicKey};
 use openmls::{group::MlsGroup, messages::Welcome, prelude::Credential, prelude::SenderRatchetConfiguration};
+use openmls_traits::types::SignatureScheme;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
@@ -59,24 +61,40 @@ pub struct MlsConversationConfiguration {
     // TODO: Implement the key rotation manually instead.
     /// The duration for which a key must be rotated
     pub key_rotation_span: Option<std::time::Duration>,
-    /// Delivery service credential
-    pub external_senders: Vec<Credential>,
+    /// Delivery service public signature key and credential
+    pub external_senders: Vec<Vec<u8>>,
 }
 
 impl MlsConversationConfiguration {
+    // TODO: pending a long term solution with a real certificate
+    const WIRE_SERVER_IDENTITY: &'static str = "wire-server";
+
     /// Generates an `MlsGroupConfig` from this configuration
     #[inline(always)]
-    pub fn as_openmls_default_configuration(&self) -> openmls::group::MlsGroupConfig {
-        let external_senders = self.external_senders.clone();
-        openmls::group::MlsGroupConfig::builder()
+    pub fn as_openmls_default_configuration(&self) -> CryptoResult<openmls::group::MlsGroupConfig> {
+        Ok(openmls::group::MlsGroupConfig::builder()
             .wire_format_policy(openmls::group::MIXED_PLAINTEXT_WIRE_FORMAT_POLICY)
             .max_past_epochs(3)
             .padding_size(16)
             .number_of_resumtion_secrets(1)
             .sender_ratchet_configuration(SenderRatchetConfiguration::new(2, 1000))
             .use_ratchet_tree_extension(true)
-            .external_senders(external_senders)
-            .build()
+            .external_senders(self.decode_external_senders()?)
+            .build())
+    }
+
+    fn decode_external_senders(&self) -> CryptoResult<Vec<ExternalSender>> {
+        Ok(self
+            .external_senders
+            .iter()
+            .map(|key| {
+                SignaturePublicKey::new(key.clone(), SignatureScheme::ED25519)
+                    .map_err(MlsError::from)
+                    .map_err(CryptoError::from)
+            })
+            .filter_map(|r: CryptoResult<SignaturePublicKey>| r.ok())
+            .map(|signature_key| ExternalSender::new_basic(Self::WIRE_SERVER_IDENTITY, signature_key))
+            .collect())
     }
 }
 
@@ -113,7 +131,7 @@ impl MlsConversation {
 
         let group = MlsGroup::new(
             backend,
-            &config.as_openmls_default_configuration(),
+            &config.as_openmls_default_configuration()?,
             openmls::group::GroupId::from_slice(&id),
             &kp_hash,
         )
@@ -148,7 +166,7 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
         let mls_group_config = configuration.as_openmls_default_configuration();
-        let group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None)
+        let group = MlsGroup::new_from_welcome(backend, &mls_group_config?, welcome, None)
             .await
             .map_err(MlsError::from)?;
 
@@ -262,70 +280,6 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-pub mod state_tests_utils {
-    use crate::{proposal::MlsProposal, MlsCentral, MlsConversationConfiguration};
-
-    pub async fn conv_no_pending(central: &mut MlsCentral, id: &Vec<u8>) {
-        central
-            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-            .await
-            .unwrap();
-        let conv = central.get_conversation(id).unwrap();
-        assert_eq!(conv.group.pending_proposals().count(), 0);
-        assert!(conv.group.pending_commit().is_none());
-    }
-
-    pub async fn conv_pending_proposal_and_no_pending_commit(central: &mut MlsCentral, id: &Vec<u8>) {
-        central
-            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-            .await
-            .unwrap();
-        let _ = central.new_proposal(id, MlsProposal::Update).await.unwrap();
-        let conv = central.get_conversation(id).unwrap();
-        assert_eq!(conv.group.pending_proposals().count(), 1);
-        assert!(conv.group.pending_commit().is_none());
-    }
-
-    pub async fn conv_no_pending_proposal_and_pending_commit(central: &mut MlsCentral, id: &Vec<u8>) {
-        central
-            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-            .await
-            .unwrap();
-        let _ = central.update_keying_material(id).await.unwrap();
-        let conv = central.get_conversation(id).unwrap();
-        assert_eq!(conv.group.pending_proposals().count(), 0);
-        assert!(conv.group.pending_commit().is_some());
-    }
-
-    pub async fn conv_pending_proposal_and_pending_commit(
-        alice_central: &mut MlsCentral,
-        bob_central: MlsCentral,
-        id: &Vec<u8>,
-    ) {
-        alice_central
-            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-            .await
-            .unwrap();
-
-        let bob_kp = bob_central.get_one_key_package().await;
-        let epoch = alice_central.get_conversation(id).unwrap().group.epoch();
-        let bob_proposal = bob_central
-            .new_external_add_proposal(id.clone(), epoch, bob_kp)
-            .await
-            .unwrap();
-
-        alice_central.update_keying_material(id).await.unwrap();
-
-        alice_central
-            .decrypt_message(id, bob_proposal.to_bytes().unwrap())
-            .await
-            .unwrap();
-        assert_eq!(alice_central.pending_proposals(id).len(), 1);
-        assert!(alice_central.pending_commit(id).is_some());
-    }
-}
-
-#[cfg(test)]
 pub mod tests {
     use wasm_bindgen_test::*;
 
@@ -338,100 +292,43 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    pub mod create {
-        use super::*;
-
-        #[apply(all_credential_types)]
-        #[wasm_bindgen_test]
-        pub async fn create_self_conversation_should_succeed(credential: CredentialSupplier) {
-            run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
-                    assert_eq!(alice_central[&id].id, id);
-                    assert_eq!(alice_central[&id].group.group_id().as_slice(), id);
-                    assert_eq!(alice_central[&id].members().len(), 1);
-                    let alice_can_send_message = alice_central.encrypt_message(&id, b"me").await;
-                    assert!(alice_can_send_message.is_ok());
-                })
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn create_self_conversation_should_succeed(credential: CredentialSupplier) {
+        run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                    .await
+                    .unwrap();
+                assert_eq!(alice_central[&id].id, id);
+                assert_eq!(alice_central[&id].group.group_id().as_slice(), id);
+                assert_eq!(alice_central[&id].members().len(), 1);
+                let alice_can_send_message = alice_central.encrypt_message(&id, b"me").await;
+                assert!(alice_can_send_message.is_ok());
             })
-            .await;
-        }
+        })
+        .await;
+    }
 
-        #[apply(all_credential_types)]
-        #[wasm_bindgen_test]
-        pub async fn create_1_1_conversation_should_succeed(credential: CredentialSupplier) {
-            run_test_with_client_ids(
-                credential,
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
-
-                        let MlsConversationCreationMessage { welcome, .. } = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
-                            .await
-                            .unwrap();
-                        // before merging, commit is not applied
-                        assert_eq!(alice_central[&id].members().len(), 1);
-                        alice_central.commit_accepted(&id).await.unwrap();
-
-                        assert_eq!(alice_central[&id].id, id);
-                        assert_eq!(alice_central[&id].group.group_id().as_slice(), id);
-                        assert_eq!(alice_central[&id].members().len(), 2);
-
-                        bob_central
-                            .process_welcome_message(welcome, MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
-
-                        assert_eq!(bob_central[&id].id(), alice_central[&id].id());
-                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
-                    })
-                },
-            )
-            .await;
-        }
-
-        #[apply(all_credential_types)]
-        #[wasm_bindgen_test]
-        pub async fn create_100_people_conversation(credential: CredentialSupplier) {
-            run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn create_1_1_conversation_should_succeed(credential: CredentialSupplier) {
+        run_test_with_client_ids(
+            credential,
+            ["alice", "bob"],
+            move |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
+
                     alice_central
                         .new_conversation(id.clone(), MlsConversationConfiguration::default())
                         .await
                         .unwrap();
-
-                    let mut bob_and_friends = Vec::with_capacity(GROUP_SAMPLE_SIZE);
-                    for _ in 0..GROUP_SAMPLE_SIZE {
-                        let uuid = uuid::Uuid::new_v4();
-                        let name = uuid.hyphenated().to_string();
-                        let path = tmp_db_file();
-                        let cfg = MlsCentralConfiguration::try_new(path.0, name.as_str().into(), name.as_str().into())
-                            .unwrap();
-                        let central = MlsCentral::try_new(cfg, credential()).await.unwrap();
-                        bob_and_friends.push(central);
-                    }
-
-                    let number_of_friends = bob_and_friends.len();
-
-                    let mut bob_and_friends_members: Vec<ConversationMember> = futures_util::future::join_all(
-                        bob_and_friends.iter().map(|c| async move { c.rnd_member().await }),
-                    )
-                    .await;
 
                     let MlsConversationCreationMessage { welcome, .. } = alice_central
-                        .add_members_to_conversation(&id, &mut bob_and_friends_members)
+                        .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
                         .await
                         .unwrap();
                     // before merging, commit is not applied
@@ -440,74 +337,126 @@ pub mod tests {
 
                     assert_eq!(alice_central[&id].id, id);
                     assert_eq!(alice_central[&id].group.group_id().as_slice(), id);
-                    assert_eq!(alice_central[&id].members().len(), 1 + number_of_friends);
+                    assert_eq!(alice_central[&id].members().len(), 2);
 
-                    let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
-                    for mut c in bob_and_friends {
-                        c.process_welcome_message(welcome.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
-                        assert!(c.talk_to(&id, &mut alice_central).await.is_ok());
-                        bob_and_friends_groups.push(c);
-                    }
+                    bob_central
+                        .process_welcome_message(welcome, MlsConversationConfiguration::default())
+                        .await
+                        .unwrap();
 
-                    assert_eq!(bob_and_friends_groups.len(), GROUP_SAMPLE_SIZE);
+                    assert_eq!(bob_central[&id].id(), alice_central[&id].id());
+                    assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
                 })
+            },
+        )
+        .await;
+    }
+
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn create_100_people_conversation(credential: CredentialSupplier) {
+        run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                    .await
+                    .unwrap();
+
+                let mut bob_and_friends = Vec::with_capacity(GROUP_SAMPLE_SIZE);
+                for _ in 0..GROUP_SAMPLE_SIZE {
+                    let uuid = uuid::Uuid::new_v4();
+                    let name = uuid.hyphenated().to_string();
+                    let path = tmp_db_file();
+                    let cfg =
+                        MlsCentralConfiguration::try_new(path.0, name.as_str().into(), name.as_str().into()).unwrap();
+                    let central = MlsCentral::try_new(cfg, credential()).await.unwrap();
+                    bob_and_friends.push(central);
+                }
+
+                let number_of_friends = bob_and_friends.len();
+
+                let mut bob_and_friends_members: Vec<ConversationMember> =
+                    futures_util::future::join_all(bob_and_friends.iter().map(|c| async move { c.rnd_member().await }))
+                        .await;
+
+                let MlsConversationCreationMessage { welcome, .. } = alice_central
+                    .add_members_to_conversation(&id, &mut bob_and_friends_members)
+                    .await
+                    .unwrap();
+                // before merging, commit is not applied
+                assert_eq!(alice_central[&id].members().len(), 1);
+                alice_central.commit_accepted(&id).await.unwrap();
+
+                assert_eq!(alice_central[&id].id, id);
+                assert_eq!(alice_central[&id].group.group_id().as_slice(), id);
+                assert_eq!(alice_central[&id].members().len(), 1 + number_of_friends);
+
+                let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
+                for mut c in bob_and_friends {
+                    c.process_welcome_message(welcome.clone(), MlsConversationConfiguration::default())
+                        .await
+                        .unwrap();
+                    assert!(c.talk_to(&id, &mut alice_central).await.is_ok());
+                    bob_and_friends_groups.push(c);
+                }
+
+                assert_eq!(bob_and_friends_groups.len(), GROUP_SAMPLE_SIZE);
             })
-            .await;
-        }
+        })
+        .await;
+    }
 
-        #[apply(all_credential_types)]
-        #[wasm_bindgen_test]
-        pub async fn conversation_from_welcome_prunes_local_keypackage(credential: CredentialSupplier) {
-            use core_crypto_keystore::CryptoKeystoreMls as _;
-            use openmls_traits::OpenMlsCryptoProvider as _;
-            run_test_with_client_ids(
-                credential,
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        // has to be before the original key_package count because it creates one
-                        let bob = bob_central.rnd_member().await;
-                        // Keep track of the whatever amount was initially generated
-                        let original_kpb_count = bob_central
-                            .mls_backend
-                            .key_store()
-                            .mls_keypackagebundle_count()
-                            .await
-                            .unwrap();
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn conversation_from_welcome_prunes_local_keypackage(credential: CredentialSupplier) {
+        use core_crypto_keystore::CryptoKeystoreMls as _;
+        use openmls_traits::OpenMlsCryptoProvider as _;
+        run_test_with_client_ids(
+            credential,
+            ["alice", "bob"],
+            move |[mut alice_central, mut bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    // has to be before the original key_package count because it creates one
+                    let bob = bob_central.rnd_member().await;
+                    // Keep track of the whatever amount was initially generated
+                    let original_kpb_count = bob_central
+                        .mls_backend
+                        .key_store()
+                        .mls_keypackagebundle_count()
+                        .await
+                        .unwrap();
 
-                        // Create a conversation from alice, where she invites bob
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                    // Create a conversation from alice, where she invites bob
+                    alice_central
+                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .await
+                        .unwrap();
 
-                        let MlsConversationCreationMessage { welcome, .. } = alice_central
-                            .add_members_to_conversation(&id, &mut [bob])
-                            .await
-                            .unwrap();
+                    let MlsConversationCreationMessage { welcome, .. } = alice_central
+                        .add_members_to_conversation(&id, &mut [bob])
+                        .await
+                        .unwrap();
 
-                        // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
-                        bob_central
-                            .process_welcome_message(welcome, MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                    // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
+                    bob_central
+                        .process_welcome_message(welcome, MlsConversationConfiguration::default())
+                        .await
+                        .unwrap();
 
-                        // Ensure we're left with 1 less keypackage bundle in the store, because it was consumed with the OpenMLS Welcome message
-                        let new_kpb_count = bob_central
-                            .mls_backend
-                            .key_store()
-                            .mls_keypackagebundle_count()
-                            .await
-                            .unwrap();
-                        assert_eq!(new_kpb_count, original_kpb_count - 1);
-                    })
-                },
-            )
-            .await;
-        }
+                    // Ensure we're left with 1 less keypackage bundle in the store, because it was consumed with the OpenMLS Welcome message
+                    let new_kpb_count = bob_central
+                        .mls_backend
+                        .key_store()
+                        .mls_keypackagebundle_count()
+                        .await
+                        .unwrap();
+                    assert_eq!(new_kpb_count, original_kpb_count - 1);
+                })
+            },
+        )
+        .await;
     }
 
     pub mod wipe_group {

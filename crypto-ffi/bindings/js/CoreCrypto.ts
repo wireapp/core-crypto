@@ -120,7 +120,7 @@ export interface MemberAddedMessages {
 export interface CommitBundle {
     /**
      * TLS-serialized MLS Commit that needs to be fanned out to other (existing) members of the conversation
-     * 
+     *
      * @readonly
      */
     message: Uint8Array;
@@ -191,16 +191,16 @@ export class CoreCrypto {
 
     /**
      * This is your entrypoint to initialize {@link CoreCrypto}!
-     * 
+     *
      * @param params - {@link CoreCryptoParams}
-     * 
+     *
      * @example
      * ## Simple init
      * ```ts
      * const cc = await CoreCrypto.init({ databaseName: "test", key: "test", clientId: "test" });
      * // Do the rest with `cc`
      * ```
-     * 
+     *
      * ## Custom Entropy seed init & wasm file location
      * ```ts
      * // FYI, this is the IETF test vector #1
@@ -210,10 +210,10 @@ export class CoreCrypto {
      *   0x7c5941da, 0x8d485751, 0x3fe02477, 0x374ad8b8,
      *   0xf4b8436a, 0x1ca11815, 0x69b687c3, 0x8665eeb2,
      * ]);
-     * 
+     *
      * const wasmFilePath = "/long/complicated/path/on/webserver/whatever.wasm";
-     * 
-     * const cc = await CoreCrypto.init({ 
+     *
+     * const cc = await CoreCrypto.init({
      *   databaseName: "test",
      *   key: "test",
      *   clientId: "test",
@@ -257,9 +257,9 @@ export class CoreCrypto {
 
     /**
      * Checks if the Client is member of a given conversation and if the MLS Group is loaded up
-     * 
+     *
      * @returns Whether the given conversation ID exists
-     * 
+     *
      * @example
      * ```ts
      *  const cc = await CoreCrypto.init({ databaseName: "test", key: "test", clientId: "test" });
@@ -278,7 +278,7 @@ export class CoreCrypto {
     /**
      * Creates a new conversation with the current client being the sole member
      * You will want to use {@link CoreCrypto.addClientsToConversation} afterwards to add clients to this conversation
-     * 
+     *
      * @param conversationId - The conversation ID; You can either make them random or let the backend attribute MLS group IDs
      * @param configuration.ciphersuite - The {@link Ciphersuite} that is chosen to be the group's
      * @param configuration.keyRotationSpan - The amount of time in milliseconds after which the MLS Keypackages will be rotated
@@ -286,8 +286,7 @@ export class CoreCrypto {
      */
     async createConversation(
         conversationId: ConversationId,
-        { ciphersuite, keyRotationSpan, externalSenders }: ConversationConfiguration = { externalSenders: [] }
-    ) {
+        { ciphersuite, keyRotationSpan, externalSenders }: ConversationConfiguration) {
         const config = new CoreCrypto.#module.ConversationConfiguration(
             ciphersuite,
             keyRotationSpan,
@@ -299,10 +298,10 @@ export class CoreCrypto {
 
     /**
      * Decrypts a message for a given conversation
-     * 
+     *
      * @param conversationId - The ID of the conversation
      * @param payload - The encrypted message buffer
-     * 
+     *
      * @returns Either a decrypted message payload or `undefined` - This happens when the encrypted payload contains a system message such a proposal or commit
      */
     async decryptMessage(conversationId: ConversationId, payload: Uint8Array): Promise<Uint8Array | undefined> {
@@ -314,10 +313,10 @@ export class CoreCrypto {
 
     /**
      * Encrypts a message for a given conversation
-     * 
+     *
      * @param conversationId - The ID of the conversation
      * @param message - The plaintext message to encrypt
-     * 
+     *
      * @returns The encrypted payload for the given group. This needs to be fanned out to the other members of the group.
      */
     async encryptMessage(conversationId: ConversationId, message: Uint8Array): Promise<Uint8Array> {
@@ -329,7 +328,7 @@ export class CoreCrypto {
 
     /**
      * Ingest a TLS-serialized MLS welcome message to join a an existing MLS group
-     * 
+     *
      * @param welcomeMessage - TLS-serialized MLS Welcome message
      * @returns The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages
      */
