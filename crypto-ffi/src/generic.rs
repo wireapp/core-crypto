@@ -336,7 +336,7 @@ impl CoreCrypto<'_> {
     }
 
     /// wipes group locally
-    pub fn wipe_group(&self, conversation_id: ConversationId) -> CryptoResult<()> {
+    pub fn wipe_conversation(&self, conversation_id: ConversationId) -> CryptoResult<()> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central

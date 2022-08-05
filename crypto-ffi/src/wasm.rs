@@ -650,7 +650,7 @@ impl CoreCrypto {
     }
 
     /// Returns WasmCryptoResult<()>
-    pub fn wipe_group(&self, conversation_id: Box<[u8]>) -> Promise {
+    pub fn wipe_conversation(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
             async move {
