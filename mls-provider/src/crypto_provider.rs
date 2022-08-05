@@ -2,7 +2,7 @@ use std::sync::RwLock;
 
 use aes_gcm::{
     aead::{Aead, Payload},
-    Aes128Gcm, Aes256Gcm, NewAead,
+    Aes128Gcm, Aes256Gcm, KeyInit,
 };
 use chacha20poly1305::ChaCha20Poly1305;
 use ecdsa::{signature::Verifier, Signature, SigningKey, VerifyingKey};

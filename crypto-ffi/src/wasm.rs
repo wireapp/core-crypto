@@ -380,7 +380,7 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
             if let Ok(Some(result)) = is_user_in_group
                 .call2(
                     &this,
-                    &js_sys::Uint8Array::from(identity),
+                    &js_sys::Uint8Array::from(identity.as_slice()),
                     &other_clients
                         .into_iter()
                         .map(|client| js_sys::Uint8Array::from(client.as_slice()))
