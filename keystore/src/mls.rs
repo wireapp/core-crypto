@@ -91,6 +91,11 @@ pub trait CryptoKeystoreMls: Sized {
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
     async fn mls_groups_restore(&self) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, Vec<u8>>>;
+    /// Deletes `MlsGroups` from the database.
+    /// # Errors
+    /// Any common error that can happen during a database connection. IoError being a common error
+    /// for example.
+    async fn mls_group_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()>;
     /// Saves a `MlsGroup` in a temporary table (typically used in scenarios where the group cannot
     /// be commited until the backend acknowledges it, like external commits)
     ///
@@ -332,6 +337,12 @@ impl CryptoKeystoreMls for crate::connection::Connection {
             state: state.into(),
         })
         .await?;
+
+        Ok(())
+    }
+
+    async fn mls_group_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()> {
+        self.remove::<PersistedMlsGroup, _>(group_id).await?;
 
         Ok(())
     }

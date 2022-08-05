@@ -22,6 +22,7 @@
 #![deny(missing_docs)]
 #![allow(clippy::single_component_path_imports)]
 
+use core_crypto_keystore::CryptoKeystoreMls;
 #[cfg(test)]
 use rstest_reuse;
 
@@ -454,6 +455,18 @@ impl MlsCentral {
     /// KeyStore errors, such as IO
     pub async fn close(self) -> CryptoResult<()> {
         self.mls_backend.close().await?;
+        Ok(())
+    }
+
+    /// Destroys a group locally
+    ///
+    /// # Errors
+    /// KeyStore errors, such as IO
+    pub async fn wipe_group(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
+        self.mls_groups
+            .remove(conversation_id)
+            .ok_or_else(|| CryptoError::ConversationNotFound(conversation_id.clone()))?;
+        self.mls_backend.key_store().mls_group_delete(conversation_id).await?;
         Ok(())
     }
 
