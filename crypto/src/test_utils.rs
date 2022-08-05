@@ -6,7 +6,7 @@ use std::{
 };
 
 use openmls::prelude::{
-    KeyPackage, KeyPackageBundle, MlsGroup, PublicGroupState, QueuedProposal, StagedCommit, VerifiablePublicGroupState,
+    KeyPackage, KeyPackageBundle, PublicGroupState, QueuedProposal, StagedCommit, VerifiablePublicGroupState,
 };
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
@@ -96,10 +96,6 @@ impl MlsCentral {
 
     pub async fn get_one_key_package_bundle(&self) -> KeyPackageBundle {
         self.client_keypackages(1).await.unwrap().first().unwrap().clone()
-    }
-
-    pub fn group(&self, id: &ConversationId) -> &MlsGroup {
-        &self[id].group
     }
 
     pub async fn rnd_member(&self) -> ConversationMember {
