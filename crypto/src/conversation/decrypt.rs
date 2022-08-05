@@ -522,32 +522,28 @@ pub mod tests {
                     Box::pin(async move {
                         alice_central.callbacks(Box::new(ValidationCallbacks::default()));
                         bob_central.callbacks(Box::new(ValidationCallbacks::default()));
-                        let conversation_id = conversation_id();
+                        let id = conversation_id();
                         let configuration = MlsConversationConfiguration::default();
 
-                        alice_central
-                            .new_conversation(conversation_id.clone(), configuration)
-                            .await
-                            .unwrap();
-                        alice_central.invite(&conversation_id, &mut bob_central).await.unwrap();
+                        alice_central.new_conversation(id.clone(), configuration).await.unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         let kp = alice2_central.get_one_key_package().await;
-                        let alice_group = alice_central.group(&conversation_id);
-                        let epoch = alice_group.epoch();
+                        let epoch = alice_central[&id].group.epoch();
                         let message = alice2_central
-                            .new_external_add_proposal(conversation_id.clone(), epoch, kp)
+                            .new_external_add_proposal(id.clone(), epoch, kp)
                             .await
                             .unwrap();
 
                         let decrypted = alice_central
-                            .decrypt_message(&conversation_id, &message.to_bytes().unwrap())
+                            .decrypt_message(&id, &message.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert!(decrypted.app_msg.is_none());
                         assert!(decrypted.delay.is_some());
 
                         let decrypted = bob_central
-                            .decrypt_message(&conversation_id, &message.to_bytes().unwrap())
+                            .decrypt_message(&id, &message.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert!(decrypted.app_msg.is_none());
@@ -566,32 +562,28 @@ pub mod tests {
                 ["alice", "bob", "alice2"],
                 move |[mut alice_central, mut bob_central, alice2_central]| {
                     Box::pin(async move {
-                        let conversation_id = conversation_id();
+                        let id = conversation_id();
                         let configuration = MlsConversationConfiguration::default();
 
-                        alice_central
-                            .new_conversation(conversation_id.clone(), configuration)
-                            .await
-                            .unwrap();
-                        alice_central.invite(&conversation_id, &mut bob_central).await.unwrap();
+                        alice_central.new_conversation(id.clone(), configuration).await.unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         let kp = alice2_central.get_one_key_package().await;
-                        let alice_group = alice_central.group(&conversation_id);
-                        let epoch = alice_group.epoch();
+                        let epoch = alice_central[&id].group.epoch();
                         let message = alice2_central
-                            .new_external_add_proposal(conversation_id.clone(), epoch, kp)
+                            .new_external_add_proposal(id.clone(), epoch, kp)
                             .await
                             .unwrap();
 
                         let error = alice_central
-                            .decrypt_message(&conversation_id, &message.to_bytes().unwrap())
+                            .decrypt_message(&id, &message.to_bytes().unwrap())
                             .await
                             .unwrap_err();
 
                         assert!(matches!(error, CryptoError::CallbacksNotSet));
 
                         let error = bob_central
-                            .decrypt_message(&conversation_id, &message.to_bytes().unwrap())
+                            .decrypt_message(&id, &message.to_bytes().unwrap())
                             .await
                             .unwrap_err();
 
@@ -611,32 +603,28 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central, alice2_central]| {
                     Box::pin(async move {
                         alice_central.callbacks(Box::new(ValidationCallbacks::new(true, false)));
-                        let conversation_id = conversation_id();
+                        let id = conversation_id();
                         let configuration = MlsConversationConfiguration::default();
 
-                        alice_central
-                            .new_conversation(conversation_id.clone(), configuration)
-                            .await
-                            .unwrap();
-                        alice_central.invite(&conversation_id, &mut bob_central).await.unwrap();
+                        alice_central.new_conversation(id.clone(), configuration).await.unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         let kp = alice2_central.get_one_key_package().await;
-                        let alice_group = alice_central.group(&conversation_id);
-                        let epoch = alice_group.epoch();
+                        let epoch = alice_central[&id].group.epoch();
                         let message = alice2_central
-                            .new_external_add_proposal(conversation_id.clone(), epoch, kp)
+                            .new_external_add_proposal(id.clone(), epoch, kp)
                             .await
                             .unwrap();
 
                         let error = alice_central
-                            .decrypt_message(&conversation_id, &message.to_bytes().unwrap())
+                            .decrypt_message(&id, &message.to_bytes().unwrap())
                             .await
                             .unwrap_err();
 
                         assert!(matches!(error, CryptoError::ExternalProposalError(_)));
 
                         let error = bob_central
-                            .decrypt_message(&conversation_id, &message.to_bytes().unwrap())
+                            .decrypt_message(&id, &message.to_bytes().unwrap())
                             .await
                             .unwrap_err();
 
