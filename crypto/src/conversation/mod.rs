@@ -251,7 +251,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// KeyStore errors, such as IO
-    pub async fn wipe_group(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
+    pub async fn wipe_conversation(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
         self.mls_groups
             .remove(conversation_id)
             .ok_or_else(|| CryptoError::ConversationNotFound(conversation_id.clone()))?;
@@ -525,7 +525,7 @@ pub mod tests {
                         .unwrap();
                     assert!(central.group(&id).is_active());
 
-                    central.wipe_group(&id).await.unwrap();
+                    central.wipe_conversation(&id).await.unwrap();
                     assert!(!central.conversation_exists(&id));
                 })
             })
@@ -538,7 +538,7 @@ pub mod tests {
             run_test_with_central(credential, move |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    let err = central.wipe_group(&id).await.unwrap_err();
+                    let err = central.wipe_conversation(&id).await.unwrap_err();
                     assert!(matches!(err, CryptoError::ConversationNotFound(_)));
                 })
             })

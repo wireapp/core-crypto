@@ -656,7 +656,7 @@ impl CoreCrypto {
             async move {
                 let conversation_id = conversation_id.into();
                 let mut central = this.write().await;
-                central.wipe_group(&conversation_id).await?;
+                central.wipe_conversation(&conversation_id).await?;
                 WasmCryptoResult::Ok(())
             }
             .err_into(),

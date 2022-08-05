@@ -342,7 +342,7 @@ impl CoreCrypto<'_> {
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .wipe_group(&conversation_id),
+                    .wipe_conversation(&conversation_id),
             ),
         )
     }
