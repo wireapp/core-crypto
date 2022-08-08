@@ -43,9 +43,3 @@ futures-util = { version = "0.3", features = ["std", "alloc"] }
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-Os", "--enable-mutable-globals", "--enable-threads", "--detect-features"]
-
-[features]
-default = ["strict-consistency"]
-# When active, commits have to be merged manually
-# TODO: remove when backend counterpart implemented
-strict-consistency = []
