@@ -252,10 +252,11 @@ impl MlsCentral {
     /// # Errors
     /// KeyStore errors, such as IO
     pub async fn wipe_conversation(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
-        self.mls_groups
-            .remove(conversation_id)
-            .ok_or_else(|| CryptoError::ConversationNotFound(conversation_id.clone()))?;
+        if !self.conversation_exists(conversation_id) {
+            return Err(CryptoError::ConversationNotFound(conversation_id.clone()));
+        }
         self.mls_backend.key_store().mls_group_delete(conversation_id).await?;
+        self.mls_groups.remove(conversation_id);
         Ok(())
     }
 }
