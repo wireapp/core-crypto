@@ -10,9 +10,9 @@
 
 use openmls::framing::ProcessedMessage;
 use openmls::prelude::MlsMessageOut;
+use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::{conversation::renew::Renew, CoreCryptoCallbacks};
 use crate::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsError};
@@ -317,7 +317,7 @@ pub mod tests {
                             bob_central.decrypt_message(&id, p.to_bytes().unwrap()).await.unwrap();
                         }
 
-                        let MlsCommitBundle { commit, welcome } =
+                        let MlsCommitBundle { commit, welcome, .. } =
                             alice_central.commit_pending_proposals(&id).await.unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
                         // Charlie is now in the group
@@ -507,7 +507,6 @@ pub mod tests {
     }
 
     pub mod decrypt_callback {
-
         use crate::{test_utils::ValidationCallbacks, CryptoError};
 
         use super::*;

@@ -105,15 +105,17 @@ pub type FfiClientId = Box<[u8]>;
 pub struct MemberAddedMessages {
     welcome: Vec<u8>,
     message: Vec<u8>,
+    group_info: Vec<u8>,
 }
 
 #[wasm_bindgen]
 impl MemberAddedMessages {
     #[wasm_bindgen(constructor)]
-    pub fn new(welcome: Uint8Array, message: Uint8Array) -> Self {
+    pub fn new(welcome: Uint8Array, message: Uint8Array, group_info: Uint8Array) -> Self {
         Self {
             welcome: welcome.to_vec(),
             message: message.to_vec(),
+            group_info: group_info.to_vec(),
         }
     }
 
@@ -126,14 +128,23 @@ impl MemberAddedMessages {
     pub fn message(&self) -> Uint8Array {
         Uint8Array::from(&*self.message)
     }
+
+    #[wasm_bindgen(getter)]
+    pub fn group_info(&self) -> Uint8Array {
+        Uint8Array::from(&*self.group_info)
+    }
 }
 
 impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     type Error = WasmCryptoError;
 
     fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, message) = msg.to_bytes_pairs()?;
-        Ok(Self { welcome, message })
+        let (welcome, message, group_info) = msg.to_bytes_triple()?;
+        Ok(Self {
+            welcome,
+            message,
+            group_info,
+        })
     }
 }
 
@@ -142,6 +153,7 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
 pub struct CommitBundle {
     message: Vec<u8>,
     welcome: Option<Vec<u8>>,
+    group_info: Vec<u8>,
 }
 
 #[wasm_bindgen]
@@ -155,14 +167,23 @@ impl CommitBundle {
     pub fn welcome(&self) -> Option<Uint8Array> {
         self.welcome.as_ref().map(|buf| Uint8Array::from(buf.as_slice()))
     }
+
+    #[wasm_bindgen(getter)]
+    pub fn group_info(&self) -> Uint8Array {
+        Uint8Array::from(&*self.group_info)
+    }
 }
 
 impl TryFrom<MlsCommitBundle> for CommitBundle {
     type Error = WasmCryptoError;
 
     fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
-        let (welcome, message) = msg.to_bytes_pairs()?;
-        Ok(Self { welcome, message })
+        let (welcome, message, group_info) = msg.to_bytes_triple()?;
+        Ok(Self {
+            welcome,
+            message,
+            group_info,
+        })
     }
 }
 
@@ -685,7 +706,7 @@ impl CoreCrypto {
                 let conversation_id = conversation_id.into();
                 let mut central = this.write().await;
                 central.wipe_conversation(&conversation_id).await?;
-                WasmCryptoResult::Ok(())
+                WasmCryptoResult::Ok(JsValue::null())
             }
             .err_into(),
         )

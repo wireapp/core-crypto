@@ -112,6 +112,7 @@ export interface MemberAddedMessages {
      * @readonly
      */
     welcome: Uint8Array;
+    group_info: Uint8Array;
 }
 
 /**
@@ -130,6 +131,7 @@ export interface CommitBundle {
      * @readonly
      */
     welcome?: Uint8Array;
+    group_info: Uint8Array;
 }
 
 /**
@@ -387,6 +389,7 @@ export class CoreCrypto {
         const ret: MemberAddedMessages = {
             welcome: ffiRet.welcome,
             message: ffiRet.message,
+            group_info: ffiRet.group_info,
         };
 
         return ret;
@@ -412,6 +415,7 @@ export class CoreCrypto {
         const ret: CommitBundle = {
             welcome: ffiRet.welcome,
             message: ffiRet.message,
+            group_info: ffiRet.group_info,
         };
 
         return ret
