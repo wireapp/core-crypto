@@ -370,7 +370,7 @@ pub mod tests {
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_group_info(credential: CredentialSupplier) {
+        pub async fn should_return_valid_welcome(credential: CredentialSupplier) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "guest"],
@@ -447,6 +447,54 @@ pub mod tests {
                             CryptoError::ConversationNotFound(conv_id) if conv_id == id
                         ));
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_err());
+                    })
+                },
+            )
+            .await;
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_return_valid_welcome(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "guest"],
+                move |[mut alice_central, mut bob_central, mut guest_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                        let proposal = alice_central
+                            .new_proposal(&id, MlsProposal::Add(guest_central.get_one_key_package().await))
+                            .await
+                            .unwrap();
+                        bob_central
+                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+
+                        let MlsCommitBundle { commit, welcome, .. } = alice_central
+                            .remove_members_from_conversation(&id, &["bob".into()])
+                            .await
+                            .unwrap();
+                        alice_central.commit_accepted(&id).await.unwrap();
+
+                        bob_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+
+                        assert!(guest_central
+                            .try_join_from_welcome(&id, welcome.unwrap(), vec![&mut alice_central])
+                            .await
+                            .is_ok());
+                        // because Bob has been removed from the group
+                        assert!(guest_central.talk_to(&id, &mut bob_central).await.is_err());
                     })
                 },
             )
@@ -618,6 +666,49 @@ pub mod tests {
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
                         assert!(bob_central.talk_to(&id, &mut charlie_central).await.is_ok());
                         assert!(charlie_central.talk_to(&id, &mut alice_central).await.is_ok());
+                    })
+                },
+            )
+            .await;
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_return_valid_welcome(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "guest"],
+                move |[mut alice_central, mut bob_central, mut guest_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                        let proposal = alice_central
+                            .new_proposal(&id, MlsProposal::Add(guest_central.get_one_key_package().await))
+                            .await
+                            .unwrap();
+                        bob_central
+                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+
+                        let MlsCommitBundle { commit, welcome, .. } =
+                            alice_central.update_keying_material(&id).await.unwrap();
+                        alice_central.commit_accepted(&id).await.unwrap();
+
+                        // receiving the commit on bob's side (updating key from alice)
+                        bob_central
+                            .decrypt_message(&id, &commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        assert!(guest_central
+                            .try_join_from_welcome(&id, welcome.unwrap(), vec![&mut alice_central, &mut bob_central])
+                            .await
+                            .is_ok());
                     })
                 },
             )

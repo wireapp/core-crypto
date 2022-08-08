@@ -6,7 +6,7 @@ use std::{
 };
 
 use openmls::prelude::{
-    KeyPackage, KeyPackageBundle, PublicGroupState, QueuedProposal, StagedCommit, VerifiablePublicGroupState,
+    KeyPackage, KeyPackageBundle, PublicGroupState, QueuedProposal, StagedCommit, VerifiablePublicGroupState, Welcome,
 };
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
@@ -177,6 +177,20 @@ impl MlsCentral {
         for other in others {
             let commit = commit.to_bytes().map_err(MlsError::from)?;
             other.decrypt_message(id, commit).await?;
+            self.talk_to(id, other).await?;
+        }
+        Ok(())
+    }
+
+    pub async fn try_join_from_welcome(
+        &mut self,
+        id: &ConversationId,
+        welcome: Welcome,
+        others: Vec<&mut Self>,
+    ) -> CryptoResult<()> {
+        self.process_welcome_message(welcome, MlsConversationConfiguration::default())
+            .await?;
+        for other in others {
             self.talk_to(id, other).await?;
         }
         Ok(())
