@@ -223,11 +223,9 @@ impl MlsCentral {
                 return Err(CryptoError::Unauthorized);
             }
         }
-        let add = Self::get_conversation_mut(&mut self.mls_groups, id)?
+        Ok(Self::get_conversation_mut(&mut self.mls_groups, id)?
             .add_members(members, &self.mls_backend)
-            .await?;
-        self.maybe_accept_commit(id).await?;
-        Ok(add)
+            .await?)
     }
 
     /// Removes clients from the group/conversation.
@@ -253,11 +251,9 @@ impl MlsCentral {
                 return Err(CryptoError::Unauthorized);
             }
         }
-        let remove = Self::get_conversation_mut(&mut self.mls_groups, id)?
+        Ok(Self::get_conversation_mut(&mut self.mls_groups, id)?
             .remove_members(clients, &self.mls_backend)
-            .await?;
-        self.maybe_accept_commit(id).await?;
-        Ok(remove)
+            .await?)
     }
 
     /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited
@@ -273,11 +269,9 @@ impl MlsCentral {
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     pub async fn update_keying_material(&mut self, id: &ConversationId) -> CryptoResult<MlsCommitBundle> {
-        let update = Self::get_conversation_mut(&mut self.mls_groups, id)?
+        Self::get_conversation_mut(&mut self.mls_groups, id)?
             .update_keying_material(&self.mls_backend)
-            .await;
-        self.maybe_accept_commit(id).await?;
-        update
+            .await
     }
 
     /// Commits all pending proposals of the group
@@ -291,26 +285,8 @@ impl MlsCentral {
     /// # Errors
     /// Errors can be originating from the KeyStore and OpenMls
     pub async fn commit_pending_proposals(&mut self, id: &ConversationId) -> CryptoResult<MlsCommitBundle> {
-        let commit = Self::get_conversation_mut(&mut self.mls_groups, id)?
-            .commit_pending_proposals(&self.mls_backend)
-            .await;
-        self.maybe_accept_commit(id).await?;
-        commit
-    }
-
-    // Preserves "current" behaviour with auto-merged commits
-    // TODO: remove when backend counterpart implemented
-    #[cfg(feature = "strict-consistency")]
-    async fn maybe_accept_commit(&mut self, _id: &ConversationId) -> CryptoResult<()> {
-        Ok(())
-    }
-
-    // Preserves "current" behaviour with auto-merged commits
-    // TODO: remove when backend counterpart implemented
-    #[cfg(not(feature = "strict-consistency"))]
-    async fn maybe_accept_commit(&mut self, id: &ConversationId) -> CryptoResult<()> {
         Self::get_conversation_mut(&mut self.mls_groups, id)?
-            .commit_accepted(&self.mls_backend)
+            .commit_pending_proposals(&self.mls_backend)
             .await
     }
 }
