@@ -524,7 +524,7 @@ pub mod tests {
                         .new_conversation(id.clone(), conversation_configuration)
                         .await
                         .unwrap();
-                    assert!(central[&id].is_active());
+                    assert!(central[&id].group.is_active());
 
                     central.wipe_conversation(&id).await.unwrap();
                     assert!(!central.conversation_exists(&id));
