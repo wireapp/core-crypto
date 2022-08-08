@@ -58,6 +58,7 @@ impl MlsCommitBundle {
     /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
     /// 0 -> welcome
     /// 1 -> message
+    #[allow(clippy::type_complexity)]
     pub fn to_bytes_triple(&self) -> CryptoResult<(Option<Vec<u8>>, Vec<u8>, Vec<u8>)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self
@@ -223,9 +224,9 @@ impl MlsCentral {
                 return Err(CryptoError::Unauthorized);
             }
         }
-        Ok(Self::get_conversation_mut(&mut self.mls_groups, id)?
+        Self::get_conversation_mut(&mut self.mls_groups, id)?
             .add_members(members, &self.mls_backend)
-            .await?)
+            .await
     }
 
     /// Removes clients from the group/conversation.
@@ -251,9 +252,9 @@ impl MlsCentral {
                 return Err(CryptoError::Unauthorized);
             }
         }
-        Ok(Self::get_conversation_mut(&mut self.mls_groups, id)?
+        Self::get_conversation_mut(&mut self.mls_groups, id)?
             .remove_members(clients, &self.mls_backend)
-            .await?)
+            .await
     }
 
     /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited
