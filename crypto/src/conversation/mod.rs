@@ -29,6 +29,7 @@
 
 use std::collections::HashMap;
 
+use core_crypto_keystore::CryptoKeystoreMls;
 use openmls::{group::MlsGroup, messages::Welcome, prelude::Credential, prelude::SenderRatchetConfiguration};
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -244,6 +245,19 @@ impl MlsCentral {
         groups
             .get_mut(id)
             .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))
+    }
+
+    /// Destroys a group locally
+    ///
+    /// # Errors
+    /// KeyStore errors, such as IO
+    pub async fn wipe_conversation(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
+        if !self.conversation_exists(conversation_id) {
+            return Err(CryptoError::ConversationNotFound(conversation_id.clone()));
+        }
+        self.mls_backend.key_store().mls_group_delete(conversation_id).await?;
+        self.mls_groups.remove(conversation_id);
+        Ok(())
     }
 }
 
@@ -492,6 +506,43 @@ pub mod tests {
                     })
                 },
             )
+            .await;
+        }
+    }
+
+    pub mod wipe_group {
+        use super::*;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn can_wipe_group(credential: CredentialSupplier) {
+            run_test_with_central(credential, move |[mut central]| {
+                Box::pin(async move {
+                    let conversation_configuration = MlsConversationConfiguration::default();
+                    let id = conversation_id();
+                    central
+                        .new_conversation(id.clone(), conversation_configuration)
+                        .await
+                        .unwrap();
+                    assert!(central[&id].group.is_active());
+
+                    central.wipe_conversation(&id).await.unwrap();
+                    assert!(!central.conversation_exists(&id));
+                })
+            })
+            .await;
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn cannot_wipe_group_inexistent(credential: CredentialSupplier) {
+            run_test_with_central(credential, move |[mut central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    let err = central.wipe_conversation(&id).await.unwrap_err();
+                    assert!(matches!(err, CryptoError::ConversationNotFound(conv_id) if conv_id == id));
+                })
+            })
             .await;
         }
     }

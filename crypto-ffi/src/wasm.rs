@@ -649,6 +649,20 @@ impl CoreCrypto {
         )
     }
 
+    /// Returns WasmCryptoResult<()>
+    pub fn wipe_conversation(&self, conversation_id: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let conversation_id = conversation_id.into();
+                let mut central = this.write().await;
+                central.wipe_conversation(&conversation_id).await?;
+                WasmCryptoResult::Ok(())
+            }
+            .err_into(),
+        )
+    }
+
     /// Returns: WasmCryptoResult<Option<Uint8Array>>
     pub fn decrypt_message(&self, conversation_id: Box<[u8]>, payload: Box<[u8]>) -> Promise {
         let this = self.0.clone();

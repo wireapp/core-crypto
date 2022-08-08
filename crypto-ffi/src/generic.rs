@@ -335,6 +335,18 @@ impl CoreCrypto<'_> {
         .try_into()
     }
 
+    /// wipes group locally
+    pub fn wipe_conversation(&self, conversation_id: ConversationId) -> CryptoResult<()> {
+        future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .wipe_conversation(&conversation_id),
+            ),
+        )
+    }
+
     pub fn decrypt_message(&self, conversation_id: ConversationId, payload: &[u8]) -> CryptoResult<DecryptedMessage> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(

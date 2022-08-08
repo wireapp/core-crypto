@@ -111,6 +111,9 @@ interface CoreCrypto {
     CommitBundle remove_clients_from_conversation(ConversationId conversation_id, sequence<ClientId> clients);
 
     [Throws=CryptoError]
+    void wipe_conversation(ConversationId conversation_id);
+
+    [Throws=CryptoError]
     DecryptedMessage decrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> payload);
 
     [Throws=CryptoError]
