@@ -8,7 +8,7 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
-use openmls::prelude::{KeyPackage, KeyPackageRef, MlsMessageOut, Welcome};
+use openmls::prelude::{KeyPackage, KeyPackageRef, MlsMessageOut, PublicGroupState, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
@@ -25,19 +25,21 @@ pub struct MlsConversationCreationMessage {
     pub welcome: Welcome,
     /// Commit message adding members to the group
     pub commit: MlsMessageOut,
+    /// [`PublicGroupState`] (aka GroupInfo) if the commit is merged
+    pub group_info: PublicGroupState,
 }
 
 impl MlsConversationCreationMessage {
     /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
     /// 0 -> welcome
     /// 1 -> message
-    pub fn to_bytes_pairs(&self) -> CryptoResult<(Vec<u8>, Vec<u8>)> {
+    pub fn to_bytes_triple(&self) -> CryptoResult<(Vec<u8>, Vec<u8>, Vec<u8>)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self.welcome.tls_serialize_detached().map_err(MlsError::from)?;
-
         let msg = self.commit.to_bytes().map_err(MlsError::from)?;
+        let group_info = self.group_info.tls_serialize_detached().map_err(MlsError::from)?;
 
-        Ok((welcome, msg))
+        Ok((welcome, msg, group_info))
     }
 }
 
@@ -48,22 +50,25 @@ pub struct MlsCommitBundle {
     pub welcome: Option<Welcome>,
     /// The commit message
     pub commit: MlsMessageOut,
+    /// [`PublicGroupState`] (aka GroupInfo) if the commit is merged
+    pub group_info: PublicGroupState,
 }
 
 impl MlsCommitBundle {
     /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
     /// 0 -> welcome
     /// 1 -> message
-    pub fn to_bytes_pairs(&self) -> CryptoResult<(Option<Vec<u8>>, Vec<u8>)> {
+    pub fn to_bytes_triple(&self) -> CryptoResult<(Option<Vec<u8>>, Vec<u8>, Vec<u8>)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self
             .welcome
             .as_ref()
             .map(|w| w.tls_serialize_detached().map_err(MlsError::from))
             .transpose()?;
-        let msg = self.commit.to_bytes().map_err(MlsError::from)?;
+        let commit = self.commit.to_bytes().map_err(MlsError::from)?;
+        let group_info = self.group_info.tls_serialize_detached().map_err(MlsError::from)?;
 
-        Ok((welcome, msg))
+        Ok((welcome, commit, group_info))
     }
 }
 
@@ -120,13 +125,17 @@ impl MlsConversation {
             .filter_map(|(_, kps)| kps)
             .collect::<Vec<KeyPackage>>();
 
-        let (commit, welcome) = self
+        let (commit, welcome, group_info) = self
             .group
             .add_members(backend, &keypackages)
             .await
             .map_err(MlsError::from)?;
 
-        Ok(MlsConversationCreationMessage { welcome, commit })
+        Ok(MlsConversationCreationMessage {
+            welcome,
+            commit,
+            group_info,
+        })
     }
 
     /// see [MlsCentral::remove_members_from_conversation]
@@ -152,33 +161,40 @@ impl MlsConversation {
                 Ok(acc)
             })?;
 
-        let (commit, welcome) = self
+        let (commit, welcome, group_info) = self
             .group
             .remove_members(backend, &member_kps)
             .await
             .map_err(MlsError::from)?;
-
-        Ok(MlsCommitBundle { commit, welcome })
+        Ok(MlsCommitBundle {
+            commit,
+            welcome,
+            group_info,
+        })
     }
 
     /// see [MlsCentral::update_keying_material]
     pub async fn update_keying_material(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<MlsCommitBundle> {
-        Ok(self
-            .group
-            .self_update(backend, None)
-            .await
-            .map_err(MlsError::from)
-            .map(|(commit, welcome)| MlsCommitBundle { welcome, commit })?)
+        let (commit, welcome, group_info) = self.group.self_update(backend, None).await.map_err(MlsError::from)?;
+        Ok(MlsCommitBundle {
+            welcome,
+            commit,
+            group_info,
+        })
     }
 
     /// see [MlsCentral::commit_pending_proposals]
     pub async fn commit_pending_proposals(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<MlsCommitBundle> {
-        Ok(self
+        let (commit, welcome, group_info) = self
             .group
             .commit_to_pending_proposals(backend)
             .await
-            .map_err(MlsError::from)
-            .map(|(commit, welcome)| MlsCommitBundle { welcome, commit })?)
+            .map_err(MlsError::from)?;
+        Ok(MlsCommitBundle {
+            welcome,
+            commit,
+            group_info,
+        })
     }
 }
 
@@ -301,8 +317,9 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{credential::CredentialSupplier, proposal::MlsProposal, test_utils::*, MlsConversationConfiguration};
     use wasm_bindgen_test::*;
+
+    use crate::{credential::CredentialSupplier, proposal::MlsProposal, test_utils::*, MlsConversationConfiguration};
 
     use super::*;
 
@@ -345,6 +362,44 @@ pub mod tests {
                         assert_eq!(alice_central[&id].id(), bob_central[&id].id());
                         assert_eq!(bob_central[&id].members().len(), 2);
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_return_valid_group_info(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "guest"],
+                move |[mut alice_central, mut bob_central, mut guest_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        let MlsConversationCreationMessage {
+                            welcome, group_info, ..
+                        } = alice_central
+                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
+                            .await
+                            .unwrap();
+
+                        alice_central.commit_accepted(&id).await.unwrap();
+
+                        bob_central
+                            .process_welcome_message(welcome, MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+
+                        assert!(guest_central
+                            .try_join_from_group_info(&id, group_info, vec![&mut alice_central, &mut bob_central])
+                            .await
+                            .is_ok());
                     })
                 },
             )
@@ -397,6 +452,45 @@ pub mod tests {
             )
             .await;
         }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_return_valid_group_info(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "guest"],
+                move |[mut alice_central, mut bob_central, mut guest_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                        let MlsCommitBundle { commit, group_info, .. } = alice_central
+                            .remove_members_from_conversation(&id, &["bob".into()])
+                            .await
+                            .unwrap();
+                        alice_central.commit_accepted(&id).await.unwrap();
+
+                        bob_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+
+                        assert!(guest_central
+                            .try_join_from_group_info(&id, group_info, vec![&mut alice_central])
+                            .await
+                            .is_ok());
+                        // because Bob has been removed from the group
+                        assert!(guest_central.talk_to(&id, &mut bob_central).await.is_err());
+                    })
+                },
+            )
+            .await;
+        }
     }
 
     pub mod update_keying_material {
@@ -424,7 +518,7 @@ pub mod tests {
                         let alice_key = alice_central.key_package_of(&id, "alice");
 
                         // proposing the key update for alice
-                        let MlsCommitBundle { commit, welcome } =
+                        let MlsCommitBundle { commit, welcome, .. } =
                             alice_central.update_keying_material(&id).await.unwrap();
                         assert!(welcome.is_none());
 
@@ -489,7 +583,7 @@ pub mod tests {
                             .unwrap();
 
                         // performing an update on Alice's key. this should generate a welcome for Charlie
-                        let MlsCommitBundle { commit, welcome } =
+                        let MlsCommitBundle { commit, welcome, .. } =
                             alice_central.update_keying_material(&id).await.unwrap();
                         assert!(welcome.is_some());
                         assert!(alice_central[&id].group.members().contains(&&alice_key));
@@ -524,6 +618,40 @@ pub mod tests {
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
                         assert!(bob_central.talk_to(&id, &mut charlie_central).await.is_ok());
                         assert!(charlie_central.talk_to(&id, &mut alice_central).await.is_ok());
+                    })
+                },
+            )
+            .await;
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_return_valid_group_info(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "guest"],
+                move |[mut alice_central, mut bob_central, mut guest_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                        let MlsCommitBundle { commit, group_info, .. } =
+                            alice_central.update_keying_material(&id).await.unwrap();
+                        alice_central.commit_accepted(&id).await.unwrap();
+
+                        // receiving the commit on bob's side (updating key from alice)
+                        bob_central
+                            .decrypt_message(&id, &commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        assert!(guest_central
+                            .try_join_from_group_info(&id, group_info, vec![&mut alice_central, &mut bob_central])
+                            .await
+                            .is_ok());
                     })
                 },
             )

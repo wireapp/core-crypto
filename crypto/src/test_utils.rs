@@ -14,6 +14,7 @@ pub use rstest_reuse::{self, *};
 use crate::{
     config::MlsCentralConfiguration, credential::CredentialSupplier, member::ConversationMember, ConversationId,
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationConfiguration,
+    MlsError,
 };
 
 #[template]
@@ -156,6 +157,28 @@ impl MlsCentral {
         assert_eq!(self[id].members().len(), size_before + 1);
         assert_eq!(other[id].members().len(), size_before + 1);
         self.talk_to(id, other).await?;
+        Ok(())
+    }
+
+    pub async fn try_join_from_group_info(
+        &mut self,
+        id: &ConversationId,
+        group_info: PublicGroupState,
+        others: Vec<&mut Self>,
+    ) -> CryptoResult<()> {
+        use tls_codec::{Deserialize as _, Serialize as _};
+        let group_info = group_info.tls_serialize_detached().map_err(MlsError::from)?;
+        let group_info =
+            VerifiablePublicGroupState::tls_deserialize(&mut group_info.as_slice()).map_err(MlsError::from)?;
+        let (group_id, commit) = self.join_by_external_commit(group_info).await?;
+        self.merge_pending_group_from_external_commit(group_id.as_slice(), MlsConversationConfiguration::default())
+            .await?;
+        assert_eq!(group_id.as_slice(), id.as_slice());
+        for other in others {
+            let commit = commit.to_bytes().map_err(MlsError::from)?;
+            other.decrypt_message(id, commit).await?;
+            self.talk_to(id, other).await?;
+        }
         Ok(())
     }
 
