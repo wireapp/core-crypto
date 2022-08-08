@@ -30,10 +30,11 @@ impl MlsConversation {
     pub(crate) fn validate_external_proposal(
         &self,
         proposal: &QueuedProposal,
-        callbacks: &(impl CoreCryptoCallbacks + ?Sized),
+        callbacks: Option<&dyn CoreCryptoCallbacks>,
         backend: &impl OpenMlsCrypto,
     ) -> CryptoResult<()> {
         if proposal.is_external_add_proposal() {
+            let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
             let pending_removes = self
                 .group
                 .pending_proposals()
@@ -218,8 +219,6 @@ mod tests {
                 ["owner", "guest", "ds"],
                 move |[mut owner_central, mut guest_central, ds]| {
                     Box::pin(async move {
-                        owner_central.callbacks(Box::new(ValidationCallbacks::default()));
-                        guest_central.callbacks(Box::new(ValidationCallbacks::default()));
                         let id = conversation_id();
 
                         let remove_key = ds.mls_client.credentials().credential().signature_key().clone();
