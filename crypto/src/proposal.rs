@@ -157,7 +157,6 @@ pub mod proposal_tests {
         pub async fn should_remove_member(credential: CredentialSupplier) {
             run_test_with_client_ids(credential, ["alice", "bob"], |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
-                    bob_central.callbacks(Box::new(ValidationCallbacks::default()));
                     let id = conversation_id();
                     alice_central
                         .new_conversation(id.clone(), MlsConversationConfiguration::default())
