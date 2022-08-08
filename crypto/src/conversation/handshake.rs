@@ -724,4 +724,147 @@ pub mod tests {
             .await;
         }
     }
+
+    pub mod commit_pending_proposals {
+        use super::*;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_create_a_commit_out_of_self_pending_proposals(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central
+                            .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package().await))
+                            .await
+                            .unwrap();
+                        assert!(!alice_central.pending_proposals(&id).is_empty());
+                        assert_eq!(alice_central[&id].members().len(), 1);
+                        let MlsCommitBundle { welcome, .. } =
+                            alice_central.commit_pending_proposals(&id).await.unwrap();
+                        alice_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(alice_central[&id].members().len(), 2);
+
+                        bob_central
+                            .process_welcome_message(welcome.unwrap(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                    })
+                },
+            )
+            .await;
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_create_a_commit_out_of_pending_proposals_by_ref(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "charlie"],
+                move |[mut alice_central, mut bob_central, charlie_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        let proposal = bob_central
+                            .new_proposal(&id, MlsProposal::Add(charlie_central.get_one_key_package().await))
+                            .await
+                            .unwrap();
+                        assert!(!bob_central.pending_proposals(&id).is_empty());
+                        assert_eq!(bob_central[&id].members().len(), 2);
+                        alice_central
+                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+
+                        let MlsCommitBundle { commit, .. } = alice_central.commit_pending_proposals(&id).await.unwrap();
+                        alice_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(alice_central[&id].members().len(), 3);
+
+                        bob_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        assert_eq!(bob_central[&id].members().len(), 3);
+                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                    })
+                },
+            )
+            .await;
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_return_valid_welcome(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central
+                            .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package().await))
+                            .await
+                            .unwrap();
+                        let MlsCommitBundle { welcome, .. } =
+                            alice_central.commit_pending_proposals(&id).await.unwrap();
+                        alice_central.commit_accepted(&id).await.unwrap();
+
+                        bob_central
+                            .process_welcome_message(welcome.unwrap(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                    })
+                },
+            )
+            .await;
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_return_valid_group_info(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "guest"],
+                move |[mut alice_central, bob_central, mut guest_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central
+                            .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package().await))
+                            .await
+                            .unwrap();
+                        let MlsCommitBundle { group_info, .. } =
+                            alice_central.commit_pending_proposals(&id).await.unwrap();
+                        alice_central.commit_accepted(&id).await.unwrap();
+
+                        assert!(guest_central
+                            .try_join_from_group_info(&id, group_info, vec![&mut alice_central])
+                            .await
+                            .is_ok());
+                    })
+                },
+            )
+            .await;
+        }
+    }
 }
