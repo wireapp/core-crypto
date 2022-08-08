@@ -539,7 +539,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     let err = central.wipe_conversation(&id).await.unwrap_err();
-                    assert!(matches!(err, CryptoError::ConversationNotFound(_)));
+                    assert!(matches!(err, CryptoError::ConversationNotFound(conv_id) if conv_id == id));
                 })
             })
             .await;
