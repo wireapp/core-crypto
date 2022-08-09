@@ -131,7 +131,7 @@ interface CoreCrypto {
     sequence<u8> new_remove_proposal(ConversationId conversation_id, ClientId client_id);
 
     [Throws=CryptoError]
-    sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch, sequence<u8> key_package);
+    sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch);
 
     [Throws=CryptoError]
     sequence<u8> new_external_remove_proposal(ConversationId conversation_id, u64 epoch, sequence<u8> key_package_ref);

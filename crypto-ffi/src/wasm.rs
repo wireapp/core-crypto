@@ -827,17 +827,14 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::MlsCentral::new_external_add_proposal]
-    pub fn new_external_add_proposal(&self, conversation_id: Box<[u8]>, epoch: u32, keypackage: Box<[u8]>) -> Promise {
+    pub fn new_external_add_proposal(&self, conversation_id: Box<[u8]>, epoch: u32) -> Promise {
         let this = self.0.clone();
         future_to_promise(
             async move {
-                let kp = KeyPackage::try_from(&keypackage[..])
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)?;
                 let proposal_bytes = this
                     .write()
                     .await
-                    .new_external_add_proposal(conversation_id.to_vec(), u64::from(epoch).into(), kp)
+                    .new_external_add_proposal(conversation_id.to_vec(), u64::from(epoch).into())
                     .await?
                     .to_bytes()
                     .map(|bytes| Uint8Array::from(bytes.as_slice()))
