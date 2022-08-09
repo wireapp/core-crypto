@@ -9,13 +9,14 @@
 //! | 1+ pend. Proposal | ✅              | ✅              |
 
 use openmls::framing::ProcessedMessage;
-use openmls::prelude::MlsMessageOut;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::{conversation::renew::Renew, CoreCryptoCallbacks};
-use crate::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsError};
+use crate::{
+    conversation::renew::Renew, prelude::MlsProposalBundle, ConversationId, CoreCryptoCallbacks, CryptoError,
+    CryptoResult, MlsCentral, MlsConversation, MlsError,
+};
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
 /// have decrypted for him
@@ -26,7 +27,7 @@ pub struct MlsConversationDecryptMessage {
     /// If decrypted message is a commit, this will contain either:
     /// * local pending proposal by value
     /// * proposals by value in pending commit
-    pub proposals: Vec<MlsMessageOut>,
+    pub proposals: Vec<MlsProposalBundle>,
     /// Is the conversation still active after receiving this commit
     /// aka has the user been removed from the group
     pub is_active: bool,
@@ -308,12 +309,18 @@ pub mod tests {
                         assert!(!proposals.is_empty());
                         assert_eq!(alice_central.pending_proposals(&id).len(), 1);
                         assert!(alice_central.pending_commit(&id).is_none());
-                        assert_eq!(commit_epoch.as_u64() + 1, proposals.first().unwrap().epoch().as_u64());
+                        assert_eq!(
+                            commit_epoch.as_u64() + 1,
+                            proposals.first().unwrap().proposal.epoch().as_u64()
+                        );
 
                         // Let's commit this proposal to see if it works
                         for p in proposals {
                             // But first, proposals have to be fan out to Bob
-                            bob_central.decrypt_message(&id, p.to_bytes().unwrap()).await.unwrap();
+                            bob_central
+                                .decrypt_message(&id, p.proposal.to_bytes().unwrap())
+                                .await
+                                .unwrap();
                         }
 
                         let MlsCommitBundle { commit, welcome, .. } =
@@ -367,7 +374,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .decrypt_message(&id, add_charlie_proposal.to_bytes().unwrap())
+                            .decrypt_message(&id, add_charlie_proposal.proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -430,11 +437,11 @@ pub mod tests {
                         assert!(!proposals.is_empty());
                         assert_eq!(alice_central.pending_proposals(&id).len(), 1);
                         let renewed_proposal = proposals.first().unwrap();
-                        assert_eq!(commit_epoch.as_u64() + 1, renewed_proposal.epoch().as_u64());
+                        assert_eq!(commit_epoch.as_u64() + 1, renewed_proposal.proposal.epoch().as_u64());
 
                         // Let's use this proposal to see if it works
                         bob_central
-                            .decrypt_message(&id, renewed_proposal.to_bytes().unwrap())
+                            .decrypt_message(&id, renewed_proposal.proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert_eq!(bob_central.pending_proposals(&id).len(), 1);

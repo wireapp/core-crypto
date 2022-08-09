@@ -21,6 +21,8 @@ enum CiphersuiteName {
 enum CryptoError {
     "ConversationNotFound",
     "ClientNotFound",
+    "PendingProposalNotFound",
+    "PendingCommitNotFound",
     "MalformedIdentifier",
     "ClientSignatureNotFound",
     "ClientSignatureMismatch",
@@ -39,11 +41,12 @@ enum CryptoError {
     "Unauthorized",
     "CallbacksNotSet",
     "ExternalAddProposalError",
+    "InvalidHashReference",
 };
 
 dictionary DecryptedMessage {
     sequence<u8>? message;
-    sequence<sequence<u8>> proposals;
+    sequence<ProposalBundle> proposals;
     boolean is_active;
     u64? commit_delay;
 };
@@ -63,6 +66,11 @@ dictionary CommitBundle {
     sequence<u8>? welcome;
     sequence<u8> commit;
     sequence<u8> public_group_state;
+};
+
+dictionary ProposalBundle {
+    sequence<u8> proposal;
+    sequence<u8> proposal_ref;
 };
 
 dictionary MlsConversationInitMessage {
@@ -122,13 +130,13 @@ interface CoreCrypto {
     sequence<u8> encrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> message);
 
     [Throws=CryptoError]
-    sequence<u8> new_add_proposal(ConversationId conversation_id, sequence<u8> key_package);
+    ProposalBundle new_add_proposal(ConversationId conversation_id, sequence<u8> key_package);
 
     [Throws=CryptoError]
-    sequence<u8> new_update_proposal(ConversationId conversation_id);
+    ProposalBundle new_update_proposal(ConversationId conversation_id);
 
     [Throws=CryptoError]
-    sequence<u8> new_remove_proposal(ConversationId conversation_id, ClientId client_id);
+    ProposalBundle new_remove_proposal(ConversationId conversation_id, ClientId client_id);
 
     [Throws=CryptoError]
     sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch);
@@ -156,6 +164,12 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     void commit_accepted(ConversationId conversation_id);
+
+    [Throws=CryptoError]
+    void clear_pending_proposal(ConversationId conversation_id, sequence<u8> proposal_ref);
+
+    [Throws=CryptoError]
+    void clear_pending_commit(ConversationId conversation_id);
 
     [Throws=CryptoError]
     CommitBundle commit_pending_proposals(ConversationId conversation_id);

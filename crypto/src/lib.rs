@@ -72,11 +72,13 @@ pub mod prelude {
     pub use mls_crypto_provider::{EntropySeed, RawEntropySeed};
 
     pub use crate::client::*;
-    pub use crate::conversation::handshake::MlsConversationCreationMessage;
+    pub use crate::conversation::decrypt::MlsConversationDecryptMessage;
+    pub use crate::conversation::handshake::{MlsCommitBundle, MlsConversationCreationMessage, MlsProposalBundle};
     pub use crate::conversation::*;
     pub use crate::error::*;
     pub use crate::member::*;
     pub use crate::proposal::MlsProposal;
+    pub use crate::proposal::MlsProposalRef;
     pub use crate::CoreCryptoCallbacks;
     pub use crate::{config::MlsCentralConfiguration, MlsCentral, MlsCiphersuite};
 }

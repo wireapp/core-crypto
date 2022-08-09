@@ -14,12 +14,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use openmls::prelude::{KeyPackage, MlsMessageOut};
+use openmls::prelude::KeyPackage;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::{ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsError};
+use crate::{
+    prelude::handshake::MlsProposalBundle, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral,
+    MlsConversation, MlsError,
+};
+
+/// Abstraction over a [openmls::prelude::hash_ref::ProposalRef] to deal with conversions
+#[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::From, derive_more::Deref, derive_more::Display)]
+pub struct MlsProposalRef(openmls::prelude::hash_ref::ProposalRef);
+
+impl TryFrom<Vec<u8>> for MlsProposalRef {
+    type Error = CryptoError;
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        let value: [u8; 16] = value.try_into().map_err(|_| Self::Error::InvalidHashReference)?;
+        Ok(Self(value.into()))
+    }
+}
+
+#[cfg(test)]
+impl From<MlsProposalRef> for Vec<u8> {
+    fn from(prop_ref: MlsProposalRef) -> Self {
+        prop_ref.0.as_slice().to_vec()
+    }
+}
 
 /// Internal representation of proposal to ease further additions
 pub enum MlsProposal {
@@ -38,8 +61,8 @@ impl MlsProposal {
         self,
         backend: &MlsCryptoProvider,
         conversation: &mut MlsConversation,
-    ) -> CryptoResult<MlsMessageOut> {
-        match self {
+    ) -> CryptoResult<MlsProposalBundle> {
+        let proposal = match self {
             MlsProposal::Add(key_package) => conversation.propose_add_member(backend, &key_package).await,
             MlsProposal::Update => conversation.propose_self_update(backend).await,
             MlsProposal::Remove(client_id) => {
@@ -52,7 +75,8 @@ impl MlsProposal {
                     .and_then(|kp| Ok(kp.hash_ref(backend.crypto()).map_err(MlsError::from)?))?;
                 conversation.propose_remove_member(backend, &href).await
             }
-        }
+        }?;
+        Ok(proposal)
     }
 }
 
@@ -64,7 +88,7 @@ impl MlsCentral {
     /// * `proposal` - the proposal do be added in the group
     ///
     /// # Return type
-    /// A message will be returned with the proposal that was created
+    /// A [ProposalBundle] with the proposal in a Mls message and a reference to that proposal in order to rollback it if required
     ///
     /// # Errors
     /// If the conversation is not found, an error will be returned. Errors from OpenMls can be
@@ -73,7 +97,7 @@ impl MlsCentral {
         &mut self,
         conversation: &ConversationId,
         proposal: MlsProposal,
-    ) -> CryptoResult<MlsMessageOut> {
+    ) -> CryptoResult<MlsProposalBundle> {
         let conversation = Self::get_conversation_mut(&mut self.mls_groups, conversation)?;
         proposal.create(&self.mls_backend, conversation).await
     }
@@ -171,7 +195,7 @@ pub mod proposal_tests {
                         .await
                         .unwrap();
                     bob_central
-                        .decrypt_message(&id, remove_proposal.to_bytes().unwrap())
+                        .decrypt_message(&id, remove_proposal.proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
                     let MlsCommitBundle { commit, .. } = alice_central.commit_pending_proposals(&id).await.unwrap();

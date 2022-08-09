@@ -54,6 +54,11 @@ export interface ConversationConfiguration {
 export type ConversationId = Uint8Array;
 
 /**
+ * Alias for proposal reference. It is a byte array of size 16.
+ */
+export type ProposalRef = Uint8Array;
+
+/**
  * Params for CoreCrypto initialization
  * Please note that the `entropySeed` parameter MUST be exactly 32 bytes
  */
@@ -171,7 +176,7 @@ export interface DecryptedMessage {
     /**
      * List of proposals that were retrieved from the decrypted message, in addition to the pending local proposals
      */
-    proposals: Uint8Array[];
+    proposals: ProposalBundle[];
     /**
      * It is set to false if ingesting this MLS message has resulted in the client being removed from the group (i.e. a Remove commit)
      */
@@ -180,6 +185,24 @@ export interface DecryptedMessage {
      * Commit delay hint (in milliseconds) to prevent clients from hammering the server with epoch changes
      */
     commitDelay?: number;
+}
+
+/**
+ * Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome)
+ */
+export interface ProposalBundle {
+    /**
+     * TLS-serialized MLS proposal that needs to be fanned out to other (existing) members of the conversation
+     *
+     * @readonly
+     */
+    proposal: Uint8Array;
+    /**
+     * Unique identifier of a proposal
+     *
+     * @readonly
+     */
+    proposal_ref: ProposalRef;
 }
 
 /**
@@ -554,12 +577,12 @@ export class CoreCrypto {
      * @param proposalType - The type of proposal, see {@link ProposalType}
      * @param args - The arguments of the proposal, see {@link ProposalArgs}, {@link AddProposalArgs} or {@link RemoveProposalArgs}
      *
-     * @returns A TLS-serialized MLS proposal
+     * @returns A {@link ProposalBundle} containing the Proposal and its reference in order to rollback it if necessary
      */
     async newProposal(
         proposalType: ProposalType,
         args: ProposalArgs | AddProposalArgs | RemoveProposalArgs
-    ): Promise<Uint8Array> {
+    ): Promise<ProposalBundle> {
         switch (proposalType) {
             case ProposalType.Add: {
                 if (!(args as AddProposalArgs).kp) {
@@ -719,6 +742,35 @@ export class CoreCrypto {
         return await this.#cc.reseed_rng(seed);
     }
 
+
+    /**
+     * Allows to remove a pending proposal (rollback). Use this when backend rejects the proposal you just sent e.g. if permissions
+     * have changed meanwhile.
+     *
+     * **CAUTION**: only use this when you had an explicit response from the Delivery Service
+     * e.g. 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc..
+     *
+     * @param conversationId - The group's ID
+     * @param proposal_ref - A reference to the proposal to delete. You get one when using {@link CoreCrypto.newProposal}
+     */
+    async clear_pending_proposal(conversationId: ConversationId, proposal_ref: ProposalRef): Promise<void> {
+        return await this.#cc.clear_pending_proposal(conversationId, proposal_ref);
+    }
+
+    /**
+     * Allows to remove a pending commit (rollback). Use this when backend rejects the commit you just sent e.g. if permissions
+     * have changed meanwhile.
+     *
+     * **CAUTION**: only use this when you had an explicit response from the Delivery Service
+     * e.g. 403. Do not use otherwise e.g. 5xx responses, timeout etc..
+     * **DO NOT** use when Delivery Service responds 409, pending state will be renewed
+     * in {@link CoreCrypto.decrypt_message}
+     *
+     * @param conversationId - The group's ID
+     */
+    async clear_pending_commit(conversationId: ConversationId): Promise<void> {
+        return await this.#cc.clear_pending_commit(conversationId);
+    }
 
     /**
      * Returns the current version of {@link CoreCrypto}

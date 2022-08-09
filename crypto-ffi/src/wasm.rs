@@ -14,23 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-#[allow(dead_code)]
-pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
+use std::collections::HashMap;
 
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
-use std::collections::HashMap;
-
 use core_crypto::prelude::decrypt::MlsConversationDecryptMessage;
 use core_crypto::prelude::handshake::MlsCommitBundle;
 use core_crypto::prelude::*;
 pub use core_crypto::CryptoError;
+
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+#[allow(dead_code)]
+pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub type WasmCryptoError = JsError;
 pub type WasmCryptoResult<T> = Result<T, WasmCryptoError>;
@@ -189,6 +189,35 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ProposalBundle {
+    proposal: Vec<u8>,
+    proposal_ref: Vec<u8>,
+}
+
+#[wasm_bindgen]
+impl ProposalBundle {
+    #[wasm_bindgen(getter)]
+    pub fn proposal(&self) -> Uint8Array {
+        Uint8Array::from(&*self.proposal)
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn proposal_ref(&self) -> Uint8Array {
+        Uint8Array::from(&*self.proposal_ref)
+    }
+}
+
+impl TryFrom<MlsProposalBundle> for ProposalBundle {
+    type Error = WasmCryptoError;
+
+    fn try_from(msg: MlsProposalBundle) -> Result<Self, Self::Error> {
+        let (proposal, proposal_ref) = msg.to_bytes_pair()?;
+        Ok(Self { proposal, proposal_ref })
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MlsConversationInitMessage {
     group: Vec<u8>,
     commit: Vec<u8>,
@@ -212,20 +241,20 @@ impl MlsConversationInitMessage {
 /// see [core_crypto::prelude::decrypt::MlsConversationDecryptMessage]
 pub struct DecryptedMessage {
     message: Option<Vec<u8>>,
-    proposals: Vec<Vec<u8>>,
+    proposals: Vec<ProposalBundle>,
     is_active: bool,
     commit_delay: Option<u32>,
 }
 
 impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
-    type Error = CryptoError;
+    type Error = WasmCryptoError;
 
     fn try_from(from: MlsConversationDecryptMessage) -> Result<Self, Self::Error> {
         let proposals = from
             .proposals
             .into_iter()
-            .map(|p| CryptoResult::Ok(p.to_bytes().map_err(MlsError::from)?))
-            .collect::<CryptoResult<Vec<Vec<u8>>>>()?;
+            .map(ProposalBundle::try_from)
+            .collect::<WasmCryptoResult<Vec<ProposalBundle>>>()?;
 
         let commit_delay = if let Some(delay) = from.delay {
             Some(delay.try_into()?)
@@ -250,8 +279,11 @@ impl DecryptedMessage {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn proposals(&self) -> Vec<Uint8Array> {
-        self.proposals.iter().map(|p| Uint8Array::from(p.as_slice())).collect()
+    pub fn proposals(&self) -> js_sys::Array {
+        self.proposals
+            .iter()
+            .map(|p| JsValue::from(p.clone()))
+            .collect::<js_sys::Array>()
     }
 
     #[wasm_bindgen(getter)]
@@ -796,17 +828,13 @@ impl CoreCrypto {
                 let kp = KeyPackage::try_from(&keypackage[..])
                     .map_err(MlsError::from)
                     .map_err(CryptoError::from)?;
-                let proposal_bytes = this
+                let proposal: ProposalBundle = this
                     .write()
                     .await
                     .new_proposal(&conversation_id.to_vec(), MlsProposal::Add(kp))
                     .await?
-                    .to_bytes()
-                    .map(|bytes| Uint8Array::from(bytes.as_slice()))
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)?;
-
-                WasmCryptoResult::Ok(proposal_bytes.into())
+                    .try_into()?;
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&proposal)?)
             }
             .err_into(),
         )
@@ -819,17 +847,13 @@ impl CoreCrypto {
         let this = self.0.clone();
         future_to_promise(
             async move {
-                let proposal_bytes = this
+                let proposal: ProposalBundle = this
                     .write()
                     .await
                     .new_proposal(&conversation_id.to_vec(), MlsProposal::Update)
                     .await?
-                    .to_bytes()
-                    .map(|bytes| Uint8Array::from(bytes.as_slice()))
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)?;
-
-                WasmCryptoResult::Ok(proposal_bytes.into())
+                    .try_into()?;
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&proposal)?)
             }
             .err_into(),
         )
@@ -842,17 +866,13 @@ impl CoreCrypto {
         let this = self.0.clone();
         future_to_promise(
             async move {
-                let proposal_bytes = this
+                let proposal: ProposalBundle = this
                     .write()
                     .await
                     .new_proposal(&conversation_id.to_vec(), MlsProposal::Remove(client_id.into()))
                     .await?
-                    .to_bytes()
-                    .map(|bytes| Uint8Array::from(bytes.as_slice()))
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)?;
-
-                WasmCryptoResult::Ok(proposal_bytes.into())
+                    .try_into()?;
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&proposal)?)
             }
             .err_into(),
         )
@@ -990,6 +1010,38 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 this.write().await.commit_accepted(&conversation_id.to_vec()).await?;
+
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
+        )
+    }
+
+    /// see [core_crypto::MlsCentral::clear_pending_proposal]
+    pub fn clear_pending_proposal(&self, conversation_id: Box<[u8]>, proposal_ref: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                this.write()
+                    .await
+                    .clear_pending_proposal(&conversation_id.to_vec(), proposal_ref.to_vec())
+                    .await?;
+
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
+        )
+    }
+
+    /// see [core_crypto::MlsCentral::clear_pending_commit]
+    pub fn clear_pending_commit(&self, conversation_id: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                this.write()
+                    .await
+                    .clear_pending_commit(&conversation_id.to_vec())
+                    .await?;
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
