@@ -35,11 +35,11 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 Install Android SDK and Build-Tools for API level 30+
 
 NOTE: If you are building on macOS you'll need to setup $ANDROID_SDK_ROOT path variable manually:
-```
+```ignore
 export ANDROID_SDK_ROOT=~/Android/Sdk
 ```
 Install android rust targets
-```
+```ignore
 rustup target add x86_64-linux-android aarch64-linux-android armv7-linux-androideabi i686-linux-android
 ```
 
@@ -49,14 +49,14 @@ Install Xcode & it's commandline tools: [https://developer.apple.com/xcode/](htt
 
 Install iOS rust targets
 
-```
+```ignore
 rustup target add aarch64-apple-ios x86_64-apple-ios aarch64-apple-ios-sim
 ```
 
 ### MacOS
 
 Install macOS rust targets (M1 macs are currently not supported)
-```
+```ignore
 rustup target add x86_64-apple-darwin
 ```
 
@@ -66,7 +66,7 @@ If cross-compiling from macOS you'll need install: [https://github.com/messense/
 
 Install linux targets
 
-```
+```ignore
 rustup target add x86_64-unknown-linux-gnu
 ```
 
@@ -80,7 +80,7 @@ rustup target add x86_64-unknown-linux-gnu
 
 Build bindings for Android, JVM, iOS and WASM
 
-```
+```ignore
 cd crypto-ffi 
 
 # builds bindings and targets for the JVM (macOS / Linux)
@@ -100,7 +100,7 @@ cargo make wasm
 
 You can publish the JVM and Android bindings to maven using gradle after you'be build the corresponding target.
 
-```
+```ignore
 cd kotlin
 ./gradlew :jvm:publishToMavenLocal
 ./gradlew :android:publishToMavenLocal
