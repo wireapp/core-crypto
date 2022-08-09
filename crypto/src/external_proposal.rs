@@ -9,18 +9,6 @@ use crate::{
     prelude::MlsConversation, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsError,
 };
 
-pub(crate) trait ExternalProposalExt {
-    fn is_external_add_proposal(&self) -> bool;
-}
-impl ExternalProposalExt for QueuedProposal {
-    fn is_external_add_proposal(&self) -> bool {
-        matches!(
-            (self.proposal(), self.sender()),
-            (Proposal::Add(_), Sender::External(_) | Sender::NewMember)
-        )
-    }
-}
-
 impl MlsConversation {
     /// Validates the proposal. If it is external and an `Add` proposal it will call the callback
     /// interface to validate the proposal, otherwise it will succeed.
@@ -30,42 +18,47 @@ impl MlsConversation {
         callbacks: Option<&dyn CoreCryptoCallbacks>,
         backend: &impl OpenMlsCrypto,
     ) -> CryptoResult<()> {
-        if proposal.is_external_add_proposal() {
-            let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
-            let pending_removes = self
-                .group
-                .pending_proposals()
-                .filter_map(|proposal| match proposal.proposal() {
-                    Proposal::Remove(ref remove) => Some(remove.removed()),
-                    _ => None,
-                })
-                .collect::<Vec<_>>();
-            let other_clients = self
-                .group
-                .members()
-                .into_iter()
-                .filter_map(|kp| {
-                    if !pending_removes.contains(&&kp.hash_ref(backend).ok()?) {
-                        Some(kp.credential().identity().to_owned())
-                    } else {
-                        None
-                    }
-                })
-                .collect::<HashSet<_>>();
-            let add_proposal = match proposal.proposal() {
-                Proposal::Add(ref add) => add,
-                _ => return Err(CryptoError::InvalidProposalType),
-            };
-            if !callbacks.is_user_in_group(
-                add_proposal.key_package().credential().identity().to_owned(),
-                other_clients.into_iter().collect(),
-            ) {
-                return Err(CryptoError::ExternalProposalError(
-                    "identity validation failure. Only users already in group are allowed.",
-                ));
+        let is_external_proposal = matches!(proposal.sender(), Sender::External(_) | Sender::NewMember);
+        if is_external_proposal {
+            if let Proposal::Add(add_proposal) = proposal.proposal() {
+                let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
+                let other_clients = self.members_in_next_epoch(backend);
+                let self_identity = add_proposal.key_package().credential().identity().to_owned();
+                let is_self_user_in_group =
+                    callbacks.is_user_in_group(self_identity, other_clients.into_iter().collect());
+                if !is_self_user_in_group {
+                    return Err(CryptoError::ExternalAddProposalError);
+                }
             }
         }
         Ok(())
+    }
+
+    /// Get actual group members and substract pending remove proposals
+    fn members_in_next_epoch(&self, backend: &impl OpenMlsCrypto) -> HashSet<Vec<u8>> {
+        let pending_removals = self.pending_removals();
+        self.group
+            .members()
+            .into_iter()
+            .filter_map(|kp| {
+                if !pending_removals.contains(&&kp.hash_ref(backend).ok()?) {
+                    Some(kp.credential().identity().to_owned())
+                } else {
+                    None
+                }
+            })
+            .collect::<HashSet<_>>()
+    }
+
+    /// Gather pending remove proposals
+    fn pending_removals(&self) -> Vec<&KeyPackageRef> {
+        self.group
+            .pending_proposals()
+            .filter_map(|proposal| match proposal.proposal() {
+                Proposal::Remove(ref remove) => Some(remove.removed()),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
     }
 }
 
