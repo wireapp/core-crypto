@@ -49,7 +49,7 @@ dictionary DecryptedMessage {
 dictionary MemberAddedMessages {
     sequence<u8> message;
     sequence<u8> welcome;
-    sequence<u8> group_info;
+    sequence<u8> public_group_state;
 };
 
 dictionary Invitee {
@@ -60,7 +60,7 @@ dictionary Invitee {
 dictionary CommitBundle {
     sequence<u8>? welcome;
     sequence<u8> message;
-    sequence<u8> group_info;
+    sequence<u8> public_group_state;
 };
 
 dictionary MlsConversationInitMessage {

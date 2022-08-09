@@ -112,7 +112,12 @@ export interface MemberAddedMessages {
      * @readonly
      */
     welcome: Uint8Array;
-    group_info: Uint8Array;
+    /**
+     * TLS-serialized MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit
+     *
+     * @readonly
+     */
+    public_group_state: Uint8Array;
 }
 
 /**
@@ -131,7 +136,12 @@ export interface CommitBundle {
      * @readonly
      */
     welcome?: Uint8Array;
-    group_info: Uint8Array;
+    /**
+     * TLS-serialized MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit
+     *
+     * @readonly
+     */
+    public_group_state: Uint8Array;
 }
 
 /**
@@ -389,7 +399,7 @@ export class CoreCrypto {
         const ret: MemberAddedMessages = {
             welcome: ffiRet.welcome,
             message: ffiRet.message,
-            group_info: ffiRet.group_info,
+            public_group_state: ffiRet.public_group_state,
         };
 
         return ret;
@@ -415,7 +425,7 @@ export class CoreCrypto {
         const ret: CommitBundle = {
             welcome: ffiRet.welcome,
             message: ffiRet.message,
-            group_info: ffiRet.group_info,
+            public_group_state: ffiRet.public_group_state,
         };
 
         return ret

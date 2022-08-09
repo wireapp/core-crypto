@@ -160,17 +160,17 @@ impl MlsCentral {
         Ok(())
     }
 
-    pub async fn try_join_from_group_info(
+    pub async fn try_join_from_public_group_state(
         &mut self,
         id: &ConversationId,
-        group_info: PublicGroupState,
+        public_group_state: PublicGroupState,
         others: Vec<&mut Self>,
     ) -> CryptoResult<()> {
         use tls_codec::{Deserialize as _, Serialize as _};
-        let group_info = group_info.tls_serialize_detached().map_err(MlsError::from)?;
-        let group_info =
-            VerifiablePublicGroupState::tls_deserialize(&mut group_info.as_slice()).map_err(MlsError::from)?;
-        let (group_id, commit) = self.join_by_external_commit(group_info).await?;
+        let public_group_state = public_group_state.tls_serialize_detached().map_err(MlsError::from)?;
+        let public_group_state =
+            VerifiablePublicGroupState::tls_deserialize(&mut public_group_state.as_slice()).map_err(MlsError::from)?;
+        let (group_id, commit) = self.join_by_external_commit(public_group_state).await?;
         self.merge_pending_group_from_external_commit(group_id.as_slice(), MlsConversationConfiguration::default())
             .await?;
         assert_eq!(group_id.as_slice(), id.as_slice());
@@ -196,7 +196,7 @@ impl MlsCentral {
         Ok(())
     }
 
-    pub async fn group_info(&self, id: &ConversationId) -> PublicGroupState {
+    pub async fn public_group_state(&self, id: &ConversationId) -> PublicGroupState {
         self.get_conversation(id)
             .unwrap()
             .group
@@ -205,10 +205,10 @@ impl MlsCentral {
             .unwrap()
     }
 
-    pub async fn verifiable_group_info(&self, id: &ConversationId) -> VerifiablePublicGroupState {
+    pub async fn verifiable_public_group_state(&self, id: &ConversationId) -> VerifiablePublicGroupState {
         use tls_codec::{Deserialize as _, Serialize as _};
-        let group_info = self.group_info(id).await.tls_serialize_detached().unwrap();
-        VerifiablePublicGroupState::tls_deserialize(&mut group_info.as_slice()).unwrap()
+        let public_group_state = self.public_group_state(id).await.tls_serialize_detached().unwrap();
+        VerifiablePublicGroupState::tls_deserialize(&mut public_group_state.as_slice()).unwrap()
     }
 
     /// Finds the [KeyPackage] of a [Client] within a [MlsGroup]
