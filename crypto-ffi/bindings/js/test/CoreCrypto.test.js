@@ -175,48 +175,50 @@ test("roundtrip message", async () => {
   const [ctx2, page2] = await initBrowser();
 
   const messageText = "Hello World!";
+  const conversationId = "testConversation";
 
-  let kp = await page2.evaluate(async () => {
+  const client1Config = {
+    databaseName: "roundtrip message test 1",
+    key: "test",
+    clientId: "test",
+  };
+
+  const client2Config = {
+    databaseName: "roundtrip message test 2",
+    key: "test2",
+    clientId: "test2",
+  };
+
+  let kp = await page2.evaluate(async (config) => {
     const { CoreCrypto } = await import("./corecrypto.js");
 
-    const cc2 = await CoreCrypto.init({
-      databaseName: "roundtrip message test 2",
-      key: "test2",
-      clientId: "test2",
-    });
+    const cc2 = await CoreCrypto.init(config);
 
     const [kp] = await cc2.clientKeypackages(1);
     await cc2.close();
     return kp;
-  });
+  }, client2Config);
 
   kp = Uint8Array.from(Object.values(kp));
 
-  let [welcome, message] = await page.evaluate(async (kp) => {
+  let [welcome, message] = await page.evaluate(async (kp, messageText, conversationId, client1Config, client2Config) => {
     const { CoreCrypto } = await import("./corecrypto.js");
 
-    const cc = await CoreCrypto.init({
-      databaseName: "roundtrip message test 1",
-      key: "test",
-      clientId: "test",
-    });
+    const cc = await CoreCrypto.init(client1Config);
 
     const encoder = new TextEncoder();
 
-    const conversationId = "testConversation";
     const conversationIdBuffer = encoder.encode(conversationId);
 
     await cc.createConversation(conversationIdBuffer);
 
     const welcome = await cc.addClientsToConversation(conversationIdBuffer, [
-      { id: encoder.encode("test2"), kp: Uint8Array.from(Object.values(kp)) },
+      { id: encoder.encode(client2Config.clientId), kp: Uint8Array.from(Object.values(kp)) },
     ]);
 
     if (!welcome) {
       throw new Error("no welcome message was generated");
     }
-
-    const messageText = "Hello World!";
 
     const message = await cc.encryptMessage(
       conversationIdBuffer,
@@ -224,37 +226,40 @@ test("roundtrip message", async () => {
     );
 
     return [welcome, message];
-  }, kp);
+  }, kp, messageText, conversationId, client1Config, client2Config);
 
   welcome.welcome = Uint8Array.from(welcome.welcome);
   welcome.message = Uint8Array.from(welcome.message);
+  welcome.groupInfo = Uint8Array.from(welcome.groupInfo);
+
   message = Uint8Array.from(Object.values(message));
 
-  const isMessageIdentical = await page2.evaluate(async (welcome, message) => {
+  const isMessageIdentical = await page2.evaluate(async (welcome, message, messageText, conversationId, config) => {
+    const welcomeMessage = Uint8Array.from(Object.values(welcome));
+    const encryptedMessage = Uint8Array.from(Object.values(message));
     const { CoreCrypto } = await import("./corecrypto.js");
 
     const encoder = new TextEncoder();
 
-    const cc2 = await CoreCrypto.init({
-      databaseName: "roundtrip message test 2",
-      key: "test2",
-      clientId: "test2",
-    });
+    const cc2 = await CoreCrypto.init(config);
 
-    const messageBuffer = encoder.encode("Hello World!");
+    const messageBuffer = encoder.encode(messageText);
 
-    const conversationId = "testConversation";
     const conversationIdBuffer = encoder.encode(conversationId);
 
-    const welcomeConversationId = await cc2.processWelcomeMessage(Uint8Array.from(Object.values(welcome)));
+    const welcomeConversationId = await cc2.processWelcomeMessage(welcomeMessage);
     if (!conversationIdBuffer.every((val, i) => val === welcomeConversationId[i])) {
       throw new Error(`conversationId mismatch, got ${welcomeConversationId}, expected ${conversationIdBuffer}`);
     }
 
-    const decryptedMessage = await cc2.decryptMessage(welcomeConversationId, Uint8Array.from(Object.values(message)));
+    const decryptedMessage = await cc2.decryptMessage(welcomeConversationId, encryptedMessage);
 
-    return decryptedMessage.every((val, i) => val === messageBuffer[i]);
-  }, welcome.welcome, message);
+    if (!decryptedMessage.message) {
+      return false;
+    }
+
+    return decryptedMessage.message.every((val, i) => val === messageBuffer[i]);
+  }, welcome.welcome, message, messageText, conversationId, client2Config);
 
   expect(isMessageIdentical).toBe(true);
 

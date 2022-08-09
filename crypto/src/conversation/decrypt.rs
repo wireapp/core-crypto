@@ -30,7 +30,7 @@ pub struct MlsConversationDecryptMessage {
     /// Is the conversation still active after receiving this commit
     /// aka has the user been removed from the group
     pub is_active: bool,
-    /// delay time to feed caller timer for committing
+    /// delay time in seconds to feed caller timer for committing
     pub delay: Option<u64>,
 }
 
@@ -63,6 +63,7 @@ impl MlsConversation {
             ProcessedMessage::ProposalMessage(proposal) => {
                 self.validate_external_proposal(&proposal, callbacks, backend.crypto())?;
                 self.group.store_pending_proposal(*proposal);
+
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals: vec![],
@@ -95,7 +96,9 @@ impl MlsConversation {
                 }
             }
         };
+
         self.persist_group_when_changed(backend, false).await?;
+
         Ok(decrypted)
     }
 }

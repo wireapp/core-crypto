@@ -5,7 +5,7 @@ impl MlsConversation {
     const DELAY_RAMP_UP_MULTIPLIER: f32 = 120.0;
     const DELAY_RAMP_UP_SUB: u64 = 106;
 
-    /// Helps consumer by providing a deterministic delay for him to commit its pending proposal.
+    /// Helps consumer by providing a deterministic delay in seconds for him to commit its pending proposal.
     /// It depends on the index of the client in the ratchet tree
     /// * `self_index` - ratchet tree index of self client
     /// * `epoch` - current group epoch

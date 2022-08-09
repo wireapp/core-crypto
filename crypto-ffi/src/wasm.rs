@@ -21,7 +21,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 use futures_util::future::TryFutureExt;
-use js_sys::{Array, Promise, Uint8Array};
+use js_sys::{Promise, Uint8Array};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
@@ -212,16 +212,33 @@ impl MlsConversationInitMessage {
 /// see [core_crypto::prelude::decrypt::MlsConversationDecryptMessage]
 pub struct DecryptedMessage {
     message: Option<Vec<u8>>,
-    commit_delay: Option<u64>,
+    proposals: Vec<Vec<u8>>,
+    is_active: bool,
+    commit_delay: Option<u32>,
 }
 
-impl From<MlsConversationDecryptMessage> for DecryptedMessage {
-    fn from(from: MlsConversationDecryptMessage) -> Self {
-        // TODO: map other fields in next minor version
-        Self {
+impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
+    type Error = CryptoError;
+
+    fn try_from(from: MlsConversationDecryptMessage) -> Result<Self, Self::Error> {
+        let proposals = from
+            .proposals
+            .into_iter()
+            .map(|p| CryptoResult::Ok(p.to_bytes().map_err(MlsError::from)?))
+            .collect::<CryptoResult<Vec<Vec<u8>>>>()?;
+
+        let commit_delay = if let Some(delay) = from.delay {
+            Some(delay.try_into()?)
+        } else {
+            None
+        };
+
+        Ok(Self {
             message: from.app_msg,
-            commit_delay: from.delay,
-        }
+            proposals,
+            is_active: from.is_active,
+            commit_delay,
+        })
     }
 }
 
@@ -229,11 +246,21 @@ impl From<MlsConversationDecryptMessage> for DecryptedMessage {
 impl DecryptedMessage {
     #[wasm_bindgen(getter)]
     pub fn message(&self) -> Option<Uint8Array> {
-        self.message.clone().map(|m| Uint8Array::from(&*m))
+        self.message.clone().map(|m| Uint8Array::from(m.as_slice()))
     }
 
     #[wasm_bindgen(getter)]
-    pub fn commit_delay(&self) -> Option<u64> {
+    pub fn proposals(&self) -> Vec<Uint8Array> {
+        self.proposals.iter().map(|p| Uint8Array::from(p.as_slice())).collect()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn is_active(&self) -> bool {
+        self.is_active
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn commit_delay(&self) -> Option<u32> {
         self.commit_delay
     }
 }
@@ -304,22 +331,40 @@ impl TryInto<ConversationMember> for Invitee {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// see [core_crypto::prelude::MlsConversationConfiguration]
 pub struct ConversationConfiguration {
-    // pub admins: Box<[Box<[u8]>]>,
+    admins: Vec<Vec<u8>>,
     ciphersuite: Option<Ciphersuite>,
     key_rotation_span: Option<u32>,
-    #[serde(default, skip_serializing, skip_deserializing)]
-    external_senders: js_sys::Array,
+    external_senders: Vec<Vec<u8>>,
 }
 
 #[wasm_bindgen]
 impl ConversationConfiguration {
     #[wasm_bindgen(constructor)]
     pub fn new(
+        admins: Option<Vec<Uint8Array>>,
         ciphersuite: Option<Ciphersuite>,
         key_rotation_span: Option<u32>,
-        external_senders: js_sys::Array,
+        external_senders: Option<Vec<Uint8Array>>,
     ) -> Self {
+        let admins = admins
+            .map(|a| {
+                a.to_vec()
+                    .into_iter()
+                    .map(|jsv| Uint8Array::from(jsv).to_vec())
+                    .collect()
+            })
+            .unwrap_or_default();
+        let external_senders = external_senders
+            .map(|exs| {
+                exs.to_vec()
+                    .into_iter()
+                    .map(|jsv| Uint8Array::from(jsv).to_vec())
+                    .collect()
+            })
+            .unwrap_or_default();
+
         Self {
+            admins,
             ciphersuite,
             key_rotation_span,
             external_senders,
@@ -330,18 +375,14 @@ impl ConversationConfiguration {
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     type Error = WasmCryptoError;
     fn try_into(mut self) -> WasmCryptoResult<MlsConversationConfiguration> {
-        let external_senders = self
-            .external_senders
-            .iter()
-            .map(|s: JsValue| Uint8Array::new(&s).to_vec())
-            .collect();
         let key_rotation_span = self
             .key_rotation_span
             .map(|span| std::time::Duration::from_secs(span as u64));
+
         let mut cfg = MlsConversationConfiguration {
-            // admins: self.admins.to_vec().into_iter().map(Into::into).collect(),
+            admins: self.admins,
             key_rotation_span,
-            external_senders,
+            external_senders: self.external_senders,
             ..Default::default()
         };
 
@@ -582,16 +623,8 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::MlsCentral::new_conversation]
-    pub fn create_conversation(
-        &self,
-        conversation_id: Box<[u8]>,
-        mut config: ConversationConfiguration,
-        external_senders: Array,
-    ) -> Promise {
+    pub fn create_conversation(&self, conversation_id: Box<[u8]>, config: ConversationConfiguration) -> Promise {
         let this = self.0.clone();
-        if !external_senders.is_null() && !external_senders.is_undefined() {
-            config.external_senders = external_senders;
-        }
         future_to_promise(
             async move {
                 this.write()
@@ -706,25 +739,26 @@ impl CoreCrypto {
                 let conversation_id = conversation_id.into();
                 let mut central = this.write().await;
                 central.wipe_conversation(&conversation_id).await?;
-                WasmCryptoResult::Ok(JsValue::null())
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )
     }
 
-    /// Returns: [`WasmCryptoResult<Option<js_sys::Uint8Array>>`]
+    /// Returns: [`WasmCryptoResult<DecryptedMessage>`]
     ///
     /// see [core_crypto::MlsCentral::decrypt_message]
     pub fn decrypt_message(&self, conversation_id: Box<[u8]>, payload: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
             async move {
-                let decrypted_message = this
+                let raw_decrypted_message = this
                     .write()
                     .await
                     .decrypt_message(&conversation_id.to_vec(), payload)
-                    .await
-                    .map(DecryptedMessage::from)?;
+                    .await?;
+
+                let decrypted_message: DecryptedMessage = raw_decrypted_message.try_into()?;
 
                 WasmCryptoResult::Ok(decrypted_message.into())
             }
@@ -744,7 +778,7 @@ impl CoreCrypto {
                     .await
                     .encrypt_message(&conversation_id.to_vec(), message)
                     .await
-                    .map(|cleartext| Uint8Array::from(cleartext.as_slice()))?;
+                    .map(|ciphertext| Uint8Array::from(ciphertext.as_slice()))?;
 
                 WasmCryptoResult::Ok(ciphertext.into())
             }
@@ -879,6 +913,8 @@ impl CoreCrypto {
         )
     }
 
+    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    ///
     /// see [core_crypto::MlsCentral::export_public_group_state]
     pub fn export_group_state(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
@@ -896,6 +932,8 @@ impl CoreCrypto {
     }
 
     #[allow(clippy::boxed_local)]
+    /// Returns: [`WasmCryptoResult<MlsConversationInitMessage>`]
+    ///
     /// see [core_crypto::MlsCentral::join_by_external_commit]
     pub fn join_by_external_commit(&self, group_state: Box<[u8]>) -> Promise {
         use core_crypto::prelude::tls_codec::Deserialize as _;
@@ -925,6 +963,8 @@ impl CoreCrypto {
         )
     }
 
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
     /// see [core_crypto::MlsCentral::merge_pending_group_from_external_commit]
     pub fn merge_pending_group_from_external_commit(
         &self,
@@ -938,36 +978,6 @@ impl CoreCrypto {
                     .await
                     .merge_pending_group_from_external_commit(&conversation_id, configuration.try_into()?)
                     .await?;
-                WasmCryptoResult::Ok(JsValue::UNDEFINED)
-            }
-            .err_into(),
-        )
-    }
-
-    /// Returns: [`WasmCryptoResult<js_sys::ArrayBuffer>`]
-    ///
-    /// see [core_crypto::MlsCentral::random_bytes]
-    pub fn random_bytes(&self, len: usize) -> Promise {
-        let this = self.0.clone();
-        future_to_promise(
-            async move {
-                let bytes = this.read().await.random_bytes(len)?;
-                WasmCryptoResult::Ok(Uint8Array::from(bytes.as_slice()).into())
-            }
-            .err_into(),
-        )
-    }
-
-    #[allow(rustdoc::broken_intra_doc_links)]
-    /// Returns: [`WasmCryptoResult<()>`]
-    ///
-    /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
-    pub fn reseed_rng(&self, seed: Box<[u8]>) -> Promise {
-        let this = self.0.clone();
-        future_to_promise(
-            async move {
-                let seed = EntropySeed::try_from_slice(&seed)?;
-                this.write().await.provider_mut().reseed(Some(seed));
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -998,6 +1008,36 @@ impl CoreCrypto {
                 let commit_bundle = central.commit_pending_proposals(&conversation_id).await?;
                 let commit_bundle: CommitBundle = commit_bundle.try_into()?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit_bundle)?)
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    ///
+    /// see [core_crypto::MlsCentral::random_bytes]
+    pub fn random_bytes(&self, len: usize) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let bytes = this.read().await.random_bytes(len)?;
+                WasmCryptoResult::Ok(Uint8Array::from(bytes.as_slice()).into())
+            }
+            .err_into(),
+        )
+    }
+
+    #[allow(rustdoc::broken_intra_doc_links)]
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
+    pub fn reseed_rng(&self, seed: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let seed = EntropySeed::try_from_slice(&seed)?;
+                this.write().await.provider_mut().reseed(Some(seed));
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )

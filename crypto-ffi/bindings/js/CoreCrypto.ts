@@ -28,11 +28,12 @@ export type { Ciphersuite } from "./wasm/core-crypto-ffi";
  */
 export interface ConversationConfiguration {
     /**
-     *  List of client IDs with administrative permissions
+     * List of client IDs with administrative permissions
+     * Note: This is currently unused
      */
     admins?: Uint8Array[];
     /**
-     *  Conversation ciphersuite
+     * Conversation ciphersuite
      */
     ciphersuite?: Ciphersuite;
     /**
@@ -43,7 +44,7 @@ export interface ConversationConfiguration {
     /**
      * List of client IDs that are allowed to be external senders of commits
      */
-    externalSenders: Uint8Array[];
+    externalSenders?: Uint8Array[];
 }
 
 /**
@@ -117,7 +118,7 @@ export interface MemberAddedMessages {
      *
      * @readonly
      */
-    public_group_state: Uint8Array;
+    publicGroupState: Uint8Array;
 }
 
 /**
@@ -141,7 +142,44 @@ export interface CommitBundle {
      *
      * @readonly
      */
-    public_group_state: Uint8Array;
+    publicGroupState: Uint8Array;
+}
+
+export interface MlsConversationInitMessage {
+    /**
+     * Group ID
+     *
+     * @readonly
+     */
+    group: Uint8Array;
+    /**
+     * TLS-serialized MLS Commit that needs to be fanned out
+     *
+     * @readonly
+     */
+    message: Uint8Array;
+}
+
+/**
+ * This is a wrapper for all the possible outcomes you can get after decrypting a message
+ */
+export interface DecryptedMessage {
+    /**
+     * Raw decrypted application message, if the decrypted MLS message is an application message
+     */
+    message?: Uint8Array;
+    /**
+     * List of proposals that were retrieved from the decrypted message, in addition to the pending local proposals
+     */
+    proposals: Uint8Array[];
+    /**
+     * It is set to false if ingesting this MLS message has resulted in the client being removed from the group (i.e. a Remove commit)
+     */
+    isActive: boolean;
+    /**
+     * Commit delay hint (in milliseconds) to prevent clients from hammering the server with epoch changes
+     */
+    commitDelay?: number;
 }
 
 /**
@@ -190,6 +228,39 @@ export interface RemoveProposalArgs extends ProposalArgs {
      * Client ID to be removed from the conversation
      */
     clientId: Uint8Array;
+}
+
+/**
+ * MLS External Proposal type
+ */
+export const enum ExternalProposalType {
+    /**
+     * This allows to propose the addition of other clients to the MLS group/conversation
+     */
+    Add,
+    /**
+     * This allows to propose the removal of clients from the MLS group/conversation
+     */
+    Remove,
+}
+
+export interface ExternalProposalArgs {
+    /**
+     * Conversation ID that is targeted by the external proposal
+     */
+    conversationId: ConversationId;
+    /**
+     * MLS Group epoch for the external proposal.
+     * This needs to be the current epoch of the group or this proposal **will** be rejected
+     */
+    epoch: number;
+}
+
+export interface ExternalRemoveProposalArgs extends ExternalProposalArgs {
+    /**
+     * KeyPackageRef of the client that needs to be removed in the proposal
+     */
+    keyPackageRef: Uint8Array;
 }
 
 /**
@@ -287,24 +358,57 @@ export class CoreCrypto {
         return await this.#cc.conversation_exists(conversationId);
     }
 
+
+    /**
+     * Wipes and destroys the local storage of a given conversation / MLS group
+     *
+     * @param conversationId - The ID of the conversation to remove
+     */
+    async wipeConversation(conversationId: ConversationId): Promise<void> {
+        return await this.#cc.wipe_conversation(conversationId);
+    }
+
+    /**
+     * Creates an update commit which forces every client to update their keypackages in the conversation
+     *
+     * @param conversationId - The ID of the conversation
+     */
+    async updateKeyingMaterial(conversationId: ConversationId): Promise<CommitBundle> {
+        const ffiRet: CoreCryptoFfiTypes.CommitBundle = await this.#cc.update_keying_material(
+            conversationId
+        );
+
+        const ret: CommitBundle = {
+            welcome: ffiRet.welcome,
+            message: ffiRet.message,
+            publicGroupState: ffiRet.public_group_state,
+        };
+
+        return ret;
+    }
+
     /**
      * Creates a new conversation with the current client being the sole member
      * You will want to use {@link CoreCrypto.addClientsToConversation} afterwards to add clients to this conversation
      *
      * @param conversationId - The conversation ID; You can either make them random or let the backend attribute MLS group IDs
+     * @param configuration.admins - An array of client IDs that will have administrative permissions over the group
      * @param configuration.ciphersuite - The {@link Ciphersuite} that is chosen to be the group's
      * @param configuration.keyRotationSpan - The amount of time in milliseconds after which the MLS Keypackages will be rotated
      * @param configuration.externalSenders - Array of Client IDs that are qualified as external senders within the group
      */
     async createConversation(
         conversationId: ConversationId,
-        { ciphersuite, keyRotationSpan, externalSenders }: ConversationConfiguration) {
+        configuration: ConversationConfiguration = {}
+    ) {
+        const { admins, ciphersuite, keyRotationSpan, externalSenders } = configuration ?? {};
         const config = new CoreCrypto.#module.ConversationConfiguration(
+            admins,
             ciphersuite,
             keyRotationSpan,
             externalSenders,
         );
-        const ret = await this.#cc.create_conversation(conversationId, config, externalSenders);
+        const ret = await this.#cc.create_conversation(conversationId, config);
         return ret;
     }
 
@@ -316,11 +420,24 @@ export class CoreCrypto {
      *
      * @returns Either a decrypted message payload or `undefined` - This happens when the encrypted payload contains a system message such a proposal or commit
      */
-    async decryptMessage(conversationId: ConversationId, payload: Uint8Array): Promise<Uint8Array | undefined> {
-        return await this.#cc.decrypt_message(
+    async decryptMessage(conversationId: ConversationId, payload: Uint8Array): Promise<DecryptedMessage> {
+        const ffiDecryptedMessage: CoreCryptoFfiTypes.DecryptedMessage = await this.#cc.decrypt_message(
             conversationId,
             payload
         );
+
+        const commitDelay = ffiDecryptedMessage.commit_delay ?
+            ffiDecryptedMessage.commit_delay * 1000 :
+            undefined;
+
+        const ret: DecryptedMessage = {
+            message: ffiDecryptedMessage.message,
+            proposals: ffiDecryptedMessage.proposals,
+            isActive: ffiDecryptedMessage.is_active,
+            commitDelay,
+        };
+
+        return ret;
     }
 
     /**
@@ -399,7 +516,7 @@ export class CoreCrypto {
         const ret: MemberAddedMessages = {
             welcome: ffiRet.welcome,
             message: ffiRet.message,
-            public_group_state: ffiRet.public_group_state,
+            publicGroupState: ffiRet.public_group_state,
         };
 
         return ret;
@@ -425,10 +542,10 @@ export class CoreCrypto {
         const ret: CommitBundle = {
             welcome: ffiRet.welcome,
             message: ffiRet.message,
-            public_group_state: ffiRet.public_group_state,
+            publicGroupState: ffiRet.public_group_state,
         };
 
-        return ret
+        return ret;
     }
 
     /**
@@ -474,14 +591,108 @@ export class CoreCrypto {
         }
     }
 
-    /**
-     * Allows to reseed {@link CoreCrypto}'s internal CSPRNG with a new seed.
-     *
-     * @param seed - **exactly 32** bytes buffer seed
-     */
-    async reseedRng(seed: Uint8Array): Promise<void> {
-        return await this.#cc.reseed_rng(seed);
+    async newExternalProposal(
+        externalProposalType: ExternalProposalType,
+        args: ExternalProposalArgs | ExternalRemoveProposalArgs
+    ): Promise<Uint8Array> {
+        switch (externalProposalType) {
+            case ExternalProposalType.Add: {
+                return await this.#cc.new_external_add_proposal(args.conversationId, args.epoch);
+            }
+            case ExternalProposalType.Remove: {
+                if (!(args as ExternalRemoveProposalArgs).keyPackageRef) {
+                    throw new Error("keyPackageRef is not contained in the external proposal arguments");
+                }
+
+                return await this.#cc.new_external_remove_proposal(
+                    args.conversationId,
+                    args.epoch,
+                    (args as ExternalRemoveProposalArgs).keyPackageRef
+                );
+            }
+            default:
+                throw new Error("Invalid external proposal type!");
+        }
     }
+
+    /**
+     * Exports public group state for use in external commits
+     *
+     * @param conversationId - MLS Conversation ID
+     * @returns TLS-serialized MLS public group state
+     */
+    async exportGroupState(conversationId: ConversationId): Promise<Uint8Array> {
+        return await this.#cc.export_group_state(conversationId);
+    }
+
+    /**
+     * Allows to create an external commit to "apply" to join a group through its public group state
+     *
+     * Also see the second step of this process: {@link CoreCrypto.mergePendingGroupFromExternalCommit}
+     *
+     * @param publicGroupState - The public group state that can be fetched from the backend for a given conversation
+     * @returns see {@link MlsConversationInitMessage}
+     */
+    async joinByExternalCommit(publicGroupState: Uint8Array): Promise<MlsConversationInitMessage> {
+        const ffiInitMessage: CoreCryptoFfiTypes.MlsConversationInitMessage = await this.#cc.join_by_external_commit(publicGroupState);
+
+        const ret: MlsConversationInitMessage = {
+            group: ffiInitMessage.group,
+            message: ffiInitMessage.message
+        };
+
+        return ret;
+    }
+
+    /**
+     * This is the second step of the process of joining a group through an external commit
+     *
+     * This step makes the group operational and ready to encrypt/decrypt message
+     *
+     * @param conversationId - The ID of the conversation
+     * @param configuration - Configuration of the group, see {@link ConversationConfiguration}
+     */
+    async mergePendingGroupFromExternalCommit(conversationId: ConversationId, configuration: ConversationConfiguration): Promise<void> {
+        const { admins, ciphersuite, keyRotationSpan, externalSenders } = configuration ?? {};
+        const config = new CoreCrypto.#module.ConversationConfiguration(
+            admins,
+            ciphersuite,
+            keyRotationSpan,
+            externalSenders,
+        );
+        return await this.#cc.merge_pending_group_from_external_commit(conversationId, config);
+    }
+
+    /**
+     * Allows to mark the latest commit produced as "accepted" and be able to safely merge it
+     * into the local group state
+     *
+     * @param conversationId - The group's ID
+     */
+    async commitAccepted(conversationId: ConversationId): Promise<void> {
+        return await this.#cc.commit_accepted(conversationId);
+    }
+
+    /**
+     * Commits the local pending proposals and returns the {@link CommitBundle} object containing what can result from this operation
+     *
+     * @param conversationId - The ID of the conversation
+     * @returns see {@link CommitBundle}
+     */
+    async commitPendingProposals(conversationId: ConversationId): Promise<CommitBundle> {
+        const ffiCommitBundle: CoreCryptoFfiTypes.CommitBundle = await this.#cc.commit_pending_proposals(
+            conversationId
+        );
+
+        const ret: CommitBundle = {
+            welcome: ffiCommitBundle.welcome,
+            message: ffiCommitBundle.message,
+            publicGroupState: ffiCommitBundle.public_group_state,
+        };
+
+        return ret;
+    }
+
 
     /**
      * Allows {@link CoreCrypto} to act as a CSPRNG provider
@@ -494,6 +705,20 @@ export class CoreCrypto {
     async randomBytes(length: number): Promise<Uint8Array> {
         return await this.#cc.random_bytes(length);
     }
+
+    /**
+     * Allows to reseed {@link CoreCrypto}'s internal CSPRNG with a new seed.
+     *
+     * @param seed - **exactly 32** bytes buffer seed
+     */
+    async reseedRng(seed: Uint8Array): Promise<void> {
+        if (seed.length !== 32) {
+            throw new Error(`The seed length needs to be exactly 32 bytes. ${seed.length} bytes provided.`);
+        }
+
+        return await this.#cc.reseed_rng(seed);
+    }
+
 
     /**
      * Returns the current version of {@link CoreCrypto}
