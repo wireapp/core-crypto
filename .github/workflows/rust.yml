@@ -72,6 +72,10 @@ jobs:
         with:
           command: nextest
           args: run --verbose --release
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --doc
 
   wasm-build:
     runs-on: ubuntu-latest
