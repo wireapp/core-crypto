@@ -472,9 +472,8 @@ pub mod tests {
                         // But meanwhile Bob, before receiving the external proposal,
                         // will create a commit and send it to Alice.
                         // Alice will not renew the external proposal
-                        let charlie_kp = charlie_central.get_one_key_package().await;
                         let ext_proposal = charlie_central
-                            .new_external_add_proposal(id.clone(), alice_central[&id].group.epoch(), charlie_kp)
+                            .new_external_add_proposal(id.clone(), alice_central[&id].group.epoch())
                             .await
                             .unwrap();
                         assert!(alice_central.pending_proposals(&id).is_empty());
@@ -522,10 +521,9 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
-                        let kp = alice2_central.get_one_key_package().await;
                         let epoch = alice_central[&id].group.epoch();
                         let ext_proposal = alice2_central
-                            .new_external_add_proposal(id.clone(), epoch, kp)
+                            .new_external_add_proposal(id.clone(), epoch)
                             .await
                             .unwrap();
 
@@ -564,10 +562,9 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
-                        let kp = alice2_central.get_one_key_package().await;
                         let epoch = alice_central[&id].group.epoch();
                         let message = alice2_central
-                            .new_external_add_proposal(id.clone(), epoch, kp)
+                            .new_external_add_proposal(id.clone(), epoch)
                             .await
                             .unwrap();
 
@@ -607,10 +604,9 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
-                        let kp = alice2_central.get_one_key_package().await;
                         let epoch = alice_central[&id].group.epoch();
                         let external_proposal = alice2_central
-                            .new_external_add_proposal(id.clone(), epoch, kp)
+                            .new_external_add_proposal(id.clone(), epoch)
                             .await
                             .unwrap();
 

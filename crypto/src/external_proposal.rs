@@ -2,10 +2,7 @@ use std::collections::HashSet;
 
 use openmls::{
     group::QueuedProposal,
-    prelude::{
-        ExternalProposal, GroupEpoch, GroupId, KeyPackage, KeyPackageRef, MlsMessageOut, OpenMlsCrypto, Proposal,
-        Sender,
-    },
+    prelude::{ExternalProposal, GroupEpoch, GroupId, KeyPackageRef, MlsMessageOut, OpenMlsCrypto, Proposal, Sender},
 };
 
 use crate::{
@@ -79,7 +76,6 @@ impl MlsCentral {
     /// # Arguments
     /// * `conversation_id` - the group/conversation id
     /// * `epoch` - the current epoch of the group. See [openmls::group::GroupEpoch][GroupEpoch]
-    /// * `key_package` - the `KeyPackage` of the client to be added to the group
     ///
     /// # Return type
     /// Returns a message with the proposal to be add a new client
@@ -90,9 +86,9 @@ impl MlsCentral {
         &self,
         conversation_id: ConversationId,
         epoch: GroupEpoch,
-        key_package: KeyPackage,
     ) -> CryptoResult<MlsMessageOut> {
         let group_id = GroupId::from_slice(&conversation_id[..]);
+        let (key_package, ..) = self.mls_client.gen_keypackage(&self.mls_backend).await?.into_parts();
         ExternalProposal::new_add(
             key_package,
             group_id,
@@ -170,11 +166,10 @@ mod tests {
                             .await
                             .unwrap();
                         let epoch = owner_central[&id].group.epoch();
-                        let guest_kp = guest_central.get_one_key_package().await;
 
                         // Craft an external proposal from guest
                         let external_add = guest_central
-                            .new_external_add_proposal(id.clone(), epoch, guest_kp)
+                            .new_external_add_proposal(id.clone(), epoch)
                             .await
                             .unwrap();
 

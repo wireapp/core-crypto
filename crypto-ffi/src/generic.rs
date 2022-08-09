@@ -444,19 +444,13 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::MlsCentral::new_external_add_proposal]
-    pub fn new_external_add_proposal(
-        &self,
-        conversation_id: ConversationId,
-        epoch: u64,
-        keypackage: Vec<u8>,
-    ) -> CryptoResult<Vec<u8>> {
-        let kp = KeyPackage::try_from(&keypackage[..]).map_err(MlsError::from)?;
+    pub fn new_external_add_proposal(&self, conversation_id: ConversationId, epoch: u64) -> CryptoResult<Vec<u8>> {
         Ok(future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .new_external_add_proposal(conversation_id, epoch.into(), kp),
+                    .new_external_add_proposal(conversation_id, epoch.into()),
             ),
         )?
         .to_bytes()
