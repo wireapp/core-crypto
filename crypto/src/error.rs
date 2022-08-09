@@ -78,12 +78,9 @@ pub enum CryptoError {
     /// Calbacks are not informed
     #[error("The callback interface in the MlsCentral was not informed")]
     CallbacksNotSet,
-    /// External Proposal Validation failed
-    #[error("The external proposal validation failed: {0}")]
-    ExternalProposalError(&'static str),
-    /// The proposal type is invalid
-    #[error("The proposal type is not supported by this operation")]
-    InvalidProposalType,
+    /// External Add Proposal Validation failed
+    #[error("External add proposal validation failed: only users already in the group are allowed")]
+    ExternalAddProposalError,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

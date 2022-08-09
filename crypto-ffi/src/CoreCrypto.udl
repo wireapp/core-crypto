@@ -38,8 +38,7 @@ enum CryptoError {
     "IoError",
     "Unauthorized",
     "CallbacksNotSet",
-    "ExternalProposalError",
-    "InvalidProposalType"
+    "ExternalAddProposalError",
 };
 
 dictionary DecryptedMessage {

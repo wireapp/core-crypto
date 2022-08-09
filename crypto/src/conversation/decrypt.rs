@@ -615,7 +615,7 @@ pub mod tests {
                             .await
                             .unwrap_err();
 
-                        assert!(matches!(error, CryptoError::ExternalProposalError(_)));
+                        assert!(matches!(error, CryptoError::ExternalAddProposalError));
 
                         let error = bob_central
                             .decrypt_message(&id, &external_proposal.to_bytes().unwrap())
