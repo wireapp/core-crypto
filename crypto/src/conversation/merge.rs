@@ -126,6 +126,14 @@ pub mod tests {
         credential::CredentialSupplier, prelude::MlsProposal, prelude::MlsProposalBundle, test_utils::*,
         MlsConversationConfiguration,
     };
+    use openmls::prelude::AddProposal;
+    use openmls::prelude::Proposal;
+
+    use super::*;
+    use crate::{
+        credential::CredentialSupplier, prelude::MlsProposal, prelude::MlsProposalBundle, test_utils::*,
+        MlsConversationConfiguration,
+    };
 
     use super::*;
 
