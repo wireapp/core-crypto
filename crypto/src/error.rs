@@ -41,9 +41,6 @@ pub enum CryptoError {
     /// A conversation member is out of local stored keypackages - if it does happen something went wrong
     #[error("Member #{0:x?} is out of keypackages")]
     OutOfKeyPackage(crate::member::MemberId),
-    /// Own key couldn't be found inside group - if it does happen something went wrong
-    #[error("Own key couldn't be found inside group")]
-    SelfKeypackageNotFound,
     /// Errors that are sent by our MLS Provider
     #[error(transparent)]
     MlsProviderError(#[from] mls_crypto_provider::MlsProviderError),
