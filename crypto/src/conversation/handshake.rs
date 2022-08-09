@@ -26,7 +26,7 @@ pub struct MlsConversationCreationMessage {
     /// Commit message adding members to the group
     pub commit: MlsMessageOut,
     /// [`PublicGroupState`] (aka GroupInfo) if the commit is merged
-    pub group_info: PublicGroupState,
+    pub public_group_state: PublicGroupState,
 }
 
 impl MlsConversationCreationMessage {
@@ -37,9 +37,12 @@ impl MlsConversationCreationMessage {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self.welcome.tls_serialize_detached().map_err(MlsError::from)?;
         let msg = self.commit.to_bytes().map_err(MlsError::from)?;
-        let group_info = self.group_info.tls_serialize_detached().map_err(MlsError::from)?;
+        let public_group_state = self
+            .public_group_state
+            .tls_serialize_detached()
+            .map_err(MlsError::from)?;
 
-        Ok((welcome, msg, group_info))
+        Ok((welcome, msg, public_group_state))
     }
 }
 
@@ -51,13 +54,14 @@ pub struct MlsCommitBundle {
     /// The commit message
     pub commit: MlsMessageOut,
     /// [`PublicGroupState`] (aka GroupInfo) if the commit is merged
-    pub group_info: PublicGroupState,
+    pub public_group_state: PublicGroupState,
 }
 
 impl MlsCommitBundle {
     /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
     /// 0 -> welcome
     /// 1 -> message
+    /// 2 -> public group state
     #[allow(clippy::type_complexity)]
     pub fn to_bytes_triple(&self) -> CryptoResult<(Option<Vec<u8>>, Vec<u8>, Vec<u8>)> {
         use openmls::prelude::TlsSerializeTrait as _;
@@ -67,9 +71,12 @@ impl MlsCommitBundle {
             .map(|w| w.tls_serialize_detached().map_err(MlsError::from))
             .transpose()?;
         let commit = self.commit.to_bytes().map_err(MlsError::from)?;
-        let group_info = self.group_info.tls_serialize_detached().map_err(MlsError::from)?;
+        let public_group_state = self
+            .public_group_state
+            .tls_serialize_detached()
+            .map_err(MlsError::from)?;
 
-        Ok((welcome, commit, group_info))
+        Ok((welcome, commit, public_group_state))
     }
 }
 
@@ -126,7 +133,7 @@ impl MlsConversation {
             .filter_map(|(_, kps)| kps)
             .collect::<Vec<KeyPackage>>();
 
-        let (commit, welcome, group_info) = self
+        let (commit, welcome, public_group_state) = self
             .group
             .add_members(backend, &keypackages)
             .await
@@ -135,7 +142,7 @@ impl MlsConversation {
         Ok(MlsConversationCreationMessage {
             welcome,
             commit,
-            group_info,
+            public_group_state,
         })
     }
 
@@ -162,7 +169,7 @@ impl MlsConversation {
                 Ok(acc)
             })?;
 
-        let (commit, welcome, group_info) = self
+        let (commit, welcome, public_group_state) = self
             .group
             .remove_members(backend, &member_kps)
             .await
@@ -170,23 +177,24 @@ impl MlsConversation {
         Ok(MlsCommitBundle {
             commit,
             welcome,
-            group_info,
+            public_group_state,
         })
     }
 
     /// see [MlsCentral::update_keying_material]
     pub async fn update_keying_material(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<MlsCommitBundle> {
-        let (commit, welcome, group_info) = self.group.self_update(backend, None).await.map_err(MlsError::from)?;
+        let (commit, welcome, public_group_state) =
+            self.group.self_update(backend, None).await.map_err(MlsError::from)?;
         Ok(MlsCommitBundle {
             welcome,
             commit,
-            group_info,
+            public_group_state,
         })
     }
 
     /// see [MlsCentral::commit_pending_proposals]
     pub async fn commit_pending_proposals(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<MlsCommitBundle> {
-        let (commit, welcome, group_info) = self
+        let (commit, welcome, public_group_state) = self
             .group
             .commit_to_pending_proposals(backend)
             .await
@@ -194,7 +202,7 @@ impl MlsConversation {
         Ok(MlsCommitBundle {
             welcome,
             commit,
-            group_info,
+            public_group_state,
         })
     }
 }
@@ -360,7 +368,9 @@ pub mod tests {
                             .await
                             .unwrap();
                         let MlsConversationCreationMessage {
-                            welcome, group_info, ..
+                            welcome,
+                            public_group_state,
+                            ..
                         } = alice_central
                             .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
                             .await
@@ -374,7 +384,11 @@ pub mod tests {
                             .unwrap();
 
                         assert!(guest_central
-                            .try_join_from_group_info(&id, group_info, vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_public_group_state(
+                                &id,
+                                public_group_state,
+                                vec![&mut alice_central, &mut bob_central]
+                            )
                             .await
                             .is_ok());
                     })
@@ -480,7 +494,7 @@ pub mod tests {
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_group_info(credential: CredentialSupplier) {
+        pub async fn should_return_valid_public_group_state(credential: CredentialSupplier) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "guest"],
@@ -494,7 +508,11 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
-                        let MlsCommitBundle { commit, group_info, .. } = alice_central
+                        let MlsCommitBundle {
+                            commit,
+                            public_group_state,
+                            ..
+                        } = alice_central
                             .remove_members_from_conversation(&id, &["bob".into()])
                             .await
                             .unwrap();
@@ -506,7 +524,7 @@ pub mod tests {
                             .unwrap();
 
                         assert!(guest_central
-                            .try_join_from_group_info(&id, group_info, vec![&mut alice_central])
+                            .try_join_from_public_group_state(&id, public_group_state, vec![&mut alice_central])
                             .await
                             .is_ok());
                         // because Bob has been removed from the group
@@ -693,7 +711,7 @@ pub mod tests {
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_group_info(credential: CredentialSupplier) {
+        pub async fn should_return_valid_public_group_state(credential: CredentialSupplier) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "guest"],
@@ -706,8 +724,11 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
-                        let MlsCommitBundle { commit, group_info, .. } =
-                            alice_central.update_keying_material(&id).await.unwrap();
+                        let MlsCommitBundle {
+                            commit,
+                            public_group_state,
+                            ..
+                        } = alice_central.update_keying_material(&id).await.unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         // receiving the commit on bob's side (updating key from alice)
@@ -716,7 +737,11 @@ pub mod tests {
                             .await
                             .unwrap();
                         assert!(guest_central
-                            .try_join_from_group_info(&id, group_info, vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_public_group_state(
+                                &id,
+                                public_group_state,
+                                vec![&mut alice_central, &mut bob_central]
+                            )
                             .await
                             .is_ok());
                     })
@@ -839,7 +864,7 @@ pub mod tests {
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_group_info(credential: CredentialSupplier) {
+        pub async fn should_return_valid_public_group_state(credential: CredentialSupplier) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "guest"],
@@ -854,12 +879,12 @@ pub mod tests {
                             .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package().await))
                             .await
                             .unwrap();
-                        let MlsCommitBundle { group_info, .. } =
+                        let MlsCommitBundle { public_group_state, .. } =
                             alice_central.commit_pending_proposals(&id).await.unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_group_info(&id, group_info, vec![&mut alice_central])
+                            .try_join_from_public_group_state(&id, public_group_state, vec![&mut alice_central])
                             .await
                             .is_ok());
                     })

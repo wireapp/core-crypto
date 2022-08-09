@@ -105,17 +105,17 @@ pub type FfiClientId = Box<[u8]>;
 pub struct MemberAddedMessages {
     welcome: Vec<u8>,
     message: Vec<u8>,
-    group_info: Vec<u8>,
+    public_group_state: Vec<u8>,
 }
 
 #[wasm_bindgen]
 impl MemberAddedMessages {
     #[wasm_bindgen(constructor)]
-    pub fn new(welcome: Uint8Array, message: Uint8Array, group_info: Uint8Array) -> Self {
+    pub fn new(welcome: Uint8Array, message: Uint8Array, public_group_state: Uint8Array) -> Self {
         Self {
             welcome: welcome.to_vec(),
             message: message.to_vec(),
-            group_info: group_info.to_vec(),
+            public_group_state: public_group_state.to_vec(),
         }
     }
 
@@ -130,8 +130,8 @@ impl MemberAddedMessages {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn group_info(&self) -> Uint8Array {
-        Uint8Array::from(&*self.group_info)
+    pub fn public_group_state(&self) -> Uint8Array {
+        Uint8Array::from(&*self.public_group_state)
     }
 }
 
@@ -139,11 +139,11 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     type Error = WasmCryptoError;
 
     fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, message, group_info) = msg.to_bytes_triple()?;
+        let (welcome, message, public_group_state) = msg.to_bytes_triple()?;
         Ok(Self {
             welcome,
             message,
-            group_info,
+            public_group_state,
         })
     }
 }
@@ -153,7 +153,7 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
 pub struct CommitBundle {
     message: Vec<u8>,
     welcome: Option<Vec<u8>>,
-    group_info: Vec<u8>,
+    public_group_state: Vec<u8>,
 }
 
 #[wasm_bindgen]
@@ -169,8 +169,8 @@ impl CommitBundle {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn group_info(&self) -> Uint8Array {
-        Uint8Array::from(&*self.group_info)
+    pub fn public_group_state(&self) -> Uint8Array {
+        Uint8Array::from(&*self.public_group_state)
     }
 }
 
@@ -178,11 +178,11 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
     type Error = WasmCryptoError;
 
     fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
-        let (welcome, message, group_info) = msg.to_bytes_triple()?;
+        let (welcome, message, public_group_state) = msg.to_bytes_triple()?;
         Ok(Self {
             welcome,
             message,
-            group_info,
+            public_group_state,
         })
     }
 }

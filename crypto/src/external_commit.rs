@@ -134,11 +134,11 @@ mod tests {
                             .unwrap();
 
                         // export Alice group info
-                        let group_info = alice_central.verifiable_group_info(&id).await;
+                        let public_group_state = alice_central.verifiable_public_group_state(&id).await;
 
                         // Bob tries to join Alice's group
                         let (group_id, external_commit) =
-                            bob_central.join_by_external_commit(group_info).await.unwrap();
+                            bob_central.join_by_external_commit(public_group_state).await.unwrap();
                         assert_eq!(group_id.as_slice(), &id);
 
                         // Alice acks the request and adds the new member
@@ -183,9 +183,9 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let group_info = alice_central.verifiable_group_info(&id).await;
+                    let public_group_state = alice_central.verifiable_public_group_state(&id).await;
                     // try to make an external join into Alice's group
-                    let (_, external_commit) = bob_central.join_by_external_commit(group_info).await.unwrap();
+                    let (_, external_commit) = bob_central.join_by_external_commit(public_group_state).await.unwrap();
 
                     // Alice creates a new commit before receiving the external join
                     alice_central.update_keying_material(&id).await.unwrap();
@@ -217,8 +217,8 @@ mod tests {
                         .new_conversation(id.clone(), MlsConversationConfiguration::default())
                         .await
                         .unwrap();
-                    let group_info = alice_central.verifiable_group_info(&id).await;
-                    let join_self = alice_central.join_by_external_commit(group_info).await;
+                    let public_group_state = alice_central.verifiable_public_group_state(&id).await;
+                    let join_self = alice_central.join_by_external_commit(public_group_state).await;
                     assert!(matches!(
                         join_self.unwrap_err(),
                         crate::CryptoError::MlsError(MlsError::MlsExternalCommitError(

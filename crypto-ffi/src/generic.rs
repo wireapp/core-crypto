@@ -39,18 +39,18 @@ cfg_if::cfg_if! {
 pub struct MemberAddedMessages {
     pub welcome: Vec<u8>,
     pub message: Vec<u8>,
-    pub group_info: Vec<u8>,
+    pub public_group_state: Vec<u8>,
 }
 
 impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     type Error = CryptoError;
 
     fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, message, group_info) = msg.to_bytes_triple()?;
+        let (welcome, message, public_group_state) = msg.to_bytes_triple()?;
         Ok(Self {
             welcome,
             message,
-            group_info,
+            public_group_state,
         })
     }
 }
@@ -67,18 +67,18 @@ pub struct Invitee {
 pub struct CommitBundle {
     pub welcome: Option<Vec<u8>>,
     pub message: Vec<u8>,
-    pub group_info: Vec<u8>,
+    pub public_group_state: Vec<u8>,
 }
 
 impl TryFrom<MlsCommitBundle> for CommitBundle {
     type Error = CryptoError;
 
     fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
-        let (welcome, message, group_info) = msg.to_bytes_triple()?;
+        let (welcome, message, public_group_state) = msg.to_bytes_triple()?;
         Ok(Self {
             welcome,
             message,
-            group_info,
+            public_group_state,
         })
     }
 }
