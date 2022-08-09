@@ -13,9 +13,82 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
+use crate::prelude::MlsProposalRef;
 use crate::{member::ConversationMember, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError};
 
 use super::MlsConversation;
+
+/// Returned when a commit is created
+#[derive(Debug)]
+pub struct MlsProposalBundle {
+    /// The proposal message
+    pub proposal: MlsMessageOut,
+    /// An identifier of the proposal to rollback it later if required
+    pub proposal_ref: MlsProposalRef,
+}
+
+impl From<(MlsMessageOut, openmls::prelude::hash_ref::ProposalRef)> for MlsProposalBundle {
+    fn from((proposal, proposal_ref): (MlsMessageOut, openmls::prelude::hash_ref::ProposalRef)) -> Self {
+        Self {
+            proposal,
+            proposal_ref: proposal_ref.into(),
+        }
+    }
+}
+
+impl MlsProposalBundle {
+    /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
+    /// 0 -> proposal
+    /// 1 -> proposal reference
+    pub fn to_bytes_pair(&self) -> CryptoResult<(Vec<u8>, Vec<u8>)> {
+        use openmls::prelude::TlsSerializeTrait as _;
+        let proposal = self.proposal.to_bytes().map_err(MlsError::from)?;
+        let proposal_ref = self.proposal_ref.tls_serialize_detached().map_err(MlsError::from)?;
+
+        Ok((proposal, proposal_ref))
+    }
+}
+
+/// Creating proposals
+impl MlsConversation {
+    /// see [openmls::group::MlsGroup::propose_add_member]
+    pub async fn propose_add_member(
+        &mut self,
+        backend: &MlsCryptoProvider,
+        key_package: &KeyPackage,
+    ) -> CryptoResult<MlsProposalBundle> {
+        self.group
+            .propose_add_member(backend, key_package)
+            .await
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)
+            .map(MlsProposalBundle::from)
+    }
+
+    /// see [openmls::group::MlsGroup::propose_self_update]
+    pub async fn propose_self_update(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<MlsProposalBundle> {
+        self.group
+            .propose_self_update(backend, None)
+            .await
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)
+            .map(MlsProposalBundle::from)
+    }
+
+    /// see [openmls::group::MlsGroup::propose_remove_member]
+    pub async fn propose_remove_member(
+        &mut self,
+        backend: &MlsCryptoProvider,
+        member: &KeyPackageRef,
+    ) -> CryptoResult<MlsProposalBundle> {
+        self.group
+            .propose_remove_member(backend, member)
+            .await
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)
+            .map(MlsProposalBundle::from)
+    }
+}
 
 /// Returned when initializing a conversation through a commit.
 /// Different from conversation created from a [`Welcome`] message or an external commit.
@@ -77,44 +150,6 @@ impl MlsCommitBundle {
             .map_err(MlsError::from)?;
 
         Ok((welcome, commit, public_group_state))
-    }
-}
-
-/// Creating proposals
-impl MlsConversation {
-    /// see [openmls::group::MlsGroup::propose_add_member]
-    pub async fn propose_add_member(
-        &mut self,
-        backend: &MlsCryptoProvider,
-        key_package: &KeyPackage,
-    ) -> CryptoResult<MlsMessageOut> {
-        Ok(self
-            .group
-            .propose_add_member(backend, key_package)
-            .await
-            .map_err(MlsError::from)?)
-    }
-
-    /// see [openmls::group::MlsGroup::propose_self_update]
-    pub async fn propose_self_update(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<MlsMessageOut> {
-        Ok(self
-            .group
-            .propose_self_update(backend, None)
-            .await
-            .map_err(MlsError::from)?)
-    }
-
-    /// see [openmls::group::MlsGroup::propose_remove_member]
-    pub async fn propose_remove_member(
-        &mut self,
-        backend: &MlsCryptoProvider,
-        member: &KeyPackageRef,
-    ) -> CryptoResult<MlsMessageOut> {
-        Ok(self
-            .group
-            .propose_remove_member(backend, member)
-            .await
-            .map_err(MlsError::from)?)
     }
 }
 
@@ -465,7 +500,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         bob_central
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .decrypt_message(&id, proposal.proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -620,7 +655,7 @@ pub mod tests {
 
                         // receiving the proposal on Bob's side
                         bob_central
-                            .decrypt_message(&id, add_charlie_proposal.to_bytes().unwrap())
+                            .decrypt_message(&id, add_charlie_proposal.proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -686,7 +721,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         bob_central
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .decrypt_message(&id, proposal.proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -810,7 +845,7 @@ pub mod tests {
                         assert!(!bob_central.pending_proposals(&id).is_empty());
                         assert_eq!(bob_central[&id].members().len(), 2);
                         alice_central
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .decrypt_message(&id, proposal.proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
 

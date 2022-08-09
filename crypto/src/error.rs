@@ -23,6 +23,9 @@ pub enum CryptoError {
     /// This error is emitted when the requested client couldn't be found in MLS group
     #[error("Couldn't find client")]
     ClientNotFound(crate::ClientId),
+    /// This error is emitted when a pending proposal couldn't be found in MLS group
+    #[error("Couldn't find pending proposal {0}")]
+    PendingProposalNotFound(crate::proposal::MlsProposalRef),
     /// This error is emitted when we find a malformed (i.e. not uuid) or empty identifier
     #[error("Malformed identifier found: {0}")]
     MalformedIdentifier(String),
@@ -81,6 +84,9 @@ pub enum CryptoError {
     /// External Add Proposal Validation failed
     #[error("External add proposal validation failed: only users already in the group are allowed")]
     ExternalAddProposalError,
+    /// A supplied [`HashReference`] is not of the expected size: 16
+    #[error("A supplied reference is not of the expected size: 16")]
+    InvalidHashReference,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

@@ -1,7 +1,8 @@
-use openmls::prelude::{MlsMessageOut, Proposal, QueuedProposal, Sender, StagedCommit};
+use openmls::prelude::{Proposal, QueuedProposal, Sender, StagedCommit};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
+use crate::prelude::handshake::MlsProposalBundle;
 use crate::{CryptoError, CryptoResult, MlsConversation};
 
 /// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)
@@ -69,7 +70,7 @@ impl MlsConversation {
         &mut self,
         backend: &MlsCryptoProvider,
         proposals: impl Iterator<Item = QueuedProposal>,
-    ) -> CryptoResult<Vec<MlsMessageOut>> {
+    ) -> CryptoResult<Vec<MlsProposalBundle>> {
         let mut result = vec![];
         let is_external = |p: &QueuedProposal| matches!(p.sender(), Sender::External(_) | Sender::NewMember);
         let proposals = proposals.filter(|p| !is_external(p));
