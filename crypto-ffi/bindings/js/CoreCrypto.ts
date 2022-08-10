@@ -188,7 +188,7 @@ export interface DecryptedMessage {
 }
 
 /**
- * Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome)
+ * Returned by all methods creating proposals. Contains a proposal message and an identifier to roll back the proposal
  */
 export interface ProposalBundle {
     /**
@@ -198,11 +198,11 @@ export interface ProposalBundle {
      */
     proposal: Uint8Array;
     /**
-     * Unique identifier of a proposal
+     * Unique identifier of a proposal. Use this in {@link CoreCrypto.clear_pending_proposal} to roll back (delete) the proposal
      *
      * @readonly
      */
-    proposal_ref: ProposalRef;
+    proposalRef: ProposalRef;
 }
 
 /**
@@ -577,7 +577,7 @@ export class CoreCrypto {
      * @param proposalType - The type of proposal, see {@link ProposalType}
      * @param args - The arguments of the proposal, see {@link ProposalArgs}, {@link AddProposalArgs} or {@link RemoveProposalArgs}
      *
-     * @returns A {@link ProposalBundle} containing the Proposal and its reference in order to rollback it if necessary
+     * @returns A {@link ProposalBundle} containing the Proposal and its reference in order to roll it back if necessary
      */
     async newProposal(
         proposalType: ProposalType,
@@ -751,10 +751,10 @@ export class CoreCrypto {
      * e.g. 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc..
      *
      * @param conversationId - The group's ID
-     * @param proposal_ref - A reference to the proposal to delete. You get one when using {@link CoreCrypto.newProposal}
+     * @param proposalRef - A reference to the proposal to delete. You get one when using {@link CoreCrypto.newProposal}
      */
-    async clear_pending_proposal(conversationId: ConversationId, proposal_ref: ProposalRef): Promise<void> {
-        return await this.#cc.clear_pending_proposal(conversationId, proposal_ref);
+    async clear_pending_proposal(conversationId: ConversationId, proposalRef: ProposalRef): Promise<void> {
+        return await this.#cc.clear_pending_proposal(conversationId, proposalRef);
     }
 
     /**

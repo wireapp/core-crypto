@@ -26,6 +26,9 @@ pub enum CryptoError {
     /// This error is emitted when a pending proposal couldn't be found in MLS group
     #[error("Couldn't find pending proposal {0}")]
     PendingProposalNotFound(crate::proposal::MlsProposalRef),
+    /// This error is emitted when a pending commmit couldn't be found in MLS group
+    #[error("Couldn't find pending commit")]
+    PendingCommitNotFound,
     /// This error is emitted when we find a malformed (i.e. not uuid) or empty identifier
     #[error("Malformed identifier found: {0}")]
     MalformedIdentifier(String),
