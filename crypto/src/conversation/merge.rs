@@ -38,6 +38,16 @@ impl MlsConversation {
         })?;
         self.persist_group_when_changed(backend, false).await
     }
+
+    /// see [MlsCentral::clear_pending_commit]
+    pub async fn clear_pending_commit(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+        if self.group.pending_commit().is_some() {
+            self.group.clear_pending_commit();
+            self.persist_group_when_changed(backend, false).await
+        } else {
+            Err(CryptoError::PendingCommitNotFound)
+        }
+    }
 }
 
 /// A MLS group is a distributed object scattered across many parties. We use a Delivery Service
@@ -86,18 +96,36 @@ impl MlsCentral {
             .clear_pending_proposal(proposal_ref.try_into()?, &self.mls_backend)
             .await
     }
+
+    /// Allows to remove a pending commit. Use this when backend rejects the commit
+    /// you just sent e.g. if permissions have changed meanwhile.
+    ///
+    /// **CAUTION**: only use this when you had an explicit response from the Delivery Service
+    /// e.g. 403. Do not use otherwise e.g. 5xx responses, timeout etc..
+    /// **DO NOT** use when Delivery Service responds 409, pending state will be renewed
+    /// in [MlsCentral::decrypt_message]
+    ///
+    /// # Arguments
+    /// * `conversation_id` - the group/conversation id
+    ///
+    /// # Errors
+    /// When the conversation is not found or there is no pending commit
+    pub async fn clear_pending_commit(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
+        Self::get_conversation_mut(&mut self.mls_groups, conversation_id)?
+            .clear_pending_commit(&self.mls_backend)
+            .await
+    }
 }
 
 #[cfg(test)]
 pub mod tests {
+    use openmls::prelude::Proposal;
     use wasm_bindgen_test::*;
 
     use crate::{
         credential::CredentialSupplier, prelude::MlsProposal, prelude::MlsProposalBundle, test_utils::*,
         MlsConversationConfiguration,
     };
-    use openmls::prelude::AddProposal;
-    use openmls::prelude::Proposal;
 
     use super::*;
 
@@ -141,7 +169,7 @@ pub mod tests {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
-                move |[mut alice_central, mut bob_central, mut charlie_central]| {
+                move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
@@ -233,6 +261,62 @@ pub mod tests {
                     let any_ref = MlsProposalRef::try_from(vec![0; 16]).unwrap();
                     let clear = alice_central.clear_pending_proposal(&id, any_ref.into()).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::PendingProposalNotFound(prop_ref) if prop_ref == any_ref))
+                })
+            })
+            .await
+        }
+    }
+
+    pub mod clear_pending_commit {
+        use super::*;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_remove_commit(credential: CredentialSupplier) {
+            run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .await
+                        .unwrap();
+                    assert!(alice_central.pending_commit(&id).is_none());
+
+                    alice_central.update_keying_material(&id).await.unwrap();
+                    assert!(alice_central.pending_commit(&id).is_some());
+                    alice_central.clear_pending_commit(&id).await.unwrap();
+                    assert!(alice_central.pending_commit(&id).is_none());
+                })
+            })
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_fail_when_conversation_not_found(credential: CredentialSupplier) {
+            run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    let clear = alice_central.clear_pending_commit(&id).await;
+                    assert!(matches!(clear.unwrap_err(), CryptoError::ConversationNotFound(conv_id) if conv_id == id))
+                })
+            })
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_fail_when_pending_commit_absent(credential: CredentialSupplier) {
+            run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .await
+                        .unwrap();
+                    assert!(alice_central.pending_commit(&id).is_none());
+                    let clear = alice_central.clear_pending_commit(&id).await;
+                    assert!(matches!(clear.unwrap_err(), CryptoError::PendingCommitNotFound))
                 })
             })
             .await
