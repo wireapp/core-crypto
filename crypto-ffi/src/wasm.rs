@@ -104,17 +104,17 @@ pub type FfiClientId = Box<[u8]>;
 /// see [core_crypto::prelude::MlsConversationCreationMessage]
 pub struct MemberAddedMessages {
     welcome: Vec<u8>,
-    message: Vec<u8>,
+    commit: Vec<u8>,
     public_group_state: Vec<u8>,
 }
 
 #[wasm_bindgen]
 impl MemberAddedMessages {
     #[wasm_bindgen(constructor)]
-    pub fn new(welcome: Uint8Array, message: Uint8Array, public_group_state: Uint8Array) -> Self {
+    pub fn new(welcome: Uint8Array, commit: Uint8Array, public_group_state: Uint8Array) -> Self {
         Self {
             welcome: welcome.to_vec(),
-            message: message.to_vec(),
+            commit: commit.to_vec(),
             public_group_state: public_group_state.to_vec(),
         }
     }
@@ -125,8 +125,8 @@ impl MemberAddedMessages {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn message(&self) -> Uint8Array {
-        Uint8Array::from(&*self.message)
+    pub fn commit(&self) -> Uint8Array {
+        Uint8Array::from(&*self.commit)
     }
 
     #[wasm_bindgen(getter)]
@@ -139,10 +139,10 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     type Error = WasmCryptoError;
 
     fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, message, public_group_state) = msg.to_bytes_triple()?;
+        let (welcome, commit, public_group_state) = msg.to_bytes_triple()?;
         Ok(Self {
             welcome,
-            message,
+            commit,
             public_group_state,
         })
     }
@@ -151,7 +151,7 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CommitBundle {
-    message: Vec<u8>,
+    commit: Vec<u8>,
     welcome: Option<Vec<u8>>,
     public_group_state: Vec<u8>,
 }
@@ -159,8 +159,8 @@ pub struct CommitBundle {
 #[wasm_bindgen]
 impl CommitBundle {
     #[wasm_bindgen(getter)]
-    pub fn message(&self) -> Uint8Array {
-        Uint8Array::from(&*self.message)
+    pub fn commit(&self) -> Uint8Array {
+        Uint8Array::from(&*self.commit)
     }
 
     #[wasm_bindgen(getter)]
@@ -178,10 +178,10 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
     type Error = WasmCryptoError;
 
     fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
-        let (welcome, message, public_group_state) = msg.to_bytes_triple()?;
+        let (welcome, commit, public_group_state) = msg.to_bytes_triple()?;
         Ok(Self {
             welcome,
-            message,
+            commit,
             public_group_state,
         })
     }
@@ -191,14 +191,14 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MlsConversationInitMessage {
     group: Vec<u8>,
-    message: Vec<u8>,
+    commit: Vec<u8>,
 }
 
 #[wasm_bindgen]
 impl MlsConversationInitMessage {
     #[wasm_bindgen(getter)]
-    pub fn message(&self) -> Uint8Array {
-        Uint8Array::from(&*self.message)
+    pub fn commit(&self) -> Uint8Array {
+        Uint8Array::from(&*self.commit)
     }
 
     #[wasm_bindgen(getter)]
@@ -946,9 +946,9 @@ impl CoreCrypto {
             async move {
                 let group_state =
                     VerifiablePublicGroupState::tls_deserialize(&mut &state[..]).map_err(MlsError::from)?;
-                let (group, message) = this.read().await.join_by_external_commit(group_state).await?;
+                let (group, commit) = this.read().await.join_by_external_commit(group_state).await?;
                 let result = MlsConversationInitMessage {
-                    message: message
+                    commit: commit
                         .tls_serialize_detached()
                         .map_err(MlsError::from)
                         .map_err(CryptoError::from)?,
