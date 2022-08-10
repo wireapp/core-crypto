@@ -216,6 +216,8 @@ test("roundtrip message", async () => {
       { id: encoder.encode(client2Config.clientId), kp: Uint8Array.from(Object.values(kp)) },
     ]);
 
+    await cc.commitAccepted(conversationIdBuffer);
+
     if (!welcome) {
       throw new Error("no welcome message was generated");
     }
@@ -229,7 +231,7 @@ test("roundtrip message", async () => {
   }, kp, messageText, conversationId, client1Config, client2Config);
 
   welcome.welcome = Uint8Array.from(welcome.welcome);
-  welcome.message = Uint8Array.from(welcome.message);
+  welcome.commit = Uint8Array.from(welcome.commit);
   welcome.groupInfo = Uint8Array.from(welcome.groupInfo);
 
   message = Uint8Array.from(Object.values(message));

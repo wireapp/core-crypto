@@ -106,7 +106,7 @@ export interface MemberAddedMessages {
      *
      * @readonly
      */
-    message: Uint8Array;
+    commit: Uint8Array;
     /**
      * TLS-serialized MLS Welcome message that needs to be fanned out to the clients newly added to the conversation
      *
@@ -130,7 +130,7 @@ export interface CommitBundle {
      *
      * @readonly
      */
-    message: Uint8Array;
+    commit: Uint8Array;
     /**
      * Optional TLS-serialized MLS Welcome message that needs to be fanned out to the clients newly added to the conversation
      *
@@ -157,7 +157,7 @@ export interface MlsConversationInitMessage {
      *
      * @readonly
      */
-    message: Uint8Array;
+    commit: Uint8Array;
 }
 
 /**
@@ -380,7 +380,7 @@ export class CoreCrypto {
 
         const ret: CommitBundle = {
             welcome: ffiRet.welcome,
-            message: ffiRet.message,
+            commit: ffiRet.commit,
             publicGroupState: ffiRet.public_group_state,
         };
 
@@ -515,7 +515,7 @@ export class CoreCrypto {
 
         const ret: MemberAddedMessages = {
             welcome: ffiRet.welcome,
-            message: ffiRet.message,
+            commit: ffiRet.commit,
             publicGroupState: ffiRet.public_group_state,
         };
 
@@ -541,7 +541,7 @@ export class CoreCrypto {
 
         const ret: CommitBundle = {
             welcome: ffiRet.welcome,
-            message: ffiRet.message,
+            commit: ffiRet.commit,
             publicGroupState: ffiRet.public_group_state,
         };
 
@@ -638,7 +638,7 @@ export class CoreCrypto {
 
         const ret: MlsConversationInitMessage = {
             group: ffiInitMessage.group,
-            message: ffiInitMessage.message
+            commit: ffiInitMessage.commit,
         };
 
         return ret;
@@ -686,7 +686,7 @@ export class CoreCrypto {
 
         const ret: CommitBundle = {
             welcome: ffiCommitBundle.welcome,
-            message: ffiCommitBundle.message,
+            commit: ffiCommitBundle.commit,
             publicGroupState: ffiCommitBundle.public_group_state,
         };
 
