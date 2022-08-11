@@ -27,10 +27,11 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "mobile")] {
         mod uniffi_support;
         pub use self::uniffi_support::*;
-    } else if #[cfg(feature = "c-api")] {
-        mod c_api;
-        pub use self::c_api::*;
     }
+    // else if #[cfg(feature = "c-api")] {
+    //     mod c_api;
+    //     pub use self::c_api::*;
+    // }
 }
 
 #[cfg_attr(feature = "c-api", repr(C))]
@@ -38,7 +39,7 @@ cfg_if::cfg_if! {
 /// see [core_crypto::prelude::handshake::MlsConversationCreationMessage]
 pub struct MemberAddedMessages {
     pub welcome: Vec<u8>,
-    pub message: Vec<u8>,
+    pub commit: Vec<u8>,
     pub public_group_state: Vec<u8>,
 }
 
@@ -46,10 +47,10 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     type Error = CryptoError;
 
     fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, message, public_group_state) = msg.to_bytes_triple()?;
+        let (welcome, commit, public_group_state) = msg.to_bytes_triple()?;
         Ok(Self {
             welcome,
-            message,
+            commit,
             public_group_state,
         })
     }
@@ -66,7 +67,7 @@ pub struct Invitee {
 #[derive(Debug)]
 pub struct CommitBundle {
     pub welcome: Option<Vec<u8>>,
-    pub message: Vec<u8>,
+    pub commit: Vec<u8>,
     pub public_group_state: Vec<u8>,
 }
 
@@ -74,10 +75,10 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
     type Error = CryptoError;
 
     fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
-        let (welcome, message, public_group_state) = msg.to_bytes_triple()?;
+        let (welcome, commit, public_group_state) = msg.to_bytes_triple()?;
         Ok(Self {
             welcome,
-            message,
+            commit,
             public_group_state,
         })
     }
@@ -87,7 +88,7 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
 #[derive(Debug)]
 pub struct MlsConversationInitMessage {
     pub group: Vec<u8>,
-    pub message: Vec<u8>,
+    pub commit: Vec<u8>,
 }
 
 #[cfg_attr(feature = "c-api", repr(C))]
@@ -498,7 +499,7 @@ impl CoreCrypto<'_> {
         use core_crypto::prelude::tls_codec::Serialize as _;
 
         let group_state = VerifiablePublicGroupState::tls_deserialize(&mut &group_state[..]).map_err(MlsError::from)?;
-        let (group, message) = future::block_on(
+        let (group, commit) = future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
@@ -507,7 +508,7 @@ impl CoreCrypto<'_> {
             ),
         )?;
         Ok(MlsConversationInitMessage {
-            message: message
+            commit: commit
                 .tls_serialize_detached()
                 .map_err(MlsError::from)
                 .map_err(CryptoError::from)?,

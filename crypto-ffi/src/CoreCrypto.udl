@@ -47,7 +47,7 @@ dictionary DecryptedMessage {
 };
 
 dictionary MemberAddedMessages {
-    sequence<u8> message;
+    sequence<u8> commit;
     sequence<u8> welcome;
     sequence<u8> public_group_state;
 };
@@ -59,13 +59,13 @@ dictionary Invitee {
 
 dictionary CommitBundle {
     sequence<u8>? welcome;
-    sequence<u8> message;
+    sequence<u8> commit;
     sequence<u8> public_group_state;
 };
 
 dictionary MlsConversationInitMessage {
     sequence<u8> group;
-    sequence<u8> message;
+    sequence<u8> commit;
 };
 
 dictionary ConversationConfiguration {

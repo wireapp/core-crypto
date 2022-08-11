@@ -13,7 +13,7 @@ crate-type = ["cdylib", "staticlib"]
 [features]
 default = []
 mobile = ["uniffi", "uniffi_macros", "uniffi_build", "uniffi_bindgen"]
-c-api = ["libc"]
+# c-api = ["libc"] # FIXME: Disabled until it becomes compatible with the internal APIs again
 
 [dependencies]
 core-crypto = { version = "0.3", path = "../crypto" }
