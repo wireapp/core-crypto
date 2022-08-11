@@ -87,26 +87,11 @@ script = '''
 
 [tasks.create-framework]
 script = '''
-    cd bindings/swift
+    cd bindings/libcore-crypto
 
-    rm -rf ./out/CoreCrypto.xcframework
-    mkdir -p ./out
-
-    #lipo -create -output ./out/libcore_crypto_ffi_iossimulator.a \
-    #    ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a
-    #    ../../../target/aarch64-apple-ios-sim/release/libcore_crypto_ffi.a
-
-    lipo -create -output ./out/libcore_crypto_ffi_iossimulator.a \
-        ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a
-
-    xcodebuild -create-xcframework \
-        -library ../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a \
-        -headers ./include \
-        -library ./out/libcore_crypto_ffi_iossimulator.a \
-        -headers ./include \
-        -output ./out/CoreCrypto.xcframework
-
-    rm ./out/libcore_crypto_ffi_iossimulator.a
+    lipo -create -output ./lib/libcore_crypto_ffi.a \
+        ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a \
+        ../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a
 '''
 dependencies = ["ios"]
 

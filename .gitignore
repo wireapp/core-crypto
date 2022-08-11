@@ -1,12 +1,28 @@
 sample-projects/CoreCryptoTestApp/**/build/
 sample-projects/CoreCryptoTestApp/app/src/main/jniLibs/**/*.so
 
-crypto-ffi/bindings/swift/out
-crypto-ffi/bindings/swift/.build
-crypto-ffi/bindings/swift/.swiftpm
-
 platforms/web/*
 
+# Swift/Xcode
+**/libcore_crypto_ffi.a
+xcuserdata/
+crypto-ffi/bindings/*/out
+crypto-ffi/bindings/*/.build
+crypto-ffi/bindings/*/build
+crypto-ffi/bindings/*/.swiftpm
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.ipa
+*.dSYM.zip
+*.dSYM
 sample-projects/ios/.build
 sample-projects/ios/.swiftpm
 .DS_Store

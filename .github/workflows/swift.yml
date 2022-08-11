@@ -1,0 +1,20 @@
+name: Swift
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: davidB/rust-cargo-make@v1
+      - name: Build
+        run: cd crypto-ffi && rustup target add aarch64-apple-ios x86_64-apple-ios aarch64-apple-ios-sim && cargo make "create-framework"
+      - name: Run tests
+        run: cd crypto-ffi/bindings/swift && swift test -v  -Xswiftc "-L" -Xswiftc "../libcore-crypto/lib/" -Xswiftc "-I" -Xswiftc "../libcore-crypto/lib/" -Xswiftc "-lcore_crypto_ffi" 

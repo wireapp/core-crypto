@@ -3,27 +3,25 @@
 import PackageDescription
 
 let package = Package(
-    name: "CoreCryptoSwift",
-    //platforms: [.iOS(.v13)],
+    name: "CoreCrypto",
+    platforms: [.iOS(.v12)],
     products: [
         .library(
-            name: "CoreCryptoSwift",
-            targets: ["CoreCryptoSwift", "CoreCrypto"]
-        )
-    ],
-    dependencies: [],
-    targets: [
-        .binaryTarget(
             name: "CoreCrypto",
-            path: "out/CoreCrypto.xcframework"
+            targets: ["CoreCrypto"]
         ),
+    ],
+    dependencies: [
+        .package(name: "LibCoreCrypto", path: "../libcore-crypto")
+    ],
+    targets: [
         .target(
-            name: "CoreCryptoSwift",
-            dependencies: ["CoreCrypto"]
+            name: "CoreCrypto",
+            dependencies: [.productItem(name: "CoreCryptoSwift", package: "LibCoreCrypto", condition: nil)]
         ),
         .testTarget(
             name: "CoreCryptoTests",
-            dependencies: ["CoreCryptoSwift"]
+            dependencies: ["CoreCrypto"]
         )
     ]
 )
