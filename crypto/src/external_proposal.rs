@@ -217,7 +217,6 @@ mod tests {
                         owner_central.new_conversation(id.clone(), cfg).await.unwrap();
 
                         owner_central.invite(&id, &mut guest_central).await.unwrap();
-                        owner_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(owner_central[&id].members().len(), 2);
 
                         // now, as e.g. a Delivery Service, let's create an external remove proposal
@@ -277,7 +276,6 @@ mod tests {
                         owner_central.new_conversation(id.clone(), cfg).await.unwrap();
 
                         owner_central.invite(&id, &mut guest_central).await.unwrap();
-                        owner_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(owner_central[&id].members().len(), 2);
 
                         // now, attacker will try to remove guest from the group, and should fail
@@ -336,7 +334,6 @@ mod tests {
                         owner_central.new_conversation(id.clone(), cfg).await.unwrap();
 
                         owner_central.invite(&id, &mut guest_central).await.unwrap();
-                        owner_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(owner_central[&id].members().len(), 2);
 
                         // now, as e.g. a Delivery Service, let's create an external remove proposal
