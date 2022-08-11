@@ -96,7 +96,14 @@ cargo make "create-framework"
 cargo make wasm
 ```
 
-## Publishing for Android / JVM
+## Publishing
+
+### Changelog
+
+* Update <CHANGELOG.tpl> accordingly
+* run `cargo xtask documentation changelog` to update <CHANGELOG.md> with the git-conventional history
+
+### Android / JVM
 
 You can publish the JVM and Android bindings to maven using gradle after you'be build the corresponding target.
 
@@ -106,6 +113,6 @@ cd kotlin
 ./gradlew :android:publishToMavenLocal
 ```
 
-## Publishing for JS / WASM
+### JS / WASM
 
 Given that you are logged in NPM and can publish to `@wireapp/core-crypto`, you can just `npm publish` to push a new version

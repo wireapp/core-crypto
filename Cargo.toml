@@ -1,6 +1,6 @@
 [workspace]
 members = ["crypto", "crypto-ffi", "keystore", "mls-provider"]
-exclude = ["extras/anycrypto", "extras/core-ds", "extras/interop"]
+exclude = ["xtask", "extras/anycrypto", "extras/core-ds", "extras/interop"]
 resolver = "2"
 
 [patch.crates-io.rexie]
@@ -12,13 +12,11 @@ git = "https://github.com/wireapp/proteus"
 branch = "otak/sodiumoxide-0.2.7"
 
 [patch.crates-io.openmls]
-# path = "../openmls-async/openmls"
 git = "https://github.com/wireapp/openmls"
 branch = "feat/async"
 package = "openmls"
 
 [patch.crates-io.openmls_traits]
-# path = "../openmls-async/traits"
 git = "https://github.com/wireapp/openmls"
 branch = "feat/async"
 package = "openmls_traits"
@@ -47,3 +45,6 @@ lto = true
 codegen-units = 1
 opt-level = "s"
 # panic = "abort"
+
+# [profile.dev.package.backtrace]
+# opt-level = 3

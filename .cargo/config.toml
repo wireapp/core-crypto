@@ -22,6 +22,9 @@ CFLAGS="-Wno-error=inline"
 [unstable]
 build-std = ["std", "panic_abort"]
 
+[alias]
+xtask = "run --manifest-path ./xtask/Cargo.toml --"
+
 # [target.wasm32-unknown-unknown]
 # rustflags = "-C target-feature=+atomics,+bulk-memory,+mutable-globals"
 

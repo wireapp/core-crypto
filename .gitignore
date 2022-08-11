@@ -11,6 +11,7 @@ sample-projects/ios/.build
 sample-projects/ios/.swiftpm
 .DS_Store
 
+
 # Test databases leftovers
 *.edb
 *.edb-salt
@@ -185,3 +186,6 @@ dist
 .svelte-kit
 
 # End of https://www.toptal.com/developers/gitignore/api/node
+
+# Allow xtask Cargo.lock
+!xtask/Cargo.lock

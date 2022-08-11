@@ -1,6 +1,4 @@
-# Human Changelog
-
-This changelog is hand-written and is a more succinct description of what happened between releases.
+# Changelog
 
 Platform support legends:
 
@@ -11,6 +9,11 @@ Platform support legends:
 
 
 ## [0.3.0] - TBD
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.3.0" unreleased=true}}
+</details>
 
 This second major release focuses on expanding our platform support and featureset
 
@@ -39,6 +42,7 @@ Note: all the platforms marked with (⚠️) above will get a round of polish fo
     * As a consequence, we forked `openmls` to [wireapp/openmls](https://github.com/wireapp/openmls)
         * Our incremental changes, including the `async` rewrite of `openmls` is located [here](https://github.com/wireapp/openmls/pull/4)
 * Added support for MLS Group Persistence, as this was preventing clients from continuing use of their joined groups (oops!)
+* **All methods creating a commit e.g. `add_clients_to_conversation` now require to call `commit_accepted` when Delivery Service responds `200 OK`. Otherwise, it might indicate there was a `409 CONFLICT`, i.e. another client sent a commit for current epoch before and got accepted. In that case, do nothing and let things get reconciled in `decrypt_message`**
 * Added support for lifetime-expired Keypackage pruning
 * Added support for external CSPRNG entropy pool seeding
 * Dropped the `openmls-rust-crypto-provider` in favour of our `mls-crypto-provider` with support for more ciphersuites and updated dependencies
@@ -62,13 +66,25 @@ Note: all the platforms marked with (⚠️) above will get a round of polish fo
         * Ability to leave
         * Ability to force clients to update their keying material (i.e. self-update)
     * Support for MLS proposals
+        * Exposed methods to create `Add` / `Remove` / `Update` proposals
     * Support for MLS external commits
         * Added ability to export MLS Public Group State for a given conversation
-        * Added support for creating an external commit to join a conversation
-    * Support for MLS external Add and Remove Proposal support
+            * A `PublicGroupState` is also returned everytime you create a commit. This comes from the need to keep the MLS Delivery Service up to date on the `PublicGroupState` so that external commits can be made by other clients.
+        * Added support for creating an external commit to join a conversation (`join_by_external_commit`)
+    * Support for MLS external Add (`new_external_add_proposal`) and Remove Proposal (`new_external_remove_proposal`).
     * Support for X.509 credentials
     * Added a commit delay hint to prevent clients from rushing to commit to the server - which would cause epoch conflicts and high load
+        * Returned in `decrypt_message`
 * Changed most `message` fields to be named `commit`, as this would cause less confusion for consumers. Those fields always contained MLS commits and should be treated as such.
+* All commit methods now return a `CommitBundle` struct containing
+      * the commit message
+      * an optional `Welcome` if there were pending add proposals
+      * a `PublicGroupState` to upload to the Delivery Service
+    * `decrypt_message` now returns a `DecryptedMessage` struct containing:
+      * an optional application message
+      * optional pending proposals renewed for next epoch to fan out
+      * a `is_active` boolean indicating if the decrypted commit message caused the client to be removed from the group
+      * the aforementioned commit delay
 
 ### FFI
 
@@ -85,12 +101,12 @@ Note: all the platforms marked with (⚠️) above will get a round of polish fo
 * Added support for WASM through an AES-GCM256-encrypted IndexedDB backend
     * This introduced a major refactoring to structure the code around having different backends depending on the platform.
 
+## [0.2.0] - 2022-03-22
+
 <details>
     <summary>git-conventional changelog</summary>
-{{*gitlog tag="0.3.0"}}
+{{git-cliff tag="v0.2.0"}}
 </details>
-
-## [0.2.0] - 2022-03-22
 
 Initial stable release with a reduced featureset
 
@@ -131,8 +147,4 @@ This release contains the following features:
     * See the comment at `https://wireapp.github.io/core-crypto/src/core_crypto_keystore/connection/platform/generic/mod.rs#99` for more details
 * Fix for migrations being incorrectly defined
 
-<details>
-    <summary>git-conventional changelog</summary>
-{{*gitlog tag="0.2.0"}}
-</details>
 
