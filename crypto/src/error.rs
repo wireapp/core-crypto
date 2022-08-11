@@ -90,6 +90,11 @@ pub enum CryptoError {
     /// A supplied [`HashReference`] is not of the expected size: 16
     #[error("A supplied reference is not of the expected size: 16")]
     InvalidHashReference,
+    /// The client who created this message is likely to have reused a ratchet generation or
+    /// we are trying to decrypt the same message twice. For the former, this client MLS
+    /// implementation has a loophole and it'd better be evicted from the group.
+    #[error("Decrypted an application message twice")]
+    GenerationOutOfBound,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

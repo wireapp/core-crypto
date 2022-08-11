@@ -43,6 +43,7 @@ use crate::{
 
 mod commit_delay;
 pub mod decrypt;
+#[cfg(test)]
 mod durability;
 pub mod encrypt;
 pub mod handshake;

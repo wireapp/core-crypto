@@ -8,7 +8,9 @@
 //! | 0 pend. Proposal  | ✅              | ✅              |
 //! | 1+ pend. Proposal | ✅              | ✅              |
 
-use openmls::framing::ProcessedMessage;
+use openmls::framing::errors::MessageDecryptionError;
+use openmls::framing::{MlsMessageIn, ProcessedMessage, UnverifiedMessage};
+use openmls::prelude::{ParseMessageError, ValidationError};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
@@ -38,6 +40,7 @@ pub struct MlsConversationDecryptMessage {
 /// Abstraction over a MLS group capable of decrypting a MLS message
 impl MlsConversation {
     /// see [MlsCentral::decrypt_message]
+    #[cfg_attr(test, crate::durable)]
     pub async fn decrypt_message(
         &mut self,
         message: impl AsRef<[u8]>,
@@ -46,7 +49,7 @@ impl MlsConversation {
     ) -> CryptoResult<MlsConversationDecryptMessage> {
         let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
 
-        let parsed_message = self.group.parse_message(msg_in, backend).map_err(MlsError::from)?;
+        let parsed_message = self.parse_message(backend, msg_in)?;
 
         let message = self
             .group
@@ -75,18 +78,20 @@ impl MlsConversation {
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
                 let pending_commit = self.group.pending_commit().cloned();
                 #[allow(clippy::needless_collect)] // false positive
-                let pending_proposals = self.group.pending_proposals().cloned().collect::<Vec<_>>();
+                let pending_proposals = self.self_pending_proposals().cloned().collect::<Vec<_>>();
                 let valid_commit = staged_commit.clone();
+                let self_kpr = self.group.key_package_ref().cloned();
 
                 self.group.merge_staged_commit(*staged_commit).map_err(MlsError::from)?;
 
-                let proposals = Renew::renew(
+                let (proposals, update_self) = Renew::renew(
+                    self_kpr,
                     pending_proposals.into_iter(),
                     pending_commit.as_ref(),
                     valid_commit.as_ref(),
                 );
                 let proposals = self
-                    .renew_proposals_for_current_epoch(backend, proposals.into_iter())
+                    .renew_proposals_for_current_epoch(backend, proposals.into_iter(), update_self)
                     .await?;
 
                 MlsConversationDecryptMessage {
@@ -101,6 +106,15 @@ impl MlsConversation {
         self.persist_group_when_changed(backend, false).await?;
 
         Ok(decrypted)
+    }
+
+    fn parse_message(&mut self, backend: &MlsCryptoProvider, msg_in: MlsMessageIn) -> CryptoResult<UnverifiedMessage> {
+        self.group.parse_message(msg_in, backend).map_err(|e| match e {
+            ParseMessageError::ValidationError(ValidationError::UnableToDecrypt(
+                MessageDecryptionError::GenerationOutOfBound,
+            )) => CryptoError::GenerationOutOfBound,
+            _ => CryptoError::from(MlsError::from(e)),
+        })
     }
 }
 
@@ -633,6 +647,153 @@ pub mod tests {
                             .unwrap_err();
 
                         assert!(matches!(error, CryptoError::CallbacksNotSet));
+                    })
+                },
+            )
+            .await
+        }
+    }
+
+    pub mod proposal {
+        use super::*;
+
+        // Ensures decrypting an proposal is durable
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn can_decrypt_proposal(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "charlie"],
+                move |[mut alice_central, mut bob_central, charlie_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                        let charlie_kp = charlie_central.get_one_key_package().await;
+                        let proposal = alice_central
+                            .new_proposal(&id, MlsProposal::Add(charlie_kp))
+                            .await
+                            .unwrap()
+                            .proposal;
+
+                        bob_central
+                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+
+                        assert_eq!(bob_central[&id].members().len(), 2);
+                        // if 'decrypt_message' is not durable the commit won't contain the add proposal
+                        bob_central.commit_pending_proposals(&id).await.unwrap().commit;
+                        bob_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(bob_central[&id].members().len(), 3);
+                    })
+                },
+            )
+            .await
+        }
+    }
+
+    pub mod app_message {
+        use super::*;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn can_decrypt_app_message(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                        let msg = b"Hello bob";
+                        let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
+                        assert_ne!(&msg[..], &encrypted[..]);
+                        let decrypted = bob_central
+                            .decrypt_message(&id, encrypted)
+                            .await
+                            .unwrap()
+                            .app_msg
+                            .unwrap();
+                        assert_eq!(&decrypted[..], &msg[..]);
+                    })
+                },
+            )
+            .await
+        }
+
+        // Ensures decrypting an application message is durable
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn cannot_decrypt_app_message_twice(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                        let msg = b"Hello bob";
+                        let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
+                        assert_ne!(&msg[..], &encrypted[..]);
+                        let decrypt_once = bob_central.decrypt_message(&id, encrypted.clone()).await;
+                        assert!(decrypt_once.is_ok());
+                        let decrypt_twice = bob_central.decrypt_message(&id, encrypted).await;
+                        assert!(matches!(decrypt_twice.unwrap_err(), CryptoError::GenerationOutOfBound))
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn can_decrypt_app_message_in_any_order(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                        let msg1 = b"Hello bob once";
+                        let encrypted1 = alice_central.encrypt_message(&id, msg1).await.unwrap();
+                        let msg2 = b"Hello bob twice";
+                        let encrypted2 = alice_central.encrypt_message(&id, msg2).await.unwrap();
+
+                        let decrypted2 = bob_central
+                            .decrypt_message(&id, encrypted2)
+                            .await
+                            .unwrap()
+                            .app_msg
+                            .unwrap();
+                        assert_eq!(&decrypted2[..], &msg2[..]);
+                        let decrypted1 = bob_central
+                            .decrypt_message(&id, encrypted1)
+                            .await
+                            .unwrap()
+                            .app_msg
+                            .unwrap();
+                        assert_eq!(&decrypted1[..], &msg1[..]);
                     })
                 },
             )

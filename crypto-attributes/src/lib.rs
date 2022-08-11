@@ -39,9 +39,6 @@ pub fn durable(_attrs: TokenStream, item: TokenStream) -> TokenStream {
     let body = &ast.block;
     let attrs = &ast.attrs;
     let vis = &ast.vis;
-    if ast.sig.asyncness.is_none() {
-        return compile_error(item, syn::Error::new_spanned(ast, ASYNC_ERROR_MSG));
-    }
     let result: proc_macro2::TokenStream = quote::quote! {
         #(#doc_attributes)*
         #(#attrs)*

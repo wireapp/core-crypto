@@ -47,6 +47,8 @@ use credential::CertificateBundle;
 use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
 
 pub use self::error::*;
+
+#[cfg(test)]
 pub use core_crypto_attributes::durable;
 
 mod client;

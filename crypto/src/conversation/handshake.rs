@@ -52,41 +52,53 @@ impl MlsProposalBundle {
 /// Creating proposals
 impl MlsConversation {
     /// see [openmls::group::MlsGroup::propose_add_member]
+    #[cfg_attr(test, crate::durable)]
     pub async fn propose_add_member(
         &mut self,
         backend: &MlsCryptoProvider,
         key_package: &KeyPackage,
     ) -> CryptoResult<MlsProposalBundle> {
-        self.group
+        let proposal = self
+            .group
             .propose_add_member(backend, key_package)
             .await
             .map_err(MlsError::from)
             .map_err(CryptoError::from)
-            .map(MlsProposalBundle::from)
+            .map(MlsProposalBundle::from)?;
+        self.persist_group_when_changed(backend, false).await?;
+        Ok(proposal)
     }
 
     /// see [openmls::group::MlsGroup::propose_self_update]
+    #[cfg_attr(test, crate::durable)]
     pub async fn propose_self_update(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<MlsProposalBundle> {
-        self.group
+        let proposal = self
+            .group
             .propose_self_update(backend, None)
             .await
             .map_err(MlsError::from)
             .map_err(CryptoError::from)
-            .map(MlsProposalBundle::from)
+            .map(MlsProposalBundle::from)?;
+        self.persist_group_when_changed(backend, false).await?;
+        Ok(proposal)
     }
 
     /// see [openmls::group::MlsGroup::propose_remove_member]
+    #[cfg_attr(test, crate::durable)]
     pub async fn propose_remove_member(
         &mut self,
         backend: &MlsCryptoProvider,
         member: &KeyPackageRef,
     ) -> CryptoResult<MlsProposalBundle> {
-        self.group
+        let proposal = self
+            .group
             .propose_remove_member(backend, member)
             .await
             .map_err(MlsError::from)
             .map_err(CryptoError::from)
-            .map(MlsProposalBundle::from)
+            .map(MlsProposalBundle::from)?;
+        self.persist_group_when_changed(backend, false).await?;
+        Ok(proposal)
     }
 }
 
@@ -157,7 +169,8 @@ impl MlsCommitBundle {
 impl MlsConversation {
     /// see [MlsCentral::add_members_to_conversation]
     /// Note: this is not exposed publicly because authorization isn't handled at this level
-    pub async fn add_members(
+    #[cfg_attr(test, crate::durable)]
+    pub(crate) async fn add_members(
         &mut self,
         members: &mut [ConversationMember],
         backend: &MlsCryptoProvider,
@@ -174,6 +187,8 @@ impl MlsConversation {
             .await
             .map_err(MlsError::from)?;
 
+        self.persist_group_when_changed(backend, false).await?;
+
         Ok(MlsConversationCreationMessage {
             welcome,
             commit,
@@ -183,6 +198,7 @@ impl MlsConversation {
 
     /// see [MlsCentral::remove_members_from_conversation]
     /// Note: this is not exposed publicly because authorization isn't handled at this level
+    #[cfg_attr(test, crate::durable)]
     pub(crate) async fn remove_members(
         &mut self,
         clients: &[ClientId],
@@ -209,6 +225,9 @@ impl MlsConversation {
             .remove_members(backend, &member_kps)
             .await
             .map_err(MlsError::from)?;
+
+        self.persist_group_when_changed(backend, false).await?;
+
         Ok(MlsCommitBundle {
             commit,
             welcome,
@@ -217,9 +236,16 @@ impl MlsConversation {
     }
 
     /// see [MlsCentral::update_keying_material]
-    pub async fn update_keying_material(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<MlsCommitBundle> {
+    #[cfg_attr(test, crate::durable)]
+    pub(crate) async fn update_keying_material(
+        &mut self,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<MlsCommitBundle> {
         let (commit, welcome, public_group_state) =
             self.group.self_update(backend, None).await.map_err(MlsError::from)?;
+
+        self.persist_group_when_changed(backend, false).await?;
+
         Ok(MlsCommitBundle {
             welcome,
             commit,
@@ -228,12 +254,19 @@ impl MlsConversation {
     }
 
     /// see [MlsCentral::commit_pending_proposals]
-    pub async fn commit_pending_proposals(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<MlsCommitBundle> {
+    #[cfg_attr(test, crate::durable)]
+    pub(crate) async fn commit_pending_proposals(
+        &mut self,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<MlsCommitBundle> {
         let (commit, welcome, public_group_state) = self
             .group
             .commit_to_pending_proposals(backend)
             .await
             .map_err(MlsError::from)?;
+
+        self.persist_group_when_changed(backend, false).await?;
+
         Ok(MlsCommitBundle {
             welcome,
             commit,
@@ -393,39 +426,113 @@ pub mod tests {
         pub async fn should_return_valid_welcome(credential: CredentialSupplier) {
             run_test_with_client_ids(
                 credential,
-                ["alice", "bob", "guest"],
-                move |[mut alice_central, mut bob_central, mut guest_central]| {
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
                             .unwrap();
-                        let MlsConversationCreationMessage {
-                            welcome,
-                            public_group_state,
-                            ..
-                        } = alice_central
+
+                        let welcome = alice_central
                             .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
                             .await
-                            .unwrap();
-
+                            .unwrap()
+                            .welcome;
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         bob_central
                             .process_welcome_message(welcome, MlsConversationConfiguration::default())
                             .await
                             .unwrap();
+                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_return_valid_public_group_state(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "guest"],
+                move |[mut alice_central, bob_central, mut guest_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+
+                        let public_group_state = alice_central
+                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
+                            .await
+                            .unwrap()
+                            .public_group_state;
+                        alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_public_group_state(
-                                &id,
-                                public_group_state,
-                                vec![&mut alice_central, &mut bob_central]
-                            )
+                            .try_join_from_public_group_state(&id, public_group_state, vec![&mut alice_central])
                             .await
                             .is_ok());
+                    })
+                },
+            )
+            .await
+        }
+    }
+
+    pub mod propose_add_members {
+        use super::*;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn can_propose_adding_members_to_conversation(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "charlie"],
+                move |[mut alice_central, mut bob_central, mut charlie_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        let charlie_kp = charlie_central.get_one_key_package().await;
+
+                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        let proposal = alice_central
+                            .new_proposal(&id, MlsProposal::Add(charlie_kp))
+                            .await
+                            .unwrap()
+                            .proposal;
+                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        bob_central
+                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        let MlsCommitBundle { commit, welcome, .. } =
+                            bob_central.commit_pending_proposals(&id).await.unwrap();
+                        bob_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(bob_central[&id].members().len(), 3);
+
+                        // if 'new_proposal' wasn't durable this would fail because proposal would
+                        // not be referenced in commit
+                        alice_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        assert_eq!(alice_central[&id].members().len(), 3);
+
+                        charlie_central
+                            .try_join_from_welcome(&id, welcome.unwrap(), vec![&mut alice_central, &mut bob_central])
+                            .await
+                            .unwrap();
+                        assert_eq!(charlie_central[&id].members().len(), 3);
                     })
                 },
             )
@@ -452,10 +559,11 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
-                        let MlsCommitBundle { commit, .. } = alice_central
+                        let MlsCommitBundle { commit, welcome, .. } = alice_central
                             .remove_members_from_conversation(&id, &["bob".into()])
                             .await
                             .unwrap();
+                        assert!(welcome.is_none());
 
                         // before merging, commit is not applied
                         assert_eq!(alice_central[&id].members().len(), 2);
@@ -504,16 +612,12 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let MlsCommitBundle { commit, welcome, .. } = alice_central
+                        let welcome = alice_central
                             .remove_members_from_conversation(&id, &["bob".into()])
                             .await
-                            .unwrap();
+                            .unwrap()
+                            .welcome;
                         alice_central.commit_accepted(&id).await.unwrap();
-
-                        bob_central
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
 
                         assert!(guest_central
                             .try_join_from_welcome(&id, welcome.unwrap(), vec![&mut alice_central])
@@ -543,20 +647,12 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
-                        let MlsCommitBundle {
-                            commit,
-                            public_group_state,
-                            ..
-                        } = alice_central
+                        let public_group_state = alice_central
                             .remove_members_from_conversation(&id, &["bob".into()])
                             .await
-                            .unwrap();
+                            .unwrap()
+                            .public_group_state;
                         alice_central.commit_accepted(&id).await.unwrap();
-
-                        bob_central
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
 
                         assert!(guest_central
                             .try_join_from_public_group_state(&id, public_group_state, vec![&mut alice_central])
@@ -568,6 +664,58 @@ pub mod tests {
                 },
             )
             .await;
+        }
+    }
+
+    pub mod propose_remove_members {
+        use super::*;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn can_propose_removing_members_from_conversation(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "charlie"],
+                move |[mut alice_central, mut bob_central, mut charlie_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        let pgs = alice_central.public_group_state(&id).await;
+                        charlie_central
+                            .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
+                            .await
+                            .unwrap();
+
+                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        let proposal = alice_central
+                            .new_proposal(&id, MlsProposal::Remove(b"charlie"[..].into()))
+                            .await
+                            .unwrap()
+                            .proposal;
+                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        bob_central
+                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        let commit = bob_central.commit_pending_proposals(&id).await.unwrap().commit;
+                        bob_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(bob_central[&id].members().len(), 2);
+
+                        // if 'new_proposal' wasn't durable this would fail because proposal would
+                        // not be referenced in commit
+                        alice_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        assert_eq!(alice_central[&id].members().len(), 2);
+                    })
+                },
+            )
+            .await
         }
     }
 
@@ -719,9 +867,10 @@ pub mod tests {
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Add(guest_central.get_one_key_package().await))
                             .await
-                            .unwrap();
+                            .unwrap()
+                            .proposal;
                         bob_central
-                            .decrypt_message(&id, proposal.proposal.to_bytes().unwrap())
+                            .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -729,11 +878,11 @@ pub mod tests {
                             alice_central.update_keying_material(&id).await.unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
 
-                        // receiving the commit on bob's side (updating key from alice)
                         bob_central
-                            .decrypt_message(&id, &commit.to_bytes().unwrap())
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
+
                         assert!(guest_central
                             .try_join_from_welcome(&id, welcome.unwrap(), vec![&mut alice_central, &mut bob_central])
                             .await
@@ -759,26 +908,74 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
-                        let MlsCommitBundle {
-                            commit,
-                            public_group_state,
-                            ..
-                        } = alice_central.update_keying_material(&id).await.unwrap();
+                        let public_group_state = alice_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .public_group_state;
                         alice_central.commit_accepted(&id).await.unwrap();
 
-                        // receiving the commit on bob's side (updating key from alice)
-                        bob_central
-                            .decrypt_message(&id, &commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
                         assert!(guest_central
-                            .try_join_from_public_group_state(
-                                &id,
-                                public_group_state,
-                                vec![&mut alice_central, &mut bob_central]
-                            )
+                            .try_join_from_public_group_state(&id, public_group_state, vec![&mut alice_central])
                             .await
                             .is_ok());
+                    })
+                },
+            )
+            .await;
+        }
+    }
+
+    pub mod propose_self_update {
+        use super::*;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn can_propose_updating(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                        let bob_keys = bob_central[&id].group.members();
+                        let alice_keys = alice_central[&id].group.members();
+                        assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
+                        let alice_key = alice_central.key_package_of(&id, "alice");
+
+                        let proposal = alice_central
+                            .new_proposal(&id, MlsProposal::Update)
+                            .await
+                            .unwrap()
+                            .proposal;
+                        bob_central
+                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        let commit = bob_central.commit_pending_proposals(&id).await.unwrap().commit;
+
+                        // before merging, commit is not applied
+                        assert!(bob_central[&id].group.members().contains(&&alice_key));
+                        bob_central.commit_accepted(&id).await.unwrap();
+                        assert!(!bob_central[&id].group.members().contains(&&alice_key));
+
+                        assert!(alice_central[&id].group.members().contains(&&alice_key));
+                        // if 'new_proposal' wasn't durable this would fail because proposal would
+                        // not be referenced in commit
+                        alice_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        assert!(!alice_central[&id].group.members().contains(&&alice_key));
+
+                        // ensuring both can encrypt messages
+                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
                     })
                 },
             )

@@ -21,12 +21,14 @@ use crate::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversati
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {
     /// see [MlsCentral::commit_accepted]
+    #[cfg_attr(test, crate::durable)]
     pub async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         self.group.merge_pending_commit().map_err(MlsError::from)?;
         self.persist_group_when_changed(backend, false).await
     }
 
     /// see [MlsCentral::clear_pending_proposal]
+    #[cfg_attr(test, crate::durable)]
     pub async fn clear_pending_proposal(
         &mut self,
         proposal_ref: MlsProposalRef,
@@ -36,14 +38,17 @@ impl MlsConversation {
             MlsGroupStateError::PendingProposalNotFound => CryptoError::PendingProposalNotFound(proposal_ref),
             _ => CryptoError::from(MlsError::from(e)),
         })?;
-        self.persist_group_when_changed(backend, false).await
+        self.persist_group_when_changed(backend, true).await?;
+        Ok(())
     }
 
     /// see [MlsCentral::clear_pending_commit]
+    #[cfg_attr(test, crate::durable)]
     pub async fn clear_pending_commit(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         if self.group.pending_commit().is_some() {
             self.group.clear_pending_commit();
-            self.persist_group_when_changed(backend, false).await
+            self.persist_group_when_changed(backend, true).await?;
+            Ok(())
         } else {
             Err(CryptoError::PendingCommitNotFound)
         }
@@ -122,16 +127,7 @@ pub mod tests {
     use openmls::prelude::Proposal;
     use wasm_bindgen_test::*;
 
-    use crate::{
-        credential::CredentialSupplier, prelude::MlsProposal, prelude::MlsProposalBundle, test_utils::*,
-        MlsConversationConfiguration,
-    };
-
-    use super::*;
-    use crate::{
-        credential::CredentialSupplier, prelude::MlsProposal, prelude::MlsProposalBundle, test_utils::*,
-        MlsConversationConfiguration,
-    };
+    use crate::{credential::CredentialSupplier, prelude::MlsProposal, test_utils::*, MlsConversationConfiguration};
 
     use super::*;
 
@@ -139,6 +135,34 @@ pub mod tests {
 
     pub mod commit_accepted {
         use super::*;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_apply_pending_commit(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        assert_eq!(alice_central[&id].members().len(), 2);
+                        alice_central
+                            .remove_members_from_conversation(&id, &["bob".into()])
+                            .await
+                            .unwrap();
+                        assert_eq!(alice_central[&id].members().len(), 2);
+                        alice_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(alice_central[&id].members().len(), 1);
+                    })
+                },
+            )
+            .await
+        }
 
         #[apply(all_credential_types)]
         #[wasm_bindgen_test]
@@ -186,25 +210,23 @@ pub mod tests {
                         assert!(alice_central.pending_proposals(&id).is_empty());
 
                         let charlie_kp = charlie_central.get_one_key_package().await;
-                        let MlsProposalBundle {
-                            proposal_ref: add_ref, ..
-                        } = alice_central
+                        let add_ref = alice_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
                             .await
-                            .unwrap();
+                            .unwrap()
+                            .proposal_ref;
 
-                        let MlsProposalBundle {
-                            proposal_ref: remove_ref,
-                            ..
-                        } = alice_central
+                        let remove_ref = alice_central
                             .new_proposal(&id, MlsProposal::Remove(b"bob"[..].into()))
                             .await
-                            .unwrap();
+                            .unwrap()
+                            .proposal_ref;
 
-                        let MlsProposalBundle {
-                            proposal_ref: update_ref,
-                            ..
-                        } = alice_central.new_proposal(&id, MlsProposal::Update).await.unwrap();
+                        let update_ref = alice_central
+                            .new_proposal(&id, MlsProposal::Update)
+                            .await
+                            .unwrap()
+                            .proposal_ref;
 
                         assert_eq!(alice_central.pending_proposals(&id).len(), 3);
                         alice_central.clear_pending_proposal(&id, add_ref.into()).await.unwrap();
