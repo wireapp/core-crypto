@@ -43,10 +43,11 @@ use tls_codec::{Deserialize, Serialize};
 use client::{Client, ClientId};
 use config::MlsCentralConfiguration;
 use conversation::{ConversationId, MlsConversation, MlsConversationConfiguration};
+use credential::CertificateBundle;
 use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
 
 pub use self::error::*;
-use crate::credential::CertificateBundle;
+pub use core_crypto_attributes::durable;
 
 mod client;
 mod conversation;
