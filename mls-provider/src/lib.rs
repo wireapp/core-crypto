@@ -68,7 +68,7 @@ impl std::ops::DerefMut for EntropySeed {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MlsCryptoProviderConfiguration<'a> {
     /// File path or database name of the persistent storage
     pub db_path: &'a str,
