@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 /// Error to represent when a key is not present in the KeyStore
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum MissingKeyErrorKind {
     #[error("MLS KeyPackageBundle")]
     MlsKeyPackageBundle,
