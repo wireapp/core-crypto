@@ -32,6 +32,8 @@ Note: all the platforms marked with (⚠️) above will get a round of polish fo
 
 ### CoreCrypto
 
+* Majorly improved documentation across all crates. Documentation for the `main` branch can be found here. The `HEAD` of this branch should only be a tagged version.
+    * This documentation is available here: <https://wireapp.github.io/core-crypto/core_crypto/>
 * Moved the codebase to `async`
     * This was a requirement to make everything work on the WASM target, as we cannot block the JavaScript runtime without making the browsers freeze up completely
     * As a consequence, we forked `openmls` to [wireapp/openmls](https://github.com/wireapp/openmls)
@@ -42,8 +44,18 @@ Note: all the platforms marked with (⚠️) above will get a round of polish fo
 * Dropped the `openmls-rust-crypto-provider` in favour of our `mls-crypto-provider` with support for more ciphersuites and updated dependencies
     * As a consequence, we forked `hpke-rs` to [wireapp/hpke-rs](https://github.com/wireapp/hpke-rs)
         * Our changes can be found [here](https://github.com/wireapp/hpke-rs/tree/fix/updated-deps)
-* Majorly improved docs across all crates. Documentation for the `main` branch can be found here. The `HEAD` of this branch should only be a tagged version.
-    * This documentation is available here: <https://wireapp.github.io/core-crypto/core_crypto/>
+    * Ciphersuite support details:
+        * `MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519` ✅
+        * `MLS_128_DHKEMP256_AES128GCM_SHA256_P256` ✅
+        * `MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519` ✅
+        * `MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448` ❌
+            * There is no suitable `ed448` rust crate yet
+        * `MLS_256_DHKEMP521_AES256GCM_SHA512_P521` ❌
+            * `p521` RustCrypto crate is a WIP and not ready just yet. It shouldn't take too long though.
+        * `MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448` ❌
+            * There is no suitable `ed448` rust crate yet
+        * `MLS_256_DHKEMP384_AES256GCM_SHA384_P384` ✅
+
 * Expanded the API to include:
     * Conversations:
         * Ability to wipe
@@ -51,7 +63,8 @@ Note: all the platforms marked with (⚠️) above will get a round of polish fo
         * Ability to force clients to update their keying material (i.e. self-update)
     * Support for MLS proposals
     * Support for MLS external commits
-        * Added support for joining a conversation via external commit
+        * Added ability to export MLS Public Group State for a given conversation
+        * Added support for creating an external commit to join a conversation
     * Support for MLS external Add and Remove Proposal support
     * Support for X.509 credentials
     * Added a commit delay hint to prevent clients from rushing to commit to the server - which would cause epoch conflicts and high load
@@ -72,6 +85,10 @@ Note: all the platforms marked with (⚠️) above will get a round of polish fo
 * Added support for WASM through an AES-GCM256-encrypted IndexedDB backend
     * This introduced a major refactoring to structure the code around having different backends depending on the platform.
 
+<details>
+    <summary>git-conventional changelog</summary>
+{{*gitlog tag="0.3.0"}}
+</details>
 
 ## [0.2.0] - 2022-03-22
 
@@ -113,4 +130,9 @@ This release contains the following features:
 * Fixed iOS-specific WAL behavior to preserve backgrounding capabilities
     * See the comment at `https://wireapp.github.io/core-crypto/src/core_crypto_keystore/connection/platform/generic/mod.rs#99` for more details
 * Fix for migrations being incorrectly defined
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{*gitlog tag="0.2.0"}}
+</details>
 
