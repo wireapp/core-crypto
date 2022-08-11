@@ -5,6 +5,7 @@ repository = "https://github.com/wireapp/core-crypto"
 version = "0.3.0"
 edition = "2021"
 license = "GPL-3.0-only"
+publish = false
 
 [lib]
 name = "core_crypto"

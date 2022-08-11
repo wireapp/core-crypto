@@ -43,6 +43,8 @@ enum CryptoError {
 
 dictionary DecryptedMessage {
     sequence<u8>? message;
+    sequence<sequence<u8>> proposals;
+    boolean is_active;
     u64? commit_delay;
 };
 
