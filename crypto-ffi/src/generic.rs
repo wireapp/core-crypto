@@ -20,7 +20,6 @@ use core_crypto::prelude::*;
 pub use core_crypto::prelude::{CiphersuiteName, ClientId, ConversationId, CoreCryptoCallbacks, MemberId};
 pub use core_crypto::CryptoError;
 use futures_lite::future;
-use futures_util::TryFutureExt;
 use std::collections::HashMap;
 
 cfg_if::cfg_if! {
@@ -96,16 +95,27 @@ pub struct MlsConversationInitMessage {
 /// See [core_crypto::prelude::decrypt::MlsConversationDecryptMessage]
 pub struct DecryptedMessage {
     pub message: Option<Vec<u8>>,
+    pub proposals: Vec<Vec<u8>>,
+    pub is_active: bool,
     pub commit_delay: Option<u64>,
 }
 
-impl From<MlsConversationDecryptMessage> for DecryptedMessage {
-    fn from(from: MlsConversationDecryptMessage) -> Self {
-        // TODO: map other fields in next minor version
-        Self {
+impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
+    type Error = CryptoError;
+
+    fn try_from(from: MlsConversationDecryptMessage) -> Result<Self, Self::Error> {
+        let proposals = from
+            .proposals
+            .into_iter()
+            .map(|p| CryptoResult::Ok(p.to_bytes().map_err(MlsError::from)?))
+            .collect::<CryptoResult<Vec<Vec<u8>>>>()?;
+
+        Ok(Self {
             message: from.app_msg,
+            proposals,
+            is_active: from.is_active,
             commit_delay: from.delay,
-        }
+        })
     }
 }
 
@@ -367,15 +377,18 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::MlsCentral::decrypt_message]
     pub fn decrypt_message(&self, conversation_id: ConversationId, payload: &[u8]) -> CryptoResult<DecryptedMessage> {
-        future::block_on(
+        let raw_decrypted_message = future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .decrypt_message(&conversation_id, payload)
-                    .map_ok(DecryptedMessage::from),
+                    .decrypt_message(&conversation_id, payload),
             ),
-        )
+        )?;
+
+        let decrypted_message: DecryptedMessage = raw_decrypted_message.try_into()?;
+
+        Ok(decrypted_message)
     }
 
     /// See [core_crypto::MlsCentral::encrypt_message]
