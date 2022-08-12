@@ -2,6 +2,10 @@ use clap::{Parser, Subcommand};
 use color_eyre::eyre::Result;
 
 mod documentation;
+mod release;
+
+use crate::documentation::DocumentationCommands;
+use crate::release::ReleaseCommands;
 
 #[derive(Debug, Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -15,31 +19,25 @@ struct Xtask {
 enum Commands {
     #[clap(subcommand)]
     Documentation(DocumentationCommands),
+    #[clap(subcommand)]
+    Release(ReleaseCommands),
 }
 
-#[derive(Debug, Subcommand)]
-enum DocumentationCommands {
-    Build {
-        // TODO: Add platforms to build documentation for
-        #[clap(value_parser)]
-        platforms: Option<String>,
-    },
-    Changelog {
-        #[clap(long, action)]
-        dry_run: bool,
-    },
-}
 
 fn main() -> Result<()> {
     color_eyre::install()?;
+    femme::start();
 
     let cli = Xtask::parse();
 
     match cli.command {
-        Commands::Documentation(doc_command) => match &doc_command {
+        Commands::Documentation(doc_command) => match doc_command {
             DocumentationCommands::Build { .. } => documentation::build()?,
-            DocumentationCommands::Changelog { dry_run } => documentation::changelog(*dry_run)?,
+            DocumentationCommands::Changelog { dry_run } => documentation::changelog(dry_run)?,
         },
+        Commands::Release(release_command) => match release_command {
+            ReleaseCommands::Bump { version, dry_run } => release::bump(version, dry_run)?,
+        }
     }
 
     Ok(())

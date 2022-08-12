@@ -8,7 +8,7 @@ Platform support legends:
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
 
-## [0.3.0] - TBD
+## [0.3.0] - 2022-08-12
 
 <details>
     <summary>git-conventional changelog</summary>
@@ -66,6 +66,7 @@ Platform support legends:
 
 ### Miscellaneous Tasks
 
+- Bump WASM bundle version to 0.3.0
 - Added Changelog generator
 - Fix nits on CHANGELOG-HUMAN.md
 - Add changelog generator configuration + human changelog

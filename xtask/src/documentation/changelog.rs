@@ -14,7 +14,11 @@ pub fn changelog(dry_run: bool) -> Result<()> {
         .ok_or_else(|| eyre!("HEAD is not pointing at a valid ref. Detached state detected, we bail!"))?
         .to_string();
 
+    log::debug!("Found git HEAD at {head_ref}");
+
     let tail_ref = cmd!(sh, "git rev-list --max-parents=0 HEAD").read()?;
+
+    log::debug!("Found git TAIL at {tail_ref}");
 
     let mut prev_ref = tail_ref;
 
@@ -36,7 +40,11 @@ pub fn changelog(dry_run: bool) -> Result<()> {
             git2::ReferenceFormat::ALLOW_ONELEVEL | git2::ReferenceFormat::REFSPEC_SHORTHAND,
         )?;
 
-        refs.insert(normalized_ref_name, format!("{prev_ref}..{ref_target}").into());
+        let tag_range = format!("{prev_ref}..{ref_target}");
+
+        log::debug!("Found git range for tag {normalized_ref_name}: {tag_range}");
+
+        refs.insert(normalized_ref_name, tag_range.into());
         prev_ref = ref_target.to_string();
     }
 
@@ -72,11 +80,15 @@ pub fn changelog(dry_run: bool) -> Result<()> {
     data.insert("head_ref".into(), head_ref.into());
     let output = handlebars.render("changelog", &data)?;
     if dry_run {
+        log::info!("Changelog generated successfully");
+        log::info!("Dry run selected, just printing");
         println!("{output}");
         return Ok(());
     }
 
     std::fs::write("CHANGELOG.md", output)?;
+
+    log::info!("Changelog written to CHANGELOG.md");
 
     Ok(())
 }

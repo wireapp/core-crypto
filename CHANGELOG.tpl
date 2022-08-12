@@ -8,11 +8,11 @@ Platform support legends:
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
 
-## [0.3.0] - TBD
+## [0.3.0] - 2022-08-12
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.3.0" unreleased=true}}
+{{git-cliff tag="v0.3.0"}}
 </details>
 
 This second major release focuses on expanding our platform support and featureset
