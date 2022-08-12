@@ -68,10 +68,16 @@ jobs:
           toolchain: stable
       - uses: Swatinem/rust-cache@v1
       - uses: taiki-e/install-action@nextest
-      - uses: actions-rs/cargo@v1
+      - name: "Test CoreCrypto"
+        uses: actions-rs/cargo@v1
         with:
           command: nextest
           args: run --verbose --release
+      - name: "Test CoreCrypto xtask tooling"
+        uses: actions-rs/cargo@v1
+        with:
+          command: nextest
+          args: run --verbose --manifest-path xtask/Cargo.toml
       - uses: actions-rs/cargo@v1
         with:
           command: test
