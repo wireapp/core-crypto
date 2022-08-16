@@ -2,7 +2,7 @@
 name = "mls-crypto-provider"
 description = "MLS Crypto Provider wrapping core-crypto-keystore"
 repository = "https://github.com/wireapp/core-crypto"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2018"
 license = "GPL-3.0-only"
 publish = false
