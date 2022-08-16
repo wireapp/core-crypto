@@ -13,32 +13,34 @@ branch = "otak/sodiumoxide-0.2.7"
 
 [patch.crates-io.openmls]
 git = "https://github.com/wireapp/openmls"
-branch = "feat/async"
+tag = "v0.5.1-pre.core-crypto-0.3.0"
+# branch = "feat/async-unstable"
 package = "openmls"
 
 [patch.crates-io.openmls_traits]
 git = "https://github.com/wireapp/openmls"
-branch = "feat/async"
+tag = "v0.5.1-pre.core-crypto-0.3.0"
+# branch = "feat/async-unstable"
 package = "openmls_traits"
 
 [patch.crates-io.hpke-rs]
 git = "https://github.com/wireapp/hpke-rs"
-branch = "fix/updated-deps"
+tag = "v0.1.2"
 package = "hpke-rs"
 
 [patch.crates-io.hpke-rs-crypto]
 git = "https://github.com/wireapp/hpke-rs"
-branch = "fix/updated-deps"
+tag = "v0.1.2"
 package = "hpke-rs-crypto"
 
 [patch.crates-io.hpke-rs-rust-crypto]
 git = "https://github.com/wireapp/hpke-rs"
-branch = "fix/updated-deps"
+tag = "v0.1.2"
 package = "hpke-rs-rust-crypto"
 
 [patch.crates-io.rcgen]
 git = "https://github.com/wireapp/rcgen"
-branch = "master"
+tag = "v1.0.0-pre.core-crypto-0.3.0"
 
 [profile.release]
 lto = true
