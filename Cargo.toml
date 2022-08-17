@@ -13,14 +13,14 @@ branch = "otak/sodiumoxide-0.2.7"
 
 [patch.crates-io.openmls]
 git = "https://github.com/wireapp/openmls"
-tag = "v0.5.1-pre.core-crypto-0.3.0"
-# branch = "feat/async-unstable"
+#tag = "v0.5.1-pre.core-crypto-0.3.0"
+ branch = "feat/async"
 package = "openmls"
 
 [patch.crates-io.openmls_traits]
 git = "https://github.com/wireapp/openmls"
-tag = "v0.5.1-pre.core-crypto-0.3.0"
-# branch = "feat/async-unstable"
+#tag = "v0.5.1-pre.core-crypto-0.3.0"
+ branch = "feat/async"
 package = "openmls_traits"
 
 [patch.crates-io.hpke-rs]
