@@ -41,6 +41,11 @@ rstest_reuse = "0.4"
 rcgen = { version = "0.9", features = ["x509-parser"] }
 async-std = { version = "1.12", features = ["attributes"] }
 futures-util = { version = "0.3", features = ["std", "alloc"] }
+futures-lite = "1.12"
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
+version = "0.3"
+features = ["async_futures", "html_reports"]
 
 [dev-dependencies.core-crypto-attributes]
 version = "0.3"
@@ -48,3 +53,27 @@ path = "../crypto-attributes"
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-Os", "--enable-mutable-globals", "--enable-threads", "--detect-features"]
+
+[[bench]]
+name = "key_package"
+harness = false
+
+[[bench]]
+name = "proposal"
+harness = false
+
+[[bench]]
+name = "public_group_state"
+harness = false
+
+[[bench]]
+name = "commit"
+harness = false
+
+[[bench]]
+name = "encryption"
+harness = false
+
+[[bench]]
+name = "create_group"
+harness = false

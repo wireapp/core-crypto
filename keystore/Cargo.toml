@@ -79,7 +79,6 @@ getrandom = { version = "0.2", features = ["js"] }
 sha2 = "0.10"
 
 [dev-dependencies]
-criterion = "0.3"
 wasm-bindgen-test = "0.3"
 uuid = { version = "1.0", features = ["v4", "js"] }
 rand = { version = "0.8", features = ["getrandom"] }
@@ -90,6 +89,11 @@ mls-crypto-provider = { path = "../mls-provider" }
 rstest = "0.15"
 rstest_reuse = "0.4"
 async-std = { version = "1.12", features = ["attributes"] }
+futures-lite = "1.12"
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
+version = "0.3"
+features = ["async_futures", "html_reports"]
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-Os", "--enable-mutable-globals", "--enable-threads", "--detect-features"]

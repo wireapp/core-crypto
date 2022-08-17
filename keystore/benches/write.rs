@@ -14,20 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use core_crypto_keystore::Connection as CryptoKeystore;
-use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion, Throughput};
-use mls_crypto_provider::RustCrypto;
+use criterion::{
+    async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, Criterion, Throughput,
+};
 use openmls::{
-    credentials::{CredentialBundle, CredentialType},
+    credentials::CredentialBundle,
     extensions::{Extension, ExternalKeyIdExtension},
     key_packages::KeyPackageBundle,
     prelude::Ciphersuite,
 };
 use openmls_traits::{key_store::OpenMlsKeyStore, random::OpenMlsRand, OpenMlsCryptoProvider};
 
+use core_crypto_keystore::Connection as CryptoKeystore;
+use futures_lite::future::block_on;
+use mls_crypto_provider::MlsCryptoProvider;
+
 #[cfg(feature = "proteus")]
 fn benchmark_writes_proteus(c: &mut Criterion) {
     use core_crypto_keystore::CryptoKeystoreProteus;
+    use mls_crypto_provider::RustCrypto;
     use proteus::keys::{PreKey, PreKeyId};
 
     let store = CryptoKeystore::open_with_key("bench_write", "key").unwrap();
@@ -53,14 +58,14 @@ fn benchmark_writes_proteus(c: &mut Criterion) {
 }
 
 fn benchmark_writes_mls(c: &mut Criterion) {
-    let store = CryptoKeystore::open_with_key("bench_write", "key").unwrap();
-    let backend = RustCrypto::default();
+    let store = block_on(async { CryptoKeystore::open_with_key("bench_write", "key").await.unwrap() });
+    let backend = block_on(async { MlsCryptoProvider::try_new("mls-write", "secret").await.unwrap() });
 
     let mut group = c.benchmark_group("MLS Writes");
     group.throughput(Throughput::Elements(1));
 
-    group.bench_function("Writes", |b| {
-        b.iter_batched(
+    group.bench_with_input("Writes", &store, |b, store| {
+        b.to_async(FuturesExecutor).iter_batched(
             || {
                 let uuid: [u8; 16] = backend.rand().random_array().unwrap();
                 let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519;
@@ -96,13 +101,13 @@ fn benchmark_writes_mls(c: &mut Criterion) {
 
                 (key, keypackage_bundle)
             },
-            |(key, bundle)| black_box(store.store(key.as_bytes(), &bundle)),
+            |(key, bundle)| async move { black_box(store.store(key.as_bytes(), &bundle).await) },
             BatchSize::SmallInput,
         )
     });
 
     group.finish();
-    store.wipe().unwrap();
+    block_on(async { store.wipe().await.unwrap() });
 }
 
 #[cfg(not(feature = "proteus-keystore"))]
