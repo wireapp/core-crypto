@@ -27,7 +27,7 @@ test("init", async () => {
     return CoreCrypto.version();
   });
 
-  expect(version).toBe("0.3.0");
+  expect(version).toBe("0.3.1");
 
   await page.close();
   await ctx.close();
@@ -232,7 +232,7 @@ test("roundtrip message", async () => {
 
   welcome.welcome = Uint8Array.from(welcome.welcome);
   welcome.commit = Uint8Array.from(welcome.commit);
-  welcome.groupInfo = Uint8Array.from(welcome.groupInfo);
+  welcome.publicGroupState = Uint8Array.from(welcome.publicGroupState);
 
   message = Uint8Array.from(Object.values(message));
 
