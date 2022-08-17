@@ -34,6 +34,11 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
+      - name: "Check benches"
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --benches
 
   build:
     runs-on: ubuntu-latest
@@ -78,10 +83,13 @@ jobs:
         with:
           command: nextest
           args: run --verbose --manifest-path xtask/Cargo.toml
-      - uses: actions-rs/cargo@v1
+      - name: "Test CoreCrypto documentation"
+        uses: actions-rs/cargo@v1
         with:
           command: test
           args: --doc
+      - name: "Test CoreCrypto benchmarks"
+        run: sh crypto/benches/scripts/test.sh
 
   wasm-build:
     runs-on: ubuntu-latest
@@ -101,6 +109,7 @@ jobs:
           wasm-pack build --dev --target web keystore
           wasm-pack build --dev --target web mls-provider
           wasm-pack build --dev --target web crypto
+
 
   wasm-test:
     runs-on: ubuntu-latest

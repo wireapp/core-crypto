@@ -14,16 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use core_crypto_keystore::Connection as CryptoKeystore;
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{
+    async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
+};
 use openmls::{
-    credentials::{CredentialBundle, CredentialType},
+    credentials::CredentialBundle,
     extensions::{Extension, ExternalKeyIdExtension},
     key_packages::KeyPackageBundle,
     prelude::Ciphersuite,
 };
-use openmls_rust_crypto_provider::OpenMlsRustCrypto;
 use openmls_traits::{key_store::OpenMlsKeyStore, random::OpenMlsRand, OpenMlsCryptoProvider};
+
+use core_crypto_keystore::Connection as CryptoKeystore;
+use futures_lite::future::block_on;
+use mls_crypto_provider::MlsCryptoProvider;
 
 #[cfg(feature = "proteus")]
 fn benchmark_reads_proteus(c: &mut Criterion) {
@@ -57,12 +61,21 @@ fn benchmark_reads_proteus(c: &mut Criterion) {
 }
 
 fn benchmark_reads_mls(c: &mut Criterion) {
-    let store_cached = CryptoKeystore::open_with_key("bench_cached_read_mls", "key").unwrap();
-    let store_uncached = CryptoKeystore::open_with_key("bench_uncached_read_mls", "key").unwrap();
+    let store_cached = block_on(async {
+        CryptoKeystore::open_with_key("bench_cached_read_mls", "key")
+            .await
+            .unwrap()
+    });
+    let store_uncached = block_on(async {
+        CryptoKeystore::open_with_key("bench_uncached_read_mls", "key")
+            .await
+            .unwrap()
+    });
     #[cfg(feature = "memory-cache")]
     store_uncached.cache(false);
 
-    let backend = OpenMlsRustCrypto::default();
+    let backend = block_on(async { MlsCryptoProvider::try_new("mls-read.edb", "secret").await.unwrap() });
+
     let uuid: [u8; 16] = backend.rand().random_array().unwrap();
     let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519;
 
@@ -94,30 +107,34 @@ fn benchmark_reads_mls(c: &mut Criterion) {
         uuid::Uuid::from_slice(id).unwrap()
     };
 
-    store_cached.store(key.as_bytes(), &keypackage_bundle).unwrap();
-    store_uncached.store(key.as_bytes(), &keypackage_bundle).unwrap();
+    block_on(async {
+        store_cached.store(key.as_bytes(), &keypackage_bundle).await.unwrap();
+        store_uncached.store(key.as_bytes(), &keypackage_bundle).await.unwrap();
+    });
 
     let mut group = c.benchmark_group("MLS Reads");
     group.throughput(Throughput::Elements(1));
 
     group.bench_with_input(BenchmarkId::new("Reads", "cached"), &key, |b, key| {
-        b.iter(|| {
-            let bundle: KeyPackageBundle = store_cached.read(key.as_bytes()).unwrap();
+        b.to_async(FuturesExecutor).iter(|| async {
+            let bundle: KeyPackageBundle = store_cached.read(key.as_bytes()).await.unwrap();
             black_box(bundle);
         })
     });
 
     group.bench_with_input(BenchmarkId::new("Reads", "uncached"), &key, |b, key| {
-        b.iter(|| {
-            let bundle: KeyPackageBundle = store_uncached.read(key.as_bytes()).unwrap();
+        b.to_async(FuturesExecutor).iter(|| async {
+            let bundle: KeyPackageBundle = store_uncached.read(key.as_bytes()).await.unwrap();
             black_box(bundle);
         })
     });
 
     group.finish();
 
-    store_cached.wipe().unwrap();
-    store_uncached.wipe().unwrap();
+    block_on(async {
+        store_cached.wipe().await.unwrap();
+        store_uncached.wipe().await.unwrap();
+    });
 }
 #[cfg(not(feature = "proteus-keystore"))]
 criterion_group!(benches, benchmark_reads_mls);

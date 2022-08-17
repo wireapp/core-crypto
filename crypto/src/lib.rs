@@ -78,6 +78,7 @@ pub mod prelude {
     pub use crate::conversation::decrypt::MlsConversationDecryptMessage;
     pub use crate::conversation::handshake::{MlsCommitBundle, MlsConversationCreationMessage, MlsProposalBundle};
     pub use crate::conversation::*;
+    pub use crate::credential::CertificateBundle;
     pub use crate::error::*;
     pub use crate::member::*;
     pub use crate::proposal::MlsProposal;
@@ -120,6 +121,12 @@ impl Default for MlsCiphersuite {
 impl From<Ciphersuite> for MlsCiphersuite {
     fn from(value: Ciphersuite) -> Self {
         Self(value)
+    }
+}
+
+impl From<MlsCiphersuite> for Ciphersuite {
+    fn from(ciphersuite: MlsCiphersuite) -> Self {
+        ciphersuite.0
     }
 }
 
