@@ -43,7 +43,15 @@ extension CoreCryptoSwift.MlsConversationInitMessage {
 
 extension CoreCryptoSwift.DecryptedMessage {
     func convertTo() -> DecryptedMessage {
-        return DecryptedMessage(message: self.message, proposals: self.proposals, isActive: self.isActive, commitDelay: self.commitDelay)
+        return DecryptedMessage(message: self.message, proposals: self.proposals.map({ (bundle) -> ProposalBundle in
+            return bundle.convertTo()
+        }), isActive: self.isActive, commitDelay: self.commitDelay)
+    }
+}
+
+extension CoreCryptoSwift.ProposalBundle {
+    func convertTo() -> ProposalBundle {
+        return ProposalBundle(proposal: self.proposal, proposalRef: self.proposalRef)
     }
 }
 
@@ -159,14 +167,14 @@ public struct DecryptedMessage: ConvertToInner {
     /// If decrypted message is a commit, this will contain either:
     /// - local pending proposal by value
     /// - proposals by value in pending commit
-    public var proposals: [[UInt8]]
+    public var proposals: [ProposalBundle]
     /// Is the conversation still active after receiving this commit
     /// aka has the user been removed from the group
     public var isActive: Bool
     /// delay time in seconds to feed caller timer for committing
     public var commitDelay: UInt64?
 
-    public init(message: [UInt8]?, proposals: [[UInt8]], isActive: Bool, commitDelay: UInt64?) {
+    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?) {
         self.message = message
         self.proposals = proposals
         self.isActive = isActive
@@ -174,7 +182,24 @@ public struct DecryptedMessage: ConvertToInner {
     }
 
     func convert() -> Inner {
-        return CoreCryptoSwift.DecryptedMessage(message: self.message, proposals: self.proposals, isActive: self.isActive, commitDelay: self.commitDelay)
+        return CoreCryptoSwift.DecryptedMessage(message: self.message, proposals: self.proposals.map({ (bundle) -> CoreCryptoSwift.ProposalBundle in
+            bundle.convert()
+        }), isActive: self.isActive, commitDelay: self.commitDelay)
+    }
+}
+
+public struct ProposalBundle: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.ProposalBundle
+    public var proposal: [UInt8]
+    public var proposalRef: [UInt8]
+
+    public init(proposal: [UInt8], proposalRef: [UInt8]) {
+        self.proposal = proposal
+        self.proposalRef = proposalRef
+    }
+    
+    func convert() -> Inner {
+        return CoreCryptoSwift.ProposalBundle(proposal: self.proposal, proposalRef: self.proposalRef)
     }
 }
 
@@ -338,8 +363,8 @@ public class CoreCryptoWrapper {
     /// - parameter conversationId: conversation identifier
     /// - parameter keyPackage: the owner's `KeyPackage` to be added to the group
     /// - returns: a message (to be fanned out) will be returned with the proposal that was created
-    public func newAddProposal(conversationId: ConversationId, keyPackage: [UInt8]) throws -> [UInt8] {
-        return try self.coreCrypto.newAddProposal(conversationId: conversationId, keyPackage: keyPackage)
+    public func newAddProposal(conversationId: ConversationId, keyPackage: [UInt8]) throws -> ProposalBundle {
+        return try self.coreCrypto.newAddProposal(conversationId: conversationId, keyPackage: keyPackage).convertTo()
     }
 
     /// Creates a new update proposal within a group. It will replace the sender's `LeafNode` in the
@@ -347,8 +372,8 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter conversationId: conversation identifier
     /// - returns: a message (to be fanned out) will be returned with the proposal that was created
-    public func newUpdateProposal(conversationId: ConversationId) throws -> [UInt8] {
-        return try self.coreCrypto.newUpdateProposal(conversationId: conversationId)
+    public func newUpdateProposal(conversationId: ConversationId) throws -> ProposalBundle {
+        return try self.coreCrypto.newUpdateProposal(conversationId: conversationId).convertTo()
     }
 
     /// Creates a new remove proposal within a group
@@ -356,8 +381,8 @@ public class CoreCryptoWrapper {
     /// - parameter conversationId: conversation identifier
     /// - parameter clientId: client id to be removed from the group
     /// - returns: a message (to be fanned out) will be returned with the proposal that was created
-    public func newRemoveProposal(conversationId: ConversationId, clientId: ClientId) throws -> [UInt8] {
-        return try self.coreCrypto.newRemoveProposal(conversationId: conversationId, clientId: clientId)
+    public func newRemoveProposal(conversationId: ConversationId, clientId: ClientId) throws -> ProposalBundle {
+        return try self.coreCrypto.newRemoveProposal(conversationId: conversationId, clientId: clientId).convertTo()
     }
 
     /// Crafts a new external Add proposal. Enables a client outside a group to request addition to this group.
