@@ -188,9 +188,12 @@ public struct DecryptedMessage: ConvertToInner {
     }
 }
 
+/// Result of a created commit
 public struct ProposalBundle: ConvertToInner {
     typealias Inner = CoreCryptoSwift.ProposalBundle
+    /// The proposal message
     public var proposal: [UInt8]
+    /// An identifier of the proposal to rollback it later if required
     public var proposalRef: [UInt8]
 
     public init(proposal: [UInt8], proposalRef: [UInt8]) {
