@@ -18,10 +18,6 @@ let package = Package(
         .target(
             name: "CoreCrypto",
             dependencies: [.productItem(name: "CoreCryptoSwift", package: "LibCoreCrypto", condition: nil)]
-        ),
-        .testTarget(
-            name: "CoreCryptoTests",
-            dependencies: ["CoreCrypto"]
         )
     ]
 )
