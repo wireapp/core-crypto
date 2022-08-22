@@ -1,4 +1,4 @@
-// swift-tools-version:5.5
+// swift-tools-version:5.6
 
 import PackageDescription
 
@@ -8,16 +8,26 @@ let package = Package(
     products: [
         .library(
             name: "CoreCrypto",
-            targets: ["CoreCrypto"]
+            targets: ["CoreCrypto", "CoreCryptoSwift"]
+        ),
+        .library(
+            name: "LibCoreCrypto",
+            targets: ["LibCoreCrypto"]
         ),
     ],
-    dependencies: [
-        .package(name: "LibCoreCrypto", path: "../libcore-crypto")
-    ],
+    dependencies: [],
     targets: [
         .target(
             name: "CoreCrypto",
-            dependencies: [.productItem(name: "CoreCryptoSwift", package: "LibCoreCrypto", condition: nil)]
-        )
+            dependencies: ["CoreCryptoSwift"]
+        ),
+        .systemLibrary(
+            name: "LibCoreCrypto",
+            path: "./lib"
+        ),
+        .target(
+            name: "CoreCryptoSwift",
+            dependencies: ["LibCoreCrypto"]
+        ),
     ]
 )

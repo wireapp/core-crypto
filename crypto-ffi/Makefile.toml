@@ -82,12 +82,13 @@ dependencies = ["ios-device", "ios-simulator-x86"]
 script = '''
     cd bindings/swift
 
-    xcodebuild -scheme CoreCryptoSwift -destination "platform=iOS Simulator,OS=15.2,name=iPhone 8"
+    swift build
 '''
+dependencies = ["create-swift-package"]
 
-[tasks.create-framework]
+[tasks.create-swift-package]
 script = '''
-    cd bindings/libcore-crypto
+    cd bindings/swift
 
     lipo -create -output ./lib/libcore_crypto_ffi.a \
         ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a \

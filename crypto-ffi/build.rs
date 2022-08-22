@@ -44,14 +44,14 @@ fn main() {
         UDL_FILE.into(),
         None,
         vec!["swift"],
-        Some("./bindings/libcore-crypto/lib/".into()),
+        Some("./bindings/swift/lib/".into()),
         false,
     )
     .unwrap();
     if cfg!(feature = "mobile") {
         std::fs::rename(
-            "./bindings/libcore-crypto/lib/CoreCrypto.swift",
-            "./bindings/libcore-crypto/Sources/CoreCryptoSwift/CoreCryptoSwift.swift",
+            "./bindings/swift/lib/CoreCrypto.swift",
+            "./bindings/swift/Sources/CoreCryptoSwift/CoreCryptoSwift.swift",
         )
         .unwrap();
     }
