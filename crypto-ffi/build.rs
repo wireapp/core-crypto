@@ -44,13 +44,13 @@ fn main() {
         UDL_FILE.into(),
         None,
         vec!["swift"],
-        Some("./bindings/swift/include".into()),
+        Some("./bindings/swift/lib/".into()),
         false,
     )
     .unwrap();
     if cfg!(feature = "mobile") {
         std::fs::rename(
-            "./bindings/swift/include/CoreCrypto.swift",
+            "./bindings/swift/lib/CoreCrypto.swift",
             "./bindings/swift/Sources/CoreCryptoSwift/CoreCryptoSwift.swift",
         )
         .unwrap();

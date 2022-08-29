@@ -1,29 +1,33 @@
-// swift-tools-version:5.5
+// swift-tools-version:5.6
 
 import PackageDescription
 
 let package = Package(
-    name: "CoreCryptoSwift",
-    //platforms: [.iOS(.v13)],
+    name: "CoreCrypto",
+    platforms: [.iOS(.v12)],
     products: [
         .library(
-            name: "CoreCryptoSwift",
-            targets: ["CoreCryptoSwift", "CoreCrypto"]
-        )
+            name: "CoreCrypto",
+            targets: ["CoreCrypto", "CoreCryptoSwift"]
+        ),
+        .library(
+            name: "LibCoreCrypto",
+            targets: ["LibCoreCrypto"]
+        ),
     ],
     dependencies: [],
     targets: [
-        .binaryTarget(
+        .target(
             name: "CoreCrypto",
-            path: "out/CoreCrypto.xcframework"
+            dependencies: ["CoreCryptoSwift"]
+        ),
+        .systemLibrary(
+            name: "LibCoreCrypto",
+            path: "./lib"
         ),
         .target(
             name: "CoreCryptoSwift",
-            dependencies: ["CoreCrypto"]
+            dependencies: ["LibCoreCrypto"]
         ),
-        .testTarget(
-            name: "CoreCryptoTests",
-            dependencies: ["CoreCryptoSwift"]
-        )
     ]
 )

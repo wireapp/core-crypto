@@ -42,6 +42,7 @@ enum CryptoError {
     "CallbacksNotSet",
     "ExternalAddProposalError",
     "InvalidHashReference",
+    "GenerationOutOfBound",
 };
 
 dictionary DecryptedMessage {
@@ -86,8 +87,8 @@ dictionary ConversationConfiguration {
 };
 
 callback interface CoreCryptoCallbacks {
-    boolean authorize([ByRef] sequence<u8> conversation_id, [ByRef] string client_id);
-    boolean is_user_in_group([ByRef] sequence<u8> identity, sequence<sequence<u8>> other_clients);
+    boolean authorize([ByRef] sequence<u8> conversationId, [ByRef] string clientId);
+    boolean is_user_in_group([ByRef] sequence<u8> identity, sequence<sequence<u8>> otherClients);
 };
 
 interface CoreCrypto {

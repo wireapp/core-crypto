@@ -1,0 +1,479 @@
+// Wire
+// Copyright (C) 2022 Wire Swiss GmbH
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see http://www.gnu.org/licenses/.
+
+import CoreCryptoSwift
+import Foundation
+
+/// Interface to convert to ``CoreCrypto``'s internal types
+private protocol ConvertToInner {
+    associatedtype Inner
+    func convert() -> Inner
+}
+
+extension CoreCryptoSwift.CommitBundle {
+    func convertTo() -> CommitBundle {
+        return CommitBundle(welcome: self.welcome, commit: self.commit, publicGroupState: self.publicGroupState)
+    }
+}
+
+extension CoreCryptoSwift.MemberAddedMessages {
+    func convertTo() -> MemberAddedMessages {
+        return MemberAddedMessages(commit: self.commit, welcome: self.welcome, publicGroupState: self.publicGroupState)
+    }
+}
+
+extension CoreCryptoSwift.MlsConversationInitMessage {
+    func convertTo() -> MlsConversationInitMessage {
+        return MlsConversationInitMessage(group: self.group, commit: self.commit)
+    }
+}
+
+extension CoreCryptoSwift.DecryptedMessage {
+    func convertTo() -> DecryptedMessage {
+        return DecryptedMessage(message: self.message, proposals: self.proposals.map({ (bundle) -> ProposalBundle in
+            return bundle.convertTo()
+        }), isActive: self.isActive, commitDelay: self.commitDelay)
+    }
+}
+
+extension CoreCryptoSwift.ProposalBundle {
+    func convertTo() -> ProposalBundle {
+        return ProposalBundle(proposal: self.proposal, proposalRef: self.proposalRef)
+    }
+}
+
+/// Alias for convesation IDs.
+/// This is a freeform, uninspected buffer.
+public typealias ConversationId = [UInt8]
+public typealias MemberId = [UInt8]
+
+/// Conversation ciphersuite variants
+public enum CiphersuiteName: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.CiphersuiteName
+    
+    case mls128Dhkemx25519Aes128gcmSha256Ed25519
+    case mls128Dhkemp256Aes128gcmSha256P256
+    case mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
+    case mls256Dhkemx448Aes256gcmSha512Ed448
+    case mls256Dhkemp521Aes256gcmSha512P521
+    case mls256Dhkemx448Chacha20poly1305Sha512Ed448
+    case mls256Dhkemp384Aes256gcmSha384P384
+}
+
+private extension CiphersuiteName {
+    func convert() -> Inner {
+        switch self {
+        case .mls128Dhkemx25519Aes128gcmSha256Ed25519:
+            return CoreCryptoSwift.CiphersuiteName.mls128Dhkemx25519Aes128gcmSha256Ed25519
+        case .mls128Dhkemp256Aes128gcmSha256P256:
+            return CoreCryptoSwift.CiphersuiteName.mls128Dhkemp256Aes128gcmSha256P256
+        case .mls128Dhkemx25519Chacha20poly1305Sha256Ed25519:
+            return CoreCryptoSwift.CiphersuiteName.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
+        case .mls256Dhkemx448Aes256gcmSha512Ed448:
+            return CoreCryptoSwift.CiphersuiteName.mls256Dhkemx448Aes256gcmSha512Ed448
+        case .mls256Dhkemp521Aes256gcmSha512P521:
+            return CoreCryptoSwift.CiphersuiteName.mls256Dhkemp521Aes256gcmSha512P521
+        case .mls256Dhkemx448Chacha20poly1305Sha512Ed448:
+            return CoreCryptoSwift.CiphersuiteName.mls256Dhkemx448Chacha20poly1305Sha512Ed448
+        case .mls256Dhkemp384Aes256gcmSha384P384:
+            return CoreCryptoSwift.CiphersuiteName.mls256Dhkemp384Aes256gcmSha384P384
+        }
+    }
+}
+
+/// Configuration object for new conversations
+public struct ConversationConfiguration: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.ConversationConfiguration
+    func convert() -> Inner {
+        return CoreCryptoSwift.ConversationConfiguration(admins: self.admins, ciphersuite: self.ciphersuite?.convert(), keyRotationSpan: self.keyRotationSpan, externalSenders: self.externalSenders)
+    }
+    
+    ///  List of client IDs with administrative permissions
+    public var admins: [MemberId]
+    /// Conversation ciphersuite
+    public var ciphersuite: CiphersuiteName?
+    /// Duration in seconds after which we will automatically force a self_update commit
+    /// Note: This isn't currently implemented
+    public var keyRotationSpan: TimeInterval?
+    /// List of client IDs that are allowed to be external senders of commits
+    public var externalSenders: [[UInt8]]
+
+    public init(admins: [MemberId], ciphersuite: CiphersuiteName?, keyRotationSpan: TimeInterval?, externalSenders: [[UInt8]]) {
+        self.admins = admins
+        self.ciphersuite = ciphersuite
+        self.keyRotationSpan = keyRotationSpan
+        self.externalSenders = externalSenders
+    }
+}
+
+/// Data shape for adding clients to a conversation
+public struct Invitee: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.Invitee
+    /// Client ID as a byte array
+    public var id: ClientId
+    /// MLS KeyPackage belonging to the aforementioned client
+    public var kp: [UInt8]
+
+    public init(id: ClientId, kp: [UInt8]) {
+        self.id = id
+        self.kp = kp
+    }
+    
+    func convert() -> Inner {
+        return CoreCryptoSwift.Invitee(id: self.id, kp: self.kp)
+    }
+}
+
+/// Data shape for the returned MLS commit & welcome message tuple upon adding clients to a conversation
+public struct MemberAddedMessages: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.MemberAddedMessages
+    /// TLS-serialized MLS Welcome message that needs to be fanned out to the clients newly added to the conversation
+    public var commit: [UInt8]
+    /// TLS-serialized MLS Commit that needs to be fanned out to other (existing) members of the conversation
+    public var welcome: [UInt8]
+    /// The current group state
+    public var publicGroupState: [UInt8]
+
+    public init(commit: [UInt8], welcome: [UInt8], publicGroupState: [UInt8]) {
+        self.commit = commit
+        self.welcome = welcome
+        self.publicGroupState = publicGroupState
+    }
+    
+    func convert() -> Inner {
+        return CoreCryptoSwift.MemberAddedMessages(commit: self.commit, welcome: self.welcome, publicGroupState: self.publicGroupState)
+    }
+}
+
+/// Represents the potential items a consumer might require after passing us an encrypted message we
+/// have decrypted for him
+public struct DecryptedMessage: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.DecryptedMessage
+    /// Decrypted text message
+    public var message: [UInt8]?
+    /// If decrypted message is a commit, this will contain either:
+    /// - local pending proposal by value
+    /// - proposals by value in pending commit
+    public var proposals: [ProposalBundle]
+    /// Is the conversation still active after receiving this commit
+    /// aka has the user been removed from the group
+    public var isActive: Bool
+    /// delay time in seconds to feed caller timer for committing
+    public var commitDelay: UInt64?
+
+    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?) {
+        self.message = message
+        self.proposals = proposals
+        self.isActive = isActive
+        self.commitDelay = commitDelay
+    }
+
+    func convert() -> Inner {
+        return CoreCryptoSwift.DecryptedMessage(message: self.message, proposals: self.proposals.map({ (bundle) -> CoreCryptoSwift.ProposalBundle in
+            bundle.convert()
+        }), isActive: self.isActive, commitDelay: self.commitDelay)
+    }
+}
+
+/// Result of a created commit
+public struct ProposalBundle: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.ProposalBundle
+    /// The proposal message
+    public var proposal: [UInt8]
+    /// An identifier of the proposal to rollback it later if required
+    public var proposalRef: [UInt8]
+
+    public init(proposal: [UInt8], proposalRef: [UInt8]) {
+        self.proposal = proposal
+        self.proposalRef = proposalRef
+    }
+    
+    func convert() -> Inner {
+        return CoreCryptoSwift.ProposalBundle(proposal: self.proposal, proposalRef: self.proposalRef)
+    }
+}
+
+
+/// Represents the result type of the external commit request.
+public struct MlsConversationInitMessage: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.MlsConversationInitMessage
+    /// Conversation id
+    public var group: [UInt8]
+    /// TLS-serialized MLS Commit that needs to be fanned out
+    public var commit: [UInt8]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(group: [UInt8], commit: [UInt8]) {
+        self.group = group
+        self.commit = commit
+    }
+
+    func convert() -> Inner {
+        return CoreCryptoSwift.MlsConversationInitMessage(group: self.group, commit: self.commit)
+    }
+}
+
+/// Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome)
+public struct CommitBundle: ConvertToInner {
+    /// Optional TLS-serialized MLS Welcome message that needs to be fanned out to the clients newly added to the conversation
+    public var welcome: [UInt8]?
+    /// TLS-serialized MLS Commit that needs to be fanned out to other (existing) members of the conversation
+    public var commit: [UInt8]
+    /// The current state of the group
+    public var publicGroupState: [UInt8]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(welcome: [UInt8]?, commit: [UInt8], publicGroupState: [UInt8]) {
+        self.welcome = welcome
+        self.commit = commit
+        self.publicGroupState = publicGroupState
+    }
+    typealias Inner = CoreCryptoSwift.CommitBundle
+
+    func convert() -> Inner {
+        return CoreCryptoSwift.CommitBundle(welcome: self.welcome, commit: self.commit, publicGroupState: self.publicGroupState)
+    }
+}
+
+/// A wrapper for the underlying ``CoreCrypto`` object.
+/// Intended to avoid API breakages due to possible changes in the internal framework used to generate it
+public class CoreCryptoWrapper {
+    fileprivate let coreCrypto: CoreCrypto
+
+    /// This is your entrypoint to initialize ``CoreCrypto``
+    /// - parameter path: Name of the IndexedDB database
+    /// - parameter key: Encryption master key
+    /// - parameter clientId: MLS Client ID.
+    /// - parameter entropySeed: External PRNG entropy pool seed.
+    ///
+    /// # Notes #
+    /// 1. ``entropySeed`` **must** be exactly 32 bytes
+    /// 2. ``clientId`` should stay consistent as it will be verified against the stored signature & identity to validate the persisted credential
+    /// 3. ``key`` should be appropriately stored in a secure location (i.e. WebCrypto private key storage)
+    ///
+    public init(path: String, key: String, clientId: String, entropySeed: [UInt8]?) throws {
+        self.coreCrypto = try CoreCrypto(path: path, key: key, clientId: clientId, entropySeed: entropySeed)
+    }
+
+    /// Sets the callback interface, required by some operations from `CoreCrypto`
+    ///
+    /// - parameter callbacks: the object that implements the ``CoreCryptoCallbacks`` interface
+    public func setCallbacks(callbacks: CoreCryptoCallbacks) throws {
+        try self.coreCrypto.setCallbacks(callbacks: callbacks)
+    }
+
+    /// - returns: The client's public key
+    public func clientPublicKey() throws -> [UInt8] {
+        return try self.coreCrypto.clientPublicKey()
+    }
+
+    /// Fetches a requested amount of keypackages
+    /// - parameter amountRequested: The amount of keypackages requested
+    /// - returns: An array of length `amountRequested` containing TLS-serialized KeyPackages
+    public func clientKeypackages(amountRequested: UInt32) throws -> [[UInt8]] {
+        return try self.coreCrypto.clientKeypackages(amountRequested: amountRequested)
+    }
+
+    /// - returns: The amount of valid, non-expired KeyPackages that are persisted in the backing storage
+    public func clientValidKeypackagesCount() throws -> UInt64 {
+        return try self.coreCrypto.clientValidKeypackagesCount()
+    }
+
+    /// Creates a new conversation with the current client being the sole member
+    /// You will want to use ``addClientsToConversation(conversationId:clients:)`` afterwards to add clients to this conversation
+    /// - parameter conversationId: conversation identifier
+    /// - parameter config: the configuration for the conversation to be created
+    public func createConversation(conversationId: ConversationId, config: ConversationConfiguration) throws {
+        try self.coreCrypto.createConversation(conversationId: conversationId, config: config.convert())
+    }
+
+    /// Checks if the Client is member of a given conversation and if the MLS Group is loaded up
+    /// - parameter conversationId: conversation identifier
+    /// - returns: Whether the given conversation ID exists
+    public func conversationExists(conversationId: ConversationId) -> Bool {
+        return self.coreCrypto.conversationExists(conversationId: conversationId)
+    }
+
+    /// Ingest a TLS-serialized MLS welcome message to join a an existing MLS group
+    /// - parameter welcomeMessage: - TLS-serialized MLS Welcome message
+    /// - returns: The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages
+    public func processWelcomeMessage(welcomeMessage: [UInt8]) throws -> ConversationId {
+        return try self.coreCrypto.processWelcomeMessage(welcomeMessage: welcomeMessage)
+    }
+
+    /// Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation
+    /// The returned {@link MemberAddedMessages} object contains a TLS-serialized MLS commit (the `message`) that needs to be
+    /// fanned out to existing members of the conversation and a TLS-serialized MLS Welcome message that needs to be fanned out to the
+    /// - parameter conversationId: conversation identifier
+    /// - parameter clients: Array of {@link Invitee} (which are Client ID / KeyPackage pairs)
+    /// - returns: A ``MemberAddedMessages`` object
+    public func addClientsToConversation(conversationId: ConversationId, clients: [Invitee]) throws -> MemberAddedMessages {
+        return try self.coreCrypto.addClientsToConversation(conversationId: conversationId, clients: clients.map({ (invitee) -> CoreCryptoSwift.Invitee in
+            return invitee.convert()
+        })).convertTo()
+    }
+
+    /// Removes the provided clients from a conversation; Assuming those clients exist and the current client is allowed to do so, otherwise this operation does nothing
+    /// - parameter conversationId: conversation identifier
+    /// - parameter clients: Array of Client IDs to remove.
+    /// - returns: A TLS-serialized MLS commit acting on the removal of those clients, or `undefined` if for any reason, the operation would result in an empty commit
+    public func removeClientsFromConversation(conversationId: ConversationId, clients: [ClientId]) throws -> CommitBundle {
+        return try self.coreCrypto.removeClientsFromConversation(conversationId: conversationId, clients: clients).convertTo()
+    }
+
+    /// Destroys a group locally
+    ///
+    /// - parameter conversationId: conversation identifier
+    public func wipeConversation(conversationId: ConversationId) throws {
+        try self.coreCrypto.wipeConversation(conversationId: conversationId)
+    }
+
+    /// Deserializes a TLS-serialized message, then deciphers it
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - parameter payload: the encrypted message as a byte array
+    /// - returns an object of the type ``DecryptedMessage``
+    public func decryptMessage(conversationId: ConversationId, payload: [UInt8]) throws -> DecryptedMessage {
+        return try self.coreCrypto.decryptMessage(conversationId: conversationId, payload: payload).convertTo()
+    }
+
+    /// Encrypts a raw payload then serializes it to the TLS wire format
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - parameter message: the message as a byte array
+    /// - returns: an encrypted TLS serialized message.
+    public func encryptMessage(conversationId: ConversationId, message: [UInt8]) throws -> [UInt8] {
+        return try self.coreCrypto.encryptMessage(conversationId: conversationId, message: message)
+    }
+
+    /// Creates a new add proposal within a group
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - parameter keyPackage: the owner's `KeyPackage` to be added to the group
+    /// - returns: a message (to be fanned out) will be returned with the proposal that was created
+    public func newAddProposal(conversationId: ConversationId, keyPackage: [UInt8]) throws -> ProposalBundle {
+        return try self.coreCrypto.newAddProposal(conversationId: conversationId, keyPackage: keyPackage).convertTo()
+    }
+
+    /// Creates a new update proposal within a group. It will replace the sender's `LeafNode` in the
+    /// ratchet tree
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - returns: a message (to be fanned out) will be returned with the proposal that was created
+    public func newUpdateProposal(conversationId: ConversationId) throws -> ProposalBundle {
+        return try self.coreCrypto.newUpdateProposal(conversationId: conversationId).convertTo()
+    }
+
+    /// Creates a new remove proposal within a group
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - parameter clientId: client id to be removed from the group
+    /// - returns: a message (to be fanned out) will be returned with the proposal that was created
+    public func newRemoveProposal(conversationId: ConversationId, clientId: ClientId) throws -> ProposalBundle {
+        return try self.coreCrypto.newRemoveProposal(conversationId: conversationId, clientId: clientId).convertTo()
+    }
+
+    /// Crafts a new external Add proposal. Enables a client outside a group to request addition to this group.
+    /// For Wire only, the client must belong to an user already in the group
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - parameter epoch: the current epoch of the group
+    /// - returns: a message with the proposal to be add a new client
+    public func newExternalAddProposal(conversationId: ConversationId, epoch: UInt64) throws -> [UInt8] {
+        return try self.coreCrypto.newExternalAddProposal(conversationId: conversationId, epoch: epoch)
+    }
+
+    /// Crafts a new external Remove proposal. Enables a client outside a group to request removal
+    /// of a client within the group.
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - parameter epoch: the current epoch of the group
+    /// - parameter keyPackageRef: the `KeyPackageRef` of the client to be added to the group
+    /// - returns: a message with the proposal to be remove a client
+    public func newExternalRemoveProposal(conversationId: ConversationId, epoch: UInt64, keyPackageRef: [UInt8]) throws -> [UInt8] {
+        return try self.coreCrypto.newExternalRemoveProposal(conversationId: conversationId, epoch: epoch, keyPackageRef: keyPackageRef)
+    }
+
+    /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - returns: an object of type ``CommitBundle``
+    public func updateKeyingMaterial(conversationId: ConversationId) throws -> CommitBundle {
+        try self.coreCrypto.updateKeyingMaterial(conversationId: conversationId).convertTo()
+    }
+
+    /// Issues an external commit and stores the group in a temporary table. This method is
+    /// intended for example when a new client wants to join the user's existing groups.
+    /// On success this function will return the group id and a message to be fanned out to other
+    /// clients.
+    ///
+    /// - parameter groupState: a verifiable public group state. it can be obtained by deserializing a TLS
+    /// serialized `PublicGoupState` object
+    /// - returns: an object of type `MlsConversationInitMessage`
+    public func joinByExternalCommit(groupState: [UInt8]) throws -> MlsConversationInitMessage {
+        try self.coreCrypto.joinByExternalCommit(groupState: groupState).convertTo()
+    }
+
+    /// Exports a TLS-serialized view of the current group state corresponding to the provided conversation ID.
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - returns: a TLS serialized byte array of the conversation state
+    public func exportGroupState(conversationId: ConversationId) throws -> [UInt8] {
+        return try self.coreCrypto.exportGroupState(conversationId: conversationId)
+    }
+
+    /// This merges the commit generated by the external commit, persists the group permanently and
+    /// deletes the temporary. After merging, the group should be fully functional.
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - parameter config: the configuration to be applied by the new group on this client
+    public func mergePendingGroupFromExternalCommit(conversationId: ConversationId, config: ConversationConfiguration) throws {
+        try self.coreCrypto.mergePendingGroupFromExternalCommit(conversationId: conversationId, config: config.convert())
+    }
+
+    /// Allows ``CoreCrypto`` to act as a CSPRNG provider
+    /// - parameter length: The number of bytes to be returned in the `Uint8` array
+    /// - returns: A ``Uint8`` array buffer that contains ``length`` cryptographically-secure random bytes
+    public func randomBytes(length: UInt32) throws -> [UInt8] {
+        try self.coreCrypto.randomBytes(length: length)
+    }
+
+    /// Allows to reseed ``CoreCrypto``'s internal CSPRNG with a new seed.
+    /// - parameter seed: **exactly 32** bytes buffer seed
+    public func reseedRng(seed: [UInt8]) throws {
+        try self.coreCrypto.reseedRng(seed: seed)
+    }
+
+    /// The commit we created has been accepted by the Delivery Service. Hence it is guaranteed
+    /// to be used for the new epoch.
+    /// We can now safely "merge" it (effectively apply the commit to the group) and update it
+    /// in the keystore. The previous can be discarded to respect Forward Secrecy.
+    ///
+    /// - parameter conversationId: conversation identifier
+    public func commitAccepted(conversationId: ConversationId) throws {
+        try self.coreCrypto.commitAccepted(conversationId: conversationId)
+    }
+
+    /// Commits all pending proposals of the group
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - returns: an object of type ``CommitBundle``
+    public func commitPendingProposals(conversationId: ConversationId) throws -> CommitBundle {
+        try self.coreCrypto.commitPendingProposals(conversationId:conversationId).convertTo()
+    }
+}
