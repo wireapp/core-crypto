@@ -309,6 +309,13 @@ public class CoreCryptoWrapper {
         return self.coreCrypto.conversationExists(conversationId: conversationId)
     }
 
+    /// Returns the epoch of a given conversation id
+    /// - parameter conversationId: conversation identifier
+    /// - returns: the current epoch of the conversation
+    public func conversationEpoch(conversationId: ConversationId) throws -> UInt64 {
+        return try self.coreCrypto.conversationEpoch(conversationId: conversationId)
+    }
+
     /// Ingest a TLS-serialized MLS welcome message to join a an existing MLS group
     /// - parameter welcomeMessage: - TLS-serialized MLS Welcome message
     /// - returns: The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages

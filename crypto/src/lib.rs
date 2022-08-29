@@ -393,6 +393,20 @@ impl MlsCentral {
         self.mls_groups.contains_key(id)
     }
 
+    /// Returns the epoch of a given conversation
+    ///
+    /// # Errors
+    /// If the conversation can't be found
+    pub fn conversation_epoch(&self, id: &ConversationId) -> CryptoResult<u64> {
+        Ok(self
+            .mls_groups
+            .get(id)
+            .ok_or_else(|| CryptoError::ConversationNotFound(id.to_owned()))?
+            .group
+            .epoch()
+            .as_u64())
+    }
+
     /// Create a conversation from a received MLS Welcome message
     ///
     /// # Arguments

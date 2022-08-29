@@ -381,6 +381,22 @@ export class CoreCrypto {
         return await this.#cc.conversation_exists(conversationId);
     }
 
+    /**
+     * Returhs the epoch of a conversation
+     *
+     * @returns the epoch of the conversation
+     *
+     * @example
+     * ```ts
+     *  const cc = await CoreCrypto.init({ databaseName: "test", key: "test", clientId: "test" });
+     *  const encoder = new TextEncoder();
+     *  console.log(await cc.conversationEpoch(encoder.encode("my super chat")))
+     * ```
+     */
+    async conversationEpoch(conversationId: ConversationId): Promise<number> {
+        return await this.#cc.conversation_epoch(conversationId);
+    }
+
 
     /**
      * Wipes and destroys the local storage of a given conversation / MLS group

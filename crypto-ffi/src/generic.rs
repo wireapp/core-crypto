@@ -330,6 +330,14 @@ impl CoreCrypto<'_> {
         )
     }
 
+    /// See [core_crypto::MlsCentral::conversation_epoch]
+    pub fn conversation_epoch(&self, conversation_id: ConversationId) -> CryptoResult<u64> {
+        self.central
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .conversation_epoch(&conversation_id)
+    }
+
     /// See [core_crypto::MlsCentral::process_raw_welcome_message]
     pub fn process_welcome_message(&self, welcome_message: &[u8]) -> CryptoResult<ConversationId> {
         future::block_on(

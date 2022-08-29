@@ -669,6 +669,17 @@ impl CoreCrypto {
         )
     }
 
+    /// Returns [`WasmCryptoResult<u64>`]
+    ///
+    /// see [core_crypto::MlsCentral::conversation_epoch]
+    pub fn conversation_epoch(&self, conversation_id: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move { WasmCryptoResult::Ok(this.read().await.conversation_epoch(&conversation_id.into())?.into()) }
+                .err_into(),
+        )
+    }
+
     /// Returns: [`bool`]
     ///
     /// see [core_crypto::MlsCentral::conversation_exists]
