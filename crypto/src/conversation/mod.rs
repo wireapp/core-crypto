@@ -70,6 +70,7 @@ pub struct MlsConversationConfiguration {
 impl MlsConversationConfiguration {
     // TODO: pending a long term solution with a real certificate
     const WIRE_SERVER_IDENTITY: &'static str = "wire-server";
+    const PADDING_SIZE: usize = 128;
 
     /// Generates an `MlsGroupConfig` from this configuration
     #[inline(always)]
@@ -77,7 +78,7 @@ impl MlsConversationConfiguration {
         Ok(openmls::group::MlsGroupConfig::builder()
             .wire_format_policy(openmls::group::MIXED_PLAINTEXT_WIRE_FORMAT_POLICY)
             .max_past_epochs(3)
-            .padding_size(16)
+            .padding_size(Self::PADDING_SIZE)
             .number_of_resumtion_secrets(1)
             .sender_ratchet_configuration(SenderRatchetConfiguration::new(2, 1000))
             .use_ratchet_tree_extension(true)
