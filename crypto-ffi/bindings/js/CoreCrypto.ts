@@ -382,7 +382,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Returhs the epoch of a conversation
+     * Returns the current epoch of a conversation
      *
      * @returns the epoch of the conversation
      *
