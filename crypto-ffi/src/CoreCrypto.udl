@@ -50,6 +50,7 @@ dictionary DecryptedMessage {
     sequence<ProposalBundle> proposals;
     boolean is_active;
     u64? commit_delay;
+    ClientId? sender_client_id;
 };
 
 dictionary MemberAddedMessages {

@@ -48,10 +48,16 @@ export interface ConversationConfiguration {
 }
 
 /**
- * Alias for convesation IDs.
+ * Alias for conversation IDs.
  * This is a freeform, uninspected buffer.
  */
 export type ConversationId = Uint8Array;
+
+/**
+ * Alias for client identifier.
+ * This is a freeform, uninspected buffer.
+ */
+export type ClientId = Uint8Array;
 
 /**
  * Alias for proposal reference. It is a byte array of size 16.
@@ -95,7 +101,7 @@ export interface Invitee {
     /**
      * Client ID as a byte array
      */
-    id: Uint8Array;
+    id: ClientId;
     /**
      * MLS KeyPackage belonging to the aforementioned client
      */
@@ -185,6 +191,10 @@ export interface DecryptedMessage {
      * Commit delay hint (in milliseconds) to prevent clients from hammering the server with epoch changes
      */
     commitDelay?: number;
+    /**
+     * Client identifier of the sender of the message being decrypted. Only present for application messages.
+     */
+    senderClientId?: ClientId;
 }
 
 /**
@@ -250,7 +260,7 @@ export interface RemoveProposalArgs extends ProposalArgs {
     /**
      * Client ID to be removed from the conversation
      */
-    clientId: Uint8Array;
+    clientId: ClientId;
 }
 
 /**
@@ -571,7 +581,7 @@ export class CoreCrypto {
      */
     async removeClientsFromConversation(
         conversationId: ConversationId,
-        clientIds: Uint8Array[]
+        clientIds: ClientId[]
     ): Promise<CommitBundle> {
         const ffiRet: CoreCryptoFfiTypes.CommitBundle = await this.#cc.remove_clients_from_conversation(
             conversationId,
