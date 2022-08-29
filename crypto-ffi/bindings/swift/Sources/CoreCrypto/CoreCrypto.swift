@@ -55,15 +55,17 @@ extension CoreCryptoSwift.ProposalBundle {
     }
 }
 
-/// Alias for convesation IDs.
+/// Alias for conversation IDs.
 /// This is a freeform, uninspected buffer.
 public typealias ConversationId = [UInt8]
+
+/// Alias for ClientId within a conversation.
 public typealias MemberId = [UInt8]
 
 /// Conversation ciphersuite variants
 public enum CiphersuiteName: ConvertToInner {
     typealias Inner = CoreCryptoSwift.CiphersuiteName
-    
+
     case mls128Dhkemx25519Aes128gcmSha256Ed25519
     case mls128Dhkemp256Aes128gcmSha256P256
     case mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
@@ -100,7 +102,7 @@ public struct ConversationConfiguration: ConvertToInner {
     func convert() -> Inner {
         return CoreCryptoSwift.ConversationConfiguration(admins: self.admins, ciphersuite: self.ciphersuite?.convert(), keyRotationSpan: self.keyRotationSpan, externalSenders: self.externalSenders)
     }
-    
+
     ///  List of client IDs with administrative permissions
     public var admins: [MemberId]
     /// Conversation ciphersuite
@@ -131,7 +133,7 @@ public struct Invitee: ConvertToInner {
         self.id = id
         self.kp = kp
     }
-    
+
     func convert() -> Inner {
         return CoreCryptoSwift.Invitee(id: self.id, kp: self.kp)
     }
@@ -152,7 +154,7 @@ public struct MemberAddedMessages: ConvertToInner {
         self.welcome = welcome
         self.publicGroupState = publicGroupState
     }
-    
+
     func convert() -> Inner {
         return CoreCryptoSwift.MemberAddedMessages(commit: self.commit, welcome: self.welcome, publicGroupState: self.publicGroupState)
     }
@@ -173,18 +175,21 @@ public struct DecryptedMessage: ConvertToInner {
     public var isActive: Bool
     /// delay time in seconds to feed caller timer for committing
     public var commitDelay: UInt64?
+    /// Client identifier of the sender of the message being decrypted. Only present for application messages.
+    public var senderClientId: ClientId?
 
-    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?) {
+    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?) {
         self.message = message
         self.proposals = proposals
         self.isActive = isActive
         self.commitDelay = commitDelay
+        self.senderClientId = senderClientId
     }
 
     func convert() -> Inner {
         return CoreCryptoSwift.DecryptedMessage(message: self.message, proposals: self.proposals.map({ (bundle) -> CoreCryptoSwift.ProposalBundle in
             bundle.convert()
-        }), isActive: self.isActive, commitDelay: self.commitDelay)
+        }), isActive: self.isActive, commitDelay: self.commitDelay, senderClientId: self.senderClientId)
     }
 }
 
@@ -200,7 +205,7 @@ public struct ProposalBundle: ConvertToInner {
         self.proposal = proposal
         self.proposalRef = proposalRef
     }
-    
+
     func convert() -> Inner {
         return CoreCryptoSwift.ProposalBundle(proposal: self.proposal, proposalRef: self.proposalRef)
     }

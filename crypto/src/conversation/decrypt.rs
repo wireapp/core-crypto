@@ -16,7 +16,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
-    conversation::renew::Renew, prelude::MlsProposalBundle, ConversationId, CoreCryptoCallbacks, CryptoError,
+    conversation::renew::Renew, prelude::MlsProposalBundle, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError,
     CryptoResult, MlsCentral, MlsConversation, MlsError,
 };
 
@@ -35,6 +35,8 @@ pub struct MlsConversationDecryptMessage {
     pub is_active: bool,
     /// delay time in seconds to feed caller timer for committing
     pub delay: Option<u64>,
+    /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
+    pub sender_client_id: Option<ClientId>,
 }
 
 /// Abstraction over a MLS group capable of decrypting a MLS message
@@ -51,6 +53,8 @@ impl MlsConversation {
 
         let parsed_message = self.parse_message(backend, msg_in)?;
 
+        let sender_client_id = parsed_message.credential().map(|c| c.identity().into());
+
         let message = self
             .group
             .process_unverified_message(parsed_message, None, backend)
@@ -63,6 +67,7 @@ impl MlsConversation {
                 proposals: vec![],
                 is_active: true,
                 delay: None,
+                sender_client_id,
             },
             ProcessedMessage::ProposalMessage(proposal) => {
                 self.validate_external_proposal(&proposal, callbacks, backend.crypto())?;
@@ -73,6 +78,7 @@ impl MlsConversation {
                     proposals: vec![],
                     is_active: true,
                     delay: self.compute_next_commit_delay(),
+                    sender_client_id: None,
                 }
             }
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
@@ -99,6 +105,7 @@ impl MlsConversation {
                     proposals,
                     is_active: self.group.is_active(),
                     delay: self.compute_next_commit_delay(),
+                    sender_client_id: None,
                 }
             }
         };
@@ -520,6 +527,35 @@ pub mod tests {
             )
             .await
         }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_not_return_sender_client_id(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                        let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
+
+                        let sender_client_id = bob_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap()
+                            .sender_client_id;
+                        assert!(sender_client_id.is_none());
+                    })
+                },
+            )
+            .await
+        }
     }
 
     pub mod decrypt_callback {
@@ -695,6 +731,39 @@ pub mod tests {
             )
             .await
         }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_not_return_sender_client_id(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                        let proposal = alice_central
+                            .new_proposal(&id, MlsProposal::Update)
+                            .await
+                            .unwrap()
+                            .proposal;
+
+                        let sender_client_id = bob_central
+                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .await
+                            .unwrap()
+                            .sender_client_id;
+                        assert!(sender_client_id.is_none());
+                    })
+                },
+            )
+            .await
+        }
     }
 
     pub mod app_message {
@@ -794,6 +863,37 @@ pub mod tests {
                             .app_msg
                             .unwrap();
                         assert_eq!(&decrypted1[..], &msg1[..]);
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn returns_sender_client_id(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                        let msg = b"Hello bob";
+                        let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
+                        assert_ne!(&msg[..], &encrypted[..]);
+                        let sender_client_id = bob_central
+                            .decrypt_message(&id, encrypted)
+                            .await
+                            .unwrap()
+                            .sender_client_id
+                            .unwrap();
+                        assert_eq!(sender_client_id, b"alice"[..].into());
                     })
                 },
             )

@@ -60,6 +60,12 @@ impl From<Box<[u8]>> for ClientId {
     }
 }
 
+impl From<ClientId> for Box<[u8]> {
+    fn from(value: ClientId) -> Self {
+        value.0.into_boxed_slice()
+    }
+}
+
 #[cfg(test)]
 impl From<&str> for ClientId {
     fn from(value: &str) -> Self {

@@ -113,6 +113,7 @@ pub struct DecryptedMessage {
     pub proposals: Vec<ProposalBundle>,
     pub is_active: bool,
     pub commit_delay: Option<u64>,
+    pub sender_client_id: Option<ClientId>,
 }
 
 impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
@@ -130,6 +131,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             proposals,
             is_active: from.is_active,
             commit_delay: from.delay,
+            sender_client_id: from.sender_client_id,
         })
     }
 }
