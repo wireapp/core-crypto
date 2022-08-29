@@ -110,6 +110,9 @@ interface CoreCrypto {
     [Throws=CryptoError]
     void create_conversation(ConversationId conversation_id, ConversationConfiguration config);
 
+    [Throws=CryptoError]
+    u64 conversation_epoch(ConversationId conversation_id);
+
     boolean conversation_exists(ConversationId conversation_id);
 
     [Throws=CryptoError]
