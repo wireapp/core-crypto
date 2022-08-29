@@ -521,6 +521,62 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
+    pub mod conversation_epoch {
+        use super::*;
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn can_get_newly_created_conversation_epoch(credential: CredentialSupplier) {
+            run_test_with_central(credential, move |[mut central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    central
+                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .await
+                        .unwrap();
+                    let epoch = central.conversation_epoch(&id).unwrap();
+                    assert_eq!(epoch, 0);
+                })
+            })
+            .await;
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn can_get_conversation_epoch(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .await
+                            .unwrap();
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        let epoch = alice_central.conversation_epoch(&id).unwrap();
+                        assert_eq!(epoch, 1);
+                    })
+                },
+            )
+            .await;
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn conversation_not_found(credential: CredentialSupplier) {
+            run_test_with_central(credential, move |[central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    let err = central.conversation_epoch(&id).unwrap_err();
+                    assert!(matches!(err, CryptoError::ConversationNotFound(conv_id) if conv_id == id));
+                })
+            })
+            .await;
+        }
+    }
+
     pub mod invariants {
         use super::*;
 
