@@ -125,6 +125,8 @@ impl Client {
     }
 }
 
+// TODO: ensure certificate signature must match the group's ciphersuite ; fails otherwise.
+// Requires more than 1 ciphersuite supported at the moment.
 #[cfg(test)]
 pub mod tests {
     use openmls::prelude::{CredentialError, WelcomeError};
