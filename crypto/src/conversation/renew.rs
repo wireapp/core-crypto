@@ -305,7 +305,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
-                        let pgs = alice_central.public_group_state(&id).await;
+                        let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
                             .await
@@ -445,7 +445,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
-                        let pgs = alice_central.public_group_state(&id).await;
+                        let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
                             .await
@@ -591,7 +591,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
-                        let pgs = alice_central.public_group_state(&id).await;
+                        let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
                             .await
@@ -637,7 +637,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
-                        let pgs = alice_central.public_group_state(&id).await;
+                        let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
                             .await
@@ -684,12 +684,12 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
-                        let pgs = alice_central.public_group_state(&id).await;
+                        let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
-                        let pgs = alice_central.public_group_state(&id).await;
+                        let pgs = alice_central.verifiable_public_group_state(&id).await;
                         debbie_central
                             .try_join_from_public_group_state(
                                 &id,
@@ -741,12 +741,12 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
-                        let pgs = alice_central.public_group_state(&id).await;
+                        let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
-                        let pgs = alice_central.public_group_state(&id).await;
+                        let pgs = alice_central.verifiable_public_group_state(&id).await;
                         debbie_central
                             .try_join_from_public_group_state(
                                 &id,
@@ -799,12 +799,12 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
-                        let pgs = alice_central.public_group_state(&id).await;
+                        let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
-                        let pgs = alice_central.public_group_state(&id).await;
+                        let pgs = alice_central.verifiable_public_group_state(&id).await;
                         debbie_central
                             .try_join_from_public_group_state(
                                 &id,

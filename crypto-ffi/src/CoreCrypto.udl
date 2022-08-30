@@ -7,6 +7,24 @@ typedef sequence<u8> MemberId;
 [Custom]
 typedef sequence<u8> ClientId;
 
+[Custom]
+typedef sequence<u8> TlsMemberAddedMessages;
+
+dictionary MemberAddedMessages {
+    sequence<u8> commit;
+    sequence<u8> welcome;
+    sequence<u8> public_group_state;
+};
+
+[Custom]
+typedef sequence<u8> TlsCommitBundle;
+
+dictionary CommitBundle {
+    sequence<u8>? welcome;
+    sequence<u8> commit;
+    sequence<u8> public_group_state;
+};
+
 enum CiphersuiteName {
     "MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519",
     "MLS_128_DHKEMP256_AES128GCM_SHA256_P256",
@@ -53,21 +71,9 @@ dictionary DecryptedMessage {
     ClientId? sender_client_id;
 };
 
-dictionary MemberAddedMessages {
-    sequence<u8> commit;
-    sequence<u8> welcome;
-    sequence<u8> public_group_state;
-};
-
 dictionary Invitee {
     ClientId id;
     sequence<u8> kp;
-};
-
-dictionary CommitBundle {
-    sequence<u8>? welcome;
-    sequence<u8> commit;
-    sequence<u8> public_group_state;
 };
 
 dictionary ProposalBundle {
@@ -88,8 +94,8 @@ dictionary ConversationConfiguration {
 };
 
 callback interface CoreCryptoCallbacks {
-    boolean authorize([ByRef] sequence<u8> conversationId, [ByRef] string clientId);
-    boolean is_user_in_group([ByRef] sequence<u8> identity, sequence<sequence<u8>> otherClients);
+    boolean authorize([ByRef] sequence<u8> conversation_id, [ByRef] string client_id);
+    boolean is_user_in_group([ByRef] sequence<u8> identity, sequence<sequence<u8>> other_clients);
 };
 
 interface CoreCrypto {
@@ -126,6 +132,24 @@ interface CoreCrypto {
     CommitBundle remove_clients_from_conversation(ConversationId conversation_id, sequence<ClientId> clients);
 
     [Throws=CryptoError]
+    CommitBundle update_keying_material(ConversationId conversation_id);
+
+    [Throws=CryptoError]
+    CommitBundle commit_pending_proposals(ConversationId conversation_id);
+
+    [Throws=CryptoError]
+    TlsMemberAddedMessages final_add_clients_to_conversation(ConversationId conversation_id, sequence<Invitee> clients);
+
+    [Throws=CryptoError]
+    TlsCommitBundle final_remove_clients_from_conversation(ConversationId conversation_id, sequence<ClientId> clients);
+
+    [Throws=CryptoError]
+    TlsCommitBundle final_update_keying_material(ConversationId conversation_id);
+
+    [Throws=CryptoError]
+    TlsCommitBundle final_commit_pending_proposals(ConversationId conversation_id);
+
+    [Throws=CryptoError]
     void wipe_conversation(ConversationId conversation_id);
 
     [Throws=CryptoError]
@@ -150,9 +174,6 @@ interface CoreCrypto {
     sequence<u8> new_external_remove_proposal(ConversationId conversation_id, u64 epoch, sequence<u8> key_package_ref);
 
     [Throws=CryptoError]
-    CommitBundle update_keying_material(ConversationId conversation_id);
-
-    [Throws=CryptoError]
     MlsConversationInitMessage join_by_external_commit(sequence<u8> group_state);
 
     [Throws=CryptoError]
@@ -175,9 +196,6 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     void clear_pending_commit(ConversationId conversation_id);
-
-    [Throws=CryptoError]
-    CommitBundle commit_pending_proposals(ConversationId conversation_id);
 };
 
 namespace CoreCrypto {

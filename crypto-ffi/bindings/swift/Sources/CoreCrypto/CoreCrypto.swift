@@ -62,6 +62,14 @@ public typealias ConversationId = [UInt8]
 /// Alias for ClientId within a conversation.
 public typealias MemberId = [UInt8]
 
+/// Alias for an MLS generic commit.
+/// It contains:
+/// - MLS Commit that needs to be fanned out to other (existing) members of the conversation
+/// - (Optional) MLS Welcome message that needs to be fanned out to the clients newly added to the conversation (if any)
+/// - TLS-serialized MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit + some metadatas for optimizations
+/// (For final version. Requires to be implemented in the Delivery Service)
+public typealias TlsCommitBundle = [UInt8]
+
 /// Conversation ciphersuite variants
 public enum CiphersuiteName: ConvertToInner {
     typealias Inner = CoreCryptoSwift.CiphersuiteName
@@ -211,7 +219,6 @@ public struct ProposalBundle: ConvertToInner {
     }
 }
 
-
 /// Represents the result type of the external commit request.
 public struct MlsConversationInitMessage: ConvertToInner {
     typealias Inner = CoreCryptoSwift.MlsConversationInitMessage
@@ -329,23 +336,141 @@ public class CoreCryptoWrapper {
     }
 
     /// Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation
-    /// The returned {@link MemberAddedMessages} object contains a TLS-serialized MLS commit (the `message`) that needs to be
-    /// fanned out to existing members of the conversation and a TLS-serialized MLS Welcome message that needs to be fanned out to the
+    ///
+    /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
+    /// It also contains a Welcome message the Delivery Service will forward to invited clients and
+    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
+    ///
+    /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
+    /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
+    /// epoch, use new encryption secrets etc...
+    ///
     /// - parameter conversationId: conversation identifier
-    /// - parameter clients: Array of {@link Invitee} (which are Client ID / KeyPackage pairs)
-    /// - returns: A ``MemberAddedMessages`` object
+    /// - parameter clients: Array of ``Invitee`` (which are Client ID / KeyPackage pairs)
+    /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
     public func addClientsToConversation(conversationId: ConversationId, clients: [Invitee]) throws -> MemberAddedMessages {
         return try self.coreCrypto.addClientsToConversation(conversationId: conversationId, clients: clients.map({ (invitee) -> CoreCryptoSwift.Invitee in
             return invitee.convert()
         })).convertTo()
     }
 
-    /// Removes the provided clients from a conversation; Assuming those clients exist and the current client is allowed to do so, otherwise this operation does nothing
+    /// Removes the provided clients from a conversation; Assuming those clients exist and the current client is allowed
+    /// to do so, otherwise this operation does nothing.
+    ///
+    /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
+    /// It also contains a Welcome message the Delivery Service will forward to invited clients and
+    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
+    ///
+    /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
+    /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
+    /// epoch, use new encryption secrets etc...
+    ///
     /// - parameter conversationId: conversation identifier
     /// - parameter clients: Array of Client IDs to remove.
-    /// - returns: A TLS-serialized MLS commit acting on the removal of those clients, or `undefined` if for any reason, the operation would result in an empty commit
+    /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
     public func removeClientsFromConversation(conversationId: ConversationId, clients: [ClientId]) throws -> CommitBundle {
         return try self.coreCrypto.removeClientsFromConversation(conversationId: conversationId, clients: clients).convertTo()
+    }
+
+    /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited.
+    ///
+    /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
+    /// It also contains a Welcome message the Delivery Service will forward to invited clients and
+    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
+    ///
+    /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
+    /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
+    /// epoch, use new encryption secrets etc...
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
+    public func updateKeyingMaterial(conversationId: ConversationId) throws -> CommitBundle {
+        try self.coreCrypto.updateKeyingMaterial(conversationId: conversationId).convertTo()
+    }
+
+    /// Commits all pending proposals of the group
+    ///
+    /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
+    /// It also contains a Welcome message the Delivery Service will forward to invited clients and
+    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
+    ///
+    /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
+    /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
+    /// epoch, use new encryption secrets etc...
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
+    public func commitPendingProposals(conversationId: ConversationId) throws -> CommitBundle {
+        try self.coreCrypto.commitPendingProposals(conversationId:conversationId).convertTo()
+    }
+
+    /// Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation
+    ///
+    /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
+    /// It also contains a Welcome message the Delivery Service will forward to invited clients and
+    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
+    ///
+    /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
+    /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
+    /// epoch, use new encryption secrets etc...
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - parameter clients: Array of ``Invitee`` (which are Client ID / KeyPackage pairs)
+    /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
+    public func finalAddClientsToConversation(conversationId: ConversationId, clients: [Invitee]) throws -> TlsCommitBundle {
+        return try self.coreCrypto.finalAddClientsToConversation(conversationId: conversationId, clients: clients.map({ (invitee) -> CoreCryptoSwift.Invitee in
+            return invitee.convert()
+        })).convertTo()
+    }
+
+    /// Removes the provided clients from a conversation; Assuming those clients exist and the current client is allowed
+    /// to do so, otherwise this operation does nothing.
+    ///
+    /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
+    /// It also contains a Welcome message the Delivery Service will forward to invited clients and
+    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
+    ///
+    /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
+    /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
+    /// epoch, use new encryption secrets etc...
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - parameter clients: Array of Client IDs to remove.
+    /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
+    public func finalRemoveClientsFromConversation(conversationId: ConversationId, clients: [ClientId]) throws -> TlsCommitBundle {
+        return try self.coreCrypto.finalRemoveClientsFromConversation(conversationId: conversationId, clients: clients).convertTo()
+    }
+
+    /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited.
+    ///
+    /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
+    /// It also contains a Welcome message the Delivery Service will forward to invited clients and
+    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
+    ///
+    /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
+    /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
+    /// epoch, use new encryption secrets etc...
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
+    public func finalUpdateKeyingMaterial(conversationId: ConversationId) throws -> TlsCommitBundle {
+        try self.coreCrypto.finalUpdateKeyingMaterial(conversationId: conversationId).convertTo()
+    }
+
+    /// Commits all pending proposals of the group
+    ///
+    /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
+    /// It also contains a Welcome message the Delivery Service will forward to invited clients and
+    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
+    ///
+    /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
+    /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
+    /// epoch, use new encryption secrets etc...
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
+    public func finalCommitPendingProposals(conversationId: ConversationId) throws -> TlsCommitBundle {
+        try self.coreCrypto.finalCommitPendingProposals(conversationId:conversationId).convertTo()
     }
 
     /// Destroys a group locally
@@ -421,14 +546,6 @@ public class CoreCryptoWrapper {
         return try self.coreCrypto.newExternalRemoveProposal(conversationId: conversationId, epoch: epoch, keyPackageRef: keyPackageRef)
     }
 
-    /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited
-    ///
-    /// - parameter conversationId: conversation identifier
-    /// - returns: an object of type ``CommitBundle``
-    public func updateKeyingMaterial(conversationId: ConversationId) throws -> CommitBundle {
-        try self.coreCrypto.updateKeyingMaterial(conversationId: conversationId).convertTo()
-    }
-
     /// Issues an external commit and stores the group in a temporary table. This method is
     /// intended for example when a new client wants to join the user's existing groups.
     /// On success this function will return the group id and a message to be fanned out to other
@@ -479,13 +596,5 @@ public class CoreCryptoWrapper {
     /// - parameter conversationId: conversation identifier
     public func commitAccepted(conversationId: ConversationId) throws {
         try self.coreCrypto.commitAccepted(conversationId: conversationId)
-    }
-
-    /// Commits all pending proposals of the group
-    ///
-    /// - parameter conversationId: conversation identifier
-    /// - returns: an object of type ``CommitBundle``
-    public func commitPendingProposals(conversationId: ConversationId) throws -> CommitBundle {
-        try self.coreCrypto.commitPendingProposals(conversationId:conversationId).convertTo()
     }
 }

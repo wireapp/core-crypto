@@ -21,8 +21,7 @@ use js_sys::{Promise, Uint8Array};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
-use core_crypto::prelude::decrypt::MlsConversationDecryptMessage;
-use core_crypto::prelude::handshake::MlsCommitBundle;
+use core_crypto::prelude::tls_codec::Serialize;
 use core_crypto::prelude::*;
 pub use core_crypto::CryptoError;
 
@@ -636,24 +635,6 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: [`WasmCryptoResult<CommitBundle>`]
-    ///
-    /// see [core_crypto::MlsCentral::update_keying_material]
-    pub fn update_keying_material(&self, conversation_id: Box<[u8]>) -> Promise {
-        let this = self.0.clone();
-
-        future_to_promise(
-            async move {
-                let mut central = this.write().await;
-                let conversation_id = conversation_id.into();
-                let commit_bundle = central.update_keying_material(&conversation_id).await?;
-                let commit_bundle: CommitBundle = commit_bundle.try_into()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit_bundle)?)
-            }
-            .err_into(),
-        )
-    }
-
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::MlsCentral::new_conversation]
@@ -734,11 +715,11 @@ impl CoreCrypto {
                 let mut members = Invitee::group_to_conversation_member(invitees)?;
                 let mut central = this.write().await;
                 let conversation_id = conversation_id.into();
-                let messages_raw = central
+                let commit = central
                     .add_members_to_conversation(&conversation_id, &mut members)
                     .await?;
-                let messages: MemberAddedMessages = messages_raw.try_into()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&messages)?)
+                let commit: MemberAddedMessages = commit.try_into()?;
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
             .err_into(),
         )
@@ -764,11 +745,132 @@ impl CoreCrypto {
 
                 let conversation_id = conversation_id.into();
                 let mut central = this.write().await;
-                let commit_bundle = central
+                let commit = central
                     .remove_members_from_conversation(&conversation_id, &clients)
                     .await?;
-                let commit_bundle: CommitBundle = commit_bundle.try_into()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit_bundle)?)
+                let commit: CommitBundle = commit.try_into()?;
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<CommitBundle>`]
+    ///
+    /// see [core_crypto::MlsCentral::update_keying_material]
+    pub fn update_keying_material(&self, conversation_id: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+
+        future_to_promise(
+            async move {
+                let mut central = this.write().await;
+                let conversation_id = conversation_id.into();
+                let commit = central.update_keying_material(&conversation_id).await?;
+                let commit: CommitBundle = commit.try_into()?;
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
+            }
+            .err_into(),
+        )
+    }
+
+    /// see [core_crypto::MlsCentral::commit_pending_proposals]
+    pub fn commit_pending_proposals(&self, conversation_id: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+
+        future_to_promise(
+            async move {
+                let mut central = this.write().await;
+                let conversation_id = conversation_id.into();
+                let commit = central.commit_pending_proposals(&conversation_id).await?;
+                let commit: CommitBundle = commit.try_into()?;
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<Option<MemberAddedMessages>>`]
+    ///
+    /// see [core_crypto::MlsCentral::add_members_to_conversation]
+    pub fn final_add_clients_to_conversation(&self, conversation_id: Box<[u8]>, clients: Box<[JsValue]>) -> Promise {
+        let this = self.0.clone();
+
+        future_to_promise(
+            async move {
+                let invitees = clients
+                    .iter()
+                    .cloned()
+                    .map(|js_client| Ok(serde_wasm_bindgen::from_value(js_client)?))
+                    .collect::<WasmCryptoResult<Vec<Invitee>>>()?;
+
+                let mut members = Invitee::group_to_conversation_member(invitees)?;
+                let mut central = this.write().await;
+                let conversation_id = conversation_id.into();
+                let commit = central
+                    .add_members_to_conversation(&conversation_id, &mut members)
+                    .await?;
+                WasmCryptoResult::Ok(Uint8Array::from(commit.tls_serialize_detached()?.as_slice()).into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<Option<js_sys::Uint8Array>>`]
+    ///
+    /// see [core_crypto::MlsCentral::remove_members_from_conversation]
+    pub fn final_remove_clients_from_conversation(
+        &self,
+        conversation_id: Box<[u8]>,
+        clients: Box<[js_sys::Uint8Array]>,
+    ) -> Promise {
+        let this = self.0.clone();
+
+        future_to_promise(
+            async move {
+                let clients = clients
+                    .iter()
+                    .cloned()
+                    .map(|c| c.to_vec().into())
+                    .collect::<Vec<ClientId>>();
+
+                let conversation_id = conversation_id.into();
+                let mut central = this.write().await;
+                let commit = central
+                    .remove_members_from_conversation(&conversation_id, &clients)
+                    .await?;
+                WasmCryptoResult::Ok(Uint8Array::from(commit.tls_serialize_detached()?.as_slice()).into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<CommitBundle>`]
+    ///
+    /// see [core_crypto::MlsCentral::update_keying_material]
+    pub fn final_update_keying_material(&self, conversation_id: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+
+        future_to_promise(
+            async move {
+                let mut central = this.write().await;
+                let conversation_id = conversation_id.into();
+                let commit = central.update_keying_material(&conversation_id).await?;
+                WasmCryptoResult::Ok(Uint8Array::from(commit.tls_serialize_detached()?.as_slice()).into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// see [core_crypto::MlsCentral::commit_pending_proposals]
+    pub fn final_commit_pending_proposals(&self, conversation_id: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+
+        future_to_promise(
+            async move {
+                let mut central = this.write().await;
+                let conversation_id = conversation_id.into();
+                let commit = central.commit_pending_proposals(&conversation_id).await?;
+                WasmCryptoResult::Ok(Uint8Array::from(commit.tls_serialize_detached()?.as_slice()).into())
             }
             .err_into(),
         )
@@ -1057,22 +1159,6 @@ impl CoreCrypto {
                     .await?;
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
-            }
-            .err_into(),
-        )
-    }
-
-    /// see [core_crypto::MlsCentral::commit_pending_proposals]
-    pub fn commit_pending_proposals(&self, conversation_id: Box<[u8]>) -> Promise {
-        let this = self.0.clone();
-
-        future_to_promise(
-            async move {
-                let mut central = this.write().await;
-                let conversation_id = conversation_id.into();
-                let commit_bundle = central.commit_pending_proposals(&conversation_id).await?;
-                let commit_bundle: CommitBundle = commit_bundle.try_into()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit_bundle)?)
             }
             .err_into(),
         )

@@ -8,11 +8,15 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
-use openmls::prelude::{KeyPackage, KeyPackageRef, MlsMessageOut, PublicGroupState, Welcome};
+use std::io::Write;
+
+use openmls::prelude::{KeyPackage, KeyPackageRef, MlsMessageOut, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
+use tls_codec::Error;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
+use crate::conversation::public_group_state::PublicGroupStateBundle;
 use crate::prelude::MlsProposalRef;
 use crate::{member::ConversationMember, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError};
 
@@ -104,20 +108,30 @@ impl MlsConversation {
 
 /// Returned when initializing a conversation through a commit.
 /// Different from conversation created from a [`Welcome`] message or an external commit.
-#[derive(Debug)]
+#[derive(Debug, tls_codec::TlsSize)]
 pub struct MlsConversationCreationMessage {
     /// A welcome message for new members to join the group
     pub welcome: Welcome,
     /// Commit message adding members to the group
     pub commit: MlsMessageOut,
     /// [`PublicGroupState`] (aka GroupInfo) if the commit is merged
-    pub public_group_state: PublicGroupState,
+    pub public_group_state: PublicGroupStateBundle,
+}
+
+impl tls_codec::Serialize for MlsConversationCreationMessage {
+    fn tls_serialize<W: Write>(&self, writer: &mut W) -> Result<usize, Error> {
+        self.welcome
+            .tls_serialize(writer)
+            .and_then(|w| self.commit.tls_serialize(writer).map(|l| l + w))
+            .and_then(|w| self.public_group_state.tls_serialize(writer).map(|l| l + w))
+    }
 }
 
 impl MlsConversationCreationMessage {
     /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
     /// 0 -> welcome
-    /// 1 -> message
+    /// 1 -> commit
+    /// 2 -> public_group_state
     pub fn to_bytes_triple(&self) -> CryptoResult<(Vec<u8>, Vec<u8>, Vec<u8>)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self.welcome.tls_serialize_detached().map_err(MlsError::from)?;
@@ -132,14 +146,23 @@ impl MlsConversationCreationMessage {
 }
 
 /// Returned when a commit is created
-#[derive(Debug)]
+#[derive(Debug, tls_codec::TlsSize)]
 pub struct MlsCommitBundle {
     /// A welcome message if there are pending Add proposals
     pub welcome: Option<Welcome>,
     /// The commit message
     pub commit: MlsMessageOut,
     /// [`PublicGroupState`] (aka GroupInfo) if the commit is merged
-    pub public_group_state: PublicGroupState,
+    pub public_group_state: PublicGroupStateBundle,
+}
+
+impl tls_codec::Serialize for MlsCommitBundle {
+    fn tls_serialize<W: Write>(&self, writer: &mut W) -> Result<usize, Error> {
+        self.welcome
+            .tls_serialize(writer)
+            .and_then(|w| self.commit.tls_serialize(writer).map(|l| l + w))
+            .and_then(|w| self.public_group_state.tls_serialize(writer).map(|l| l + w))
+    }
 }
 
 impl MlsCommitBundle {
@@ -181,7 +204,7 @@ impl MlsConversation {
             .filter_map(|(_, kps)| kps)
             .collect::<Vec<KeyPackage>>();
 
-        let (commit, welcome, public_group_state) = self
+        let (commit, welcome, pgs) = self
             .group
             .add_members(backend, &keypackages)
             .await
@@ -192,7 +215,7 @@ impl MlsConversation {
         Ok(MlsConversationCreationMessage {
             welcome,
             commit,
-            public_group_state,
+            public_group_state: PublicGroupStateBundle::try_new_full_unencrypted(pgs)?,
         })
     }
 
@@ -220,7 +243,7 @@ impl MlsConversation {
                 Ok(acc)
             })?;
 
-        let (commit, welcome, public_group_state) = self
+        let (commit, welcome, pgs) = self
             .group
             .remove_members(backend, &member_kps)
             .await
@@ -231,7 +254,7 @@ impl MlsConversation {
         Ok(MlsCommitBundle {
             commit,
             welcome,
-            public_group_state,
+            public_group_state: PublicGroupStateBundle::try_new_full_unencrypted(pgs)?,
         })
     }
 
@@ -241,15 +264,14 @@ impl MlsConversation {
         &mut self,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsCommitBundle> {
-        let (commit, welcome, public_group_state) =
-            self.group.self_update(backend, None).await.map_err(MlsError::from)?;
+        let (commit, welcome, pgs) = self.group.self_update(backend, None).await.map_err(MlsError::from)?;
 
         self.persist_group_when_changed(backend, false).await?;
 
         Ok(MlsCommitBundle {
             welcome,
             commit,
-            public_group_state,
+            public_group_state: PublicGroupStateBundle::try_new_full_unencrypted(pgs)?,
         })
     }
 
@@ -259,7 +281,7 @@ impl MlsConversation {
         &mut self,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsCommitBundle> {
-        let (commit, welcome, public_group_state) = self
+        let (commit, welcome, pgs) = self
             .group
             .commit_to_pending_proposals(backend)
             .await
@@ -270,7 +292,7 @@ impl MlsConversation {
         Ok(MlsCommitBundle {
             welcome,
             commit,
-            public_group_state,
+            public_group_state: PublicGroupStateBundle::try_new_full_unencrypted(pgs)?,
         })
     }
 }
@@ -475,7 +497,11 @@ pub mod tests {
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_public_group_state(&id, public_group_state, vec![&mut alice_central])
+                            .try_join_from_public_group_state(
+                                &id,
+                                public_group_state.get_pgs(),
+                                vec![&mut alice_central]
+                            )
                             .await
                             .is_ok());
                     })
@@ -655,7 +681,11 @@ pub mod tests {
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_public_group_state(&id, public_group_state, vec![&mut alice_central])
+                            .try_join_from_public_group_state(
+                                &id,
+                                public_group_state.get_pgs(),
+                                vec![&mut alice_central]
+                            )
                             .await
                             .is_ok());
                         // because Bob has been removed from the group
@@ -684,7 +714,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
-                        let pgs = alice_central.public_group_state(&id).await;
+                        let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
                             .await
@@ -916,7 +946,11 @@ pub mod tests {
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_public_group_state(&id, public_group_state, vec![&mut alice_central])
+                            .try_join_from_public_group_state(
+                                &id,
+                                public_group_state.get_pgs(),
+                                vec![&mut alice_central]
+                            )
                             .await
                             .is_ok());
                     })
@@ -1116,7 +1150,11 @@ pub mod tests {
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_public_group_state(&id, public_group_state, vec![&mut alice_central])
+                            .try_join_from_public_group_state(
+                                &id,
+                                public_group_state.get_pgs(),
+                                vec![&mut alice_central]
+                            )
                             .await
                             .is_ok());
                     })
