@@ -19,7 +19,9 @@ use std::collections::HashMap;
 use futures_lite::future;
 
 use core_crypto::prelude::*;
-pub use core_crypto::prelude::{CiphersuiteName, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, MemberId};
+pub use core_crypto::prelude::{
+    tls_codec::Serialize, CiphersuiteName, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, MemberId,
+};
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "mobile")] {
@@ -34,7 +36,7 @@ cfg_if::cfg_if! {
 
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
-/// see [core_crypto::prelude::handshake::MlsConversationCreationMessage]
+/// see [core_crypto::prelude::MlsConversationCreationMessage]
 pub struct MemberAddedMessages {
     pub welcome: Vec<u8>,
     pub commit: Vec<u8>,
@@ -54,12 +56,9 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     }
 }
 
-#[cfg_attr(feature = "c-api", repr(C))]
-#[derive(Debug, Clone)]
-pub struct Invitee {
-    pub id: ClientId,
-    pub kp: Vec<u8>,
-}
+/// For final version. Requires to be implemented in the Delivery Service
+/// see [CommitBundle]
+pub type TlsCommitBundle = Vec<u8>;
 
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
@@ -80,6 +79,13 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
             public_group_state,
         })
     }
+}
+
+#[cfg_attr(feature = "c-api", repr(C))]
+#[derive(Debug, Clone)]
+pub struct Invitee {
+    pub id: ClientId,
+    pub kp: Vec<u8>,
 }
 
 #[cfg_attr(feature = "c-api", repr(C))]
@@ -269,7 +275,6 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::MlsCentral::client_keypackages]
     pub fn client_keypackages(&self, amount_requested: u32) -> CryptoResult<Vec<Vec<u8>>> {
-        use core_crypto::prelude::tls_codec::Serialize as _;
         let kps = future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
@@ -301,19 +306,6 @@ impl CoreCrypto<'_> {
         )?;
 
         Ok(count.try_into()?)
-    }
-
-    /// See [core_crypto::MlsCentral::update_keying_material]
-    pub fn update_keying_material(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
-        future::block_on({
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .update_keying_material(&conversation_id),
-            )
-        })?
-        .try_into()
     }
 
     /// See [core_crypto::MlsCentral::new_conversation]
@@ -358,6 +350,74 @@ impl CoreCrypto<'_> {
         conversation_id: ConversationId,
         clients: Vec<Invitee>,
     ) -> CryptoResult<MemberAddedMessages> {
+        self._add_clients_to_conversation(conversation_id, clients)?.try_into()
+    }
+
+    /// See [core_crypto::MlsCentral::remove_members_from_conversation]
+    pub fn remove_clients_from_conversation(
+        &self,
+        conversation_id: ConversationId,
+        clients: Vec<ClientId>,
+    ) -> CryptoResult<CommitBundle> {
+        self._remove_clients_from_conversation(conversation_id, clients)?
+            .try_into()
+    }
+
+    /// See [core_crypto::MlsCentral::update_keying_material]
+    pub fn update_keying_material(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
+        self._update_keying_material(conversation_id)?.try_into()
+    }
+
+    /// See [core_crypto::MlsCentral::commit_pending_proposals]
+    pub fn commit_pending_proposals(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
+        self._commit_pending_proposals(conversation_id)?.try_into()
+    }
+
+    /// See [core_crypto::MlsCentral::add_members_to_conversation]
+    pub fn final_add_clients_to_conversation(
+        &self,
+        conversation_id: ConversationId,
+        clients: Vec<Invitee>,
+    ) -> CryptoResult<TlsCommitBundle> {
+        self._add_clients_to_conversation(conversation_id, clients)?
+            .tls_serialize_detached()
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)
+    }
+
+    /// See [core_crypto::MlsCentral::remove_members_from_conversation]
+    pub fn final_remove_clients_from_conversation(
+        &self,
+        conversation_id: ConversationId,
+        clients: Vec<ClientId>,
+    ) -> CryptoResult<TlsCommitBundle> {
+        self._remove_clients_from_conversation(conversation_id, clients)?
+            .tls_serialize_detached()
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)
+    }
+
+    /// See [core_crypto::MlsCentral::update_keying_material]
+    pub fn final_update_keying_material(&self, conversation_id: ConversationId) -> CryptoResult<TlsCommitBundle> {
+        self._update_keying_material(conversation_id)?
+            .tls_serialize_detached()
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)
+    }
+
+    /// See [core_crypto::MlsCentral::commit_pending_proposals]
+    pub fn final_commit_pending_proposals(&self, conversation_id: ConversationId) -> CryptoResult<TlsCommitBundle> {
+        self._commit_pending_proposals(conversation_id)?
+            .tls_serialize_detached()
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)
+    }
+
+    fn _add_clients_to_conversation(
+        &self,
+        conversation_id: ConversationId,
+        clients: Vec<Invitee>,
+    ) -> CryptoResult<MlsConversationCreationMessage> {
         let mut members = Invitee::group_to_conversation_member(clients)?;
 
         future::block_on(
@@ -367,16 +427,14 @@ impl CoreCrypto<'_> {
                     .map_err(|_| CryptoError::LockPoisonError)?
                     .add_members_to_conversation(&conversation_id, &mut members),
             ),
-        )?
-        .try_into()
+        )
     }
 
-    /// See [core_crypto::MlsCentral::remove_members_from_conversation]
-    pub fn remove_clients_from_conversation(
+    fn _remove_clients_from_conversation(
         &self,
         conversation_id: ConversationId,
         clients: Vec<ClientId>,
-    ) -> CryptoResult<CommitBundle> {
+    ) -> CryptoResult<MlsCommitBundle> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
@@ -384,8 +442,29 @@ impl CoreCrypto<'_> {
                     .map_err(|_| CryptoError::LockPoisonError)?
                     .remove_members_from_conversation(&conversation_id, &clients),
             ),
-        )?
-        .try_into()
+        )
+    }
+
+    fn _update_keying_material(&self, conversation_id: ConversationId) -> CryptoResult<MlsCommitBundle> {
+        future::block_on({
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .update_keying_material(&conversation_id),
+            )
+        })
+    }
+
+    fn _commit_pending_proposals(&self, conversation_id: ConversationId) -> CryptoResult<MlsCommitBundle> {
+        future::block_on({
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .commit_pending_proposals(&conversation_id),
+            )
+        })
     }
 
     /// see [core_crypto::MlsCentral::wipe_conversation]
@@ -539,7 +618,6 @@ impl CoreCrypto<'_> {
     /// See [core_crypto::MlsCentral::join_by_external_commit]
     pub fn join_by_external_commit(&self, group_state: Vec<u8>) -> CryptoResult<MlsConversationInitMessage> {
         use core_crypto::prelude::tls_codec::Deserialize as _;
-        use core_crypto::prelude::tls_codec::Serialize as _;
 
         let group_state = VerifiablePublicGroupState::tls_deserialize(&mut &group_state[..]).map_err(MlsError::from)?;
         let (group, commit) = future::block_on(
@@ -634,18 +712,5 @@ impl CoreCrypto<'_> {
                     .clear_pending_commit(&conversation_id),
             ),
         )
-    }
-
-    /// See [core_crypto::MlsCentral::commit_pending_proposals]
-    pub fn commit_pending_proposals(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
-        future::block_on({
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .commit_pending_proposals(&conversation_id),
-            )
-        })?
-        .try_into()
     }
 }

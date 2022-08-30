@@ -174,7 +174,7 @@ pub enum MlsError {
     /// External Commit error
     #[error(transparent)]
     MlsExternalCommitError(#[from] openmls::prelude::ExternalCommitError),
-    /// External Commit error
+    /// OpenMls crypto error
     #[error(transparent)]
     MlsCryptoError(#[from] openmls::prelude::CryptoError),
 }

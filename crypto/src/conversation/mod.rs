@@ -48,6 +48,7 @@ mod durability;
 pub mod encrypt;
 pub mod handshake;
 pub mod merge;
+mod public_group_state;
 mod renew;
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.

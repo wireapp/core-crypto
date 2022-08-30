@@ -163,7 +163,7 @@ impl MlsCentral {
     pub async fn try_join_from_public_group_state(
         &mut self,
         id: &ConversationId,
-        public_group_state: PublicGroupState,
+        public_group_state: VerifiablePublicGroupState,
         others: Vec<&mut Self>,
     ) -> CryptoResult<()> {
         use tls_codec::{Deserialize as _, Serialize as _};
@@ -196,6 +196,12 @@ impl MlsCentral {
         Ok(())
     }
 
+    pub async fn verifiable_public_group_state(&self, id: &ConversationId) -> VerifiablePublicGroupState {
+        use tls_codec::{Deserialize as _, Serialize as _};
+        let public_group_state = self.public_group_state(id).await.tls_serialize_detached().unwrap();
+        VerifiablePublicGroupState::tls_deserialize(&mut public_group_state.as_slice()).unwrap()
+    }
+
     pub async fn public_group_state(&self, id: &ConversationId) -> PublicGroupState {
         self.get_conversation(id)
             .unwrap()
@@ -203,12 +209,6 @@ impl MlsCentral {
             .export_public_group_state(&self.mls_backend)
             .await
             .unwrap()
-    }
-
-    pub async fn verifiable_public_group_state(&self, id: &ConversationId) -> VerifiablePublicGroupState {
-        use tls_codec::{Deserialize as _, Serialize as _};
-        let public_group_state = self.public_group_state(id).await.tls_serialize_detached().unwrap();
-        VerifiablePublicGroupState::tls_deserialize(&mut public_group_state.as_slice()).unwrap()
     }
 
     /// Finds the [KeyPackage] of a [Client] within a [MlsGroup]
