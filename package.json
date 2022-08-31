@@ -1,6 +1,6 @@
 {
-    "name": "@otak/core-crypto",
-    "version": "0.3.0",
+    "name": "@wireapp/core-crypto",
+    "version": "0.4.0",
     "description": "CoreCrypto bindings for the Web - Dev version",
     "type": "module",
     "module": "platforms/web/corecrypto.js",

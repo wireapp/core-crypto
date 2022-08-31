@@ -7,6 +7,39 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.4.0] - 2022-08-31
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Ensure durable methods are well tested and actually durable
+
+### Features
+
+- Commits and group creation return a TLS serialized CommitBundle. The latter also contains a PublicGroupStateBundle to prepare future evolutions
+- [**breaking**] 'decrypt_message' returns the sender client id
+- Use 128 bytes of padding when encrypting messages instead of 16 previously
+- Add function to return current epoch of a group [CL-80] ([#96](https://github.com/wireapp/core-crypto/issues/96))
+- Adding a wrapper for the swift API and initial docs [CL-62] ([#89](https://github.com/wireapp/core-crypto/issues/89))
+- Add '#[durable]' macro to verify the method is tolerant to crashes and persists the MLS group in keystore
+- Expose 'clear_pending_commit' method
+- Allow rollbacking a proposal
+- [**breaking**] Expose 'clear_pending_commit' method
+- [**breaking**] Allow rollbacking a proposal
+
+### Miscellaneous Tasks
+
+- Migrate benchmarks to async and write some for core crypto operations
+- Fixed WASM E2E tests
+
+### Testing
+
+- Add reminder for x509 certificate tests
+
+</details>
+
 ## [0.3.1] - 2022-08-16
 
 <details>
