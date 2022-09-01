@@ -7,9 +7,6 @@ typedef sequence<u8> MemberId;
 [Custom]
 typedef sequence<u8> ClientId;
 
-[Custom]
-typedef sequence<u8> TlsMemberAddedMessages;
-
 dictionary MemberAddedMessages {
     sequence<u8> commit;
     sequence<u8> welcome;
@@ -138,7 +135,7 @@ interface CoreCrypto {
     CommitBundle commit_pending_proposals(ConversationId conversation_id);
 
     [Throws=CryptoError]
-    TlsMemberAddedMessages final_add_clients_to_conversation(ConversationId conversation_id, sequence<Invitee> clients);
+    TlsCommitBundle final_add_clients_to_conversation(ConversationId conversation_id, sequence<Invitee> clients);
 
     [Throws=CryptoError]
     TlsCommitBundle final_remove_clients_from_conversation(ConversationId conversation_id, sequence<ClientId> clients);
