@@ -7,11 +7,18 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.4.0] - 2022-08-31
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.4.0" unreleased=true}}
+</details>
+
 ## [0.3.1] - 2022-08-16
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.3.1" unreleased=true}}
+{{git-cliff tag="v0.3.1"}}
 </details>
 
 Maintenance release to prepare for the next release
