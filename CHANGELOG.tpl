@@ -7,6 +7,15 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.4.1] - 2022-09-01
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.4.1" unreleased=true}}
+</details>
+
+Fixes build issues for mobile target
+
 ## [0.4.0] - 2022-08-31
 
 <details>
