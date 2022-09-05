@@ -42,6 +42,11 @@ package = "hpke-rs-rust-crypto"
 git = "https://github.com/wireapp/rcgen"
 tag = "v1.0.0-pre.core-crypto-0.3.0"
 
+[patch.crates-io.sha2]
+git = "https://github.com/RustCrypto/hashes.git"
+tag = "sha2-v0.10.2"
+package = "sha2"
+
 # Needed for quick mode and (later) result comparison see (https://www.tweag.io/blog/2022-03-03-criterion-rs/)
 # TODO: remove once branch got merged in 0.4 release
 [patch.crates-io.criterion]
