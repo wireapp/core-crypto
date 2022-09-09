@@ -280,20 +280,24 @@ impl MlsConversation {
     pub(crate) async fn commit_pending_proposals(
         &mut self,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<MlsCommitBundle> {
-        let (commit, welcome, pgs) = self
-            .group
-            .commit_to_pending_proposals(backend)
-            .await
-            .map_err(MlsError::from)?;
+    ) -> CryptoResult<Option<MlsCommitBundle>> {
+        if self.group.pending_proposals().count() > 0 {
+            let (commit, welcome, pgs) = self
+                .group
+                .commit_to_pending_proposals(backend)
+                .await
+                .map_err(MlsError::from)?;
 
-        self.persist_group_when_changed(backend, false).await?;
+            self.persist_group_when_changed(backend, false).await?;
 
-        Ok(MlsCommitBundle {
-            welcome,
-            commit,
-            public_group_state: PublicGroupStateBundle::try_new_full_unencrypted(pgs)?,
-        })
+            Ok(Some(MlsCommitBundle {
+                welcome,
+                commit,
+                public_group_state: PublicGroupStateBundle::try_new_full_unencrypted(pgs)?,
+            }))
+        } else {
+            Ok(None)
+        }
     }
 }
 
@@ -383,7 +387,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// Errors can be originating from the KeyStore and OpenMls
-    pub async fn commit_pending_proposals(&mut self, id: &ConversationId) -> CryptoResult<MlsCommitBundle> {
+    pub async fn commit_pending_proposals(&mut self, id: &ConversationId) -> CryptoResult<Option<MlsCommitBundle>> {
         Self::get_conversation_mut(&mut self.mls_groups, id)?
             .commit_pending_proposals(&self.mls_backend)
             .await
@@ -542,7 +546,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         let MlsCommitBundle { commit, welcome, .. } =
-                            bob_central.commit_pending_proposals(&id).await.unwrap();
+                            bob_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         bob_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(bob_central[&id].members().len(), 3);
 
@@ -731,7 +735,7 @@ pub mod tests {
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        let commit = bob_central.commit_pending_proposals(&id).await.unwrap().commit;
+                        let commit = bob_central.commit_pending_proposals(&id).await.unwrap().unwrap().commit;
                         bob_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(bob_central[&id].members().len(), 2);
 
@@ -992,7 +996,7 @@ pub mod tests {
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        let commit = bob_central.commit_pending_proposals(&id).await.unwrap().commit;
+                        let commit = bob_central.commit_pending_proposals(&id).await.unwrap().unwrap().commit;
 
                         // before merging, commit is not applied
                         assert!(bob_central[&id].group.members().contains(&&alice_key));
@@ -1040,7 +1044,7 @@ pub mod tests {
                         assert!(!alice_central.pending_proposals(&id).is_empty());
                         assert_eq!(alice_central[&id].members().len(), 1);
                         let MlsCommitBundle { welcome, .. } =
-                            alice_central.commit_pending_proposals(&id).await.unwrap();
+                            alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(alice_central[&id].members().len(), 2);
 
@@ -1052,6 +1056,23 @@ pub mod tests {
                     })
                 },
             )
+            .await;
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        pub async fn should_return_none_when_there_are_no_pending_proposals(credential: CredentialSupplier) {
+            run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .await
+                        .unwrap();
+                    assert!(alice_central.pending_proposals(&id).is_empty());
+                    assert!(alice_central.commit_pending_proposals(&id).await.unwrap().is_none());
+                })
+            })
             .await;
         }
 
@@ -1080,7 +1101,8 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let MlsCommitBundle { commit, .. } = alice_central.commit_pending_proposals(&id).await.unwrap();
+                        let MlsCommitBundle { commit, .. } =
+                            alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(alice_central[&id].members().len(), 3);
 
@@ -1114,7 +1136,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         let MlsCommitBundle { welcome, .. } =
-                            alice_central.commit_pending_proposals(&id).await.unwrap();
+                            alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         bob_central
@@ -1146,7 +1168,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         let MlsCommitBundle { public_group_state, .. } =
-                            alice_central.commit_pending_proposals(&id).await.unwrap();
+                            alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central

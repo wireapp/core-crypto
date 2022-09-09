@@ -177,7 +177,7 @@ mod tests {
 
                         // simulate commit message reception from server
                         let MlsCommitBundle { welcome, .. } =
-                            owner_central.commit_pending_proposals(&id).await.unwrap();
+                            owner_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         owner_central.commit_accepted(&id).await.unwrap();
                         // guest joined the group
                         assert_eq!(owner_central[&id].members().len(), 2);
@@ -236,7 +236,8 @@ mod tests {
                             .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        let MlsCommitBundle { commit, .. } = owner_central.commit_pending_proposals(&id).await.unwrap();
+                        let MlsCommitBundle { commit, .. } =
+                            owner_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         // before merging, commit is not applied
                         assert_eq!(owner_central[&id].members().len(), 2);
                         owner_central.commit_accepted(&id).await.unwrap();
