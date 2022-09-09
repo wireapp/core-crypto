@@ -24,7 +24,7 @@ futures-util = "0.3"
 
 # UniFFI - Android + iOS bindings - Runtime support
 uniffi = { version = "=0.19.3", optional = true }
-uniffi_macros = { version = "=0.19.3", optional = true }
+uniffi_macros = { version = "=0.19.6", optional = true }
 
 # C-API support
 libc = { version = "0.2", optional = true }
