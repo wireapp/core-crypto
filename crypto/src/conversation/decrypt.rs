@@ -345,7 +345,7 @@ pub mod tests {
                         }
 
                         let MlsCommitBundle { commit, welcome, .. } =
-                            alice_central.commit_pending_proposals(&id).await.unwrap();
+                            alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
                         // Charlie is now in the group
                         assert!(alice_central[&id].members().get(&charlie.id).is_some());
@@ -466,7 +466,8 @@ pub mod tests {
                             .await
                             .unwrap();
                         assert_eq!(bob_central.pending_proposals(&id).len(), 1);
-                        let MlsCommitBundle { commit, .. } = bob_central.commit_pending_proposals(&id).await.unwrap();
+                        let MlsCommitBundle { commit, .. } =
+                            bob_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
@@ -723,7 +724,7 @@ pub mod tests {
 
                         assert_eq!(bob_central[&id].members().len(), 2);
                         // if 'decrypt_message' is not durable the commit won't contain the add proposal
-                        bob_central.commit_pending_proposals(&id).await.unwrap().commit;
+                        bob_central.commit_pending_proposals(&id).await.unwrap().unwrap().commit;
                         bob_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(bob_central[&id].members().len(), 3);
                     })

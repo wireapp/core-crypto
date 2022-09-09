@@ -132,7 +132,7 @@ interface CoreCrypto {
     CommitBundle update_keying_material(ConversationId conversation_id);
 
     [Throws=CryptoError]
-    CommitBundle commit_pending_proposals(ConversationId conversation_id);
+    CommitBundle? commit_pending_proposals(ConversationId conversation_id);
 
     [Throws=CryptoError]
     TlsCommitBundle final_add_clients_to_conversation(ConversationId conversation_id, sequence<Invitee> clients);
@@ -144,7 +144,7 @@ interface CoreCrypto {
     TlsCommitBundle final_update_keying_material(ConversationId conversation_id);
 
     [Throws=CryptoError]
-    TlsCommitBundle final_commit_pending_proposals(ConversationId conversation_id);
+    TlsCommitBundle? final_commit_pending_proposals(ConversationId conversation_id);
 
     [Throws=CryptoError]
     void wipe_conversation(ConversationId conversation_id);

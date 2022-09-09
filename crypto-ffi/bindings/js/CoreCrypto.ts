@@ -493,7 +493,7 @@ export class CoreCrypto {
      * @param conversationId - The ID of the conversation
      * @param payload - The encrypted message buffer
      *
-     * @returns Either a {@link DecryptedMessage} payload or `undefined` - This happens when the encrypted payload contains a system message such a proposal or commit
+     * @returns a {@link DecryptedMessage}. Note that {@link DecryptedMessage#message} is `undefined` when the encrypted payload contains a system message such a proposal or commit
      */
     async decryptMessage(conversationId: ConversationId, payload: Uint8Array): Promise<DecryptedMessage> {
         const ffiDecryptedMessage: CoreCryptoFfiTypes.DecryptedMessage = await this.#cc.decrypt_message(
@@ -611,7 +611,7 @@ export class CoreCrypto {
      * @param conversationId - The ID of the conversation
      * @param clientIds - Array of Client IDs to remove.
      *
-     * @returns A {@link CommitBundle}, or `undefined` if for any reason, the operation would result in an empty commit
+     * @returns A {@link CommitBundle}
      */
     async removeClientsFromConversation(
         conversationId: ConversationId,
@@ -665,9 +665,9 @@ export class CoreCrypto {
      *
      * @param conversationId - The ID of the conversation
      *
-     * @returns A {@link CommitBundle}
+     * @returns A {@link CommitBundle} or `undefined` when there was no pending proposal to commit
      */
-    async commitPendingProposals(conversationId: ConversationId): Promise<CommitBundle> {
+    async commitPendingProposals(conversationId: ConversationId): Promise<CommitBundle | undefined> {
         const ffiCommitBundle: CoreCryptoFfiTypes.CommitBundle = await this.#cc.commit_pending_proposals(
             conversationId
         );
@@ -767,9 +767,9 @@ export class CoreCrypto {
      *
      * @param conversationId - The ID of the conversation
      *
-     * @returns A {@link CommitBundle} byte array to fan out to the Delivery Service
+     * @returns A {@link CommitBundle} byte array to fan out to the Delivery Service or `undefined` when there was no pending proposal to commit
      */
-    async finalCommitPendingProposals(conversationId: ConversationId): Promise<TlsCommitBundle> {
+    async finalCommitPendingProposals(conversationId: ConversationId): Promise<TlsCommitBundle | undefined> {
         return await this.#cc.commit_pending_proposals(conversationId);
     }
 

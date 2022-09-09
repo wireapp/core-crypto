@@ -400,8 +400,8 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter conversationId: conversation identifier
     /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
-    public func commitPendingProposals(conversationId: ConversationId) throws -> CommitBundle {
-        try self.coreCrypto.commitPendingProposals(conversationId:conversationId).convertTo()
+    public func commitPendingProposals(conversationId: ConversationId) throws -> CommitBundle? {
+        try self.coreCrypto.commitPendingProposals(conversationId:conversationId)?.convertTo()
     }
 
     /// Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation
@@ -469,8 +469,8 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter conversationId: conversation identifier
     /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
-    public func finalCommitPendingProposals(conversationId: ConversationId) throws -> TlsCommitBundle {
-        try self.coreCrypto.finalCommitPendingProposals(conversationId:conversationId).convertTo()
+    public func finalCommitPendingProposals(conversationId: ConversationId) throws -> TlsCommitBundle? {
+        try self.coreCrypto.finalCommitPendingProposals(conversationId:conversationId)?.convertTo()
     }
 
     /// Destroys a group locally

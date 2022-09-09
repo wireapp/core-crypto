@@ -369,8 +369,11 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::MlsCentral::commit_pending_proposals]
-    pub fn commit_pending_proposals(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
-        self._commit_pending_proposals(conversation_id)?.try_into()
+    pub fn commit_pending_proposals(&self, conversation_id: ConversationId) -> CryptoResult<Option<CommitBundle>> {
+        self._commit_pending_proposals(conversation_id)
+            .transpose()
+            .map(|r| r.and_then(|b| b.try_into()))
+            .transpose()
     }
 
     /// See [core_crypto::MlsCentral::add_members_to_conversation]
@@ -406,11 +409,20 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::MlsCentral::commit_pending_proposals]
-    pub fn final_commit_pending_proposals(&self, conversation_id: ConversationId) -> CryptoResult<TlsCommitBundle> {
-        self._commit_pending_proposals(conversation_id)?
-            .tls_serialize_detached()
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)
+    pub fn final_commit_pending_proposals(
+        &self,
+        conversation_id: ConversationId,
+    ) -> CryptoResult<Option<TlsCommitBundle>> {
+        self._commit_pending_proposals(conversation_id)
+            .transpose()
+            .map(|r| {
+                r.and_then(|b| {
+                    b.tls_serialize_detached()
+                        .map_err(MlsError::from)
+                        .map_err(CryptoError::from)
+                })
+            })
+            .transpose()
     }
 
     fn _add_clients_to_conversation(
@@ -456,7 +468,7 @@ impl CoreCrypto<'_> {
         })
     }
 
-    fn _commit_pending_proposals(&self, conversation_id: ConversationId) -> CryptoResult<MlsCommitBundle> {
+    fn _commit_pending_proposals(&self, conversation_id: ConversationId) -> CryptoResult<Option<MlsCommitBundle>> {
         future::block_on({
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central

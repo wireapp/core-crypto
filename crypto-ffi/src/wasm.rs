@@ -781,8 +781,11 @@ impl CoreCrypto {
             async move {
                 let mut central = this.write().await;
                 let conversation_id = conversation_id.into();
-                let commit = central.commit_pending_proposals(&conversation_id).await?;
-                let commit: CommitBundle = commit.try_into()?;
+                let commit: Option<CommitBundle> = central
+                    .commit_pending_proposals(&conversation_id)
+                    .await?
+                    .map(|c| c.try_into())
+                    .transpose()?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
             .err_into(),
