@@ -229,7 +229,7 @@ export interface ProposalBundle {
 /**
  * MLS Proposal type
  */
-export const enum ProposalType {
+export enum ProposalType {
     /**
      * This allows to propose the addition of other clients to the MLS group/conversation
      */
@@ -277,7 +277,7 @@ export interface RemoveProposalArgs extends ProposalArgs {
 /**
  * MLS External Proposal type
  */
-export const enum ExternalProposalType {
+export enum ExternalProposalType {
     /**
      * This allows to propose the addition of other clients to the MLS group/conversation
      */
@@ -305,6 +305,27 @@ export interface ExternalRemoveProposalArgs extends ExternalProposalArgs {
      * KeyPackageRef of the client that needs to be removed in the proposal
      */
     keyPackageRef: Uint8Array;
+}
+
+export interface CoreCryptoCallbacks {
+    /**
+     * This callback is called by CoreCrypto to know whether a given clientId is authorized to "write"
+     * in the given conversationId. Think of it as a "isAdmin" callback conceptually
+     *
+     * This callback exists because there are many business cases where CoreCrypto doesn't have enough knowledge
+     * (such as what can exists on a backend) to inform the decision
+     *
+     * @param conversationId - id of the group/conversation
+     * @param clientId - id of the client performing an operation requiring authorization
+     * @returns whether the user is authorized by the logic layer to perform the operation
+     */
+    authorize: (conversationId: Uint8Array, clientId: Uint8Array) => boolean;
+
+    /**
+     * Callback to ensure that the given `clientId` belongs to one of the provided `otherClients`
+     * This basically allows to defer the client ID parsing logic to the caller - because CoreCrypto is oblivious to such things
+     */
+    clientIdBelongsToOneOf: (clientId: Uint8Array, otherClients: Uint8Array[]) => boolean;
 }
 
 /**
@@ -380,6 +401,20 @@ export class CoreCrypto {
      */
     async close() {
         await this.#cc.close();
+    }
+
+
+    /**
+     * Registers the callbacks for CoreCrypto to use in order to gain additional information
+     *
+     * @param callbacks - Any interface following the {@link CoreCryptoCallbacks} interface
+     */
+    registerCallbacks(callbacks: CoreCryptoCallbacks) {
+        const wasmCallbacks = new CoreCrypto.#module.CoreCryptoWasmCallbacks(
+            callbacks.authorize,
+            callbacks.clientIdBelongsToOneOf
+        );
+        this.#cc.set_callbacks(wasmCallbacks);
     }
 
     /**
