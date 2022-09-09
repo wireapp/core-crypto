@@ -91,20 +91,20 @@ pub mod prelude {
 /// operations like adding or removing memebers that can be authorized through a caller provided
 /// authorization method.
 pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
-    /// Function responsible for authorizing an operation. Will return `true` if the operation is
+    /// Function responsible for authorizing an operation. Should return `true` if the operation is
     /// authorized
     ///
     /// # Arguments
     /// * `conversation_id` - id of the group/conversation
     /// * `client_id` - id of the client
-    fn authorize(&self, conversation_id: ConversationId, client_id: String) -> bool;
-    /// Validates if the user is in the group
+    fn authorize(&self, conversation_id: Vec<u8>, client_id: Vec<u8>) -> bool;
+    /// Validates if the given `client_id` belongs to one of the provided `other_clients`
+    /// This basically allows to defer the client ID parsing logic to the caller - because CoreCrypto is oblivious to such things
     ///
     /// # Arguments
-    /// * `identity` - identity of the client within the sent proposal
+    /// * `client_id` - client ID of the client referenced within the sent proposal
     /// * `other_clients` - all the clients in the MLS group
-    /// NOTE: uniffi doesn't support &[&[u8]] so we have to receive a copy from the data here
-    fn is_user_in_group(&self, identity: Vec<u8>, other_clients: Vec<Vec<u8>>) -> bool;
+    fn client_id_belongs_to_one_of(&self, client_id: Vec<u8>, other_clients: Vec<Vec<u8>>) -> bool;
 }
 
 #[derive(Debug, Clone, derive_more::Deref)]

@@ -23,9 +23,9 @@ impl MlsConversation {
             if let Proposal::Add(add_proposal) = proposal.proposal() {
                 let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
                 let other_clients = self.members_in_next_epoch(backend);
-                let self_identity = add_proposal.key_package().credential().identity().to_owned();
+                let self_identity = add_proposal.key_package().credential().identity();
                 let is_self_user_in_group =
-                    callbacks.is_user_in_group(self_identity, other_clients.into_iter().collect());
+                    callbacks.client_id_belongs_to_one_of(self_identity.to_vec(), other_clients.into_iter().collect());
                 if !is_self_user_in_group {
                     return Err(CryptoError::ExternalAddProposalError);
                 }
