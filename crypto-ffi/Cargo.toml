@@ -29,6 +29,10 @@ uniffi_macros = { version = "=0.19.3", optional = true }
 # C-API support
 libc = { version = "0.2", optional = true }
 
+# see https://github.com/RustCrypto/hashes/issues/404
+[target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "x86")))'.dependencies]
+sha2 = { version = "0.10", features = ["force-soft"] }
+
 # Blocking APIs support
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 futures-lite = "1.12"
