@@ -27,6 +27,25 @@ Fixes build issues for mobile target
 
 ## [0.4.0] - 2022-08-31
 
+### CoreCrypto
+
+* Allow rollbacking proposals. Now every method for creating a proposal also returns a proposal reference
+(unique identifier) one can use later on to `clear_pending_proposal`
+* Add `clear_pending_proposal` to wipe out local pending proposals
+* Add `clear_pending_commit` to wipe out local pending commit
+* Add `conversation_epoch` to get the current conversation's MLS epoch
+* Now `decrypt_message` returns the sender client_id when the message is an application message. To use in calling.
+* Durability: Now all the mutable operations are checked for durability i.e. would a process crash turn the application
+into an inconsistent state. It boils down to verifying that we persist the MLS group in the keystore after every
+operation mutating it
+* Added a clean and documented Swift wrapper and tasks to build it more easily
+* use 128 bytes of padding when encrypting messages instead of 16 previously
+* Add some commit methods `final_add_clients_to_conversation`, `final_remove_clients_from_conversation`,
+`final_update_keying_material` & `final_commit_pending_proposals` which return a TLS serialized CommitBundle. It cannot
+be used now since wire-server does not yet have an endpoint for supplying it. It can be used to test the endpoint.
+In the end, the `final_` prefix will removed and the not prefixed methods will be deprecated.
+* Benchmarks have been improved and now also cover MLS operations
+
 <details>
     <summary>git-conventional changelog</summary>
 {{git-cliff tag="v0.4.0" unreleased=true}}
