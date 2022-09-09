@@ -7,23 +7,34 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.5.0] - TBD
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.5.0" unreleased=true}}
+</details>
+
+* **[BREAKING]**: Changed the API for callbacks for clarity
+    * This also contains documentation changes that make the use and intent of callbacks easier to understand.
+* Added: Missing callbacks API for the TypeScript bindings
+
 ## [0.4.2] - 2022-09-05
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.4.2" unreleased=true}}
+{{git-cliff tag="v0.4.2"}}
 </details>
 
-Fixes runtime issues on Android caused by the [sha2](https://github.com/RustCrypto/hashes/tree/master/sha2) crate.
+* Fixes runtime issues on Android caused by the [sha2](https://github.com/RustCrypto/hashes/tree/master/sha2) crate.
 
 ## [0.4.1] - 2022-09-01
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.4.1" unreleased=true}}
+{{git-cliff tag="v0.4.1"}}
 </details>
 
-Fixes build issues for mobile target
+* Fixes build issues for mobile target
 
 ## [0.4.0] - 2022-08-31
 
@@ -48,7 +59,7 @@ In the end, the `final_` prefix will removed and the not prefixed methods will b
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.4.0" unreleased=true}}
+{{git-cliff tag="v0.4.0"}}
 </details>
 
 ## [0.3.1] - 2022-08-16

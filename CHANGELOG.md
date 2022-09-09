@@ -7,6 +7,22 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.5.0] - TBD
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- [**breaking**] Changed misleading callback API and docs
+- [**breaking**] Added missing TS API to set CoreCrypto callbacks
+
+</details>
+
+* **[BREAKING]**: Changed the API for callbacks for clarity
+    * This also contains documentation changes that make the use and intent of callbacks easier to understand.
+* Added: Missing callbacks API for the TypeScript bindings
+
 ## [0.4.2] - 2022-09-05
 
 <details>
@@ -14,23 +30,54 @@ Platform support legends:
 
 </details>
 
-Fixes runtime issues on Android caused by the [sha2](https://github.com/RustCrypto/hashes/tree/master/sha2) crate.
+* Fixes runtime issues on Android caused by the [sha2](https://github.com/RustCrypto/hashes/tree/master/sha2) crate.
 
 ## [0.4.1] - 2022-09-01
 
 <details>
     <summary>git-conventional changelog</summary>
 
+### Bug Fixes
+
+- Uniffi breaking changes in patch release and ffi error due to unused `TlsMemberAddedMessages`
+
 </details>
 
-Fixes build issues for mobile target
+* Fixes build issues for mobile target
 
 ## [0.4.0] - 2022-08-31
 
 <details>
     <summary>git-conventional changelog</summary>
 
+### Bug Fixes
+
+- Ensure durable methods are well tested and actually durable
+
+### Features
+
+- Commits and group creation return a TLS serialized CommitBundle. The latter also contains a PublicGroupStateBundle to prepare future evolutions
+- [**breaking**] 'decrypt_message' returns the sender client id
+- Use 128 bytes of padding when encrypting messages instead of 16 previously
+- Add function to return current epoch of a group [CL-80] ([#96](https://github.com/wireapp/core-crypto/issues/96))
+- Adding a wrapper for the swift API and initial docs [CL-62] ([#89](https://github.com/wireapp/core-crypto/issues/89))
+- Add '#[durable]' macro to verify the method is tolerant to crashes and persists the MLS group in keystore
+- Expose 'clear_pending_commit' method
+- Allow rollbacking a proposal
+- [**breaking**] Expose 'clear_pending_commit' method
+- [**breaking**] Allow rollbacking a proposal
+
+### Miscellaneous Tasks
+
+- Migrate benchmarks to async and write some for core crypto operations
+- Fixed WASM E2E tests
+
+### Testing
+
+- Add reminder for x509 certificate tests
+
 </details>
+
 
 ## [0.3.1] - 2022-08-16
 
