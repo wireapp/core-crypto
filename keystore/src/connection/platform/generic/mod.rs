@@ -49,7 +49,7 @@ impl SqlCipherConnection {
 
         // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
         #[cfg(feature = "ios-wal-compat")]
-        Self::handle_ios_wal_compat(&conn)?;
+        Self::handle_ios_wal_compat(&conn, path)?;
 
         // Enable WAL journaling mode
         conn.pragma_update(None, "journal_mode", "wal")?;
@@ -96,9 +96,23 @@ impl SqlCipherConnection {
     /// when doing background work
     /// See more: https://github.com/sqlcipher/sqlcipher/issues/255
     #[cfg(feature = "ios-wal-compat")]
-    fn handle_ios_wal_compat(conn: &rusqlite::Connection) -> CryptoKeystoreResult<()> {
+    fn handle_ios_wal_compat(conn: &rusqlite::Connection, path: &str) -> CryptoKeystoreResult<()> {
         const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
-        match security_framework::passwords::get_generic_password("wire.com", "keystore_salt") {
+        use security_framework::passwords as ios_keychain;
+
+        use sha2::Digest as _;
+
+        let mut path_hash = sha2::Sha256::default();
+        path_hash.update(path.as_bytes());
+        let keychain_key = format!("keystore_salt_{}", hex::encode(&path_hash.finalize()));
+
+        // Old version compat fix
+        if let Ok(salt) = ios_keychain::get_generic_password("wire.com", "keystore_salt") {
+            ios_keychain::set_generic_password("wire.com", &keychain_key, salt.as_slice())?;
+            ios_keychain::delete_generic_password("wire.com", "keystore_salt")?;
+        }
+
+        match ios_keychain::get_generic_password("wire.com", &keychain_key) {
             Ok(salt) => {
                 conn.pragma_update(None, "cipher_salt", format!("x'{}'", hex::encode(salt)))?;
             }
@@ -107,8 +121,7 @@ impl SqlCipherConnection {
                 let mut bytes = [0u8; 16];
                 hex::decode_to_slice(salt, &mut bytes)
                     .map_err(|e| crate::CryptoKeystoreError::HexSaltDecodeError(e))?;
-                #[cfg(target_os = "ios")]
-                security_framework::password::set_generic_password("wire.com", "keystore_salt", bytes)?;
+                ios_keychain::set_generic_password("wire.com", &keychain_key, &bytes)?;
             }
             Err(e) => return Err(e.into()),
         }
