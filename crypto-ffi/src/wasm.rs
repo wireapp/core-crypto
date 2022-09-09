@@ -433,16 +433,16 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
 /// see [core_crypto::prelude::CoreCryptoCallbacks]
 pub struct CoreCryptoWasmCallbacks {
     authorize: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
-    is_user_in_group: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
+    client_id_belongs_to_one_of: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
 }
 
 #[wasm_bindgen]
 impl CoreCryptoWasmCallbacks {
     #[wasm_bindgen(constructor)]
-    pub fn new(authorize: js_sys::Function, is_user_in_group: js_sys::Function) -> Self {
+    pub fn new(authorize: js_sys::Function, client_id_belongs_to_one_of: js_sys::Function) -> Self {
         Self {
             authorize: std::sync::Arc::new(authorize.into()),
-            is_user_in_group: std::sync::Arc::new(is_user_in_group.into()),
+            client_id_belongs_to_one_of: std::sync::Arc::new(client_id_belongs_to_one_of.into()),
         }
     }
 }
@@ -451,14 +451,14 @@ unsafe impl Send for CoreCryptoWasmCallbacks {}
 unsafe impl Sync for CoreCryptoWasmCallbacks {}
 
 impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
-    fn authorize(&self, conversation_id: ConversationId, client_id: String) -> bool {
+    fn authorize(&self, conversation_id: ConversationId, client_id: Vec<u8>) -> bool {
         if let Ok(authorize) = self.authorize.try_lock() {
             let this = JsValue::null();
             if let Ok(Some(result)) = authorize
                 .call2(
                     &this,
                     &js_sys::Uint8Array::from(conversation_id.as_slice()),
-                    &JsValue::from_str(&client_id),
+                    &js_sys::Uint8Array::from(client_id.as_slice()),
                 )
                 .map(|jsval| jsval.as_bool())
             {
@@ -471,13 +471,13 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
         }
     }
 
-    fn is_user_in_group(&self, identity: Vec<u8>, other_clients: Vec<Vec<u8>>) -> bool {
-        if let Ok(is_user_in_group) = self.is_user_in_group.try_lock() {
+    fn client_id_belongs_to_one_of(&self, client_id: Vec<u8>, other_clients: Vec<Vec<u8>>) -> bool {
+        if let Ok(client_id_belongs_to_one_of) = self.client_id_belongs_to_one_of.try_lock() {
             let this = JsValue::null();
-            if let Ok(Some(result)) = is_user_in_group
+            if let Ok(Some(result)) = client_id_belongs_to_one_of
                 .call2(
                     &this,
-                    &js_sys::Uint8Array::from(identity.as_slice()),
+                    &js_sys::Uint8Array::from(client_id.as_slice()),
                     &other_clients
                         .into_iter()
                         .map(|client| js_sys::Uint8Array::from(client.as_slice()))

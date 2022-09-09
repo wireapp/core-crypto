@@ -27,7 +27,7 @@ test("init", async () => {
     return CoreCrypto.version();
   });
 
-  expect(version).toBe("0.3.1");
+  expect(version).toBe("0.4.2");
 
   await page.close();
   await ctx.close();
@@ -270,3 +270,91 @@ test("roundtrip message", async () => {
   await ctx.close();
   await ctx2.close();
 }, 20000);
+
+test("callbacks", async () => {
+  const [ctx, page] = await initBrowser();
+
+  const callbacksResults = await page.evaluate(async () => {
+    const { CoreCrypto, ExternalProposalType } = await import("./corecrypto.js");
+
+    const callbacksResults = {
+      authorize: false,
+      clientIdBelongsToOneOf: false,
+    };
+
+    const client1Config = {
+      databaseName: "test init",
+      key: "test",
+      clientId: "test",
+    };
+
+    const client2Config = {
+      databaseName: "test init2",
+      key: "test",
+      clientId: "test2",
+    };
+
+    const clientExtConfig = {
+      databaseName: "test init ext",
+      key: "test",
+      clientId: "testExternal",
+    };
+
+    const cc = await CoreCrypto.init(client1Config);
+
+    cc.registerCallbacks({
+      authorize(conversationId, clientId) {
+        callbacksResults.authorize = true;
+        return true;
+      },
+      clientIdBelongsToOneOf(clientId, otherClients) {
+        callbacksResults.clientIdBelongsToOneOf = true;
+        return true;
+      }
+    });
+
+    const cc2 = await CoreCrypto.init(client2Config);
+    const [cc2Kp] = await cc2.clientKeypackages(1);
+
+    const ccExternal = await CoreCrypto.init(clientExtConfig);
+
+    const encoder = new TextEncoder();
+
+    const conversationId = encoder.encode("Test conversation");
+
+    await cc.createConversation(conversationId);
+
+    // ! This should trigger the authorize callback
+    const creationMessage = await cc.addClientsToConversation(conversationId, [
+      { id: encoder.encode(client2Config.clientId), kp: cc2Kp },
+    ]);
+
+    await cc.commitAccepted(conversationId);
+
+    if (!callbacksResults.authorize) {
+      throw new Error("authorize callback wasn't triggered");
+    }
+
+    const extProposal = await ccExternal.newExternalProposal(ExternalProposalType.Add, {
+      conversationId,
+      // ? Be careful; If you change anything above the epoch might change because right now it's a guesswork
+      // ? Normally, clients should obtain the epoch *somehow*, usually from the MLS DS, but we just guess that since we only added
+      // ? one client, the epoch should only have moved from 0 (initial state) to 1 (added 1 client -> committed)
+      epoch: 1,
+    });
+
+    // ! This should trigger the clientIdBelongsToOneOf callback
+    const something = await cc.decryptMessage(conversationId, extProposal);
+    if (!callbacksResults.clientIdBelongsToOneOf) {
+      throw new Error("clientIdBelongsToOneOf callback wasn't triggered");
+    }
+
+    return callbacksResults;
+  });
+
+  expect(callbacksResults.authorize).toBe(true);
+  expect(callbacksResults.clientIdBelongsToOneOf).toBe(true);
+
+  await page.close();
+  await ctx.close();
+});
