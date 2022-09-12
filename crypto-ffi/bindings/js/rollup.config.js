@@ -33,53 +33,25 @@ const generateDtsBundlePlugin = (entry, output) => ({
     },
 });
 
-const getOutput = (format = "es2017") => {
-    return {
+const rollup = {
+    input: pathResolve(__dirname, "./CoreCrypto.ts"),
+    output: {
         file: pathResolve(
             __dirname,
-            "../../../platforms/web/" + format + "/corecrypto.js"
+            "../../../platforms/web/corecrypto.js"
         ),
         format: "es",
-    };
-};
-
-const getPlugins = (format = "es2017") => {
-    return [
+    },
+    plugins: [
         rust(),
         ts({
-            tsconfig: {
-                fileName: pathResolve(__dirname, "./tsconfig.json"),
-                hook: (resolvedConfig) => ({
-                    ...resolvedConfig,
-                    target: format,
-                }),
-            },
+            tsconfig: pathResolve(__dirname, "./tsconfig.json"),
         }),
         generateDtsBundlePlugin(
             pathResolve(__dirname, "./CoreCrypto.ts"),
-            pathResolve(
-                __dirname,
-                "../../../platforms/web/" + format + "/corecrypto.d.ts"
-            )
+            pathResolve(__dirname, "../../../platforms/web/corecrypto.d.ts"),
         ),
-    ];
-};
-
-const rollup = (_args) => {
-    const input = pathResolve(__dirname, "./CoreCrypto.ts");
-
-    return [
-        {
-            input,
-            output: getOutput("es2017"),
-            plugins: getPlugins("es2017"),
-        },
-        {
-            input,
-            output: getOutput("es2019"),
-            plugins: getPlugins("es2019"),
-        },
-    ];
+    ],
 };
 
 export default rollup;
