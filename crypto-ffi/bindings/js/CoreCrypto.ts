@@ -512,6 +512,7 @@ export class CoreCrypto {
             message: ffiDecryptedMessage.message,
             proposals: ffiDecryptedMessage.proposals,
             isActive: ffiDecryptedMessage.is_active,
+            senderClientId: ffiDecryptedMessage.sender_client_id,
             commitDelay,
         };
 

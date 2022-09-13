@@ -244,7 +244,7 @@ pub struct DecryptedMessage {
     proposals: Vec<ProposalBundle>,
     is_active: bool,
     commit_delay: Option<u32>,
-    sender_client_id: Option<FfiClientId>,
+    sender_client_id: Option<Vec<u8>>,
 }
 
 impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
@@ -277,14 +277,15 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
 impl DecryptedMessage {
     #[wasm_bindgen(getter)]
     pub fn message(&self) -> Option<Uint8Array> {
-        self.message.clone().map(|m| Uint8Array::from(m.as_slice()))
+        self.message.as_ref().map(|m| Uint8Array::from(m.as_slice()))
     }
 
     #[wasm_bindgen(getter)]
     pub fn proposals(&self) -> js_sys::Array {
         self.proposals
             .iter()
-            .map(|p| JsValue::from(p.clone()))
+            .cloned()
+            .map(|p| JsValue::from(p))
             .collect::<js_sys::Array>()
     }
 
@@ -296,6 +297,11 @@ impl DecryptedMessage {
     #[wasm_bindgen(getter)]
     pub fn commit_delay(&self) -> Option<u32> {
         self.commit_delay
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn sender_client_id(&self) -> Option<Uint8Array> {
+        self.sender_client_id.as_ref().map(|p| Uint8Array::from(p.as_slice()))
     }
 }
 
@@ -909,9 +915,9 @@ impl CoreCrypto {
                     .decrypt_message(&conversation_id.to_vec(), payload)
                     .await?;
 
-                let decrypted_message: DecryptedMessage = raw_decrypted_message.try_into()?;
+                let decrypted_message = DecryptedMessage::try_from(raw_decrypted_message)?;
 
-                WasmCryptoResult::Ok(decrypted_message.into())
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&decrypted_message)?)
             }
             .err_into(),
         )
