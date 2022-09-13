@@ -1,6 +1,6 @@
 [workspace]
-members = ["crypto", "crypto-ffi", "crypto-attributes", "keystore", "mls-provider"]
-exclude = ["xtask", "extras/anycrypto", "extras/core-ds", "extras/interop"]
+members = ["crypto", "crypto-ffi", "crypto-attributes", "keystore", "mls-provider", "interop"]
+exclude = ["xtask", "extras/anycrypto", "extras/core-ds"]
 resolver = "2"
 
 [patch.crates-io.rexie]

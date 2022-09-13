@@ -22,7 +22,11 @@ impl MlsConversation {
     }
 
     fn calculate_delay(self_index: u64, epoch: u64, nb_members: u64) -> u64 {
-        let position = ((epoch % nb_members) + (self_index % nb_members)) % nb_members + 1;
+        let position = if nb_members > 0 {
+            ((epoch % nb_members) + (self_index % nb_members)) % nb_members + 1
+        } else {
+            1
+        };
         match position {
             1 => 0,
             2 => 15,
@@ -36,8 +40,12 @@ impl MlsConversation {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
 
     #[test]
+    #[wasm_bindgen_test]
     pub fn calculate_delay_single() {
         let (self_index, epoch, nb_members) = (0, 0, 1);
         let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
@@ -45,6 +53,7 @@ pub mod tests {
     }
 
     #[test]
+    #[wasm_bindgen_test]
     pub fn calculate_delay_max() {
         let (self_index, epoch, nb_members) = (u64::MAX, u64::MAX, u64::MAX);
         let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
@@ -52,6 +61,7 @@ pub mod tests {
     }
 
     #[test]
+    #[wasm_bindgen_test]
     pub fn calculate_delay_min() {
         let (self_index, epoch, nb_members) = (u64::MIN, u64::MIN, u64::MAX);
         let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
@@ -59,15 +69,15 @@ pub mod tests {
     }
 
     #[test]
-    #[should_panic]
-    pub fn calculate_delay_panic() {
+    #[wasm_bindgen_test]
+    pub fn calculate_delay_zero_members() {
         let (self_index, epoch, nb_members) = (0, 0, u64::MIN);
-        // total members can never be 0 as there's no group with 0 members and it will panic
-        // when trying to calculate the remainder of 0
-        MlsConversation::calculate_delay(self_index, epoch, nb_members);
+        let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
+        assert_eq!(delay, 0);
     }
 
     #[test]
+    #[wasm_bindgen_test]
     pub fn calculate_delay_min_max() {
         let (self_index, epoch, nb_members) = (u64::MIN, u64::MAX, u64::MAX);
         let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
@@ -75,6 +85,7 @@ pub mod tests {
     }
 
     #[test]
+    #[wasm_bindgen_test]
     pub fn calculate_delay_n() {
         let epoch = 1;
         let nb_members = 10;

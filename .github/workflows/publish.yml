@@ -20,14 +20,16 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
-      - name: Install Rust toolchain
-        run: rustup update --no-self-update stable
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
 
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
 
-      - name: Add WASM target
-        run: rustup target add wasm32-unknown-unknown
 
       - name: Install wasm-pack
         uses: jetli/wasm-pack-action@v0.3.0

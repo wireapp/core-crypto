@@ -7,16 +7,26 @@ edition = "2021"
 
 [dependencies]
 color-eyre = "0.6"
-femme = "2.2"
 log = "0.4"
+femme = "2.2"
 dirs = "4.0"
 tokio = { version = "1.20", features = ["full"] }
+core-crypto = { path = "../crypto" }
+# Webdriver stuff
 webdriver-install = "0.3"
 fantoccini = "0.19"
-xshell = "0.2"
-warpy = "0.2"
+# Http Server
+warp = "0.3"
+# Utils
+async-trait = "0.1"
 serde_json = "1.0"
 sha2 = "0.10"
 hex = "0.4"
-core-crypto = { path = "../crypto" }
+const_format = "0.2"
+rand = "0.8"
+# Terminal support
+xshell = "0.2"
+spinoff = "0.5"
+uuid = { version = "1.1", features = ["v4"] }
+
 
