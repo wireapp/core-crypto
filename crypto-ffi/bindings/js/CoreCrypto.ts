@@ -476,7 +476,7 @@ export class CoreCrypto {
         conversationId: ConversationId,
         configuration: ConversationConfiguration = {}
     ) {
-        const {admins, ciphersuite, keyRotationSpan, externalSenders} = configuration ?? {};
+        const {admins, ciphersuite, keyRotationSpan, externalSenders} = configuration || {};
         const config = new CoreCrypto.#module.ConversationConfiguration(
             admins,
             ciphersuite,
@@ -878,7 +878,7 @@ export class CoreCrypto {
      * @param configuration - Configuration of the group, see {@link ConversationConfiguration}
      */
     async mergePendingGroupFromExternalCommit(conversationId: ConversationId, configuration: ConversationConfiguration): Promise<void> {
-        const {admins, ciphersuite, keyRotationSpan, externalSenders} = configuration ?? {};
+        const {admins, ciphersuite, keyRotationSpan, externalSenders} = configuration || {};
         const config = new CoreCrypto.#module.ConversationConfiguration(
             admins,
             ciphersuite,
