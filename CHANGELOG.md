@@ -7,21 +7,43 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
-## [0.5.0] - TBD
+## [0.5.0] - 2022-14-09
 
 <details>
     <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
+- Fixed iOS SQLCipher salt handling within keychain
 - [**breaking**] Changed misleading callback API and docs
 - [**breaking**] Added missing TS API to set CoreCrypto callbacks
+- Force software implementation for sha2 on target architectures not supporting hardware implementation (i686 & armv7 in our case)
+
+### Documentation
+
+- Add forgotten 0.4.0 changelog
+
+### Features
+
+- [**breaking**] 'commit_pending_proposals' now returns an optional CommitBundle when there is no pending proposals to commit
+
+### Miscellaneous Tasks
+
+- Update node version from 12 to 16 LTS
+- Update dependencies
+- Remove es2020-specific operators and target es2020 only
+- Updated changelog
 
 </details>
 
+* **[BREAKING]**: `commit_pending_proposals` now returns an optional `CommitBundle`
+    * This was made to handle the case where there are no queued proposals to commit and this method would be called, causing the operation to fail.
 * **[BREAKING]**: Changed the API for callbacks for clarity
     * This also contains documentation changes that make the use and intent of callbacks easier to understand.
-* Added: Missing callbacks API for the TypeScript bindings
+* Fixed the iOS-specific database salt handling to allow using several databases on the same device.
+* TypeScript bindings:
+    * Removed the use of ES2020-specific operators (`??` Null-coalescing operator) to allow downstream to compile without transpiling.
+    * Added callbacks API
 
 ## [0.4.2] - 2022-09-05
 
@@ -46,6 +68,25 @@ Platform support legends:
 * Fixes build issues for mobile target
 
 ## [0.4.0] - 2022-08-31
+
+### CoreCrypto
+
+* Allow rollbacking proposals. Now every method for creating a proposal also returns a proposal reference
+(unique identifier) one can use later on to `clear_pending_proposal`
+* Add `clear_pending_proposal` to wipe out local pending proposals
+* Add `clear_pending_commit` to wipe out local pending commit
+* Add `conversation_epoch` to get the current conversation's MLS epoch
+* Now `decrypt_message` returns the sender client_id when the message is an application message. To use in calling.
+* Durability: Now all the mutable operations are checked for durability i.e. would a process crash turn the application
+into an inconsistent state. It boils down to verifying that we persist the MLS group in the keystore after every
+operation mutating it
+* Added a clean and documented Swift wrapper and tasks to build it more easily
+* use 128 bytes of padding when encrypting messages instead of 16 previously
+* Add some commit methods `final_add_clients_to_conversation`, `final_remove_clients_from_conversation`,
+`final_update_keying_material` & `final_commit_pending_proposals` which return a TLS serialized CommitBundle. It cannot
+be used now since wire-server does not yet have an endpoint for supplying it. It can be used to test the endpoint.
+In the end, the `final_` prefix will removed and the not prefixed methods will be deprecated.
+* Benchmarks have been improved and now also cover MLS operations
 
 <details>
     <summary>git-conventional changelog</summary>
@@ -77,7 +118,6 @@ Platform support legends:
 - Add reminder for x509 certificate tests
 
 </details>
-
 
 ## [0.3.1] - 2022-08-16
 

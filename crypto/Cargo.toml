@@ -2,7 +2,7 @@
 name = "core-crypto"
 description = "Abstraction over OpenMLS with persistent keystore"
 repository = "https://github.com/wireapp/core-crypto"
-version = "0.4.2"
+version = "0.5.0"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
@@ -24,11 +24,11 @@ serde_json = "1.0"
 derive_more = { version = "0.99", features = ["deref"] }
 
 [dependencies.core-crypto-keystore]
-version = "0.4"
+version = "0.5"
 path = "../keystore"
 
 [dependencies.mls-crypto-provider]
-version = "0.4"
+version = "0.5"
 path = "../mls-provider"
 
 [dev-dependencies]
@@ -48,7 +48,7 @@ version = "0.3"
 features = ["async_futures", "html_reports"]
 
 [dev-dependencies.core-crypto-attributes]
-version = "0.4"
+version = "0.5"
 path = "../crypto-attributes"
 
 [package.metadata.wasm-pack.profile.release]
