@@ -53,7 +53,7 @@ pub enum RatchetTreeType {
 
 /// Represents the byte array in [PublicGroupStateBundle]
 #[derive(Debug)]
-pub enum PublicGroupStatePayload {
+pub(crate) enum PublicGroupStatePayload {
     /// Unencrypted [PublicGroupState]
     Plaintext(tls_codec::TlsByteVecU32),
     // TODO: expose when fully implemented
