@@ -191,7 +191,10 @@ export interface DecryptedMessage {
      */
     message?: Uint8Array;
     /**
-     * List of proposals that were retrieved from the decrypted message, in addition to the pending local proposals
+     * Only when decrypted message is a commit, CoreCrypto will renew local proposal which could not make it in the commit.
+     * This will contain either:
+     *   * local pending proposal not in the accepted commit
+     *   * If there is a pending commit, its proposals which are not in the accepted commit
      */
     proposals: ProposalBundle[];
     /**

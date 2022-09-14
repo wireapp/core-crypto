@@ -174,9 +174,10 @@ public struct DecryptedMessage: ConvertToInner {
     typealias Inner = CoreCryptoSwift.DecryptedMessage
     /// Decrypted text message
     public var message: [UInt8]?
-    /// If decrypted message is a commit, this will contain either:
-    /// - local pending proposal by value
-    /// - proposals by value in pending commit
+    /// Only when decrypted message is a commit, CoreCrypto will renew local proposal which could not make it in the commit.
+    /// This will contain either:
+    /// - local pending proposal not in the accepted commit
+    /// - If there is a pending commit, its proposals which are not in the accepted commit
     public var proposals: [ProposalBundle]
     /// Is the conversation still active after receiving this commit
     /// aka has the user been removed from the group
