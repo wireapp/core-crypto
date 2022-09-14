@@ -219,7 +219,7 @@ export interface ProposalBundle {
      */
     proposal: Uint8Array;
     /**
-     * Unique identifier of a proposal. Use this in {@link CoreCrypto.clear_pending_proposal} to roll back (delete) the proposal
+     * Unique identifier of a proposal. Use this in {@link CoreCrypto.clearPendingProposal} to roll back (delete) the proposal
      *
      * @readonly
      */
@@ -898,6 +898,36 @@ export class CoreCrypto {
         return await this.#cc.commit_accepted(conversationId);
     }
 
+
+    /**
+     * Allows to remove a pending proposal (rollback). Use this when backend rejects the proposal you just sent e.g. if permissions
+     * have changed meanwhile.
+     *
+     * **CAUTION**: only use this when you had an explicit response from the Delivery Service
+     * e.g. 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc..
+     *
+     * @param conversationId - The group's ID
+     * @param proposalRef - A reference to the proposal to delete. You get one when using {@link CoreCrypto.newProposal}
+     */
+    async clearPendingProposal(conversationId: ConversationId, proposalRef: ProposalRef): Promise<void> {
+        return await this.#cc.clear_pending_proposal(conversationId, proposalRef);
+    }
+
+    /**
+     * Allows to remove a pending commit (rollback). Use this when backend rejects the commit you just sent e.g. if permissions
+     * have changed meanwhile.
+     *
+     * **CAUTION**: only use this when you had an explicit response from the Delivery Service
+     * e.g. 403. Do not use otherwise e.g. 5xx responses, timeout etc..
+     * **DO NOT** use when Delivery Service responds 409, pending state will be renewed
+     * in {@link CoreCrypto.decrypt_message}
+     *
+     * @param conversationId - The group's ID
+     */
+    async clearPendingCommit(conversationId: ConversationId): Promise<void> {
+        return await this.#cc.clear_pending_commit(conversationId);
+    }
+
     /**
      * Allows {@link CoreCrypto} to act as a CSPRNG provider
      * @note The underlying CSPRNG algorithm is ChaCha20 and takes in account the external seed provider either at init time or provided with {@link CoreCrypto.reseedRng}
@@ -921,35 +951,6 @@ export class CoreCrypto {
         }
 
         return await this.#cc.reseed_rng(seed);
-    }
-
-    /**
-     * Allows to remove a pending proposal (rollback). Use this when backend rejects the proposal you just sent e.g. if permissions
-     * have changed meanwhile.
-     *
-     * **CAUTION**: only use this when you had an explicit response from the Delivery Service
-     * e.g. 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc..
-     *
-     * @param conversationId - The group's ID
-     * @param proposalRef - A reference to the proposal to delete. You get one when using {@link CoreCrypto.newProposal}
-     */
-    async clear_pending_proposal(conversationId: ConversationId, proposalRef: ProposalRef): Promise<void> {
-        return await this.#cc.clear_pending_proposal(conversationId, proposalRef);
-    }
-
-    /**
-     * Allows to remove a pending commit (rollback). Use this when backend rejects the commit you just sent e.g. if permissions
-     * have changed meanwhile.
-     *
-     * **CAUTION**: only use this when you had an explicit response from the Delivery Service
-     * e.g. 403. Do not use otherwise e.g. 5xx responses, timeout etc..
-     * **DO NOT** use when Delivery Service responds 409, pending state will be renewed
-     * in {@link CoreCrypto.decrypt_message}
-     *
-     * @param conversationId - The group's ID
-     */
-    async clear_pending_commit(conversationId: ConversationId): Promise<void> {
-        return await this.#cc.clear_pending_commit(conversationId);
     }
 
     /**

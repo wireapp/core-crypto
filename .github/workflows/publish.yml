@@ -41,7 +41,7 @@ jobs:
 
       - name: Build TS/JS Library
         run: |
-          npm i
+          npm ci
           npm run build
 
       - name: Publishes package to NPM
