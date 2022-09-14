@@ -34,11 +34,13 @@ jobs:
         with:
           version: 'latest'
 
-      - name: Build TS/JS Library
+      - name: Build WASM package
         run: |
           cd crypto-ffi
-          cargo make npm-deps
-          cargo make wasm
+          cargo make wasm-build
+
+      - name: Build TS/JS Library
+        run: npm run build
 
       - name: Publishes package to NPM
         uses: JS-DevTools/npm-publish@v1
