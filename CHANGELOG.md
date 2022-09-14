@@ -14,6 +14,8 @@ Platform support legends:
 
 ### Bug Fixes
 
+- Wee_alloc memory leak + NPM publish issue
+- Unreachable pub struct breaks docgen
 - Fixed iOS SQLCipher salt handling within keychain
 - [**breaking**] Changed misleading callback API and docs
 - [**breaking**] Added missing TS API to set CoreCrypto callbacks
@@ -29,6 +31,7 @@ Platform support legends:
 
 ### Miscellaneous Tasks
 
+- Release v0.5.0
 - Update node version from 12 to 16 LTS
 - Update dependencies
 - Remove es2020-specific operators and target es2020 only
@@ -44,6 +47,7 @@ Platform support legends:
 * TypeScript bindings:
     * Removed the use of ES2020-specific operators (`??` Null-coalescing operator) to allow downstream to compile without transpiling.
     * Added callbacks API
+    * Removed the usage of `wee_alloc` allocator as it leaks memory: https://github.com/rustwasm/wee_alloc/issues/106
 
 ## [0.4.2] - 2022-09-05
 
