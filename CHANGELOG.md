@@ -14,6 +14,8 @@ Platform support legends:
 
 ### Bug Fixes
 
+- Rollback openmls & chrono in order to release 0.5.0
+- Pin openmls without vulnerable chrono
 - Wee_alloc memory leak + NPM publish issue
 - Unreachable pub struct breaks docgen
 - Fixed iOS SQLCipher salt handling within keychain
@@ -31,6 +33,8 @@ Platform support legends:
 
 ### Miscellaneous Tasks
 
+- Release v0.5.0 Redux
+- Update UniFFI to 0.20
 - Release v0.5.0
 - Update node version from 12 to 16 LTS
 - Update dependencies
@@ -48,6 +52,9 @@ Platform support legends:
     * Removed the use of ES2020-specific operators (`??` Null-coalescing operator) to allow downstream to compile without transpiling.
     * Added callbacks API
     * Removed the usage of `wee_alloc` allocator as it leaks memory: https://github.com/rustwasm/wee_alloc/issues/106
+* Kotlin & Swift bindings:
+    * Upgraded UniFFI to 0.20 which now generates a correct callback interface in `camelCase` instead of erroneous `snake_case`.
+        * Note that you will have to adapt to the aforementioned breaking changes to the callback API anyway so this just makes it a bit nicer
 
 ## [0.4.2] - 2022-09-05
 
