@@ -50,7 +50,7 @@ js-sys = "0.3"
 [build-dependencies]
 # UniFFI - Android + iOS bindings - Build support
 uniffi_build = { version = "0.19", features = ["builtin-bindgen"], optional = true }
-uniffi_bindgen = { version = "0.19", optional = true }
+uniffi_bindgen = { version = "0.20", optional = true }
 
 [dev-dependencies]
 uniffi = { version = "0.19", features = ["builtin-bindgen"] }
