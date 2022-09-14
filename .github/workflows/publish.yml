@@ -40,7 +40,9 @@ jobs:
           cargo make wasm-build
 
       - name: Build TS/JS Library
-        run: npm run build
+        run: |
+          npm i
+          npm run build
 
       - name: Publishes package to NPM
         uses: JS-DevTools/npm-publish@v1
