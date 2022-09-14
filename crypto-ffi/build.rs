@@ -36,6 +36,7 @@ fn main() {
         None,
         vec!["kotlin"],
         Some("./bindings/kt/".into()),
+        None,
         false,
     )
     .unwrap();
@@ -45,6 +46,7 @@ fn main() {
         None,
         vec!["swift"],
         Some("./bindings/swift/lib/".into()),
+        None,
         false,
     )
     .unwrap();
