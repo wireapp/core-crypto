@@ -672,17 +672,15 @@ export class CoreCrypto {
      * @returns A {@link CommitBundle} or `undefined` when there was no pending proposal to commit
      */
     async commitPendingProposals(conversationId: ConversationId): Promise<CommitBundle | undefined> {
-        const ffiCommitBundle: CoreCryptoFfiTypes.CommitBundle = await this.#cc.commit_pending_proposals(
+        const ffiCommitBundle: CoreCryptoFfiTypes.CommitBundle | undefined = await this.#cc.commit_pending_proposals(
             conversationId
         );
 
-        const ret: CommitBundle = {
-            welcome: ffiCommitBundle.welcome,
-            commit: ffiCommitBundle.commit,
-            publicGroupState: ffiCommitBundle.public_group_state,
-        };
-
-        return ret;
+            return ffiCommitBundle ? {
+                welcome: ffiCommitBundle.welcome,
+                commit: ffiCommitBundle.commit,
+                publicGroupState: ffiCommitBundle.public_group_state,
+            } : undefined;
     }
 
     /**
