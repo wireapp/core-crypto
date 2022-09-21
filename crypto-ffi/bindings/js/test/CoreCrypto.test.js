@@ -27,7 +27,7 @@ test("init", async () => {
     return CoreCrypto.version();
   });
 
-  expect(version).toBe("0.5.0");
+  expect(version).toBe("0.5.1");
 
   await page.close();
   await ctx.close();
