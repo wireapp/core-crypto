@@ -7,11 +7,23 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.5.1] - 2022-21-09
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.5.1" unreleased=true}}
+</details>
+
+* Fix: supplied backend's removal key (used for verifying external remove proposals) was not TLS deserialized
+* Fix: incorrect null handing in Typescript wrapper for 'commitPendingProposals' causing an error when there was no proposal to commit
+* New test runner for running interoperability tests between various core-crypto clients.
+Currently, only native & WASM are supported. Most of all, those tests can be run in our Continuous Integration.
+
 ## [0.5.0] - 2022-14-09
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.5.0" unreleased=true}}
+{{git-cliff tag="v0.5.0"}}
 </details>
 
 * **[BREAKING]**: `commit_pending_proposals` now returns an optional `CommitBundle`
