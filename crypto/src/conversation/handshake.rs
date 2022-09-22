@@ -127,24 +127,6 @@ impl tls_codec::Serialize for MlsConversationCreationMessage {
     }
 }
 
-impl MlsConversationCreationMessage {
-    /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
-    /// 0 -> welcome
-    /// 1 -> commit
-    /// 2 -> public_group_state
-    pub fn to_bytes_triple(&self) -> CryptoResult<(Vec<u8>, Vec<u8>, Vec<u8>)> {
-        use openmls::prelude::TlsSerializeTrait as _;
-        let welcome = self.welcome.tls_serialize_detached().map_err(MlsError::from)?;
-        let msg = self.commit.to_bytes().map_err(MlsError::from)?;
-        let public_group_state = self
-            .public_group_state
-            .tls_serialize_detached()
-            .map_err(MlsError::from)?;
-
-        Ok((welcome, msg, public_group_state))
-    }
-}
-
 /// Returned when a commit is created
 #[derive(Debug, tls_codec::TlsSize)]
 pub struct MlsCommitBundle {
@@ -162,29 +144,6 @@ impl tls_codec::Serialize for MlsCommitBundle {
             .tls_serialize(writer)
             .and_then(|w| self.commit.tls_serialize(writer).map(|l| l + w))
             .and_then(|w| self.public_group_state.tls_serialize(writer).map(|l| l + w))
-    }
-}
-
-impl MlsCommitBundle {
-    /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
-    /// 0 -> welcome
-    /// 1 -> message
-    /// 2 -> public group state
-    #[allow(clippy::type_complexity)]
-    pub fn to_bytes_triple(&self) -> CryptoResult<(Option<Vec<u8>>, Vec<u8>, Vec<u8>)> {
-        use openmls::prelude::TlsSerializeTrait as _;
-        let welcome = self
-            .welcome
-            .as_ref()
-            .map(|w| w.tls_serialize_detached().map_err(MlsError::from))
-            .transpose()?;
-        let commit = self.commit.to_bytes().map_err(MlsError::from)?;
-        let public_group_state = self
-            .public_group_state
-            .tls_serialize_detached()
-            .map_err(MlsError::from)?;
-
-        Ok((welcome, commit, public_group_state))
     }
 }
 

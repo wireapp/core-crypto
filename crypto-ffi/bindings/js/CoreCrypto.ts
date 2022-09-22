@@ -76,54 +76,6 @@ export type ProposalRef = Uint8Array;
 export type TlsCommitBundle = Uint8Array;
 
 /**
- * Data shape for the returned MLS commit & welcome message tuple upon adding clients to a conversation
- */
-export interface MemberAddedMessages {
-    /**
-     * TLS-serialized MLS Commit that needs to be fanned out to other (existing) members of the conversation
-     *
-     * @readonly
-     */
-    commit: Uint8Array;
-    /**
-     * TLS-serialized MLS Welcome message that needs to be fanned out to the clients newly added to the conversation
-     *
-     * @readonly
-     */
-    welcome: Uint8Array;
-    /**
-     * TLS-serialized MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit
-     *
-     * @readonly
-     */
-    publicGroupState: Uint8Array;
-}
-
-/**
- * Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome)
- */
-export interface CommitBundle {
-    /**
-     * TLS-serialized MLS Commit that needs to be fanned out to other (existing) members of the conversation
-     *
-     * @readonly
-     */
-    commit: Uint8Array;
-    /**
-     * Optional TLS-serialized MLS Welcome message that needs to be fanned out to the clients newly added to the conversation
-     *
-     * @readonly
-     */
-    welcome?: Uint8Array;
-    /**
-     * TLS-serialized MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit
-     *
-     * @readonly
-     */
-    publicGroupState: Uint8Array;
-}
-
-/**
  * Params for CoreCrypto initialization
  * Please note that the `entropySeed` parameter MUST be exactly 32 bytes
  */
@@ -173,13 +125,13 @@ export interface MlsConversationInitMessage {
      *
      * @readonly
      */
-    group: Uint8Array;
+    conversation_id: ConversationId;
     /**
      * TLS-serialized MLS Commit that needs to be fanned out
      *
      * @readonly
      */
-    commit: Uint8Array;
+    commit_bundle: Uint8Array;
 }
 
 /**
@@ -406,7 +358,6 @@ export class CoreCrypto {
         await this.#cc.close();
     }
 
-
     /**
      * Registers the callbacks for CoreCrypto to use in order to gain additional information
      *
@@ -570,121 +521,6 @@ export class CoreCrypto {
 
     /**
      * Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation.
-     *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     * @param clients - Array of {@link Invitee} (which are Client ID / KeyPackage pairs)
-     *
-     * @returns A {@link CommitBundle}
-     */
-    async addClientsToConversation(
-        conversationId: ConversationId,
-        clients: Invitee[]
-    ): Promise<MemberAddedMessages> {
-        const ffiClients = clients.map(
-            (invitee) => new CoreCrypto.#module.Invitee(invitee.id, invitee.kp)
-        );
-
-        const ffiRet: CoreCryptoFfiTypes.MemberAddedMessages = await this.#cc.add_clients_to_conversation(
-            conversationId,
-            ffiClients
-        );
-
-        ffiClients.forEach(c => c.free());
-
-        const ret: MemberAddedMessages = {
-            welcome: ffiRet.welcome,
-            commit: ffiRet.commit,
-            publicGroupState: ffiRet.public_group_state,
-        };
-
-        return ret;
-    }
-
-    /**
-     * Removes the provided clients from a conversation; Assuming those clients exist and the current client is allowed
-     * to do so, otherwise this operation does nothing.
-     *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     * @param clientIds - Array of Client IDs to remove.
-     *
-     * @returns A {@link CommitBundle}
-     */
-    async removeClientsFromConversation(
-        conversationId: ConversationId,
-        clientIds: ClientId[]
-    ): Promise<CommitBundle> {
-        const ffiRet: CoreCryptoFfiTypes.CommitBundle = await this.#cc.remove_clients_from_conversation(
-            conversationId,
-            clientIds
-        );
-
-        const ret: CommitBundle = {
-            welcome: ffiRet.welcome,
-            commit: ffiRet.commit,
-            publicGroupState: ffiRet.public_group_state,
-        };
-
-        return ret;
-    }
-
-    /**
-     * Creates an update commit which forces every client to update their keypackages in the conversation
-     *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     *
-     * @returns A {@link CommitBundle}
-     */
-    async updateKeyingMaterial(conversationId: ConversationId): Promise<CommitBundle> {
-        const ffiRet: CoreCryptoFfiTypes.CommitBundle = await this.#cc.update_keying_material(
-            conversationId
-        );
-
-        const ret: CommitBundle = {
-            welcome: ffiRet.welcome,
-            commit: ffiRet.commit,
-            publicGroupState: ffiRet.public_group_state,
-        };
-
-        return ret;
-    }
-
-    /**
-     * Commits the local pending proposals and returns the {@link CommitBundle} object containing what can result from this operation.
-     *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     *
-     * @returns A {@link CommitBundle} or `undefined` when there was no pending proposal to commit
-     */
-    async commitPendingProposals(conversationId: ConversationId): Promise<CommitBundle | undefined> {
-        const ffiCommitBundle: CoreCryptoFfiTypes.CommitBundle | undefined = await this.#cc.commit_pending_proposals(
-            conversationId
-        );
-
-            return ffiCommitBundle ? {
-                welcome: ffiCommitBundle.welcome,
-                commit: ffiCommitBundle.commit,
-                publicGroupState: ffiCommitBundle.public_group_state,
-            } : undefined;
-    }
-
-    /**
-     * Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation.
      * The returned {@link CommitBundle} is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
      * It also contains a Welcome message the Delivery Service will forward to invited clients and
      * an updated PublicGroupState required by clients willing to join the group by an external commit.
@@ -698,7 +534,7 @@ export class CoreCrypto {
      *
      * @returns A {@link CommitBundle} byte array to fan out to the Delivery Service
      */
-    async finalAddClientsToConversation(
+    async addClientsToConversation(
         conversationId: ConversationId,
         clients: Invitee[]
     ): Promise<TlsCommitBundle> {
@@ -730,7 +566,7 @@ export class CoreCrypto {
      *
      * @returns A {@link CommitBundle} byte array to fan out to the Delivery Service, or `undefined` if for any reason, the operation would result in an empty commit
      */
-    async finalRemoveClientsFromConversation(
+    async removeClientsFromConversation(
         conversationId: ConversationId,
         clientIds: ClientId[]
     ): Promise<TlsCommitBundle> {
@@ -752,7 +588,7 @@ export class CoreCrypto {
      *
      * @returns A {@link CommitBundle} byte array to fan out to the Delivery Service
      */
-    async finalUpdateKeyingMaterial(conversationId: ConversationId): Promise<TlsCommitBundle> {
+    async updateKeyingMaterial(conversationId: ConversationId): Promise<TlsCommitBundle> {
         return await this.#cc.update_keying_material(conversationId);
     }
 
@@ -771,7 +607,7 @@ export class CoreCrypto {
      *
      * @returns A {@link CommitBundle} byte array to fan out to the Delivery Service or `undefined` when there was no pending proposal to commit
      */
-    async finalCommitPendingProposals(conversationId: ConversationId): Promise<TlsCommitBundle | undefined> {
+    async commitPendingProposals(conversationId: ConversationId): Promise<TlsCommitBundle | undefined> {
         return await this.#cc.commit_pending_proposals(conversationId);
     }
 
@@ -864,8 +700,8 @@ export class CoreCrypto {
         const ffiInitMessage: CoreCryptoFfiTypes.MlsConversationInitMessage = await this.#cc.join_by_external_commit(publicGroupState);
 
         const ret: MlsConversationInitMessage = {
-            group: ffiInitMessage.group,
-            commit: ffiInitMessage.commit,
+            conversation_id: ffiInitMessage.conversation_id,
+            commit_bundle: ffiInitMessage.commit_bundle,
         };
 
         return ret;
@@ -899,7 +735,6 @@ export class CoreCrypto {
     async commitAccepted(conversationId: ConversationId): Promise<void> {
         return await this.#cc.commit_accepted(conversationId);
     }
-
 
     /**
      * Allows to remove a pending proposal (rollback). Use this when backend rejects the proposal you just sent e.g. if permissions

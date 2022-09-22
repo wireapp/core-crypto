@@ -100,94 +100,6 @@ impl Into<CiphersuiteName> for Ciphersuite {
 pub type FfiClientId = Box<[u8]>;
 
 #[wasm_bindgen]
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-/// see [core_crypto::prelude::MlsConversationCreationMessage]
-pub struct MemberAddedMessages {
-    welcome: Vec<u8>,
-    commit: Vec<u8>,
-    public_group_state: Vec<u8>,
-}
-
-#[wasm_bindgen]
-impl MemberAddedMessages {
-    #[wasm_bindgen(constructor)]
-    pub fn new(welcome: Uint8Array, commit: Uint8Array, public_group_state: Uint8Array) -> Self {
-        Self {
-            welcome: welcome.to_vec(),
-            commit: commit.to_vec(),
-            public_group_state: public_group_state.to_vec(),
-        }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn welcome(&self) -> Uint8Array {
-        Uint8Array::from(&*self.welcome)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn commit(&self) -> Uint8Array {
-        Uint8Array::from(&*self.commit)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn public_group_state(&self) -> Uint8Array {
-        Uint8Array::from(&*self.public_group_state)
-    }
-}
-
-impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
-    type Error = WasmCryptoError;
-
-    fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, commit, public_group_state) = msg.to_bytes_triple()?;
-        Ok(Self {
-            welcome,
-            commit,
-            public_group_state,
-        })
-    }
-}
-
-#[wasm_bindgen]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct CommitBundle {
-    commit: Vec<u8>,
-    welcome: Option<Vec<u8>>,
-    public_group_state: Vec<u8>,
-}
-
-#[wasm_bindgen]
-impl CommitBundle {
-    #[wasm_bindgen(getter)]
-    pub fn commit(&self) -> Uint8Array {
-        Uint8Array::from(&*self.commit)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn welcome(&self) -> Option<Uint8Array> {
-        self.welcome.as_ref().map(|buf| Uint8Array::from(buf.as_slice()))
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn public_group_state(&self) -> Uint8Array {
-        Uint8Array::from(&*self.public_group_state)
-    }
-}
-
-impl TryFrom<MlsCommitBundle> for CommitBundle {
-    type Error = WasmCryptoError;
-
-    fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
-        let (welcome, commit, public_group_state) = msg.to_bytes_triple()?;
-        Ok(Self {
-            welcome,
-            commit,
-            public_group_state,
-        })
-    }
-}
-
-#[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ProposalBundle {
     proposal: Vec<u8>,
@@ -219,20 +131,20 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MlsConversationInitMessage {
-    group: Vec<u8>,
-    commit: Vec<u8>,
+    conversation_id: ConversationId,
+    commit_bundle: Vec<u8>,
 }
 
 #[wasm_bindgen]
 impl MlsConversationInitMessage {
     #[wasm_bindgen(getter)]
-    pub fn commit(&self) -> Uint8Array {
-        Uint8Array::from(&*self.commit)
+    pub fn conversation_id(&self) -> Uint8Array {
+        Uint8Array::from(&*self.conversation_id)
     }
 
     #[wasm_bindgen(getter)]
-    pub fn group(&self) -> Uint8Array {
-        Uint8Array::from(&*self.group)
+    pub fn commit_bundle(&self) -> Uint8Array {
+        Uint8Array::from(&*self.commit_bundle)
     }
 }
 
@@ -725,8 +637,7 @@ impl CoreCrypto {
                 let commit = central
                     .add_members_to_conversation(&conversation_id, &mut members)
                     .await?;
-                let commit: MemberAddedMessages = commit.try_into()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
+                WasmCryptoResult::Ok(Uint8Array::from(commit.tls_serialize_detached()?.as_slice()).into())
             }
             .err_into(),
         )
@@ -755,8 +666,7 @@ impl CoreCrypto {
                 let commit = central
                     .remove_members_from_conversation(&conversation_id, &clients)
                     .await?;
-                let commit: CommitBundle = commit.try_into()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
+                WasmCryptoResult::Ok(Uint8Array::from(commit.tls_serialize_detached()?.as_slice()).into())
             }
             .err_into(),
         )
@@ -773,8 +683,7 @@ impl CoreCrypto {
                 let mut central = this.write().await;
                 let conversation_id = conversation_id.into();
                 let commit = central.update_keying_material(&conversation_id).await?;
-                let commit: CommitBundle = commit.try_into()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
+                WasmCryptoResult::Ok(Uint8Array::from(commit.tls_serialize_detached()?.as_slice()).into())
             }
             .err_into(),
         )
@@ -782,97 +691,6 @@ impl CoreCrypto {
 
     /// see [core_crypto::MlsCentral::commit_pending_proposals]
     pub fn commit_pending_proposals(&self, conversation_id: Box<[u8]>) -> Promise {
-        let this = self.0.clone();
-
-        future_to_promise(
-            async move {
-                let mut central = this.write().await;
-                let conversation_id = conversation_id.into();
-                let commit: Option<CommitBundle> = central
-                    .commit_pending_proposals(&conversation_id)
-                    .await?
-                    .map(|c| c.try_into())
-                    .transpose()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
-            }
-            .err_into(),
-        )
-    }
-
-    /// Returns: [`WasmCryptoResult<Option<MemberAddedMessages>>`]
-    ///
-    /// see [core_crypto::MlsCentral::add_members_to_conversation]
-    pub fn final_add_clients_to_conversation(&self, conversation_id: Box<[u8]>, clients: Box<[JsValue]>) -> Promise {
-        let this = self.0.clone();
-
-        future_to_promise(
-            async move {
-                let invitees = clients
-                    .iter()
-                    .cloned()
-                    .map(|js_client| Ok(serde_wasm_bindgen::from_value(js_client)?))
-                    .collect::<WasmCryptoResult<Vec<Invitee>>>()?;
-
-                let mut members = Invitee::group_to_conversation_member(invitees)?;
-                let mut central = this.write().await;
-                let conversation_id = conversation_id.into();
-                let commit = central
-                    .add_members_to_conversation(&conversation_id, &mut members)
-                    .await?;
-                WasmCryptoResult::Ok(Uint8Array::from(commit.tls_serialize_detached()?.as_slice()).into())
-            }
-            .err_into(),
-        )
-    }
-
-    /// Returns: [`WasmCryptoResult<Option<js_sys::Uint8Array>>`]
-    ///
-    /// see [core_crypto::MlsCentral::remove_members_from_conversation]
-    pub fn final_remove_clients_from_conversation(
-        &self,
-        conversation_id: Box<[u8]>,
-        clients: Box<[js_sys::Uint8Array]>,
-    ) -> Promise {
-        let this = self.0.clone();
-
-        future_to_promise(
-            async move {
-                let clients = clients
-                    .iter()
-                    .cloned()
-                    .map(|c| c.to_vec().into())
-                    .collect::<Vec<ClientId>>();
-
-                let conversation_id = conversation_id.into();
-                let mut central = this.write().await;
-                let commit = central
-                    .remove_members_from_conversation(&conversation_id, &clients)
-                    .await?;
-                WasmCryptoResult::Ok(Uint8Array::from(commit.tls_serialize_detached()?.as_slice()).into())
-            }
-            .err_into(),
-        )
-    }
-
-    /// Returns: [`WasmCryptoResult<CommitBundle>`]
-    ///
-    /// see [core_crypto::MlsCentral::update_keying_material]
-    pub fn final_update_keying_material(&self, conversation_id: Box<[u8]>) -> Promise {
-        let this = self.0.clone();
-
-        future_to_promise(
-            async move {
-                let mut central = this.write().await;
-                let conversation_id = conversation_id.into();
-                let commit = central.update_keying_material(&conversation_id).await?;
-                WasmCryptoResult::Ok(Uint8Array::from(commit.tls_serialize_detached()?.as_slice()).into())
-            }
-            .err_into(),
-        )
-    }
-
-    /// see [core_crypto::MlsCentral::commit_pending_proposals]
-    pub fn final_commit_pending_proposals(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
 
         future_to_promise(
@@ -1080,27 +898,21 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<MlsConversationInitMessage>`]
     ///
     /// see [core_crypto::MlsCentral::join_by_external_commit]
-    pub fn join_by_external_commit(&self, group_state: Box<[u8]>) -> Promise {
+    pub fn join_by_external_commit(&self, public_group_state: Box<[u8]>) -> Promise {
         use core_crypto::prelude::tls_codec::Deserialize as _;
         use core_crypto::prelude::tls_codec::Serialize as _;
 
         let this = self.0.clone();
-        let state = group_state.to_vec();
+        let state = public_group_state.to_vec();
 
         future_to_promise(
             async move {
                 let group_state =
                     VerifiablePublicGroupState::tls_deserialize(&mut &state[..]).map_err(MlsError::from)?;
-                let (group, commit) = this.read().await.join_by_external_commit(group_state).await?;
+                let (conversation_id, commit_bundle) = this.read().await.join_by_external_commit(group_state).await?;
                 let result = MlsConversationInitMessage {
-                    commit: commit
-                        .tls_serialize_detached()
-                        .map_err(MlsError::from)
-                        .map_err(CryptoError::from)?,
-                    group: group
-                        .tls_serialize_detached()
-                        .map_err(MlsError::from)
-                        .map_err(CryptoError::from)?,
+                    conversation_id,
+                    commit_bundle: commit_bundle.tls_serialize_detached().map_err(MlsError::from)?,
                 };
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&result)?)
             }

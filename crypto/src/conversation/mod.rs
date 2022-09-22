@@ -45,11 +45,11 @@ use crate::{
 mod commit_delay;
 pub mod decrypt;
 #[cfg(test)]
-mod durability;
+pub mod durability;
 pub mod encrypt;
 pub mod handshake;
 pub mod merge;
-mod public_group_state;
+pub(crate) mod public_group_state;
 mod renew;
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.

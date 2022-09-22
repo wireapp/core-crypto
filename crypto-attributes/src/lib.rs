@@ -6,6 +6,8 @@ use proc_macro::TokenStream;
 /// This simulates an application crash. Once restarted, everything has to be loaded from the
 /// keystore, memory is lost.
 ///
+/// Requires the [core_crypto::MlsConversation] method to have a parameter exactly like `backend: &MlsCryptoProvider`
+///
 /// This helps spotting:
 /// * when one has forgotten to call [core_crypto::MlsConversation::persist_group_when_changed]
 /// * if persisted fields are sufficient to pursue normally after a crash
@@ -15,7 +17,7 @@ use proc_macro::TokenStream;
 /// * have unit tests not covering the method enough
 /// * do not require this method to be durable
 #[proc_macro_attribute]
-pub fn durable(_attrs: TokenStream, item: TokenStream) -> TokenStream {
+pub fn durable(_args: TokenStream, item: TokenStream) -> TokenStream {
     const ASYNC_ERROR_MSG: &str = "Since a durable method requires persistence in the keystore, it has to be async";
 
     let ast = match syn::parse2::<syn::ItemFn>(item.clone().into()) {
@@ -39,6 +41,7 @@ pub fn durable(_attrs: TokenStream, item: TokenStream) -> TokenStream {
     let body = &ast.block;
     let attrs = &ast.attrs;
     let vis = &ast.vis;
+
     let result: proc_macro2::TokenStream = quote::quote! {
         #(#doc_attributes)*
         #(#attrs)*
