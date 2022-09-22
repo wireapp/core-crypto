@@ -9,7 +9,7 @@
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::{ConversationId, CryptoResult, MlsCentral, MlsError};
+use crate::{mls::ConversationId, mls::MlsCentral, CryptoResult, MlsError};
 
 use super::MlsConversation;
 
@@ -62,7 +62,7 @@ impl MlsCentral {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{credential::CredentialSupplier, test_utils::*, MlsConversationConfiguration};
+    use crate::{mls::credential::CredentialSupplier, mls::MlsConversationConfiguration, test_utils::*};
 
     wasm_bindgen_test_configure!(run_in_browser);
 

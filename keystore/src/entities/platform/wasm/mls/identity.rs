@@ -14,12 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::{EntityFindParams, MlsIdentity, MlsIdentityExt, StringEntityId};
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase},
+    entities::{Entity, EntityBase, EntityFindParams, MlsIdentity, MlsIdentityExt, StringEntityId},
+    CryptoKeystoreResult, MissingKeyErrorKind,
 };
-use crate::{CryptoKeystoreResult, MissingKeyErrorKind};
 
 #[async_trait::async_trait(?Send)]
 impl EntityBase for MlsIdentity {
@@ -47,14 +46,6 @@ impl EntityBase for MlsIdentity {
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
         conn.storage().get("mls_identities", id.as_bytes()).await
     }
-
-    // async fn find_many(
-    //     conn: &mut Self::ConnectionType,
-    //     ids: &[StringEntityId],
-    // ) -> crate::CryptoKeystoreResult<Vec<Self>> {
-    //     conn.storage().get_many("mls_identities", ids).await
-    //     // unimplemented!("There is only one identity within a keystore, so this won't be implemented")
-    // }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         conn.storage().count("mls_identities").await

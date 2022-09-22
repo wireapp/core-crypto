@@ -29,35 +29,71 @@ use core_crypto_keystore::Connection as CryptoKeystore;
 use futures_lite::future::block_on;
 use mls_crypto_provider::MlsCryptoProvider;
 
-#[cfg(feature = "proteus")]
+#[cfg(feature = "proteus-keystore")]
+struct ProteusReadParams {
+    store: std::cell::RefCell<CryptoKeystore>,
+    prekey_id: u16,
+}
+
+#[cfg(feature = "proteus-keystore")]
 fn benchmark_reads_proteus(c: &mut Criterion) {
-    let mut store_cached = CryptoKeystore::open_with_key("bench_cached_read_proteus", "key").unwrap();
-    let mut store_uncached = CryptoKeystore::open_with_key("bench_uncached_read_proteus", "key").unwrap();
+    let store_cached = block_on(CryptoKeystore::open_with_key("bench_cached_read_proteus", "key")).unwrap();
+    let store_uncached = block_on(CryptoKeystore::open_with_key("bench_uncached_read_proteus", "key")).unwrap();
+    #[cfg(feature = "memory-cache")]
     store_uncached.cache(false);
 
     let prekey_id = proteus::keys::PreKeyId::new(28273);
     let prekey = proteus::keys::PreKey::new(prekey_id);
 
-    store_cached.store_prekey(&prekey).unwrap();
-    store_uncached.store_prekey(&prekey).unwrap();
+    use core_crypto_keystore::CryptoKeystoreProteus as _;
+    let prekey_id_value = prekey_id.value();
+    let prekey_ser = prekey.serialise().unwrap();
+    block_on(async {
+        store_cached
+            .proteus_store_prekey(prekey_id_value, &prekey_ser)
+            .await
+            .unwrap();
+        store_uncached
+            .proteus_store_prekey(prekey_id_value, &prekey_ser)
+            .await
+            .unwrap();
+    });
 
     let mut group = c.benchmark_group("Proteus Reads");
     group.throughput(Throughput::Elements(1));
 
-    use core_crypto_keystore::CryptoKeystoreProteus;
-    use proteus::session::PreKeyStore as _;
-    group.bench_with_input(BenchmarkId::new("Reads", "cached"), &prekey_id, |b, prekey_id| {
-        b.iter(|| black_box(store_cached.prekey(*prekey_id)))
+    use proteus_traits::PreKeyStore as _;
+    let params_cached = ProteusReadParams {
+        store: store_cached.into(),
+        prekey_id: prekey_id_value,
+    };
+    group.bench_with_input(BenchmarkId::new("Reads", "cached"), &params_cached, |b, params| {
+        b.to_async(FuturesExecutor).iter(|| async move {
+            let prekey = params.store.borrow_mut().prekey(params.prekey_id).await.unwrap();
+            black_box(prekey)
+        })
     });
 
-    group.bench_with_input(BenchmarkId::new("Reads", "uncached"), &prekey_id, |b, prekey_id| {
-        b.iter(|| black_box(store_uncached.prekey(*prekey_id)))
+    let params_uncached = ProteusReadParams {
+        store: store_uncached.into(),
+        prekey_id: prekey_id_value,
+    };
+    group.bench_with_input(BenchmarkId::new("Reads", "uncached"), &params_uncached, |b, params| {
+        b.to_async(FuturesExecutor).iter(|| async {
+            let prekey = params.store.borrow_mut().prekey(params.prekey_id).await.unwrap();
+            black_box(prekey)
+        })
     });
 
     group.finish();
 
-    store_cached.wipe().unwrap();
-    store_uncached.wipe().unwrap();
+    let store_cached = params_cached.store.into_inner();
+    let store_uncached = params_uncached.store.into_inner();
+
+    block_on(async move {
+        store_cached.wipe().await.unwrap();
+        store_uncached.wipe().await.unwrap();
+    });
 }
 
 fn benchmark_reads_mls(c: &mut Criterion) {
@@ -136,8 +172,13 @@ fn benchmark_reads_mls(c: &mut Criterion) {
         store_uncached.wipe().await.unwrap();
     });
 }
-#[cfg(not(feature = "proteus-keystore"))]
-criterion_group!(benches, benchmark_reads_mls);
-#[cfg(feature = "proteus-keystore")]
-criterion_group!(benches, benchmark_reads_mls, benchmark_reads_proteus);
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "proteus-keystore")] {
+        criterion_group!(benches, benchmark_reads_mls, benchmark_reads_proteus);
+    } else {
+        criterion_group!(benches, benchmark_reads_mls);
+    }
+}
+
 criterion_main!(benches);

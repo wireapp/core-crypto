@@ -8,8 +8,14 @@ git = "https://github.com/otak/rexie"
 branch = "feat/api-expansion"
 
 [patch.crates-io.proteus]
+package = "proteus"
 git = "https://github.com/wireapp/proteus"
-branch = "otak/sodiumoxide-0.2.7"
+branch = "otak/oxidize-wasm-v2"
+
+[patch.crates-io.proteus-traits]
+package = "proteus-traits"
+git = "https://github.com/wireapp/proteus"
+branch = "otak/oxidize-wasm-v2"
 
 [patch.crates-io.openmls]
 git = "https://github.com/wireapp/openmls"

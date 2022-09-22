@@ -38,7 +38,8 @@ use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
-    client::Client, member::MemberId, ClientId, CryptoError, CryptoResult, MlsCentral, MlsCiphersuite, MlsError,
+    mls::{client::Client, member::MemberId, ClientId, MlsCentral, MlsCiphersuite},
+    CryptoError, CryptoResult, MlsError,
 };
 
 mod commit_delay;
@@ -290,8 +291,11 @@ pub mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{
-        conversation::handshake::MlsConversationCreationMessage, credential::CredentialSupplier,
-        member::ConversationMember, test_utils::*, MlsCentralConfiguration, MlsConversationConfiguration,
+        mls::{
+            conversation::handshake::MlsConversationCreationMessage, credential::CredentialSupplier,
+            member::ConversationMember, MlsCentralConfiguration, MlsConversationConfiguration,
+        },
+        test_utils::*,
     };
 
     use super::*;

@@ -21,8 +21,17 @@ mod common;
 
 const ENTITY_COUNT: usize = 10;
 
+macro_rules! pat_to_bool {
+    () => {
+        false
+    };
+    ($value:literal) => {
+        $value
+    };
+}
+
 macro_rules! test_for_entity {
-    ($test_name:ident, $entity:ident) => {
+    ($test_name:ident, $entity:ident $(ignore_entity_count:$ignore_entity_count:literal)? $(ignore_update_assertion:$ignore_update_assertion:literal)?) => {
         #[apply(all_storage_types)]
         #[wasm_bindgen_test]
         pub async fn $test_name(store: core_crypto_keystore::Connection) {
@@ -30,11 +39,13 @@ macro_rules! test_for_entity {
             let mut entity = crate::tests_impl::can_save_entity::<$entity>(&store).await;
 
             crate::tests_impl::can_find_entity::<$entity>(&store, &entity).await;
-            crate::tests_impl::can_update_entity::<$entity>(&store, &mut entity).await;
+            let ignore_update_assertion = pat_to_bool!($($ignore_update_assertion)?);
+            crate::tests_impl::can_update_entity::<$entity>(&store, &mut entity, ignore_update_assertion).await;
             crate::tests_impl::can_remove_entity::<$entity>(&store, entity).await;
 
-            crate::tests_impl::can_list_entities_with_find_many::<$entity>(&store).await;
-            crate::tests_impl::can_list_entities_with_find_all::<$entity>(&store).await;
+            let ignore = pat_to_bool!($($ignore_entity_count)?);
+            crate::tests_impl::can_list_entities_with_find_many::<$entity>(&store, ignore).await;
+            crate::tests_impl::can_list_entities_with_find_all::<$entity>(&store, ignore).await;
 
             store.wipe().await.unwrap();
         }
@@ -69,11 +80,14 @@ mod tests_impl {
     pub async fn can_update_entity<R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>>(
         store: &CryptoKeystore,
         entity: &mut R,
+        ignore_update_assertion: bool,
     ) {
         entity.random_update();
         store.save(entity.clone()).await.unwrap();
         let entity2: R = store.find(entity.id_raw()).await.unwrap().unwrap();
-        assert_eq!(*entity, entity2);
+        if !ignore_update_assertion {
+            assert_eq!(*entity, entity2);
+        }
     }
 
     pub async fn can_remove_entity<R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>>(
@@ -89,6 +103,7 @@ mod tests_impl {
         R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
     >(
         store: &CryptoKeystore,
+        ignore_entity_count: bool,
     ) {
         let mut ids: Vec<Vec<u8>> = vec![];
         for _ in 0..ENTITY_COUNT {
@@ -98,16 +113,21 @@ mod tests_impl {
         }
 
         let entities = store.find_many::<R, _>(&ids).await.unwrap();
-        assert_eq!(entities.len(), ENTITY_COUNT);
+        if !ignore_entity_count {
+            assert_eq!(entities.len(), ENTITY_COUNT);
+        }
     }
 
     pub async fn can_list_entities_with_find_all<
         R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
     >(
         store: &CryptoKeystore,
+        ignore_entity_count: bool,
     ) {
         let entities = store.find_all::<R>(EntityFindParams::default()).await.unwrap();
-        assert_eq!(entities.len(), ENTITY_COUNT);
+        if !ignore_entity_count {
+            assert_eq!(entities.len(), ENTITY_COUNT);
+        }
     }
 }
 
@@ -127,18 +147,18 @@ pub mod tests {
             test_for_entity!(test_mls_keypackage, MlsKeypackage);
         }
     }
-
-    #[cfg(feature = "proteus-keystore")]
-    test_for_entity!(test_proteus_prekey, ProteusPrekey);
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "proteus-keystore")] {
+            test_for_entity!(test_proteus_identity, ProteusIdentity ignore_entity_count:true ignore_update_assertion:true);
+            test_for_entity!(test_proteus_prekey, ProteusPrekey);
+            test_for_entity!(test_proteus_session, ProteusSession);
+        }
+    }
 }
 
 #[cfg(test)]
 pub mod utils {
-
     use rand::Rng as _;
-
-    // ? This is making the tests WAY too slow
-    // const MAX_BLOB_SIZE: std::ops::Range<usize> = 1024..MAX_BLOB_LEN;
     const MAX_BLOB_SIZE: std::ops::Range<usize> = 1024..8192;
 
     pub trait EntityTestExt: core_crypto_keystore::entities::Entity {
@@ -222,26 +242,77 @@ pub mod utils {
         }
     }
 
-    #[cfg(feature = "proteus-keystore")]
-    impl EntityTestExt for core_crypto_keystore::entities::ProteusPrekey {
-        fn random() -> Self {
-            use rand::Rng as _;
-            let mut rng = rand::thread_rng();
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "proteus-keystore")] {
+            impl EntityTestExt for core_crypto_keystore::entities::ProteusPrekey {
+                fn random() -> Self {
+                    use rand::Rng as _;
+                    let mut rng = rand::thread_rng();
 
-            let id: u16 = rng.gen();
-            let mut prekey = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
-            rng.fill(&mut prekey);
+                    let id: u16 = rng.gen();
+                    let mut prekey = vec![0u8; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut prekey[..]);
 
-            Self {
-                id,
-                prekey: prekey.into(),
+                    Self::from_raw(id, prekey)
+                }
+
+                fn random_update(&mut self) {
+                    let mut rng = rand::thread_rng();
+                    // self.set_id(rng.gen());
+                    self.prekey = vec![0u8; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut self.prekey[..]);
+                }
             }
-        }
 
-        fn random_update(&mut self) {
-            let mut rng = rand::thread_rng();
-            self.prekey = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
-            rng.fill(&mut self.prekey[..]);
+            impl EntityTestExt for core_crypto_keystore::entities::ProteusIdentity {
+                fn random() -> Self {
+                    use rand::Rng as _;
+                    let mut rng = rand::thread_rng();
+
+                    let mut sk = vec![0u8; Self::SK_KEY_SIZE];
+                    rng.fill(&mut sk[..]);
+                    let mut pk = vec![0u8; Self::PK_KEY_SIZE];
+                    rng.fill(&mut pk[..]);
+
+                    Self {
+                        sk,
+                        pk,
+                    }
+                }
+
+                fn random_update(&mut self) {
+                    let mut rng = rand::thread_rng();
+                    self.sk = vec![0u8; Self::SK_KEY_SIZE];
+                    rng.fill(&mut self.sk[..]);
+
+                    self.pk = vec![0u8; Self::PK_KEY_SIZE];
+                    rng.fill(&mut self.pk[..]);
+                }
+            }
+
+            impl EntityTestExt for core_crypto_keystore::entities::ProteusSession {
+                fn random() -> Self {
+                    use rand::Rng as _;
+                    let mut rng = rand::thread_rng();
+
+                    let uuid = uuid::Uuid::new_v4();
+
+                    let mut session = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
+                    rng.fill(&mut session[..]);
+
+                    Self {
+                        id: uuid.hyphenated().to_string(),
+                        session,
+                    }
+                }
+
+                fn random_update(&mut self) {
+                    let mut rng = rand::thread_rng();
+
+                    self.session = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
+                    rng.fill(&mut self.session[..]);
+                }
+            }
         }
     }
 }

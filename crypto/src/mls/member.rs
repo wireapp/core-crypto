@@ -20,7 +20,7 @@ use openmls::prelude::KeyPackage;
 use tls_codec::Deserialize;
 
 use crate::{
-    client::{Client, ClientId},
+    mls::client::{Client, ClientId},
     CryptoResult, MlsError,
 };
 
@@ -107,8 +107,8 @@ impl Eq for ConversationMember {}
 impl ConversationMember {
     /// Generates a random new Member
     pub async fn random_generate(
-        backend: &crate::MlsCryptoProvider,
-        credential: crate::credential::CredentialSupplier,
+        backend: &mls_crypto_provider::MlsCryptoProvider,
+        credential: crate::mls::credential::CredentialSupplier,
     ) -> CryptoResult<(Self, openmls::prelude::KeyPackageBundle)> {
         let client = Client::random_generate(backend, false, credential()).await?;
         let id = client.id();
@@ -154,10 +154,10 @@ pub mod tests {
     use mls_crypto_provider::MlsCryptoProvider;
 
     use crate::{
-        credential::{CertificateBundle, CredentialSupplier},
+        mls::credential::{CertificateBundle, CredentialSupplier},
+        mls::ClientId,
         prelude::INITIAL_KEYING_MATERIAL_COUNT,
         test_utils::*,
-        ClientId,
     };
 
     use super::ConversationMember;
@@ -186,7 +186,8 @@ pub mod tests {
     }
 
     pub mod add_keypackage {
-        use crate::Client;
+        use crate::mls::Client;
+        use crate::prelude::MlsCiphersuite;
 
         use super::*;
 
@@ -215,7 +216,7 @@ pub mod tests {
         }
 
         async fn new_keypackage(identity: &[u8], credential: Option<CertificateBundle>) -> KeyPackage {
-            let ciphersuite = crate::MlsCiphersuite::default().0;
+            let ciphersuite = MlsCiphersuite::default().0;
             let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
             let credential = if let Some(cert) = credential {
                 Client::generate_x509_credential_bundle(&identity.into(), cert.certificate_chain, cert.private_key)

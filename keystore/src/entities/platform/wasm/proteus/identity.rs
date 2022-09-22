@@ -16,62 +16,70 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, MlsKeypackage, StringEntityId},
+    entities::{Entity, EntityBase, EntityFindParams, ProteusIdentity, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 #[async_trait::async_trait(?Send)]
-impl EntityBase for MlsKeypackage {
+impl EntityBase for ProteusIdentity {
     type ConnectionType = KeystoreDatabaseConnection;
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
-        MissingKeyErrorKind::MlsKeyPackageBundle
+        MissingKeyErrorKind::ProteusIdentity
     }
 
-    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+    async fn find_all(conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
-        storage.get_all("mls_keys", Some(params)).await
+        storage.get_all("proteus_identities", None).await
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
-        storage.save("mls_keys", &mut [self.clone()]).await?;
-
-        Ok(())
+        storage.save("proteus_identities", &mut [self.clone()]).await
     }
 
     async fn find_one(
         conn: &mut Self::ConnectionType,
-        id: &StringEntityId,
+        _id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        conn.storage().get("mls_keys", id.as_bytes()).await
+        let mut identities = Self::find_all(conn, EntityFindParams::default()).await?;
+        if identities.is_empty() {
+            Ok(None)
+        } else {
+            Ok(identities.pop())
+        }
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        conn.storage().count("mls_keys").await
+        let storage = conn.storage();
+        storage.count("proteus_identities").await
     }
 
     async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
         let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::as_bytes).collect();
-        storage.delete("mls_keys", &ids).await
+        storage.delete("proteus_identities", &ids).await
     }
 }
 
-impl Entity for MlsKeypackage {
+impl Entity for ProteusIdentity {
     fn id_raw(&self) -> &[u8] {
-        self.id.as_bytes()
+        &[1u8]
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.key = Self::encrypt_data(cipher, self.key.as_slice(), self.aad())?;
-        Self::ConnectionType::check_buffer_size(self.key.len())?;
+        self.pk = Self::encrypt_data(cipher, self.pk.as_slice(), self.aad())?;
+        Self::ConnectionType::check_buffer_size(self.pk.len())?;
+
+        self.sk = Self::encrypt_data(cipher, self.sk.as_slice(), self.aad())?;
+        Self::ConnectionType::check_buffer_size(self.sk.len())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.key = Self::decrypt_data(cipher, self.key.as_slice(), self.aad())?;
+        self.pk = Self::decrypt_data(cipher, self.pk.as_slice(), self.aad())?;
+        self.sk = Self::decrypt_data(cipher, self.sk.as_slice(), self.aad())?;
 
         Ok(())
     }

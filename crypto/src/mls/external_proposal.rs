@@ -6,8 +6,9 @@ use openmls::{
 };
 
 use crate::{
-    prelude::MlsConversation, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral,
-    MlsError,
+    mls::{ClientId, ConversationId, MlsCentral},
+    prelude::MlsConversation,
+    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };
 
 impl MlsConversation {
@@ -138,7 +139,7 @@ mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{
-        credential::CredentialSupplier,
+        mls::credential::CredentialSupplier,
         prelude::{
             handshake::MlsCommitBundle, CryptoError, MlsConversationConfiguration, MlsConversationCreationMessage,
             MlsConversationInitBundle, MlsError,

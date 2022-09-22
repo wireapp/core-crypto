@@ -17,8 +17,9 @@ use openmls_traits::OpenMlsCryptoProvider;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
-    conversation::renew::Renew, prelude::MlsProposalBundle, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError,
-    CryptoResult, MlsCentral, MlsConversation, MlsError,
+    mls::{conversation::renew::Renew, ClientId, ConversationId, MlsCentral, MlsConversation},
+    prelude::MlsProposalBundle,
+    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
@@ -172,8 +173,8 @@ pub mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{
-        credential::CredentialSupplier, prelude::handshake::MlsCommitBundle, proposal::MlsProposal, test_utils::*,
-        MlsConversationConfiguration,
+        mls::credential::CredentialSupplier, mls::proposal::MlsProposal, mls::MlsConversationConfiguration,
+        prelude::handshake::MlsCommitBundle, test_utils::*,
     };
 
     use super::*;

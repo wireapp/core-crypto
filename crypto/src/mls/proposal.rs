@@ -20,8 +20,9 @@ use openmls_traits::OpenMlsCryptoProvider;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
-    prelude::handshake::MlsProposalBundle, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral,
-    MlsConversation, MlsError,
+    mls::{ClientId, ConversationId, MlsCentral, MlsConversation},
+    prelude::handshake::MlsProposalBundle,
+    CryptoError, CryptoResult, MlsError,
 };
 
 /// Abstraction over a [openmls::prelude::hash_ref::ProposalRef] to deal with conversions
@@ -107,7 +108,7 @@ impl MlsCentral {
 pub mod proposal_tests {
     use wasm_bindgen_test::*;
 
-    use crate::{credential::CredentialSupplier, prelude::handshake::MlsCommitBundle, test_utils::*, *};
+    use crate::{mls::credential::CredentialSupplier, prelude::handshake::MlsCommitBundle, prelude::*, test_utils::*};
 
     use super::*;
 

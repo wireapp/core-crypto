@@ -1,4 +1,4 @@
-use crate::{ConversationId, MlsCentral, MlsConversation};
+use crate::mls::{ConversationId, MlsCentral, MlsConversation};
 
 impl MlsConversation {
     /// Replaces the MLS group in memory with the one from keystore.

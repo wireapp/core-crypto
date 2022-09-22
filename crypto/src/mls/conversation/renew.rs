@@ -3,7 +3,7 @@ use openmls::prelude::{KeyPackageRef, Proposal, QueuedProposal, Sender, StagedCo
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::prelude::handshake::MlsProposalBundle;
-use crate::{CryptoError, CryptoResult, MlsConversation};
+use crate::{mls::MlsConversation, CryptoError, CryptoResult};
 
 /// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)
 /// in case another commit has been accepted by the backend instead of ours
@@ -126,7 +126,9 @@ impl MlsConversation {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{credential::CredentialSupplier, prelude::MlsProposal, test_utils::*, MlsConversationConfiguration};
+    use crate::{
+        mls::credential::CredentialSupplier, mls::MlsConversationConfiguration, prelude::MlsProposal, test_utils::*,
+    };
 
     mod update {
         use super::*;

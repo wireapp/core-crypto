@@ -28,6 +28,12 @@ pub enum MissingKeyErrorKind {
     #[cfg(feature = "proteus-keystore")]
     #[error("Proteus PreKey")]
     ProteusPrekey,
+    #[cfg(feature = "proteus-keystore")]
+    #[error("Proteus Session")]
+    ProteusSession,
+    #[cfg(feature = "proteus-keystore")]
+    #[error("Proteus Identity")]
+    ProteusIdentity,
 }
 
 /// Error type to represent various errors that can happen in the KeyStore
@@ -81,14 +87,15 @@ pub enum CryptoKeystoreError {
     #[error(transparent)]
     MlsExtensionError(#[from] openmls::prelude::ExtensionError),
     #[cfg(feature = "proteus-keystore")]
+    #[error("Invalid key [{key}] size, expected {expected}, got {actual}")]
+    InvalidKeySize {
+        expected: usize,
+        actual: usize,
+        key: &'static str,
+    },
+    #[cfg(feature = "proteus-keystore")]
     #[error(transparent)]
     ParseIntError(#[from] std::num::ParseIntError),
-    #[cfg(feature = "proteus-keystore")]
-    #[error(transparent)]
-    PrekeyDecodeError(#[from] proteus::internal::types::DecodeError),
-    #[cfg(feature = "proteus-keystore")]
-    #[error(transparent)]
-    PrekeyEncodeError(#[from] proteus::internal::types::EncodeError),
     #[error("{0}")]
     MlsKeyStoreError(String),
     #[error(transparent)]

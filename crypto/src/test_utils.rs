@@ -1,4 +1,19 @@
 #![cfg(test)]
+// Wire
+// Copyright (C) 2022 Wire Swiss GmbH
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see http://www.gnu.org/licenses/.
 
 use std::{
     collections::HashMap,
@@ -11,19 +26,19 @@ use openmls::prelude::{
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
-use crate::external_commit::MlsConversationInitBundle;
+use crate::mls::external_commit::MlsConversationInitBundle;
 use crate::{
-    config::MlsCentralConfiguration, credential::CredentialSupplier, member::ConversationMember, ClientId,
-    ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsConversation,
-    MlsConversationConfiguration, MlsError,
+    mls::{config::MlsCentralConfiguration, credential::CredentialSupplier, member::ConversationMember, MlsCentral},
+    prelude::{ClientId, ConversationId, MlsConversation, MlsConversationConfiguration},
+    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };
 
 #[template]
 #[export]
 #[rstest(
     credential,
-    case::credential_basic(crate::credential::CertificateBundle::rnd_basic()),
-    case::credential_x509(crate::credential::CertificateBundle::rnd_certificate_bundle())
+    case::credential_basic(crate::mls::credential::CertificateBundle::rnd_basic()),
+    case::credential_x509(crate::mls::credential::CertificateBundle::rnd_certificate_bundle())
 )]
 #[allow(non_snake_case)]
 pub fn all_credential_types(credential: crate::credential::CredentialSupplier) {}

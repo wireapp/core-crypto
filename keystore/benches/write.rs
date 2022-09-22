@@ -29,42 +29,41 @@ use core_crypto_keystore::Connection as CryptoKeystore;
 use futures_lite::future::block_on;
 use mls_crypto_provider::MlsCryptoProvider;
 
-#[cfg(feature = "proteus")]
+#[cfg(feature = "proteus-keystore")]
 fn benchmark_writes_proteus(c: &mut Criterion) {
-    use core_crypto_keystore::CryptoKeystoreProteus;
-    use mls_crypto_provider::RustCrypto;
+    use core_crypto_keystore::CryptoKeystoreProteus as _;
     use proteus::keys::{PreKey, PreKeyId};
+    use rand::Rng as _;
 
-    let store = CryptoKeystore::open_with_key("bench_write", "key").unwrap();
-    let backend = RustCrypto::default();
+    let store = block_on(async { CryptoKeystore::open_with_key("bench_write", "key").await.unwrap() });
+    let mut prng = rand::thread_rng();
 
     let mut group = c.benchmark_group("Proteus Writes");
     group.throughput(Throughput::Elements(1));
 
-    group.bench_function("Writes", |b| {
-        b.iter_batched(
+    group.bench_with_input("Writes", &store, |b, store| {
+        b.to_async(FuturesExecutor).iter_batched(
             || {
-                PreKey::new(PreKeyId::new(u16::from_le_bytes(
-                    backend.rand().random_array::<2>().unwrap(),
-                )))
+                let pk = PreKey::new(PreKeyId::new(u16::from_le_bytes(prng.gen())));
+                (pk.key_id.value(), pk.serialise().unwrap())
             },
-            |prekey| black_box(store.store_prekey(&prekey)),
+            |(pk_id, pk_ser)| async move { black_box(store.proteus_store_prekey(pk_id, &pk_ser).await.unwrap()) },
             BatchSize::SmallInput,
         )
     });
 
     group.finish();
-    store.wipe().unwrap();
+    block_on(async { store.wipe().await.unwrap() });
 }
 
 fn benchmark_writes_mls(c: &mut Criterion) {
     let store = block_on(async { CryptoKeystore::open_with_key("bench_write", "key").await.unwrap() });
-    let backend = block_on(async { MlsCryptoProvider::try_new("mls-write", "secret").await.unwrap() });
+    let backend = MlsCryptoProvider::new_with_store(store, None);
 
     let mut group = c.benchmark_group("MLS Writes");
     group.throughput(Throughput::Elements(1));
 
-    group.bench_with_input("Writes", &store, |b, store| {
+    group.bench_with_input("Writes", backend.borrow_keystore(), |b, store| {
         b.to_async(FuturesExecutor).iter_batched(
             || {
                 let uuid: [u8; 16] = backend.rand().random_array().unwrap();
@@ -107,11 +106,16 @@ fn benchmark_writes_mls(c: &mut Criterion) {
     });
 
     group.finish();
+    let store = backend.unwrap_keystore();
     block_on(async { store.wipe().await.unwrap() });
 }
 
-#[cfg(not(feature = "proteus-keystore"))]
-criterion_group!(benches, benchmark_writes_mls);
-#[cfg(feature = "proteus-keystore")]
-criterion_group!(benches, benchmark_writes_mls, benchmark_writes_proteus);
+cfg_if::cfg_if! {
+    if #[cfg(feature = "proteus-keystore")] {
+        criterion_group!(benches, benchmark_writes_mls, benchmark_writes_proteus);
+    } else {
+        criterion_group!(benches, benchmark_writes_mls);
+    }
+}
+
 criterion_main!(benches);

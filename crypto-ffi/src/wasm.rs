@@ -25,10 +25,6 @@ use core_crypto::prelude::tls_codec::Serialize;
 use core_crypto::prelude::*;
 pub use core_crypto::CryptoError;
 
-// ! wee_alloc is leaking memory: https://github.com/rustwasm/wee_alloc/issues/106
-// #[global_allocator]
-// static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
 #[allow(dead_code)]
 pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
 
