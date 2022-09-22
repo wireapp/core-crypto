@@ -11,6 +11,10 @@ publish = false
 name = "core_crypto"
 crate-type = ["lib", "cdylib"]
 
+[features]
+default = ["proteus"]
+proteus = ["dep:proteus", "core-crypto-keystore/proteus-keystore"]
+
 [dependencies]
 thiserror = "1.0"
 hex = "0.4"
@@ -22,6 +26,8 @@ openmls_traits = "0.1"
 tls_codec = "0.2"
 serde_json = "1.0"
 derive_more = { version = "0.99", features = ["deref"] }
+
+proteus = { version = "2.0", features = ["hazmat"], optional = true }
 
 [dependencies.core-crypto-keystore]
 version = "0.5"
@@ -42,6 +48,8 @@ rcgen = { version = "=0.9.2", features = ["x509-parser"] }
 async-std = { version = "1.12", features = ["attributes"] }
 futures-util = { version = "0.3", features = ["std", "alloc"] }
 futures-lite = "1.12"
+proteus-traits = "2.0"
+async-trait = "0.1"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
 version = "0.3"

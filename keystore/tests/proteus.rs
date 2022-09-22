@@ -24,7 +24,7 @@ mod tests {
     use crate::common::*;
     use core_crypto_keystore::{
         entities::{EntityBase, ProteusPrekey},
-        Connection,
+        Connection, MissingKeyErrorKind,
     };
     use proteus::keys::{PreKey, PreKeyId};
     use wasm_bindgen_test::*;
@@ -44,16 +44,24 @@ mod tests {
     #[wasm_bindgen_test]
     pub async fn can_add_read_delete_prekey_traits(store: Connection) {
         use core_crypto_keystore::CryptoKeystoreProteus as _;
+        use proteus_traits::PreKeyStore as _;
 
-        let prekey_id = PreKeyId::new(28273);
+        let mut store = store.await;
+
+        let prekey_id = PreKeyId::new(28273u16);
         let prekey = PreKey::new(prekey_id);
 
-        store.store_prekey(&prekey).unwrap();
+        store
+            .proteus_store_prekey(prekey_id.value(), &prekey.serialise().unwrap())
+            .await
+            .unwrap();
 
-        use proteus::session::PreKeyStore as _;
-        let _ = store.prekey(prekey_id).unwrap().unwrap();
+        assert!(store.prekey(prekey_id.value()).await.unwrap().is_some());
 
-        let _ = proteus::session::PreKeyStore::remove(&mut store, prekey.key_id).unwrap();
-        teardown(store);
+        let _ = proteus_traits::PreKeyStore::remove(&mut store, prekey.key_id.value())
+            .await
+            .unwrap();
+
+        teardown(store).await;
     }
 }

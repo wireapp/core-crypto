@@ -16,7 +16,10 @@ use openmls::prelude::MlsGroupStateError;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::prelude::MlsProposalRef;
-use crate::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsError};
+use crate::{
+    mls::{ConversationId, MlsCentral, MlsConversation},
+    CryptoError, CryptoResult, MlsError,
+};
 
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {
@@ -127,7 +130,9 @@ pub mod tests {
     use openmls::prelude::Proposal;
     use wasm_bindgen_test::*;
 
-    use crate::{credential::CredentialSupplier, prelude::MlsProposal, test_utils::*, MlsConversationConfiguration};
+    use crate::{
+        mls::credential::CredentialSupplier, prelude::MlsConversationConfiguration, prelude::MlsProposal, test_utils::*,
+    };
 
     use super::*;
 

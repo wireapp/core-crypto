@@ -16,7 +16,7 @@
 
 #![doc = include_str!("../README.md")]
 
-use core_crypto_keystore::Connection as CryptoKeystore;
+pub use core_crypto_keystore::Connection as CryptoKeystore;
 
 mod crypto_provider;
 mod error;
@@ -135,6 +135,15 @@ impl MlsCryptoProvider {
     /// *you have been warned*
     pub async fn destroy_and_reset(self) -> MlsProviderResult<()> {
         Ok(self.key_store.wipe().await?)
+    }
+
+    /// Borrow keystore
+    pub fn borrow_keystore(&self) -> &CryptoKeystore {
+        &self.key_store
+    }
+
+    pub fn borrow_keystore_mut(&mut self) -> &mut CryptoKeystore {
+        &mut self.key_store
     }
 
     /// Allows to retrieve the underlying key store directly

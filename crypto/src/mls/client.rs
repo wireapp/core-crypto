@@ -30,7 +30,7 @@ use core_crypto_keystore::{
 };
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::{CertificateBundle, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
+use crate::{mls::CertificateBundle, mls::MlsCiphersuite, CryptoError, CryptoResult, MlsError};
 
 pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 
@@ -477,7 +477,7 @@ pub mod tests {
 
     use mls_crypto_provider::MlsCryptoProvider;
 
-    use crate::{credential::CredentialSupplier, test_utils::*};
+    use crate::{mls::credential::CredentialSupplier, test_utils::*};
 
     use super::Client;
 

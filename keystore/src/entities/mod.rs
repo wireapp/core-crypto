@@ -45,7 +45,7 @@ pub use self::platform::*;
 use crate::connection::DatabaseConnection;
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
 #[repr(transparent)]
 pub struct StringEntityId<'a>(&'a [u8]);

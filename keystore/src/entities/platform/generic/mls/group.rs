@@ -27,13 +27,13 @@ use crate::{
 
 impl Entity for PersistedMlsGroup {
     fn id_raw(&self) -> &[u8] {
-        self.id.as_slice()
+        &self.id
     }
 }
 
 impl Entity for PersistedMlsPendingGroup {
     fn id_raw(&self) -> &[u8] {
-        self.id.as_slice()
+        &self.id
     }
 }
 

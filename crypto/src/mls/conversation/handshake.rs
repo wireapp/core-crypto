@@ -16,9 +16,12 @@ use tls_codec::Error;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::conversation::public_group_state::PublicGroupStateBundle;
+use crate::mls::conversation::public_group_state::PublicGroupStateBundle;
 use crate::prelude::MlsProposalRef;
-use crate::{member::ConversationMember, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError};
+use crate::{
+    mls::member::ConversationMember, mls::ClientId, mls::ConversationId, mls::MlsCentral, CryptoError, CryptoResult,
+    MlsError,
+};
 
 use super::MlsConversation;
 
@@ -396,7 +399,10 @@ impl MlsCentral {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{credential::CredentialSupplier, proposal::MlsProposal, test_utils::*, MlsConversationConfiguration};
+    use crate::{
+        mls::credential::CredentialSupplier, mls::proposal::MlsProposal, mls::MlsConversationConfiguration,
+        test_utils::*,
+    };
 
     use super::*;
 

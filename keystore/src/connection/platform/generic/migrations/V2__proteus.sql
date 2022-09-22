@@ -1,3 +1,4 @@
+/*
 // Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
@@ -13,5 +14,15 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
+*/
 
-// TODO: Bind with & drive iOS Emulator
+
+CREATE TABLE proteus_identities (
+    sk BLOB,
+    pk BLOB
+);
+
+CREATE TABLE proteus_sessions (
+    id VARCHAR(255) UNIQUE,
+    session BLOB
+);

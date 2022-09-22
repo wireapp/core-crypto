@@ -2,7 +2,10 @@ use openmls::prelude::{CredentialBundle, SignaturePrivateKey};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::{Client, ClientId, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
+use crate::{
+    mls::{Client, ClientId, MlsCiphersuite},
+    CryptoError, CryptoResult, MlsError,
+};
 
 /// For test fixtures (test with basic or x509 credential)
 #[cfg(test)]
@@ -131,7 +134,11 @@ impl Client {
 pub mod tests {
     use openmls::prelude::{CredentialError, WelcomeError};
 
-    use crate::{error::CryptoError, test_utils::*, MlsCentral, MlsCentralConfiguration, MlsConversationConfiguration};
+    use crate::{
+        error::CryptoError,
+        mls::{MlsCentral, MlsCentralConfiguration, MlsConversationConfiguration},
+        test_utils::*,
+    };
 
     use super::*;
 

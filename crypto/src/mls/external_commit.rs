@@ -20,8 +20,10 @@ use openmls_traits::{crypto::OpenMlsCrypto, OpenMlsCryptoProvider};
 use core_crypto_keystore::CryptoKeystoreMls;
 
 use crate::{
-    prelude::{MlsConversation, MlsConversationConfiguration, PublicGroupStateBundle},
-    ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsError,
+    prelude::{
+        ClientId, ConversationId, MlsCentral, MlsConversation, MlsConversationConfiguration, PublicGroupStateBundle,
+    },
+    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };
 
 /// Returned when a commit is created
@@ -185,13 +187,13 @@ impl MlsConversation {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        mls::credential::CredentialSupplier, mls::MlsConversationConfiguration, prelude::MlsConversationInitBundle,
+        test_utils::*, MlsError,
+    };
+    use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
     use openmls::prelude::*;
     use wasm_bindgen_test::*;
-
-    use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
-
-    use crate::prelude::MlsConversationInitBundle;
-    use crate::{credential::CredentialSupplier, test_utils::*, CryptoError, MlsConversationConfiguration, MlsError};
 
     wasm_bindgen_test_configure!(run_in_browser);
 

@@ -19,13 +19,13 @@
 pub enum CryptoError {
     /// This error is emitted when the requested conversation couldn't be found in our store
     #[error("Couldn't find conversation")]
-    ConversationNotFound(crate::ConversationId),
+    ConversationNotFound(crate::prelude::ConversationId),
     /// This error is emitted when the requested client couldn't be found in MLS group
     #[error("Couldn't find client")]
-    ClientNotFound(crate::ClientId),
+    ClientNotFound(crate::prelude::ClientId),
     /// This error is emitted when a pending proposal couldn't be found in MLS group
     #[error("Couldn't find pending proposal {0}")]
-    PendingProposalNotFound(crate::proposal::MlsProposalRef),
+    PendingProposalNotFound(crate::mls::proposal::MlsProposalRef),
     /// This error is emitted when a pending commmit couldn't be found in MLS group
     #[error("Couldn't find pending commit")]
     PendingCommitNotFound,
@@ -46,7 +46,7 @@ pub enum CryptoError {
     ImplementationError,
     /// A conversation member is out of local stored keypackages - if it does happen something went wrong
     #[error("Member #{0:x?} is out of keypackages")]
-    OutOfKeyPackage(crate::member::MemberId),
+    OutOfKeyPackage(crate::mls::member::MemberId),
     /// Errors that are sent by our MLS Provider
     #[error(transparent)]
     MlsProviderError(#[from] mls_crypto_provider::MlsProviderError),
@@ -72,6 +72,9 @@ pub enum CryptoError {
     /// Error when trying to convert integer sizes - usually when they don't fit
     #[error(transparent)]
     ConvertIntError(#[from] std::num::TryFromIntError),
+    /// Error when trying to decode an hex-encoded string. Usually that means that the length of the hex string is odd - should be always even
+    #[error(transparent)]
+    HexDecodeError(#[from] hex::FromHexError),
     /// Error when trying to coerce a Vec<u8> into a [u8 ; N]
     #[error("Byte array supplied did not have the expected size {0}")]
     InvalidByteArrayError(usize),
@@ -98,6 +101,13 @@ pub enum CryptoError {
     /// implementation has a loophole and it'd better be evicted from the group.
     #[error("Decrypted an application message twice")]
     GenerationOutOfBound,
+    #[cfg(feature = "proteus")]
+    /// Proteus Error Wrapper
+    #[error(transparent)]
+    ProteusError(#[from] ProteusError),
+    #[cfg(feature = "proteus")]
+    #[error("Proteus client hasn't been initialized")]
+    ProteusNotInitialized,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]
@@ -180,4 +190,19 @@ pub enum MlsError {
     /// OpenMls crypto error
     #[error(transparent)]
     MlsCryptoError(#[from] openmls::prelude::CryptoError),
+}
+
+// #[cfg(feature = "proteus")]
+#[derive(Debug, thiserror::Error)]
+/// TODO
+pub enum ProteusError {
+    #[error(transparent)]
+    /// TODO
+    ProteusDecodeError(#[from] proteus::DecodeError),
+    #[error(transparent)]
+    /// TODO
+    ProteusEncodeError(#[from] proteus::EncodeError),
+    #[error(transparent)]
+    /// TODO
+    ProteusSessionError(#[from] proteus::session::Error<core_crypto_keystore::CryptoKeystoreError>),
 }
