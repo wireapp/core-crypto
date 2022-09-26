@@ -10,6 +10,15 @@ This interop runner is to ensure that, additionally to our unit test suite (300+
 
 In the future, once we add more complex, a star-shaped communication pattern will be used; i.e. each client among N clients will roundtrip messages with all the other (N - 1) clients.
 
+## Installation
+
+### macos
+
+```bash
+brew install --cask chromedriver &&
+ln -s /usr/local/bin/chromedriver ~/.webdrivers/
+```
+
 ## Targets Supported
 
 - [x] Native
