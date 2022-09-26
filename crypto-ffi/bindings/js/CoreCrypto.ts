@@ -125,13 +125,13 @@ export interface MlsConversationInitMessage {
      *
      * @readonly
      */
-    conversation_id: ConversationId;
+    conversationId: ConversationId;
     /**
      * TLS-serialized MLS Commit that needs to be fanned out
      *
      * @readonly
      */
-    commit_bundle: Uint8Array;
+    commitBundle: Uint8Array;
 }
 
 /**
@@ -700,8 +700,8 @@ export class CoreCrypto {
         const ffiInitMessage: CoreCryptoFfiTypes.MlsConversationInitMessage = await this.#cc.join_by_external_commit(publicGroupState);
 
         const ret: MlsConversationInitMessage = {
-            conversation_id: ffiInitMessage.conversation_id,
-            commit_bundle: ffiInitMessage.commit_bundle,
+            conversationId: ffiInitMessage.conversation_id,
+            commitBundle: ffiInitMessage.commit_bundle,
         };
 
         return ret;

@@ -87,7 +87,7 @@ impl MlsCentral {
         let buf = keystore.mls_pending_groups_load(id).await?;
         let mut mls_group = MlsGroup::load(&mut &buf[..])?;
 
-        // Merge it aka bring the MLS group to life and make it usable
+        // Merge it i.e. bring the MLS group to life and make it usable
         mls_group.merge_pending_commit().map_err(MlsError::from)?;
 
         // Persist the now usable MLS group inn the keystore
@@ -101,12 +101,12 @@ impl MlsCentral {
     }
 }
 
-/// Returned when a commit is created
+/// Returned when an external commit is created
 #[derive(Debug, tls_codec::TlsSize)]
 pub struct MlsExternalCommitBundle {
-    /// The commit message
+    /// The external commit message
     pub commit: MlsMessageOut,
-    /// [`PublicGroupState`] (aka GroupInfo) if the commit is merged
+    /// [`PublicGroupState`] (aka GroupInfo) only relevant when the commit is merged
     pub public_group_state: PublicGroupStateBundle,
 }
 
@@ -161,14 +161,17 @@ mod tests {
 
                     // Let's say backend accepted our external commit.
                     // So Bob can merge the commit and update the local state
-                    assert!(bob_central.get_conversation(&id).is_err());
+                    assert!(bob_central.get_conversation(&conversation_id).is_err());
                     bob_central
-                        .merge_pending_group_from_external_commit(&id, MlsConversationConfiguration::default())
+                        .merge_pending_group_from_external_commit(
+                            &conversation_id,
+                            MlsConversationConfiguration::default(),
+                        )
                         .await
                         .unwrap();
-                    assert!(bob_central.get_conversation(&id).is_ok());
-                    assert_eq!(bob_central[&id].members().len(), 2);
-                    assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                    assert!(bob_central.get_conversation(&conversation_id).is_ok());
+                    assert_eq!(bob_central[&conversation_id].members().len(), 2);
+                    assert!(alice_central.talk_to(&conversation_id, &mut bob_central).await.is_ok());
 
                     // Pending group removed from keystore
                     let error = alice_central.mls_backend.key_store().mls_pending_groups_load(&id).await;
