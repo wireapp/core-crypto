@@ -33,6 +33,34 @@ test("init", async () => {
   await ctx.close();
 });
 
+test("can import ciphersuite enum", async () => {
+  const [ctx, page] = await initBrowser();
+
+  const enumRepr = await page.evaluate(async () => {
+    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
+
+    window.cc = await CoreCrypto.init({
+      databaseName: "test ciphersuite",
+      key: "test",
+      clientId: "test",
+    });
+
+    window.ciphersuite = Ciphersuite;
+    return Ciphersuite;
+  });
+
+  expect(await page.evaluate(() => window.ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)).toBe(0x0001);
+  expect(await page.evaluate(() => window.ciphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256)).toBe(0x0002);
+  expect(await page.evaluate(() => window.ciphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519)).toBe(0x0003);
+  expect(await page.evaluate(() => window.ciphersuite.MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448)).toBe(0x0004);
+  expect(await page.evaluate(() => window.ciphersuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521)).toBe(0x0005);
+  expect(await page.evaluate(() => window.ciphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448)).toBe(0x0006);
+  expect(await page.evaluate(() => window.ciphersuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384)).toBe(0x0007);
+
+  await page.close();
+  await ctx.close();
+});
+
 test("external entropy", async () => {
   const [ctx, page] = await initBrowser();
 
