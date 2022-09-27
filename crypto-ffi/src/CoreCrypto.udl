@@ -47,6 +47,7 @@ enum CryptoError {
     "MlsProviderError",
     "KeyStoreError",
     "MlsError",
+    "Base64DecodingError",
     "Utf8Error",
     "StringUtf8Error",
     "ParseIntError",

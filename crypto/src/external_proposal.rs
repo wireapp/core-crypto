@@ -138,7 +138,6 @@ mod tests {
         credential::CredentialSupplier, prelude::handshake::MlsCommitBundle, test_utils::*, CryptoError,
         MlsConversationConfiguration, MlsError,
     };
-    use tls_codec::Serialize;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -211,7 +210,9 @@ mod tests {
                         let id = conversation_id();
 
                         let remove_key = ds.mls_client.credentials().credential().signature_key().clone();
-                        let remove_key = remove_key.tls_serialize_detached().unwrap();
+                        let remove_key =
+                            base64::encode_config(remove_key.as_slice(), base64::URL_SAFE_NO_PAD).into_bytes();
+
                         let cfg = MlsConversationConfiguration {
                             external_senders: vec![remove_key],
                             ..Default::default()
@@ -272,7 +273,9 @@ mod tests {
 
                         // Delivery service key is used in the group..
                         let remove_key = ds.mls_client.credentials().credential().signature_key().clone();
-                        let remove_key = remove_key.tls_serialize_detached().unwrap();
+                        let remove_key =
+                            base64::encode_config(remove_key.as_slice(), base64::URL_SAFE_NO_PAD).into_bytes();
+
                         let cfg = MlsConversationConfiguration {
                             external_senders: vec![remove_key],
                             ..Default::default()
@@ -331,7 +334,8 @@ mod tests {
                         let short_remove_key =
                             SignaturePublicKey::new(remove_key.as_slice()[1..].to_vec(), remove_key.signature_scheme())
                                 .unwrap();
-                        let short_remove_key = short_remove_key.tls_serialize_detached().unwrap();
+                        let short_remove_key =
+                            base64::encode_config(short_remove_key.as_slice(), base64::URL_SAFE_NO_PAD).into_bytes();
                         let cfg = MlsConversationConfiguration {
                             external_senders: vec![short_remove_key.as_slice().to_vec()],
                             ..Default::default()

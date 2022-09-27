@@ -60,6 +60,9 @@ pub enum CryptoError {
     #[cfg(test)]
     #[error(transparent)]
     UuidError(#[from] uuid::Error),
+    /// Error when decoding a base64 byte array
+    #[error(transparent)]
+    Base64DecodingError(#[from] base64::DecodeError),
     /// Error when parsing `str`s that are not UTF-8
     #[error(transparent)]
     Utf8Error(#[from] std::str::Utf8Error),

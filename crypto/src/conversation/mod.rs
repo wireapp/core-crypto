@@ -33,7 +33,6 @@ use openmls::prelude::{ExternalSender, SignaturePublicKey};
 use openmls::{group::MlsGroup, messages::Welcome, prelude::Credential, prelude::SenderRatchetConfiguration};
 use openmls_traits::types::SignatureScheme;
 use openmls_traits::OpenMlsCryptoProvider;
-use tls_codec::{Deserialize, TlsVecU16};
 
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
@@ -93,10 +92,13 @@ impl MlsConversationConfiguration {
             .external_senders
             .iter()
             .map(|key| {
-                TlsVecU16::tls_deserialize(&mut key.as_slice())
-                    .map_err(MlsError::from)
-                    .and_then(|k| SignaturePublicKey::new(k.into(), SignatureScheme::ED25519).map_err(MlsError::from))
+                base64::decode_config(key, base64::URL_SAFE_NO_PAD)
                     .map_err(CryptoError::from)
+                    .and_then(|k| {
+                        SignaturePublicKey::new(k, SignatureScheme::ED25519)
+                            .map_err(MlsError::from)
+                            .map_err(CryptoError::from)
+                    })
             })
             .filter_map(|r: CryptoResult<SignaturePublicKey>| r.ok())
             .map(|signature_key| ExternalSender::new_basic(Self::WIRE_SERVER_IDENTITY, signature_key))
