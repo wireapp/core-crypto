@@ -210,8 +210,13 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
 
-                        let remove_key = ds.mls_client.credentials().credential().signature_key().clone();
-                        let remove_key = remove_key.tls_serialize_detached().unwrap();
+                        let remove_key = ds
+                            .mls_client
+                            .credentials()
+                            .credential()
+                            .signature_key()
+                            .as_slice()
+                            .to_vec();
                         let cfg = MlsConversationConfiguration {
                             external_senders: vec![remove_key],
                             ..Default::default()
@@ -271,8 +276,13 @@ mod tests {
                         let id = conversation_id();
 
                         // Delivery service key is used in the group..
-                        let remove_key = ds.mls_client.credentials().credential().signature_key().clone();
-                        let remove_key = remove_key.tls_serialize_detached().unwrap();
+                        let remove_key = ds
+                            .mls_client
+                            .credentials()
+                            .credential()
+                            .signature_key()
+                            .as_slice()
+                            .to_vec();
                         let cfg = MlsConversationConfiguration {
                             external_senders: vec![remove_key],
                             ..Default::default()
@@ -327,7 +337,7 @@ mod tests {
                         guest_central.callbacks(Box::new(ValidationCallbacks::default()));
                         let id = conversation_id();
 
-                        let remove_key = ds.mls_client.credentials().credential().signature_key().clone();
+                        let remove_key = ds.mls_client.credentials().credential().signature_key();
                         let short_remove_key =
                             SignaturePublicKey::new(remove_key.as_slice()[1..].to_vec(), remove_key.signature_scheme())
                                 .unwrap();
