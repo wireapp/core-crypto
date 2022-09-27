@@ -7,6 +7,26 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.5.2] - 2022-27-09
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Wire-server sends a base64 encoded ed25519 key afterall. Consumers are in charge of base64 decoding it and pass it to core-crypto
+- TS Ciphersuite enum not correctly exported
+
+### Documentation
+
+- Add installation instructions for e2e runner on macos
+
+</details>
+
+* Fix: supplied backend's removal key was not TLS serialized but base64 encoded. In this release, it is up to consumer
+to base64 decode the key and supply it to core-crypto
+* Fix: Typescript enumerations could not be used by value
+
 ## [0.5.1] - 2022-21-09
 
 <details>

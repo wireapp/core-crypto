@@ -7,11 +7,22 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.5.2] - 2022-27-09
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.5.2" unreleased=true}}
+</details>
+
+* Fix: supplied backend's removal key was not TLS serialized but base64 encoded. In this release, it is up to consumer
+to base64 decode the key and supply it to core-crypto
+* Fix: Typescript enumerations could not be used by value
+
 ## [0.5.1] - 2022-21-09
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.5.1" unreleased=true}}
+{{git-cliff tag="v0.5.1"}}
 </details>
 
 * Fix: supplied backend's removal key (used for verifying external remove proposals) was not TLS deserialized
