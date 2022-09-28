@@ -103,73 +103,22 @@ impl MlsCentral {
 
 #[cfg(test)]
 mod tests {
-    use crate::{credential::CredentialSupplier, test_utils::*, MlsConversationConfiguration, MlsError};
-    use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
     use openmls::prelude::*;
     use wasm_bindgen_test::*;
 
+    use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
+
+    use crate::{credential::CredentialSupplier, test_utils::*, MlsConversationConfiguration, MlsError};
+
     wasm_bindgen_test_configure!(run_in_browser);
 
-    pub mod external_join {
-        use super::*;
-
-        #[apply(all_credential_types)]
-        #[wasm_bindgen_test]
-        pub async fn join_by_external_commit(credential: CredentialSupplier) {
-            run_test_with_client_ids(
-                credential,
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
-
-                        // export Alice group info
-                        let public_group_state = alice_central.verifiable_public_group_state(&id).await;
-
-                        // Bob tries to join Alice's group
-                        let (group_id, external_commit) =
-                            bob_central.join_by_external_commit(public_group_state).await.unwrap();
-                        assert_eq!(group_id.as_slice(), &id);
-
-                        // Alice acks the request and adds the new member
-                        assert_eq!(alice_central[&id].members().len(), 1);
-                        alice_central
-                            .decrypt_message(&id, &external_commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        assert_eq!(alice_central[&id].members().len(), 2);
-
-                        // Let's say backend accepted our external commit.
-                        // So Bob can merge the commit and update the local state
-                        assert!(bob_central.get_conversation(&id).is_err());
-                        bob_central
-                            .merge_pending_group_from_external_commit(&id, MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
-                        assert!(bob_central.get_conversation(&id).is_ok());
-                        assert_eq!(bob_central[&id].members().len(), 2);
-                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
-
-                        // Pending group removed from keystore
-                        let error = alice_central.mls_backend.key_store().mls_pending_groups_load(&id).await;
-                        assert!(matches!(
-                            error.unwrap_err(),
-                            CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsPendingGroup)
-                        ));
-                    })
-                },
-            )
-            .await
-        }
-
-        #[apply(all_credential_types)]
-        #[wasm_bindgen_test]
-        pub async fn join_by_external_commit_bad_epoch(credential: CredentialSupplier) {
-            run_test_with_client_ids(credential, ["alice", "bob"], move |[mut alice_central, bob_central]| {
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn join_by_external_commit_should_succeed(credential: CredentialSupplier) {
+        run_test_with_client_ids(
+            credential,
+            ["alice", "bob"],
+            move |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -177,73 +126,172 @@ mod tests {
                         .await
                         .unwrap();
 
+                    // export Alice group info
                     let public_group_state = alice_central.verifiable_public_group_state(&id).await;
-                    // try to make an external join into Alice's group
-                    let (_, external_commit) = bob_central.join_by_external_commit(public_group_state).await.unwrap();
 
-                    // Alice creates a new commit before receiving the external join
-                    alice_central.update_keying_material(&id).await.unwrap();
-                    alice_central.commit_accepted(&id).await.unwrap();
+                    // Bob tries to join Alice's group
+                    let (group_id, external_commit) =
+                        bob_central.join_by_external_commit(public_group_state).await.unwrap();
+                    assert_eq!(group_id.as_slice(), &id);
 
-                    // receiving the external join with outdated epoch should fail because of
-                    // the wrong epoch
-                    let result = alice_central
+                    // Alice acks the request and adds the new member
+                    assert_eq!(alice_central[&id].members().len(), 1);
+                    alice_central
                         .decrypt_message(&id, &external_commit.to_bytes().unwrap())
-                        .await;
+                        .await
+                        .unwrap();
+                    assert_eq!(alice_central[&id].members().len(), 2);
+
+                    // Let's say backend accepted our external commit.
+                    // So Bob can merge the commit and update the local state
+                    assert!(bob_central.get_conversation(&id).is_err());
+                    bob_central
+                        .merge_pending_group_from_external_commit(&id, MlsConversationConfiguration::default())
+                        .await
+                        .unwrap();
+                    assert!(bob_central.get_conversation(&id).is_ok());
+                    assert_eq!(bob_central[&id].members().len(), 2);
+                    assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+
+                    // Pending group removed from keystore
+                    let error = alice_central.mls_backend.key_store().mls_pending_groups_load(&id).await;
                     assert!(matches!(
-                        result.unwrap_err(),
-                        crate::CryptoError::MlsError(MlsError::MlsParseMessageError(
-                            ParseMessageError::ValidationError(ValidationError::WrongEpoch)
-                        ))
+                        error.unwrap_err(),
+                        CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsPendingGroup)
                     ));
                 })
-            })
-            .await
-        }
+            },
+        )
+        .await
+    }
 
-        #[apply(all_credential_types)]
-        #[wasm_bindgen_test]
-        pub async fn join_self_by_external_commit(credential: CredentialSupplier) {
-            run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn join_by_external_commit_should_be_retriable(credential: CredentialSupplier) {
+        run_test_with_client_ids(
+            credential,
+            ["alice", "bob"],
+            move |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
                         .new_conversation(id.clone(), MlsConversationConfiguration::default())
                         .await
                         .unwrap();
+
+                    // export Alice group info
                     let public_group_state = alice_central.verifiable_public_group_state(&id).await;
-                    let join_self = alice_central.join_by_external_commit(public_group_state).await;
-                    assert!(matches!(
-                        join_self.unwrap_err(),
-                        crate::CryptoError::MlsError(MlsError::MlsExternalCommitError(
-                            ExternalCommitError::CommitError
-                        ))
-                    ))
-                })
-            })
-            .await
-        }
 
-        #[apply(all_credential_types)]
-        #[wasm_bindgen_test]
-        pub async fn join_by_external_commit_no_pending(credential: CredentialSupplier) {
-            run_test_with_central(credential, move |[mut central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    // try to merge an inexisting pending group
-                    let merge_unknown = central
+                    // Bob tries to join Alice's group
+                    bob_central
+                        .join_by_external_commit(public_group_state.clone())
+                        .await
+                        .unwrap();
+                    // BUT for some reason the Delivery Service will reject this external commit
+                    // e.g. another commit arrived meanwhile and the [PublicGroupState] is no longer valid
+
+                    // Retrying
+                    let (conversation_id, external_commit) =
+                        bob_central.join_by_external_commit(public_group_state).await.unwrap();
+                    assert_eq!(conversation_id.as_slice(), &id);
+
+                    // Alice decrypts the external commit and adds Bob
+                    assert_eq!(alice_central[&id].members().len(), 1);
+                    alice_central
+                        .decrypt_message(&id, &external_commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    assert_eq!(alice_central[&id].members().len(), 2);
+
+                    // And Bob can merge its external commit
+                    bob_central
                         .merge_pending_group_from_external_commit(&id, MlsConversationConfiguration::default())
-                        .await;
-
-                    assert!(matches!(
-                        merge_unknown.unwrap_err(),
-                        crate::CryptoError::KeyStoreError(CryptoKeystoreError::MissingKeyInStore(
-                            MissingKeyErrorKind::MlsPendingGroup
-                        ))
-                    ));
+                        .await
+                        .unwrap();
+                    assert!(bob_central.get_conversation(&id).is_ok());
+                    assert_eq!(bob_central[&id].members().len(), 2);
+                    assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
                 })
+            },
+        )
+        .await
+    }
+
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn join_by_external_commit_should_fail_when_bad_epoch(credential: CredentialSupplier) {
+        run_test_with_client_ids(credential, ["alice", "bob"], move |[mut alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                    .await
+                    .unwrap();
+
+                let public_group_state = alice_central.verifiable_public_group_state(&id).await;
+                // try to make an external join into Alice's group
+                let (_, external_commit) = bob_central.join_by_external_commit(public_group_state).await.unwrap();
+
+                // Alice creates a new commit before receiving the external join
+                alice_central.update_keying_material(&id).await.unwrap();
+                alice_central.commit_accepted(&id).await.unwrap();
+
+                // receiving the external join with outdated epoch should fail because of
+                // the wrong epoch
+                let result = alice_central
+                    .decrypt_message(&id, &external_commit.to_bytes().unwrap())
+                    .await;
+                assert!(matches!(
+                    result.unwrap_err(),
+                    crate::CryptoError::MlsError(MlsError::MlsParseMessageError(ParseMessageError::ValidationError(
+                        ValidationError::WrongEpoch
+                    )))
+                ));
             })
-            .await
-        }
+        })
+        .await
+    }
+
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn self_joining_by_external_commit_should_fail(credential: CredentialSupplier) {
+        run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                    .await
+                    .unwrap();
+                let public_group_state = alice_central.verifiable_public_group_state(&id).await;
+                let join_self = alice_central.join_by_external_commit(public_group_state).await;
+                assert!(matches!(
+                    join_self.unwrap_err(),
+                    crate::CryptoError::MlsError(MlsError::MlsExternalCommitError(ExternalCommitError::CommitError))
+                ))
+            })
+        })
+        .await
+    }
+
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn join_by_external_commit_should_fail_when_no_pending_external_commit(credential: CredentialSupplier) {
+        run_test_with_central(credential, move |[mut central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                // try to merge an inexisting pending group
+                let merge_unknown = central
+                    .merge_pending_group_from_external_commit(&id, MlsConversationConfiguration::default())
+                    .await;
+
+                assert!(matches!(
+                    merge_unknown.unwrap_err(),
+                    crate::CryptoError::KeyStoreError(CryptoKeystoreError::MissingKeyInStore(
+                        MissingKeyErrorKind::MlsPendingGroup
+                    ))
+                ));
+            })
+        })
+        .await
     }
 }
