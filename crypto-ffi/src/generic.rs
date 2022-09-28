@@ -642,10 +642,7 @@ impl CoreCrypto<'_> {
         )?;
         Ok(MlsConversationInitMessage {
             conversation_id,
-            commit: commit
-                .tls_serialize_detached()
-                .map_err(MlsError::from)
-                .map_err(CryptoError::from)?,
+            commit: commit.tls_serialize_detached().map_err(MlsError::from)?,
         })
     }
 

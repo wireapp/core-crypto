@@ -411,8 +411,7 @@ impl Client {
                     .map_err(CryptoKeystoreError::from)?
                     .as_slice()
                     .try_into()
-                    .map_err(CryptoKeystoreError::from)
-                    .map_err(CryptoError::from)?;
+                    .map_err(CryptoKeystoreError::from)?;
                 let href = KeyPackageRef::from(href);
                 is_expired = refs.contains(&href);
             }

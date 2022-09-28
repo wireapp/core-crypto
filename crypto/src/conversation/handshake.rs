@@ -67,7 +67,6 @@ impl MlsConversation {
             .propose_add_member(backend, key_package)
             .await
             .map_err(MlsError::from)
-            .map_err(CryptoError::from)
             .map(MlsProposalBundle::from)?;
         self.persist_group_when_changed(backend, false).await?;
         Ok(proposal)
@@ -81,7 +80,6 @@ impl MlsConversation {
             .propose_self_update(backend, None)
             .await
             .map_err(MlsError::from)
-            .map_err(CryptoError::from)
             .map(MlsProposalBundle::from)?;
         self.persist_group_when_changed(backend, false).await?;
         Ok(proposal)
