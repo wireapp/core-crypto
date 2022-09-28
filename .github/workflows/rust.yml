@@ -109,6 +109,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CARGO_TERM_COLOR: always
+    strategy:
+      matrix:
+        workspace: [ "crypto", "keystore", "mls-provider" ]
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
@@ -120,16 +123,16 @@ jobs:
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - uses: Swatinem/rust-cache@v1
       - name: WASM build
-        run: |
-          wasm-pack build --dev --target web keystore
-          wasm-pack build --dev --target web mls-provider
-          wasm-pack build --dev --target web crypto
+        run: wasm-pack build --dev --target web ${{ matrix.workspace }}
 
 
   wasm-test:
     runs-on: ubuntu-latest
     env:
       CARGO_TERM_COLOR: always
+    strategy:
+      matrix:
+        workspace: ["crypto", "keystore", "mls-provider"]
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
@@ -141,10 +144,7 @@ jobs:
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - uses: Swatinem/rust-cache@v1
       - name: Run tests (wasm)
-        run: |
-          wasm-pack test --release --headless --chrome keystore
-          wasm-pack test --release --headless --chrome mls-provider
-          wasm-pack test --release --headless --chrome crypto
+        run: wasm-pack test --release --headless --chrome ${{ matrix.workspace }}
 
   e2e-interop-test:
     runs-on: ubuntu-latest
