@@ -108,7 +108,7 @@ fn join_from_public_group_state_bench(c: &mut Criterion) {
                         let (group_id, ..) = black_box(central.join_by_external_commit(pgs).await.unwrap());
                         black_box(
                             central
-                                .merge_pending_group_from_external_commit(group_id.as_slice(), cfg)
+                                .merge_pending_group_from_external_commit(&group_id, cfg)
                                 .await
                                 .unwrap(),
                         );

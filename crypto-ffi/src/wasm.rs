@@ -1097,10 +1097,7 @@ impl CoreCrypto {
                         .tls_serialize_detached()
                         .map_err(MlsError::from)
                         .map_err(CryptoError::from)?,
-                    group: group
-                        .tls_serialize_detached()
-                        .map_err(MlsError::from)
-                        .map_err(CryptoError::from)?,
+                    group,
                 };
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&result)?)
             }

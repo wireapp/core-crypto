@@ -641,11 +641,8 @@ impl CoreCrypto<'_> {
             ),
         )?;
         Ok(MlsConversationInitMessage {
+            group,
             commit: commit
-                .tls_serialize_detached()
-                .map_err(MlsError::from)
-                .map_err(CryptoError::from)?,
-            group: group
                 .tls_serialize_detached()
                 .map_err(MlsError::from)
                 .map_err(CryptoError::from)?,

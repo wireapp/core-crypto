@@ -170,10 +170,10 @@ impl MlsCentral {
         let public_group_state = public_group_state.tls_serialize_detached().map_err(MlsError::from)?;
         let public_group_state =
             VerifiablePublicGroupState::tls_deserialize(&mut public_group_state.as_slice()).map_err(MlsError::from)?;
-        let (group_id, commit) = self.join_by_external_commit(public_group_state).await?;
-        self.merge_pending_group_from_external_commit(group_id.as_slice(), MlsConversationConfiguration::default())
+        let (conversation_id, commit) = self.join_by_external_commit(public_group_state).await?;
+        self.merge_pending_group_from_external_commit(&conversation_id, MlsConversationConfiguration::default())
             .await?;
-        assert_eq!(group_id.as_slice(), id.as_slice());
+        assert_eq!(conversation_id.as_slice(), id.as_slice());
         for other in others {
             let commit = commit.to_bytes().map_err(MlsError::from)?;
             other.decrypt_message(id, commit).await?;
