@@ -950,9 +950,7 @@ impl CoreCrypto {
         let this = self.0.clone();
         future_to_promise(
             async move {
-                let kp = KeyPackage::try_from(&keypackage[..])
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)?;
+                let kp = KeyPackage::try_from(&keypackage[..]).map_err(MlsError::from)?;
                 let proposal: ProposalBundle = this
                     .write()
                     .await
@@ -1017,8 +1015,7 @@ impl CoreCrypto {
                     .await?
                     .to_bytes()
                     .map(|bytes| Uint8Array::from(bytes.as_slice()))
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)?;
+                    .map_err(MlsError::from)?;
 
                 WasmCryptoResult::Ok(proposal_bytes.into())
             }
@@ -1049,8 +1046,7 @@ impl CoreCrypto {
                     .await?
                     .to_bytes()
                     .map(|bytes| Uint8Array::from(bytes.as_slice()))
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)?;
+                    .map_err(MlsError::from)?;
 
                 WasmCryptoResult::Ok(proposal_bytes.into())
             }
@@ -1094,10 +1090,7 @@ impl CoreCrypto {
                 let (conversation_id, commit) = this.read().await.join_by_external_commit(group_state).await?;
                 let result = MlsConversationInitMessage {
                     conversation_id,
-                    commit: commit
-                        .tls_serialize_detached()
-                        .map_err(MlsError::from)
-                        .map_err(CryptoError::from)?,
+                    commit: commit.tls_serialize_detached().map_err(MlsError::from)?,
                 };
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&result)?)
             }

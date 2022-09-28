@@ -9,7 +9,7 @@
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError};
+use crate::{ConversationId, CryptoResult, MlsCentral, MlsError};
 
 use super::MlsConversation;
 
@@ -28,8 +28,7 @@ impl MlsConversation {
             .create_message(backend, message.as_ref())
             .await
             .map_err(MlsError::from)
-            .and_then(|m| m.to_bytes().map_err(MlsError::from))
-            .map_err(CryptoError::from)?;
+            .and_then(|m| m.to_bytes().map_err(MlsError::from))?;
         self.persist_group_when_changed(backend, false).await?;
         Ok(encrypted)
     }

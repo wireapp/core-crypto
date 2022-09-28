@@ -21,7 +21,7 @@ use core_crypto_keystore::CryptoKeystoreMls;
 
 use crate::{
     prelude::{MlsConversation, MlsConversationConfiguration},
-    ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError,
+    ConversationId, CryptoResult, MlsCentral, MlsError,
 };
 
 impl MlsCentral {
@@ -54,8 +54,7 @@ impl MlsCentral {
             credentials,
         )
         .await
-        .map_err(MlsError::from)
-        .map_err(CryptoError::from)?;
+        .map_err(MlsError::from)?;
 
         let mut group_serialized = vec![];
         group.save(&mut group_serialized)?;
@@ -63,8 +62,7 @@ impl MlsCentral {
         self.mls_backend
             .key_store()
             .mls_pending_groups_save(group.group_id().as_slice(), &group_serialized)
-            .await
-            .map_err(CryptoError::from)?;
+            .await?;
         Ok((group.group_id().to_vec(), message))
     }
 
