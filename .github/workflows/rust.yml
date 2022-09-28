@@ -78,16 +78,30 @@ jobs:
         with:
           command: nextest
           args: run --verbose --release
-      - name: "Test CoreCrypto xtask tooling"
-        uses: actions-rs/cargo@v1
-        with:
-          command: nextest
-          args: run --verbose --manifest-path xtask/Cargo.toml
       - name: "Test CoreCrypto documentation"
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --doc
+
+  # extract things unrelated to main tests not to slow them down
+  tooling-test:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v1
+      - uses: taiki-e/install-action@nextest
+      - name: "Test CoreCrypto xtask tooling"
+        uses: actions-rs/cargo@v1
+        with:
+          command: nextest
+          args: run --verbose --manifest-path xtask/Cargo.toml
       - name: "Test CoreCrypto benchmarks"
         run: sh crypto/benches/scripts/test.sh
 
