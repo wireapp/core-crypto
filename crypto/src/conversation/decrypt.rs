@@ -8,9 +8,10 @@
 //! | 0 pend. Proposal  | ✅              | ✅              |
 //! | 1+ pend. Proposal | ✅              | ✅              |
 
-use openmls::framing::errors::MessageDecryptionError;
-use openmls::framing::{MlsMessageIn, ProcessedMessage, UnverifiedMessage};
-use openmls::prelude::{ParseMessageError, ValidationError};
+use openmls::{
+    framing::errors::MessageDecryptionError,
+    prelude::{MlsMessageIn, ParseMessageError, ProcessedMessage, UnverifiedMessage, ValidationError},
+};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
@@ -725,7 +726,7 @@ pub mod tests {
 
                         assert_eq!(bob_central[&id].members().len(), 2);
                         // if 'decrypt_message' is not durable the commit won't contain the add proposal
-                        bob_central.commit_pending_proposals(&id).await.unwrap().unwrap().commit;
+                        bob_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         bob_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(bob_central[&id].members().len(), 3);
                     })
