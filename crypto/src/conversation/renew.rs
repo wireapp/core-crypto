@@ -147,11 +147,7 @@ pub mod tests {
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         assert!(alice_central.pending_proposals(&id).is_empty());
-                        alice_central
-                            .new_proposal(&id, MlsProposal::Update)
-                            .await
-                            .unwrap()
-                            .proposal;
+                        alice_central.new_proposal(&id, MlsProposal::Update).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).len(), 1);
 
                         // Bob hasn't Alice's proposal but creates a commit
