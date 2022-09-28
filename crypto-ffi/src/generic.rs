@@ -107,7 +107,7 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
 pub struct MlsConversationInitMessage {
-    pub group: Vec<u8>,
+    pub conversation_id: Vec<u8>,
     pub commit: Vec<u8>,
 }
 
@@ -632,7 +632,7 @@ impl CoreCrypto<'_> {
         use core_crypto::prelude::tls_codec::Deserialize as _;
 
         let group_state = VerifiablePublicGroupState::tls_deserialize(&mut &group_state[..]).map_err(MlsError::from)?;
-        let (group, commit) = future::block_on(
+        let (conversation_id, commit) = future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
@@ -641,7 +641,7 @@ impl CoreCrypto<'_> {
             ),
         )?;
         Ok(MlsConversationInitMessage {
-            group,
+            conversation_id,
             commit: commit
                 .tls_serialize_detached()
                 .map_err(MlsError::from)
