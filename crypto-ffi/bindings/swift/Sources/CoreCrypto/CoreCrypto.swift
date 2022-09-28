@@ -37,7 +37,7 @@ extension CoreCryptoSwift.MemberAddedMessages {
 
 extension CoreCryptoSwift.MlsConversationInitMessage {
     func convertTo() -> MlsConversationInitMessage {
-        return MlsConversationInitMessage(group: self.group, commit: self.commit)
+        return MlsConversationInitMessage(group: self.conversationId, commit: self.commit)
     }
 }
 
@@ -224,19 +224,19 @@ public struct ProposalBundle: ConvertToInner {
 public struct MlsConversationInitMessage: ConvertToInner {
     typealias Inner = CoreCryptoSwift.MlsConversationInitMessage
     /// Conversation id
-    public var group: [UInt8]
-    /// TLS-serialized MLS Commit that needs to be fanned out
+    public var conversationId: ConversationId
+    /// TLS-serialized MLS External Commit that needs to be fanned out
     public var commit: [UInt8]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(group: [UInt8], commit: [UInt8]) {
-        self.group = group
+    public init(conversationId: ConversationId, commit: [UInt8]) {
+        self.conversationId = conversationId
         self.commit = commit
     }
 
     func convert() -> Inner {
-        return CoreCryptoSwift.MlsConversationInitMessage(group: self.group, commit: self.commit)
+        return CoreCryptoSwift.MlsConversationInitMessage(conversationId: self.conversationId, commit: self.commit)
     }
 }
 

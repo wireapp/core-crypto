@@ -219,7 +219,7 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MlsConversationInitMessage {
-    group: Vec<u8>,
+    conversation_id: Vec<u8>,
     commit: Vec<u8>,
 }
 
@@ -231,8 +231,8 @@ impl MlsConversationInitMessage {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn group(&self) -> Uint8Array {
-        Uint8Array::from(&*self.group)
+    pub fn conversation_id(&self) -> Uint8Array {
+        Uint8Array::from(&*self.conversation_id)
     }
 }
 
@@ -1091,13 +1091,13 @@ impl CoreCrypto {
             async move {
                 let group_state =
                     VerifiablePublicGroupState::tls_deserialize(&mut &state[..]).map_err(MlsError::from)?;
-                let (group, commit) = this.read().await.join_by_external_commit(group_state).await?;
+                let (conversation_id, commit) = this.read().await.join_by_external_commit(group_state).await?;
                 let result = MlsConversationInitMessage {
+                    conversation_id,
                     commit: commit
                         .tls_serialize_detached()
                         .map_err(MlsError::from)
                         .map_err(CryptoError::from)?,
-                    group,
                 };
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&result)?)
             }

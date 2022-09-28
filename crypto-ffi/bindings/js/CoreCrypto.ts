@@ -200,13 +200,13 @@ export interface Invitee {
 
 export interface MlsConversationInitMessage {
     /**
-     * Group ID
+     * Conversation ID
      *
      * @readonly
      */
-    group: Uint8Array;
+    conversationId: ConversationId;
     /**
-     * TLS-serialized MLS Commit that needs to be fanned out
+     * TLS-serialized MLS External Commit that needs to be fanned out
      *
      * @readonly
      */
@@ -895,7 +895,7 @@ export class CoreCrypto {
         const ffiInitMessage: CoreCryptoFfiTypes.MlsConversationInitMessage = await this.#cc.join_by_external_commit(publicGroupState);
 
         const ret: MlsConversationInitMessage = {
-            group: ffiInitMessage.group,
+            conversationId: ffiInitMessage.conversation_id,
             commit: ffiInitMessage.commit,
         };
 

@@ -79,7 +79,7 @@ dictionary ProposalBundle {
 };
 
 dictionary MlsConversationInitMessage {
-    sequence<u8> group;
+    sequence<u8> conversation_id;
     sequence<u8> commit;
 };
 
