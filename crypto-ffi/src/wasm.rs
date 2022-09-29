@@ -1076,12 +1076,12 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<MlsConversationInitMessage>`]
     ///
     /// see [core_crypto::MlsCentral::join_by_external_commit]
-    pub fn join_by_external_commit(&self, group_state: Box<[u8]>) -> Promise {
+    pub fn join_by_external_commit(&self, public_group_state: Box<[u8]>) -> Promise {
         use core_crypto::prelude::tls_codec::Deserialize as _;
         use core_crypto::prelude::tls_codec::Serialize as _;
 
         let this = self.0.clone();
-        let state = group_state.to_vec();
+        let state = public_group_state.to_vec();
 
         future_to_promise(
             async move {
@@ -1112,6 +1112,23 @@ impl CoreCrypto {
                 this.write()
                     .await
                     .merge_pending_group_from_external_commit(&conversation_id, configuration.try_into()?)
+                    .await?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [core_crypto::MlsCentral::clear_pending_group_from_external_commit]
+    pub fn clear_pending_group_from_external_commit(&self, conversation_id: ConversationId) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                this.write()
+                    .await
+                    .clear_pending_group_from_external_commit(&conversation_id)
                     .await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
