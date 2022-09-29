@@ -628,10 +628,11 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::MlsCentral::join_by_external_commit]
-    pub fn join_by_external_commit(&self, group_state: Vec<u8>) -> CryptoResult<MlsConversationInitMessage> {
+    pub fn join_by_external_commit(&self, public_group_state: Vec<u8>) -> CryptoResult<MlsConversationInitMessage> {
         use core_crypto::prelude::tls_codec::Deserialize as _;
 
-        let group_state = VerifiablePublicGroupState::tls_deserialize(&mut &group_state[..]).map_err(MlsError::from)?;
+        let group_state =
+            VerifiablePublicGroupState::tls_deserialize(&mut &public_group_state[..]).map_err(MlsError::from)?;
         let (conversation_id, commit) = future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
@@ -658,6 +659,20 @@ impl CoreCrypto<'_> {
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
                     .merge_pending_group_from_external_commit(&conversation_id, configuration.try_into()?),
+            ),
+        )?;
+
+        Ok(())
+    }
+
+    /// See [core_crypto::MlsCentral::clear_pending_group_from_external_commit]
+    pub fn clear_pending_group_from_external_commit(&self, conversation_id: ConversationId) -> CryptoResult<()> {
+        future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .clear_pending_group_from_external_commit(&conversation_id),
             ),
         )?;
 
