@@ -106,9 +106,23 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
 
 #[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
-pub struct MlsConversationInitMessage {
-    pub conversation_id: Vec<u8>,
+pub struct ConversationInitBundle {
+    pub conversation_id: ConversationId,
     pub commit: Vec<u8>,
+    pub public_group_state: Vec<u8>,
+}
+
+impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
+    type Error = CryptoError;
+
+    fn try_from(from: MlsConversationInitBundle) -> Result<Self, Self::Error> {
+        let (commit, public_group_state) = from.to_bytes_pair()?;
+        Ok(Self {
+            conversation_id: from.conversation_id,
+            commit,
+            public_group_state,
+        })
+    }
 }
 
 #[cfg_attr(feature = "c-api", repr(C))]
@@ -628,23 +642,20 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::MlsCentral::join_by_external_commit]
-    pub fn join_by_external_commit(&self, public_group_state: Vec<u8>) -> CryptoResult<MlsConversationInitMessage> {
+    pub fn join_by_external_commit(&self, public_group_state: Vec<u8>) -> CryptoResult<ConversationInitBundle> {
         use core_crypto::prelude::tls_codec::Deserialize as _;
 
         let group_state =
             VerifiablePublicGroupState::tls_deserialize(&mut &public_group_state[..]).map_err(MlsError::from)?;
-        let (conversation_id, commit) = future::block_on(
+        future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
                     .join_by_external_commit(group_state),
             ),
-        )?;
-        Ok(MlsConversationInitMessage {
-            conversation_id,
-            commit: commit.tls_serialize_detached().map_err(MlsError::from)?,
-        })
+        )?
+        .try_into()
     }
 
     /// See [core_crypto::MlsCentral::merge_pending_group_from_external_commit]

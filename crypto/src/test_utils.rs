@@ -11,6 +11,7 @@ use openmls::prelude::{
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
+use crate::external_commit::MlsConversationInitBundle;
 use crate::{
     config::MlsCentralConfiguration, credential::CredentialSupplier, member::ConversationMember, ConversationId,
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationConfiguration,
@@ -170,7 +171,11 @@ impl MlsCentral {
         let public_group_state = public_group_state.tls_serialize_detached().map_err(MlsError::from)?;
         let public_group_state =
             VerifiablePublicGroupState::tls_deserialize(&mut public_group_state.as_slice()).map_err(MlsError::from)?;
-        let (conversation_id, commit) = self.join_by_external_commit(public_group_state).await?;
+        let MlsConversationInitBundle {
+            conversation_id,
+            commit,
+            ..
+        } = self.join_by_external_commit(public_group_state).await?;
         self.merge_pending_group_from_external_commit(&conversation_id, MlsConversationConfiguration::default())
             .await?;
         assert_eq!(conversation_id.as_slice(), id.as_slice());

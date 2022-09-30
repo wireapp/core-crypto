@@ -35,9 +35,9 @@ extension CoreCryptoSwift.MemberAddedMessages {
     }
 }
 
-extension CoreCryptoSwift.MlsConversationInitMessage {
-    func convertTo() -> MlsConversationInitMessage {
-        return MlsConversationInitMessage(group: self.conversationId, commit: self.commit)
+extension CoreCryptoSwift.ConversationInitBundle {
+    func convertTo() -> ConversationInitBundle {
+        return ConversationInitBundle(conversationId: self.conversationId, commit: self.commit, publicGroupState: self.publicGroupState)
     }
 }
 
@@ -221,22 +221,25 @@ public struct ProposalBundle: ConvertToInner {
 }
 
 /// Represents the result type of the external commit request.
-public struct MlsConversationInitMessage: ConvertToInner {
-    typealias Inner = CoreCryptoSwift.MlsConversationInitMessage
+public struct ConversationInitBundle: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.ConversationInitBundle
     /// Conversation id
     public var conversationId: ConversationId
     /// TLS-serialized MLS External Commit that needs to be fanned out
     public var commit: [UInt8]
+    /// TLS-serialized PublicGoupState (aka GroupInfo) which becomes valid when the external commit is accepted by the Delivery Service
+    public var publicGroupState: [UInt8]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(conversationId: ConversationId, commit: [UInt8]) {
+    public init(conversationId: ConversationId, commit: [UInt8], publicGroupState: [UInt8]) {
         self.conversationId = conversationId
         self.commit = commit
+        self.publicGroupState = publicGroupState
     }
 
     func convert() -> Inner {
-        return CoreCryptoSwift.MlsConversationInitMessage(conversationId: self.conversationId, commit: self.commit)
+        return CoreCryptoSwift.ConversationInitBundle(conversationId: self.conversationId, commit: self.commit, publicGroupState: self.publicGroupState)
     }
 }
 
@@ -559,8 +562,8 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter publicGroupState: a verifiable public group state. it can be obtained by deserializing a TLS
     /// serialized `PublicGoupState` object
-    /// - returns: an object of type `MlsConversationInitMessage`
-    public func joinByExternalCommit(publicGroupState: [UInt8]) throws -> MlsConversationInitMessage {
+    /// - returns: an object of type `ConversationInitBundle`
+    public func joinByExternalCommit(publicGroupState: [UInt8]) throws -> ConversationInitBundle {
         try self.coreCrypto.joinByExternalCommit(publicGroupState: publicGroupState).convertTo()
     }
 

@@ -198,9 +198,9 @@ export interface Invitee {
     kp: Uint8Array;
 }
 
-export interface MlsConversationInitMessage {
+export interface ConversationInitBundle {
     /**
-     * Conversation ID
+     * Conversation ID of the conversation created
      *
      * @readonly
      */
@@ -211,6 +211,13 @@ export interface MlsConversationInitMessage {
      * @readonly
      */
     commit: Uint8Array;
+    /**
+     * TLS-serialized MLS Public Group State (aka Group Info) which becomes valid when the external commit is accepted by the Delivery Service
+     * with {@link CoreCrypto.mergePendingGroupFromExternalCommit}
+     *
+     * @readonly
+     */
+    publicGroupState: Uint8Array;
 }
 
 /**
@@ -894,14 +901,15 @@ export class CoreCrypto {
      * bad can happen if you forget to except some storage space wasted.
      *
      * @param publicGroupState - The public group state that can be fetched from the backend for a given conversation
-     * @returns see {@link MlsConversationInitMessage}
+     * @returns see {@link ConversationInitBundle}
      */
-    async joinByExternalCommit(publicGroupState: Uint8Array): Promise<MlsConversationInitMessage> {
-        const ffiInitMessage: CoreCryptoFfiTypes.MlsConversationInitMessage = await this.#cc.join_by_external_commit(publicGroupState);
+    async joinByExternalCommit(publicGroupState: Uint8Array): Promise<ConversationInitBundle> {
+        const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await this.#cc.join_by_external_commit(publicGroupState);
 
-        const ret: MlsConversationInitMessage = {
+        const ret: ConversationInitBundle = {
             conversationId: ffiInitMessage.conversation_id,
             commit: ffiInitMessage.commit,
+            publicGroupState: ffiInitMessage.public_group_state,
         };
 
         return ret;
@@ -945,7 +953,6 @@ export class CoreCrypto {
     async commitAccepted(conversationId: ConversationId): Promise<void> {
         return await this.#cc.commit_accepted(conversationId);
     }
-
 
     /**
      * Allows to remove a pending proposal (rollback). Use this when backend rejects the proposal you just sent e.g. if permissions

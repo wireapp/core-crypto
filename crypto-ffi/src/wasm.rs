@@ -218,21 +218,41 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct MlsConversationInitMessage {
-    conversation_id: Vec<u8>,
+pub struct ConversationInitBundle {
+    conversation_id: ConversationId,
     commit: Vec<u8>,
+    public_group_state: Vec<u8>,
 }
 
 #[wasm_bindgen]
-impl MlsConversationInitMessage {
+impl ConversationInitBundle {
+    #[wasm_bindgen(getter)]
+    pub fn conversation_id(&self) -> Uint8Array {
+        Uint8Array::from(&*self.conversation_id)
+    }
+
     #[wasm_bindgen(getter)]
     pub fn commit(&self) -> Uint8Array {
         Uint8Array::from(&*self.commit)
     }
 
     #[wasm_bindgen(getter)]
-    pub fn conversation_id(&self) -> Uint8Array {
-        Uint8Array::from(&*self.conversation_id)
+    pub fn public_group_state(&self) -> Uint8Array {
+        Uint8Array::from(&*self.public_group_state)
+    }
+}
+
+impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
+    type Error = WasmCryptoError;
+
+    fn try_from(from: MlsConversationInitBundle) -> Result<Self, Self::Error> {
+        let (commit, public_group_state) = from.to_bytes_pair()?;
+
+        Ok(Self {
+            conversation_id: from.conversation_id,
+            commit,
+            public_group_state,
+        })
     }
 }
 
@@ -1073,12 +1093,11 @@ impl CoreCrypto {
     }
 
     #[allow(clippy::boxed_local)]
-    /// Returns: [`WasmCryptoResult<MlsConversationInitMessage>`]
+    /// Returns: [`WasmCryptoResult<ConversationInitBundle>`]
     ///
     /// see [core_crypto::MlsCentral::join_by_external_commit]
     pub fn join_by_external_commit(&self, public_group_state: Box<[u8]>) -> Promise {
         use core_crypto::prelude::tls_codec::Deserialize as _;
-        use core_crypto::prelude::tls_codec::Serialize as _;
 
         let this = self.0.clone();
         let state = public_group_state.to_vec();
@@ -1087,11 +1106,12 @@ impl CoreCrypto {
             async move {
                 let group_state =
                     VerifiablePublicGroupState::tls_deserialize(&mut &state[..]).map_err(MlsError::from)?;
-                let (conversation_id, commit) = this.read().await.join_by_external_commit(group_state).await?;
-                let result = MlsConversationInitMessage {
-                    conversation_id,
-                    commit: commit.tls_serialize_detached().map_err(MlsError::from)?,
-                };
+                let result: ConversationInitBundle = this
+                    .read()
+                    .await
+                    .join_by_external_commit(group_state)
+                    .await?
+                    .try_into()?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&result)?)
             }
             .err_into(),
