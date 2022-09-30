@@ -77,9 +77,11 @@ pub mod prelude {
     pub use crate::client::*;
     pub use crate::conversation::decrypt::MlsConversationDecryptMessage;
     pub use crate::conversation::handshake::{MlsCommitBundle, MlsConversationCreationMessage, MlsProposalBundle};
+    pub use crate::conversation::public_group_state::PublicGroupStateBundle;
     pub use crate::conversation::*;
     pub use crate::credential::CertificateBundle;
     pub use crate::error::*;
+    pub use crate::external_commit::MlsConversationInitBundle;
     pub use crate::member::*;
     pub use crate::proposal::MlsProposal;
     pub use crate::proposal::MlsProposalRef;
