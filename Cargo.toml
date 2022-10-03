@@ -42,7 +42,7 @@ package = "hpke-rs-rust-crypto"
 
 [patch.crates-io.rcgen]
 git = "https://github.com/wireapp/rcgen"
-tag = "v1.0.0-pre.core-crypto-0.3.0"
+tag = "v1.1.0-pre.core-crypto-0.6.0"
 
 # Needed for quick mode and (later) result comparison see (https://www.tweag.io/blog/2022-03-03-criterion-rs/)
 # TODO: remove once branch got merged in 0.4 release
