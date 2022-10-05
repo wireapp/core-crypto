@@ -100,13 +100,13 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     /// * `conversation_id` - id of the group/conversation
     /// * `client_id` - id of the client
     fn authorize(&self, conversation_id: Vec<u8>, client_id: Vec<u8>) -> bool;
-    /// Validates if the given `client_id` belongs to one of the provided `other_clients`
+    /// Validates if the given `client_id` belongs to one of the provided `existing_clients`
     /// This basically allows to defer the client ID parsing logic to the caller - because CoreCrypto is oblivious to such things
     ///
     /// # Arguments
     /// * `client_id` - client ID of the client referenced within the sent proposal
-    /// * `other_clients` - all the clients in the MLS group
-    fn client_id_belongs_to_one_of(&self, client_id: Vec<u8>, other_clients: Vec<Vec<u8>>) -> bool;
+    /// * `existing_clients` - all the clients in the MLS group
+    fn client_is_existing_group_user(&self, client_id: Vec<u8>, existing_clients: Vec<Vec<u8>>) -> bool;
 }
 
 #[derive(Debug, Clone, derive_more::Deref)]

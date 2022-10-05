@@ -460,16 +460,16 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
 /// see [core_crypto::prelude::CoreCryptoCallbacks]
 pub struct CoreCryptoWasmCallbacks {
     authorize: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
-    client_id_belongs_to_one_of: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
+    client_is_existing_group_user: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
 }
 
 #[wasm_bindgen]
 impl CoreCryptoWasmCallbacks {
     #[wasm_bindgen(constructor)]
-    pub fn new(authorize: js_sys::Function, client_id_belongs_to_one_of: js_sys::Function) -> Self {
+    pub fn new(authorize: js_sys::Function, client_is_existing_group_user: js_sys::Function) -> Self {
         Self {
             authorize: std::sync::Arc::new(authorize.into()),
-            client_id_belongs_to_one_of: std::sync::Arc::new(client_id_belongs_to_one_of.into()),
+            client_is_existing_group_user: std::sync::Arc::new(client_is_existing_group_user.into()),
         }
     }
 }
@@ -498,14 +498,14 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
         }
     }
 
-    fn client_id_belongs_to_one_of(&self, client_id: Vec<u8>, other_clients: Vec<Vec<u8>>) -> bool {
-        if let Ok(client_id_belongs_to_one_of) = self.client_id_belongs_to_one_of.try_lock() {
+    fn client_is_existing_group_user(&self, client_id: Vec<u8>, existing_clients: Vec<Vec<u8>>) -> bool {
+        if let Ok(client_is_existing_group_user) = self.client_is_existing_group_user.try_lock() {
             let this = JsValue::null();
-            if let Ok(Some(result)) = client_id_belongs_to_one_of
+            if let Ok(Some(result)) = client_is_existing_group_user
                 .call2(
                     &this,
                     &js_sys::Uint8Array::from(client_id.as_slice()),
-                    &other_clients
+                    &existing_clients
                         .into_iter()
                         .map(|client| js_sys::Uint8Array::from(client.as_slice()))
                         .collect::<js_sys::Array>(),

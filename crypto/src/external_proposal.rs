@@ -22,10 +22,10 @@ impl MlsConversation {
         if is_external_proposal {
             if let Proposal::Add(add_proposal) = proposal.proposal() {
                 let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
-                let other_clients = self.members_in_next_epoch(backend);
+                let existing_clients = self.members_in_next_epoch(backend);
                 let self_identity = add_proposal.key_package().credential().identity();
-                let is_self_user_in_group =
-                    callbacks.client_id_belongs_to_one_of(self_identity.to_vec(), other_clients.into_iter().collect());
+                let is_self_user_in_group = callbacks
+                    .client_is_existing_group_user(self_identity.to_vec(), existing_clients.into_iter().collect());
                 if !is_self_user_in_group {
                     return Err(CryptoError::ExternalAddProposalError);
                 }
