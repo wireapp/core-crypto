@@ -245,23 +245,23 @@ impl IndexMut<&ConversationId> for MlsCentral {
 #[derive(Debug)]
 pub struct ValidationCallbacks {
     authorize: bool,
-    client_id_belongs_to_one_of: bool,
+    client_is_existing_group_user: bool,
 }
 
 impl Default for ValidationCallbacks {
     fn default() -> Self {
         Self {
             authorize: true,
-            client_id_belongs_to_one_of: true,
+            client_is_existing_group_user: true,
         }
     }
 }
 
 impl ValidationCallbacks {
-    pub fn new(authorize: bool, client_id_belongs_to_one_of: bool) -> Self {
+    pub fn new(authorize: bool, client_is_existing_group_user: bool) -> Self {
         Self {
             authorize,
-            client_id_belongs_to_one_of,
+            client_is_existing_group_user,
         }
     }
 }
@@ -271,7 +271,7 @@ impl CoreCryptoCallbacks for ValidationCallbacks {
         self.authorize
     }
 
-    fn client_id_belongs_to_one_of(&self, _client_id: Vec<u8>, _other_clients: Vec<Vec<u8>>) -> bool {
-        self.client_id_belongs_to_one_of
+    fn client_is_existing_group_user(&self, _client_id: Vec<u8>, _existing_clients: Vec<Vec<u8>>) -> bool {
+        self.client_is_existing_group_user
     }
 }

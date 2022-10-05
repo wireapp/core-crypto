@@ -93,7 +93,7 @@ dictionary ConversationConfiguration {
 
 callback interface CoreCryptoCallbacks {
     boolean authorize([ByRef] sequence<u8> conversation_id, [ByRef] sequence<u8> client_id);
-    boolean client_id_belongs_to_one_of([ByRef] sequence<u8> client_id, [ByRef] sequence<sequence<u8>> other_clients);
+    boolean client_is_existing_group_user([ByRef] sequence<u8> client_id, [ByRef] sequence<sequence<u8>> existing_clients);
 };
 
 interface CoreCrypto {

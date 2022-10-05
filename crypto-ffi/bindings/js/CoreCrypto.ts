@@ -363,10 +363,10 @@ export interface CoreCryptoCallbacks {
     authorize: (conversationId: Uint8Array, clientId: Uint8Array) => boolean;
 
     /**
-     * Callback to ensure that the given `clientId` belongs to one of the provided `otherClients`
+     * Callback to ensure that the given `clientId` belongs to one of the provided `existingClients`
      * This basically allows to defer the client ID parsing logic to the caller - because CoreCrypto is oblivious to such things
      */
-    clientIdBelongsToOneOf: (clientId: Uint8Array, otherClients: Uint8Array[]) => boolean;
+    clientIsExistingGroupUser: (clientId: Uint8Array, existingClients: Uint8Array[]) => boolean;
 }
 
 /**
@@ -453,7 +453,7 @@ export class CoreCrypto {
     registerCallbacks(callbacks: CoreCryptoCallbacks) {
         const wasmCallbacks = new CoreCrypto.#module.CoreCryptoWasmCallbacks(
             callbacks.authorize,
-            callbacks.clientIdBelongsToOneOf
+            callbacks.clientIsExistingGroupUser
         );
         this.#cc.set_callbacks(wasmCallbacks);
     }

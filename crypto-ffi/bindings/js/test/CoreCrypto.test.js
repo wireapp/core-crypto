@@ -307,7 +307,7 @@ test("callbacks", async () => {
 
     const callbacksResults = {
       authorize: false,
-      clientIdBelongsToOneOf: false,
+      clientIsExistingGroupUser: false,
     };
 
     const client1Config = {
@@ -335,8 +335,8 @@ test("callbacks", async () => {
         callbacksResults.authorize = true;
         return true;
       },
-      clientIdBelongsToOneOf(clientId, otherClients) {
-        callbacksResults.clientIdBelongsToOneOf = true;
+      clientIsExistingGroupUser(clientId, existingClients) {
+        callbacksResults.clientIsExistingGroupUser = true;
         return true;
       }
     });
@@ -371,17 +371,17 @@ test("callbacks", async () => {
       epoch: 1,
     });
 
-    // ! This should trigger the clientIdBelongsToOneOf callback
+    // ! This should trigger the clientIsExistingGroupUser callback
     const something = await cc.decryptMessage(conversationId, extProposal);
-    if (!callbacksResults.clientIdBelongsToOneOf) {
-      throw new Error("clientIdBelongsToOneOf callback wasn't triggered");
+    if (!callbacksResults.clientIsExistingGroupUser) {
+      throw new Error("clientIsExistingGroupUser callback wasn't triggered");
     }
 
     return callbacksResults;
   });
 
   expect(callbacksResults.authorize).toBe(true);
-  expect(callbacksResults.clientIdBelongsToOneOf).toBe(true);
+  expect(callbacksResults.clientIsExistingGroupUser).toBe(true);
 
   await page.close();
   await ctx.close();
