@@ -49,8 +49,7 @@ args = [
     "build",
     "--out-dir", "bindings/js/wasm",
     "--out-name", "core-crypto-ffi",
-    # "--target", "browser",
-    "--mode", "normal"
+    "--mode", "normal", "${@}"
 ]
 
 [tasks.wasm]

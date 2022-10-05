@@ -14,9 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use std::collections::HashMap;
-
 use futures_lite::future;
+use std::collections::HashMap;
 
 use core_crypto::prelude::*;
 pub use core_crypto::prelude::{
@@ -216,7 +215,7 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
 
 #[derive(Debug)]
 pub struct CoreCrypto<'a> {
-    central: std::sync::Arc<std::sync::Mutex<MlsCentral>>,
+    central: std::sync::Arc<std::sync::Mutex<core_crypto::CoreCrypto>>,
     executor: std::sync::Arc<std::sync::Mutex<async_executor::Executor<'a>>>,
 }
 
@@ -240,7 +239,7 @@ impl CoreCrypto<'_> {
 
         // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
         let central = future::block_on(executor.run(MlsCentral::try_new(configuration, None)))?;
-        let central = std::sync::Arc::new(central.into());
+        let central = std::sync::Arc::new(core_crypto::CoreCrypto::from(central).into());
         Ok(CoreCrypto {
             central,
             executor: std::sync::Arc::new(executor.into()),
@@ -251,7 +250,7 @@ impl CoreCrypto<'_> {
     pub fn close(self) -> CryptoResult<()> {
         if let Ok(central_lock) = std::sync::Arc::try_unwrap(self.central) {
             let central = central_lock.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
-            future::block_on(central.close())?;
+            future::block_on(central.unwrap_mls().close())?;
             Ok(())
         } else {
             Err(CryptoError::LockPoisonError)
@@ -262,7 +261,7 @@ impl CoreCrypto<'_> {
     pub fn wipe(self) -> CryptoResult<()> {
         if let Ok(central_lock) = std::sync::Arc::try_unwrap(self.central) {
             let central = central_lock.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
-            future::block_on(central.wipe())?;
+            future::block_on(central.unwrap_mls().wipe())?;
             Ok(())
         } else {
             Err(CryptoError::LockPoisonError)
@@ -745,5 +744,130 @@ impl CoreCrypto<'_> {
                     .clear_pending_commit(&conversation_id),
             ),
         )
+    }
+}
+
+#[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+impl CoreCrypto<'_> {
+    /// See [core_crypto::proteus::ProteusCentral::try_new]
+    pub fn proteus_init(&self, client_id: ClientId) -> CryptoResult<()> {
+        proteus_impl! {{
+            future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_init(client_id),
+                ),
+            )
+        }}
+    }
+
+    /// See [core_crypto::proteus::ProteusCentral::session_from_prekey]
+    pub fn proteus_session_from_prekey(&self, session_id: &str, prekey: &[u8]) -> CryptoResult<()> {
+        proteus_impl! {{
+            let _ = future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_session_from_prekey(session_id, prekey),
+                ),
+            )?;
+
+            Ok(())
+        }}
+    }
+
+    /// See [core_crypto::proteus::ProteusCentral::session_from_message]
+    pub fn proteus_session_from_message(&self, session_id: &str, envelope: &[u8]) -> CryptoResult<Vec<u8>> {
+        proteus_impl! {{
+            let (_, payload) = future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_session_from_message(session_id, envelope),
+                ),
+            )?;
+
+            Ok(payload)
+        }}
+    }
+
+    /// See [core_crypto::proteus::ProteusCentral::session_save]
+    pub fn proteus_session_save(&self, session_id: &str) -> CryptoResult<()> {
+        proteus_impl! {{
+            future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_session_save(session_id),
+                ),
+            )
+        }}
+    }
+
+    /// See [core_crypto::proteus::ProteusCentral::session_delete]
+    pub fn proteus_session_delete(&self, session_id: &str) -> CryptoResult<()> {
+        proteus_impl! {{
+            future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_session_delete(session_id),
+                ),
+            )
+        }}
+    }
+
+    /// See [core_crypto::proteus::ProteusCentral::decrypt]
+    pub fn proteus_decrypt(&self, session_id: &str, ciphertext: &[u8]) -> CryptoResult<Vec<u8>> {
+        proteus_impl! {{
+            future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_decrypt(session_id, ciphertext),
+                ),
+            )
+        }}
+    }
+
+    /// See [core_crypto::proteus::ProteusCentral::encrypt]
+    pub fn proteus_encrypt(&self, session_id: &str, plaintext: &[u8]) -> CryptoResult<Vec<u8>> {
+        proteus_impl! {{
+            self.central
+                .lock()
+                .map_err(|_| CryptoError::LockPoisonError)?
+                .proteus_encrypt(session_id, plaintext)
+        }}
+    }
+
+    /// See [core_crypto::proteus::ProteusCentral::encrypt_batched]
+    pub fn proteus_encrypt_batched(
+        &self,
+        sessions: Vec<String>,
+        plaintext: &[u8],
+    ) -> CryptoResult<std::collections::HashMap<String, Vec<u8>>> {
+        proteus_impl! {{
+            self.central
+                .lock()
+                .map_err(|_| CryptoError::LockPoisonError)?
+                .proteus_encrypt_batched(sessions.as_slice(), plaintext)
+        }}
+    }
+
+    /// See [core_crypto::proteus::ProteusCentral::fingerprint]
+    pub fn proteus_fingerprint(&self) -> CryptoResult<String> {
+        proteus_impl! {{
+            self.central
+                .lock()
+                .map_err(|_| CryptoError::LockPoisonError)?
+                .proteus_fingerprint()
+        }}
     }
 }

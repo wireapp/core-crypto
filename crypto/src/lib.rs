@@ -124,6 +124,17 @@ pub struct CoreCrypto {
     mls: crate::mls::MlsCentral,
     #[cfg(feature = "proteus")]
     proteus: Option<crate::proteus::ProteusCentral>,
+    #[cfg(not(feature = "proteus"))]
+    proteus: (),
+}
+
+impl From<crate::mls::MlsCentral> for CoreCrypto {
+    fn from(mls: crate::mls::MlsCentral) -> Self {
+        Self {
+            mls,
+            proteus: Default::default(),
+        }
+    }
 }
 
 impl std::ops::Deref for CoreCrypto {
@@ -137,6 +148,13 @@ impl std::ops::Deref for CoreCrypto {
 impl std::ops::DerefMut for CoreCrypto {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.mls
+    }
+}
+
+impl CoreCrypto {
+    /// TODO:
+    pub fn unwrap_mls(self) -> crate::mls::MlsCentral {
+        self.mls
     }
 }
 
@@ -235,7 +253,7 @@ impl CoreCrypto {
     /// TODO:
     pub fn proteus_encrypt_batched(
         &mut self,
-        sessions: &[&str],
+        sessions: &[impl AsRef<str>],
         plaintext: &[u8],
     ) -> CryptoResult<std::collections::HashMap<String, Vec<u8>>> {
         if let Some(proteus) = &mut self.proteus {

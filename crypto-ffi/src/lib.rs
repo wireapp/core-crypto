@@ -14,6 +14,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+macro_rules! proteus_impl {
+    ($body:block or throw $err_type:ty) => {{
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "proteus")] {
+                $body
+            } else {
+                return <$err_type>::Err(CryptoError::ProteusSupportNotEnabled.into());
+            }
+        }
+    }};
+    ($body:block) => {
+        proteus_impl!($body or throw ::std::result::Result<_, _>);
+    };
+}
+
 cfg_if::cfg_if! {
     if #[cfg(target_family = "wasm")] {
         mod wasm;
