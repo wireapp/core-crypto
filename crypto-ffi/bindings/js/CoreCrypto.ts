@@ -1026,6 +1026,98 @@ export class CoreCrypto {
     }
 
     /**
+     * Initiailizes the proteus client
+     *
+     * @param clientId - the ID of the proteus client
+     */
+    async proteusInit(clientId: ClientId): Promise<void> {
+        return await this.#cc.proteus_init(clientId);
+    }
+
+    /**
+     * Create a Proteus session using a prekey
+     *
+     * @param sessionId - ID of the Proteus session
+     * @param prekey - CBOR-encoded Proteus prekey of the other client
+     */
+    async proteusSessionFromPrekey(sessionId: string, prekey: Uint8Array): Promise<void> {
+        return await this.#cc.proteus_session_from_prekey(sessionId, prekey);
+    }
+
+    /**
+     * Create a Proteus session from a handshake message
+     *
+     * @param sessionId - ID of the Proteus session
+     * @param envelope - CBOR-encoded Proteus message
+     */
+    async proteusSessionFromMessage(sessionId: string, envelope: Uint8Array): Promise<void> {
+        return await this.#cc.proteus_session_from_message(sessionId, envelope);
+    }
+
+    /**
+     * Locally persists a session to the keystore
+     *
+     * @param sessionId - ID of the Proteus session
+     */
+    async proteusSessionSave(sessionId: string): Promise<void> {
+        return await this.#cc.proteus_session_save(sessionId);
+    }
+
+    /**
+     * Deletes a session
+     * Note: this also deletes the persisted data within the keystore
+     *
+     * @param sessionId - ID of the Proteus session
+     */
+    async proteusSessionDelete(sessionId: string): Promise<void> {
+        return await this.#cc.proteus_session_delete(sessionId);
+    }
+
+    /**
+     * Decrypt an incoming message for an existing Proteus session
+     *
+     * @param sessionId - ID of the Proteus session
+     * @param ciphertext - CBOR encoded, encrypted proteus message
+     * @returns The decrypted payload contained within the message
+     */
+    async proteusDecrypt(sessionId: string, ciphertext: Uint8Array): Promise<Uint8Array> {
+        return await this.#cc.proteus_decrypt(sessionId, ciphertext);
+    }
+
+    /**
+     * Encrypt a message for a given Proteus session
+     *
+     * @param sessionId - ID of the Proteus session
+     * @param plaintext - payload to encrypt
+     * @returns The CBOR-serialized encrypted message
+     */
+    async proteusEncrypt(sessionId: string, plaintext: Uint8Array): Promise<Uint8Array> {
+        return await this.#cc.proteus_encrypt(sessionId, plaintext);
+    }
+
+    /**
+     * Batch encryption for proteus messages
+     * This is used to minimize FFI roundtrips when used in the context of a multi-client session (i.e. conversation)
+     *
+     * @param sessions - List of Proteus session IDs to encrypt the message for
+     * @param plaintext - payload to encrypt
+     * @returns A map indexed by each session ID and the corresponding CBOR-serialized encrypted message for this session
+     */
+    async proteusEncryptBatched(sessions: string[], plaintext: Uint8Array): Promise<Map<string, Uint8Array>> {
+        return await this.#cc.proteus_encrypt_batched(sessions, plaintext);
+    }
+
+    /**
+     * Proteus public key fingerprint
+     * It's basically the public key encoded as an hex string
+     *
+     * @returns Hex-encoded public key string
+     */
+    async proteusFingerprint(): Promise<string> {
+        return await this.#cc.proteus_fingerprint();
+    }
+
+    /**
      * Returns the current version of {@link CoreCrypto}
      *
      * @returns The `core-crypto-ffi` version as defined in its `Cargo.toml` file

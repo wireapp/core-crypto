@@ -557,7 +557,7 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
 #[derive(Debug)]
 #[wasm_bindgen]
 #[repr(transparent)]
-pub struct CoreCrypto(std::sync::Arc<async_lock::RwLock<MlsCentral>>);
+pub struct CoreCrypto(std::sync::Arc<async_lock::RwLock<core_crypto::CoreCrypto>>);
 
 #[wasm_bindgen]
 impl CoreCrypto {
@@ -577,7 +577,7 @@ impl CoreCrypto {
 
         // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
         let central = MlsCentral::try_new(configuration, None).await?;
-        Ok(CoreCrypto(async_lock::RwLock::new(central).into()))
+        Ok(CoreCrypto(async_lock::RwLock::new(central.into()).into()))
     }
 
     /// Returns: [`WasmCryptoResult<()>`]
@@ -587,13 +587,15 @@ impl CoreCrypto {
         if let Ok(cc) = std::sync::Arc::try_unwrap(self.0).map(async_lock::RwLock::into_inner) {
             future_to_promise(
                 async move {
-                    cc.close().await?;
+                    cc.unwrap_mls().close().await?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 }
                 .err_into(),
             )
         } else {
-            panic!("There are other outstanding references to this CoreCrypto instance")
+            js_sys::Promise::reject(
+                &js_sys::JsString::from("There are other outstanding references to this CoreCrypto instance").into(),
+            )
         }
     }
 
@@ -604,13 +606,15 @@ impl CoreCrypto {
         if let Ok(cc) = std::sync::Arc::try_unwrap(self.0).map(async_lock::RwLock::into_inner) {
             future_to_promise(
                 async move {
-                    cc.wipe().await?;
+                    cc.unwrap_mls().wipe().await?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 }
                 .err_into(),
             )
         } else {
-            panic!("There are other outstanding references to this CoreCrypto instance")
+            js_sys::Promise::reject(
+                &js_sys::JsString::from("There are other outstanding references to this CoreCrypto instance").into(),
+            )
         }
     }
 
@@ -1262,9 +1266,153 @@ impl CoreCrypto {
             .err_into(),
         )
     }
+
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::try_new]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub fn proteus_init(&self, client_id: FfiClientId) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                proteus_impl!({
+                    this.write().await.proteus_init(client_id.into()).await?;
+                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
+                } or throw WasmCryptoResult<_>)
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::session_from_prekey]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub fn proteus_session_from_prekey(&self, session_id: String, prekey: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                proteus_impl!({
+                    this.write().await.proteus_session_from_prekey(&session_id, &prekey).await?;
+                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
+                } or throw WasmCryptoResult<_>)
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::session_from_message]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub fn proteus_session_from_message(&self, session_id: String, envelope: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                proteus_impl!({
+                    let (_, payload) = this.write().await.proteus_session_from_message(&session_id, &envelope).await?;
+                    WasmCryptoResult::Ok(Uint8Array::from(payload.as_slice()).into())
+                } or throw WasmCryptoResult<_>)
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::session_save]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub fn proteus_session_save(&self, session_id: String) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                proteus_impl!({
+                    this.write().await.proteus_session_save(&session_id).await?;
+                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
+                } or throw WasmCryptoResult<_>)
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::session_delete]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub fn proteus_session_delete(&self, session_id: String) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                proteus_impl!({
+                    this.write().await.proteus_session_delete(&session_id).await?;
+                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
+                } or throw WasmCryptoResult<_>)
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::decrypt]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub fn proteus_decrypt(&self, session_id: String, ciphertext: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                proteus_impl!({
+                    let cleartext = this.write().await.proteus_decrypt(&session_id, &ciphertext).await?;
+                    WasmCryptoResult::Ok(Uint8Array::from(cleartext.as_slice()).into())
+                } or throw WasmCryptoResult<_>)
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::encrypt]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub async fn proteus_encrypt(&self, session_id: String, plaintext: Box<[u8]>) -> WasmCryptoResult<Uint8Array> {
+        proteus_impl!({
+            let encrypted = self.0.write().await.proteus_encrypt(&session_id, &plaintext)?;
+            WasmCryptoResult::Ok(Uint8Array::from(encrypted.as_slice()).into())
+        } or throw WasmCryptoResult<_>)
+    }
+
+    /// Returns: [`WasmCryptoResult<js_sys::Map<string, Uint8Array>>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::encrypt_batched]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub async fn proteus_encrypt_batched(
+        &self,
+        sessions: Box<[js_sys::JsString]>,
+        plaintext: Box<[u8]>,
+    ) -> WasmCryptoResult<js_sys::Map> {
+        proteus_impl!({
+            let session_ids: Vec<String> = sessions.into_iter().map(String::from).collect();
+            let batch = self.0.write().await.proteus_encrypt_batched(session_ids.as_slice(), &plaintext)?;
+            let js_obj = js_sys::Map::new();
+            for (key, payload) in batch.into_iter() {
+                js_obj.set(&js_sys::JsString::from(key).into(), &Uint8Array::from(payload.as_slice()));
+            }
+            WasmCryptoResult::Ok(js_obj.into())
+        } or throw WasmCryptoResult<_>)
+    }
+
+    /// Returns: [`WasmCryptoResult<String>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::fingerprint]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub async fn proteus_fingerprint(&self) -> WasmCryptoResult<String> {
+        proteus_impl!({
+            self.0.read().await.proteus_fingerprint().map_err(Into::into).map(Into::into)
+        } or throw WasmCryptoResult<_>)
+    }
 }
 
 #[wasm_bindgen]
+/// Returns the current version of CoreCrypto
 pub fn version() -> String {
     crate::VERSION.into()
 }

@@ -106,8 +106,12 @@ pub enum CryptoError {
     #[error(transparent)]
     ProteusError(#[from] ProteusError),
     #[cfg(feature = "proteus")]
+    /// The proteus client has been called but has not been initialized yet
     #[error("Proteus client hasn't been initialized")]
     ProteusNotInitialized,
+    /// CoreCrypto hasn't been built with the `proteus` feature enabled, meaning proteus isn't built in
+    #[error("CoreCrypto hasn't been built with Proteus support enabled")]
+    ProteusSupportNotEnabled,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

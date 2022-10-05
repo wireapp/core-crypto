@@ -22,10 +22,10 @@ use core_crypto_keystore::{
 use proteus::{keys::IdentityKeyPair, session::Session};
 use std::{collections::HashMap, sync::Arc};
 
-/// TODO:
+/// Proteus session IDs, it seems it's basically a string
 pub type SessionIdentifier = String;
 
-/// TODO:
+/// Proteus Session wrapper, that contains the identifier and the associated proteus Session
 #[derive(Debug)]
 pub struct ProteusConversationSession {
     identifier: SessionIdentifier,
@@ -72,17 +72,17 @@ impl ProteusConversationSession {
     }
 }
 
-/// TODO:
+/// Proteus counterpart of [crate::mls::MlsCentral]
+/// The big difference is that [ProteusCentral] doesn't *own* its own keystore but must borrow it from the outside.
+/// Whether it's exclusively for this struct's purposes or it's shared with our main struct, [MlsCentral]
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct ProteusCentral {
     proteus_identity: Arc<IdentityKeyPair>,
     proteus_sessions: HashMap<SessionIdentifier, ProteusConversationSession>,
-    callbacks: Option<Box<dyn CoreCryptoCallbacks + 'static>>,
 }
 
 impl ProteusCentral {
-    /// TODO
+    /// Initializes the [ProteusCentral]
     pub async fn try_new(client_id: ClientId, keystore: &CryptoKeystore) -> CryptoResult<Self> {
         let proteus_identity: Arc<IdentityKeyPair> = Self::load_or_create_identity(keystore, client_id.as_slice())
             .await?
@@ -93,35 +93,36 @@ impl ProteusCentral {
         Ok(Self {
             proteus_identity,
             proteus_sessions,
-            callbacks: None,
         })
     }
 
-    /// TODO:
+    /// This function will try to load a proteus Identity from our keystore; If it cannot, it will create a new one
+    /// This means this function doesn't fail except in cases of deeper errors (such as in the Keystore and other crypto errors)
     async fn load_or_create_identity(keystore: &CryptoKeystore, client_id: &[u8]) -> CryptoResult<IdentityKeyPair> {
-        Ok(
-            if let Some(identity) = keystore.find::<ProteusIdentity>(client_id).await? {
-                let sk = identity.sk_raw();
-                let pk = identity.pk_raw();
-                let kp = unsafe { IdentityKeyPair::from_raw_key_pair(*sk, *pk) };
-                kp
-            } else {
-                let kp = IdentityKeyPair::new();
-                let pk_fingerprint = kp.public_key.public_key.fingerprint();
-                let pk = hex::decode(pk_fingerprint)?;
+        let keypair = if let Some(identity) = keystore.find::<ProteusIdentity>(client_id).await? {
+            let sk = identity.sk_raw();
+            let pk = identity.pk_raw();
+            // SAFETY: Byte lengths are ensured at the keystore level so this function is safe to call, despite being cursed
+            let kp = unsafe { IdentityKeyPair::from_raw_key_pair(*sk, *pk) };
+            kp
+        } else {
+            let kp = IdentityKeyPair::new();
+            let pk_fingerprint = kp.public_key.public_key.fingerprint();
+            let pk = hex::decode(pk_fingerprint)?;
 
-                let ks_identity = ProteusIdentity {
-                    sk: kp.secret_key.to_bytes_extended().into(),
-                    pk,
-                };
-                keystore.save(ks_identity).await?;
+            let ks_identity = ProteusIdentity {
+                sk: kp.secret_key.to_bytes_extended().into(),
+                pk,
+            };
+            keystore.save(ks_identity).await?;
 
-                kp
-            },
-        )
+            kp
+        };
+
+        Ok(keypair)
     }
 
-    /// TODO:
+    /// Restores the saved sessions in memory. This is performed automatically on init
     async fn restore_sessions(
         keystore: &core_crypto_keystore::Connection,
         identity: &Arc<IdentityKeyPair>,
@@ -148,7 +149,7 @@ impl ProteusCentral {
         Ok(proteus_sessions)
     }
 
-    /// TODO:
+    /// Creates a new session from a prekey
     pub async fn session_from_prekey(
         &mut self,
         session_id: &str,
@@ -168,7 +169,7 @@ impl ProteusCentral {
         Ok(self.proteus_sessions.get_mut(session_id).unwrap())
     }
 
-    /// TODO:
+    /// Creates a new proteus Session from a recieved message
     pub async fn session_from_message(
         &mut self,
         keystore: &mut CryptoKeystore,
@@ -190,7 +191,7 @@ impl ProteusCentral {
         Ok((self.proteus_sessions.get_mut(session_id).unwrap(), payload))
     }
 
-    /// TODO:
+    /// Persists a session in store
     pub async fn session_save(&self, keystore: &CryptoKeystore, session_id: &str) -> CryptoResult<()> {
         if let Some(session) = self.proteus_sessions.get(session_id) {
             let db_session = ProteusSession {
@@ -203,7 +204,7 @@ impl ProteusCentral {
         Ok(())
     }
 
-    /// TODO:
+    /// Deletes a session in the store
     pub async fn session_delete(&mut self, keystore: &CryptoKeystore, session_id: &str) -> CryptoResult<()> {
         if keystore.remove::<ProteusSession, _>(session_id).await.is_ok() {
             let _ = self.proteus_sessions.remove(session_id);
@@ -211,12 +212,13 @@ impl ProteusCentral {
         Ok(())
     }
 
-    /// TODO:
+    /// Session accessor
     pub fn session(&mut self, session_id: &str) -> Option<&mut ProteusConversationSession> {
         self.proteus_sessions.get_mut(session_id)
     }
 
-    /// TODO:
+    /// Decrypt a proteus message for an already existing session
+    /// Note: This cannot be used for handshake messages, see [ProteusCentral::session_from_message]
     pub async fn decrypt(
         &mut self,
         keystore: &mut CryptoKeystore,
@@ -230,7 +232,7 @@ impl ProteusCentral {
         }
     }
 
-    /// TODO:
+    /// Encrypt a message for a session
     pub fn encrypt(&mut self, session_id: &str, plaintext: &[u8]) -> CryptoResult<Vec<u8>> {
         if let Some(session) = self.session(session_id) {
             session.encrypt(plaintext)
@@ -239,23 +241,28 @@ impl ProteusCentral {
         }
     }
 
-    /// TODO:
-    pub fn encrypt_batched(&mut self, sessions: &[&str], plaintext: &[u8]) -> CryptoResult<HashMap<String, Vec<u8>>> {
+    /// Encrypts a message for a list of sessions
+    /// This is mainly used for conversations with multiple clients, this allows to minimize FFI roundtrips
+    pub fn encrypt_batched(
+        &mut self,
+        sessions: &[impl AsRef<str>],
+        plaintext: &[u8],
+    ) -> CryptoResult<HashMap<String, Vec<u8>>> {
         let mut acc = HashMap::new();
         for session_id in sessions {
-            if let Some(session) = self.session(session_id) {
+            if let Some(session) = self.session(session_id.as_ref()) {
                 acc.insert(session.identifier.clone(), session.encrypt(plaintext)?);
             }
         }
         Ok(acc)
     }
 
-    /// TODO:
+    /// Proteus identity keypair
     pub fn identity(&self) -> &IdentityKeyPair {
         self.proteus_identity.as_ref()
     }
 
-    /// TODO:
+    /// Proteus Public key hex-encoded fingerprint
     pub fn fingerprint(&self) -> String {
         self.identity().public_key.fingerprint()
     }

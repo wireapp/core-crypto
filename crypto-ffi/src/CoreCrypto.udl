@@ -59,6 +59,10 @@ enum CryptoError {
     "UnauthorizedExternalCommit",
     "InvalidHashReference",
     "GenerationOutOfBound",
+    "HexDecodeError",
+    "ProteusError",
+    "ProteusNotInitialized",
+    "ProteusSupportNotEnabled",
 };
 
 dictionary DecryptedMessage {
@@ -199,6 +203,33 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     void clear_pending_commit(ConversationId conversation_id);
+
+    [Throws=CryptoError]
+    void proteus_init(ClientId client_id);
+
+    [Throws=CryptoError]
+    void proteus_session_from_prekey([ByRef] string session_id, [ByRef] sequence<u8> prekey);
+
+    [Throws=CryptoError]
+    sequence<u8> proteus_session_from_message([ByRef] string session_id, [ByRef] sequence<u8> envelope);
+
+    [Throws=CryptoError]
+    void proteus_session_save([ByRef] string session_id);
+
+    [Throws=CryptoError]
+    void proteus_session_delete([ByRef] string session_id);
+
+    [Throws=CryptoError]
+    sequence<u8> proteus_decrypt([ByRef] string session_id, [ByRef] sequence<u8> ciphertext);
+
+    [Throws=CryptoError]
+    sequence<u8> proteus_encrypt([ByRef] string session_id, [ByRef] sequence<u8> plaintext);
+
+    [Throws=CryptoError]
+    record<DOMString, sequence<u8>> proteus_encrypt_batched(sequence<string> session_id, [ByRef] sequence<u8> plaintext);
+
+    [Throws=CryptoError]
+    string proteus_fingerprint();
 };
 
 namespace CoreCrypto {

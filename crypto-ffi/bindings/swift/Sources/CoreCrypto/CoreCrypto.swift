@@ -615,4 +615,78 @@ public class CoreCryptoWrapper {
     public func commitAccepted(conversationId: ConversationId) throws {
         try self.coreCrypto.commitAccepted(conversationId: conversationId)
     }
+
+    /// Initiailizes the proteus client
+    ///
+    /// - parameter clientId: the ID of the proteus client
+    public func proteusInit(clientId: ClientId) throws {
+        try self.coreCrypto.proteusInit(clientId: clientId)
+    }
+
+    /// Create a Proteus session using a prekey
+    ///
+    /// - parameter sessionId: ID of the Proteus session
+    /// - parameter prekey: CBOR-encoded Proteus prekey of the other client
+    public func proteusSessionFromPrekey(sessionId: String) throws {
+        try self.coreCrypto.proteusSessionFromPrekey(sessionId: sessionId)
+    }
+
+    /// Create a Proteus session from a handshake message
+    ///
+    /// - parameter sessionId: ID of the Proteus session
+    /// - parameter envelope: CBOR-encoded Proteus message
+    public func proteusSessionFromMessage(sessionId: String, prekey: [UInt8]) throws {
+        try self.coreCrypto.proteusSessionFromMessage(sessionId: sessionId, prekey: prekey)
+    }
+
+    /// Locally persists a session to the keystore
+    ///
+    /// - parameter sessionId: ID of the Proteus session
+    public func proteusSessionSave(sessionId: String) throws {
+        try self.coreCrypto.proteusSessionSave(sessionId: sessionId)
+    }
+
+    /// Deletes a session
+    /// Note: this also deletes the persisted data within the keystore
+    ///
+    /// - parameter sessionId: ID of the Proteus session
+    public func proteusSessionDelete(sessionId: String) throws {
+        try self.coreCrypto.proteusSessionDelete(sessionId: sessionId)
+    }
+
+    /// Decrypt an incoming message for an existing Proteus session
+    ///
+    /// - parameter sessionId: ID of the Proteus session
+    /// - parameter ciphertext: CBOR encoded, encrypted proteus message
+    /// - returns: The decrypted payload contained within the message
+    public func proteusDecrypt(sessionId: String, ciphertext: [UInt8]) throws -> [UInt8] {
+        try self.coreCrypto.proteusDecrypt(sessionId: sessionId, ciphertext: ciphertext)
+    }
+
+    /// Encrypt a message for a given Proteus session
+    ///
+    /// - parameter sessionId: ID of the Proteus session
+    /// - parameter plaintext: payload to encrypt
+    /// - returns: The CBOR-serialized encrypted message
+    public func proteusEncrypt(sessionId: String, plaintext: [UInt8]) throws -> [UInt8] {
+        try self.coreCrypto.proteusEncrypt(sessionId: sessionId, plaintext: plaintext)
+    }
+
+    /// Batch encryption for proteus messages
+    /// This is used to minimize FFI roundtrips when used in the context of a multi-client session (i.e. conversation)
+    ///
+    /// - parameter sessions: List of Proteus session IDs to encrypt the message for
+    /// - parameter plaintext: payload to encrypt
+    /// - returns: A map indexed by each session ID and the corresponding CBOR-serialized encrypted message for this session
+    public func proteusEncryptBatched(sessions: [String], plaintext: [UInt8]) throws -> [String: [UInt8]] {
+        try self.coreCrypto.proteusEncryptBatched(sessions: sessions, plaintext: plaintext)
+    }
+
+    /// Proteus public key fingerprint
+    /// It's basically the public key encoded as an hex string
+    ///
+    /// - returns: Hex-encoded public key string
+    public func proteusFingerprint() throws -> String {
+        try self.coreCrypto.proteusFingerprint()
+    }
 }
