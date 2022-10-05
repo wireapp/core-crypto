@@ -16,6 +16,6 @@ handlebars = "4.3"
 serde_json = "1.0"
 semver = "1.0"
 toml_edit = "0.14"
-cargo = "0.64"
+cargo = "0.65"
 
 
