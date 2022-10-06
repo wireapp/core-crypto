@@ -230,6 +230,9 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     string proteus_fingerprint();
+
+    [Throws=CryptoError]
+    void proteus_cryptobox_migrate([ByRef] string path);
 };
 
 namespace CoreCrypto {

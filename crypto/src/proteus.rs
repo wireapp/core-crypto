@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{prelude::ClientId, CoreCryptoCallbacks, CryptoError, CryptoResult, ProteusError};
+use crate::{prelude::ClientId, CryptoError, CryptoResult, ProteusError};
 use core_crypto_keystore::{
     entities::{ProteusIdentity, ProteusSession},
     Connection as CryptoKeystore,
@@ -103,23 +103,26 @@ impl ProteusCentral {
             let sk = identity.sk_raw();
             let pk = identity.pk_raw();
             // SAFETY: Byte lengths are ensured at the keystore level so this function is safe to call, despite being cursed
-            let kp = unsafe { IdentityKeyPair::from_raw_key_pair(*sk, *pk) };
-            kp
+            unsafe { IdentityKeyPair::from_raw_key_pair(*sk, *pk) }
         } else {
-            let kp = IdentityKeyPair::new();
-            let pk_fingerprint = kp.public_key.public_key.fingerprint();
-            let pk = hex::decode(pk_fingerprint)?;
-
-            let ks_identity = ProteusIdentity {
-                sk: kp.secret_key.to_bytes_extended().into(),
-                pk,
-            };
-            keystore.save(ks_identity).await?;
-
-            kp
+            Self::create_identity(keystore).await?
         };
 
         Ok(keypair)
+    }
+
+    async fn create_identity(keystore: &CryptoKeystore) -> CryptoResult<IdentityKeyPair> {
+        let kp = IdentityKeyPair::new();
+        let pk_fingerprint = kp.public_key.public_key.fingerprint();
+        let pk = hex::decode(pk_fingerprint)?;
+
+        let ks_identity = ProteusIdentity {
+            sk: kp.secret_key.to_bytes_extended().into(),
+            pk,
+        };
+        keystore.save(ks_identity).await?;
+
+        Ok(kp)
     }
 
     /// Restores the saved sessions in memory. This is performed automatically on init
@@ -140,7 +143,7 @@ impl ProteusCentral {
 
             let proteus_conversation = ProteusConversationSession {
                 identifier: identifier.clone(),
-                session: proteus_session.into(),
+                session: proteus_session,
             };
 
             proteus_sessions.insert(identifier, proteus_conversation);
@@ -161,7 +164,7 @@ impl ProteusCentral {
 
         let proteus_conversation = ProteusConversationSession {
             identifier: session_id.into(),
-            session: proteus_session.into(),
+            session: proteus_session,
         };
 
         self.proteus_sessions.insert(session_id.into(), proteus_conversation);
@@ -183,7 +186,7 @@ impl ProteusCentral {
 
         let proteus_conversation = ProteusConversationSession {
             identifier: session_id.into(),
-            session: session.into(),
+            session,
         };
 
         self.proteus_sessions.insert(session_id.into(), proteus_conversation);
@@ -265,6 +268,246 @@ impl ProteusCentral {
     /// Proteus Public key hex-encoded fingerprint
     pub fn fingerprint(&self) -> String {
         self.identity().public_key.fingerprint()
+    }
+
+    /// Cryptobox -> CoreCrypto migration
+    pub async fn cryptobox_migrate(&self, keystore: &CryptoKeystore, path: &str) -> CryptoResult<()> {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "cryptobox-migrate")] {
+                self.cryptobox_migrate_impl(keystore, path).await?;
+                Ok(())
+            } else {
+                Err(CryptoError::ProteusSupportNotEnabled("cryptobox-migrate".into()))
+            }
+        }
+    }
+}
+
+#[cfg(feature = "cryptobox-migrate")]
+#[allow(dead_code)]
+impl ProteusCentral {
+    #[cfg(not(target_family = "wasm"))]
+    async fn cryptobox_migrate_impl(&self, keystore: &CryptoKeystore, path: &str) -> CryptoResult<()> {
+        let root_dir = std::path::PathBuf::from(path);
+        let session_dir = root_dir.join("sessions");
+        let prekey_dir = root_dir.join("prekeys");
+
+        let mut identity = if let Some(store_kp) = keystore.find::<ProteusIdentity>(&[]).await? {
+            Some(unsafe { proteus::keys::IdentityKeyPair::from_raw_key_pair(*store_kp.sk_raw(), *store_kp.pk_raw()) })
+        } else {
+            let identity_dir = root_dir.join("identities");
+
+            let identity = identity_dir.join("local");
+            let legacy_identity = identity_dir.join("local_identity");
+            // Old "local_identity" migration step
+            let identity_check = if legacy_identity.exists() {
+                let kp_cbor = async_fs::read(&legacy_identity).await?;
+                let kp = proteus::keys::IdentityKeyPair::deserialise(&kp_cbor).map_err(ProteusError::from)?;
+                Some((kp, true))
+            } else if identity.exists() {
+                let kp_cbor = async_fs::read(&identity).await?;
+                let kp = proteus::identity::Identity::deserialise(&kp_cbor).map_err(ProteusError::from)?;
+                if let proteus::identity::Identity::Sec(kp) = kp {
+                    Some((kp.into_owned(), false))
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
+            if let Some((kp, delete)) = identity_check {
+                let pk_fingerprint = kp.public_key.public_key.fingerprint();
+                let pk = hex::decode(pk_fingerprint)?;
+
+                let ks_identity = ProteusIdentity {
+                    sk: kp.secret_key.to_bytes_extended().into(),
+                    pk,
+                };
+                keystore.save(ks_identity).await?;
+                if delete {
+                    async_fs::remove_file(legacy_identity).await?;
+                }
+
+                Some(kp)
+            } else {
+                None
+            }
+        };
+
+        let identity = if let Some(identity) = identity.take() {
+            identity
+        } else {
+            Self::create_identity(keystore).await?
+        };
+
+        use futures_lite::stream::StreamExt as _;
+        // Session migration
+        let mut session_entries = async_fs::read_dir(session_dir).await?;
+        while let Some(session_file) = session_entries.try_next().await? {
+            // The name of the file is the session id
+            let proteus_session_id: String = session_file.file_name().to_string_lossy().to_string();
+
+            // If the session is already in store, skip ahead
+            if keystore
+                .find::<ProteusSession>(proteus_session_id.as_bytes())
+                .await?
+                .is_some()
+            {
+                continue;
+            }
+
+            let raw_session = async_fs::read(session_file.path()).await?;
+            if proteus::session::Session::deserialise(&identity, &raw_session).is_ok() {
+                let keystore_session = ProteusSession {
+                    id: proteus_session_id,
+                    session: raw_session,
+                };
+
+                keystore.save(keystore_session).await?;
+            }
+        }
+
+        // Prekey migration
+        use core_crypto_keystore::entities::ProteusPrekey;
+        let mut prekey_entries = async_fs::read_dir(prekey_dir).await?;
+        while let Some(prekey_file) = prekey_entries.try_next().await? {
+            // The name of the file is the prekey id, so we parse it to get the ID
+            let proteus_prekey_id = proteus::keys::PreKeyId::new(prekey_file.file_name().to_string_lossy().parse()?);
+
+            // Check if the prekey ID is already existing
+            if keystore
+                .find::<ProteusPrekey>(&proteus_prekey_id.value().to_le_bytes())
+                .await?
+                .is_some()
+            {
+                continue;
+            }
+
+            let raw_prekey = async_fs::read(prekey_file.path()).await?;
+            // Integrity check to see if the PreKey is actually correct
+            if proteus::keys::PreKey::deserialise(&raw_prekey).is_ok() {
+                let keystore_prekey = ProteusPrekey::from_raw(proteus_prekey_id.value(), raw_prekey);
+                keystore.save(keystore_prekey).await?;
+            }
+        }
+
+        Ok(())
+    }
+
+    #[cfg(target_family = "wasm")]
+    async fn cryptobox_migrate_impl(&self, keystore: &CryptoKeystore, path: &str) -> CryptoResult<()> {
+        use core_crypto_keystore::CryptoKeystoreError;
+        use rexie::{ObjectStore, Rexie, TransactionMode};
+        let local_identity_key = "local_identity";
+        let local_identity_store_name = "keys";
+        let prekeys_store_name = "prekeys";
+        let sessions_store_name = "sessions";
+
+        // Path should be following this logic: https://github.com/wireapp/wire-web-packages/blob/main/packages/core/src/main/Account.ts#L645
+        let db = Rexie::builder(path)
+            .add_object_store(ObjectStore::new(local_identity_store_name))
+            .add_object_store(ObjectStore::new(prekeys_store_name))
+            .add_object_store(ObjectStore::new(sessions_store_name))
+            .build()
+            .await
+            .map_err(CryptoKeystoreError::from)?;
+
+        let transaction = db
+            .transaction(
+                &[local_identity_store_name, prekeys_store_name, sessions_store_name],
+                TransactionMode::ReadOnly,
+            )
+            .map_err(CryptoKeystoreError::from)?;
+
+        let identity_store = transaction
+            .store(local_identity_store_name)
+            .map_err(CryptoKeystoreError::from)?;
+
+        let mut proteus_identity = if let Some(store_kp) = keystore.find::<ProteusIdentity>(&[]).await? {
+            Some(unsafe { proteus::keys::IdentityKeyPair::from_raw_key_pair(*store_kp.sk_raw(), *store_kp.pk_raw()) })
+        } else if let Some(kp_cbor) = identity_store
+            .get(&local_identity_key.into())
+            .await
+            .map_err(CryptoKeystoreError::from)?
+        {
+            let kp_cbor = kp_cbor.as_string().unwrap();
+            Some(proteus::keys::IdentityKeyPair::deserialise(kp_cbor.as_bytes()).map_err(ProteusError::from)?)
+        } else {
+            None
+        };
+
+        let proteus_identity = if let Some(identity) = proteus_identity.take() {
+            identity
+        } else {
+            Self::create_identity(keystore).await?
+        };
+
+        let sessions_store = transaction
+            .store(sessions_store_name)
+            .map_err(CryptoKeystoreError::from)?;
+
+        let sessions = sessions_store
+            .get_all(None, None, None, None)
+            .await
+            .map_err(CryptoKeystoreError::from)?;
+
+        for (session_id, session_cbor) in sessions
+            .into_iter()
+            .map(|(k, v)| (k.as_string().unwrap(), v.as_string().unwrap()))
+        {
+            // If the session is already in store, skip ahead
+            if keystore.find::<ProteusSession>(session_id.as_bytes()).await?.is_some() {
+                continue;
+            }
+
+            let session_cbor_bytes = session_cbor.into_bytes();
+
+            // Integrity check
+            if proteus::session::Session::deserialise(&proteus_identity, &session_cbor_bytes).is_ok() {
+                let keystore_session = ProteusSession {
+                    id: session_id,
+                    session: session_cbor_bytes,
+                };
+
+                keystore.save(keystore_session).await?;
+            }
+        }
+
+        use core_crypto_keystore::entities::ProteusPrekey;
+        let prekeys_store = transaction
+            .store(prekeys_store_name)
+            .map_err(CryptoKeystoreError::from)?;
+
+        let prekeys = prekeys_store
+            .get_all(None, None, None, None)
+            .await
+            .map_err(CryptoKeystoreError::from)?;
+
+        for (prekey_id, prekey_cbor) in prekeys
+            .into_iter()
+            .map(|(id, cbor)| (id.as_string().unwrap(), cbor.as_string().unwrap()))
+        {
+            let prekey_id: u16 = prekey_id.parse()?;
+            let raw_prekey_cbor = prekey_cbor.into_bytes();
+
+            // Check if the prekey ID is already existing
+            if keystore
+                .find::<ProteusPrekey>(&prekey_id.to_le_bytes())
+                .await?
+                .is_some()
+            {
+                continue;
+            }
+
+            // Integrity check to see if the PreKey is actually correct
+            if proteus::keys::PreKey::deserialise(&raw_prekey_cbor).is_ok() {
+                let keystore_prekey = ProteusPrekey::from_raw(prekey_id, raw_prekey_cbor);
+                keystore.save(keystore_prekey).await?;
+            }
+        }
+
+        Ok(())
     }
 }
 

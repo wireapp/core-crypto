@@ -4,8 +4,8 @@ use criterion::{
 use futures_lite::future::block_on;
 
 use core_crypto::{
+    mls::MlsCiphersuite,
     prelude::{CertificateBundle, MlsProposal},
-    MlsCiphersuite,
 };
 
 use crate::utils::*;

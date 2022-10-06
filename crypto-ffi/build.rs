@@ -18,43 +18,42 @@
 const UDL_FILE: &str = "./src/CoreCrypto.udl";
 
 fn main() {
-    // Target aliases
-    #[cfg(all(feature = "mobile", target_os = "ios"))]
-    println!("cargo:rustc-cfg=ios");
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "mobile")] {
+            #[cfg(target_os = "ios")]
+            println!("cargo:rustc-cfg=ios");
+            #[cfg(target_os = "android")]
+            println!("cargo:rustc-cfg=android");
 
-    #[cfg(target_family = "wasm")]
-    println!("cargo:rustc-cfg=wasm");
+            uniffi_build::generate_scaffolding(UDL_FILE).unwrap();
 
-    #[cfg(all(feature = "mobile", target_os = "android"))]
-    println!("cargo:rustc-cfg=android");
+            uniffi_bindgen::generate_bindings(
+                UDL_FILE.into(),
+                None,
+                vec!["kotlin"],
+                Some("./bindings/kt/".into()),
+                None,
+                false,
+            )
+            .unwrap();
 
-    #[cfg(feature = "mobile")]
-    uniffi_build::generate_scaffolding(UDL_FILE).unwrap();
-    #[cfg(feature = "mobile")]
-    uniffi_bindgen::generate_bindings(
-        UDL_FILE.into(),
-        None,
-        vec!["kotlin"],
-        Some("./bindings/kt/".into()),
-        None,
-        false,
-    )
-    .unwrap();
-    #[cfg(feature = "mobile")]
-    uniffi_bindgen::generate_bindings(
-        UDL_FILE.into(),
-        None,
-        vec!["swift"],
-        Some("./bindings/swift/lib/".into()),
-        None,
-        false,
-    )
-    .unwrap();
-    if cfg!(feature = "mobile") {
-        std::fs::rename(
-            "./bindings/swift/lib/CoreCrypto.swift",
-            "./bindings/swift/Sources/CoreCryptoSwift/CoreCryptoSwift.swift",
-        )
-        .unwrap();
+            uniffi_bindgen::generate_bindings(
+                UDL_FILE.into(),
+                None,
+                vec!["swift"],
+                Some("./bindings/swift/lib/".into()),
+                None,
+                false,
+            )
+            .unwrap();
+
+            std::fs::rename(
+                "./bindings/swift/lib/CoreCrypto.swift",
+                "./bindings/swift/Sources/CoreCryptoSwift/CoreCryptoSwift.swift",
+            )
+            .unwrap();
+        } else if #[cfg(target_family = "wasm")] {
+            println!("cargo:rustc-cfg=wasm");
+        }
     }
 }

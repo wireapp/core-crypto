@@ -1118,6 +1118,15 @@ export class CoreCrypto {
     }
 
     /**
+     * Imports all the data stored by Cryptobox into the CoreCrypto keystore
+     *
+     * @param storeName - The name of the IndexedDB store where the data is stored
+     */
+    async proteusCryptoboxMigrate(storeName: string): Promise<void> {
+        return await this.#cc.proteus_cryptobox_migrate(storeName);
+    }
+
+    /**
      * Returns the current version of {@link CoreCrypto}
      *
      * @returns The `core-crypto-ffi` version as defined in its `Cargo.toml` file

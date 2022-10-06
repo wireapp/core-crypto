@@ -12,8 +12,18 @@ name = "core_crypto"
 crate-type = ["lib", "cdylib"]
 
 [features]
-default = ["proteus"]
-proteus = ["dep:proteus", "core-crypto-keystore/proteus-keystore"]
+default = []
+proteus = [
+    "dep:proteus",
+    "core-crypto-keystore/proteus-keystore"
+]
+cryptobox-migrate = [
+    "proteus",
+    "proteus/cryptobox-identity",
+    "dep:async-fs",
+    "dep:futures-lite",
+    "dep:rexie"
+]
 
 [dependencies]
 thiserror = "1.0"
@@ -26,8 +36,14 @@ openmls_traits = "0.1"
 tls_codec = "0.2"
 serde_json = "1.0"
 derive_more = { version = "0.99", features = ["deref"] }
+cfg-if = "1.0"
 
 proteus = { version = "2.0", features = ["hazmat"], optional = true }
+async-fs = { version = "1.6", optional = true }
+futures-lite = { version = "1.12", optional = true }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+rexie = { version = "0.4", optional = true }
 
 [dependencies.core-crypto-keystore]
 version = "0.5"

@@ -1409,6 +1409,23 @@ impl CoreCrypto {
             self.0.read().await.proteus_fingerprint().map_err(Into::into).map(Into::into)
         } or throw WasmCryptoResult<_>)
     }
+
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::cryptobox_migrate]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub fn proteus_cryptobox_migrate(&self, path: String) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                proteus_impl!({
+                    this.read().await.proteus_cryptobox_migrate(&path).await?;
+                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
+                } or throw WasmCryptoResult<_>)
+            }
+            .err_into(),
+        )
+    }
 }
 
 #[wasm_bindgen]

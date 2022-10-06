@@ -13,7 +13,7 @@ crate-type = ["cdylib", "staticlib"]
 
 [features]
 default = []
-proteus = ["core-crypto/proteus"]
+proteus = ["core-crypto/proteus", "core-crypto/cryptobox-migrate"]
 mobile = ["uniffi", "uniffi_macros", "uniffi_build", "uniffi_bindgen"]
 # c-api = ["libc"] # FIXME: Disabled until it becomes compatible with the internal APIs again
 
@@ -51,6 +51,7 @@ js-sys = "0.3"
 # UniFFI - Android + iOS bindings - Build support
 uniffi_build = { version = "0.20", features = ["builtin-bindgen"], optional = true }
 uniffi_bindgen = { version = "0.20", optional = true }
+cfg-if = "1.0"
 
 [dev-dependencies]
 uniffi = { version = "0.20", features = ["builtin-bindgen"] }

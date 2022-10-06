@@ -10,7 +10,7 @@ use openmls_traits::types::Ciphersuite;
 use core_crypto::prelude::{
     CertificateBundle, ClientId, ConversationId, ConversationMember, MlsConversationConfiguration,
 };
-use core_crypto::{prelude::MlsCentralConfiguration, MlsCentral, MlsCiphersuite};
+use core_crypto::{mls::MlsCentral, mls::MlsCiphersuite, prelude::MlsCentralConfiguration};
 use mls_crypto_provider::MlsCryptoProvider;
 
 // number of criterion sample

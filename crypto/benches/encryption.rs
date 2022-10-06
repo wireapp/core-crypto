@@ -4,7 +4,7 @@ use criterion::{
 use futures_lite::future::block_on;
 use rand::distributions::{Alphanumeric, DistString};
 
-use core_crypto::{prelude::CertificateBundle, MlsCiphersuite};
+use core_crypto::{mls::MlsCiphersuite, prelude::CertificateBundle};
 
 use crate::utils::*;
 
