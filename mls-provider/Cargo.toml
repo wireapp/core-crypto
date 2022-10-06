@@ -31,11 +31,16 @@ hkdf = "0.12"
 rand = { version = "0.8", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
 rand_chacha = "0.3"
-hpke = { version = "0.1", package = "hpke-rs", default-features = false, features = ["hazmat", "serialization"] }
 hpke-rs-crypto = "0.1"
 hpke-rs-rust-crypto = "0.1"
 zeroize = "1.5"
 thiserror = "1.0"
+
+[dependencies.hpke]
+version = "0.1"
+package = "hpke-rs"
+default-features = false
+features = ["hazmat", "serialization"]
 
 [dependencies.core-crypto-keystore]
 version = "0.5"

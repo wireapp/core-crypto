@@ -12,35 +12,42 @@ git = "https://github.com/wireapp/proteus"
 branch = "otak/sodiumoxide-0.2.7"
 
 [patch.crates-io.openmls]
+#path = "../openmls/openmls"
 git = "https://github.com/wireapp/openmls"
-#tag = "v0.5.2-pre.core-crypto-0.4.2"
-#tag = "v0.5.3-pre.core-crypto-0.5.0"
-branch = "post-quantum"
+branch = "feat/pq"
 package = "openmls"
 
-[patch.crates-io.openmls_traits]
-git = "https://github.com/wireapp/openmls"
 #tag = "v0.5.2-pre.core-crypto-0.4.2"
 #tag = "v0.5.3-pre.core-crypto-0.5.0"
-branch = "post-quantum"
+
+[patch.crates-io.openmls_traits]
+#path = "../openmls/traits"
+git = "https://github.com/wireapp/openmls"
+branch = "feat/pq"
 package = "openmls_traits"
 
+#tag = "v0.5.2-pre.core-crypto-0.4.2"
+#tag = "v0.5.3-pre.core-crypto-0.5.0"
+
 [patch.crates-io.hpke-rs]
+#path = "../hpke-rs"
 git = "https://github.com/wireapp/hpke-rs"
 #tag = "v0.1.2"
-branch = "post-quantum"
+branch = "feat/pq"
 package = "hpke-rs"
 
 [patch.crates-io.hpke-rs-crypto]
+#path = "../hpke-rs/traits"
 git = "https://github.com/wireapp/hpke-rs"
 #tag = "v0.1.2"
-branch = "post-quantum"
+branch = "feat/pq"
 package = "hpke-rs-crypto"
 
 [patch.crates-io.hpke-rs-rust-crypto]
+#path = "../hpke-rs/rust_crypto_provider"
 git = "https://github.com/wireapp/hpke-rs"
 #tag = "v0.1.2"
-branch = "post-quantum"
+branch = "feat/pq"
 package = "hpke-rs-rust-crypto"
 
 [patch.crates-io.rcgen]
