@@ -870,4 +870,18 @@ impl CoreCrypto<'_> {
                 .proteus_fingerprint()
         }}
     }
+
+    /// See [core_crypto::proteus::ProteusCentral::cryptobox_migrate]
+    pub fn proteus_cryptobox_migrate(&self, path: &str) -> CryptoResult<()> {
+        proteus_impl! {{
+            future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_cryptobox_migrate(path)
+                ),
+            )
+        }}
+    }
 }

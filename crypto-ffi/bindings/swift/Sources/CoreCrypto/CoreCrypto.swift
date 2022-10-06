@@ -689,4 +689,11 @@ public class CoreCryptoWrapper {
     public func proteusFingerprint() throws -> String {
         try self.coreCrypto.proteusFingerprint()
     }
+
+     /// Imports all the data stored by Cryptobox into the CoreCrypto keystore
+     ///
+     /// @param path - Path to the folder where Cryptobox things are stored
+    public func proteusCryptoboxMigrate(path: String) throws {
+        try self.coreCrypto.proteusCryptoboxMigrate(path: path)
+    }
 }

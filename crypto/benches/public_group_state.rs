@@ -2,7 +2,7 @@ use criterion::{
     async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion,
 };
 
-use core_crypto::{prelude::CertificateBundle, MlsCiphersuite};
+use core_crypto::{mls::MlsCiphersuite, prelude::CertificateBundle};
 
 use crate::utils::*;
 

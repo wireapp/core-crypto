@@ -110,8 +110,8 @@ pub enum CryptoError {
     #[error("Proteus client hasn't been initialized")]
     ProteusNotInitialized,
     /// CoreCrypto hasn't been built with the `proteus` feature enabled, meaning proteus isn't built in
-    #[error("CoreCrypto hasn't been built with Proteus support enabled")]
-    ProteusSupportNotEnabled,
+    #[error("CoreCrypto hasn't been built with Proteus support enabled; The feature `{0}` isn't enabled")]
+    ProteusSupportNotEnabled(String),
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]
@@ -196,7 +196,7 @@ pub enum MlsError {
     MlsCryptoError(#[from] openmls::prelude::CryptoError),
 }
 
-// #[cfg(feature = "proteus")]
+#[cfg(feature = "proteus")]
 #[derive(Debug, thiserror::Error)]
 /// TODO
 pub enum ProteusError {

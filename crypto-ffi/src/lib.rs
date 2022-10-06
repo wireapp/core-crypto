@@ -20,12 +20,12 @@ macro_rules! proteus_impl {
             if #[cfg(feature = "proteus")] {
                 $body
             } else {
-                return <$err_type>::Err(CryptoError::ProteusSupportNotEnabled.into());
+                return <$err_type>::Err(CryptoError::ProteusSupportNotEnabled("proteus".into()).into());
             }
         }
     }};
     ($body:block) => {
-        proteus_impl!($body or throw ::std::result::Result<_, _>);
+        proteus_impl!($body or throw ::std::result::Result<_, _>)
     };
 }
 

@@ -3,8 +3,8 @@ use criterion::{
 };
 
 use core_crypto::{
+    mls::MlsCiphersuite,
     prelude::{CertificateBundle, MlsProposal},
-    MlsCiphersuite,
 };
 
 use crate::utils::*;

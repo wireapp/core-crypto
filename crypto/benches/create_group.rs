@@ -6,8 +6,8 @@ use openmls::prelude::VerifiablePublicGroupState;
 
 use core_crypto::prelude::MlsConversationInitBundle;
 use core_crypto::{
+    mls::MlsCiphersuite,
     prelude::{CertificateBundle, ConversationMember, MlsConversationConfiguration},
-    MlsCiphersuite,
 };
 
 use crate::utils::*;

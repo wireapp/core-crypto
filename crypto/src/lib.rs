@@ -41,6 +41,7 @@ mod error;
 /// MLS Abstraction
 pub mod mls;
 
+#[cfg(feature = "proteus")]
 /// Proteus Abstraction
 pub mod proteus;
 
@@ -125,6 +126,7 @@ pub struct CoreCrypto {
     #[cfg(feature = "proteus")]
     proteus: Option<crate::proteus::ProteusCentral>,
     #[cfg(not(feature = "proteus"))]
+    #[allow(dead_code)]
     proteus: (),
 }
 
@@ -276,6 +278,16 @@ impl CoreCrypto {
     pub fn proteus_fingerprint(&self) -> CryptoResult<String> {
         if let Some(proteus) = &self.proteus {
             Ok(proteus.fingerprint())
+        } else {
+            Err(CryptoError::ProteusNotInitialized)
+        }
+    }
+
+    /// TODO:
+    pub async fn proteus_cryptobox_migrate(&self, path: &str) -> CryptoResult<()> {
+        if let Some(proteus) = &self.proteus {
+            let keystore = self.mls.mls_backend.borrow_keystore();
+            Ok(proteus.cryptobox_migrate(keystore, path).await?)
         } else {
             Err(CryptoError::ProteusNotInitialized)
         }
