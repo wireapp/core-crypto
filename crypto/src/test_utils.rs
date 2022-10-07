@@ -26,9 +26,11 @@ use openmls::prelude::{
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
-use crate::mls::external_commit::MlsConversationInitBundle;
 use crate::{
-    mls::{config::MlsCentralConfiguration, credential::CredentialSupplier, member::ConversationMember, MlsCentral},
+    mls::{
+        config::MlsCentralConfiguration, credential::CredentialSupplier, external_commit::MlsConversationInitBundle,
+        member::ConversationMember, MlsCentral,
+    },
     prelude::{ClientId, ConversationId, MlsConversation, MlsConversationConfiguration},
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };

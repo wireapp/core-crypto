@@ -71,6 +71,7 @@ pub mod prelude {
                 *,
             },
             credential::CertificateBundle,
+            external_commit::MlsConversationInitBundle,
             member::*,
             proposal::{MlsProposal, MlsProposalRef},
             MlsCentral, MlsCiphersuite,
