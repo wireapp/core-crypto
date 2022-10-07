@@ -10,13 +10,14 @@ pub use crate::credential::CredentialSupplier;
 use openmls::prelude::{
     KeyPackage, KeyPackageBundle, PublicGroupState, QueuedProposal, StagedCommit, VerifiablePublicGroupState, Welcome,
 };
+pub use openmls_traits::types::Ciphersuite;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
 use crate::external_commit::MlsConversationInitBundle;
 use crate::{
     config::MlsCentralConfiguration, member::ConversationMember, ConversationId, CoreCryptoCallbacks, CryptoError,
-    CryptoResult, MlsCentral, MlsConversation, MlsError,
+    CryptoResult, MlsCentral, MlsCiphersuite, MlsConversation, MlsError,
 };
 
 #[template]
@@ -26,11 +27,24 @@ use crate::{
     cfg,
     case::basic_cs1(
         crate::credential::CertificateBundle::rnd_basic(),
-        crate::conversation::MlsConversationConfiguration::default()
+        MlsConversationConfiguration {
+            ciphersuite: Ciphersuite::MLS_128_KYBER512_AES128GCM_SHA256_Ed25519.into(),
+            ..Default::default()
+        }
     ),
     case::cert_cs1(
         crate::credential::CertificateBundle::rnd_certificate_bundle(),
-        crate::conversation::MlsConversationConfiguration::default()
+        MlsConversationConfiguration {
+            ciphersuite: Ciphersuite::MLS_128_KYBER512_AES128GCM_SHA256_Ed25519.into(),
+            ..Default::default()
+        }
+    ),
+    case::basic_cspq(
+        crate::credential::CertificateBundle::rnd_basic(),
+        MlsConversationConfiguration {
+            ciphersuite: Ciphersuite::MLS_128_KYBER512_AES128GCM_SHA256_Ed25519.into(),
+            ..Default::default()
+        }
     )
 )]
 #[allow(non_snake_case)]
