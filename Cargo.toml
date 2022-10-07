@@ -1,5 +1,5 @@
 [workspace]
-members = ["crypto", "crypto-ffi", "crypto-attributes", "keystore", "mls-provider", "interop"]
+members = ["crypto", "crypto-ffi", "crypto-attributes", "keystore", "mls-provider"]
 exclude = ["xtask", "extras/anycrypto", "extras/core-ds"]
 resolver = "2"
 
@@ -49,6 +49,10 @@ git = "https://github.com/wireapp/hpke-rs"
 #tag = "v0.1.2"
 branch = "feat/pq"
 package = "hpke-rs-rust-crypto"
+
+[patch.crates-io.pqc_kyber]
+git = "https://github.com/beltram/kyber"
+branch = "feat/pq"
 
 [patch.crates-io.rcgen]
 git = "https://github.com/wireapp/rcgen"
