@@ -105,6 +105,10 @@ pub enum CryptoError {
     /// Proteus Error Wrapper
     #[error(transparent)]
     ProteusError(#[from] ProteusError),
+    #[cfg(feature = "cryptobox-migrate")]
+    /// Cryptobox migration error wrapper
+    #[error(transparent)]
+    CryptoboxMigrationError(#[from] CryptoboxMigrationError),
     #[cfg(feature = "proteus")]
     /// The proteus client has been called but has not been initialized yet
     #[error("Proteus client hasn't been initialized")]
@@ -202,11 +206,25 @@ pub enum MlsError {
 pub enum ProteusError {
     #[error(transparent)]
     /// TODO
-    ProteusDecodeError(#[from] proteus::DecodeError),
+    ProteusDecodeError(#[from] proteus_wasm::DecodeError),
     #[error(transparent)]
     /// TODO
-    ProteusEncodeError(#[from] proteus::EncodeError),
+    ProteusEncodeError(#[from] proteus_wasm::EncodeError),
     #[error(transparent)]
     /// TODO
-    ProteusSessionError(#[from] proteus::session::Error<core_crypto_keystore::CryptoKeystoreError>),
+    ProteusSessionError(#[from] proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>),
+}
+
+#[cfg(feature = "cryptobox-migrate")]
+#[derive(Debug, thiserror::Error)]
+/// TODO
+pub enum CryptoboxMigrationError {
+    #[cfg(target_family = "wasm")]
+    #[error(transparent)]
+    /// TODO
+    RexieError(#[from] rexie::Error),
+    #[cfg(target_family = "wasm")]
+    #[error(transparent)]
+    /// TODO
+    JsonParseError(#[from] serde_wasm_bindgen::Error),
 }

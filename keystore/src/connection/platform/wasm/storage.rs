@@ -361,8 +361,6 @@ impl WasmEncryptedStorage {
                     let js_value = value.serialize(&serializer)?;
                     store.put(&js_value, Some(&key)).await?;
                 }
-
-                transaction.commit().await?;
             }
             WasmStorageWrapper::InMemory(map) => {
                 let entry = map.entry(collection.as_ref().into()).or_default();
@@ -393,7 +391,6 @@ impl WasmEncryptedStorage {
                     let k = Uint8Array::from(k.as_ref());
                     store.delete(&k.into()).await?;
                 }
-                transaction.commit().await?;
             }
             WasmStorageWrapper::InMemory(map) => {
                 map.entry(collection.as_ref().into()).and_modify(|store| {

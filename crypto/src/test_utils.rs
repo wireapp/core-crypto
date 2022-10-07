@@ -90,6 +90,7 @@ pub async fn run_tests<const N: usize>(
         .try_into()
         .unwrap();
     test(cloned_paths).await;
+    drop(paths);
 }
 
 #[cfg(not(target_family = "wasm"))]

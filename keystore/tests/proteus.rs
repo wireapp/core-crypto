@@ -26,7 +26,7 @@ mod tests {
         entities::{EntityBase, ProteusPrekey},
         Connection, MissingKeyErrorKind,
     };
-    use proteus::keys::{PreKey, PreKeyId};
+    use proteus_wasm::keys::{PreKey, PreKeyId};
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);

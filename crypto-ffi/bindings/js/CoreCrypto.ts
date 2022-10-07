@@ -1027,11 +1027,9 @@ export class CoreCrypto {
 
     /**
      * Initiailizes the proteus client
-     *
-     * @param clientId - the ID of the proteus client
      */
-    async proteusInit(clientId: ClientId): Promise<void> {
-        return await this.#cc.proteus_init(clientId);
+    async proteusInit(): Promise<void> {
+        return await this.#cc.proteus_init();
     }
 
     /**

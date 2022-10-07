@@ -49,9 +49,11 @@ impl DatabaseConnection for WasmConnection {
                     .auto_increment(false)
                     .add_index(Index::new("signature", "signature").unique(true)),
             )
-            .add_object_store(ObjectStore::new("proteus_prekeys").auto_increment(false))
             .add_object_store(ObjectStore::new("mls_groups").auto_increment(false))
-            .add_object_store(ObjectStore::new("mls_pending_groups").auto_increment(false));
+            .add_object_store(ObjectStore::new("mls_pending_groups").auto_increment(false))
+            .add_object_store(ObjectStore::new("proteus_prekeys").auto_increment(false))
+            .add_object_store(ObjectStore::new("proteus_identities").auto_increment(false))
+            .add_object_store(ObjectStore::new("proteus_sessions").auto_increment(false));
 
         let rexie = rexie_builder.build().await?;
 

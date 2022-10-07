@@ -617,10 +617,8 @@ public class CoreCryptoWrapper {
     }
 
     /// Initiailizes the proteus client
-    ///
-    /// - parameter clientId: the ID of the proteus client
-    public func proteusInit(clientId: ClientId) throws {
-        try self.coreCrypto.proteusInit(clientId: clientId)
+    public func proteusInit() throws {
+        try self.coreCrypto.proteusInit()
     }
 
     /// Create a Proteus session using a prekey
