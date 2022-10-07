@@ -418,10 +418,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
 
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg.clone()).await.unwrap();
                         let MlsConversationCreationMessage { welcome, .. } = alice_central
                             .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
                             .await
@@ -435,10 +432,7 @@ pub mod tests {
                         assert_eq!(alice_central[&id].group.group_id().as_slice(), id);
                         assert_eq!(alice_central[&id].members().len(), 2);
 
-                        bob_central
-                            .process_welcome_message(welcome, MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        bob_central.process_welcome_message(welcome, cfg).await.unwrap();
                         assert_eq!(alice_central[&id].id(), bob_central[&id].id());
                         assert_eq!(bob_central[&id].members().len(), 2);
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
@@ -457,10 +451,7 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg.clone()).await.unwrap();
 
                         let welcome = alice_central
                             .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
@@ -469,10 +460,7 @@ pub mod tests {
                             .welcome;
                         alice_central.commit_accepted(&id).await.unwrap();
 
-                        bob_central
-                            .process_welcome_message(welcome, MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        bob_central.process_welcome_message(welcome, cfg).await.unwrap();
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
                     })
                 },
@@ -492,10 +480,7 @@ pub mod tests {
                 move |[mut alice_central, bob_central, mut guest_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
 
                         let public_group_state = alice_central
                             .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
@@ -534,10 +519,7 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central, mut charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
                         let charlie_kp = charlie_central.get_one_key_package().await;
 
@@ -593,10 +575,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
 
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         let MlsCommitBundle { commit, welcome, .. } = alice_central
@@ -637,10 +616,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
 
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         let proposal = alice_central
@@ -684,10 +660,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
 
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         let public_group_state = alice_central
@@ -729,10 +702,7 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central, mut charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
@@ -784,10 +754,7 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         let bob_keys = bob_central[&id].group.members();
@@ -836,10 +803,7 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central, mut charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg.clone()).await.unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         let bob_keys = bob_central[&id].group.members();
@@ -873,7 +837,7 @@ pub mod tests {
 
                         // create the group on charlie's side
                         charlie_central
-                            .process_welcome_message(welcome.unwrap(), MlsConversationConfiguration::default())
+                            .process_welcome_message(welcome.unwrap(), cfg)
                             .await
                             .unwrap();
 
@@ -914,10 +878,7 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central, mut guest_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         let proposal = alice_central
@@ -961,10 +922,7 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central, mut guest_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         let public_group_state = alice_central
@@ -1001,10 +959,7 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
 
                         let bob_keys = bob_central[&id].group.members();
@@ -1061,10 +1016,7 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg.clone()).await.unwrap();
                         alice_central
                             .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package().await))
                             .await
@@ -1077,7 +1029,7 @@ pub mod tests {
                         assert_eq!(alice_central[&id].members().len(), 2);
 
                         bob_central
-                            .process_welcome_message(welcome.unwrap(), MlsConversationConfiguration::default())
+                            .process_welcome_message(welcome.unwrap(), cfg)
                             .await
                             .unwrap();
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
@@ -1096,10 +1048,7 @@ pub mod tests {
             run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                     assert!(alice_central.pending_proposals(&id).is_empty());
                     assert!(alice_central.commit_pending_proposals(&id).await.unwrap().is_none());
                 })
@@ -1119,10 +1068,7 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
                         let proposal = bob_central
                             .new_proposal(&id, MlsProposal::Add(charlie_central.get_one_key_package().await))

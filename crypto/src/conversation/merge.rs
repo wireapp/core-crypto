@@ -145,10 +145,7 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
                         assert_eq!(alice_central[&id].members().len(), 2);
                         alice_central
@@ -173,10 +170,7 @@ pub mod tests {
             run_test_with_client_ids(credential, ["alice", "bob"], move |[mut alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                     alice_central.new_proposal(&id, MlsProposal::Update).await.unwrap();
                     alice_central
                         .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
@@ -205,10 +199,7 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
                         assert!(alice_central.pending_proposals(&id).is_empty());
 
@@ -291,7 +282,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .new_conversation(id.clone(), cfg)
                         .await
                         .unwrap();
                     assert!(alice_central.pending_proposals(&id).is_empty());
@@ -313,10 +304,7 @@ pub mod tests {
             run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                     assert!(alice_central.pending_commit(&id).is_none());
 
                     alice_central.update_keying_material(&id).await.unwrap();
@@ -353,10 +341,7 @@ pub mod tests {
             run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                     assert!(alice_central.pending_commit(&id).is_none());
                     let clear = alice_central.clear_pending_commit(&id).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::PendingCommitNotFound))

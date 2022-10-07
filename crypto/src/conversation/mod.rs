@@ -305,10 +305,7 @@ pub mod tests {
         run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
             Box::pin(async move {
                 let id = conversation_id();
-                alice_central
-                    .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                    .await
-                    .unwrap();
+                alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                 assert_eq!(alice_central[&id].id, id);
                 assert_eq!(alice_central[&id].group.group_id().as_slice(), id);
                 assert_eq!(alice_central[&id].members().len(), 1);
@@ -332,10 +329,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
 
-                    alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    alice_central.new_conversation(id.clone(), cfg.clone()).await.unwrap();
 
                     let MlsConversationCreationMessage { welcome, .. } = alice_central
                         .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
@@ -349,10 +343,7 @@ pub mod tests {
                     assert_eq!(alice_central[&id].group.group_id().as_slice(), id);
                     assert_eq!(alice_central[&id].members().len(), 2);
 
-                    bob_central
-                        .process_welcome_message(welcome, MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    bob_central.process_welcome_message(welcome, cfg).await.unwrap();
 
                     assert_eq!(bob_central[&id].id(), alice_central[&id].id());
                     assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
@@ -368,10 +359,7 @@ pub mod tests {
         run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
             Box::pin(async move {
                 let id = conversation_id();
-                alice_central
-                    .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                    .await
-                    .unwrap();
+                alice_central.new_conversation(id.clone(), cfg.clone()).await.unwrap();
 
                 let mut bob_and_friends = Vec::with_capacity(GROUP_SAMPLE_SIZE);
                 for _ in 0..GROUP_SAMPLE_SIZE {
@@ -404,9 +392,7 @@ pub mod tests {
 
                 let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
                 for mut c in bob_and_friends {
-                    c.process_welcome_message(welcome.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    c.process_welcome_message(welcome.clone(), cfg.clone()).await.unwrap();
                     assert!(c.talk_to(&id, &mut alice_central).await.is_ok());
                     bob_and_friends_groups.push(c);
                 }
@@ -442,10 +428,7 @@ pub mod tests {
                         .unwrap();
 
                     // Create a conversation from alice, where she invites bob
-                    alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    alice_central.new_conversation(id.clone(), cfg.clone()).await.unwrap();
 
                     let MlsConversationCreationMessage { welcome, .. } = alice_central
                         .add_members_to_conversation(&id, &mut [bob])
@@ -453,10 +436,7 @@ pub mod tests {
                         .unwrap();
 
                     // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
-                    bob_central
-                        .process_welcome_message(welcome, MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    bob_central.process_welcome_message(welcome, cfg).await.unwrap();
 
                     // Ensure we're left with 1 less keypackage bundle in the store, because it was consumed with the OpenMLS Welcome message
                     let new_kpb_count = bob_central
@@ -480,7 +460,7 @@ pub mod tests {
         pub async fn can_wipe_group(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_central(credential, move |[mut central]| {
                 Box::pin(async move {
-                    let conversation_configuration = MlsConversationConfiguration::default();
+                    let conversation_configuration = cfg;
                     let id = conversation_id();
                     central
                         .new_conversation(id.clone(), conversation_configuration)

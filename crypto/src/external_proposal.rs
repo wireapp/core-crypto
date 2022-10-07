@@ -158,10 +158,7 @@ mod tests {
                     Box::pin(async move {
                         owner_central.callbacks(Box::new(ValidationCallbacks::default()));
                         let id = conversation_id();
-                        owner_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        owner_central.new_conversation(id.clone(), cfg.clone()).await.unwrap();
                         let epoch = owner_central[&id].group.epoch();
 
                         // Craft an external proposal from guest
@@ -187,7 +184,7 @@ mod tests {
                         assert_eq!(owner_central[&id].members().len(), 2);
 
                         guest_central
-                            .process_welcome_message(welcome.unwrap(), MlsConversationConfiguration::default())
+                            .process_welcome_message(welcome.unwrap(), cfg)
                             .await
                             .unwrap();
                         assert_eq!(guest_central[&id].members().len(), 2);

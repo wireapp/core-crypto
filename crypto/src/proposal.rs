@@ -125,10 +125,7 @@ pub mod proposal_tests {
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg.clone()).await.unwrap();
                         let bob_kp = bob_central.get_one_key_package().await;
                         alice_central.new_proposal(&id, MlsProposal::Add(bob_kp)).await.unwrap();
                         let MlsCommitBundle { welcome, .. } =
@@ -136,7 +133,7 @@ pub mod proposal_tests {
                         alice_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(alice_central[&id].members().len(), 2);
                         let new_id = bob_central
-                            .process_welcome_message(welcome.unwrap(), MlsConversationConfiguration::default())
+                            .process_welcome_message(welcome.unwrap(), cfg)
                             .await
                             .unwrap();
                         assert_eq!(id, new_id);
@@ -157,10 +154,7 @@ pub mod proposal_tests {
             run_test_with_central(credential, |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    central.new_conversation(id.clone(), cfg).await.unwrap();
                     let before = &(*central[&id].group.members().first().unwrap()).clone();
                     central.new_proposal(&id, MlsProposal::Update).await.unwrap();
                     central.commit_pending_proposals(&id).await.unwrap();
@@ -182,10 +176,7 @@ pub mod proposal_tests {
             run_test_with_client_ids(credential, ["alice", "bob"], |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                     alice_central.invite(&id, &mut bob_central).await.unwrap();
                     assert_eq!(alice_central[&id].members().len(), 2);
                     assert_eq!(bob_central[&id].members().len(), 2);
@@ -225,10 +216,7 @@ pub mod proposal_tests {
             run_test_with_client_ids(credential, ["alice"], |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    alice_central.new_conversation(id.clone(), cfg).await.unwrap();
 
                     let remove_proposal = alice_central
                         .new_proposal(&id, MlsProposal::Remove(b"unknown"[..].into()))

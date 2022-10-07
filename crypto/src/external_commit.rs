@@ -175,10 +175,7 @@ mod tests {
             move |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    alice_central.new_conversation(id.clone(), cfg.clone()).await.unwrap();
 
                     // export Alice group info
                     let public_group_state = alice_central.verifiable_public_group_state(&id).await;
@@ -203,7 +200,7 @@ mod tests {
                     // So Bob can merge the commit and update the local state
                     assert!(bob_central.get_conversation(&id).is_err());
                     bob_central
-                        .merge_pending_group_from_external_commit(&id, MlsConversationConfiguration::default())
+                        .merge_pending_group_from_external_commit(&id, cfg)
                         .await
                         .unwrap();
                     assert!(bob_central.get_conversation(&id).is_ok());
@@ -238,10 +235,7 @@ mod tests {
             move |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    alice_central.new_conversation(id.clone(), cfg.clone()).await.unwrap();
 
                     // export Alice group info
                     let public_group_state = alice_central.verifiable_public_group_state(&id).await;
@@ -272,7 +266,7 @@ mod tests {
 
                     // And Bob can merge its external commit
                     bob_central
-                        .merge_pending_group_from_external_commit(&id, MlsConversationConfiguration::default())
+                        .merge_pending_group_from_external_commit(&id, cfg)
                         .await
                         .unwrap();
                     assert!(bob_central.get_conversation(&id).is_ok());
@@ -293,10 +287,7 @@ mod tests {
         run_test_with_client_ids(credential, ["alice", "bob"], move |[mut alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
-                alice_central
-                    .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                    .await
-                    .unwrap();
+                alice_central.new_conversation(id.clone(), cfg).await.unwrap();
 
                 let public_group_state = alice_central.verifiable_public_group_state(&id).await;
                 // try to make an external join into Alice's group
@@ -334,10 +325,7 @@ mod tests {
         run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
             Box::pin(async move {
                 let id = conversation_id();
-                alice_central
-                    .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                    .await
-                    .unwrap();
+                alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                 let public_group_state = alice_central.verifiable_public_group_state(&id).await;
                 let join_self = alice_central.join_by_external_commit(public_group_state).await;
                 assert!(matches!(
@@ -359,9 +347,7 @@ mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 // try to merge an inexisting pending group
-                let merge_unknown = central
-                    .merge_pending_group_from_external_commit(&id, MlsConversationConfiguration::default())
-                    .await;
+                let merge_unknown = central.merge_pending_group_from_external_commit(&id, cfg).await;
 
                 assert!(matches!(
                     merge_unknown.unwrap_err(),
@@ -386,10 +372,7 @@ mod tests {
             move |[mut alice_central, mut bob_central, mut charlie_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    alice_central.new_conversation(id.clone(), cfg.clone()).await.unwrap();
 
                     // export Alice group info
                     let public_group_state = alice_central.verifiable_public_group_state(&id).await;
@@ -410,7 +393,7 @@ mod tests {
 
                     // Bob merges the commit, he's also in !
                     bob_central
-                        .merge_pending_group_from_external_commit(&id, MlsConversationConfiguration::default())
+                        .merge_pending_group_from_external_commit(&id, cfg.clone())
                         .await
                         .unwrap();
                     assert!(bob_central.get_conversation(&id).is_ok());
@@ -438,7 +421,7 @@ mod tests {
 
                     // Charlie merges the commit, he's also in !
                     charlie_central
-                        .merge_pending_group_from_external_commit(&id, MlsConversationConfiguration::default())
+                        .merge_pending_group_from_external_commit(&id, cfg)
                         .await
                         .unwrap();
                     assert!(charlie_central.get_conversation(&id).is_ok());
@@ -460,10 +443,7 @@ mod tests {
             move |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    alice_central.new_conversation(id.clone(), cfg.clone()).await.unwrap();
 
                     // export Alice group info
                     let public_group_state = alice_central.verifiable_public_group_state(&id).await;
@@ -475,9 +455,7 @@ mod tests {
                     bob_central.clear_pending_group_from_external_commit(&id).await.unwrap();
 
                     // Hence trying to merge the pending should fail
-                    let result = bob_central
-                        .merge_pending_group_from_external_commit(&id, MlsConversationConfiguration::default())
-                        .await;
+                    let result = bob_central.merge_pending_group_from_external_commit(&id, cfg).await;
                     assert!(matches!(
                         result.unwrap_err(),
                         CryptoError::KeyStoreError(CryptoKeystoreError::MissingKeyInStore(

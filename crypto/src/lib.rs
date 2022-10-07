@@ -536,10 +536,7 @@ pub mod tests {
             run_test_with_central(credential, move |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    central.new_conversation(id.clone(), cfg).await.unwrap();
                     let epoch = central.conversation_epoch(&id).unwrap();
                     assert_eq!(epoch, 0);
                 })
@@ -556,10 +553,7 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                            .await
-                            .unwrap();
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
                         alice_central.invite(&id, &mut bob_central).await.unwrap();
                         let epoch = alice_central.conversation_epoch(&id).unwrap();
                         assert_eq!(epoch, 1);
@@ -662,7 +656,7 @@ pub mod tests {
                             .unwrap();
 
                     let mut central = MlsCentral::try_new(configuration.clone(), credential()).await.unwrap();
-                    let conversation_configuration = MlsConversationConfiguration::default();
+                    let conversation_configuration = cfg;
                     let id = conversation_id();
                     let _ = central.new_conversation(id.clone(), conversation_configuration).await;
 
