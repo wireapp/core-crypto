@@ -42,7 +42,12 @@ lru = { version = "0.7", optional = true }
 security-framework = { version = "2.6", optional = true }
 
 openmls_traits = { version = "0.1", optional = true, features = ["single-threaded"] }
-proteus-traits = { version = "2.0", optional = true }
+
+[dependencies.proteus-traits]
+optional = true
+package = "proteus-traits"
+git = "https://github.com/wireapp/proteus"
+branch = "otak/oxidize-wasm-v2"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = "1.5"
@@ -92,7 +97,12 @@ rstest = "0.15"
 rstest_reuse = "0.4"
 async-std = { version = "1.12", features = ["attributes"] }
 futures-lite = "1.12"
-proteus = "2.0"
+
+[dev-dependencies.proteus-wasm]
+version = "2.0"
+package = "proteus"
+git = "https://github.com/wireapp/proteus"
+branch = "otak/oxidize-wasm-v2"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
 version = "0.3"

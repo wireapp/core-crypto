@@ -61,6 +61,7 @@ enum CryptoError {
     "GenerationOutOfBound",
     "HexDecodeError",
     "ProteusError",
+    "CryptoboxMigrationError",
     "ProteusNotInitialized",
     "ProteusSupportNotEnabled",
 };
@@ -205,7 +206,7 @@ interface CoreCrypto {
     void clear_pending_commit(ConversationId conversation_id);
 
     [Throws=CryptoError]
-    void proteus_init(ClientId client_id);
+    void proteus_init();
 
     [Throws=CryptoError]
     void proteus_session_from_prekey([ByRef] string session_id, [ByRef] sequence<u8> prekey);

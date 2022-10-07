@@ -1271,12 +1271,12 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::proteus::ProteusCentral::try_new]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub fn proteus_init(&self, client_id: FfiClientId) -> Promise {
+    pub fn proteus_init(&self) -> Promise {
         let this = self.0.clone();
         future_to_promise(
             async move {
                 proteus_impl!({
-                    this.write().await.proteus_init(client_id.into()).await?;
+                    this.write().await.proteus_init().await?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_>)
             }

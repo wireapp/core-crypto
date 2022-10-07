@@ -750,14 +750,14 @@ impl CoreCrypto<'_> {
 #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
 impl CoreCrypto<'_> {
     /// See [core_crypto::proteus::ProteusCentral::try_new]
-    pub fn proteus_init(&self, client_id: ClientId) -> CryptoResult<()> {
+    pub fn proteus_init(&self) -> CryptoResult<()> {
         proteus_impl! {{
             future::block_on(
                 self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                     self.central
                         .lock()
                         .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_init(client_id),
+                        .proteus_init(),
                 ),
             )
         }}

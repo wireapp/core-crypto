@@ -7,10 +7,12 @@ resolver = "2"
 git = "https://github.com/otak/rexie"
 branch = "feat/api-expansion"
 
-[patch.crates-io.proteus]
+[patch.'https://github.com/wireapp/proteus'.proteus]
 package = "proteus"
-git = "https://github.com/wireapp/proteus"
-branch = "otak/oxidize-wasm-v2"
+# Keep the extra / in the url, it prevents this error:
+# `patch for `proteus` in `https://github.com/wireapp/proteus` points to the same source, but patches must point to different sources`
+git = "https://github.com/wireapp//proteus"
+branch = "otak/sodiumoxide-0.2.7"
 
 [patch.crates-io.proteus-traits]
 package = "proteus-traits"

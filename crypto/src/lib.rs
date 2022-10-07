@@ -164,10 +164,10 @@ impl CoreCrypto {
 #[cfg(feature = "proteus")]
 impl CoreCrypto {
     /// TODO
-    pub async fn proteus_init(&mut self, client_id: crate::mls::client::ClientId) -> CryptoResult<()> {
+    pub async fn proteus_init(&mut self) -> CryptoResult<()> {
         // ? Cannot inline the statement or the borrow checker gets really confused about the type of `keystore`
         let keystore = self.mls.mls_backend.borrow_keystore();
-        let proteus_client = crate::proteus::ProteusCentral::try_new(client_id, keystore).await?;
+        let proteus_client = crate::proteus::ProteusCentral::try_new(keystore).await?;
         self.proteus = Some(proteus_client);
 
         Ok(())
@@ -267,7 +267,7 @@ impl CoreCrypto {
     }
 
     /// Returns the proteus identity keypair
-    pub fn proteus_identity(&self) -> CryptoResult<&::proteus::keys::IdentityKeyPair> {
+    pub fn proteus_identity(&self) -> CryptoResult<&::proteus_wasm::keys::IdentityKeyPair> {
         if let Some(proteus) = &self.proteus {
             Ok(proteus.identity())
         } else {
@@ -286,11 +286,7 @@ impl CoreCrypto {
 
     /// TODO:
     pub async fn proteus_cryptobox_migrate(&self, path: &str) -> CryptoResult<()> {
-        if let Some(proteus) = &self.proteus {
-            let keystore = self.mls.mls_backend.borrow_keystore();
-            Ok(proteus.cryptobox_migrate(keystore, path).await?)
-        } else {
-            Err(CryptoError::ProteusNotInitialized)
-        }
+        let keystore = self.mls.mls_backend.borrow_keystore();
+        Ok(crate::proteus::ProteusCentral::cryptobox_migrate(keystore, path).await?)
     }
 }
