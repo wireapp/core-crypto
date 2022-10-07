@@ -66,9 +66,9 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn can_encrypt_app_message(credential: CredentialSupplier) {
+    pub async fn can_encrypt_app_message(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
         run_test_with_client_ids(
             credential,
             ["alice", "bob"],
@@ -98,9 +98,9 @@ pub mod tests {
     }
 
     // Ensures encrypting an application message is durable
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn can_encrypt_consecutive_messages(credential: CredentialSupplier) {
+    pub async fn can_encrypt_consecutive_messages(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
         run_test_with_client_ids(
             credential,
             ["alice", "bob"],

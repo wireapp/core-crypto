@@ -180,9 +180,12 @@ pub mod tests {
     pub mod is_active {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_regular_commit_should_leave_conversation_active(credential: CredentialSupplier) {
+        pub async fn decrypting_a_regular_commit_should_leave_conversation_active(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -207,10 +210,11 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
         pub async fn decrypting_a_commit_removing_self_should_set_conversation_inactive(
             credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
         ) {
             run_test_with_client_ids(
                 credential,
@@ -243,9 +247,12 @@ pub mod tests {
     pub mod commit {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_clear_pending_commit(credential: CredentialSupplier) {
+        pub async fn decrypting_a_commit_should_clear_pending_commit(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie", "debbie"],
@@ -287,9 +294,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_renew_proposals_in_pending_commit(credential: CredentialSupplier) {
+        pub async fn decrypting_a_commit_should_renew_proposals_in_pending_commit(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -371,9 +381,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_not_renew_proposals_in_valid_commit(credential: CredentialSupplier) {
+        pub async fn decrypting_a_commit_should_not_renew_proposals_in_valid_commit(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -416,9 +429,12 @@ pub mod tests {
         }
 
         // orphan proposal = not backed by the pending commit
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_renew_orphan_pending_proposals(credential: CredentialSupplier) {
+        pub async fn decrypting_a_commit_should_renew_orphan_pending_proposals(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -486,9 +502,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_discard_pending_external_proposals(credential: CredentialSupplier) {
+        pub async fn decrypting_a_commit_should_discard_pending_external_proposals(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -531,9 +550,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_not_return_sender_client_id(credential: CredentialSupplier) {
+        pub async fn should_not_return_sender_client_id(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -566,9 +588,9 @@ pub mod tests {
 
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn can_decrypt_proposal(credential: CredentialSupplier) {
+        pub async fn can_decrypt_proposal(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "alice2"],
@@ -609,9 +631,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn cannot_decrypt_proposal_no_callback(credential: CredentialSupplier) {
+        pub async fn cannot_decrypt_proposal_no_callback(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "alice2"],
@@ -650,9 +675,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn cannot_decrypt_proposal_validation(credential: CredentialSupplier) {
+        pub async fn cannot_decrypt_proposal_validation(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "alice2"],
@@ -697,9 +725,9 @@ pub mod tests {
         use super::*;
 
         // Ensures decrypting an proposal is durable
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn can_decrypt_proposal(credential: CredentialSupplier) {
+        pub async fn can_decrypt_proposal(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -735,9 +763,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_not_return_sender_client_id(credential: CredentialSupplier) {
+        pub async fn should_not_return_sender_client_id(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -772,9 +803,9 @@ pub mod tests {
     pub mod app_message {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn can_decrypt_app_message(credential: CredentialSupplier) {
+        pub async fn can_decrypt_app_message(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -804,9 +835,12 @@ pub mod tests {
         }
 
         // Ensures decrypting an application message is durable
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn cannot_decrypt_app_message_twice(credential: CredentialSupplier) {
+        pub async fn cannot_decrypt_app_message_twice(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -832,9 +866,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn can_decrypt_app_message_in_any_order(credential: CredentialSupplier) {
+        pub async fn can_decrypt_app_message_in_any_order(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -872,9 +909,9 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn returns_sender_client_id(credential: CredentialSupplier) {
+        pub async fn returns_sender_client_id(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],

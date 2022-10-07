@@ -136,9 +136,9 @@ pub mod tests {
     pub mod commit_accepted {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_apply_pending_commit(credential: CredentialSupplier) {
+        pub async fn should_apply_pending_commit(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -164,9 +164,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_clear_pending_commit_and_proposals(credential: CredentialSupplier) {
+        pub async fn should_clear_pending_commit_and_proposals(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(credential, ["alice", "bob"], move |[mut alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -193,9 +196,9 @@ pub mod tests {
     pub mod clear_pending_proposal {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_remove_proposal(credential: CredentialSupplier) {
+        pub async fn should_remove_proposal(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -261,9 +264,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_fail_when_conversation_not_found(credential: CredentialSupplier) {
+        pub async fn should_fail_when_conversation_not_found(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -275,9 +281,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_fail_when_proposal_ref_not_found(credential: CredentialSupplier) {
+        pub async fn should_fail_when_proposal_ref_not_found(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -298,9 +307,9 @@ pub mod tests {
     pub mod clear_pending_commit {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_remove_commit(credential: CredentialSupplier) {
+        pub async fn should_remove_commit(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -319,9 +328,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_fail_when_conversation_not_found(credential: CredentialSupplier) {
+        pub async fn should_fail_when_conversation_not_found(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -332,9 +344,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_fail_when_pending_commit_absent(credential: CredentialSupplier) {
+        pub async fn should_fail_when_pending_commit_absent(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();

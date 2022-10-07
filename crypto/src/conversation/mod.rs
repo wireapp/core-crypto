@@ -296,9 +296,12 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn create_self_conversation_should_succeed(credential: CredentialSupplier) {
+    pub async fn create_self_conversation_should_succeed(
+        credential: CredentialSupplier,
+        cfg: MlsConversationConfiguration,
+    ) {
         run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -316,9 +319,12 @@ pub mod tests {
         .await;
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn create_1_1_conversation_should_succeed(credential: CredentialSupplier) {
+    pub async fn create_1_1_conversation_should_succeed(
+        credential: CredentialSupplier,
+        cfg: MlsConversationConfiguration,
+    ) {
         run_test_with_client_ids(
             credential,
             ["alice", "bob"],
@@ -356,9 +362,9 @@ pub mod tests {
         .await;
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn create_100_people_conversation(credential: CredentialSupplier) {
+    pub async fn create_100_people_conversation(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
         run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -411,9 +417,12 @@ pub mod tests {
         .await;
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn conversation_from_welcome_prunes_local_keypackage(credential: CredentialSupplier) {
+    pub async fn conversation_from_welcome_prunes_local_keypackage(
+        credential: CredentialSupplier,
+        cfg: MlsConversationConfiguration,
+    ) {
         use core_crypto_keystore::CryptoKeystoreMls as _;
         use openmls_traits::OpenMlsCryptoProvider as _;
         run_test_with_client_ids(
@@ -466,9 +475,9 @@ pub mod tests {
     pub mod wipe_group {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn can_wipe_group(credential: CredentialSupplier) {
+        pub async fn can_wipe_group(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_central(credential, move |[mut central]| {
                 Box::pin(async move {
                     let conversation_configuration = MlsConversationConfiguration::default();
@@ -486,9 +495,9 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn cannot_wipe_group_inexistent(credential: CredentialSupplier) {
+        pub async fn cannot_wipe_group_inexistent(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_central(credential, move |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();

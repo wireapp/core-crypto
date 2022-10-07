@@ -405,9 +405,12 @@ pub mod tests {
     pub mod add_members {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn can_add_members_to_conversation(credential: CredentialSupplier) {
+        pub async fn can_add_members_to_conversation(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -445,9 +448,9 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_welcome(credential: CredentialSupplier) {
+        pub async fn should_return_valid_welcome(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -477,9 +480,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_public_group_state(credential: CredentialSupplier) {
+        pub async fn should_return_valid_public_group_state(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "guest"],
@@ -516,9 +522,12 @@ pub mod tests {
     pub mod propose_add_members {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn can_propose_adding_members_to_conversation(credential: CredentialSupplier) {
+        pub async fn can_propose_adding_members_to_conversation(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -571,9 +580,12 @@ pub mod tests {
     pub mod remove_members {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn alice_can_remove_bob_from_conversation(credential: CredentialSupplier) {
+        pub async fn alice_can_remove_bob_from_conversation(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -615,9 +627,9 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_welcome(credential: CredentialSupplier) {
+        pub async fn should_return_valid_welcome(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "guest"],
@@ -659,9 +671,12 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_public_group_state(credential: CredentialSupplier) {
+        pub async fn should_return_valid_public_group_state(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "guest"],
@@ -702,9 +717,12 @@ pub mod tests {
     pub mod propose_remove_members {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn can_propose_removing_members_from_conversation(credential: CredentialSupplier) {
+        pub async fn can_propose_removing_members_from_conversation(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -754,9 +772,12 @@ pub mod tests {
     pub mod update_keying_material {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_update_keying_material_conversation_group(credential: CredentialSupplier) {
+        pub async fn should_update_keying_material_conversation_group(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -803,9 +824,12 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_update_keying_material_group_pending_commit(credential: CredentialSupplier) {
+        pub async fn should_update_keying_material_group_pending_commit(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -881,9 +905,9 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_welcome(credential: CredentialSupplier) {
+        pub async fn should_return_valid_welcome(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "guest"],
@@ -925,9 +949,12 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_public_group_state(credential: CredentialSupplier) {
+        pub async fn should_return_valid_public_group_state(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "guest"],
@@ -965,9 +992,9 @@ pub mod tests {
     pub mod propose_self_update {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn can_propose_updating(credential: CredentialSupplier) {
+        pub async fn can_propose_updating(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -1022,9 +1049,12 @@ pub mod tests {
     pub mod commit_pending_proposals {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_create_a_commit_out_of_self_pending_proposals(credential: CredentialSupplier) {
+        pub async fn should_create_a_commit_out_of_self_pending_proposals(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -1057,9 +1087,12 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_return_none_when_there_are_no_pending_proposals(credential: CredentialSupplier) {
+        pub async fn should_return_none_when_there_are_no_pending_proposals(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -1074,9 +1107,12 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_create_a_commit_out_of_pending_proposals_by_ref(credential: CredentialSupplier) {
+        pub async fn should_create_a_commit_out_of_pending_proposals_by_ref(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -1116,9 +1152,9 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_welcome(credential: CredentialSupplier) {
+        pub async fn should_return_valid_welcome(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -1148,9 +1184,12 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_public_group_state(credential: CredentialSupplier) {
+        pub async fn should_return_valid_public_group_state(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "guest"],

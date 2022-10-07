@@ -131,9 +131,9 @@ pub mod tests {
     mod update {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn renewable_when_created_by_self(credential: CredentialSupplier) {
+        pub async fn renewable_when_created_by_self(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -182,9 +182,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn renews_pending_commit_when_created_by_self(credential: CredentialSupplier) {
+        pub async fn renews_pending_commit_when_created_by_self(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -217,9 +220,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_when_in_valid_commit(credential: CredentialSupplier) {
+        pub async fn not_renewable_when_in_valid_commit(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -287,9 +293,9 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_by_ref(credential: CredentialSupplier) {
+        pub async fn not_renewable_by_ref(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -339,9 +345,12 @@ pub mod tests {
     mod add {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_when_valid_commit_adds_same(credential: CredentialSupplier) {
+        pub async fn not_renewable_when_valid_commit_adds_same(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -381,9 +390,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_in_pending_commit_when_valid_commit_adds_same(credential: CredentialSupplier) {
+        pub async fn not_renewable_in_pending_commit_when_valid_commit_adds_same(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -427,9 +439,9 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_by_ref(credential: CredentialSupplier) {
+        pub async fn not_renewable_by_ref(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie", "debbie"],
@@ -476,9 +488,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn renewable_when_valid_commit_doesnt_adds_same(credential: CredentialSupplier) {
+        pub async fn renewable_when_valid_commit_doesnt_adds_same(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -531,9 +546,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn renews_pending_commit_when_valid_commit_doesnt_adds_same(credential: CredentialSupplier) {
+        pub async fn renews_pending_commit_when_valid_commit_doesnt_adds_same(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -573,9 +591,12 @@ pub mod tests {
     mod remove {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_when_valid_commit_removes_same(credential: CredentialSupplier) {
+        pub async fn not_renewable_when_valid_commit_removes_same(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -619,9 +640,9 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_by_ref(credential: CredentialSupplier) {
+        pub async fn not_renewable_by_ref(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie"],
@@ -666,9 +687,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn renewable_when_valid_commit_doesnt_remove_same(credential: CredentialSupplier) {
+        pub async fn renewable_when_valid_commit_doesnt_remove_same(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie", "debbie"],
@@ -723,9 +747,12 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn renews_pending_commit_when_commit_doesnt_remove_same(credential: CredentialSupplier) {
+        pub async fn renews_pending_commit_when_commit_doesnt_remove_same(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob", "charlie", "debbie"],
@@ -779,10 +806,11 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
         pub async fn renews_pending_commit_from_proposal_when_commit_doesnt_remove_same(
             credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
         ) {
             run_test_with_client_ids(
                 credential,

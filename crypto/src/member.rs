@@ -164,16 +164,19 @@ pub mod tests {
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn can_generate_member(credential: CredentialSupplier) {
+    pub async fn can_generate_member(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
         assert!(ConversationMember::random_generate(&backend, credential).await.is_ok());
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn member_can_run_out_of_keypackage_hashes(credential: CredentialSupplier) {
+    pub async fn member_can_run_out_of_keypackage_hashes(
+        credential: CredentialSupplier,
+        cfg: MlsConversationConfiguration,
+    ) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
         let (mut member, _) = ConversationMember::random_generate(&backend, credential).await.unwrap();
         let client_id = member.local_client.as_ref().map(|c| c.id().clone()).unwrap();
@@ -190,9 +193,12 @@ pub mod tests {
 
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn add_valid_keypackage_should_add_it_to_client(credential: CredentialSupplier) {
+        pub async fn add_valid_keypackage_should_add_it_to_client(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             let mut member = ConversationMember::random_generate_clientless().unwrap();
             let cid = ClientId::from(member.id.as_slice());
             let kp = new_keypackage(&cid, credential()).await;

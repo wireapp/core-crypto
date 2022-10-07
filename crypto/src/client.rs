@@ -483,9 +483,9 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn can_assess_keypackage_expiration(credential: CredentialSupplier) {
+    pub async fn can_assess_keypackage_expiration(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
         let mut client = Client::random_generate(&backend, false, credential()).await.unwrap();
 
@@ -501,16 +501,19 @@ pub mod tests {
         assert!(Client::is_mls_keypackage_expired(&kp_1s_exp));
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn can_generate_client(credential: CredentialSupplier) {
+    pub async fn can_generate_client(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
         assert!(Client::random_generate(&backend, false, credential()).await.is_ok());
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn client_never_runs_out_of_keypackages(credential: CredentialSupplier) {
+    pub async fn client_never_runs_out_of_keypackages(
+        credential: CredentialSupplier,
+        cfg: MlsConversationConfiguration,
+    ) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
         let client = Client::random_generate(&backend, true, credential()).await.unwrap();
         for _ in 0..100 {
@@ -518,9 +521,12 @@ pub mod tests {
         }
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn client_generates_correct_number_of_kpbs(credential: CredentialSupplier) {
+    pub async fn client_generates_correct_number_of_kpbs(
+        credential: CredentialSupplier,
+        cfg: MlsConversationConfiguration,
+    ) {
         use openmls_traits::OpenMlsCryptoProvider as _;
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
         let client = Client::random_generate(&backend, false, credential()).await.unwrap();
@@ -553,9 +559,12 @@ pub mod tests {
         }
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn client_automatically_prunes_lifetime_expired_keypackages(credential: CredentialSupplier) {
+    pub async fn client_automatically_prunes_lifetime_expired_keypackages(
+        credential: CredentialSupplier,
+        cfg: MlsConversationConfiguration,
+    ) {
         const UNEXPIRED_COUNT: usize = 125;
         const EXPIRED_COUNT: usize = 200;
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();

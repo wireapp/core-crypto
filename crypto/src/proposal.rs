@@ -116,9 +116,9 @@ pub mod proposal_tests {
     pub mod add {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_add_member(credential: CredentialSupplier) {
+        pub async fn should_add_member(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -151,9 +151,9 @@ pub mod proposal_tests {
     pub mod update {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_update_key_package(credential: CredentialSupplier) {
+        pub async fn should_update_key_package(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_central(credential, |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -176,9 +176,9 @@ pub mod proposal_tests {
     pub mod remove {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_remove_member(credential: CredentialSupplier) {
+        pub async fn should_remove_member(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(credential, ["alice", "bob"], |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -216,9 +216,12 @@ pub mod proposal_tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn should_fail_when_unknown_client(credential: CredentialSupplier) {
+        pub async fn should_fail_when_unknown_client(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(credential, ["alice"], |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -240,9 +243,12 @@ pub mod proposal_tests {
         }
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn should_fail_when_unknown_conversation(credential: CredentialSupplier) {
+    pub async fn should_fail_when_unknown_conversation(
+        credential: CredentialSupplier,
+        cfg: MlsConversationConfiguration,
+    ) {
         run_test_with_client_ids(credential, ["alice", "bob"], move |[mut alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();

@@ -145,9 +145,12 @@ mod tests {
     mod add {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        async fn guest_should_externally_propose_adding_itself_to_owner_group(credential: CredentialSupplier) {
+        async fn guest_should_externally_propose_adding_itself_to_owner_group(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["owner", "guest"],
@@ -200,9 +203,12 @@ mod tests {
     mod remove {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        async fn ds_should_remove_guest_from_conversation(credential: CredentialSupplier) {
+        async fn ds_should_remove_guest_from_conversation(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["owner", "guest", "ds"],
@@ -263,9 +269,12 @@ mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        async fn should_fail_when_invalid_external_sender(credential: CredentialSupplier) {
+        async fn should_fail_when_invalid_external_sender(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["owner", "guest", "ds", "attacker"],
@@ -325,9 +334,12 @@ mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        async fn should_fail_when_invalid_remove_key(credential: CredentialSupplier) {
+        async fn should_fail_when_invalid_remove_key(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_client_ids(
                 credential,
                 ["owner", "guest", "ds"],

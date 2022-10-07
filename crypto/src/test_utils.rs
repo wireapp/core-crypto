@@ -5,6 +5,8 @@ use std::{
     ops::{Index, IndexMut},
 };
 
+pub use crate::conversation::MlsConversationConfiguration;
+pub use crate::credential::CredentialSupplier;
 use openmls::prelude::{
     KeyPackage, KeyPackageBundle, PublicGroupState, QueuedProposal, StagedCommit, VerifiablePublicGroupState, Welcome,
 };
@@ -13,20 +15,30 @@ pub use rstest_reuse::{self, *};
 
 use crate::external_commit::MlsConversationInitBundle;
 use crate::{
-    config::MlsCentralConfiguration, credential::CredentialSupplier, member::ConversationMember, ConversationId,
-    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationConfiguration,
-    MlsError,
+    config::MlsCentralConfiguration, member::ConversationMember, ConversationId, CoreCryptoCallbacks, CryptoError,
+    CryptoResult, MlsCentral, MlsConversation, MlsError,
 };
 
 #[template]
 #[export]
 #[rstest(
     credential,
-    case::credential_basic(crate::credential::CertificateBundle::rnd_basic()),
-    case::credential_x509(crate::credential::CertificateBundle::rnd_certificate_bundle())
+    cfg,
+    case::basic_cs1(
+        crate::credential::CertificateBundle::rnd_basic(),
+        crate::conversation::MlsConversationConfiguration::default()
+    ),
+    case::cert_cs1(
+        crate::credential::CertificateBundle::rnd_certificate_bundle(),
+        crate::conversation::MlsConversationConfiguration::default()
+    )
 )]
 #[allow(non_snake_case)]
-pub fn all_credential_types(credential: crate::credential::CredentialSupplier) {}
+pub fn all_cipher_cred(
+    credential: crate::credential::CredentialSupplier,
+    cfg: crate::conversation::MlsConversationConfiguration,
+) {
+}
 
 #[cfg(debug_assertions)]
 pub const GROUP_SAMPLE_SIZE: usize = 9;

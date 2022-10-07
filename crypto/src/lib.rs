@@ -116,8 +116,8 @@ pub struct MlsCiphersuite(Ciphersuite);
 
 impl Default for MlsCiphersuite {
     fn default() -> Self {
-        Self(Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
-        // Self(Ciphersuite::MLS_128_KYBER512_AES128GCM_SHA256_Ed25519)
+        // Self(Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
+        Self(Ciphersuite::MLS_128_KYBER512_AES128GCM_SHA256_Ed25519)
     }
 }
 
@@ -527,9 +527,12 @@ pub mod tests {
     pub mod conversation_epoch {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn can_get_newly_created_conversation_epoch(credential: CredentialSupplier) {
+        pub async fn can_get_newly_created_conversation_epoch(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_test_with_central(credential, move |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -544,9 +547,9 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn can_get_conversation_epoch(credential: CredentialSupplier) {
+        pub async fn can_get_conversation_epoch(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_client_ids(
                 credential,
                 ["alice", "bob"],
@@ -566,9 +569,9 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn conversation_not_found(credential: CredentialSupplier) {
+        pub async fn conversation_not_found(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_test_with_central(credential, move |[central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -583,9 +586,12 @@ pub mod tests {
     pub mod invariants {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn can_create_from_valid_configuration(credential: CredentialSupplier) {
+        pub async fn can_create_from_valid_configuration(
+            credential: CredentialSupplier,
+            cfg: MlsConversationConfiguration,
+        ) {
             run_tests(move |[tmp_dir_argument]| {
                 Box::pin(async move {
                     let configuration =
@@ -646,9 +652,9 @@ pub mod tests {
     pub mod persistence {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cipher_cred)]
         #[wasm_bindgen_test]
-        pub async fn can_persist_group_state(credential: CredentialSupplier) {
+        pub async fn can_persist_group_state(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
             run_tests(move |[tmp_dir_argument]| {
                 Box::pin(async move {
                     let configuration =
@@ -671,9 +677,9 @@ pub mod tests {
         }
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cipher_cred)]
     #[wasm_bindgen_test]
-    pub async fn can_fetch_client_public_key(credential: CredentialSupplier) {
+    pub async fn can_fetch_client_public_key(credential: CredentialSupplier, cfg: MlsConversationConfiguration) {
         run_tests(move |[tmp_dir_argument]| {
             Box::pin(async move {
                 let configuration =
