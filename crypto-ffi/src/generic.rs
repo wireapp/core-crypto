@@ -201,9 +201,10 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
         let mut cfg = MlsConversationConfiguration {
             admins: self.admins,
             key_rotation_span: self.key_rotation_span,
-            external_senders: self.external_senders,
             ..Default::default()
         };
+
+        cfg.set_raw_external_senders(self.external_senders);
 
         if let Some(ciphersuite) = self.ciphersuite.take() {
             cfg.ciphersuite = ciphersuite.into();
