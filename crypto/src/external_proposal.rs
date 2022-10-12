@@ -135,8 +135,12 @@ mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{
-        credential::CredentialSupplier, prelude::handshake::MlsCommitBundle, test_utils::*, CryptoError,
-        MlsConversationConfiguration, MlsError,
+        credential::CredentialSupplier,
+        prelude::{
+            handshake::MlsCommitBundle, CryptoError, MlsConversationConfiguration, MlsConversationCreationMessage,
+            MlsConversationInitBundle, MlsError,
+        },
+        test_utils::*,
     };
     use tls_codec::Serialize;
 
@@ -217,10 +221,8 @@ mod tests {
                             .signature_key()
                             .as_slice()
                             .to_vec();
-                        let cfg = MlsConversationConfiguration {
-                            external_senders: vec![remove_key],
-                            ..Default::default()
-                        };
+                        let mut cfg = MlsConversationConfiguration::default();
+                        cfg.set_raw_external_senders(vec![remove_key]);
                         owner_central.new_conversation(id.clone(), cfg).await.unwrap();
 
                         owner_central.invite(&id, &mut guest_central).await.unwrap();
@@ -283,10 +285,8 @@ mod tests {
                             .signature_key()
                             .as_slice()
                             .to_vec();
-                        let cfg = MlsConversationConfiguration {
-                            external_senders: vec![remove_key],
-                            ..Default::default()
-                        };
+                        let mut cfg = MlsConversationConfiguration::default();
+                        cfg.set_raw_external_senders(vec![remove_key]);
                         owner_central.new_conversation(id.clone(), cfg).await.unwrap();
 
                         owner_central.invite(&id, &mut guest_central).await.unwrap();
@@ -342,10 +342,8 @@ mod tests {
                             SignaturePublicKey::new(remove_key.as_slice()[1..].to_vec(), remove_key.signature_scheme())
                                 .unwrap();
                         let short_remove_key = short_remove_key.tls_serialize_detached().unwrap();
-                        let cfg = MlsConversationConfiguration {
-                            external_senders: vec![short_remove_key.as_slice().to_vec()],
-                            ..Default::default()
-                        };
+                        let mut cfg = MlsConversationConfiguration::default();
+                        cfg.set_raw_external_senders(vec![short_remove_key.as_slice().to_vec()]);
                         owner_central.new_conversation(id.clone(), cfg).await.unwrap();
 
                         owner_central.invite(&id, &mut guest_central).await.unwrap();
@@ -379,6 +377,202 @@ mod tests {
                                 UnverifiedMessageError::InvalidSignature
                             ))
                         ));
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        async fn joiners_from_welcome_can_accept_external_remove_proposals(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "charlie", "ds"],
+                move |[mut alice_central, mut bob_central, mut charlie_central, ds]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+
+                        let remove_key = ds
+                            .mls_client
+                            .credentials()
+                            .credential()
+                            .signature_key()
+                            .as_slice()
+                            .to_vec();
+                        let mut cfg = MlsConversationConfiguration::default();
+                        cfg.set_raw_external_senders(vec![remove_key]);
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
+
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        assert_eq!(alice_central[&id].members().len(), 2);
+
+                        // Charlie joins through a Welcome and should get external_senders from Welcome
+                        // message and not from configuration
+                        let charlie = charlie_central.rnd_member().await;
+                        let MlsConversationCreationMessage { welcome, commit, .. } = alice_central
+                            .add_members_to_conversation(&id, &mut [charlie])
+                            .await
+                            .unwrap();
+                        alice_central.commit_accepted(&id).await.unwrap();
+                        bob_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        // Purposely have a configuration without `external_senders`
+                        let cfg = MlsConversationConfiguration::default();
+                        charlie_central.process_welcome_message(welcome, cfg).await.unwrap();
+                        assert_eq!(charlie_central[&id].members().len(), 3);
+                        assert!(charlie_central.talk_to(&id, &mut alice_central).await.is_ok());
+                        assert!(charlie_central.talk_to(&id, &mut bob_central).await.is_ok());
+
+                        // now, as e.g. a Delivery Service, let's create an external remove proposal
+                        // and kick Bob out of the conversation
+                        let bob_kp = bob_central.key_package_of(&id, "bob");
+                        let bob_kp_ref = bob_kp.hash_ref(bob_central.mls_backend.crypto()).unwrap();
+                        let ext_remove_proposal = ds
+                            .new_external_remove_proposal(id.clone(), alice_central[&id].group.epoch(), bob_kp_ref)
+                            .await
+                            .unwrap();
+
+                        // joiner from Welcome should be able to verify the external remove proposal since
+                        // it has fetched back the external_sender from Welcome
+                        let charlie_can_verify_ext_proposal = charlie_central
+                            .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
+                            .await;
+                        assert!(charlie_can_verify_ext_proposal.is_ok());
+
+                        alice_central
+                            .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        bob_central
+                            .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+
+                        let commit = charlie_central
+                            .commit_pending_proposals(&id)
+                            .await
+                            .unwrap()
+                            .unwrap()
+                            .commit;
+                        charlie_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(charlie_central[&id].members().len(), 2);
+
+                        alice_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        assert_eq!(alice_central[&id].members().len(), 2);
+                        bob_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        assert!(alice_central.talk_to(&id, &mut charlie_central).await.is_ok());
+                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_err());
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_credential_types)]
+        #[wasm_bindgen_test]
+        async fn joiners_from_external_commit_can_accept_external_remove_proposals(credential: CredentialSupplier) {
+            run_test_with_client_ids(
+                credential,
+                ["alice", "bob", "charlie", "ds"],
+                move |[mut alice_central, mut bob_central, mut charlie_central, ds]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+
+                        let remove_key = ds
+                            .mls_client
+                            .credentials()
+                            .credential()
+                            .signature_key()
+                            .as_slice()
+                            .to_vec();
+                        let mut cfg = MlsConversationConfiguration::default();
+                        cfg.set_raw_external_senders(vec![remove_key]);
+                        alice_central.new_conversation(id.clone(), cfg).await.unwrap();
+
+                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        assert_eq!(alice_central[&id].members().len(), 2);
+
+                        // Charlie joins through an external commit and should get external_senders
+                        // from PGS and not from configuration
+                        let public_group_state = alice_central.verifiable_public_group_state(&id).await;
+                        let MlsConversationInitBundle { commit, .. } = charlie_central
+                            .join_by_external_commit(public_group_state)
+                            .await
+                            .unwrap();
+                        // Purposely have a configuration without `external_senders`
+                        let cfg = MlsConversationConfiguration::default();
+                        charlie_central
+                            .merge_pending_group_from_external_commit(&id, cfg)
+                            .await
+                            .unwrap();
+
+                        alice_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        bob_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+
+                        assert_eq!(charlie_central[&id].members().len(), 3);
+                        assert!(charlie_central.talk_to(&id, &mut alice_central).await.is_ok());
+                        assert!(charlie_central.talk_to(&id, &mut bob_central).await.is_ok());
+
+                        // now, as e.g. a Delivery Service, let's create an external remove proposal
+                        // and kick Bob out of the conversation
+                        let bob_kp = bob_central.key_package_of(&id, "bob");
+                        let bob_kp_ref = bob_kp.hash_ref(bob_central.mls_backend.crypto()).unwrap();
+                        let ext_remove_proposal = ds
+                            .new_external_remove_proposal(id.clone(), alice_central[&id].group.epoch(), bob_kp_ref)
+                            .await
+                            .unwrap();
+
+                        // joiner from external commit should be able to verify the external remove proposal
+                        // since it has fetched back the external_sender from external commit
+                        let charlie_can_verify_ext_proposal = charlie_central
+                            .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
+                            .await;
+                        assert!(charlie_can_verify_ext_proposal.is_ok());
+
+                        alice_central
+                            .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        bob_central
+                            .decrypt_message(&id, ext_remove_proposal.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+
+                        let commit = charlie_central
+                            .commit_pending_proposals(&id)
+                            .await
+                            .unwrap()
+                            .unwrap()
+                            .commit;
+                        charlie_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(charlie_central[&id].members().len(), 2);
+
+                        alice_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        assert_eq!(alice_central[&id].members().len(), 2);
+                        bob_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        assert!(alice_central.talk_to(&id, &mut charlie_central).await.is_ok());
+                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_err());
                     })
                 },
             )

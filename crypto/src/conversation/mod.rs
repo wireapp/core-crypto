@@ -65,7 +65,7 @@ pub struct MlsConversationConfiguration {
     /// The duration for which a key must be rotated
     pub key_rotation_span: Option<std::time::Duration>,
     /// Delivery service public signature key and credential
-    pub external_senders: Vec<Vec<u8>>,
+    pub external_senders: Vec<ExternalSender>,
 }
 
 impl MlsConversationConfiguration {
@@ -83,13 +83,15 @@ impl MlsConversationConfiguration {
             .number_of_resumtion_secrets(1)
             .sender_ratchet_configuration(SenderRatchetConfiguration::new(2, 1000))
             .use_ratchet_tree_extension(true)
-            .external_senders(self.decode_external_senders()?)
+            .external_senders(self.external_senders.clone())
             .build())
     }
 
-    fn decode_external_senders(&self) -> CryptoResult<Vec<ExternalSender>> {
-        Ok(self
-            .external_senders
+    /// Parses supplied key from Delivery Service in order to build back an [ExternalSender]
+    /// Note that this only works currently with Ed25519 keys and will have to be changed to accept
+    /// other key schemes
+    pub fn set_raw_external_senders(&mut self, external_senders: Vec<Vec<u8>>) {
+        let external_senders = external_senders
             .iter()
             .map(|key| {
                 SignaturePublicKey::new(key.clone(), SignatureScheme::ED25519)
@@ -98,7 +100,8 @@ impl MlsConversationConfiguration {
             })
             .filter_map(|r: CryptoResult<SignaturePublicKey>| r.ok())
             .map(|signature_key| ExternalSender::new_basic(Self::WIRE_SERVER_IDENTITY, signature_key))
-            .collect())
+            .collect();
+        self.external_senders = external_senders;
     }
 }
 
@@ -160,7 +163,7 @@ impl MlsConversation {
     /// # Arguments
     /// * `welcome` - welcome message to create the group from
     /// * `config` - group configuration
-    /// * `backend` - the KeyStore to persiste the group
+    /// * `backend` - the KeyStore to persist the group
     ///
     /// # Errors
     /// Errors can happen from OpenMls or from the KeyStore
@@ -169,11 +172,10 @@ impl MlsConversation {
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
-        let mls_group_config = configuration.as_openmls_default_configuration();
-        let group = MlsGroup::new_from_welcome(backend, &mls_group_config?, welcome, None)
+        let mls_group_config = configuration.as_openmls_default_configuration()?;
+        let group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None)
             .await
             .map_err(MlsError::from)?;
-
         Self::from_mls_group(group, configuration, backend).await
     }
 
