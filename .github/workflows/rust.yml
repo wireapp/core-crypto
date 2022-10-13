@@ -84,6 +84,24 @@ jobs:
           command: test
           args: --doc
 
+  proteus-test:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v1
+      - uses: taiki-e/install-action@nextest
+      - name: "Test CoreCrypto's proteus implementation"
+        uses: actions-rs/cargo@v1
+        with:
+          command: nextest
+          args: run --verbose --features proteus,cryptobox-migrate,proteus-keystore proteus
+
   # extract things unrelated to main tests not to slow them down
   tooling-test:
     runs-on: ubuntu-latest
@@ -145,6 +163,25 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - name: Run tests (wasm)
         run: wasm-pack test --release --headless --chrome ${{ matrix.workspace }}
+
+  proteus-wasm-test:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - uses: Swatinem/rust-cache@v1
+      - name: Run tests (wasm)
+        run: |
+          wasm-pack test --chrome --headless keystore --features proteus-keystore -- proteus
+          wasm-pack test --chrome --headless crypto --features proteus,cryptobox-migrate -- proteus
 
   e2e-interop-test:
     runs-on: ubuntu-latest
