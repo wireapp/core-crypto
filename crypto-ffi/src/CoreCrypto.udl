@@ -55,7 +55,8 @@ enum CryptoError {
     "IoError",
     "Unauthorized",
     "CallbacksNotSet",
-    "ExternalAddProposalError",
+    "UnauthorizedExternalAddProposal",
+    "UnauthorizedExternalCommit",
     "InvalidHashReference",
     "GenerationOutOfBound",
 };
@@ -92,8 +93,9 @@ dictionary ConversationConfiguration {
 };
 
 callback interface CoreCryptoCallbacks {
-    boolean authorize([ByRef] sequence<u8> conversation_id, [ByRef] sequence<u8> client_id);
-    boolean client_is_existing_group_user([ByRef] sequence<u8> client_id, [ByRef] sequence<sequence<u8>> existing_clients);
+    boolean authorize([ByRef] ConversationId conversation_id, [ByRef] ClientId client_id);
+    boolean user_authorize([ByRef] ConversationId conversation_id, [ByRef] ClientId external_client_id, [ByRef] sequence<ClientId> existing_clients);
+    boolean client_is_existing_group_user([ByRef] ClientId client_id, [ByRef] sequence<ClientId> existing_clients);
 };
 
 interface CoreCrypto {

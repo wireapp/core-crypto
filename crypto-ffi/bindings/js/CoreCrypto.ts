@@ -354,7 +354,7 @@ export interface CoreCryptoCallbacks {
      * in the given conversationId. Think of it as a "isAdmin" callback conceptually
      *
      * This callback exists because there are many business cases where CoreCrypto doesn't have enough knowledge
-     * (such as what can exists on a backend) to inform the decision
+     * (such as what can exist on a backend) to inform the decision
      *
      * @param conversationId - id of the group/conversation
      * @param clientId - id of the client performing an operation requiring authorization
@@ -363,8 +363,24 @@ export interface CoreCryptoCallbacks {
     authorize: (conversationId: Uint8Array, clientId: Uint8Array) => boolean;
 
     /**
+     * A mix between {@link authorize} and {@link clientIsExistingGroupUser}. We currently use this callback to verify
+     * external commits to join a group ; in such case, the client has to:
+     * * first, belong to a user which is already in the MLS group (similar to {@link clientIsExistingGroupUser})
+     * * then, this user should be authorized to "write" in the given conversation (similar to {@link authorize})
+     *
+     * @param conversationId - id of the group/conversation
+     * @param externalClientId - id of the client performing an operation requiring authorization
+     * @param existingClients - all the clients currently within the MLS group
+     * @returns true if the external client is authorized to write to the conversation
+     */
+    userAuthorize: (conversationId: Uint8Array, externalClientId: Uint8Array, existingClients: Uint8Array[]) => boolean;
+
+    /**
      * Callback to ensure that the given `clientId` belongs to one of the provided `existingClients`
      * This basically allows to defer the client ID parsing logic to the caller - because CoreCrypto is oblivious to such things
+     *
+     * @param clientId - id of a client
+     * @param existingClients - all the clients currently within the MLS group
      */
     clientIsExistingGroupUser: (clientId: Uint8Array, existingClients: Uint8Array[]) => boolean;
 }
@@ -453,6 +469,7 @@ export class CoreCrypto {
     registerCallbacks(callbacks: CoreCryptoCallbacks) {
         const wasmCallbacks = new CoreCrypto.#module.CoreCryptoWasmCallbacks(
             callbacks.authorize,
+            callbacks.userAuthorize,
             callbacks.clientIsExistingGroupUser
         );
         this.#cc.set_callbacks(wasmCallbacks);

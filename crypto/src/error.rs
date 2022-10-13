@@ -81,12 +81,15 @@ pub enum CryptoError {
     /// Authorization error
     #[error("The current client id isn't authorized to perform this action")]
     Unauthorized,
-    /// Calbacks are not informed
+    /// Callbacks are not informed
     #[error("The callback interface in the MlsCentral was not informed")]
     CallbacksNotSet,
     /// External Add Proposal Validation failed
     #[error("External add proposal validation failed: only users already in the group are allowed")]
-    ExternalAddProposalError,
+    UnauthorizedExternalAddProposal,
+    /// External Commit sender was not authorized to perform such
+    #[error("External Commit sender was not authorized to perform such")]
+    UnauthorizedExternalCommit,
     /// A supplied [`HashReference`] is not of the expected size: 16
     #[error("A supplied reference is not of the expected size: 16")]
     InvalidHashReference,
