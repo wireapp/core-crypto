@@ -680,6 +680,14 @@ public class CoreCryptoWrapper {
         try self.coreCrypto.proteusEncryptBatched(sessions: sessions, plaintext: plaintext)
     }
 
+    /// Creates a new prekey with the requested ID.
+    ///
+    /// - parameter prekeyId: ID of the PreKey to generate
+    /// - returns: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
+    public func proteusNewPrekey(prekeyId: UInt16) throws -> [UInt8] {
+        try self.coreCrypto.proteusNewPrekey(prekeyId: prekeyId)
+    }
+
     /// Proteus public key fingerprint
     /// It's basically the public key encoded as an hex string
     ///

@@ -265,6 +265,22 @@ impl ProteusCentral {
         Ok(acc)
     }
 
+    /// Generates a new Proteus PreKey, stores it in the keystore and returns a serialized PreKeyBundle to be consumed externally
+    pub async fn new_prekey(&self, id: u16, keystore: &CryptoKeystore) -> CryptoResult<Vec<u8>> {
+        use proteus_wasm::keys::{PreKey, PreKeyId};
+
+        let prekey_id = PreKeyId::new(id);
+        let prekey = PreKey::new(prekey_id);
+        let keystore_prekey = core_crypto_keystore::entities::ProteusPrekey::from_raw(
+            id,
+            prekey.serialise().map_err(ProteusError::from)?,
+        );
+        keystore.save(keystore_prekey).await?;
+
+        let bundle = PreKeyBundle::new(self.proteus_identity.as_ref().public_key.clone(), &prekey);
+        Ok(bundle.serialise().map_err(ProteusError::from)?)
+    }
+
     /// Proteus identity keypair
     pub fn identity(&self) -> &IdentityKeyPair {
         self.proteus_identity.as_ref()
@@ -276,6 +292,7 @@ impl ProteusCentral {
     }
 
     /// Cryptobox -> CoreCrypto migration
+    #[cfg_attr(not(feature = "cryptobox-migrate"), allow(unused_variables))]
     pub async fn cryptobox_migrate(keystore: &CryptoKeystore, path: &str) -> CryptoResult<()> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "cryptobox-migrate")] {
@@ -655,6 +672,48 @@ mod tests {
             .unwrap();
 
         assert_eq!(decrypted, message);
+
+        keystore.wipe().await.unwrap();
+        drop(db_file);
+    }
+
+    #[async_std::test]
+    #[wasm_bindgen_test]
+    async fn can_produce_proteus_consumed_prekeys() {
+        let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
+        let (path, db_file) = crate::test_utils::tmp_db_file();
+
+        let mut keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
+            .await
+            .unwrap();
+        let mut alice = ProteusCentral::try_new(&keystore).await.unwrap();
+        let bob = proteus_wasm::keys::IdentityKeyPair::new();
+        let mut bob_store = TestStore::default();
+
+        let alice_prekey_bundle_ser = alice.new_prekey(1, &keystore).await.unwrap();
+        let alice_prekey_bundle = proteus_wasm::keys::PreKeyBundle::deserialise(&alice_prekey_bundle_ser).unwrap();
+        let mut bob_session =
+            proteus_wasm::session::Session::init_from_prekey::<()>(&bob, alice_prekey_bundle).unwrap();
+        let message = b"Hello world!";
+        let encrypted = bob_session.encrypt(message).unwrap().serialise().unwrap();
+
+        let (_, decrypted) = alice
+            .session_from_message(&mut keystore, &session_id, &encrypted)
+            .await
+            .unwrap();
+
+        assert_eq!(message, decrypted.as_slice());
+
+        let encrypted = alice.encrypt(&session_id, message).unwrap();
+        let decrypted = bob_session
+            .decrypt(
+                &mut bob_store,
+                &proteus_wasm::message::Envelope::deserialise(&encrypted).unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(message, decrypted.as_slice());
 
         keystore.wipe().await.unwrap();
         drop(db_file);

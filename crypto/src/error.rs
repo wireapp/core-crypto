@@ -101,15 +101,12 @@ pub enum CryptoError {
     /// implementation has a loophole and it'd better be evicted from the group.
     #[error("Decrypted an application message twice")]
     GenerationOutOfBound,
-    #[cfg(feature = "proteus")]
     /// Proteus Error Wrapper
     #[error(transparent)]
     ProteusError(#[from] ProteusError),
-    #[cfg(feature = "cryptobox-migrate")]
     /// Cryptobox migration error wrapper
     #[error(transparent)]
     CryptoboxMigrationError(#[from] CryptoboxMigrationError),
-    #[cfg(feature = "proteus")]
     /// The proteus client has been called but has not been initialized yet
     #[error("Proteus client hasn't been initialized")]
     ProteusNotInitialized,
@@ -200,30 +197,31 @@ pub enum MlsError {
     MlsCryptoError(#[from] openmls::prelude::CryptoError),
 }
 
-#[cfg(feature = "proteus")]
 #[derive(Debug, thiserror::Error)]
 /// Wrapper for Proteus-related errors
 pub enum ProteusError {
+    #[cfg(feature = "proteus")]
     #[error(transparent)]
     /// Error when decoding CBOR and/or decrypting Proteus messages
     ProteusDecodeError(#[from] proteus_wasm::DecodeError),
+    #[cfg(feature = "proteus")]
     #[error(transparent)]
     /// Error when encoding CBOR and/or decrypting Proteus messages
     ProteusEncodeError(#[from] proteus_wasm::EncodeError),
+    #[cfg(feature = "proteus")]
     #[error(transparent)]
     /// Error when there's a critical error within a proteus Session
     ProteusSessionError(#[from] proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>),
 }
 
-#[cfg(feature = "cryptobox-migrate")]
 #[derive(Debug, thiserror::Error)]
 /// Wrapper for errors that can happen during a Cryptobox migration
 pub enum CryptoboxMigrationError {
-    #[cfg(target_family = "wasm")]
+    #[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
     #[error(transparent)]
     /// IndexedDB Error
     RexieError(#[from] rexie::Error),
-    #[cfg(target_family = "wasm")]
+    #[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
     #[error(transparent)]
     /// Error when parsing/serializing JSON payloads from the WASM boundary
     JsonParseError(#[from] serde_wasm_bindgen::Error),
