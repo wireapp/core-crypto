@@ -1009,8 +1009,8 @@ export class CoreCrypto {
      *
      * @returns A `Uint8Array` representing the derived key
      */
-    async exportSecretKey(conversationId: ConversationId, label: string, keyLength: number): Promise<Uint8Array> {
-        return await this.#cc.exportSecretKey(conversationId, label, keyLength);
+    async exportSecretKey(conversationId: ConversationId, keyLength: number): Promise<Uint8Array> {
+        return await this.#cc.export_secret_key(conversationId, keyLength);
     }
 
     /**
@@ -1021,7 +1021,7 @@ export class CoreCrypto {
      * @returns A list of clients from the members of the group
      */
     async exportClients(conversationId: ConversationId): Promise<ClientId[]> {
-        return await this.#cc.exportClients(conversationId);
+        return await this.#cc.export_clients(conversationId);
     }
 
     /**

@@ -19,13 +19,61 @@ fileprivate extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
+<<<<<<< HEAD
         try! rustCall { ffi_CoreCrypto_ec77_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+        try! rustCall { ffi_CoreCrypto_ff56_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+||||||| parent of e5e4538 (Adding bindings)
+        try! rustCall { ffi_CoreCrypto_54ee_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+=======
+        try! rustCall { ffi_CoreCrypto_e3ae_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+        try! rustCall { ffi_CoreCrypto_ff56_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+||||||| parent of e5e4538 (Adding bindings)
+        try! rustCall { ffi_CoreCrypto_54ee_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+=======
+        try! rustCall { ffi_CoreCrypto_e3ae_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+        try! rustCall { ffi_CoreCrypto_e3ae_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+=======
+        try! rustCall { ffi_CoreCrypto_7cc0_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
+<<<<<<< HEAD
         try! rustCall { ffi_CoreCrypto_ec77_rustbuffer_free(self, $0) }
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+        try! rustCall { ffi_CoreCrypto_ff56_rustbuffer_free(self, $0) }
+||||||| parent of e5e4538 (Adding bindings)
+        try! rustCall { ffi_CoreCrypto_54ee_rustbuffer_free(self, $0) }
+=======
+        try! rustCall { ffi_CoreCrypto_e3ae_rustbuffer_free(self, $0) }
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+        try! rustCall { ffi_CoreCrypto_ff56_rustbuffer_free(self, $0) }
+||||||| parent of e5e4538 (Adding bindings)
+        try! rustCall { ffi_CoreCrypto_54ee_rustbuffer_free(self, $0) }
+=======
+        try! rustCall { ffi_CoreCrypto_e3ae_rustbuffer_free(self, $0) }
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+        try! rustCall { ffi_CoreCrypto_e3ae_rustbuffer_free(self, $0) }
+=======
+        try! rustCall { ffi_CoreCrypto_7cc0_rustbuffer_free(self, $0) }
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
     }
 }
 
@@ -447,7 +495,7 @@ public protocol CoreCryptoProtocol {
     func exportGroupState(conversationId: ConversationId) throws -> [UInt8]
     func mergePendingGroupFromExternalCommit(conversationId: ConversationId, config: ConversationConfiguration) throws
     func clearPendingGroupFromExternalCommit(conversationId: ConversationId) throws
-    func exportSecretKey(conversationId: ConversationId, label: String, keyLength: UInt32) throws -> [UInt8]
+    func exportSecretKey(conversationId: ConversationId, keyLength: UInt32) throws -> [UInt8]
     func exportClients(conversationId: ConversationId) throws -> [ClientId]
     func randomBytes(length: UInt32) throws -> [UInt8]
     func reseedRng(seed: [UInt8]) throws
@@ -482,7 +530,31 @@ public class CoreCrypto: CoreCryptoProtocol {
     
     rustCallWithError(FfiConverterTypeCryptoError.self) {
     
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_new(
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_new(
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_new(
+=======
+    CoreCrypto_e3ae_CoreCrypto_new(
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_new(
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_new(
+=======
+    CoreCrypto_e3ae_CoreCrypto_new(
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_new(
+=======
+    CoreCrypto_7cc0_CoreCrypto_new(
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterString.lower(path), 
         FfiConverterString.lower(key), 
         FfiConverterString.lower(clientId), 
@@ -491,7 +563,31 @@ public class CoreCrypto: CoreCryptoProtocol {
     }
 
     deinit {
+<<<<<<< HEAD
         try! rustCall { ffi_CoreCrypto_ec77_CoreCrypto_object_free(pointer, $0) }
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+        try! rustCall { ffi_CoreCrypto_ff56_CoreCrypto_object_free(pointer, $0) }
+||||||| parent of e5e4538 (Adding bindings)
+        try! rustCall { ffi_CoreCrypto_54ee_CoreCrypto_object_free(pointer, $0) }
+=======
+        try! rustCall { ffi_CoreCrypto_e3ae_CoreCrypto_object_free(pointer, $0) }
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+        try! rustCall { ffi_CoreCrypto_ff56_CoreCrypto_object_free(pointer, $0) }
+||||||| parent of e5e4538 (Adding bindings)
+        try! rustCall { ffi_CoreCrypto_54ee_CoreCrypto_object_free(pointer, $0) }
+=======
+        try! rustCall { ffi_CoreCrypto_e3ae_CoreCrypto_object_free(pointer, $0) }
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+        try! rustCall { ffi_CoreCrypto_e3ae_CoreCrypto_object_free(pointer, $0) }
+=======
+        try! rustCall { ffi_CoreCrypto_7cc0_CoreCrypto_object_free(pointer, $0) }
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
     }
 
     
@@ -500,7 +596,31 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func setCallbacks(callbacks: CoreCryptoCallbacks) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_set_callbacks(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_set_callbacks(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_set_callbacks(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_set_callbacks(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_set_callbacks(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_set_callbacks(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_set_callbacks(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_set_callbacks(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_set_callbacks(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterCallbackInterfaceCoreCryptoCallbacks.lower(callbacks), $0
     )
 }
@@ -509,7 +629,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_client_public_key(self.pointer, $0
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_client_public_key(self.pointer, $0
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_client_public_key(self.pointer, $0
+=======
+    CoreCrypto_e3ae_CoreCrypto_client_public_key(self.pointer, $0
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_client_public_key(self.pointer, $0
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_client_public_key(self.pointer, $0
+=======
+    CoreCrypto_e3ae_CoreCrypto_client_public_key(self.pointer, $0
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_client_public_key(self.pointer, $0
+=======
+    CoreCrypto_7cc0_CoreCrypto_client_public_key(self.pointer, $0
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
     )
 }
         )
@@ -518,7 +662,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_client_keypackages(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_client_keypackages(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_client_keypackages(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_client_keypackages(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_client_keypackages(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_client_keypackages(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_client_keypackages(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_client_keypackages(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_client_keypackages(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterUInt32.lower(amountRequested), $0
     )
 }
@@ -528,7 +696,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterUInt64.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_client_valid_keypackages_count(self.pointer, $0
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_client_valid_keypackages_count(self.pointer, $0
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_client_valid_keypackages_count(self.pointer, $0
+=======
+    CoreCrypto_e3ae_CoreCrypto_client_valid_keypackages_count(self.pointer, $0
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_client_valid_keypackages_count(self.pointer, $0
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_client_valid_keypackages_count(self.pointer, $0
+=======
+    CoreCrypto_e3ae_CoreCrypto_client_valid_keypackages_count(self.pointer, $0
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_client_valid_keypackages_count(self.pointer, $0
+=======
+    CoreCrypto_7cc0_CoreCrypto_client_valid_keypackages_count(self.pointer, $0
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
     )
 }
         )
@@ -536,7 +728,31 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func createConversation(conversationId: ConversationId, config: ConversationConfiguration) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_create_conversation(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_create_conversation(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_create_conversation(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_create_conversation(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_create_conversation(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_create_conversation(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_create_conversation(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_create_conversation(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_create_conversation(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterTypeConversationConfiguration.lower(config), $0
     )
@@ -546,7 +762,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterUInt64.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_conversation_epoch(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_conversation_epoch(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_conversation_epoch(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_conversation_epoch(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_conversation_epoch(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_conversation_epoch(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_conversation_epoch(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_conversation_epoch(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_conversation_epoch(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -557,7 +797,31 @@ public class CoreCrypto: CoreCryptoProtocol {
             try!
     rustCall() {
     
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_conversation_exists(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_conversation_exists(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_conversation_exists(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_conversation_exists(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_conversation_exists(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_conversation_exists(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_conversation_exists(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_conversation_exists(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_conversation_exists(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -567,7 +831,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeConversationId.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_process_welcome_message(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_process_welcome_message(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_process_welcome_message(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_process_welcome_message(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_process_welcome_message(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_process_welcome_message(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_process_welcome_message(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_process_welcome_message(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_process_welcome_message(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterSequenceUInt8.lower(welcomeMessage), $0
     )
 }
@@ -577,7 +865,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeMemberAddedMessages.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_add_clients_to_conversation(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_add_clients_to_conversation(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_add_clients_to_conversation(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_add_clients_to_conversation(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_add_clients_to_conversation(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_add_clients_to_conversation(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_add_clients_to_conversation(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_add_clients_to_conversation(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_add_clients_to_conversation(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceTypeInvitee.lower(clients), $0
     )
@@ -588,7 +900,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeCommitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_remove_clients_from_conversation(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_remove_clients_from_conversation(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_remove_clients_from_conversation(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_remove_clients_from_conversation(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_remove_clients_from_conversation(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_remove_clients_from_conversation(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_remove_clients_from_conversation(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_remove_clients_from_conversation(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_remove_clients_from_conversation(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceTypeClientId.lower(clients), $0
     )
@@ -599,7 +935,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeCommitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_update_keying_material(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_update_keying_material(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_update_keying_material(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_update_keying_material(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_update_keying_material(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_update_keying_material(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_update_keying_material(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_update_keying_material(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_update_keying_material(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -609,7 +969,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterOptionTypeCommitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_commit_pending_proposals(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_commit_pending_proposals(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_commit_pending_proposals(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_commit_pending_proposals(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_commit_pending_proposals(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_commit_pending_proposals(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_commit_pending_proposals(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_commit_pending_proposals(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_commit_pending_proposals(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -619,7 +1003,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeTlsCommitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_final_add_clients_to_conversation(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_final_add_clients_to_conversation(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_final_add_clients_to_conversation(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_final_add_clients_to_conversation(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_final_add_clients_to_conversation(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_final_add_clients_to_conversation(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_final_add_clients_to_conversation(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_final_add_clients_to_conversation(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_final_add_clients_to_conversation(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceTypeInvitee.lower(clients), $0
     )
@@ -630,7 +1038,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeTlsCommitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_final_remove_clients_from_conversation(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_final_remove_clients_from_conversation(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_final_remove_clients_from_conversation(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_final_remove_clients_from_conversation(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_final_remove_clients_from_conversation(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_final_remove_clients_from_conversation(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_final_remove_clients_from_conversation(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_final_remove_clients_from_conversation(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_final_remove_clients_from_conversation(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceTypeClientId.lower(clients), $0
     )
@@ -641,7 +1073,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeTlsCommitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_final_update_keying_material(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_final_update_keying_material(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_final_update_keying_material(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_final_update_keying_material(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_final_update_keying_material(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_final_update_keying_material(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_final_update_keying_material(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_final_update_keying_material(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_final_update_keying_material(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -651,7 +1107,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterOptionTypeTlsCommitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_final_commit_pending_proposals(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_final_commit_pending_proposals(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_final_commit_pending_proposals(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_final_commit_pending_proposals(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_final_commit_pending_proposals(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_final_commit_pending_proposals(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_final_commit_pending_proposals(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_final_commit_pending_proposals(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_final_commit_pending_proposals(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -660,7 +1140,31 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func wipeConversation(conversationId: ConversationId) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_wipe_conversation(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_wipe_conversation(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_wipe_conversation(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_wipe_conversation(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_wipe_conversation(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_wipe_conversation(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_wipe_conversation(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_wipe_conversation(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_wipe_conversation(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -669,7 +1173,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeDecryptedMessage.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_decrypt_message(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_decrypt_message(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_decrypt_message(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_decrypt_message(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_decrypt_message(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_decrypt_message(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_decrypt_message(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_decrypt_message(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_decrypt_message(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceUInt8.lower(payload), $0
     )
@@ -680,7 +1208,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_encrypt_message(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_encrypt_message(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_encrypt_message(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_encrypt_message(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_encrypt_message(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_encrypt_message(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_encrypt_message(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_encrypt_message(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_encrypt_message(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceUInt8.lower(message), $0
     )
@@ -691,7 +1243,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeProposalBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_new_add_proposal(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_new_add_proposal(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_new_add_proposal(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_new_add_proposal(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_new_add_proposal(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_new_add_proposal(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_new_add_proposal(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_new_add_proposal(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_new_add_proposal(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceUInt8.lower(keyPackage), $0
     )
@@ -702,7 +1278,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeProposalBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_new_update_proposal(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_new_update_proposal(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_new_update_proposal(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_new_update_proposal(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_new_update_proposal(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_new_update_proposal(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_new_update_proposal(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_new_update_proposal(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_new_update_proposal(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -712,7 +1312,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeProposalBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_new_remove_proposal(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_new_remove_proposal(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_new_remove_proposal(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_new_remove_proposal(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_new_remove_proposal(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_new_remove_proposal(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_new_remove_proposal(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_new_remove_proposal(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_new_remove_proposal(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterTypeClientId.lower(clientId), $0
     )
@@ -723,7 +1347,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_new_external_add_proposal(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_new_external_add_proposal(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_new_external_add_proposal(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_new_external_add_proposal(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_new_external_add_proposal(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_new_external_add_proposal(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_new_external_add_proposal(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_new_external_add_proposal(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_new_external_add_proposal(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterUInt64.lower(epoch), $0
     )
@@ -734,7 +1382,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_new_external_remove_proposal(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_new_external_remove_proposal(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_new_external_remove_proposal(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_new_external_remove_proposal(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_new_external_remove_proposal(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_new_external_remove_proposal(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_new_external_remove_proposal(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_new_external_remove_proposal(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_new_external_remove_proposal(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterUInt64.lower(epoch), 
         FfiConverterSequenceUInt8.lower(keyPackageRef), $0
@@ -746,7 +1418,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeConversationInitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_join_by_external_commit(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_join_by_external_commit(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_join_by_external_commit(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_join_by_external_commit(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_join_by_external_commit(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_join_by_external_commit(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_join_by_external_commit(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_join_by_external_commit(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_join_by_external_commit(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterSequenceUInt8.lower(publicGroupState), $0
     )
 }
@@ -756,7 +1452,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_export_group_state(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_export_group_state(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_export_group_state(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_export_group_state(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_export_group_state(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_export_group_state(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_export_group_state(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_export_group_state(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_export_group_state(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -765,7 +1485,31 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func mergePendingGroupFromExternalCommit(conversationId: ConversationId, config: ConversationConfiguration) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterTypeConversationConfiguration.lower(config), $0
     )
@@ -774,18 +1518,47 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func clearPendingGroupFromExternalCommit(conversationId: ConversationId) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_clear_pending_group_from_external_commit(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_clear_pending_group_from_external_commit(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_clear_pending_group_from_external_commit(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_clear_pending_group_from_external_commit(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_clear_pending_group_from_external_commit(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_clear_pending_group_from_external_commit(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_clear_pending_group_from_external_commit(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_clear_pending_group_from_external_commit(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_clear_pending_group_from_external_commit(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
     }
-    public func exportSecretKey(conversationId: ConversationId, label: String, keyLength: UInt32) throws -> [UInt8] {
+    public func exportSecretKey(conversationId: ConversationId, keyLength: UInt32) throws -> [UInt8] {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_export_secret_key(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_export_secret_key(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_export_secret_key(self.pointer, 
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), 
-        FfiConverterString.lower(label), 
         FfiConverterUInt32.lower(keyLength), $0
     )
 }
@@ -795,7 +1568,13 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceTypeClientId.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_export_clients(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_export_clients(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_export_clients(self.pointer, 
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -805,7 +1584,31 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_random_bytes(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_random_bytes(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_random_bytes(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_random_bytes(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_random_bytes(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_random_bytes(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_random_bytes(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_random_bytes(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_random_bytes(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterUInt32.lower(length), $0
     )
 }
@@ -814,7 +1617,31 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func reseedRng(seed: [UInt8]) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_reseed_rng(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_reseed_rng(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_reseed_rng(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_reseed_rng(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_reseed_rng(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_reseed_rng(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_reseed_rng(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_reseed_rng(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_reseed_rng(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterSequenceUInt8.lower(seed), $0
     )
 }
@@ -822,7 +1649,31 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func commitAccepted(conversationId: ConversationId) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_commit_accepted(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_commit_accepted(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_commit_accepted(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_commit_accepted(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_commit_accepted(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_commit_accepted(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_commit_accepted(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_commit_accepted(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_commit_accepted(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -830,7 +1681,31 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func clearPendingProposal(conversationId: ConversationId, proposalRef: [UInt8]) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_clear_pending_proposal(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_clear_pending_proposal(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_clear_pending_proposal(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_clear_pending_proposal(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_clear_pending_proposal(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_clear_pending_proposal(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_clear_pending_proposal(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_clear_pending_proposal(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_clear_pending_proposal(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), 
         FfiConverterSequenceUInt8.lower(proposalRef), $0
     )
@@ -839,7 +1714,31 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func clearPendingCommit(conversationId: ConversationId) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
+<<<<<<< HEAD
     CoreCrypto_ec77_CoreCrypto_clear_pending_commit(self.pointer, 
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_clear_pending_commit(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_clear_pending_commit(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_clear_pending_commit(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_CoreCrypto_clear_pending_commit(self.pointer, 
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_CoreCrypto_clear_pending_commit(self.pointer, 
+=======
+    CoreCrypto_e3ae_CoreCrypto_clear_pending_commit(self.pointer, 
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_CoreCrypto_clear_pending_commit(self.pointer, 
+=======
+    CoreCrypto_7cc0_CoreCrypto_clear_pending_commit(self.pointer, 
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterTypeConversationId.lower(conversationId), $0
     )
 }
@@ -1943,7 +2842,31 @@ fileprivate struct FfiConverterCallbackInterfaceCoreCryptoCallbacks {
     private static var callbackInitialized = false
     private static func initCallback() {
         try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
+<<<<<<< HEAD
                 ffi_CoreCrypto_ec77_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+                ffi_CoreCrypto_ff56_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
+||||||| parent of e5e4538 (Adding bindings)
+                ffi_CoreCrypto_54ee_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
+=======
+                ffi_CoreCrypto_e3ae_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+                ffi_CoreCrypto_ff56_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
+||||||| parent of e5e4538 (Adding bindings)
+                ffi_CoreCrypto_54ee_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
+=======
+                ffi_CoreCrypto_e3ae_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+                ffi_CoreCrypto_e3ae_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
+=======
+                ffi_CoreCrypto_7cc0_CoreCryptoCallbacks_init_callback(foreignCallbackCallbackInterfaceCoreCryptoCallbacks, err)
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         }
     }
     private static func ensureCallbackinitialized() {
@@ -2352,7 +3275,31 @@ public func initWithPathAndKey(path: String, key: String, clientId: String, entr
     
     rustCallWithError(FfiConverterTypeCryptoError.self) {
     
+<<<<<<< HEAD
     CoreCrypto_ec77_init_with_path_and_key(
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_init_with_path_and_key(
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_init_with_path_and_key(
+=======
+    CoreCrypto_e3ae_init_with_path_and_key(
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_init_with_path_and_key(
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_init_with_path_and_key(
+=======
+    CoreCrypto_e3ae_init_with_path_and_key(
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_init_with_path_and_key(
+=======
+    CoreCrypto_7cc0_init_with_path_and_key(
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
         FfiConverterString.lower(path), 
         FfiConverterString.lower(key), 
         FfiConverterString.lower(clientId), 
@@ -2369,7 +3316,31 @@ public func version()  -> String {
     
     rustCall() {
     
+<<<<<<< HEAD
     CoreCrypto_ec77_version($0)
+||||||| parent of 5ff2d51 (Removing the label and setting it as a constant)
+<<<<<<< HEAD
+    CoreCrypto_ff56_version($0)
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_version($0)
+=======
+    CoreCrypto_e3ae_version($0)
+>>>>>>> e5e4538 (Adding bindings)
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    CoreCrypto_ff56_version($0)
+||||||| parent of e5e4538 (Adding bindings)
+    CoreCrypto_54ee_version($0)
+=======
+    CoreCrypto_e3ae_version($0)
+>>>>>>> e5e4538 (Adding bindings)
+||||||| parent of 0c39ea0 (Removing the label and setting it as a constant)
+    CoreCrypto_e3ae_version($0)
+=======
+    CoreCrypto_7cc0_version($0)
+>>>>>>> 0c39ea0 (Removing the label and setting it as a constant)
+>>>>>>> 5ff2d51 (Removing the label and setting it as a constant)
 }
     )
 }

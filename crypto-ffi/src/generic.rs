@@ -754,16 +754,11 @@ impl CoreCrypto<'_> {
             .export_clients(&conversation_id)
     }
     /// See [core_crypto::MlsCentral::export_secret_key]
-    pub fn export_secret_key(
-        &self,
-        conversation_id: ConversationId,
-        label: &str,
-        key_length: u32,
-    ) -> CryptoResult<Vec<u8>> {
+    pub fn export_secret_key(&self, conversation_id: ConversationId, key_length: u32) -> CryptoResult<Vec<u8>> {
         self.central
             .lock()
             .map_err(|_| CryptoError::LockPoisonError)?
-            .export_secret_key(&conversation_id, label, key_length as usize)
+            .export_secret_key(&conversation_id, key_length as usize)
     }
 }
 
