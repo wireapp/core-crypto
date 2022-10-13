@@ -6,7 +6,8 @@ use openmls::{
 };
 
 use crate::{
-    prelude::MlsConversation, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsError,
+    prelude::MlsConversation, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral,
+    MlsError,
 };
 
 impl MlsConversation {
@@ -24,30 +25,32 @@ impl MlsConversation {
                 let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
                 let existing_clients = self.members_in_next_epoch(backend);
                 let self_identity = add_proposal.key_package().credential().identity();
-                let is_self_user_in_group = callbacks
-                    .client_is_existing_group_user(self_identity.to_vec(), existing_clients.into_iter().collect());
+                let is_self_user_in_group =
+                    callbacks.client_is_existing_group_user(self_identity.into(), existing_clients);
                 if !is_self_user_in_group {
-                    return Err(CryptoError::ExternalAddProposalError);
+                    return Err(CryptoError::UnauthorizedExternalAddProposal);
                 }
             }
         }
         Ok(())
     }
 
-    /// Get actual group members and substract pending remove proposals
-    fn members_in_next_epoch(&self, backend: &impl OpenMlsCrypto) -> HashSet<Vec<u8>> {
+    /// Get actual group members and subtract pending remove proposals
+    pub fn members_in_next_epoch(&self, backend: &impl OpenMlsCrypto) -> Vec<ClientId> {
         let pending_removals = self.pending_removals();
-        self.group
+        let existing_clients = self
+            .group
             .members()
             .into_iter()
             .filter_map(|kp| {
                 if !pending_removals.contains(&&kp.hash_ref(backend).ok()?) {
-                    Some(kp.credential().identity().to_owned())
+                    Some(kp.credential().identity().into())
                 } else {
                     None
                 }
             })
-            .collect::<HashSet<_>>()
+            .collect::<HashSet<_>>();
+        existing_clients.into_iter().collect()
     }
 
     /// Gather pending remove proposals
@@ -157,7 +160,6 @@ mod tests {
                 ["owner", "guest"],
                 move |[mut owner_central, mut guest_central]| {
                     Box::pin(async move {
-                        owner_central.callbacks(Box::new(ValidationCallbacks::default()));
                         let id = conversation_id();
                         owner_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
@@ -273,10 +275,7 @@ mod tests {
                 ["owner", "guest", "ds", "attacker"],
                 move |[mut owner_central, mut guest_central, ds, attacker]| {
                     Box::pin(async move {
-                        owner_central.callbacks(Box::new(ValidationCallbacks::default()));
-                        guest_central.callbacks(Box::new(ValidationCallbacks::default()));
                         let id = conversation_id();
-
                         // Delivery service key is used in the group..
                         let remove_key = ds
                             .mls_client
@@ -333,8 +332,6 @@ mod tests {
                 ["owner", "guest", "ds"],
                 move |[mut owner_central, mut guest_central, ds]| {
                     Box::pin(async move {
-                        owner_central.callbacks(Box::new(ValidationCallbacks::default()));
-                        guest_central.callbacks(Box::new(ValidationCallbacks::default()));
                         let id = conversation_id();
 
                         let remove_key = ds.mls_client.credentials().credential().signature_key();

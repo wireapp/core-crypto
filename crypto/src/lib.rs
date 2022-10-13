@@ -93,20 +93,36 @@ pub mod prelude {
 /// operations like adding or removing memebers that can be authorized through a caller provided
 /// authorization method.
 pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
-    /// Function responsible for authorizing an operation. Should return `true` if the operation is
-    /// authorized
+    /// Function responsible for authorizing an operation.
+    /// Returns `true` if the operation is authorized.
     ///
     /// # Arguments
     /// * `conversation_id` - id of the group/conversation
-    /// * `client_id` - id of the client
-    fn authorize(&self, conversation_id: Vec<u8>, client_id: Vec<u8>) -> bool;
+    /// * `client_id` - id of the client to authorize
+    fn authorize(&self, conversation_id: ConversationId, client_id: ClientId) -> bool;
+    /// Function responsible for authorizing an operation for a given user.
+    /// Use [external_client_id] & [existing_clients] to get all the 'client_id' belonging to the same user
+    /// as [external_client_id]. Then, given those client ids, verify that at least one has the right role
+    /// (is authorized) exactly like it's done in [authorize]
+    /// Returns `true` if the operation is authorized.
+    ///
+    /// # Arguments
+    /// * `conversation_id` - id of the group/conversation
+    /// * `external_client_id` - id a client external to the MLS group
+    /// * `existing_clients` - all the clients in the MLS group
+    fn user_authorize(
+        &self,
+        conversation_id: ConversationId,
+        external_client_id: ClientId,
+        existing_clients: Vec<ClientId>,
+    ) -> bool;
     /// Validates if the given `client_id` belongs to one of the provided `existing_clients`
     /// This basically allows to defer the client ID parsing logic to the caller - because CoreCrypto is oblivious to such things
     ///
     /// # Arguments
     /// * `client_id` - client ID of the client referenced within the sent proposal
     /// * `existing_clients` - all the clients in the MLS group
-    fn client_is_existing_group_user(&self, client_id: Vec<u8>, existing_clients: Vec<Vec<u8>>) -> bool;
+    fn client_is_existing_group_user(&self, client_id: ClientId, existing_clients: Vec<ClientId>) -> bool;
 }
 
 #[derive(Debug, Clone, derive_more::Deref)]

@@ -320,7 +320,7 @@ impl MlsCentral {
         members: &mut [ConversationMember],
     ) -> CryptoResult<MlsConversationCreationMessage> {
         if let Some(callbacks) = self.callbacks.as_ref() {
-            if !callbacks.authorize(id.clone(), (*self.mls_client.id()).to_vec()) {
+            if !callbacks.authorize(id.clone(), self.mls_client.id().clone()) {
                 return Err(CryptoError::Unauthorized);
             }
         }
@@ -348,7 +348,7 @@ impl MlsCentral {
         clients: &[ClientId],
     ) -> CryptoResult<MlsCommitBundle> {
         if let Some(callbacks) = self.callbacks.as_ref() {
-            if !callbacks.authorize(id.clone(), (*self.mls_client.id()).to_vec()) {
+            if !callbacks.authorize(id.clone(), self.mls_client.id().clone()) {
                 return Err(CryptoError::Unauthorized);
             }
         }

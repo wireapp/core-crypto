@@ -14,14 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use openmls::prelude::{MlsGroup, MlsMessageOut, VerifiablePublicGroupState};
-use openmls_traits::OpenMlsCryptoProvider;
+use openmls::prelude::{MlsGroup, MlsMessageOut, Proposal, Sender, StagedCommit, VerifiablePublicGroupState};
+use openmls_traits::{crypto::OpenMlsCrypto, OpenMlsCryptoProvider};
 
 use core_crypto_keystore::CryptoKeystoreMls;
 
 use crate::{
     prelude::{MlsConversation, MlsConversationConfiguration, PublicGroupStateBundle},
-    ConversationId, CryptoResult, MlsCentral, MlsError,
+    ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsError,
 };
 
 /// Returned when a commit is created
@@ -148,6 +148,38 @@ impl MlsCentral {
     /// Errors resulting from the KeyStore calls
     pub async fn clear_pending_group_from_external_commit(&mut self, id: &ConversationId) -> CryptoResult<()> {
         Ok(self.mls_backend.key_store().mls_pending_groups_delete(id).await?)
+    }
+}
+
+impl MlsConversation {
+    pub(crate) fn validate_external_commit(
+        &self,
+        commit: &StagedCommit,
+        sender: Option<ClientId>,
+        callbacks: Option<&dyn CoreCryptoCallbacks>,
+        backend: &impl OpenMlsCrypto,
+    ) -> CryptoResult<()> {
+        // i.e. has this commit been created by [MlsCentral::join_by_external_commit] ?
+        let is_external_init = commit
+            .staged_proposal_queue()
+            .any(|p| matches!(p.sender(), Sender::NewMember) && matches!(p.proposal(), Proposal::ExternalInit(_)));
+
+        if is_external_init {
+            let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
+            let sender = sender.ok_or(CryptoError::UnauthorizedExternalCommit)?;
+            // first let's verify the sender belongs to an user already in the MLS group
+            let existing_clients = self.members_in_next_epoch(backend);
+            if !callbacks.client_is_existing_group_user(sender.clone(), existing_clients.clone()) {
+                return Err(CryptoError::UnauthorizedExternalCommit);
+            }
+            // then verify that the user this client belongs to has the right role (is allowed)
+            // to perform such operation
+            if !callbacks.user_authorize(self.id.clone(), sender, existing_clients) {
+                return Err(CryptoError::UnauthorizedExternalCommit);
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -430,6 +462,72 @@ mod tests {
                 })
             },
         )
+        .await
+    }
+
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn join_by_external_commit_should_fail_when_sender_user_not_in_group(credential: CredentialSupplier) {
+        run_test_with_client_ids(credential, ["alice", "bob"], move |[mut alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+
+                alice_central.callbacks(Box::new(ValidationCallbacks {
+                    client_is_existing_group_user: false,
+                    ..Default::default()
+                }));
+
+                alice_central
+                    .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                    .await
+                    .unwrap();
+
+                // export Alice group info
+                let public_group_state = alice_central.verifiable_public_group_state(&id).await;
+
+                // Bob tries to join Alice's group
+                let MlsConversationInitBundle { commit, .. } =
+                    bob_central.join_by_external_commit(public_group_state).await.unwrap();
+                let alice_accepts_ext_commit = alice_central.decrypt_message(&id, &commit.to_bytes().unwrap()).await;
+                assert!(matches!(
+                    alice_accepts_ext_commit.unwrap_err(),
+                    CryptoError::UnauthorizedExternalCommit
+                ))
+            })
+        })
+        .await
+    }
+
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn join_by_external_commit_should_fail_when_sender_lacks_role(credential: CredentialSupplier) {
+        run_test_with_client_ids(credential, ["alice", "bob"], move |[mut alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+
+                alice_central.callbacks(Box::new(ValidationCallbacks {
+                    user_authorize: false,
+                    ..Default::default()
+                }));
+
+                alice_central
+                    .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                    .await
+                    .unwrap();
+
+                // export Alice group info
+                let public_group_state = alice_central.verifiable_public_group_state(&id).await;
+
+                // Bob tries to join Alice's group
+                let MlsConversationInitBundle { commit, .. } =
+                    bob_central.join_by_external_commit(public_group_state).await.unwrap();
+                let alice_accepts_ext_commit = alice_central.decrypt_message(&id, &commit.to_bytes().unwrap()).await;
+                assert!(matches!(
+                    alice_accepts_ext_commit.unwrap_err(),
+                    CryptoError::UnauthorizedExternalCommit
+                ))
+            })
+        })
         .await
     }
 
