@@ -202,29 +202,29 @@ pub enum MlsError {
 
 #[cfg(feature = "proteus")]
 #[derive(Debug, thiserror::Error)]
-/// TODO
+/// Wrapper for Proteus-related errors
 pub enum ProteusError {
     #[error(transparent)]
-    /// TODO
+    /// Error when decoding CBOR and/or decrypting Proteus messages
     ProteusDecodeError(#[from] proteus_wasm::DecodeError),
     #[error(transparent)]
-    /// TODO
+    /// Error when encoding CBOR and/or decrypting Proteus messages
     ProteusEncodeError(#[from] proteus_wasm::EncodeError),
     #[error(transparent)]
-    /// TODO
+    /// Error when there's a critical error within a proteus Session
     ProteusSessionError(#[from] proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>),
 }
 
 #[cfg(feature = "cryptobox-migrate")]
 #[derive(Debug, thiserror::Error)]
-/// TODO
+/// Wrapper for errors that can happen during a Cryptobox migration
 pub enum CryptoboxMigrationError {
     #[cfg(target_family = "wasm")]
     #[error(transparent)]
-    /// TODO
+    /// IndexedDB Error
     RexieError(#[from] rexie::Error),
     #[cfg(target_family = "wasm")]
     #[error(transparent)]
-    /// TODO
+    /// Error when parsing/serializing JSON payloads from the WASM boundary
     JsonParseError(#[from] serde_wasm_bindgen::Error),
 }

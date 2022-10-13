@@ -37,7 +37,7 @@ pub struct ProteusConversationSession {
 }
 
 impl ProteusConversationSession {
-    /// TODO:
+    /// Encrypts a message for this Proteus session
     pub fn encrypt(&mut self, plaintext: &[u8]) -> CryptoResult<Vec<u8>> {
         Ok(self
             .session
@@ -46,7 +46,7 @@ impl ProteusConversationSession {
             .map_err(ProteusError::from)?)
     }
 
-    /// TODO:
+    /// Decrypts a message for this Proteus session
     pub async fn decrypt(
         &mut self,
         store: &mut core_crypto_keystore::Connection,
@@ -60,17 +60,17 @@ impl ProteusConversationSession {
             .map_err(ProteusError::from)?)
     }
 
-    /// TODO:
+    /// Returns the session identifier
     pub fn identifier(&self) -> &str {
         &self.identifier
     }
 
-    /// TODO:
+    /// Returns the public key fingerprint of the local identity (= self identity)
     pub fn fingerprint_local(&self) -> String {
         self.session.local_identity().fingerprint()
     }
 
-    /// TODO:
+    /// Returns the public key fingerprint of the remote identity (= client you're communicating with)
     pub fn fingerprint_remote(&self) -> String {
         self.session.remote_identity().fingerprint()
     }
@@ -115,6 +115,7 @@ impl ProteusCentral {
         Ok(keypair)
     }
 
+    /// Internal function to create and save a new Proteus Identity
     async fn create_identity(keystore: &CryptoKeystore) -> CryptoResult<IdentityKeyPair> {
         let kp = IdentityKeyPair::new();
         let pk_fingerprint = kp.public_key.public_key.fingerprint();
