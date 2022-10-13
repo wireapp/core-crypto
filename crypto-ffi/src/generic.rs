@@ -861,6 +861,20 @@ impl CoreCrypto<'_> {
         }}
     }
 
+    /// See [core_crypto::proteus::ProteusCentral::new_prekey]
+    pub fn proteus_new_prekey(&self, prekey_id: u16) -> CryptoResult<Vec<u8>> {
+        proteus_impl! {{
+            future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_new_prekey(prekey_id),
+                ),
+            )
+        }}
+    }
+
     /// See [core_crypto::proteus::ProteusCentral::fingerprint]
     pub fn proteus_fingerprint(&self) -> CryptoResult<String> {
         proteus_impl! {{

@@ -284,6 +284,18 @@ impl CoreCrypto {
         }
     }
 
+    /// Creates a new Proteus prekey and returns the CBOR-serialized version of the prekey bundle
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub async fn proteus_new_prekey(&self, prekey_id: u16) -> CryptoResult<Vec<u8>> {
+        if let Some(proteus) = &self.proteus {
+            let keystore = self.mls.mls_backend.borrow_keystore();
+            Ok(proteus.new_prekey(prekey_id, keystore).await?)
+        } else {
+            Err(CryptoError::ProteusNotInitialized)
+        }
+    }
+
     /// Returns the proteus identity keypair
     ///
     /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned

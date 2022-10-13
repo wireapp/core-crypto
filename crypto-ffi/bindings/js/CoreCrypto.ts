@@ -1106,6 +1106,16 @@ export class CoreCrypto {
     }
 
     /**
+     * Creates a new prekey with the requested ID.
+     *
+     * @param prekeyId - ID of the PreKey to generate. This cannot be bigger than a u16
+     * @returns: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
+     */
+    async proteusNewPrekey(prekeyId: number): Promise<Uint8Array> {
+        return await this.#cc.proteus_new_prekey(prekeyId);
+    }
+
+    /**
      * Proteus public key fingerprint
      * It's basically the public key encoded as an hex string
      *

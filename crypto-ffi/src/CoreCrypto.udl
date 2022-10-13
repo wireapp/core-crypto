@@ -230,6 +230,9 @@ interface CoreCrypto {
     record<DOMString, sequence<u8>> proteus_encrypt_batched(sequence<string> session_id, [ByRef] sequence<u8> plaintext);
 
     [Throws=CryptoError]
+    sequence<u8> proteus_new_prekey(u16 prekey_id);
+
+    [Throws=CryptoError]
     string proteus_fingerprint();
 
     [Throws=CryptoError]
