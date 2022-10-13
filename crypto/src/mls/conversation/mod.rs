@@ -47,6 +47,7 @@ pub mod decrypt;
 #[cfg(test)]
 mod durability;
 pub mod encrypt;
+pub mod export;
 pub mod handshake;
 pub mod merge;
 pub(crate) mod public_group_state;
