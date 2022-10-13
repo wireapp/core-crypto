@@ -44,7 +44,19 @@ open class RustBuffer : Structure() {
 
     companion object {
         internal fun alloc(size: Int = 0) = rustCall() { status ->
+<<<<<<< HEAD
             _UniFFILib.INSTANCE.ffi_CoreCrypto_24ee_rustbuffer_alloc(size, status).also {
+||||||| parent of ac2d23e (Adding bindings)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_ff56_rustbuffer_alloc(size, status).also {
+=======
+<<<<<<< HEAD
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_ff56_rustbuffer_alloc(size, status).also {
+||||||| parent of e5e4538 (Adding bindings)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_54ee_rustbuffer_alloc(size, status).also {
+=======
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_e3ae_rustbuffer_alloc(size, status).also {
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
                 if(it.data == null) {
                    throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=${size})")
                }
@@ -52,7 +64,19 @@ open class RustBuffer : Structure() {
         }
 
         internal fun free(buf: RustBuffer.ByValue) = rustCall() { status ->
+<<<<<<< HEAD
             _UniFFILib.INSTANCE.ffi_CoreCrypto_24ee_rustbuffer_free(buf, status)
+||||||| parent of ac2d23e (Adding bindings)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_ff56_rustbuffer_free(buf, status)
+=======
+<<<<<<< HEAD
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_ff56_rustbuffer_free(buf, status)
+||||||| parent of e5e4538 (Adding bindings)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_54ee_rustbuffer_free(buf, status)
+=======
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_e3ae_rustbuffer_free(buf, status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
         }
     }
 
@@ -264,150 +288,591 @@ internal interface _UniFFILib : Library {
         }
     }
 
+<<<<<<< HEAD
     fun ffi_CoreCrypto_24ee_CoreCrypto_object_free(`ptr`: Pointer,
+||||||| parent of ac2d23e (Adding bindings)
+    fun ffi_CoreCrypto_ff56_CoreCrypto_object_free(`ptr`: Pointer,
+=======
+<<<<<<< HEAD
+    fun ffi_CoreCrypto_ff56_CoreCrypto_object_free(`ptr`: Pointer,
+||||||| parent of e5e4538 (Adding bindings)
+    fun ffi_CoreCrypto_54ee_CoreCrypto_object_free(`ptr`: Pointer,
+=======
+    fun ffi_CoreCrypto_e3ae_CoreCrypto_object_free(`ptr`: Pointer,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_new(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,`entropySeed`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_new(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,`entropySeed`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_new(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,`entropySeed`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_new(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,`entropySeed`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_new(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,`entropySeed`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Pointer
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_set_callbacks(`ptr`: Pointer,`callbacks`: Long,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_set_callbacks(`ptr`: Pointer,`callbacks`: Long,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_set_callbacks(`ptr`: Pointer,`callbacks`: Long,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_set_callbacks(`ptr`: Pointer,`callbacks`: Long,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_set_callbacks(`ptr`: Pointer,`callbacks`: Long,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_client_public_key(`ptr`: Pointer,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_client_public_key(`ptr`: Pointer,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_client_public_key(`ptr`: Pointer,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_client_public_key(`ptr`: Pointer,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_client_public_key(`ptr`: Pointer,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_client_keypackages(`ptr`: Pointer,`amountRequested`: Int,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_client_keypackages(`ptr`: Pointer,`amountRequested`: Int,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_client_keypackages(`ptr`: Pointer,`amountRequested`: Int,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_client_keypackages(`ptr`: Pointer,`amountRequested`: Int,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_client_keypackages(`ptr`: Pointer,`amountRequested`: Int,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_client_valid_keypackages_count(`ptr`: Pointer,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_client_valid_keypackages_count(`ptr`: Pointer,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_client_valid_keypackages_count(`ptr`: Pointer,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_client_valid_keypackages_count(`ptr`: Pointer,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_client_valid_keypackages_count(`ptr`: Pointer,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Long
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_create_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_create_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_create_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_create_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_create_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_conversation_epoch(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_conversation_epoch(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_conversation_epoch(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_conversation_epoch(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_conversation_epoch(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Long
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_conversation_exists(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_conversation_exists(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_conversation_exists(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_conversation_exists(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_conversation_exists(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Byte
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_process_welcome_message(`ptr`: Pointer,`welcomeMessage`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_process_welcome_message(`ptr`: Pointer,`welcomeMessage`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_process_welcome_message(`ptr`: Pointer,`welcomeMessage`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_process_welcome_message(`ptr`: Pointer,`welcomeMessage`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_process_welcome_message(`ptr`: Pointer,`welcomeMessage`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_commit_pending_proposals(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_commit_pending_proposals(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_commit_pending_proposals(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_commit_pending_proposals(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_commit_pending_proposals(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_final_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_final_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_final_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_final_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_final_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_final_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_final_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_final_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_final_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_final_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clients`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_final_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_final_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_final_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_final_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_final_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_final_commit_pending_proposals(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_final_commit_pending_proposals(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_final_commit_pending_proposals(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_final_commit_pending_proposals(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_final_commit_pending_proposals(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_wipe_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_wipe_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_wipe_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_wipe_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_wipe_conversation(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_decrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`payload`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_decrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`payload`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_decrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`payload`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_decrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`payload`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_decrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`payload`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_encrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_encrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_encrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_encrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_encrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_new_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`keyPackage`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_new_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`keyPackage`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_new_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`keyPackage`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_new_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`keyPackage`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_new_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`keyPackage`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_new_update_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_new_update_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_new_update_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_new_update_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_new_update_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_new_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_new_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_new_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_new_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_new_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_new_external_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_new_external_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_new_external_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_new_external_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_new_external_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_new_external_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,`keyPackageRef`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_new_external_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,`keyPackageRef`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_new_external_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,`keyPackageRef`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_new_external_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,`keyPackageRef`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_new_external_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`epoch`: Long,`keyPackageRef`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_join_by_external_commit(`ptr`: Pointer,`publicGroupState`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_join_by_external_commit(`ptr`: Pointer,`publicGroupState`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_join_by_external_commit(`ptr`: Pointer,`publicGroupState`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_join_by_external_commit(`ptr`: Pointer,`publicGroupState`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_join_by_external_commit(`ptr`: Pointer,`publicGroupState`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_export_group_state(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_export_group_state(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_export_group_state(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_export_group_state(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_export_group_state(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_merge_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_merge_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_merge_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_merge_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_merge_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_clear_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_clear_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_clear_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_clear_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_clear_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_random_bytes(`ptr`: Pointer,`length`: Int,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_random_bytes(`ptr`: Pointer,`length`: Int,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_random_bytes(`ptr`: Pointer,`length`: Int,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_random_bytes(`ptr`: Pointer,`length`: Int,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_export_secret_key(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`label`: RustBuffer.ByValue,`keyLength`: Int,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_reseed_rng(`ptr`: Pointer,`seed`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_reseed_rng(`ptr`: Pointer,`seed`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_reseed_rng(`ptr`: Pointer,`seed`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_reseed_rng(`ptr`: Pointer,`seed`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_export_clients(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer.ByValue
+
+    fun CoreCrypto_e3ae_CoreCrypto_random_bytes(`ptr`: Pointer,`length`: Int,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer.ByValue
+
+    fun CoreCrypto_e3ae_CoreCrypto_reseed_rng(`ptr`: Pointer,`seed`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_commit_accepted(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_commit_accepted(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_commit_accepted(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_commit_accepted(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_commit_accepted(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_clear_pending_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`proposalRef`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_clear_pending_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`proposalRef`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_clear_pending_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`proposalRef`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_clear_pending_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`proposalRef`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_clear_pending_proposal(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,`proposalRef`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_clear_pending_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_CoreCrypto_clear_pending_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_CoreCrypto_clear_pending_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_CoreCrypto_clear_pending_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_CoreCrypto_clear_pending_commit(`ptr`: Pointer,`conversationId`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_proteus_init(`ptr`: Pointer,
+||||||| parent of ac2d23e (Adding bindings)
+    fun ffi_CoreCrypto_ff56_CoreCryptoCallbacks_init_callback(`callbackStub`: ForeignCallback,
+=======
+<<<<<<< HEAD
+    fun ffi_CoreCrypto_ff56_CoreCryptoCallbacks_init_callback(`callbackStub`: ForeignCallback,
+||||||| parent of e5e4538 (Adding bindings)
+    fun ffi_CoreCrypto_54ee_CoreCryptoCallbacks_init_callback(`callbackStub`: ForeignCallback,
+=======
+    fun ffi_CoreCrypto_e3ae_CoreCryptoCallbacks_init_callback(`callbackStub`: ForeignCallback,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_CoreCrypto_proteus_session_from_prekey(`ptr`: Pointer,`sessionId`: RustBuffer.ByValue,`prekey`: RustBuffer.ByValue,
     _uniffi_out_err: RustCallStatus
     ): Unit
@@ -453,26 +918,97 @@ internal interface _UniFFILib : Library {
     ): Unit
 
     fun CoreCrypto_24ee_init_with_path_and_key(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,`entropySeed`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_init_with_path_and_key(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,`entropySeed`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_init_with_path_and_key(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,`entropySeed`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_init_with_path_and_key(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,`entropySeed`: RustBuffer.ByValue,
+=======
+    fun CoreCrypto_e3ae_init_with_path_and_key(`path`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`clientId`: RustBuffer.ByValue,`entropySeed`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Pointer
 
+<<<<<<< HEAD
     fun CoreCrypto_24ee_version(
+||||||| parent of ac2d23e (Adding bindings)
+    fun CoreCrypto_ff56_version(
+=======
+<<<<<<< HEAD
+    fun CoreCrypto_ff56_version(
+||||||| parent of e5e4538 (Adding bindings)
+    fun CoreCrypto_54ee_version(
+=======
+    fun CoreCrypto_e3ae_version(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun ffi_CoreCrypto_24ee_rustbuffer_alloc(`size`: Int,
+||||||| parent of ac2d23e (Adding bindings)
+    fun ffi_CoreCrypto_ff56_rustbuffer_alloc(`size`: Int,
+=======
+<<<<<<< HEAD
+    fun ffi_CoreCrypto_ff56_rustbuffer_alloc(`size`: Int,
+||||||| parent of e5e4538 (Adding bindings)
+    fun ffi_CoreCrypto_54ee_rustbuffer_alloc(`size`: Int,
+=======
+    fun ffi_CoreCrypto_e3ae_rustbuffer_alloc(`size`: Int,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun ffi_CoreCrypto_24ee_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun ffi_CoreCrypto_ff56_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,
+=======
+<<<<<<< HEAD
+    fun ffi_CoreCrypto_ff56_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun ffi_CoreCrypto_54ee_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,
+=======
+    fun ffi_CoreCrypto_e3ae_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
+<<<<<<< HEAD
     fun ffi_CoreCrypto_24ee_rustbuffer_free(`buf`: RustBuffer.ByValue,
+||||||| parent of ac2d23e (Adding bindings)
+    fun ffi_CoreCrypto_ff56_rustbuffer_free(`buf`: RustBuffer.ByValue,
+=======
+<<<<<<< HEAD
+    fun ffi_CoreCrypto_ff56_rustbuffer_free(`buf`: RustBuffer.ByValue,
+||||||| parent of e5e4538 (Adding bindings)
+    fun ffi_CoreCrypto_54ee_rustbuffer_free(`buf`: RustBuffer.ByValue,
+=======
+    fun ffi_CoreCrypto_e3ae_rustbuffer_free(`buf`: RustBuffer.ByValue,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): Unit
 
+<<<<<<< HEAD
     fun ffi_CoreCrypto_24ee_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Int,
+||||||| parent of ac2d23e (Adding bindings)
+    fun ffi_CoreCrypto_ff56_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Int,
+=======
+<<<<<<< HEAD
+    fun ffi_CoreCrypto_ff56_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Int,
+||||||| parent of e5e4538 (Adding bindings)
+    fun ffi_CoreCrypto_54ee_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Int,
+=======
+    fun ffi_CoreCrypto_e3ae_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Int,
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
     _uniffi_out_err: RustCallStatus
     ): RustBuffer.ByValue
 
@@ -915,6 +1451,12 @@ public interface CoreCryptoInterface {
     fun `clearPendingGroupFromExternalCommit`(`conversationId`: ConversationId)
     
     @Throws(CryptoException::class)
+    fun `exportSecretKey`(`conversationId`: ConversationId, `label`: String, `keyLength`: UInt): List<UByte>
+    
+    @Throws(CryptoException::class)
+    fun `exportClients`(`conversationId`: ConversationId): List<ClientId>
+    
+    @Throws(CryptoException::class)
     fun `randomBytes`(`length`: UInt): List<UByte>
     
     @Throws(CryptoException::class)
@@ -970,7 +1512,19 @@ class CoreCrypto(
     constructor(`path`: String, `key`: String, `clientId`: String, `entropySeed`: List<UByte>?) :
         this(
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_new(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), FfiConverterOptionalSequenceUByte.lower(`entropySeed`), _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_new(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), FfiConverterOptionalSequenceUByte.lower(`entropySeed`), _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_new(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), FfiConverterOptionalSequenceUByte.lower(`entropySeed`), _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_new(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), FfiConverterOptionalSequenceUByte.lower(`entropySeed`), _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_new(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), FfiConverterOptionalSequenceUByte.lower(`entropySeed`), _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 })
 
     /**
@@ -983,7 +1537,19 @@ class CoreCrypto(
      */
     override protected fun freeRustArcPtr() {
         rustCall() { status ->
+<<<<<<< HEAD
             _UniFFILib.INSTANCE.ffi_CoreCrypto_24ee_CoreCrypto_object_free(this.pointer, status)
+||||||| parent of ac2d23e (Adding bindings)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_ff56_CoreCrypto_object_free(this.pointer, status)
+=======
+<<<<<<< HEAD
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_ff56_CoreCrypto_object_free(this.pointer, status)
+||||||| parent of e5e4538 (Adding bindings)
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_54ee_CoreCrypto_object_free(this.pointer, status)
+=======
+            _UniFFILib.INSTANCE.ffi_CoreCrypto_e3ae_CoreCrypto_object_free(this.pointer, status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
         }
     }
 
@@ -991,7 +1557,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `setCallbacks`(`callbacks`: CoreCryptoCallbacks) =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_set_callbacks(it, FfiConverterTypeCoreCryptoCallbacks.lower(`callbacks`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_set_callbacks(it, FfiConverterTypeCoreCryptoCallbacks.lower(`callbacks`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_set_callbacks(it, FfiConverterTypeCoreCryptoCallbacks.lower(`callbacks`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_set_callbacks(it, FfiConverterTypeCoreCryptoCallbacks.lower(`callbacks`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_set_callbacks(it, FfiConverterTypeCoreCryptoCallbacks.lower(`callbacks`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }
     
@@ -999,7 +1577,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `clientPublicKey`(): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_client_public_key(it,  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_client_public_key(it,  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_client_public_key(it,  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_client_public_key(it,  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_client_public_key(it,  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -1008,7 +1598,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `clientKeypackages`(`amountRequested`: UInt): List<List<UByte>> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_client_keypackages(it, FfiConverterUInt.lower(`amountRequested`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_client_keypackages(it, FfiConverterUInt.lower(`amountRequested`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_client_keypackages(it, FfiConverterUInt.lower(`amountRequested`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_client_keypackages(it, FfiConverterUInt.lower(`amountRequested`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_client_keypackages(it, FfiConverterUInt.lower(`amountRequested`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterSequenceSequenceUByte.lift(it)
@@ -1017,7 +1619,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `clientValidKeypackagesCount`(): ULong =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_client_valid_keypackages_count(it,  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_client_valid_keypackages_count(it,  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_client_valid_keypackages_count(it,  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_client_valid_keypackages_count(it,  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_client_valid_keypackages_count(it,  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterULong.lift(it)
@@ -1026,7 +1640,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `createConversation`(`conversationId`: ConversationId, `config`: ConversationConfiguration) =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_create_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }
     
@@ -1034,7 +1660,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `conversationEpoch`(`conversationId`: ConversationId): ULong =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_conversation_epoch(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_conversation_epoch(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_conversation_epoch(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_conversation_epoch(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_conversation_epoch(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterULong.lift(it)
@@ -1042,7 +1680,19 @@ class CoreCrypto(
     override fun `conversationExists`(`conversationId`: ConversationId): Boolean =
         callWithPointer {
     rustCall() { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_conversation_exists(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_conversation_exists(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_conversation_exists(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_conversation_exists(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_conversation_exists(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterBoolean.lift(it)
@@ -1051,7 +1701,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `processWelcomeMessage`(`welcomeMessage`: List<UByte>): ConversationId =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_process_welcome_message(it, FfiConverterSequenceUByte.lower(`welcomeMessage`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_process_welcome_message(it, FfiConverterSequenceUByte.lower(`welcomeMessage`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_process_welcome_message(it, FfiConverterSequenceUByte.lower(`welcomeMessage`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_process_welcome_message(it, FfiConverterSequenceUByte.lower(`welcomeMessage`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_process_welcome_message(it, FfiConverterSequenceUByte.lower(`welcomeMessage`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterTypeConversationId.lift(it)
@@ -1060,7 +1722,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `addClientsToConversation`(`conversationId`: ConversationId, `clients`: List<Invitee>): MemberAddedMessages =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterTypeMemberAddedMessages.lift(it)
@@ -1069,7 +1743,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `removeClientsFromConversation`(`conversationId`: ConversationId, `clients`: List<ClientId>): CommitBundle =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterTypeCommitBundle.lift(it)
@@ -1078,7 +1764,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `updateKeyingMaterial`(`conversationId`: ConversationId): CommitBundle =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterTypeCommitBundle.lift(it)
@@ -1087,7 +1785,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `commitPendingProposals`(`conversationId`: ConversationId): CommitBundle? =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_commit_pending_proposals(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_commit_pending_proposals(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_commit_pending_proposals(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_commit_pending_proposals(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_commit_pending_proposals(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterOptionalTypeCommitBundle.lift(it)
@@ -1096,7 +1806,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `finalAddClientsToConversation`(`conversationId`: ConversationId, `clients`: List<Invitee>): TlsCommitBundle =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_final_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_final_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_final_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_final_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_final_add_clients_to_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeInvitee.lower(`clients`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterTypeTlsCommitBundle.lift(it)
@@ -1105,7 +1827,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `finalRemoveClientsFromConversation`(`conversationId`: ConversationId, `clients`: List<ClientId>): TlsCommitBundle =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_final_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_final_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_final_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_final_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_final_remove_clients_from_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceTypeClientId.lower(`clients`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterTypeTlsCommitBundle.lift(it)
@@ -1114,7 +1848,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `finalUpdateKeyingMaterial`(`conversationId`: ConversationId): TlsCommitBundle =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_final_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_final_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_final_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_final_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_final_update_keying_material(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterTypeTlsCommitBundle.lift(it)
@@ -1123,7 +1869,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `finalCommitPendingProposals`(`conversationId`: ConversationId): TlsCommitBundle? =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_final_commit_pending_proposals(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_final_commit_pending_proposals(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_final_commit_pending_proposals(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_final_commit_pending_proposals(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_final_commit_pending_proposals(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterOptionalTypeTlsCommitBundle.lift(it)
@@ -1132,7 +1890,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `wipeConversation`(`conversationId`: ConversationId) =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_wipe_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_wipe_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_wipe_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_wipe_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_wipe_conversation(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }
     
@@ -1140,7 +1910,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `decryptMessage`(`conversationId`: ConversationId, `payload`: List<UByte>): DecryptedMessage =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`payload`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`payload`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`payload`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`payload`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_decrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`payload`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterTypeDecryptedMessage.lift(it)
@@ -1149,7 +1931,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `encryptMessage`(`conversationId`: ConversationId, `message`: List<UByte>): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`message`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`message`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`message`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`message`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_encrypt_message(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`message`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -1158,7 +1952,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `newAddProposal`(`conversationId`: ConversationId, `keyPackage`: List<UByte>): ProposalBundle =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_new_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`keyPackage`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_new_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`keyPackage`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_new_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`keyPackage`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_new_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`keyPackage`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_new_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`keyPackage`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterTypeProposalBundle.lift(it)
@@ -1167,7 +1973,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `newUpdateProposal`(`conversationId`: ConversationId): ProposalBundle =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_new_update_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_new_update_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_new_update_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_new_update_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_new_update_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterTypeProposalBundle.lift(it)
@@ -1176,7 +1994,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `newRemoveProposal`(`conversationId`: ConversationId, `clientId`: ClientId): ProposalBundle =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_new_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeClientId.lower(`clientId`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_new_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeClientId.lower(`clientId`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_new_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeClientId.lower(`clientId`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_new_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeClientId.lower(`clientId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_new_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeClientId.lower(`clientId`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterTypeProposalBundle.lift(it)
@@ -1185,7 +2015,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `newExternalAddProposal`(`conversationId`: ConversationId, `epoch`: ULong): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_new_external_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterULong.lower(`epoch`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_new_external_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterULong.lower(`epoch`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_new_external_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterULong.lower(`epoch`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_new_external_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterULong.lower(`epoch`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_new_external_add_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterULong.lower(`epoch`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -1194,7 +2036,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `newExternalRemoveProposal`(`conversationId`: ConversationId, `epoch`: ULong, `keyPackageRef`: List<UByte>): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_new_external_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterULong.lower(`epoch`), FfiConverterSequenceUByte.lower(`keyPackageRef`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_new_external_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterULong.lower(`epoch`), FfiConverterSequenceUByte.lower(`keyPackageRef`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_new_external_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterULong.lower(`epoch`), FfiConverterSequenceUByte.lower(`keyPackageRef`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_new_external_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterULong.lower(`epoch`), FfiConverterSequenceUByte.lower(`keyPackageRef`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_new_external_remove_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterULong.lower(`epoch`), FfiConverterSequenceUByte.lower(`keyPackageRef`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -1203,7 +2057,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `joinByExternalCommit`(`publicGroupState`: List<UByte>): ConversationInitBundle =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_join_by_external_commit(it, FfiConverterSequenceUByte.lower(`publicGroupState`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_join_by_external_commit(it, FfiConverterSequenceUByte.lower(`publicGroupState`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_join_by_external_commit(it, FfiConverterSequenceUByte.lower(`publicGroupState`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_join_by_external_commit(it, FfiConverterSequenceUByte.lower(`publicGroupState`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_join_by_external_commit(it, FfiConverterSequenceUByte.lower(`publicGroupState`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterTypeConversationInitBundle.lift(it)
@@ -1212,7 +2078,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `exportGroupState`(`conversationId`: ConversationId): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_export_group_state(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_export_group_state(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_export_group_state(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_export_group_state(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_export_group_state(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -1221,7 +2099,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `mergePendingGroupFromExternalCommit`(`conversationId`: ConversationId, `config`: ConversationConfiguration) =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_merge_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_merge_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_merge_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_merge_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_merge_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterTypeConversationConfiguration.lower(`config`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }
     
@@ -1229,15 +2119,57 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `clearPendingGroupFromExternalCommit`(`conversationId`: ConversationId) =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_clear_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_clear_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_clear_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_clear_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_clear_pending_group_from_external_commit(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }
     
     
+    @Throws(CryptoException::class)override fun `exportSecretKey`(`conversationId`: ConversationId, `label`: String, `keyLength`: UInt): List<UByte> =
+        callWithPointer {
+    rustCallWithError(CryptoException) { _status ->
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_export_secret_key(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterString.lower(`label`), FfiConverterUInt.lower(`keyLength`),  _status)
+}
+        }.let {
+            FfiConverterSequenceUByte.lift(it)
+        }
+    
+    @Throws(CryptoException::class)override fun `exportClients`(`conversationId`: ConversationId): List<ClientId> =
+        callWithPointer {
+    rustCallWithError(CryptoException) { _status ->
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_export_clients(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+}
+        }.let {
+            FfiConverterSequenceTypeClientId.lift(it)
+        }
+    
     @Throws(CryptoException::class)override fun `randomBytes`(`length`: UInt): List<UByte> =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_random_bytes(it, FfiConverterUInt.lower(`length`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_random_bytes(it, FfiConverterUInt.lower(`length`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_random_bytes(it, FfiConverterUInt.lower(`length`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_random_bytes(it, FfiConverterUInt.lower(`length`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_random_bytes(it, FfiConverterUInt.lower(`length`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -1246,7 +2178,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `reseedRng`(`seed`: List<UByte>) =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_reseed_rng(it, FfiConverterSequenceUByte.lower(`seed`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_reseed_rng(it, FfiConverterSequenceUByte.lower(`seed`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_reseed_rng(it, FfiConverterSequenceUByte.lower(`seed`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_reseed_rng(it, FfiConverterSequenceUByte.lower(`seed`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_reseed_rng(it, FfiConverterSequenceUByte.lower(`seed`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }
     
@@ -1254,7 +2198,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `commitAccepted`(`conversationId`: ConversationId) =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_commit_accepted(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_commit_accepted(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_commit_accepted(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_commit_accepted(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_commit_accepted(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }
     
@@ -1262,7 +2218,19 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `clearPendingProposal`(`conversationId`: ConversationId, `proposalRef`: List<UByte>) =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_clear_pending_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`proposalRef`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_clear_pending_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`proposalRef`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_clear_pending_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`proposalRef`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_clear_pending_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`proposalRef`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_clear_pending_proposal(it, FfiConverterTypeConversationId.lower(`conversationId`), FfiConverterSequenceUByte.lower(`proposalRef`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }
     
@@ -1270,6 +2238,7 @@ class CoreCrypto(
     @Throws(CryptoException::class)override fun `clearPendingCommit`(`conversationId`: ConversationId) =
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_clear_pending_commit(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
 }
         }
@@ -1365,6 +2334,17 @@ class CoreCrypto(
         callWithPointer {
     rustCallWithError(CryptoException) { _status ->
     _UniFFILib.INSTANCE.CoreCrypto_24ee_CoreCrypto_proteus_cryptobox_migrate(it, FfiConverterString.lower(`path`),  _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_clear_pending_commit(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_CoreCrypto_clear_pending_commit(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_CoreCrypto_clear_pending_commit(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_CoreCrypto_clear_pending_commit(it, FfiConverterTypeConversationId.lower(`conversationId`),  _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 }
         }
     
@@ -1829,9 +2809,17 @@ public abstract class FfiConverterCallbackInterface<CallbackInterface>(
 // Declaration and FfiConverters for CoreCryptoCallbacks Callback Interface
 
 public interface CoreCryptoCallbacks {
+<<<<<<< HEAD
     fun `authorize`(`conversationId`: ConversationId, `clientId`: ClientId): Boolean
     fun `userAuthorize`(`conversationId`: ConversationId, `externalClientId`: ClientId, `existingClients`: List<ClientId>): Boolean
     fun `clientIsExistingGroupUser`(`clientId`: ClientId, `existingClients`: List<ClientId>): Boolean
+||||||| parent of e5e4538 (Adding bindings)
+    fun `authorize`(`conversationId`: List<UByte>, `clientId`: List<UByte>): Boolean
+    fun `clientIdBelongsToOneOf`(`clientId`: List<UByte>, `otherClients`: List<List<UByte>>): Boolean
+=======
+    fun `authorize`(`conversationId`: List<UByte>, `clientId`: List<UByte>): Boolean
+    fun `clientIsExistingGroupUser`(`clientId`: List<UByte>, `existingClients`: List<List<UByte>>): Boolean
+>>>>>>> e5e4538 (Adding bindings)
     
 }
 
@@ -1855,6 +2843,7 @@ internal class ForeignCallbackTypeCoreCryptoCallbacks : ForeignCallback {
                 1
             }
             2 -> {
+<<<<<<< HEAD
                 val buffer = this.`invokeUserAuthorize`(cb, args)
                 outBuf.setValue(buffer)
                 // Value written to out buffer.
@@ -1863,6 +2852,11 @@ internal class ForeignCallbackTypeCoreCryptoCallbacks : ForeignCallback {
             }
             3 -> {
                 val buffer = this.`invokeClientIsExistingGroupUser`(cb, args)
+||||||| parent of e5e4538 (Adding bindings)
+                val buffer = this.`invokeClientIdBelongsToOneOf`(cb, args)
+=======
+                val buffer = this.`invokeClientIsExistingGroupUser`(cb, args)
+>>>>>>> e5e4538 (Adding bindings)
                 outBuf.setValue(buffer)
                 // Value written to out buffer.
                 // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
@@ -1897,9 +2891,16 @@ internal class ForeignCallbackTypeCoreCryptoCallbacks : ForeignCallback {
         }
 
     
+<<<<<<< HEAD
     private fun `invokeUserAuthorize`(kotlinCallbackInterface: CoreCryptoCallbacks, args: RustBuffer.ByValue): RustBuffer.ByValue =
+||||||| parent of e5e4538 (Adding bindings)
+    private fun `invokeClientIdBelongsToOneOf`(kotlinCallbackInterface: CoreCryptoCallbacks, args: RustBuffer.ByValue): RustBuffer.ByValue =
+=======
+    private fun `invokeClientIsExistingGroupUser`(kotlinCallbackInterface: CoreCryptoCallbacks, args: RustBuffer.ByValue): RustBuffer.ByValue =
+>>>>>>> e5e4538 (Adding bindings)
         try {
             val buf = args.asByteBuffer() ?: throw InternalException("No ByteBuffer in RustBuffer; this is a Uniffi bug")
+<<<<<<< HEAD
             kotlinCallbackInterface.`userAuthorize`(
                     FfiConverterTypeConversationId.read(buf), 
                     FfiConverterTypeClientId.read(buf), 
@@ -1920,6 +2921,15 @@ internal class ForeignCallbackTypeCoreCryptoCallbacks : ForeignCallback {
             kotlinCallbackInterface.`clientIsExistingGroupUser`(
                     FfiConverterTypeClientId.read(buf), 
                     FfiConverterSequenceTypeClientId.read(buf)
+||||||| parent of e5e4538 (Adding bindings)
+            kotlinCallbackInterface.`clientIdBelongsToOneOf`(
+                    FfiConverterSequenceUByte.read(buf), 
+                    FfiConverterSequenceSequenceUByte.read(buf)
+=======
+            kotlinCallbackInterface.`clientIsExistingGroupUser`(
+                    FfiConverterSequenceUByte.read(buf), 
+                    FfiConverterSequenceSequenceUByte.read(buf)
+>>>>>>> e5e4538 (Adding bindings)
                     )
             .let {
                     FfiConverterBoolean.lowerIntoRustBuffer(it)
@@ -1938,7 +2948,19 @@ public object FfiConverterTypeCoreCryptoCallbacks: FfiConverterCallbackInterface
 ) {
     override fun register(lib: _UniFFILib) {
         rustCall() { status ->
+<<<<<<< HEAD
             lib.ffi_CoreCrypto_24ee_CoreCryptoCallbacks_init_callback(this.foreignCallback, status)
+||||||| parent of ac2d23e (Adding bindings)
+            lib.ffi_CoreCrypto_ff56_CoreCryptoCallbacks_init_callback(this.foreignCallback, status)
+=======
+<<<<<<< HEAD
+            lib.ffi_CoreCrypto_ff56_CoreCryptoCallbacks_init_callback(this.foreignCallback, status)
+||||||| parent of e5e4538 (Adding bindings)
+            lib.ffi_CoreCrypto_54ee_CoreCryptoCallbacks_init_callback(this.foreignCallback, status)
+=======
+            lib.ffi_CoreCrypto_e3ae_CoreCryptoCallbacks_init_callback(this.foreignCallback, status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
         }
     }
 }
@@ -2401,7 +3423,19 @@ public typealias FfiConverterTypeTlsCommitBundle = FfiConverterSequenceUByte
 fun `initWithPathAndKey`(`path`: String, `key`: String, `clientId`: String, `entropySeed`: List<UByte>?): CoreCrypto {
     return FfiConverterTypeCoreCrypto.lift(
     rustCallWithError(CryptoException) { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_init_with_path_and_key(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), FfiConverterOptionalSequenceUByte.lower(`entropySeed`), _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_init_with_path_and_key(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), FfiConverterOptionalSequenceUByte.lower(`entropySeed`), _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_init_with_path_and_key(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), FfiConverterOptionalSequenceUByte.lower(`entropySeed`), _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_init_with_path_and_key(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), FfiConverterOptionalSequenceUByte.lower(`entropySeed`), _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_init_with_path_and_key(FfiConverterString.lower(`path`), FfiConverterString.lower(`key`), FfiConverterString.lower(`clientId`), FfiConverterOptionalSequenceUByte.lower(`entropySeed`), _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 })
 }
 
@@ -2410,7 +3444,19 @@ fun `initWithPathAndKey`(`path`: String, `key`: String, `clientId`: String, `ent
 fun `version`(): String {
     return FfiConverterString.lift(
     rustCall() { _status ->
+<<<<<<< HEAD
     _UniFFILib.INSTANCE.CoreCrypto_24ee_version( _status)
+||||||| parent of ac2d23e (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_version( _status)
+=======
+<<<<<<< HEAD
+    _UniFFILib.INSTANCE.CoreCrypto_ff56_version( _status)
+||||||| parent of e5e4538 (Adding bindings)
+    _UniFFILib.INSTANCE.CoreCrypto_54ee_version( _status)
+=======
+    _UniFFILib.INSTANCE.CoreCrypto_e3ae_version( _status)
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
 })
 }
 

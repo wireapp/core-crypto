@@ -46,146 +46,575 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
+<<<<<<< HEAD
 void ffi_CoreCrypto_24ee_CoreCrypto_object_free(
+||||||| parent of ac2d23e (Adding bindings)
+void ffi_CoreCrypto_ff56_CoreCrypto_object_free(
+=======
+<<<<<<< HEAD
+void ffi_CoreCrypto_ff56_CoreCrypto_object_free(
+||||||| parent of e5e4538 (Adding bindings)
+void ffi_CoreCrypto_54ee_CoreCrypto_object_free(
+=======
+void ffi_CoreCrypto_e3ae_CoreCrypto_object_free(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 void*_Nonnull CoreCrypto_24ee_CoreCrypto_new(
+||||||| parent of ac2d23e (Adding bindings)
+void*_Nonnull CoreCrypto_ff56_CoreCrypto_new(
+=======
+<<<<<<< HEAD
+void*_Nonnull CoreCrypto_ff56_CoreCrypto_new(
+||||||| parent of e5e4538 (Adding bindings)
+void*_Nonnull CoreCrypto_54ee_CoreCrypto_new(
+=======
+void*_Nonnull CoreCrypto_e3ae_CoreCrypto_new(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       RustBuffer path,RustBuffer key,RustBuffer client_id,RustBuffer entropy_seed,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 void CoreCrypto_24ee_CoreCrypto_set_callbacks(
+||||||| parent of ac2d23e (Adding bindings)
+void CoreCrypto_ff56_CoreCrypto_set_callbacks(
+=======
+<<<<<<< HEAD
+void CoreCrypto_ff56_CoreCrypto_set_callbacks(
+||||||| parent of e5e4538 (Adding bindings)
+void CoreCrypto_54ee_CoreCrypto_set_callbacks(
+=======
+void CoreCrypto_e3ae_CoreCrypto_set_callbacks(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,uint64_t callbacks,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_client_public_key(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_client_public_key(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_client_public_key(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_client_public_key(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_client_public_key(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_client_keypackages(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_client_keypackages(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_client_keypackages(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_client_keypackages(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_client_keypackages(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,uint32_t amount_requested,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 uint64_t CoreCrypto_24ee_CoreCrypto_client_valid_keypackages_count(
+||||||| parent of ac2d23e (Adding bindings)
+uint64_t CoreCrypto_ff56_CoreCrypto_client_valid_keypackages_count(
+=======
+<<<<<<< HEAD
+uint64_t CoreCrypto_ff56_CoreCrypto_client_valid_keypackages_count(
+||||||| parent of e5e4538 (Adding bindings)
+uint64_t CoreCrypto_54ee_CoreCrypto_client_valid_keypackages_count(
+=======
+uint64_t CoreCrypto_e3ae_CoreCrypto_client_valid_keypackages_count(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 void CoreCrypto_24ee_CoreCrypto_create_conversation(
+||||||| parent of ac2d23e (Adding bindings)
+void CoreCrypto_ff56_CoreCrypto_create_conversation(
+=======
+<<<<<<< HEAD
+void CoreCrypto_ff56_CoreCrypto_create_conversation(
+||||||| parent of e5e4538 (Adding bindings)
+void CoreCrypto_54ee_CoreCrypto_create_conversation(
+=======
+void CoreCrypto_e3ae_CoreCrypto_create_conversation(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer config,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 uint64_t CoreCrypto_24ee_CoreCrypto_conversation_epoch(
+||||||| parent of ac2d23e (Adding bindings)
+uint64_t CoreCrypto_ff56_CoreCrypto_conversation_epoch(
+=======
+<<<<<<< HEAD
+uint64_t CoreCrypto_ff56_CoreCrypto_conversation_epoch(
+||||||| parent of e5e4538 (Adding bindings)
+uint64_t CoreCrypto_54ee_CoreCrypto_conversation_epoch(
+=======
+uint64_t CoreCrypto_e3ae_CoreCrypto_conversation_epoch(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 int8_t CoreCrypto_24ee_CoreCrypto_conversation_exists(
+||||||| parent of ac2d23e (Adding bindings)
+int8_t CoreCrypto_ff56_CoreCrypto_conversation_exists(
+=======
+<<<<<<< HEAD
+int8_t CoreCrypto_ff56_CoreCrypto_conversation_exists(
+||||||| parent of e5e4538 (Adding bindings)
+int8_t CoreCrypto_54ee_CoreCrypto_conversation_exists(
+=======
+int8_t CoreCrypto_e3ae_CoreCrypto_conversation_exists(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_process_welcome_message(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_process_welcome_message(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_process_welcome_message(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_process_welcome_message(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_process_welcome_message(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer welcome_message,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_add_clients_to_conversation(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_add_clients_to_conversation(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_add_clients_to_conversation(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_add_clients_to_conversation(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_add_clients_to_conversation(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer clients,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_remove_clients_from_conversation(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_remove_clients_from_conversation(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_remove_clients_from_conversation(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_remove_clients_from_conversation(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_remove_clients_from_conversation(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer clients,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_update_keying_material(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_update_keying_material(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_update_keying_material(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_update_keying_material(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_update_keying_material(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_commit_pending_proposals(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_commit_pending_proposals(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_commit_pending_proposals(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_commit_pending_proposals(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_commit_pending_proposals(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_final_add_clients_to_conversation(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_final_add_clients_to_conversation(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_final_add_clients_to_conversation(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_final_add_clients_to_conversation(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_final_add_clients_to_conversation(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer clients,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_final_remove_clients_from_conversation(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_final_remove_clients_from_conversation(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_final_remove_clients_from_conversation(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_final_remove_clients_from_conversation(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_final_remove_clients_from_conversation(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer clients,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_final_update_keying_material(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_final_update_keying_material(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_final_update_keying_material(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_final_update_keying_material(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_final_update_keying_material(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_final_commit_pending_proposals(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_final_commit_pending_proposals(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_final_commit_pending_proposals(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_final_commit_pending_proposals(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_final_commit_pending_proposals(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 void CoreCrypto_24ee_CoreCrypto_wipe_conversation(
+||||||| parent of ac2d23e (Adding bindings)
+void CoreCrypto_ff56_CoreCrypto_wipe_conversation(
+=======
+<<<<<<< HEAD
+void CoreCrypto_ff56_CoreCrypto_wipe_conversation(
+||||||| parent of e5e4538 (Adding bindings)
+void CoreCrypto_54ee_CoreCrypto_wipe_conversation(
+=======
+void CoreCrypto_e3ae_CoreCrypto_wipe_conversation(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_decrypt_message(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_decrypt_message(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_decrypt_message(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_decrypt_message(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_decrypt_message(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer payload,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_encrypt_message(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_encrypt_message(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_encrypt_message(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_encrypt_message(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_encrypt_message(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer message,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_new_add_proposal(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_new_add_proposal(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_new_add_proposal(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_new_add_proposal(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_new_add_proposal(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer key_package,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_new_update_proposal(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_new_update_proposal(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_new_update_proposal(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_new_update_proposal(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_new_update_proposal(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_new_remove_proposal(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_new_remove_proposal(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_new_remove_proposal(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_new_remove_proposal(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_new_remove_proposal(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer client_id,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_new_external_add_proposal(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_new_external_add_proposal(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_new_external_add_proposal(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_new_external_add_proposal(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_new_external_add_proposal(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,uint64_t epoch,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_new_external_remove_proposal(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_new_external_remove_proposal(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_new_external_remove_proposal(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_new_external_remove_proposal(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_new_external_remove_proposal(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,uint64_t epoch,RustBuffer key_package_ref,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_join_by_external_commit(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_join_by_external_commit(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_join_by_external_commit(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_join_by_external_commit(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_join_by_external_commit(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer public_group_state,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_export_group_state(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_export_group_state(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_export_group_state(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_export_group_state(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_export_group_state(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 void CoreCrypto_24ee_CoreCrypto_merge_pending_group_from_external_commit(
+||||||| parent of ac2d23e (Adding bindings)
+void CoreCrypto_ff56_CoreCrypto_merge_pending_group_from_external_commit(
+=======
+<<<<<<< HEAD
+void CoreCrypto_ff56_CoreCrypto_merge_pending_group_from_external_commit(
+||||||| parent of e5e4538 (Adding bindings)
+void CoreCrypto_54ee_CoreCrypto_merge_pending_group_from_external_commit(
+=======
+void CoreCrypto_e3ae_CoreCrypto_merge_pending_group_from_external_commit(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer config,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 void CoreCrypto_24ee_CoreCrypto_clear_pending_group_from_external_commit(
+||||||| parent of ac2d23e (Adding bindings)
+void CoreCrypto_ff56_CoreCrypto_clear_pending_group_from_external_commit(
+=======
+<<<<<<< HEAD
+void CoreCrypto_ff56_CoreCrypto_clear_pending_group_from_external_commit(
+||||||| parent of e5e4538 (Adding bindings)
+void CoreCrypto_54ee_CoreCrypto_clear_pending_group_from_external_commit(
+=======
+void CoreCrypto_e3ae_CoreCrypto_clear_pending_group_from_external_commit(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_CoreCrypto_random_bytes(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_CoreCrypto_random_bytes(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_CoreCrypto_random_bytes(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_CoreCrypto_random_bytes(
+=======
+RustBuffer CoreCrypto_e3ae_CoreCrypto_export_secret_key(
+      void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer label,uint32_t key_length,
+    RustCallStatus *_Nonnull out_status
+    );
+RustBuffer CoreCrypto_e3ae_CoreCrypto_export_clients(
+      void*_Nonnull ptr,RustBuffer conversation_id,
+    RustCallStatus *_Nonnull out_status
+    );
+RustBuffer CoreCrypto_e3ae_CoreCrypto_random_bytes(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,uint32_t length,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 void CoreCrypto_24ee_CoreCrypto_reseed_rng(
+||||||| parent of ac2d23e (Adding bindings)
+void CoreCrypto_ff56_CoreCrypto_reseed_rng(
+=======
+<<<<<<< HEAD
+void CoreCrypto_ff56_CoreCrypto_reseed_rng(
+||||||| parent of e5e4538 (Adding bindings)
+void CoreCrypto_54ee_CoreCrypto_reseed_rng(
+=======
+void CoreCrypto_e3ae_CoreCrypto_reseed_rng(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer seed,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 void CoreCrypto_24ee_CoreCrypto_commit_accepted(
+||||||| parent of ac2d23e (Adding bindings)
+void CoreCrypto_ff56_CoreCrypto_commit_accepted(
+=======
+<<<<<<< HEAD
+void CoreCrypto_ff56_CoreCrypto_commit_accepted(
+||||||| parent of e5e4538 (Adding bindings)
+void CoreCrypto_54ee_CoreCrypto_commit_accepted(
+=======
+void CoreCrypto_e3ae_CoreCrypto_commit_accepted(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 void CoreCrypto_24ee_CoreCrypto_clear_pending_proposal(
+||||||| parent of ac2d23e (Adding bindings)
+void CoreCrypto_ff56_CoreCrypto_clear_pending_proposal(
+=======
+<<<<<<< HEAD
+void CoreCrypto_ff56_CoreCrypto_clear_pending_proposal(
+||||||| parent of e5e4538 (Adding bindings)
+void CoreCrypto_54ee_CoreCrypto_clear_pending_proposal(
+=======
+void CoreCrypto_e3ae_CoreCrypto_clear_pending_proposal(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,RustBuffer proposal_ref,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 void CoreCrypto_24ee_CoreCrypto_clear_pending_commit(
+||||||| parent of ac2d23e (Adding bindings)
+void CoreCrypto_ff56_CoreCrypto_clear_pending_commit(
+=======
+<<<<<<< HEAD
+void CoreCrypto_ff56_CoreCrypto_clear_pending_commit(
+||||||| parent of e5e4538 (Adding bindings)
+void CoreCrypto_54ee_CoreCrypto_clear_pending_commit(
+=======
+void CoreCrypto_e3ae_CoreCrypto_clear_pending_commit(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       void*_Nonnull ptr,RustBuffer conversation_id,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 void CoreCrypto_24ee_CoreCrypto_proteus_init(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
@@ -231,30 +660,113 @@ void CoreCrypto_24ee_CoreCrypto_proteus_cryptobox_migrate(
     RustCallStatus *_Nonnull out_status
     );
 void ffi_CoreCrypto_24ee_CoreCryptoCallbacks_init_callback(
+||||||| parent of ac2d23e (Adding bindings)
+void ffi_CoreCrypto_ff56_CoreCryptoCallbacks_init_callback(
+=======
+<<<<<<< HEAD
+void ffi_CoreCrypto_ff56_CoreCryptoCallbacks_init_callback(
+||||||| parent of e5e4538 (Adding bindings)
+void ffi_CoreCrypto_54ee_CoreCryptoCallbacks_init_callback(
+=======
+void ffi_CoreCrypto_e3ae_CoreCryptoCallbacks_init_callback(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       ForeignCallback  _Nonnull callback_stub,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 void*_Nonnull CoreCrypto_24ee_init_with_path_and_key(
+||||||| parent of ac2d23e (Adding bindings)
+void*_Nonnull CoreCrypto_ff56_init_with_path_and_key(
+=======
+<<<<<<< HEAD
+void*_Nonnull CoreCrypto_ff56_init_with_path_and_key(
+||||||| parent of e5e4538 (Adding bindings)
+void*_Nonnull CoreCrypto_54ee_init_with_path_and_key(
+=======
+void*_Nonnull CoreCrypto_e3ae_init_with_path_and_key(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       RustBuffer path,RustBuffer key,RustBuffer client_id,RustBuffer entropy_seed,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer CoreCrypto_24ee_version(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer CoreCrypto_ff56_version(
+=======
+<<<<<<< HEAD
+RustBuffer CoreCrypto_ff56_version(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer CoreCrypto_54ee_version(
+=======
+RustBuffer CoreCrypto_e3ae_version(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer ffi_CoreCrypto_24ee_rustbuffer_alloc(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer ffi_CoreCrypto_ff56_rustbuffer_alloc(
+=======
+<<<<<<< HEAD
+RustBuffer ffi_CoreCrypto_ff56_rustbuffer_alloc(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer ffi_CoreCrypto_54ee_rustbuffer_alloc(
+=======
+RustBuffer ffi_CoreCrypto_e3ae_rustbuffer_alloc(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer ffi_CoreCrypto_24ee_rustbuffer_from_bytes(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer ffi_CoreCrypto_ff56_rustbuffer_from_bytes(
+=======
+<<<<<<< HEAD
+RustBuffer ffi_CoreCrypto_ff56_rustbuffer_from_bytes(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer ffi_CoreCrypto_54ee_rustbuffer_from_bytes(
+=======
+RustBuffer ffi_CoreCrypto_e3ae_rustbuffer_from_bytes(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 void ffi_CoreCrypto_24ee_rustbuffer_free(
+||||||| parent of ac2d23e (Adding bindings)
+void ffi_CoreCrypto_ff56_rustbuffer_free(
+=======
+<<<<<<< HEAD
+void ffi_CoreCrypto_ff56_rustbuffer_free(
+||||||| parent of e5e4538 (Adding bindings)
+void ffi_CoreCrypto_54ee_rustbuffer_free(
+=======
+void ffi_CoreCrypto_e3ae_rustbuffer_free(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
+<<<<<<< HEAD
 RustBuffer ffi_CoreCrypto_24ee_rustbuffer_reserve(
+||||||| parent of ac2d23e (Adding bindings)
+RustBuffer ffi_CoreCrypto_ff56_rustbuffer_reserve(
+=======
+<<<<<<< HEAD
+RustBuffer ffi_CoreCrypto_ff56_rustbuffer_reserve(
+||||||| parent of e5e4538 (Adding bindings)
+RustBuffer ffi_CoreCrypto_54ee_rustbuffer_reserve(
+=======
+RustBuffer ffi_CoreCrypto_e3ae_rustbuffer_reserve(
+>>>>>>> e5e4538 (Adding bindings)
+>>>>>>> ac2d23e (Adding bindings)
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );

@@ -1001,6 +1001,30 @@ export class CoreCrypto {
     }
 
     /**
+     * Derives a new key from the group
+     *
+     * @param conversationId - The group's ID
+     * @param label - the label to be used. Intended to describe the purpose for the key
+     * @param keyLength - the length of the key to be derived
+     *
+     * @returns A `Uint8Array` representing the derived key
+     */
+    async exportSecretKey(conversationId: ConversationId, label: string, keyLength: number): Promise<Uint8Array> {
+        return await this.#cc.exportSecretKey(conversationId, label, keyLength);
+    }
+
+    /**
+     * Exports all clients from group's members
+     *
+     * @param conversationId - The group's ID
+     *
+     * @returns A list of clients from the members of the group
+     */
+    async exportClients(conversationId: ConversationId): Promise<ClientId[]> {
+        return await this.#cc.exportClients(conversationId);
+    }
+
+    /**
      * Allows {@link CoreCrypto} to act as a CSPRNG provider
      * @note The underlying CSPRNG algorithm is ChaCha20 and takes in account the external seed provider either at init time or provided with {@link CoreCrypto.reseedRng}
      *
