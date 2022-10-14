@@ -22,15 +22,11 @@ use crate::{client::ClientId, CryptoError, CryptoResult, MlsCentral, MlsError};
 
 use super::{ConversationId, MlsConversation};
 
-const EXPORTER_LABEL: &'static str = "exporter";
+const EXPORTER_LABEL: &str = "exporter";
 
 impl MlsConversation {
     /// See [MlsCentral::export_secret_key]
-    pub fn export_secret_key(
-        &self,
-        backend: &MlsCryptoProvider,
-        key_length: usize,
-    ) -> CryptoResult<Vec<u8>> {
+    pub fn export_secret_key(&self, backend: &MlsCryptoProvider, key_length: usize) -> CryptoResult<Vec<u8>> {
         self.group
             .export_secret(backend, EXPORTER_LABEL, &[], key_length)
             .map_err(MlsError::from)
@@ -52,11 +48,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// OpenMls secret generation error or conversation not found
-    pub fn export_secret_key(
-        &self,
-        conversation_id: &ConversationId,
-        key_length: usize,
-    ) -> CryptoResult<Vec<u8>> {
+    pub fn export_secret_key(&self, conversation_id: &ConversationId, key_length: usize) -> CryptoResult<Vec<u8>> {
         self.get_conversation(conversation_id)?
             .export_secret_key(&self.mls_backend, key_length)
     }
