@@ -18,9 +18,7 @@
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::{client::ClientId, CryptoError, CryptoResult, MlsCentral, MlsError};
-
-use super::{ConversationId, MlsConversation};
+use crate::mls::{client::ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsError};
 
 const EXPORTER_LABEL: &str = "exporter";
 
