@@ -143,7 +143,6 @@ jobs:
       - name: WASM build
         run: wasm-pack build --dev --target web ${{ matrix.workspace }}
 
-
   wasm-test:
     runs-on: ubuntu-latest
     env:
@@ -201,3 +200,18 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - name: Run E2E interop test
         run: cargo run --bin interop
+
+  hack:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - uses: taiki-e/install-action@cargo-hack
+      - uses: Swatinem/rust-cache@v1
+      - name: cargo/hack (verify features compile in isolation)
+        run: cargo hack check --each-feature --no-dev-deps
