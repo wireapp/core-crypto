@@ -61,3 +61,92 @@ impl MlsCentral {
         Ok(self.get_conversation(conversation_id)?.export_clients())
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+    use std::usize;
+
+    use crate::{
+        credential::CredentialSupplier,
+        error::{CryptoError, MlsError},
+        test_utils::*,
+        MlsConversationConfiguration,
+    };
+    use openmls::prelude::ExportSecretError;
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn can_export_secret_key(credential: CredentialSupplier) {
+        run_test_with_client_ids(
+            credential,
+            ["alice", "bob"],
+            move |[mut alice_central, mut bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .await
+                        .unwrap();
+                    alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                    let result = alice_central.export_secret_key(&id, 128);
+                    assert!(result.is_ok());
+                    assert!(result.unwrap().len() == 128);
+                })
+            },
+        )
+        .await
+    }
+
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn cannot_export_secret_key_invalid_length(credential: CredentialSupplier) {
+        run_test_with_client_ids(
+            credential,
+            ["alice", "bob"],
+            move |[mut alice_central, mut bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .await
+                        .unwrap();
+                    alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                    let result = alice_central.export_secret_key(&id, usize::MAX);
+                    assert!(matches!(
+                        result.unwrap_err(),
+                        CryptoError::MlsError(MlsError::MlsExportSecretError(ExportSecretError::KeyLengthTooLong))
+                    ));
+                })
+            },
+        )
+        .await
+    }
+
+    #[apply(all_credential_types)]
+    #[wasm_bindgen_test]
+    pub async fn can_export_clients(credential: CredentialSupplier) {
+        run_test_with_client_ids(
+            credential,
+            ["alice", "bob"],
+            move |[mut alice_central, mut bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .await
+                        .unwrap();
+                    alice_central.invite(&id, &mut bob_central).await.unwrap();
+
+                    let clients = alice_central.export_clients(&id).unwrap();
+                    assert!(clients.len() == 2);
+                })
+            },
+        )
+        .await
+    }
+}
