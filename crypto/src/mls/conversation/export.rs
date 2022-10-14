@@ -65,10 +65,9 @@ pub mod tests {
     use std::usize;
 
     use crate::{
-        credential::CredentialSupplier,
         error::{CryptoError, MlsError},
+        mls::{credential::CredentialSupplier, MlsConversationConfiguration},
         test_utils::*,
-        MlsConversationConfiguration,
     };
     use openmls::prelude::ExportSecretError;
     use wasm_bindgen_test::*;
