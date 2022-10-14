@@ -11,13 +11,7 @@ color-eyre = "0.6"
 log = "0.4"
 femme = "2.2"
 dirs = "4.0"
-tokio = { version = "1.20", features = ["full"] }
 core-crypto = { path = "../crypto" }
-# Webdriver stuff
-webdriver-install = "0.3"
-fantoccini = "0.19"
-# Http Server
-warp = "0.3"
 # Utils
 async-trait = "0.1"
 serde_json = "1.0"
@@ -30,4 +24,10 @@ xshell = "0.2"
 spinoff = "0.5"
 uuid = { version = "1.1", features = ["v4"] }
 
-
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+tokio = { version = "1.20", features = ["full"] }
+# Http Server
+warp = "0.3"
+# Webdriver stuff
+webdriver-install = "0.3"
+fantoccini = "0.19"
