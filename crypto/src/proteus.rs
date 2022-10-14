@@ -177,7 +177,7 @@ impl ProteusCentral {
         Ok(self.proteus_sessions.get_mut(session_id).unwrap())
     }
 
-    /// Creates a new proteus Session from a recieved message
+    /// Creates a new proteus Session from a received message
     pub async fn session_from_message(
         &mut self,
         keystore: &mut CryptoKeystore,
@@ -275,10 +275,10 @@ impl ProteusCentral {
             id,
             prekey.serialise().map_err(ProteusError::from)?,
         );
-        keystore.save(keystore_prekey).await?;
-
         let bundle = PreKeyBundle::new(self.proteus_identity.as_ref().public_key.clone(), &prekey);
-        Ok(bundle.serialise().map_err(ProteusError::from)?)
+        let bundle = bundle.serialise().map_err(ProteusError::from)?;
+        keystore.save(keystore_prekey).await?;
+        Ok(bundle)
     }
 
     /// Proteus identity keypair
