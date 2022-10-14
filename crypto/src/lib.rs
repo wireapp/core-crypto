@@ -79,7 +79,7 @@ pub mod prelude {
             proposal::{MlsProposal, MlsProposalRef},
             MlsCentral, MlsCiphersuite,
         },
-        CoreCryptoCallbacks,
+        CoreCrypto, CoreCryptoCallbacks,
     };
 }
 

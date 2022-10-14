@@ -14,17 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient};
 use color_eyre::eyre::Result;
 use core_crypto::prelude::tls_codec::Serialize;
 use core_crypto::prelude::*;
 
 #[derive(Debug)]
-pub struct NativeClient {
-    cc: MlsCentral,
+pub struct CoreCryptoNativeClient {
+    cc: CoreCrypto,
     client_id: Vec<u8>,
+    #[cfg(feature = "proteus")]
+    prekey_last_id: u16,
 }
 
-impl NativeClient {
+impl CoreCryptoNativeClient {
     pub async fn new() -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
 
@@ -36,25 +39,43 @@ impl NativeClient {
             ciphersuites,
         )?;
 
-        let cc = MlsCentral::try_new_in_memory(configuration, None).await?;
+        let cc = MlsCentral::try_new_in_memory(configuration, None).await?.into();
 
         Ok(Self {
             cc,
             client_id: client_id.into_bytes().into(),
+            #[cfg(feature = "proteus")]
+            prekey_last_id: 0,
         })
     }
 }
 
 #[async_trait::async_trait(?Send)]
-impl super::EmulatedClient for NativeClient {
-    fn client_type(&self) -> super::EmulatedClientType {
-        super::EmulatedClientType::Native
+impl EmulatedClient for CoreCryptoNativeClient {
+    fn client_name(&self) -> &str {
+        "CoreCrypto::native"
+    }
+
+    fn client_type(&self) -> EmulatedClientType {
+        EmulatedClientType::Native
     }
 
     fn client_id(&self) -> &[u8] {
         self.client_id.as_slice()
     }
 
+    fn client_protocol(&self) -> EmulatedClientProtocol {
+        EmulatedClientProtocol::MLS | EmulatedClientProtocol::PROTEUS
+    }
+
+    async fn wipe(mut self) -> Result<()> {
+        self.cc.unwrap_mls().wipe().await?;
+        Ok(())
+    }
+}
+
+#[async_trait::async_trait(?Send)]
+impl EmulatedMlsClient for CoreCryptoNativeClient {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
         let kps = self.cc.client_keypackages(1).await?;
         Ok(kps[0].key_package().tls_serialize_detached()?)
@@ -102,5 +123,40 @@ impl super::EmulatedClient for NativeClient {
             .decrypt_message(&conversation_id.to_vec(), message)
             .await?
             .app_msg)
+    }
+}
+
+#[cfg(feature = "proteus")]
+#[async_trait::async_trait(?Send)]
+impl crate::clients::EmulatedProteusClient for CoreCryptoNativeClient {
+    async fn init(&mut self) -> Result<()> {
+        Ok(self.cc.proteus_init().await?)
+    }
+
+    async fn get_prekey(&mut self) -> Result<Vec<u8>> {
+        self.prekey_last_id += 1;
+        Ok(self.cc.proteus_new_prekey(self.prekey_last_id).await?)
+    }
+
+    async fn session_from_prekey(&mut self, session_id: &str, prekey: &[u8]) -> Result<()> {
+        let _ = self.cc.proteus_session_from_prekey(session_id, prekey).await?;
+        Ok(())
+    }
+
+    async fn session_from_message(&mut self, session_id: &str, message: &[u8]) -> Result<Vec<u8>> {
+        let (_, ret) = self.cc.proteus_session_from_message(session_id, message).await?;
+        Ok(ret)
+    }
+
+    async fn encrypt(&mut self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
+        Ok(self.cc.proteus_encrypt(session_id, plaintext)?)
+    }
+
+    async fn decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
+        Ok(self.cc.proteus_decrypt(session_id, ciphertext).await?)
+    }
+
+    async fn fingerprint(&self) -> Result<String> {
+        Ok(self.cc.proteus_fingerprint()?)
     }
 }

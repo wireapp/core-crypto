@@ -47,9 +47,31 @@ pub async fn build_wasm() -> Result<()> {
     use sha2::{Digest, Sha256};
     use tokio::process::Command;
 
-    let mut spinner = RunningProcess::new("Building WASM bundle...", false);
-
     let cwd = std::env::current_dir()?;
+
+    if cfg!(feature = "proteus") {
+        let spinner = RunningProcess::new("Building Cryptobox ESM bundle...", false);
+
+        Command::new("npm")
+            .args(["install"])
+            .current_dir(cwd.join("interop/src/build/web/cryptobox-esm"))
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .await?;
+
+        Command::new("npm")
+            .args(["run", "build"])
+            .current_dir(cwd.join("interop/src/build/web/cryptobox-esm"))
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .await?;
+
+        spinner.success("Cryptobox ESM bundle [OK]");
+    }
+
+    let mut spinner = RunningProcess::new("Building WASM bundle...", false);
 
     let wasm_deploy_path = cwd.join("platforms/web");
 
@@ -85,8 +107,20 @@ pub async fn build_wasm() -> Result<()> {
         spinner.update("WASM: No cache file found, rebuilding to get a cache! Please wait...");
     }
 
+    let mut cargo_args = vec!["make", "wasm-build"];
+    let mut npm_env = vec![];
+
+    if cfg!(feature = "proteus") {
+        spinner.update(
+            "`proteus` feature enabled. Building `core-crypto` with proteus support & enabling npm env BUILD_PROTEUS=1; Also building ESM bundle for Cryptobox",
+        );
+        cargo_args.push("--features");
+        cargo_args.push("proteus");
+        npm_env.push(("BUILD_PROTEUS", "1"));
+    }
+
     Command::new("cargo")
-        .args(["make", "wasm-build"])
+        .args(&cargo_args)
         .current_dir(cwd.join("crypto-ffi"))
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
@@ -95,6 +129,7 @@ pub async fn build_wasm() -> Result<()> {
 
     Command::new("npm")
         .args(["install"])
+        .envs(npm_env.clone())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .status()
@@ -102,6 +137,7 @@ pub async fn build_wasm() -> Result<()> {
 
     Command::new("npm")
         .args(["run", "build:test"])
+        .envs(npm_env)
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .status()
@@ -134,7 +170,12 @@ pub async fn build_wasm() -> Result<()> {
 pub async fn spawn_http_server() -> Result<()> {
     use warp::Filter as _;
     let addr = SocketAddr::from(([0, 0, 0, 0], TEST_SERVER_PORT.parse()?));
-    warp::serve(warp::fs::dir("platforms/web".to_string()).boxed())
+    let warp_filter_cc = warp::path("core-crypto").and(warp::fs::dir("platforms/web".to_string()));
+    let warp_filter_cbox =
+        warp::path("cryptobox").and(warp::fs::dir("interop/src/build/web/cryptobox-esm/dist".to_string()));
+    // TODO: Refactor how paths are called in the web versions of tests so that we address the correct files each time
+    // TODO: Update the WASM build process to build the cbox-esm wrappper as well.
+    warp::serve(warp_filter_cc.or(warp_filter_cbox).boxed())
         .bind(addr)
         .await;
 
