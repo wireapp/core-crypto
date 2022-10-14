@@ -24,6 +24,7 @@ cryptobox-migrate = [
     "dep:futures-lite",
     "dep:rexie"
 ]
+test-all-cipher = []
 
 [dependencies]
 async-recursion = "1.0"

@@ -228,7 +228,9 @@ impl CoreCrypto<'_> {
         client_id: &'s str,
         entropy_seed: Option<Vec<u8>>,
     ) -> CryptoResult<Self> {
-        let mut configuration = MlsCentralConfiguration::try_new(path.into(), key.into(), client_id.into())?;
+        let ciphersuites = vec![MlsCiphersuite::default()];
+        let mut configuration =
+            MlsCentralConfiguration::try_new(path.into(), key.into(), client_id.into(), ciphersuites)?;
 
         if let Some(seed) = entropy_seed {
             let owned_seed = EntropySeed::try_from_slice(&seed[..EntropySeed::EXPECTED_LEN])?;
@@ -353,7 +355,7 @@ impl CoreCrypto<'_> {
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .process_raw_welcome_message(welcome_message.into()),
+                    .process_raw_welcome_message(welcome_message.into(), MlsConversationConfiguration::default()),
             ),
         )
     }
@@ -652,7 +654,7 @@ impl CoreCrypto<'_> {
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .join_by_external_commit(group_state),
+                    .join_by_external_commit(group_state, MlsConversationConfiguration::default()),
             ),
         )?
         .try_into()

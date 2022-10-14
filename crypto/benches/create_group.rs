@@ -106,8 +106,12 @@ fn join_from_public_group_state_bench(c: &mut Criterion) {
                         (bob_central, pgs, cfg)
                     },
                     |(mut central, pgs, cfg)| async move {
-                        let MlsConversationInitBundle { conversation_id, .. } =
-                            black_box(central.join_by_external_commit(pgs).await.unwrap());
+                        let MlsConversationInitBundle { conversation_id, .. } = black_box(
+                            central
+                                .join_by_external_commit(pgs, MlsConversationConfiguration::default())
+                                .await
+                                .unwrap(),
+                        );
                         black_box(
                             central
                                 .merge_pending_group_from_external_commit(&conversation_id, cfg)

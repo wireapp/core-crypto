@@ -568,7 +568,8 @@ impl CoreCrypto {
         client_id: String,
         entropy_seed: Option<Box<[u8]>>,
     ) -> WasmCryptoResult<CoreCrypto> {
-        let mut configuration = MlsCentralConfiguration::try_new(path, key, client_id)?;
+        let ciphersuites = vec![MlsCiphersuite::default()];
+        let mut configuration = MlsCentralConfiguration::try_new(path, key, client_id, ciphersuites)?;
 
         if let Some(seed) = entropy_seed {
             let owned_seed = EntropySeed::try_from_slice(&seed[..EntropySeed::EXPECTED_LEN])?;
@@ -753,7 +754,7 @@ impl CoreCrypto {
                 let conversation_id = this
                     .write()
                     .await
-                    .process_raw_welcome_message(welcome_message.into())
+                    .process_raw_welcome_message(welcome_message.into(), MlsConversationConfiguration::default())
                     .await?;
                 WasmCryptoResult::Ok(Uint8Array::from(conversation_id.as_slice()).into())
             }
@@ -1145,7 +1146,7 @@ impl CoreCrypto {
                 let result: ConversationInitBundle = this
                     .read()
                     .await
-                    .join_by_external_commit(group_state)
+                    .join_by_external_commit(group_state, MlsConversationConfiguration::default())
                     .await?
                     .try_into()?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&result)?)

@@ -126,27 +126,28 @@ impl MlsConversation {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{
-        mls::credential::CredentialSupplier, mls::MlsConversationConfiguration, prelude::MlsProposal, test_utils::*,
-    };
+    use crate::{prelude::MlsProposal, test_utils::*};
 
     mod update {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renewable_when_created_by_self(credential: CredentialSupplier) {
+        pub async fn renewable_when_created_by_self(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         assert!(alice_central.pending_proposals(&id).is_empty());
                         alice_central.new_proposal(&id, MlsProposal::Update).await.unwrap();
@@ -184,20 +185,23 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renews_pending_commit_when_created_by_self(credential: CredentialSupplier) {
+        pub async fn renews_pending_commit_when_created_by_self(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         alice_central.update_keying_material(&id).await.unwrap();
                         assert!(alice_central.pending_commit(&id).is_some());
@@ -219,20 +223,23 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_when_in_valid_commit(credential: CredentialSupplier) {
+        pub async fn not_renewable_when_in_valid_commit(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         assert!(alice_central.pending_proposals(&id).is_empty());
                         let proposal = alice_central
@@ -289,23 +296,31 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_by_ref(credential: CredentialSupplier) {
+        pub async fn not_renewable_by_ref(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, mut charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_public_group_state(
+                                &id,
+                                pgs,
+                                case.cfg.clone(),
+                                vec![&mut alice_central, &mut bob_central],
+                            )
                             .await
                             .unwrap();
 
@@ -341,20 +356,23 @@ pub mod tests {
     mod add {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_when_valid_commit_adds_same(credential: CredentialSupplier) {
+        pub async fn not_renewable_when_valid_commit_adds_same(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package().await;
                         assert!(alice_central.pending_proposals(&id).is_empty());
@@ -383,20 +401,23 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_in_pending_commit_when_valid_commit_adds_same(credential: CredentialSupplier) {
+        pub async fn not_renewable_in_pending_commit_when_valid_commit_adds_same(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package().await;
                         assert!(alice_central.pending_proposals(&id).is_empty());
@@ -429,23 +450,31 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_by_ref(credential: CredentialSupplier) {
+        pub async fn not_renewable_by_ref(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie", "debbie"],
                 move |[mut alice_central, mut bob_central, mut charlie_central, debbie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_public_group_state(
+                                &id,
+                                pgs,
+                                case.cfg.clone(),
+                                vec![&mut alice_central, &mut bob_central],
+                            )
                             .await
                             .unwrap();
 
@@ -478,20 +507,23 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renewable_when_valid_commit_doesnt_adds_same(credential: CredentialSupplier) {
+        pub async fn renewable_when_valid_commit_doesnt_adds_same(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         // Alice proposes adding Charlie
                         let charlie_kp = charlie_central.get_one_key_package().await;
@@ -533,20 +565,23 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renews_pending_commit_when_valid_commit_doesnt_adds_same(credential: CredentialSupplier) {
+        pub async fn renews_pending_commit_when_valid_commit_doesnt_adds_same(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         // Alice commits adding Charlie
                         alice_central
@@ -575,23 +610,31 @@ pub mod tests {
     mod remove {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_when_valid_commit_removes_same(credential: CredentialSupplier) {
+        pub async fn not_renewable_when_valid_commit_removes_same(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, mut charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_public_group_state(
+                                &id,
+                                pgs,
+                                case.cfg.clone(),
+                                vec![&mut alice_central, &mut bob_central],
+                            )
                             .await
                             .unwrap();
 
@@ -621,23 +664,31 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_by_ref(credential: CredentialSupplier) {
+        pub async fn not_renewable_by_ref(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, mut charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_public_group_state(
+                                &id,
+                                pgs,
+                                case.cfg.clone(),
+                                vec![&mut alice_central, &mut bob_central],
+                            )
                             .await
                             .unwrap();
 
@@ -668,23 +719,31 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renewable_when_valid_commit_doesnt_remove_same(credential: CredentialSupplier) {
+        pub async fn renewable_when_valid_commit_doesnt_remove_same(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie", "debbie"],
                 move |[mut alice_central, mut bob_central, mut charlie_central, mut debbie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_public_group_state(
+                                &id,
+                                pgs,
+                                case.cfg.clone(),
+                                vec![&mut alice_central, &mut bob_central],
+                            )
                             .await
                             .unwrap();
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
@@ -692,6 +751,7 @@ pub mod tests {
                             .try_join_from_public_group_state(
                                 &id,
                                 pgs,
+                                case.cfg.clone(),
                                 vec![&mut alice_central, &mut bob_central, &mut charlie_central],
                             )
                             .await
@@ -725,23 +785,31 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renews_pending_commit_when_commit_doesnt_remove_same(credential: CredentialSupplier) {
+        pub async fn renews_pending_commit_when_commit_doesnt_remove_same(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie", "debbie"],
                 move |[mut alice_central, mut bob_central, mut charlie_central, mut debbie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_public_group_state(
+                                &id,
+                                pgs,
+                                case.cfg.clone(),
+                                vec![&mut alice_central, &mut bob_central],
+                            )
                             .await
                             .unwrap();
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
@@ -749,6 +817,7 @@ pub mod tests {
                             .try_join_from_public_group_state(
                                 &id,
                                 pgs,
+                                case.cfg.clone(),
                                 vec![&mut alice_central, &mut bob_central, &mut charlie_central],
                             )
                             .await
@@ -781,25 +850,31 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renews_pending_commit_from_proposal_when_commit_doesnt_remove_same(
-            credential: CredentialSupplier,
-        ) {
+        pub async fn renews_pending_commit_from_proposal_when_commit_doesnt_remove_same(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie", "debbie"],
                 move |[mut alice_central, mut bob_central, mut charlie_central, mut debbie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(&id, pgs, vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_public_group_state(
+                                &id,
+                                pgs,
+                                case.cfg.clone(),
+                                vec![&mut alice_central, &mut bob_central],
+                            )
                             .await
                             .unwrap();
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
@@ -807,6 +882,7 @@ pub mod tests {
                             .try_join_from_public_group_state(
                                 &id,
                                 pgs,
+                                case.cfg.clone(),
                                 vec![&mut alice_central, &mut bob_central, &mut charlie_central],
                             )
                             .await

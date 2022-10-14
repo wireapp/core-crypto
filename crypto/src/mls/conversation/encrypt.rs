@@ -62,24 +62,27 @@ impl MlsCentral {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{mls::credential::CredentialSupplier, mls::MlsConversationConfiguration, test_utils::*};
+    use crate::test_utils::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    #[apply(all_credential_types)]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn can_encrypt_app_message(credential: CredentialSupplier) {
+    pub async fn can_encrypt_app_message(case: TestCase) {
         run_test_with_client_ids(
-            credential,
+            case.clone(),
             ["alice", "bob"],
             move |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central.invite(&id, &mut bob_central).await.unwrap();
+                    alice_central
+                        .invite(&id, case.cfg.clone(), &mut bob_central)
+                        .await
+                        .unwrap();
 
                     let msg = b"Hello bob";
                     let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
@@ -98,20 +101,23 @@ pub mod tests {
     }
 
     // Ensures encrypting an application message is durable
-    #[apply(all_credential_types)]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn can_encrypt_consecutive_messages(credential: CredentialSupplier) {
+    pub async fn can_encrypt_consecutive_messages(case: TestCase) {
         run_test_with_client_ids(
-            credential,
+            case.clone(),
             ["alice", "bob"],
             move |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central.invite(&id, &mut bob_central).await.unwrap();
+                    alice_central
+                        .invite(&id, case.cfg.clone(), &mut bob_central)
+                        .await
+                        .unwrap();
 
                     let msg = b"Hello bob";
                     let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();

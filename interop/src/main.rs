@@ -92,8 +92,9 @@ fn run_test() -> Result<()> {
 
             let spinner = util::RunningProcess::new("Step 0: Initializing clients & env...", true);
 
+            let ciphersuites = vec![MlsCiphersuite::default()];
             let configuration =
-                MlsCentralConfiguration::try_new("whatever".into(), "test".into(), MAIN_CLIENTID.into())?;
+                MlsCentralConfiguration::try_new("whatever".into(), "test".into(), MAIN_CLIENTID.into(), ciphersuites)?;
             let mut master_client = MlsCentral::try_new_in_memory(configuration, None).await?;
 
             let conversation_id = CONVERSATION_ID.to_vec();

@@ -41,13 +41,12 @@ pub fn store_name() -> String {
 
 #[fixture(name = store_name(), in_memory = false)]
 pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> core_crypto_keystore::Connection {
-    let store = if !in_memory {
+    if !in_memory {
         core_crypto_keystore::Connection::open_with_key(name, TEST_ENCRYPTION_KEY).await
     } else {
         core_crypto_keystore::Connection::open_in_memory_with_key(name, TEST_ENCRYPTION_KEY).await
     }
-    .unwrap();
-    store
+    .unwrap()
 }
 
 #[template]

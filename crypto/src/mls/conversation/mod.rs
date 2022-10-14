@@ -293,8 +293,8 @@ pub mod tests {
 
     use crate::{
         mls::{
-            conversation::handshake::MlsConversationCreationMessage, credential::CredentialSupplier,
-            member::ConversationMember, MlsCentralConfiguration, MlsConversationConfiguration,
+            conversation::handshake::MlsConversationCreationMessage, member::ConversationMember,
+            MlsCentralConfiguration,
         },
         test_utils::*,
     };
@@ -303,14 +303,14 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    #[apply(all_credential_types)]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn create_self_conversation_should_succeed(credential: CredentialSupplier) {
-        run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+    pub async fn create_self_conversation_should_succeed(case: TestCase) {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                    .new_conversation(id.clone(), case.cfg.clone())
                     .await
                     .unwrap();
                 assert_eq!(alice_central[&id].id, id);
@@ -323,18 +323,18 @@ pub mod tests {
         .await;
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn create_1_1_conversation_should_succeed(credential: CredentialSupplier) {
+    pub async fn create_1_1_conversation_should_succeed(case: TestCase) {
         run_test_with_client_ids(
-            credential,
+            case.clone(),
             ["alice", "bob"],
             move |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
 
                     alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
 
@@ -351,7 +351,7 @@ pub mod tests {
                     assert_eq!(alice_central[&id].members().len(), 2);
 
                     bob_central
-                        .process_welcome_message(welcome, MlsConversationConfiguration::default())
+                        .process_welcome_message(welcome, case.cfg.clone())
                         .await
                         .unwrap();
 
@@ -363,14 +363,14 @@ pub mod tests {
         .await;
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn create_100_people_conversation(credential: CredentialSupplier) {
-        run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+    pub async fn create_100_people_conversation(case: TestCase) {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                    .new_conversation(id.clone(), case.cfg.clone())
                     .await
                     .unwrap();
 
@@ -379,9 +379,14 @@ pub mod tests {
                     let uuid = uuid::Uuid::new_v4();
                     let name = uuid.hyphenated().to_string();
                     let path = tmp_db_file();
-                    let cfg =
-                        MlsCentralConfiguration::try_new(path.0, name.as_str().into(), name.as_str().into()).unwrap();
-                    let central = MlsCentral::try_new(cfg, credential()).await.unwrap();
+                    let config = MlsCentralConfiguration::try_new(
+                        path.0,
+                        name.as_str().into(),
+                        name.as_str().into(),
+                        vec![case.ciphersuite()],
+                    )
+                    .unwrap();
+                    let central = MlsCentral::try_new(config, case.credential()).await.unwrap();
                     bob_and_friends.push(central);
                 }
 
@@ -405,7 +410,7 @@ pub mod tests {
 
                 let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
                 for mut c in bob_and_friends {
-                    c.process_welcome_message(welcome.clone(), MlsConversationConfiguration::default())
+                    c.process_welcome_message(welcome.clone(), case.cfg.clone())
                         .await
                         .unwrap();
                     assert!(c.talk_to(&id, &mut alice_central).await.is_ok());
@@ -418,13 +423,13 @@ pub mod tests {
         .await;
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn conversation_from_welcome_prunes_local_keypackage(credential: CredentialSupplier) {
+    pub async fn conversation_from_welcome_prunes_local_keypackage(case: TestCase) {
         use core_crypto_keystore::CryptoKeystoreMls as _;
         use openmls_traits::OpenMlsCryptoProvider as _;
         run_test_with_client_ids(
-            credential,
+            case.clone(),
             ["alice", "bob"],
             move |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
@@ -441,7 +446,7 @@ pub mod tests {
 
                     // Create a conversation from alice, where she invites bob
                     alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
 
@@ -452,7 +457,7 @@ pub mod tests {
 
                     // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
                     bob_central
-                        .process_welcome_message(welcome, MlsConversationConfiguration::default())
+                        .process_welcome_message(welcome, case.cfg.clone())
                         .await
                         .unwrap();
 
@@ -473,17 +478,13 @@ pub mod tests {
     pub mod wipe_group {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_wipe_group(credential: CredentialSupplier) {
-            run_test_with_central(credential, move |[mut central]| {
+        pub async fn can_wipe_group(case: TestCase) {
+            run_test_with_central(case.clone(), move |[mut central]| {
                 Box::pin(async move {
-                    let conversation_configuration = MlsConversationConfiguration::default();
                     let id = conversation_id();
-                    central
-                        .new_conversation(id.clone(), conversation_configuration)
-                        .await
-                        .unwrap();
+                    central.new_conversation(id.clone(), case.cfg.clone()).await.unwrap();
                     assert!(central[&id].group.is_active());
 
                     central.wipe_conversation(&id).await.unwrap();
@@ -493,10 +494,10 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn cannot_wipe_group_inexistent(credential: CredentialSupplier) {
-            run_test_with_central(credential, move |[mut central]| {
+        pub async fn cannot_wipe_group_inexistent(case: TestCase) {
+            run_test_with_central(case.clone(), move |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     let err = central.wipe_conversation(&id).await.unwrap_err();

@@ -28,8 +28,13 @@ impl NativeClient {
     pub async fn new() -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
 
-        let configuration =
-            MlsCentralConfiguration::try_new("whatever".into(), "test".into(), client_id.as_hyphenated().to_string())?;
+        let ciphersuites = vec![MlsCiphersuite::default()];
+        let configuration = MlsCentralConfiguration::try_new(
+            "whatever".into(),
+            "test".into(),
+            client_id.as_hyphenated().to_string(),
+            ciphersuites,
+        )?;
 
         let cc = MlsCentral::try_new_in_memory(configuration, None).await?;
 
@@ -81,7 +86,10 @@ impl super::EmulatedClient for NativeClient {
     }
 
     async fn process_welcome(&mut self, welcome: &[u8]) -> Result<Vec<u8>> {
-        Ok(self.cc.process_raw_welcome_message(welcome.into()).await?)
+        Ok(self
+            .cc
+            .process_raw_welcome_message(welcome.into(), MlsConversationConfiguration::default())
+            .await?)
     }
 
     async fn encrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
