@@ -442,9 +442,10 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
         let mut cfg = MlsConversationConfiguration {
             admins: self.admins,
             key_rotation_span,
-            external_senders: self.external_senders,
             ..Default::default()
         };
+
+        cfg.set_raw_external_senders(self.external_senders);
 
         if let Some(ciphersuite) = self.ciphersuite.take() {
             let mls_ciphersuite: CiphersuiteName = ciphersuite.into();
@@ -460,16 +461,22 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
 /// see [core_crypto::prelude::CoreCryptoCallbacks]
 pub struct CoreCryptoWasmCallbacks {
     authorize: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
-    client_id_belongs_to_one_of: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
+    user_authorize: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
+    client_is_existing_group_user: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
 }
 
 #[wasm_bindgen]
 impl CoreCryptoWasmCallbacks {
     #[wasm_bindgen(constructor)]
-    pub fn new(authorize: js_sys::Function, client_id_belongs_to_one_of: js_sys::Function) -> Self {
+    pub fn new(
+        authorize: js_sys::Function,
+        user_authorize: js_sys::Function,
+        client_is_existing_group_user: js_sys::Function,
+    ) -> Self {
         Self {
             authorize: std::sync::Arc::new(authorize.into()),
-            client_id_belongs_to_one_of: std::sync::Arc::new(client_id_belongs_to_one_of.into()),
+            user_authorize: std::sync::Arc::new(user_authorize.into()),
+            client_is_existing_group_user: std::sync::Arc::new(client_is_existing_group_user.into()),
         }
     }
 }
@@ -478,7 +485,7 @@ unsafe impl Send for CoreCryptoWasmCallbacks {}
 unsafe impl Sync for CoreCryptoWasmCallbacks {}
 
 impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
-    fn authorize(&self, conversation_id: ConversationId, client_id: Vec<u8>) -> bool {
+    fn authorize(&self, conversation_id: ConversationId, client_id: ClientId) -> bool {
         if let Ok(authorize) = self.authorize.try_lock() {
             let this = JsValue::null();
             if let Ok(Some(result)) = authorize
@@ -498,14 +505,43 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
         }
     }
 
-    fn client_id_belongs_to_one_of(&self, client_id: Vec<u8>, other_clients: Vec<Vec<u8>>) -> bool {
-        if let Ok(client_id_belongs_to_one_of) = self.client_id_belongs_to_one_of.try_lock() {
+    fn user_authorize(
+        &self,
+        conversation_id: ConversationId,
+        external_client_id: ClientId,
+        existing_clients: Vec<ClientId>,
+    ) -> bool {
+        if let Ok(user_authorize) = self.user_authorize.try_lock() {
             let this = JsValue::null();
-            if let Ok(Some(result)) = client_id_belongs_to_one_of
+            if let Ok(Some(result)) = user_authorize
+                .call3(
+                    &this,
+                    &js_sys::Uint8Array::from(conversation_id.as_slice()),
+                    &js_sys::Uint8Array::from(external_client_id.as_slice()),
+                    &existing_clients
+                        .into_iter()
+                        .map(|client| js_sys::Uint8Array::from(client.as_slice()))
+                        .collect::<js_sys::Array>(),
+                )
+                .map(|jsval| jsval.as_bool())
+            {
+                result
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fn client_is_existing_group_user(&self, client_id: ClientId, existing_clients: Vec<ClientId>) -> bool {
+        if let Ok(client_is_existing_group_user) = self.client_is_existing_group_user.try_lock() {
+            let this = JsValue::null();
+            if let Ok(Some(result)) = client_is_existing_group_user
                 .call2(
                     &this,
                     &js_sys::Uint8Array::from(client_id.as_slice()),
-                    &other_clients
+                    &existing_clients
                         .into_iter()
                         .map(|client| js_sys::Uint8Array::from(client.as_slice()))
                         .collect::<js_sys::Array>(),

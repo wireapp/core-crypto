@@ -84,10 +84,13 @@ impl MlsConversation {
                 }
             }
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
+                let valid_commit = staged_commit.clone();
+                self.validate_external_commit(&valid_commit, sender_client_id, callbacks, backend.crypto())?;
+
                 let pending_commit = self.group.pending_commit().cloned();
                 #[allow(clippy::needless_collect)] // false positive
                 let pending_proposals = self.self_pending_proposals().cloned().collect::<Vec<_>>();
-                let valid_commit = staged_commit.clone();
+
                 let self_kpr = self.group.key_package_ref().cloned();
 
                 self.group.merge_staged_commit(*staged_commit).map_err(MlsError::from)?;
@@ -495,7 +498,6 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central.callbacks(Box::new(ValidationCallbacks::default()));
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
@@ -575,9 +577,6 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central, alice2_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central.callbacks(Box::new(ValidationCallbacks::default()));
-                        bob_central.callbacks(Box::new(ValidationCallbacks::default()));
-
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
                             .await
@@ -631,6 +630,7 @@ pub mod tests {
                             .await
                             .unwrap();
 
+                        alice_central.callbacks = None;
                         let error = alice_central
                             .decrypt_message(&id, &message.to_bytes().unwrap())
                             .await
@@ -638,6 +638,7 @@ pub mod tests {
 
                         assert!(matches!(error, CryptoError::CallbacksNotSet));
 
+                        bob_central.callbacks = None;
                         let error = bob_central
                             .decrypt_message(&id, &message.to_bytes().unwrap())
                             .await
@@ -659,7 +660,10 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central, alice2_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central.callbacks(Box::new(ValidationCallbacks::new(true, false)));
+                        alice_central.callbacks(Box::new(ValidationCallbacks {
+                            client_is_existing_group_user: false,
+                            ..Default::default()
+                        }));
 
                         alice_central
                             .new_conversation(id.clone(), MlsConversationConfiguration::default())
@@ -678,8 +682,9 @@ pub mod tests {
                             .await
                             .unwrap_err();
 
-                        assert!(matches!(error, CryptoError::ExternalAddProposalError));
+                        assert!(matches!(error, CryptoError::UnauthorizedExternalAddProposal));
 
+                        bob_central.callbacks = None;
                         let error = bob_central
                             .decrypt_message(&id, &external_proposal.to_bytes().unwrap())
                             .await

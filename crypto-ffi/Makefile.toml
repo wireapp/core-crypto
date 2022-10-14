@@ -182,12 +182,16 @@ cp ${from} ${to}
 command = "cargo"
 args = ["build", "--target", "x86_64-apple-darwin", "--features", "mobile", "--release", "${@}"]
 
+[tasks.jvm-aarch64-darwin]
+command = "cargo"
+args = ["build", "--target", "aarch64-apple-darwin", "--features", "mobile", "--release", "${@}"]
+
 [tasks.jvm-x86-linux]
 command = "cargo"
 args = ["build", "--target", "x86_64-unknown-linux-gnu", "--features", "mobile", "--release", "${@}"]
 
 [tasks.jvm]
-dependencies = ["jvm-x86-darwin", "jvm-x86-linux"]
+dependencies = ["jvm-aarch64-darwin", "jvm-x86-darwin", "jvm-x86-linux"]
 
 [tasks.copy-jvm-resources]
 dependencies = ["jvm"]
@@ -195,9 +199,11 @@ script_runner = "@duckscript"
 script = '''
 handle = map
 map_put ${handle} "x86_64-apple-darwin" "darwin-x86-64"
+map_put ${handle} "aarch64-apple-darwin" "darwin-aarch64"
 map_put ${handle} "x86_64-unknown-linux-gnu" "linux-x86-64"
 lib_handle = map
 map_put ${lib_handle} "x86_64-apple-darwin" "libcore_crypto_ffi.dylib"
+map_put ${lib_handle} "aarch64-apple-darwin" "libcore_crypto_ffi.dylib"
 map_put ${lib_handle} "x86_64-unknown-linux-gnu" "libcore_crypto_ffi.so"
 keys = map_keys ${handle}
 for rust_target in ${keys}

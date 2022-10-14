@@ -13,9 +13,9 @@ pub use rstest_reuse::{self, *};
 
 use crate::external_commit::MlsConversationInitBundle;
 use crate::{
-    config::MlsCentralConfiguration, credential::CredentialSupplier, member::ConversationMember, ConversationId,
-    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationConfiguration,
-    MlsError,
+    config::MlsCentralConfiguration, credential::CredentialSupplier, member::ConversationMember, ClientId,
+    ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsConversation,
+    MlsConversationConfiguration, MlsError,
 };
 
 #[template]
@@ -50,7 +50,9 @@ pub async fn run_test_with_client_ids<const N: usize>(
             let stream = paths.into_iter().enumerate().map(|(i, p)| async move {
                 let client_id = client_id[i].to_string();
                 let configuration = MlsCentralConfiguration::try_new(p, "test".into(), client_id).unwrap();
-                MlsCentral::try_new(configuration, credential()).await.unwrap()
+                let mut central = MlsCentral::try_new(configuration, credential()).await.unwrap();
+                central.callbacks(Box::new(ValidationCallbacks::default()));
+                central
             });
             let centrals: [MlsCentral; N] = futures_util::future::join_all(stream).await.try_into().unwrap();
             test(centrals).await;
@@ -244,34 +246,36 @@ impl IndexMut<&ConversationId> for MlsCentral {
 
 #[derive(Debug)]
 pub struct ValidationCallbacks {
-    authorize: bool,
-    client_id_belongs_to_one_of: bool,
+    pub authorize: bool,
+    pub user_authorize: bool,
+    pub client_is_existing_group_user: bool,
 }
 
 impl Default for ValidationCallbacks {
     fn default() -> Self {
         Self {
             authorize: true,
-            client_id_belongs_to_one_of: true,
-        }
-    }
-}
-
-impl ValidationCallbacks {
-    pub fn new(authorize: bool, client_id_belongs_to_one_of: bool) -> Self {
-        Self {
-            authorize,
-            client_id_belongs_to_one_of,
+            user_authorize: true,
+            client_is_existing_group_user: true,
         }
     }
 }
 
 impl CoreCryptoCallbacks for ValidationCallbacks {
-    fn authorize(&self, _conversation_id: Vec<u8>, _client_id: Vec<u8>) -> bool {
+    fn authorize(&self, _conversation_id: ConversationId, _client_id: ClientId) -> bool {
         self.authorize
     }
 
-    fn client_id_belongs_to_one_of(&self, _client_id: Vec<u8>, _other_clients: Vec<Vec<u8>>) -> bool {
-        self.client_id_belongs_to_one_of
+    fn user_authorize(
+        &self,
+        _conversation_id: ConversationId,
+        _external_client_id: ClientId,
+        _existing_clients: Vec<ClientId>,
+    ) -> bool {
+        self.user_authorize
+    }
+
+    fn client_is_existing_group_user(&self, _client_id: ClientId, _existing_clients: Vec<ClientId>) -> bool {
+        self.client_is_existing_group_user
     }
 }
