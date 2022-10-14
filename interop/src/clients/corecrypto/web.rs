@@ -14,17 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient};
+use color_eyre::eyre::Result;
 use std::net::SocketAddr;
 
-use color_eyre::eyre::Result;
-
 #[derive(Debug)]
-pub struct WebClient {
+pub struct CoreCryptoWebClient {
     browser: fantoccini::Client,
     client_id: Vec<u8>,
+    #[cfg(feature = "proteus")]
+    prekey_last_id: u16,
 }
 
-impl WebClient {
+impl CoreCryptoWebClient {
     pub async fn new(driver_addr: &SocketAddr) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
         let client_id_str = client_id.as_hyphenated().to_string();
@@ -33,7 +35,7 @@ impl WebClient {
             "key": "test",
             "clientId": client_id_str
         });
-        let browser = crate::build::web::webdriver::setup_browser(driver_addr).await?;
+        let browser = crate::build::web::webdriver::setup_browser(driver_addr, "core-crypto").await?;
 
         let _ = browser
             .execute_async(
@@ -50,20 +52,47 @@ callback();"#,
         Ok(Self {
             browser,
             client_id: client_id.into_bytes().into(),
+            #[cfg(feature = "proteus")]
+            prekey_last_id: 0,
         })
     }
 }
 
 #[async_trait::async_trait(?Send)]
-impl super::EmulatedClient for WebClient {
-    fn client_type(&self) -> super::EmulatedClientType {
-        super::EmulatedClientType::Web
+impl EmulatedClient for CoreCryptoWebClient {
+    fn client_name(&self) -> &str {
+        "CoreCrypto::wasm"
+    }
+
+    fn client_type(&self) -> EmulatedClientType {
+        EmulatedClientType::Web
     }
 
     fn client_id(&self) -> &[u8] {
         self.client_id.as_slice()
     }
 
+    fn client_protocol(&self) -> EmulatedClientProtocol {
+        EmulatedClientProtocol::MLS | EmulatedClientProtocol::PROTEUS
+    }
+
+    async fn wipe(mut self) -> Result<()> {
+        let _ = self
+            .browser
+            .execute_async(
+                r#"
+    const [callback] = arguments;
+    window.cc.wipe().then(callback);"#,
+                vec![],
+            )
+            .await?;
+
+        Ok(())
+    }
+}
+
+#[async_trait::async_trait(?Send)]
+impl EmulatedMlsClient for CoreCryptoWebClient {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
         Ok(self
             .browser
@@ -163,5 +192,111 @@ window.cc.decryptMessage(conversationId, encryptedMessage)
         } else {
             Ok(Some(serde_json::from_value(res)?))
         }
+    }
+}
+
+#[cfg(feature = "proteus")]
+#[async_trait::async_trait(?Send)]
+impl crate::clients::EmulatedProteusClient for CoreCryptoWebClient {
+    async fn init(&mut self) -> Result<()> {
+        self.browser
+            .execute_async(
+                r#"
+const [callback] = arguments;
+window.cc.proteusInit().then(callback);"#,
+                vec![],
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    async fn get_prekey(&mut self) -> Result<Vec<u8>> {
+        self.prekey_last_id += 1;
+        let prekey = self
+            .browser
+            .execute_async(
+                r#"
+const [prekeyId, callback] = arguments;
+window.cc.proteusNewPrekey(prekeyId).then(callback);"#,
+                vec![self.prekey_last_id.into()],
+            )
+            .await
+            .and_then(|value| Ok(serde_json::from_value(value)?))?;
+
+        Ok(prekey)
+    }
+
+    async fn session_from_prekey(&mut self, session_id: &str, prekey: &[u8]) -> Result<()> {
+        self.browser
+            .execute_async(
+                r#"
+const [sessionId, prekey, callback] = arguments;
+const prekeyBuffer = Uint8Array.from(Object.values(prekey));
+window.cc.proteusSessionFromPrekey(sessionId, prekeyBuffer).then(callback);"#,
+                vec![session_id.into(), prekey.into()],
+            )
+            .await?;
+        Ok(())
+    }
+
+    async fn session_from_message(&mut self, session_id: &str, message: &[u8]) -> Result<Vec<u8>> {
+        let cleartext = self
+            .browser
+            .execute_async(
+                r#"
+const [sessionId, message, callback] = arguments;
+const messageBuffer = Uint8Array.from(Object.values(message));
+window.cc.proteusSessionFromMessage(sessionId, messageBuffer).then(callback);"#,
+                vec![session_id.into(), message.into()],
+            )
+            .await
+            .and_then(|value| Ok(serde_json::from_value(value)?))?;
+
+        Ok(cleartext)
+    }
+    async fn encrypt(&mut self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
+        let ciphertext = self
+            .browser
+            .execute_async(
+                r#"
+const [sessionId, plaintext, callback] = arguments;
+const plaintextBuffer = Uint8Array.from(Object.values(plaintext));
+window.cc.proteusEncrypt(sessionId, plaintextBuffer).then(callback);"#,
+                vec![session_id.into(), plaintext.into()],
+            )
+            .await
+            .and_then(|value| Ok(serde_json::from_value(value)?))?;
+
+        Ok(ciphertext)
+    }
+
+    async fn decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
+        let cleartext = self
+            .browser
+            .execute_async(
+                r#"
+const [sessionId, ciphertext, callback] = arguments;
+const ciphertextBuffer = Uint8Array.from(Object.values(ciphertext));
+window.cc.proteusDecrypt(sessionId, ciphertextBuffer).then(callback);"#,
+                vec![session_id.into(), ciphertext.into()],
+            )
+            .await
+            .and_then(|value| Ok(serde_json::from_value(value)?))?;
+
+        Ok(cleartext)
+    }
+
+    async fn fingerprint(&self) -> Result<String> {
+        Ok(self
+            .browser
+            .execute_async(
+                "const [callback] = arguments; window.cc.proteusFingerprint().then(callback);",
+                vec![],
+            )
+            .await?
+            .as_str()
+            .unwrap()
+            .into())
     }
 }

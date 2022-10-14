@@ -33,6 +33,12 @@ const generateDtsBundlePlugin = (entry, output) => ({
     },
 });
 
+const cargoArgs = [];
+
+if (process.env.BUILD_PROTEUS) {
+    cargoArgs.push("--features", "proteus");
+}
+
 const rollup = {
     input: pathResolve(__dirname, "./CoreCrypto.ts"),
     output: {
@@ -43,7 +49,7 @@ const rollup = {
         format: "es",
     },
     plugins: [
-        rust(),
+        rust({ cargoArgs }),
         ts({
             tsconfig: pathResolve(__dirname, "./tsconfig.json"),
         }),
