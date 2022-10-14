@@ -22,7 +22,7 @@ pub(crate) mod external_proposal;
 pub(crate) mod member;
 pub(crate) mod proposal;
 
-#[derive(Debug, Clone, derive_more::Deref)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Deref)]
 #[repr(transparent)]
 /// A wrapper for the OpenMLS Ciphersuite, so that we are able to provide a default value.
 pub struct MlsCiphersuite(Ciphersuite);
@@ -57,12 +57,15 @@ pub(crate) mod config {
     pub struct MlsCentralConfiguration {
         /// Location where the SQLite/IndexedDB database will be stored
         pub store_path: String,
-        /// Identity key to be used to instanciate the [MlsCryptoProvider]
+        /// Identity key to be used to instantiate the [MlsCryptoProvider]
         pub identity_key: String,
         /// Identifier for the client to be used by [MlsCentral]
         pub client_id: String,
         /// Entropy pool seed for the internal PRNG
         pub external_entropy: Option<EntropySeed>,
+        /// All supported ciphersuites
+        /// TODO: pending wire-server API supports selecting a ciphersuite only the first item of this array will be used.
+        pub ciphersuites: Vec<MlsCiphersuite>,
     }
 
     impl MlsCentralConfiguration {
@@ -70,8 +73,9 @@ pub(crate) mod config {
         ///
         /// # Arguments
         /// * `store_path` - location where the SQLite/IndexedDB database will be stored
-        /// * `identity_key` - identity key to be used to instanciante the [MlsCryptoProvider]
+        /// * `identity_key` - identity key to be used to instantiate the [MlsCryptoProvider]
         /// * `client_id` - identifier for the client to be used by [MlsCentral]
+        /// * `ciphersuites` - Ciphersuites supported by this device
         ///
         /// # Errors
         /// Any empty string parameter will result in a [CryptoError::MalformedIdentifier] error.
@@ -82,18 +86,29 @@ pub(crate) mod config {
         /// ```
         /// use core_crypto::{prelude::MlsCentralConfiguration, CryptoError};
         ///
-        /// let result = MlsCentralConfiguration::try_new(String::new(), String::new(), String::new());
+        /// let result = MlsCentralConfiguration::try_new(String::new(), String::new(), String::new(), vec![]);
         /// assert!(matches!(result.unwrap_err(), CryptoError::MalformedIdentifier(_)));
         /// ```
         ///
         /// This should work:
         /// ```
         /// use core_crypto::{prelude::MlsCentralConfiguration, CryptoError};
+        /// use core_crypto::mls::MlsCiphersuite;
         ///
-        /// let result = MlsCentralConfiguration::try_new("/tmp/crypto".to_string(), "MY_IDENTITY_KEY".to_string(), "MY_CLIENT_ID".to_string());
+        /// let result = MlsCentralConfiguration::try_new(
+        ///     "/tmp/crypto".to_string(),
+        ///     "MY_IDENTITY_KEY".to_string(),
+        ///     "MY_CLIENT_ID".to_string(),
+        ///     vec![MlsCiphersuite::default()],
+        /// );
         /// assert!(result.is_ok());
         /// ```
-        pub fn try_new(store_path: String, identity_key: String, client_id: String) -> CryptoResult<Self> {
+        pub fn try_new(
+            store_path: String,
+            identity_key: String,
+            client_id: String,
+            ciphersuites: Vec<MlsCiphersuite>,
+        ) -> CryptoResult<Self> {
             // TODO: probably more complex rules to enforce
             if store_path.trim().is_empty() {
                 return Err(CryptoError::MalformedIdentifier(store_path));
@@ -111,6 +126,7 @@ pub(crate) mod config {
                 identity_key,
                 client_id,
                 external_entropy: None,
+                ciphersuites,
             })
         }
 
@@ -175,6 +191,7 @@ impl MlsCentral {
         let mls_client = Client::init(
             configuration.client_id.as_bytes().into(),
             certificate_bundle,
+            configuration.ciphersuites.as_slice(),
             &mls_backend,
         )
         .await?;
@@ -194,7 +211,7 @@ impl MlsCentral {
     pub async fn try_new_in_memory(
         configuration: MlsCentralConfiguration,
         certificate_bundle: Option<CertificateBundle>,
-    ) -> crate::error::CryptoResult<Self> {
+    ) -> CryptoResult<Self> {
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: &configuration.store_path,
             identity_key: &configuration.identity_key,
@@ -205,6 +222,7 @@ impl MlsCentral {
         let mls_client = Client::init(
             configuration.client_id.as_bytes().into(),
             certificate_bundle,
+            configuration.ciphersuites.as_slice(),
             &mls_backend,
         )
         .await?;
@@ -351,6 +369,7 @@ impl MlsCentral {
     ///
     /// # Arguments
     /// * `welcome` - a TLS serialized welcome message
+    /// * `configuration` - configuration of the MLS conversation fetched from the Delivery Service
     ///
     /// # Return type
     /// This function will return the conversation/group id
@@ -360,8 +379,8 @@ impl MlsCentral {
     pub async fn process_raw_welcome_message(
         &mut self,
         welcome: Vec<u8>,
-    ) -> crate::error::CryptoResult<ConversationId> {
-        let configuration = MlsConversationConfiguration::default();
+        configuration: MlsConversationConfiguration,
+    ) -> CryptoResult<ConversationId> {
         let mut cursor = std::io::Cursor::new(welcome);
         let welcome = Welcome::tls_deserialize(&mut cursor).map_err(MlsError::from)?;
         self.process_welcome_message(welcome, configuration).await
@@ -427,11 +446,11 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
+    use openmls_traits::types::SignatureScheme;
     use wasm_bindgen_test::*;
 
     use crate::{
-        mls::{credential::CredentialSupplier, CryptoError, MlsCentral, MlsCentralConfiguration},
-        prelude::MlsConversationConfiguration,
+        mls::{CryptoError, MlsCentral, MlsCentralConfiguration},
         test_utils::*,
     };
 
@@ -440,16 +459,13 @@ pub mod tests {
     pub mod conversation_epoch {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_get_newly_created_conversation_epoch(credential: CredentialSupplier) {
-            run_test_with_central(credential, move |[mut central]| {
+        pub async fn can_get_newly_created_conversation_epoch(case: TestCase) {
+            run_test_with_central(case.clone(), move |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
+                    central.new_conversation(id.clone(), case.cfg.clone()).await.unwrap();
                     let epoch = central.conversation_epoch(&id).unwrap();
                     assert_eq!(epoch, 0);
                 })
@@ -457,20 +473,23 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_get_conversation_epoch(credential: CredentialSupplier) {
+        pub async fn can_get_conversation_epoch(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
                         let epoch = alice_central.conversation_epoch(&id).unwrap();
                         assert_eq!(epoch, 1);
                     })
@@ -479,10 +498,10 @@ pub mod tests {
             .await;
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn conversation_not_found(credential: CredentialSupplier) {
-            run_test_with_central(credential, move |[central]| {
+        pub async fn conversation_not_found(case: TestCase) {
+            run_test_with_central(case.clone(), move |[central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     let err = central.conversation_epoch(&id).unwrap_err();
@@ -495,17 +514,22 @@ pub mod tests {
 
     pub mod invariants {
         use super::*;
+        use crate::prelude::MlsCiphersuite;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_create_from_valid_configuration(credential: CredentialSupplier) {
+        pub async fn can_create_from_valid_configuration(case: TestCase) {
             run_tests(move |[tmp_dir_argument]| {
                 Box::pin(async move {
-                    let configuration =
-                        MlsCentralConfiguration::try_new(tmp_dir_argument, "test".to_string(), "alice".to_string())
-                            .unwrap();
+                    let configuration = MlsCentralConfiguration::try_new(
+                        tmp_dir_argument,
+                        "test".to_string(),
+                        "alice".to_string(),
+                        vec![case.ciphersuite()],
+                    )
+                    .unwrap();
 
-                    let central = MlsCentral::try_new(configuration, credential()).await;
+                    let central = MlsCentral::try_new(configuration, case.credential()).await;
                     assert!(central.is_ok())
                 })
             })
@@ -515,8 +539,13 @@ pub mod tests {
         #[test]
         #[wasm_bindgen_test]
         pub fn store_path_should_not_be_empty_nor_blank() {
-            let configuration =
-                MlsCentralConfiguration::try_new(" ".to_string(), "test".to_string(), "alice".to_string());
+            let ciphersuites = vec![MlsCiphersuite::default()];
+            let configuration = MlsCentralConfiguration::try_new(
+                " ".to_string(),
+                "test".to_string(),
+                "alice".to_string(),
+                ciphersuites,
+            );
             match configuration {
                 Err(CryptoError::MalformedIdentifier(value)) => assert_eq!(" ", value),
                 _ => panic!(),
@@ -528,8 +557,13 @@ pub mod tests {
         pub async fn identity_key_should_not_be_empty_nor_blank() {
             run_tests(|[tmp_dir_argument]| {
                 Box::pin(async move {
-                    let configuration =
-                        MlsCentralConfiguration::try_new(tmp_dir_argument, " ".to_string(), "alice".to_string());
+                    let ciphersuites = vec![MlsCiphersuite::default()];
+                    let configuration = MlsCentralConfiguration::try_new(
+                        tmp_dir_argument,
+                        " ".to_string(),
+                        "alice".to_string(),
+                        ciphersuites,
+                    );
                     match configuration {
                         Err(CryptoError::MalformedIdentifier(value)) => assert_eq!(" ", value),
                         _ => panic!(),
@@ -544,8 +578,13 @@ pub mod tests {
         pub async fn client_id_should_not_be_empty_nor_blank() {
             run_tests(|[tmp_dir_argument]| {
                 Box::pin(async move {
-                    let configuration =
-                        MlsCentralConfiguration::try_new(tmp_dir_argument, "test".to_string(), " ".to_string());
+                    let ciphersuites = vec![MlsCiphersuite::default()];
+                    let configuration = MlsCentralConfiguration::try_new(
+                        tmp_dir_argument,
+                        "test".to_string(),
+                        " ".to_string(),
+                        ciphersuites,
+                    );
                     match configuration {
                         Err(CryptoError::MalformedIdentifier(value)) => assert_eq!(" ", value),
                         _ => panic!(),
@@ -559,22 +598,27 @@ pub mod tests {
     pub mod persistence {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_persist_group_state(credential: CredentialSupplier) {
+        pub async fn can_persist_group_state(case: TestCase) {
             run_tests(move |[tmp_dir_argument]| {
                 Box::pin(async move {
-                    let configuration =
-                        MlsCentralConfiguration::try_new(tmp_dir_argument, "test".to_string(), "potato".to_string())
-                            .unwrap();
+                    let configuration = MlsCentralConfiguration::try_new(
+                        tmp_dir_argument,
+                        "test".to_string(),
+                        "potato".to_string(),
+                        vec![case.ciphersuite()],
+                    )
+                    .unwrap();
 
-                    let mut central = MlsCentral::try_new(configuration.clone(), credential()).await.unwrap();
-                    let conversation_configuration = MlsConversationConfiguration::default();
+                    let mut central = MlsCentral::try_new(configuration.clone(), case.credential())
+                        .await
+                        .unwrap();
                     let id = conversation_id();
-                    let _ = central.new_conversation(id.clone(), conversation_configuration).await;
+                    let _ = central.new_conversation(id.clone(), case.cfg.clone()).await;
 
                     central.close().await.unwrap();
-                    let mut central = MlsCentral::try_new(configuration, credential()).await.unwrap();
+                    let mut central = MlsCentral::try_new(configuration, case.credential()).await.unwrap();
                     let _ = central.encrypt_message(&id, b"Test").await.unwrap();
 
                     central.mls_backend.destroy_and_reset().await.unwrap();
@@ -584,19 +628,26 @@ pub mod tests {
         }
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn can_fetch_client_public_key(credential: CredentialSupplier) {
-        run_tests(move |[tmp_dir_argument]| {
-            Box::pin(async move {
-                let configuration =
-                    MlsCentralConfiguration::try_new(tmp_dir_argument, "test".to_string(), "potato".to_string())
-                        .unwrap();
+    pub async fn can_fetch_client_public_key(case: TestCase) {
+        // TODO we only support ed25519 signatures for certificates currently
+        if case.ciphersuite().0.signature_algorithm() == SignatureScheme::ED25519 {
+            run_tests(move |[tmp_dir_argument]| {
+                Box::pin(async move {
+                    let configuration = MlsCentralConfiguration::try_new(
+                        tmp_dir_argument,
+                        "test".to_string(),
+                        "potato".to_string(),
+                        vec![case.ciphersuite()],
+                    )
+                    .unwrap();
 
-                let result = MlsCentral::try_new(configuration.clone(), credential()).await;
-                assert!(result.is_ok());
+                    let result = MlsCentral::try_new(configuration.clone(), case.credential()).await;
+                    assert!(result.is_ok());
+                })
             })
-        })
-        .await
+            .await
+        }
     }
 }

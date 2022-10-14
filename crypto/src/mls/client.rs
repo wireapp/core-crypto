@@ -125,6 +125,7 @@ impl Client {
     /// # Arguments
     /// * `id` - id of the client
     /// * `certificate_bundle` - an optional x509 certificate
+    /// * `ciphersuites` - all ciphersuites this client is supposed to support
     /// * `backend` - the KeyStore and crypto provider to read identities from
     ///
     /// # Errors
@@ -132,20 +133,21 @@ impl Client {
     pub async fn init(
         id: ClientId,
         certificate_bundle: Option<CertificateBundle>,
+        ciphersuites: &[MlsCiphersuite],
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
         use core_crypto_keystore::CryptoKeystoreMls as _;
         let id_str: String = id.to_string();
         let client = if let Some(signature) = backend.key_store().mls_load_identity_signature(&id_str).await? {
-            match Self::load(id.clone(), &signature, backend).await {
+            match Self::load(id.clone(), &signature, ciphersuites, backend).await {
                 Ok(client) => client,
                 Err(CryptoError::ClientSignatureNotFound) => {
-                    Self::generate(id, certificate_bundle, backend, true).await?
+                    Self::generate(id, certificate_bundle, backend, ciphersuites, true).await?
                 }
                 Err(e) => return Err(e),
             }
         } else {
-            Self::generate(id, certificate_bundle, backend, true).await?
+            Self::generate(id, certificate_bundle, backend, ciphersuites, true).await?
         };
 
         Ok(client)
@@ -156,14 +158,16 @@ impl Client {
         id: ClientId,
         certificate_bundle: Option<CertificateBundle>,
         backend: &MlsCryptoProvider,
+        ciphersuites: &[MlsCiphersuite],
         provision: bool,
     ) -> CryptoResult<Self> {
-        let ciphersuite = MlsCiphersuite::default();
+        // TODO: support many ciphersuites
+        let ciphersuite = *ciphersuites.first().ok_or(CryptoError::ImplementationError)?;
 
         let credentials = if let Some(cert) = certificate_bundle {
             Self::generate_x509_credential_bundle(&id, cert.certificate_chain, cert.private_key)?
         } else {
-            Self::generate_basic_credential_bundle(&id, backend)?
+            Self::generate_basic_credential_bundle(&id, ciphersuite, backend)?
         };
 
         let identity = MlsIdentity {
@@ -194,9 +198,12 @@ impl Client {
     pub(crate) async fn load(
         id: ClientId,
         signature_public_key: &[u8],
+        ciphersuites: &[MlsCiphersuite],
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
-        let ciphersuite = MlsCiphersuite::default();
+        // TODO: support many ciphersuites
+        let ciphersuite = *ciphersuites.first().ok_or(CryptoError::ImplementationError)?;
+
         let identity: MlsIdentity = backend
             .key_store()
             .find(id.to_string())
@@ -444,6 +451,7 @@ impl Client {
     pub async fn random_generate(
         backend: &MlsCryptoProvider,
         provision: bool,
+        ciphersuite: MlsCiphersuite,
         certificate_bundle: Option<CertificateBundle>,
     ) -> CryptoResult<Self> {
         let user_uuid = uuid::Uuid::new_v4();
@@ -451,7 +459,7 @@ impl Client {
         let client_id = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated())
             .as_bytes()
             .into();
-        Self::generate(client_id, certificate_bundle, backend, provision).await
+        Self::generate(client_id, certificate_bundle, backend, &[ciphersuite], provision).await
     }
 
     pub async fn keypackages(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<openmls::prelude::KeyPackage>> {
@@ -477,17 +485,19 @@ pub mod tests {
 
     use mls_crypto_provider::MlsCryptoProvider;
 
-    use crate::{mls::credential::CredentialSupplier, test_utils::*};
+    use crate::test_utils::*;
 
     use super::Client;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    #[apply(all_credential_types)]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn can_assess_keypackage_expiration(credential: CredentialSupplier) {
+    pub async fn can_assess_keypackage_expiration(case: TestCase) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        let mut client = Client::random_generate(&backend, false, credential()).await.unwrap();
+        let mut client = Client::random_generate(&backend, false, case.ciphersuite(), case.credential())
+            .await
+            .unwrap();
 
         // 90-day standard expiration
         let kp_std_exp = client.gen_keypackage(&backend).await.unwrap();
@@ -501,29 +511,37 @@ pub mod tests {
         assert!(Client::is_mls_keypackage_expired(&kp_1s_exp));
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn can_generate_client(credential: CredentialSupplier) {
+    pub async fn can_generate_client(case: TestCase) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        assert!(Client::random_generate(&backend, false, credential()).await.is_ok());
+        assert!(
+            Client::random_generate(&backend, false, case.ciphersuite(), case.credential())
+                .await
+                .is_ok()
+        );
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn client_never_runs_out_of_keypackages(credential: CredentialSupplier) {
+    pub async fn client_never_runs_out_of_keypackages(case: TestCase) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        let client = Client::random_generate(&backend, true, credential()).await.unwrap();
+        let client = Client::random_generate(&backend, true, case.ciphersuite(), case.credential())
+            .await
+            .unwrap();
         for _ in 0..100 {
             assert!(client.keypackage_raw_hash(&backend).await.is_ok())
         }
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn client_generates_correct_number_of_kpbs(credential: CredentialSupplier) {
+    pub async fn client_generates_correct_number_of_kpbs(case: TestCase) {
         use openmls_traits::OpenMlsCryptoProvider as _;
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        let client = Client::random_generate(&backend, false, credential()).await.unwrap();
+        let client = Client::random_generate(&backend, false, case.ciphersuite(), case.credential())
+            .await
+            .unwrap();
 
         const COUNT: usize = 124;
 
@@ -553,13 +571,15 @@ pub mod tests {
         }
     }
 
-    #[apply(all_credential_types)]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn client_automatically_prunes_lifetime_expired_keypackages(credential: CredentialSupplier) {
+    pub async fn client_automatically_prunes_lifetime_expired_keypackages(case: TestCase) {
         const UNEXPIRED_COUNT: usize = 125;
         const EXPIRED_COUNT: usize = 200;
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        let mut client = Client::random_generate(&backend, false, credential()).await.unwrap();
+        let mut client = Client::random_generate(&backend, false, case.ciphersuite(), case.credential())
+            .await
+            .unwrap();
 
         // Generate `UNEXPIRED_COUNT` kpbs that are with default 3 months expiration. We *should* keep them for the duration of the test
         let unexpired_kpbs = client.request_keying_material(UNEXPIRED_COUNT, &backend).await.unwrap();

@@ -172,10 +172,7 @@ impl MlsCentral {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{
-        mls::credential::CredentialSupplier, mls::proposal::MlsProposal, mls::MlsConversationConfiguration,
-        prelude::handshake::MlsCommitBundle, test_utils::*,
-    };
+    use crate::{mls::proposal::MlsProposal, prelude::handshake::MlsCommitBundle, test_utils::*};
 
     use super::*;
 
@@ -184,20 +181,23 @@ pub mod tests {
     pub mod is_active {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_regular_commit_should_leave_conversation_active(credential: CredentialSupplier) {
+        pub async fn decrypting_a_regular_commit_should_leave_conversation_active(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         let MlsCommitBundle { commit, .. } = bob_central.update_keying_material(&id).await.unwrap();
                         let MlsConversationDecryptMessage { is_active, .. } = alice_central
@@ -211,22 +211,23 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_removing_self_should_set_conversation_inactive(
-            credential: CredentialSupplier,
-        ) {
+        pub async fn decrypting_a_commit_removing_self_should_set_conversation_inactive(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         let MlsCommitBundle { commit, .. } = bob_central
                             .remove_members_from_conversation(&id, &["alice".into()])
@@ -247,20 +248,23 @@ pub mod tests {
     pub mod commit {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_clear_pending_commit(credential: CredentialSupplier) {
+        pub async fn decrypting_a_commit_should_clear_pending_commit(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie", "debbie"],
                 move |[mut alice_central, mut bob_central, charlie_central, debbie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         // Alice creates a commit which will be superseded by Bob's one
                         let charlie = charlie_central.rnd_member().await;
@@ -291,20 +295,23 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_renew_proposals_in_pending_commit(credential: CredentialSupplier) {
+        pub async fn decrypting_a_commit_should_renew_proposals_in_pending_commit(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, mut charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         // Alice will create a commit to add Charlie
                         // Bob will create a commit which will be accepted first by DS so Alice will decrypt it
@@ -365,7 +372,7 @@ pub mod tests {
 
                         // Charlie can join with the Welcome from renewed Add proposal
                         let id = charlie_central
-                            .process_welcome_message(welcome.unwrap(), MlsConversationConfiguration::default())
+                            .process_welcome_message(welcome.unwrap(), case.cfg.clone())
                             .await
                             .unwrap();
                         assert!(charlie_central.talk_to(&id, &mut alice_central).await.is_ok());
@@ -375,20 +382,23 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_not_renew_proposals_in_valid_commit(credential: CredentialSupplier) {
+        pub async fn decrypting_a_commit_should_not_renew_proposals_in_valid_commit(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         // Bob will create a proposal to add Charlie
                         // Alice will decrypt this proposal
@@ -420,20 +430,23 @@ pub mod tests {
         }
 
         // orphan proposal = not backed by the pending commit
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_renew_orphan_pending_proposals(credential: CredentialSupplier) {
+        pub async fn decrypting_a_commit_should_renew_orphan_pending_proposals(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         // Alice will create a proposal to add Charlie
                         // Bob will create a commit which Alice will decrypt
@@ -490,20 +503,23 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_discard_pending_external_proposals(credential: CredentialSupplier) {
+        pub async fn decrypting_a_commit_should_discard_pending_external_proposals(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         // DS will create an external proposal to add Charlie
                         // But meanwhile Bob, before receiving the external proposal,
@@ -534,20 +550,23 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_not_return_sender_client_id(credential: CredentialSupplier) {
+        pub async fn should_not_return_sender_client_id(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
 
@@ -569,20 +588,23 @@ pub mod tests {
 
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_decrypt_proposal(credential: CredentialSupplier) {
+        pub async fn can_decrypt_proposal(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "alice2"],
                 move |[mut alice_central, mut bob_central, alice2_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         let epoch = alice_central[&id].group.epoch();
                         let ext_proposal = alice2_central
@@ -609,21 +631,24 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn cannot_decrypt_proposal_no_callback(credential: CredentialSupplier) {
+        pub async fn cannot_decrypt_proposal_no_callback(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "alice2"],
                 move |[mut alice_central, mut bob_central, alice2_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
 
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         let epoch = alice_central[&id].group.epoch();
                         let message = alice2_central
@@ -652,11 +677,11 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn cannot_decrypt_proposal_validation(credential: CredentialSupplier) {
+        pub async fn cannot_decrypt_proposal_validation(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "alice2"],
                 move |[mut alice_central, mut bob_central, alice2_central]| {
                     Box::pin(async move {
@@ -667,10 +692,13 @@ pub mod tests {
                         }));
 
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         let epoch = alice_central[&id].group.epoch();
                         let external_proposal = alice2_central
@@ -703,20 +731,23 @@ pub mod tests {
         use super::*;
 
         // Ensures decrypting an proposal is durable
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_decrypt_proposal(credential: CredentialSupplier) {
+        pub async fn can_decrypt_proposal(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package().await;
                         let proposal = alice_central
@@ -741,20 +772,23 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_not_return_sender_client_id(credential: CredentialSupplier) {
+        pub async fn should_not_return_sender_client_id(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Update)
@@ -778,20 +812,23 @@ pub mod tests {
     pub mod app_message {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_decrypt_app_message(credential: CredentialSupplier) {
+        pub async fn can_decrypt_app_message(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         let msg = b"Hello bob";
                         let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
@@ -810,20 +847,23 @@ pub mod tests {
         }
 
         // Ensures decrypting an application message is durable
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn cannot_decrypt_app_message_twice(credential: CredentialSupplier) {
+        pub async fn cannot_decrypt_app_message_twice(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         let msg = b"Hello bob";
                         let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
@@ -838,20 +878,23 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_decrypt_app_message_in_any_order(credential: CredentialSupplier) {
+        pub async fn can_decrypt_app_message_in_any_order(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         let msg1 = b"Hello bob once";
                         let encrypted1 = alice_central.encrypt_message(&id, msg1).await.unwrap();
@@ -878,20 +921,23 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn returns_sender_client_id(credential: CredentialSupplier) {
+        pub async fn returns_sender_client_id(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
 
                         let msg = b"Hello bob";
                         let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();

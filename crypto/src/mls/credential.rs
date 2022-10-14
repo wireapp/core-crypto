@@ -9,7 +9,7 @@ use crate::{
 
 /// For test fixtures (test with basic or x509 credential)
 #[cfg(test)]
-pub type CredentialSupplier = fn() -> Option<CertificateBundle>;
+pub type CredentialSupplier = fn(MlsCiphersuite) -> Option<CertificateBundle>;
 
 /// Represents a x509 certificate chain supplied by the client
 /// It can fetch it after an end-to-end identity process where it can get back a certificate
@@ -27,22 +27,22 @@ pub struct CertificateBundle {
 impl CertificateBundle {
     /// Basic credentials are generated once clients are created
     /// It will effectively return `None`
-    pub fn rnd_basic() -> CredentialSupplier {
-        || None
+    pub fn rand_basic() -> CredentialSupplier {
+        |_: MlsCiphersuite| None
     }
 
     /// Generates a supplier that is later turned into a [openmls::prelude::CredentialBundle]
-    pub fn rnd_certificate_bundle() -> CredentialSupplier {
-        || {
+    pub fn rand_certificate_bundle() -> CredentialSupplier {
+        |cs: MlsCiphersuite| {
             // generate the leaf certificate
-            let (leaf_kp, leaf_sk) = Self::key_pair();
+            let (leaf_kp, leaf_sk) = Self::key_pair(cs);
             let leaf_params = Self::certificate_params(leaf_kp, false);
-            Some(Self::certificate_bundle_from_leaf(leaf_params, leaf_sk))
-            // None
+            Some(Self::certificate_bundle_from_leaf(cs, leaf_params, leaf_sk))
         }
     }
 
     fn certificate_bundle_from_leaf(
+        cs: MlsCiphersuite,
         leaf_params: rcgen::CertificateParams,
         leaf_sk: SignaturePrivateKey,
     ) -> CertificateBundle {
@@ -60,7 +60,7 @@ impl CertificateBundle {
         csr.params.not_before = not_before;
 
         // generate an issuer who is also a root ca
-        let (issuer_kp, _) = Self::key_pair();
+        let (issuer_kp, _) = Self::key_pair(cs);
         let issuer_params = Self::certificate_params(issuer_kp, true);
         let issuer = rcgen::Certificate::from_params(issuer_params).unwrap();
         let issuer_der = issuer.serialize_der().unwrap();
@@ -76,7 +76,7 @@ impl CertificateBundle {
 
     /// A keypair compatible with rcgen
     /// We then extract from it the public/private key we require for an MLS [openmls::prelude::CredentialBundle]
-    fn key_pair() -> (rcgen::KeyPair, SignaturePrivateKey) {
+    fn key_pair(cs: MlsCiphersuite) -> (rcgen::KeyPair, SignaturePrivateKey) {
         /// used to parse a pkcs8 documents with [OneAsymmetricKey](https://datatracker.ietf.org/doc/html/rfc5958#section-2)
         const KEY_LEN: usize = 32;
         const PRIV_KEY_IDX: usize = 16;
@@ -89,7 +89,7 @@ impl CertificateBundle {
         let sign_key = [sk, pk].concat();
         let private_key = SignaturePrivateKey {
             value: sign_key,
-            signature_scheme: MlsCiphersuite::default().signature_algorithm(),
+            signature_scheme: cs.signature_algorithm(),
         };
         (kp, private_key)
     }
@@ -109,9 +109,10 @@ impl CertificateBundle {
 impl Client {
     pub(crate) fn generate_basic_credential_bundle(
         id: &ClientId,
+        ciphersuite: MlsCiphersuite,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<CredentialBundle> {
-        let signature_scheme = MlsCiphersuite::default().signature_algorithm();
+        let signature_scheme = ciphersuite.signature_algorithm();
         CredentialBundle::new_basic(id.to_vec(), signature_scheme, backend)
             .map_err(MlsError::from)
             .map_err(CryptoError::from)
@@ -133,6 +134,7 @@ impl Client {
 #[cfg(test)]
 pub mod tests {
     use openmls::prelude::{CredentialError, WelcomeError};
+    use openmls_traits::types::SignatureScheme;
 
     use crate::{
         error::CryptoError,
@@ -146,163 +148,184 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    #[async_std::test]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn basic_clients_can_send_messages() {
-        let alice_cred = CertificateBundle::rnd_basic();
-        let bob_cred = CertificateBundle::rnd_basic();
-        assert!(alice_and_bob_talk(alice_cred, bob_cred).await.is_ok());
+    async fn basic_clients_can_send_messages(case: TestCase) {
+        let alice_cred = CertificateBundle::rand_basic();
+        let bob_cred = CertificateBundle::rand_basic();
+        assert!(alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.is_ok());
     }
 
-    #[async_std::test]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn certificate_clients_can_send_messages() {
-        let alice_cred = CertificateBundle::rnd_certificate_bundle();
-        let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        assert!(alice_and_bob_talk(alice_cred, bob_cred).await.is_ok());
-    }
-
-    #[async_std::test]
-    #[wasm_bindgen_test]
-    async fn heterogeneous_clients_can_send_messages() {
-        // check that both credentials can initiate/join a group
-        {
-            let alice_cred = CertificateBundle::rnd_basic();
-            let bob_cred = CertificateBundle::rnd_certificate_bundle();
-            assert!(alice_and_bob_talk(alice_cred, bob_cred).await.is_ok());
-            // drop alice & bob key stores
-        }
-        {
-            let alice_cred = CertificateBundle::rnd_certificate_bundle();
-            let bob_cred = CertificateBundle::rnd_basic();
-            assert!(alice_and_bob_talk(alice_cred, bob_cred).await.is_ok());
+    async fn certificate_clients_can_send_messages(case: TestCase) {
+        // TODO we only support ed25519 signatures for certificates currently
+        if case.ciphersuite().0.signature_algorithm() == SignatureScheme::ED25519 {
+            let alice_cred = CertificateBundle::rand_certificate_bundle();
+            let bob_cred = CertificateBundle::rand_certificate_bundle();
+            assert!(alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.is_ok());
         }
     }
 
-    #[async_std::test]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_certificate_chain_is_empty() {
-        let alice_cred = || {
-            let bundle = CertificateBundle::rnd_certificate_bundle()().unwrap();
+    async fn heterogeneous_clients_can_send_messages(case: TestCase) {
+        // TODO we only support ed25519 signatures for certificates currently
+        if case.ciphersuite().0.signature_algorithm() == SignatureScheme::ED25519 {
+            // check that both credentials can initiate/join a group
+            {
+                let alice_cred = CertificateBundle::rand_basic();
+                let bob_cred = CertificateBundle::rand_certificate_bundle();
+                assert!(alice_and_bob_talk(alice_cred, bob_cred, case.cfg.clone()).await.is_ok());
+                // drop alice & bob key stores
+            }
+            {
+                let alice_cred = CertificateBundle::rand_certificate_bundle();
+                let bob_cred = CertificateBundle::rand_basic();
+                assert!(alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.is_ok());
+            }
+        }
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    async fn should_fail_when_certificate_chain_is_empty(case: TestCase) {
+        let alice_cred = |cs: MlsCiphersuite| {
+            let bundle = CertificateBundle::rand_certificate_bundle()(cs).unwrap();
             Some(CertificateBundle {
                 certificate_chain: vec![],
                 private_key: bundle.private_key,
             })
         };
-        let bob_cred = CertificateBundle::rnd_certificate_bundle();
+        let bob_cred = CertificateBundle::rand_certificate_bundle();
         assert!(matches!(
-            alice_and_bob_talk(alice_cred, bob_cred).await.unwrap_err(),
+            alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsCredentialError(
                 CredentialError::IncompleteCertificateChain
             ))
         ));
     }
 
-    #[async_std::test]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_certificate_chain_has_a_single_self_signed() {
-        let alice_cred = || {
-            let mut bundle = CertificateBundle::rnd_certificate_bundle()().unwrap();
+    async fn should_fail_when_certificate_chain_has_a_single_self_signed(case: TestCase) {
+        let alice_cred = |cs: MlsCiphersuite| {
+            let mut bundle = CertificateBundle::rand_certificate_bundle()(cs).unwrap();
             let root_ca = bundle.certificate_chain.last().unwrap().to_owned();
             bundle.certificate_chain = vec![root_ca];
             Some(bundle)
         };
-        let bob_cred = CertificateBundle::rnd_certificate_bundle();
+        let bob_cred = CertificateBundle::rand_certificate_bundle();
         assert!(matches!(
-            alice_and_bob_talk(alice_cred, bob_cred).await.unwrap_err(),
+            alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsCredentialError(
                 CredentialError::IncompleteCertificateChain
             ))
         ));
     }
 
-    #[async_std::test]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_certificate_chain_is_unordered() {
-        // chain must be [leaf, leaf-issuer, ..., root-ca]
-        let alice_cred = || {
-            let mut bundle = CertificateBundle::rnd_certificate_bundle()().unwrap();
-            bundle.certificate_chain.reverse();
-            Some(bundle)
-        };
-        let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        assert!(matches!(
-            alice_and_bob_talk(alice_cred, bob_cred).await.unwrap_err(),
-            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
-        ));
+    async fn should_fail_when_certificate_chain_is_unordered(case: TestCase) {
+        // TODO we only support ed25519 signatures for certificates currently
+        if case.ciphersuite().0.signature_algorithm() == SignatureScheme::ED25519 {
+            // chain must be [leaf, leaf-issuer, ..., root-ca]
+            let alice_cred = |cs: MlsCiphersuite| {
+                let mut bundle = CertificateBundle::rand_certificate_bundle()(cs).unwrap();
+                bundle.certificate_chain.reverse();
+                Some(bundle)
+            };
+            let bob_cred = CertificateBundle::rand_certificate_bundle();
+            assert!(matches!(
+                alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.unwrap_err(),
+                CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
+            ));
+        }
     }
 
-    #[async_std::test]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_signature_key_doesnt_match_certificate_public_key() {
-        let alice_cred = || {
-            let bundle = CertificateBundle::rnd_certificate_bundle()().unwrap();
-            let other_bundle = CertificateBundle::rnd_certificate_bundle()().unwrap();
-            Some(CertificateBundle {
-                certificate_chain: bundle.certificate_chain,
-                private_key: other_bundle.private_key,
-            })
-        };
-        let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        assert!(matches!(
-            alice_and_bob_talk(alice_cred, bob_cred).await.unwrap_err(),
-            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
-        ));
+    async fn should_fail_when_signature_key_doesnt_match_certificate_public_key(case: TestCase) {
+        // TODO we only support ed25519 signatures for certificates currently
+        if case.ciphersuite().0.signature_algorithm() == SignatureScheme::ED25519 {
+            let alice_cred = |cs: MlsCiphersuite| {
+                let bundle = CertificateBundle::rand_certificate_bundle()(cs).unwrap();
+                let other_bundle = CertificateBundle::rand_certificate_bundle()(cs).unwrap();
+                Some(CertificateBundle {
+                    certificate_chain: bundle.certificate_chain,
+                    private_key: other_bundle.private_key,
+                })
+            };
+            let bob_cred = CertificateBundle::rand_certificate_bundle();
+            assert!(matches!(
+                alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.unwrap_err(),
+                CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
+            ));
+        }
     }
 
-    #[async_std::test]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_certificate_expired() {
-        let alice_cred = || {
-            let (leaf_kp, leaf_sk) = CertificateBundle::key_pair();
-            let mut params = rcgen::CertificateParams::new(vec!["wire.com".to_string()]);
-            params.alg = &rcgen::PKCS_ED25519;
-            params.key_pair = Some(leaf_kp);
-            params.not_after = rcgen::date_time_ymd(1970, 1, 1);
-            Some(CertificateBundle::certificate_bundle_from_leaf(params, leaf_sk))
-        };
+    async fn should_fail_when_certificate_expired(case: TestCase) {
+        // TODO we only support ed25519 signatures for certificates currently
+        if case.ciphersuite().0.signature_algorithm() == SignatureScheme::ED25519 {
+            let alice_cred = |cs: MlsCiphersuite| {
+                let (leaf_kp, leaf_sk) = CertificateBundle::key_pair(cs);
+                let mut params = rcgen::CertificateParams::new(vec!["wire.com".to_string()]);
+                params.alg = &rcgen::PKCS_ED25519;
+                params.key_pair = Some(leaf_kp);
+                params.not_after = rcgen::date_time_ymd(1970, 1, 1);
+                Some(CertificateBundle::certificate_bundle_from_leaf(cs, params, leaf_sk))
+            };
 
-        let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        assert!(matches!(
-            alice_and_bob_talk(alice_cred, bob_cred).await.unwrap_err(),
-            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
-        ));
+            let bob_cred = CertificateBundle::rand_certificate_bundle();
+            assert!(matches!(
+                alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.unwrap_err(),
+                CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
+            ));
+        }
     }
 
-    #[async_std::test]
+    #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_certificate_not_valid_yet() {
-        let alice_cred = || {
-            let (leaf_kp, leaf_sk) = CertificateBundle::key_pair();
-            let mut params = rcgen::CertificateParams::new(vec!["wire.com".to_string()]);
-            params.alg = &rcgen::PKCS_ED25519;
-            params.key_pair = Some(leaf_kp);
-            params.not_before = rcgen::date_time_ymd(3000, 1, 1);
-            Some(CertificateBundle::certificate_bundle_from_leaf(params, leaf_sk))
-        };
+    async fn should_fail_when_certificate_not_valid_yet(case: TestCase) {
+        // TODO we only support ed25519 signatures for certificates currently
+        if case.ciphersuite().0.signature_algorithm() == SignatureScheme::ED25519 {
+            let alice_cred = |cs: MlsCiphersuite| {
+                let (leaf_kp, leaf_sk) = CertificateBundle::key_pair(cs);
+                let mut params = rcgen::CertificateParams::new(vec!["wire.com".to_string()]);
+                params.alg = &rcgen::PKCS_ED25519;
+                params.key_pair = Some(leaf_kp);
+                params.not_before = rcgen::date_time_ymd(3000, 1, 1);
+                Some(CertificateBundle::certificate_bundle_from_leaf(cs, params, leaf_sk))
+            };
 
-        let bob_cred = CertificateBundle::rnd_certificate_bundle();
-        assert!(matches!(
-            alice_and_bob_talk(alice_cred, bob_cred).await.unwrap_err(),
-            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
-        ));
+            let bob_cred = CertificateBundle::rand_certificate_bundle();
+            assert!(matches!(
+                alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.unwrap_err(),
+                CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
+            ));
+        }
     }
 
-    async fn alice_and_bob_talk(alice_cred: CredentialSupplier, bob_cred: CredentialSupplier) -> CryptoResult<()> {
+    async fn alice_and_bob_talk(
+        alice_cred: CredentialSupplier,
+        bob_cred: CredentialSupplier,
+        cfg: MlsConversationConfiguration,
+    ) -> CryptoResult<()> {
         let id = conversation_id();
 
         let alice_path = tmp_db_file();
-        let alice_cfg = MlsCentralConfiguration::try_new(alice_path.0, "alice".into(), "alice".into())?;
-        let mut alice_central = MlsCentral::try_new(alice_cfg, alice_cred()).await?;
+        let alice_cfg =
+            MlsCentralConfiguration::try_new(alice_path.0, "alice".into(), "alice".into(), vec![cfg.ciphersuite])?;
+        let mut alice_central = MlsCentral::try_new(alice_cfg, alice_cred(cfg.ciphersuite)).await?;
 
         let bob_path = tmp_db_file();
-        let bob_cfg = MlsCentralConfiguration::try_new(bob_path.0, "bob".into(), "bob".into())?;
-        let mut bob_central = MlsCentral::try_new(bob_cfg, bob_cred()).await?;
+        let bob_cfg = MlsCentralConfiguration::try_new(bob_path.0, "bob".into(), "bob".into(), vec![cfg.ciphersuite])?;
+        let mut bob_central = MlsCentral::try_new(bob_cfg, bob_cred(cfg.ciphersuite)).await?;
 
-        alice_central
-            .new_conversation(id.clone(), MlsConversationConfiguration::default())
-            .await?;
-        alice_central.invite(&id, &mut bob_central).await?;
+        alice_central.new_conversation(id.clone(), cfg.clone()).await?;
+        alice_central.invite(&id, cfg.clone(), &mut bob_central).await?;
         alice_central.talk_to(&id, &mut bob_central).await
     }
 }

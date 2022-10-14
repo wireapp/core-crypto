@@ -130,9 +130,7 @@ pub mod tests {
     use openmls::prelude::Proposal;
     use wasm_bindgen_test::*;
 
-    use crate::{
-        mls::credential::CredentialSupplier, prelude::MlsConversationConfiguration, prelude::MlsProposal, test_utils::*,
-    };
+    use crate::{prelude::MlsProposal, test_utils::*};
 
     use super::*;
 
@@ -141,20 +139,23 @@ pub mod tests {
     pub mod commit_accepted {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_apply_pending_commit(credential: CredentialSupplier) {
+        pub async fn should_apply_pending_commit(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
                         assert_eq!(alice_central[&id].members().len(), 2);
                         alice_central
                             .remove_members_from_conversation(&id, &["bob".into()])
@@ -169,28 +170,32 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_clear_pending_commit_and_proposals(credential: CredentialSupplier) {
-            run_test_with_client_ids(credential, ["alice", "bob"], move |[mut alice_central, bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
-                        .await
-                        .unwrap();
-                    alice_central.new_proposal(&id, MlsProposal::Update).await.unwrap();
-                    alice_central
-                        .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
-                        .await
-                        .unwrap();
-                    assert!(!alice_central.pending_proposals(&id).is_empty());
-                    assert!(alice_central.pending_commit(&id).is_some());
-                    alice_central.commit_accepted(&id).await.unwrap();
-                    assert!(alice_central.pending_commit(&id).is_none());
-                    assert!(alice_central.pending_proposals(&id).is_empty());
-                })
-            })
+        pub async fn should_clear_pending_commit_and_proposals(case: TestCase) {
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob"],
+                move |[mut alice_central, bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.new_proposal(&id, MlsProposal::Update).await.unwrap();
+                        alice_central
+                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
+                            .await
+                            .unwrap();
+                        assert!(!alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_commit(&id).is_some());
+                        alice_central.commit_accepted(&id).await.unwrap();
+                        assert!(alice_central.pending_commit(&id).is_none());
+                        assert!(alice_central.pending_proposals(&id).is_empty());
+                    })
+                },
+            )
             .await
         }
     }
@@ -198,20 +203,23 @@ pub mod tests {
     pub mod clear_pending_proposal {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_remove_proposal(credential: CredentialSupplier) {
+        pub async fn should_remove_proposal(case: TestCase) {
             run_test_with_client_ids(
-                credential,
+                case.clone(),
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                            .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite(&id, &mut bob_central).await.unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
                         assert!(alice_central.pending_proposals(&id).is_empty());
 
                         let charlie_kp = charlie_central.get_one_key_package().await;
@@ -266,10 +274,10 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_fail_when_conversation_not_found(credential: CredentialSupplier) {
-            run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+        pub async fn should_fail_when_conversation_not_found(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     let simple_ref = MlsProposalRef::try_from(vec![0; 16]).unwrap().into();
@@ -280,14 +288,14 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_fail_when_proposal_ref_not_found(credential: CredentialSupplier) {
-            run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+        pub async fn should_fail_when_proposal_ref_not_found(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
                     assert!(alice_central.pending_proposals(&id).is_empty());
@@ -303,14 +311,14 @@ pub mod tests {
     pub mod clear_pending_commit {
         use super::*;
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_remove_commit(credential: CredentialSupplier) {
-            run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+        pub async fn should_remove_commit(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
                     assert!(alice_central.pending_commit(&id).is_none());
@@ -324,10 +332,10 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_fail_when_conversation_not_found(credential: CredentialSupplier) {
-            run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+        pub async fn should_fail_when_conversation_not_found(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     let clear = alice_central.clear_pending_commit(&id).await;
@@ -337,14 +345,14 @@ pub mod tests {
             .await
         }
 
-        #[apply(all_credential_types)]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_fail_when_pending_commit_absent(credential: CredentialSupplier) {
-            run_test_with_client_ids(credential, ["alice"], move |[mut alice_central]| {
+        pub async fn should_fail_when_pending_commit_absent(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(id.clone(), MlsConversationConfiguration::default())
+                        .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
                     assert!(alice_central.pending_commit(&id).is_none());
