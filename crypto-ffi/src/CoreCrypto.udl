@@ -13,9 +13,6 @@ dictionary MemberAddedMessages {
     sequence<u8> public_group_state;
 };
 
-[Custom]
-typedef sequence<u8> TlsCommitBundle;
-
 dictionary CommitBundle {
     sequence<u8>? welcome;
     sequence<u8> commit;
@@ -142,18 +139,6 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     CommitBundle? commit_pending_proposals(ConversationId conversation_id);
-
-    [Throws=CryptoError]
-    TlsCommitBundle final_add_clients_to_conversation(ConversationId conversation_id, sequence<Invitee> clients);
-
-    [Throws=CryptoError]
-    TlsCommitBundle final_remove_clients_from_conversation(ConversationId conversation_id, sequence<ClientId> clients);
-
-    [Throws=CryptoError]
-    TlsCommitBundle final_update_keying_material(ConversationId conversation_id);
-
-    [Throws=CryptoError]
-    TlsCommitBundle? final_commit_pending_proposals(ConversationId conversation_id);
 
     [Throws=CryptoError]
     void wipe_conversation(ConversationId conversation_id);

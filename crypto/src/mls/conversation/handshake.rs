@@ -8,11 +8,8 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
-use std::io::Write;
-
 use openmls::prelude::{KeyPackage, KeyPackageRef, MlsMessageOut, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
-use tls_codec::Error;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -109,7 +106,7 @@ impl MlsConversation {
 
 /// Returned when initializing a conversation through a commit.
 /// Different from conversation created from a [`Welcome`] message or an external commit.
-#[derive(Debug, tls_codec::TlsSize)]
+#[derive(Debug)]
 pub struct MlsConversationCreationMessage {
     /// A welcome message for new members to join the group
     pub welcome: Welcome,
@@ -117,15 +114,6 @@ pub struct MlsConversationCreationMessage {
     pub commit: MlsMessageOut,
     /// [`PublicGroupState`] (aka GroupInfo) if the commit is merged
     pub public_group_state: PublicGroupStateBundle,
-}
-
-impl tls_codec::Serialize for MlsConversationCreationMessage {
-    fn tls_serialize<W: Write>(&self, writer: &mut W) -> Result<usize, Error> {
-        self.welcome
-            .tls_serialize(writer)
-            .and_then(|w| self.commit.tls_serialize(writer).map(|l| l + w))
-            .and_then(|w| self.public_group_state.tls_serialize(writer).map(|l| l + w))
-    }
 }
 
 impl MlsConversationCreationMessage {
@@ -147,7 +135,7 @@ impl MlsConversationCreationMessage {
 }
 
 /// Returned when a commit is created
-#[derive(Debug, tls_codec::TlsSize)]
+#[derive(Debug)]
 pub struct MlsCommitBundle {
     /// A welcome message if there are pending Add proposals
     pub welcome: Option<Welcome>,
@@ -155,15 +143,6 @@ pub struct MlsCommitBundle {
     pub commit: MlsMessageOut,
     /// [`PublicGroupState`] (aka GroupInfo) if the commit is merged
     pub public_group_state: PublicGroupStateBundle,
-}
-
-impl tls_codec::Serialize for MlsCommitBundle {
-    fn tls_serialize<W: Write>(&self, writer: &mut W) -> Result<usize, Error> {
-        self.welcome
-            .tls_serialize(writer)
-            .and_then(|w| self.commit.tls_serialize(writer).map(|l| l + w))
-            .and_then(|w| self.public_group_state.tls_serialize(writer).map(|l| l + w))
-    }
 }
 
 impl MlsCommitBundle {

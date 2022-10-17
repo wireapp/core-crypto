@@ -96,17 +96,6 @@ export type ClientId = Uint8Array;
 export type ProposalRef = Uint8Array;
 
 /**
- * Alias for an MLS generic commit.
- * It contains:
- * * MLS Commit that needs to be fanned out to other (existing) members of the conversation
- * * (Optional) MLS Welcome message that needs to be fanned out to the clients newly added to the conversation (if any)
- * * TLS-serialized MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit + some metadatas for optimizations
- * (For final version. Requires to be implemented in the Delivery Service)
- * This is a freeform, uninspected buffer.
- */
-export type TlsCommitBundle = Uint8Array;
-
-/**
  * Data shape for the returned MLS commit & welcome message tuple upon adding clients to a conversation
  */
 export interface MemberAddedMessages {
@@ -741,98 +730,6 @@ export class CoreCrypto {
                 commit: ffiCommitBundle.commit,
                 publicGroupState: ffiCommitBundle.public_group_state,
             } : undefined;
-    }
-
-    /**
-     * Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation.
-     * The returned {@link CommitBundle} is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
-     * It also contains a Welcome message the Delivery Service will forward to invited clients and
-     * an updated PublicGroupState required by clients willing to join the group by an external commit.
-     *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     * @param clients - Array of {@link Invitee} (which are Client ID / KeyPackage pairs)
-     *
-     * @returns A {@link CommitBundle} byte array to fan out to the Delivery Service
-     */
-    async finalAddClientsToConversation(
-        conversationId: ConversationId,
-        clients: Invitee[]
-    ): Promise<TlsCommitBundle> {
-        const ffiClients = clients.map(
-            (invitee) => new CoreCrypto.#module.Invitee(invitee.id, invitee.kp)
-        );
-
-        const ret: TlsCommitBundle = await this.#cc.add_clients_to_conversation(conversationId, ffiClients);
-
-        ffiClients.forEach(c => c.free());
-
-        return ret;
-    }
-
-    /**
-     * Removes the provided clients from a conversation; Assuming those clients exist and the current client is allowed
-     * to do so, otherwise this operation does nothing.
-     *
-     * The returned {@link CommitBundle} is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
-     * It also contains a Welcome message the Delivery Service will forward to invited clients and
-     * an updated PublicGroupState required by clients willing to join the group by an external commit.
-     *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     * @param clientIds - Array of Client IDs to remove.
-     *
-     * @returns A {@link CommitBundle} byte array to fan out to the Delivery Service, or `undefined` if for any reason, the operation would result in an empty commit
-     */
-    async finalRemoveClientsFromConversation(
-        conversationId: ConversationId,
-        clientIds: ClientId[]
-    ): Promise<TlsCommitBundle> {
-        return await this.#cc.remove_clients_from_conversation(conversationId, clientIds);
-    }
-
-    /**
-     * Creates an update commit which forces every client to update their keypackages in the conversation
-     *
-     * The returned {@link CommitBundle} is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
-     * It also contains a Welcome message the Delivery Service will forward to invited clients and
-     * an updated PublicGroupState required by clients willing to join the group by an external commit.
-     *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     *
-     * @returns A {@link CommitBundle} byte array to fan out to the Delivery Service
-     */
-    async finalUpdateKeyingMaterial(conversationId: ConversationId): Promise<TlsCommitBundle> {
-        return await this.#cc.update_keying_material(conversationId);
-    }
-
-    /**
-     * Commits the local pending proposals and returns the {@link CommitBundle} object containing what can result from this operation.
-     *
-     * The returned {@link CommitBundle} is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
-     * It also contains a Welcome message the Delivery Service will forward to invited clients and
-     * an updated PublicGroupState required by clients willing to join the group by an external commit.
-     *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     *
-     * @returns A {@link CommitBundle} byte array to fan out to the Delivery Service or `undefined` when there was no pending proposal to commit
-     */
-    async finalCommitPendingProposals(conversationId: ConversationId): Promise<TlsCommitBundle | undefined> {
-        return await this.#cc.commit_pending_proposals(conversationId);
     }
 
     /**

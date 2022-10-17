@@ -62,14 +62,6 @@ public typealias ConversationId = [UInt8]
 /// Alias for ClientId within a conversation.
 public typealias MemberId = [UInt8]
 
-/// Alias for an MLS generic commit.
-/// It contains:
-/// - MLS Commit that needs to be fanned out to other (existing) members of the conversation
-/// - (Optional) MLS Welcome message that needs to be fanned out to the clients newly added to the conversation (if any)
-/// - TLS-serialized MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit + some metadatas for optimizations
-/// (For final version. Requires to be implemented in the Delivery Service)
-public typealias TlsCommitBundle = [UInt8]
-
 /// Conversation ciphersuite variants
 public enum CiphersuiteName: ConvertToInner {
     typealias Inner = CoreCryptoSwift.CiphersuiteName
@@ -409,75 +401,6 @@ public class CoreCryptoWrapper {
     /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
     public func commitPendingProposals(conversationId: ConversationId) throws -> CommitBundle? {
         try self.coreCrypto.commitPendingProposals(conversationId:conversationId)?.convertTo()
-    }
-
-    /// Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation
-    ///
-    /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
-    /// It also contains a Welcome message the Delivery Service will forward to invited clients and
-    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
-    ///
-    /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-    /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
-    /// epoch, use new encryption secrets etc...
-    ///
-    /// - parameter conversationId: conversation identifier
-    /// - parameter clients: Array of ``Invitee`` (which are Client ID / KeyPackage pairs)
-    /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
-    public func finalAddClientsToConversation(conversationId: ConversationId, clients: [Invitee]) throws -> TlsCommitBundle {
-        return try self.coreCrypto.finalAddClientsToConversation(conversationId: conversationId, clients: clients.map({ (invitee) -> CoreCryptoSwift.Invitee in
-            return invitee.convert()
-        })).convertTo()
-    }
-
-    /// Removes the provided clients from a conversation; Assuming those clients exist and the current client is allowed
-    /// to do so, otherwise this operation does nothing.
-    ///
-    /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
-    /// It also contains a Welcome message the Delivery Service will forward to invited clients and
-    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
-    ///
-    /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-    /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
-    /// epoch, use new encryption secrets etc...
-    ///
-    /// - parameter conversationId: conversation identifier
-    /// - parameter clients: Array of Client IDs to remove.
-    /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
-    public func finalRemoveClientsFromConversation(conversationId: ConversationId, clients: [ClientId]) throws -> TlsCommitBundle {
-        return try self.coreCrypto.finalRemoveClientsFromConversation(conversationId: conversationId, clients: clients).convertTo()
-    }
-
-    /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited.
-    ///
-    /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
-    /// It also contains a Welcome message the Delivery Service will forward to invited clients and
-    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
-    ///
-    /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-    /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
-    /// epoch, use new encryption secrets etc...
-    ///
-    /// - parameter conversationId: conversation identifier
-    /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
-    public func finalUpdateKeyingMaterial(conversationId: ConversationId) throws -> TlsCommitBundle {
-        try self.coreCrypto.finalUpdateKeyingMaterial(conversationId: conversationId).convertTo()
-    }
-
-    /// Commits all pending proposals of the group
-    ///
-    /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
-    /// It also contains a Welcome message the Delivery Service will forward to invited clients and
-    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
-    ///
-    /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-    /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
-    /// epoch, use new encryption secrets etc...
-    ///
-    /// - parameter conversationId: conversation identifier
-    /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
-    public func finalCommitPendingProposals(conversationId: ConversationId) throws -> TlsCommitBundle? {
-        try self.coreCrypto.finalCommitPendingProposals(conversationId:conversationId)?.convertTo()
     }
 
     /// Destroys a group locally
