@@ -596,7 +596,6 @@ public class CoreCryptoWrapper {
     /// Derives a new key from the group
     ///
     /// - parameter conversationId: conversation identifier
-    /// - parameter label: the label to be used. Intended to describe the purpose for the key
     /// - parameter keyLength: the length of the key to be derived
     /// - returns a byte array representing the derived key
     public func exportSecretKey(conversationId: ConversationId, keyLength: UInt32) throws -> [UInt8] {
