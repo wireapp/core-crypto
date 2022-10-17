@@ -14,42 +14,43 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+
 // @ts-ignore
 import wasm from "../../../crypto-ffi/Cargo.toml";
 
 import type * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi";
 
 /**
- * see [core_crypto::prelude::CiphersuiteName]
- */
+* see [core_crypto::prelude::CiphersuiteName]
+*/
 export enum Ciphersuite {
     /**
-     * DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
-     */
+    * DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
+    */
     MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 = 0x0001,
     /**
-     * DH KEM P256 | AES-GCM 128 | SHA2-256 | EcDSA P256
-     */
+    * DH KEM P256 | AES-GCM 128 | SHA2-256 | EcDSA P256
+    */
     MLS_128_DHKEMP256_AES128GCM_SHA256_P256 = 0x0002,
     /**
-     * DH KEM x25519 | Chacha20Poly1305 | SHA2-256 | Ed25519
-     */
+    * DH KEM x25519 | Chacha20Poly1305 | SHA2-256 | Ed25519
+    */
     MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 = 0x0003,
     /**
-     * DH KEM x448 | AES-GCM 256 | SHA2-512 | Ed448
-     */
+    * DH KEM x448 | AES-GCM 256 | SHA2-512 | Ed448
+    */
     MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 = 0x0004,
     /**
-     * DH KEM P521 | AES-GCM 256 | SHA2-512 | EcDSA P521
-     */
+    * DH KEM P521 | AES-GCM 256 | SHA2-512 | EcDSA P521
+    */
     MLS_256_DHKEMP521_AES256GCM_SHA512_P521 = 0x0005,
     /**
-     * DH KEM x448 | Chacha20Poly1305 | SHA2-512 | Ed448
-     */
+    * DH KEM x448 | Chacha20Poly1305 | SHA2-512 | Ed448
+    */
     MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 = 0x0006,
     /**
-     * DH KEM P384 | AES-GCM 256 | SHA2-384 | EcDSA P384
-     */
+    * DH KEM P384 | AES-GCM 256 | SHA2-384 | EcDSA P384
+    */
     MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = 0x0007,
 }
 
@@ -372,11 +373,7 @@ export interface CoreCryptoCallbacks {
      * @param existingClients - all the clients currently within the MLS group
      * @returns true if the external client is authorized to write to the conversation
      */
-    userAuthorize: (
-        conversationId: Uint8Array,
-        externalClientId: Uint8Array,
-        existingClients: Uint8Array[]
-    ) => boolean;
+    userAuthorize: (conversationId: Uint8Array, externalClientId: Uint8Array, existingClients: Uint8Array[]) => boolean;
 
     /**
      * Callback to ensure that the given `clientId` belongs to one of the provided `existingClients`
@@ -385,10 +382,7 @@ export interface CoreCryptoCallbacks {
      * @param clientId - id of a client
      * @param existingClients - all the clients currently within the MLS group
      */
-    clientIsExistingGroupUser: (
-        clientId: Uint8Array,
-        existingClients: Uint8Array[]
-    ) => boolean;
+    clientIsExistingGroupUser: (clientId: Uint8Array, existingClients: Uint8Array[]) => boolean;
 }
 
 /**
@@ -433,28 +427,13 @@ export class CoreCrypto {
      * });
      * ````
      */
-    static async init({
-        databaseName,
-        key,
-        clientId,
-        wasmFilePath,
-        entropySeed,
-    }: CoreCryptoParams): Promise<CoreCrypto> {
+    static async init({databaseName, key, clientId, wasmFilePath, entropySeed}: CoreCryptoParams): Promise<CoreCrypto> {
         if (!this.#module) {
-            const wasmImportArgs = wasmFilePath
-                ? { importHook: () => wasmFilePath }
-                : undefined;
-            const exports = (await wasm(
-                wasmImportArgs
-            )) as typeof CoreCryptoFfiTypes;
+            const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
+            const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
             this.#module = exports;
         }
-        const cc = await this.#module.CoreCrypto._internal_new(
-            databaseName,
-            key,
-            clientId,
-            entropySeed
-        );
+        const cc = await this.#module.CoreCrypto._internal_new(databaseName, key, clientId, entropySeed);
         return new this(cc);
     }
 
@@ -480,6 +459,7 @@ export class CoreCrypto {
     async close() {
         await this.#cc.close();
     }
+
 
     /**
      * Registers the callbacks for CoreCrypto to use in order to gain additional information
@@ -554,13 +534,12 @@ export class CoreCrypto {
         conversationId: ConversationId,
         configuration: ConversationConfiguration = {}
     ) {
-        const { admins, ciphersuite, keyRotationSpan, externalSenders } =
-            configuration || {};
+        const {admins, ciphersuite, keyRotationSpan, externalSenders} = configuration || {};
         const config = new CoreCrypto.#module.ConversationConfiguration(
             admins,
             ciphersuite,
             keyRotationSpan,
-            externalSenders
+            externalSenders,
         );
         const ret = await this.#cc.create_conversation(conversationId, config);
         return ret;
@@ -574,16 +553,15 @@ export class CoreCrypto {
      *
      * @returns a {@link DecryptedMessage}. Note that {@link DecryptedMessage#message} is `undefined` when the encrypted payload contains a system message such a proposal or commit
      */
-    async decryptMessage(
-        conversationId: ConversationId,
-        payload: Uint8Array
-    ): Promise<DecryptedMessage> {
-        const ffiDecryptedMessage: CoreCryptoFfiTypes.DecryptedMessage =
-            await this.#cc.decrypt_message(conversationId, payload);
+    async decryptMessage(conversationId: ConversationId, payload: Uint8Array): Promise<DecryptedMessage> {
+        const ffiDecryptedMessage: CoreCryptoFfiTypes.DecryptedMessage = await this.#cc.decrypt_message(
+            conversationId,
+            payload
+        );
 
-        const commitDelay = ffiDecryptedMessage.commit_delay
-            ? ffiDecryptedMessage.commit_delay * 1000
-            : undefined;
+        const commitDelay = ffiDecryptedMessage.commit_delay ?
+            ffiDecryptedMessage.commit_delay * 1000 :
+            undefined;
 
         const ret: DecryptedMessage = {
             message: ffiDecryptedMessage.message,
@@ -604,11 +582,11 @@ export class CoreCrypto {
      *
      * @returns The encrypted payload for the given group. This needs to be fanned out to the other members of the group.
      */
-    async encryptMessage(
-        conversationId: ConversationId,
-        message: Uint8Array
-    ): Promise<Uint8Array> {
-        return await this.#cc.encrypt_message(conversationId, message);
+    async encryptMessage(conversationId: ConversationId, message: Uint8Array): Promise<Uint8Array> {
+        return await this.#cc.encrypt_message(
+            conversationId,
+            message
+        );
     }
 
     /**
@@ -617,9 +595,7 @@ export class CoreCrypto {
      * @param welcomeMessage - TLS-serialized MLS Welcome message
      * @returns The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages
      */
-    async processWelcomeMessage(
-        welcomeMessage: Uint8Array
-    ): Promise<ConversationId> {
+    async processWelcomeMessage(welcomeMessage: Uint8Array): Promise<ConversationId> {
         return await this.#cc.process_welcome_message(welcomeMessage);
     }
 
@@ -643,9 +619,7 @@ export class CoreCrypto {
      * @param amountRequested - The amount of keypackages requested
      * @returns An array of length `amountRequested` containing TLS-serialized KeyPackages
      */
-    async clientKeypackages(
-        amountRequested: number
-    ): Promise<Array<Uint8Array>> {
+    async clientKeypackages(amountRequested: number): Promise<Array<Uint8Array>> {
         return await this.#cc.client_keypackages(amountRequested);
     }
 
@@ -669,13 +643,12 @@ export class CoreCrypto {
             (invitee) => new CoreCrypto.#module.Invitee(invitee.id, invitee.kp)
         );
 
-        const ffiRet: CoreCryptoFfiTypes.MemberAddedMessages =
-            await this.#cc.add_clients_to_conversation(
-                conversationId,
-                ffiClients
-            );
+        const ffiRet: CoreCryptoFfiTypes.MemberAddedMessages = await this.#cc.add_clients_to_conversation(
+            conversationId,
+            ffiClients
+        );
 
-        ffiClients.forEach((c) => c.free());
+        ffiClients.forEach(c => c.free());
 
         const ret: MemberAddedMessages = {
             welcome: ffiRet.welcome,
@@ -703,11 +676,10 @@ export class CoreCrypto {
         conversationId: ConversationId,
         clientIds: ClientId[]
     ): Promise<CommitBundle> {
-        const ffiRet: CoreCryptoFfiTypes.CommitBundle =
-            await this.#cc.remove_clients_from_conversation(
-                conversationId,
-                clientIds
-            );
+        const ffiRet: CoreCryptoFfiTypes.CommitBundle = await this.#cc.remove_clients_from_conversation(
+            conversationId,
+            clientIds
+        );
 
         const ret: CommitBundle = {
             welcome: ffiRet.welcome,
@@ -729,11 +701,10 @@ export class CoreCrypto {
      *
      * @returns A {@link CommitBundle}
      */
-    async updateKeyingMaterial(
-        conversationId: ConversationId
-    ): Promise<CommitBundle> {
-        const ffiRet: CoreCryptoFfiTypes.CommitBundle =
-            await this.#cc.update_keying_material(conversationId);
+    async updateKeyingMaterial(conversationId: ConversationId): Promise<CommitBundle> {
+        const ffiRet: CoreCryptoFfiTypes.CommitBundle = await this.#cc.update_keying_material(
+            conversationId
+        );
 
         const ret: CommitBundle = {
             welcome: ffiRet.welcome,
@@ -755,19 +726,16 @@ export class CoreCrypto {
      *
      * @returns A {@link CommitBundle} or `undefined` when there was no pending proposal to commit
      */
-    async commitPendingProposals(
-        conversationId: ConversationId
-    ): Promise<CommitBundle | undefined> {
-        const ffiCommitBundle: CoreCryptoFfiTypes.CommitBundle | undefined =
-            await this.#cc.commit_pending_proposals(conversationId);
+    async commitPendingProposals(conversationId: ConversationId): Promise<CommitBundle | undefined> {
+        const ffiCommitBundle: CoreCryptoFfiTypes.CommitBundle | undefined = await this.#cc.commit_pending_proposals(
+            conversationId
+        );
 
-        return ffiCommitBundle
-            ? {
-                  welcome: ffiCommitBundle.welcome,
-                  commit: ffiCommitBundle.commit,
-                  publicGroupState: ffiCommitBundle.public_group_state,
-              }
-            : undefined;
+            return ffiCommitBundle ? {
+                welcome: ffiCommitBundle.welcome,
+                commit: ffiCommitBundle.commit,
+                publicGroupState: ffiCommitBundle.public_group_state,
+            } : undefined;
     }
 
     /**
@@ -793,12 +761,9 @@ export class CoreCrypto {
             (invitee) => new CoreCrypto.#module.Invitee(invitee.id, invitee.kp)
         );
 
-        const ret: TlsCommitBundle = await this.#cc.add_clients_to_conversation(
-            conversationId,
-            ffiClients
-        );
+        const ret: TlsCommitBundle = await this.#cc.add_clients_to_conversation(conversationId, ffiClients);
 
-        ffiClients.forEach((c) => c.free());
+        ffiClients.forEach(c => c.free());
 
         return ret;
     }
@@ -824,10 +789,7 @@ export class CoreCrypto {
         conversationId: ConversationId,
         clientIds: ClientId[]
     ): Promise<TlsCommitBundle> {
-        return await this.#cc.remove_clients_from_conversation(
-            conversationId,
-            clientIds
-        );
+        return await this.#cc.remove_clients_from_conversation(conversationId, clientIds);
     }
 
     /**
@@ -845,9 +807,7 @@ export class CoreCrypto {
      *
      * @returns A {@link CommitBundle} byte array to fan out to the Delivery Service
      */
-    async finalUpdateKeyingMaterial(
-        conversationId: ConversationId
-    ): Promise<TlsCommitBundle> {
+    async finalUpdateKeyingMaterial(conversationId: ConversationId): Promise<TlsCommitBundle> {
         return await this.#cc.update_keying_material(conversationId);
     }
 
@@ -866,9 +826,7 @@ export class CoreCrypto {
      *
      * @returns A {@link CommitBundle} byte array to fan out to the Delivery Service or `undefined` when there was no pending proposal to commit
      */
-    async finalCommitPendingProposals(
-        conversationId: ConversationId
-    ): Promise<TlsCommitBundle | undefined> {
+    async finalCommitPendingProposals(conversationId: ConversationId): Promise<TlsCommitBundle | undefined> {
         return await this.#cc.commit_pending_proposals(conversationId);
     }
 
@@ -887,9 +845,7 @@ export class CoreCrypto {
         switch (proposalType) {
             case ProposalType.Add: {
                 if (!(args as AddProposalArgs).kp) {
-                    throw new Error(
-                        "kp is not contained in the proposal arguments"
-                    );
+                    throw new Error("kp is not contained in the proposal arguments");
                 }
                 return await this.#cc.new_add_proposal(
                     args.conversationId,
@@ -908,7 +864,9 @@ export class CoreCrypto {
                 );
             }
             case ProposalType.Update: {
-                return await this.#cc.new_update_proposal(args.conversationId);
+                return await this.#cc.new_update_proposal(
+                    args.conversationId
+                );
             }
             default:
                 throw new Error("Invalid proposal type!");
@@ -921,16 +879,11 @@ export class CoreCrypto {
     ): Promise<Uint8Array> {
         switch (externalProposalType) {
             case ExternalProposalType.Add: {
-                return await this.#cc.new_external_add_proposal(
-                    args.conversationId,
-                    args.epoch
-                );
+                return await this.#cc.new_external_add_proposal(args.conversationId, args.epoch);
             }
             case ExternalProposalType.Remove: {
                 if (!(args as ExternalRemoveProposalArgs).keyPackageRef) {
-                    throw new Error(
-                        "keyPackageRef is not contained in the external proposal arguments"
-                    );
+                    throw new Error("keyPackageRef is not contained in the external proposal arguments");
                 }
 
                 return await this.#cc.new_external_remove_proposal(
@@ -950,9 +903,7 @@ export class CoreCrypto {
      * @param conversationId - MLS Conversation ID
      * @returns TLS-serialized MLS public group state
      */
-    async exportGroupState(
-        conversationId: ConversationId
-    ): Promise<Uint8Array> {
+    async exportGroupState(conversationId: ConversationId): Promise<Uint8Array> {
         return await this.#cc.export_group_state(conversationId);
     }
 
@@ -969,11 +920,8 @@ export class CoreCrypto {
      * @param publicGroupState - The public group state that can be fetched from the backend for a given conversation
      * @returns see {@link ConversationInitBundle}
      */
-    async joinByExternalCommit(
-        publicGroupState: Uint8Array
-    ): Promise<ConversationInitBundle> {
-        const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle =
-            await this.#cc.join_by_external_commit(publicGroupState);
+    async joinByExternalCommit(publicGroupState: Uint8Array): Promise<ConversationInitBundle> {
+        const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await this.#cc.join_by_external_commit(publicGroupState);
 
         const ret: ConversationInitBundle = {
             conversationId: ffiInitMessage.conversation_id,
@@ -991,22 +939,15 @@ export class CoreCrypto {
      * @param conversationId - The ID of the conversation
      * @param configuration - Configuration of the group, see {@link ConversationConfiguration}
      */
-    async mergePendingGroupFromExternalCommit(
-        conversationId: ConversationId,
-        configuration: ConversationConfiguration
-    ): Promise<void> {
-        const { admins, ciphersuite, keyRotationSpan, externalSenders } =
-            configuration || {};
+    async mergePendingGroupFromExternalCommit(conversationId: ConversationId, configuration: ConversationConfiguration): Promise<void> {
+        const {admins, ciphersuite, keyRotationSpan, externalSenders} = configuration || {};
         const config = new CoreCrypto.#module.ConversationConfiguration(
             admins,
             ciphersuite,
             keyRotationSpan,
-            externalSenders
+            externalSenders,
         );
-        return await this.#cc.merge_pending_group_from_external_commit(
-            conversationId,
-            config
-        );
+        return await this.#cc.merge_pending_group_from_external_commit(conversationId, config);
     }
 
     /**
@@ -1016,12 +957,8 @@ export class CoreCrypto {
      *
      * @param conversationId - The ID of the conversation
      */
-    async clearPendingGroupFromExternalCommit(
-        conversationId: ConversationId
-    ): Promise<void> {
-        return await this.#cc.clear_pending_group_from_external_commit(
-            conversationId
-        );
+    async clearPendingGroupFromExternalCommit(conversationId: ConversationId): Promise<void> {
+        return await this.#cc.clear_pending_group_from_external_commit(conversationId);
     }
 
     /**
@@ -1044,14 +981,8 @@ export class CoreCrypto {
      * @param conversationId - The group's ID
      * @param proposalRef - A reference to the proposal to delete. You get one when using {@link CoreCrypto.newProposal}
      */
-    async clearPendingProposal(
-        conversationId: ConversationId,
-        proposalRef: ProposalRef
-    ): Promise<void> {
-        return await this.#cc.clear_pending_proposal(
-            conversationId,
-            proposalRef
-        );
+    async clearPendingProposal(conversationId: ConversationId, proposalRef: ProposalRef): Promise<void> {
+        return await this.#cc.clear_pending_proposal(conversationId, proposalRef);
     }
 
     /**
@@ -1078,10 +1009,7 @@ export class CoreCrypto {
      *
      * @returns A `Uint8Array` representing the derived key
      */
-    async exportSecretKey(
-        conversationId: ConversationId,
-        keyLength: number
-    ): Promise<Uint8Array> {
+    async exportSecretKey(conversationId: ConversationId, keyLength: number): Promise<Uint8Array> {
         return await this.#cc.export_secret_key(conversationId, keyLength);
     }
 
@@ -1115,9 +1043,7 @@ export class CoreCrypto {
      */
     async reseedRng(seed: Uint8Array): Promise<void> {
         if (seed.length !== 32) {
-            throw new Error(
-                `The seed length needs to be exactly 32 bytes. ${seed.length} bytes provided.`
-            );
+            throw new Error(`The seed length needs to be exactly 32 bytes. ${seed.length} bytes provided.`);
         }
 
         return await this.#cc.reseed_rng(seed);
@@ -1136,10 +1062,7 @@ export class CoreCrypto {
      * @param sessionId - ID of the Proteus session
      * @param prekey - CBOR-encoded Proteus prekey of the other client
      */
-    async proteusSessionFromPrekey(
-        sessionId: string,
-        prekey: Uint8Array
-    ): Promise<void> {
+    async proteusSessionFromPrekey(sessionId: string, prekey: Uint8Array): Promise<void> {
         return await this.#cc.proteus_session_from_prekey(sessionId, prekey);
     }
 
@@ -1149,10 +1072,7 @@ export class CoreCrypto {
      * @param sessionId - ID of the Proteus session
      * @param envelope - CBOR-encoded Proteus message
      */
-    async proteusSessionFromMessage(
-        sessionId: string,
-        envelope: Uint8Array
-    ): Promise<void> {
+    async proteusSessionFromMessage(sessionId: string, envelope: Uint8Array): Promise<void> {
         return await this.#cc.proteus_session_from_message(sessionId, envelope);
     }
 
@@ -1182,10 +1102,7 @@ export class CoreCrypto {
      * @param ciphertext - CBOR encoded, encrypted proteus message
      * @returns The decrypted payload contained within the message
      */
-    async proteusDecrypt(
-        sessionId: string,
-        ciphertext: Uint8Array
-    ): Promise<Uint8Array> {
+    async proteusDecrypt(sessionId: string, ciphertext: Uint8Array): Promise<Uint8Array> {
         return await this.#cc.proteus_decrypt(sessionId, ciphertext);
     }
 
@@ -1196,10 +1113,7 @@ export class CoreCrypto {
      * @param plaintext - payload to encrypt
      * @returns The CBOR-serialized encrypted message
      */
-    async proteusEncrypt(
-        sessionId: string,
-        plaintext: Uint8Array
-    ): Promise<Uint8Array> {
+    async proteusEncrypt(sessionId: string, plaintext: Uint8Array): Promise<Uint8Array> {
         return await this.#cc.proteus_encrypt(sessionId, plaintext);
     }
 
@@ -1211,10 +1125,7 @@ export class CoreCrypto {
      * @param plaintext - payload to encrypt
      * @returns A map indexed by each session ID and the corresponding CBOR-serialized encrypted message for this session
      */
-    async proteusEncryptBatched(
-        sessions: string[],
-        plaintext: Uint8Array
-    ): Promise<Map<string, Uint8Array>> {
+    async proteusEncryptBatched(sessions: string[], plaintext: Uint8Array): Promise<Map<string, Uint8Array>> {
         return await this.#cc.proteus_encrypt_batched(sessions, plaintext);
     }
 
