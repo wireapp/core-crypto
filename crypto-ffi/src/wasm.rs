@@ -1457,12 +1457,12 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<Box<[js_sys::Uint8Array]>`]
     ///
-    /// see [core_crypto::MlsCentral::export_clients]
-    pub fn export_clients(&self, conversation_id: Box<[u8]>) -> Promise {
+    /// see [core_crypto::MlsCentral::get_client_ids]
+    pub fn get_client_ids(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.0.clone();
         future_to_promise(
             async move {
-                let clients = this.read().await.export_clients(&conversation_id.to_vec())?;
+                let clients = this.read().await.get_client_ids(&conversation_id.to_vec())?;
                 let clients = js_sys::Array::from_iter(
                     clients
                         .into_iter()

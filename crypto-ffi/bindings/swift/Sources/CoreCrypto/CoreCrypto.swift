@@ -596,18 +596,19 @@ public class CoreCryptoWrapper {
     /// Derives a new key from the group
     ///
     /// - parameter conversationId: conversation identifier
-    /// - parameter keyLength: the length of the key to be derived
+    /// - parameter keyLength: the length of the key to be derived. If the value is higher than the
+    /// bounds of `u16` or the context hash * 255, an error will be thrown
     /// - returns a byte array representing the derived key
     public func exportSecretKey(conversationId: ConversationId, keyLength: UInt32) throws -> [UInt8] {
         try self.coreCrypto.exportSecretKey(conversationId: conversationId, keyLength: keyLength)
     }
 
-    /// Exports all clients from group's members
+    /// Returns all clients from group's members
     ///
     /// - parameter conversationId: conversation identifier
     /// - returns a list of `ClientId` objects
-    public func exportClients(conversationId: ConversationId) throws -> [ClientId] {
-        try self.coreCrypto.exportClients(conversationId: conversationId)
+    public func getClientIds(conversationId: ConversationId) throws -> [ClientId] {
+        try self.coreCrypto.getClientIds(conversationId: conversationId)
     }
 
     /// Allows ``CoreCrypto`` to act as a CSPRNG provider

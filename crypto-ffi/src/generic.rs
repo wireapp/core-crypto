@@ -746,12 +746,12 @@ impl CoreCrypto<'_> {
         )
     }
 
-    /// See [core_crypto::MlsCentral::export_clients]
-    pub fn export_clients(&self, conversation_id: ConversationId) -> CryptoResult<Vec<ClientId>> {
+    /// See [core_crypto::MlsCentral::get_client_ids]
+    pub fn get_client_ids(&self, conversation_id: ConversationId) -> CryptoResult<Vec<ClientId>> {
         self.central
             .lock()
             .map_err(|_| CryptoError::LockPoisonError)?
-            .export_clients(&conversation_id)
+            .get_client_ids(&conversation_id)
     }
     /// See [core_crypto::MlsCentral::export_secret_key]
     pub fn export_secret_key(&self, conversation_id: ConversationId, key_length: u32) -> CryptoResult<Vec<u8>> {
