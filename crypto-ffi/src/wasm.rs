@@ -1437,6 +1437,43 @@ impl CoreCrypto {
             .err_into(),
         )
     }
+
+    /// Returns: [`WasmCryptoResult<Vec<u8>>`]
+    ///
+    /// see [core_crypto::MlsCentral::export_secret_key]
+    pub fn export_secret_key(&self, conversation_id: Box<[u8]>, key_length: usize) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let key = this
+                    .read()
+                    .await
+                    .export_secret_key(&conversation_id.to_vec(), key_length)?;
+                WasmCryptoResult::Ok(Uint8Array::from(key.as_slice()).into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<Box<[js_sys::Uint8Array]>`]
+    ///
+    /// see [core_crypto::MlsCentral::get_client_ids]
+    pub fn get_client_ids(&self, conversation_id: Box<[u8]>) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let clients = this.read().await.get_client_ids(&conversation_id.to_vec())?;
+                let clients = js_sys::Array::from_iter(
+                    clients
+                        .into_iter()
+                        .map(|client| Uint8Array::from(client.as_slice()))
+                        .map(JsValue::from),
+                );
+                WasmCryptoResult::Ok(clients.into())
+            }
+            .err_into(),
+        )
+    }
 }
 
 #[wasm_bindgen]

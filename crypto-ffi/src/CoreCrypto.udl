@@ -191,6 +191,12 @@ interface CoreCrypto {
     void clear_pending_group_from_external_commit(ConversationId conversation_id);
 
     [Throws=CryptoError]
+    sequence<u8> export_secret_key(ConversationId conversation_id, u32 key_length);
+
+    [Throws=CryptoError]
+    sequence<ClientId> get_client_ids(ConversationId conversation_id);
+
+    [Throws=CryptoError]
     sequence<u8> random_bytes(u32 length);
 
     [Throws=CryptoError]

@@ -593,6 +593,24 @@ public class CoreCryptoWrapper {
         try self.coreCrypto.clearPendingGroupFromExternalCommit(conversationId: conversationId)
     }
 
+    /// Derives a new key from the group
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - parameter keyLength: the length of the key to be derived. If the value is higher than the
+    /// bounds of `u16` or the context hash * 255, an error will be thrown
+    /// - returns a byte array representing the derived key
+    public func exportSecretKey(conversationId: ConversationId, keyLength: UInt32) throws -> [UInt8] {
+        try self.coreCrypto.exportSecretKey(conversationId: conversationId, keyLength: keyLength)
+    }
+
+    /// Returns all clients from group's members
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - returns a list of `ClientId` objects
+    public func getClientIds(conversationId: ConversationId) throws -> [ClientId] {
+        try self.coreCrypto.getClientIds(conversationId: conversationId)
+    }
+
     /// Allows ``CoreCrypto`` to act as a CSPRNG provider
     /// - parameter length: The number of bytes to be returned in the `Uint8` array
     /// - returns: A ``Uint8`` array buffer that contains ``length`` cryptographically-secure random bytes

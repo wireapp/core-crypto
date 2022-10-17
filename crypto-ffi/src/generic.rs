@@ -745,6 +745,21 @@ impl CoreCrypto<'_> {
             ),
         )
     }
+
+    /// See [core_crypto::MlsCentral::get_client_ids]
+    pub fn get_client_ids(&self, conversation_id: ConversationId) -> CryptoResult<Vec<ClientId>> {
+        self.central
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .get_client_ids(&conversation_id)
+    }
+    /// See [core_crypto::MlsCentral::export_secret_key]
+    pub fn export_secret_key(&self, conversation_id: ConversationId, key_length: u32) -> CryptoResult<Vec<u8>> {
+        self.central
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .export_secret_key(&conversation_id, key_length as usize)
+    }
 }
 
 #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]

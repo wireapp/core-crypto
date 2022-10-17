@@ -195,6 +195,9 @@ pub enum MlsError {
     /// OpenMls crypto error
     #[error(transparent)]
     MlsCryptoError(#[from] openmls::prelude::CryptoError),
+    /// OpenMls Export Secret error
+    #[error(transparent)]
+    MlsExportSecretError(#[from] openmls::prelude::ExportSecretError),
 }
 
 #[derive(Debug, thiserror::Error)]
