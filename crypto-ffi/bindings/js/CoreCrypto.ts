@@ -1004,7 +1004,6 @@ export class CoreCrypto {
      * Derives a new key from the group
      *
      * @param conversationId - The group's ID
-     * @param label - the label to be used. Intended to describe the purpose for the key
      * @param keyLength - the length of the key to be derived
      *
      * @returns A `Uint8Array` representing the derived key
