@@ -10,13 +10,30 @@ typedef sequence<u8> ClientId;
 dictionary MemberAddedMessages {
     sequence<u8> commit;
     sequence<u8> welcome;
-    sequence<u8> public_group_state;
+    PublicGroupStateBundle public_group_state;
 };
 
 dictionary CommitBundle {
     sequence<u8>? welcome;
     sequence<u8> commit;
-    sequence<u8> public_group_state;
+    PublicGroupStateBundle public_group_state;
+};
+
+dictionary PublicGroupStateBundle {
+    MlsPublicGroupStateEncryptionType encryption_type;
+    MlsRatchetTreeType ratchet_tree_type;
+    sequence<u8> payload;
+};
+
+enum MlsPublicGroupStateEncryptionType {
+    "Plaintext",
+    "JweEncrypted",
+};
+
+enum MlsRatchetTreeType {
+    "Full",
+    "Delta",
+    "ByRef",
 };
 
 enum CiphersuiteName {
@@ -85,7 +102,7 @@ dictionary ProposalBundle {
 dictionary ConversationInitBundle {
     sequence<u8> conversation_id;
     sequence<u8> commit;
-    sequence<u8> public_group_state;
+    PublicGroupStateBundle public_group_state;
 };
 
 dictionary ConversationConfiguration {

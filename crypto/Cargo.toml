@@ -37,6 +37,7 @@ openmls = "0.4"
 openmls_traits = "0.1"
 # FIXME: This is being pulled only because of flaky error types from openmls
 tls_codec = "0.2"
+serde = "1.0"
 serde_json = "1.0"
 
 [dependencies.proteus-wasm]

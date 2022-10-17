@@ -112,11 +112,11 @@ export interface MemberAddedMessages {
      */
     welcome: Uint8Array;
     /**
-     * TLS-serialized MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit
+     * MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit
      *
      * @readonly
      */
-    publicGroupState: Uint8Array;
+    publicGroupState: PublicGroupStateBundle;
 }
 
 /**
@@ -136,11 +136,64 @@ export interface CommitBundle {
      */
     welcome?: Uint8Array;
     /**
-     * TLS-serialized MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit
+     * MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit
      *
      * @readonly
      */
-    publicGroupState: Uint8Array;
+    publicGroupState: PublicGroupStateBundle;
+}
+
+/**
+ * Wraps a PublicGroupState in order to efficiently upload it to the Delivery Service.
+ * This is not part of MLS protocol but parts might be standardized at some point.
+ */
+export interface PublicGroupStateBundle {
+    /**
+     * see {@link PublicGroupStateEncryptionType}
+     */
+    encryptionType: PublicGroupStateEncryptionType,
+    /**
+     * see {@link RatchetTreeType}
+     */
+    ratchetTreeType: RatchetTreeType,
+    /**
+     * TLS-serialized PublicGroupState
+     */
+    payload: Uint8Array,
+}
+
+/**
+ * Informs whether the PublicGroupState is confidential
+ * see [core_crypto::mls::conversation::public_group_state::PublicGroupStateEncryptionType]
+ */
+export enum PublicGroupStateEncryptionType {
+    /**
+     * Unencrypted
+     */
+    Plaintext = 0x00001,
+    /**
+     * Encrypted in a JWE (not yet implemented)
+     */
+    JweEncrypted = 0x00002,
+}
+
+/**
+ * Represents different ways of carrying the Ratchet Tree with some optimizations to save some space
+ * see [core_crypto::mls::conversation::public_group_state::RatchetTreeType]
+ */
+export enum RatchetTreeType {
+    /**
+     * Complete PublicGroupState
+     */
+    Full = 0x00001,
+    /**
+     * Contains the difference since previous epoch (not yet implemented)
+     */
+    Delta = 0x00002,
+    /**
+     * To define (not yet implemented)
+     */
+    ByRef = 0x00003,
 }
 
 /**
@@ -201,12 +254,12 @@ export interface ConversationInitBundle {
      */
     commit: Uint8Array;
     /**
-     * TLS-serialized MLS Public Group State (aka Group Info) which becomes valid when the external commit is accepted by the Delivery Service
+     * MLS Public Group State (aka Group Info) which becomes valid when the external commit is accepted by the Delivery Service
      * with {@link CoreCrypto.mergePendingGroupFromExternalCommit}
      *
      * @readonly
      */
-    publicGroupState: Uint8Array;
+    publicGroupState: PublicGroupStateBundle;
 }
 
 /**
@@ -647,7 +700,11 @@ export class CoreCrypto {
         const ret: MemberAddedMessages = {
             welcome: ffiRet.welcome,
             commit: ffiRet.commit,
-            publicGroupState: ffiRet.public_group_state,
+            publicGroupState: {
+                encryptionType: ffiRet.public_group_state.encryption_type,
+                ratchetTreeType: ffiRet.public_group_state.ratchet_tree_type,
+                payload: ffiRet.public_group_state.payload
+            },
         };
 
         return ret;
@@ -678,7 +735,11 @@ export class CoreCrypto {
         const ret: CommitBundle = {
             welcome: ffiRet.welcome,
             commit: ffiRet.commit,
-            publicGroupState: ffiRet.public_group_state,
+            publicGroupState: {
+                encryptionType: ffiRet.public_group_state.encryption_type,
+                ratchetTreeType: ffiRet.public_group_state.ratchet_tree_type,
+                payload: ffiRet.public_group_state.payload
+            },
         };
 
         return ret;
@@ -703,7 +764,11 @@ export class CoreCrypto {
         const ret: CommitBundle = {
             welcome: ffiRet.welcome,
             commit: ffiRet.commit,
-            publicGroupState: ffiRet.public_group_state,
+            publicGroupState: {
+                encryptionType: ffiRet.public_group_state.encryption_type,
+                ratchetTreeType: ffiRet.public_group_state.ratchet_tree_type,
+                payload: ffiRet.public_group_state.payload
+            },
         };
 
         return ret;
@@ -728,7 +793,11 @@ export class CoreCrypto {
             return ffiCommitBundle ? {
                 welcome: ffiCommitBundle.welcome,
                 commit: ffiCommitBundle.commit,
-                publicGroupState: ffiCommitBundle.public_group_state,
+                publicGroupState: {
+                    encryptionType: ffiCommitBundle.public_group_state.encryption_type,
+                    ratchetTreeType: ffiCommitBundle.public_group_state.ratchet_tree_type,
+                    payload: ffiCommitBundle.public_group_state.payload
+                },
             } : undefined;
     }
 
@@ -819,7 +888,7 @@ export class CoreCrypto {
      * {@link CoreCrypto.clearPendingGroupFromExternalCommit} in order not to bloat the user's storage but nothing
      * bad can happen if you forget to except some storage space wasted.
      *
-     * @param publicGroupState - The public group state that can be fetched from the backend for a given conversation
+     * @param publicGroupState - a TLS encoded PublicGroupState fetched from the Delivery Service
      * @returns see {@link ConversationInitBundle}
      */
     async joinByExternalCommit(publicGroupState: Uint8Array): Promise<ConversationInitBundle> {
@@ -828,7 +897,11 @@ export class CoreCrypto {
         const ret: ConversationInitBundle = {
             conversationId: ffiInitMessage.conversation_id,
             commit: ffiInitMessage.commit,
-            publicGroupState: ffiInitMessage.public_group_state,
+            publicGroupState: {
+                encryptionType: ffiInitMessage.public_group_state.encryption_type,
+                ratchetTreeType: ffiInitMessage.public_group_state.ratchet_tree_type,
+                payload: ffiInitMessage.public_group_state.payload
+            },
         };
 
         return ret;

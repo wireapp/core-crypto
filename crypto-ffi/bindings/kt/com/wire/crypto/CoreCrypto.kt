@@ -875,18 +875,6 @@ public interface CoreCryptoInterface {
     fun `commitPendingProposals`(`conversationId`: ConversationId): CommitBundle?
     
     @Throws(CryptoException::class)
-    fun `finalAddClientsToConversation`(`conversationId`: ConversationId, `clients`: List<Invitee>): TlsCommitBundle
-    
-    @Throws(CryptoException::class)
-    fun `finalRemoveClientsFromConversation`(`conversationId`: ConversationId, `clients`: List<ClientId>): TlsCommitBundle
-    
-    @Throws(CryptoException::class)
-    fun `finalUpdateKeyingMaterial`(`conversationId`: ConversationId): TlsCommitBundle
-    
-    @Throws(CryptoException::class)
-    fun `finalCommitPendingProposals`(`conversationId`: ConversationId): TlsCommitBundle?
-    
-    @Throws(CryptoException::class)
     fun `wipeConversation`(`conversationId`: ConversationId)
     
     @Throws(CryptoException::class)
@@ -1433,7 +1421,7 @@ public object FfiConverterTypeCoreCrypto: FfiConverter<CoreCrypto, Pointer> {
 data class CommitBundle (
     var `welcome`: List<UByte>?, 
     var `commit`: List<UByte>, 
-    var `publicGroupState`: List<UByte>
+    var `publicGroupState`: PublicGroupStateBundle
 ) {
     
 }
@@ -1443,20 +1431,20 @@ public object FfiConverterTypeCommitBundle: FfiConverterRustBuffer<CommitBundle>
         return CommitBundle(
             FfiConverterOptionalSequenceUByte.read(buf),
             FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterTypePublicGroupStateBundle.read(buf),
         )
     }
 
     override fun allocationSize(value: CommitBundle) = (
             FfiConverterOptionalSequenceUByte.allocationSize(value.`welcome`) +
             FfiConverterSequenceUByte.allocationSize(value.`commit`) +
-            FfiConverterSequenceUByte.allocationSize(value.`publicGroupState`)
+            FfiConverterTypePublicGroupStateBundle.allocationSize(value.`publicGroupState`)
     )
 
     override fun write(value: CommitBundle, buf: ByteBuffer) {
             FfiConverterOptionalSequenceUByte.write(value.`welcome`, buf)
             FfiConverterSequenceUByte.write(value.`commit`, buf)
-            FfiConverterSequenceUByte.write(value.`publicGroupState`, buf)
+            FfiConverterTypePublicGroupStateBundle.write(value.`publicGroupState`, buf)
     }
 }
 
@@ -1503,7 +1491,7 @@ public object FfiConverterTypeConversationConfiguration: FfiConverterRustBuffer<
 data class ConversationInitBundle (
     var `conversationId`: List<UByte>, 
     var `commit`: List<UByte>, 
-    var `publicGroupState`: List<UByte>
+    var `publicGroupState`: PublicGroupStateBundle
 ) {
     
 }
@@ -1513,20 +1501,20 @@ public object FfiConverterTypeConversationInitBundle: FfiConverterRustBuffer<Con
         return ConversationInitBundle(
             FfiConverterSequenceUByte.read(buf),
             FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterTypePublicGroupStateBundle.read(buf),
         )
     }
 
     override fun allocationSize(value: ConversationInitBundle) = (
             FfiConverterSequenceUByte.allocationSize(value.`conversationId`) +
             FfiConverterSequenceUByte.allocationSize(value.`commit`) +
-            FfiConverterSequenceUByte.allocationSize(value.`publicGroupState`)
+            FfiConverterTypePublicGroupStateBundle.allocationSize(value.`publicGroupState`)
     )
 
     override fun write(value: ConversationInitBundle, buf: ByteBuffer) {
             FfiConverterSequenceUByte.write(value.`conversationId`, buf)
             FfiConverterSequenceUByte.write(value.`commit`, buf)
-            FfiConverterSequenceUByte.write(value.`publicGroupState`, buf)
+            FfiConverterTypePublicGroupStateBundle.write(value.`publicGroupState`, buf)
     }
 }
 
@@ -1610,7 +1598,7 @@ public object FfiConverterTypeInvitee: FfiConverterRustBuffer<Invitee> {
 data class MemberAddedMessages (
     var `commit`: List<UByte>, 
     var `welcome`: List<UByte>, 
-    var `publicGroupState`: List<UByte>
+    var `publicGroupState`: PublicGroupStateBundle
 ) {
     
 }
@@ -1620,20 +1608,20 @@ public object FfiConverterTypeMemberAddedMessages: FfiConverterRustBuffer<Member
         return MemberAddedMessages(
             FfiConverterSequenceUByte.read(buf),
             FfiConverterSequenceUByte.read(buf),
-            FfiConverterSequenceUByte.read(buf),
+            FfiConverterTypePublicGroupStateBundle.read(buf),
         )
     }
 
     override fun allocationSize(value: MemberAddedMessages) = (
             FfiConverterSequenceUByte.allocationSize(value.`commit`) +
             FfiConverterSequenceUByte.allocationSize(value.`welcome`) +
-            FfiConverterSequenceUByte.allocationSize(value.`publicGroupState`)
+            FfiConverterTypePublicGroupStateBundle.allocationSize(value.`publicGroupState`)
     )
 
     override fun write(value: MemberAddedMessages, buf: ByteBuffer) {
             FfiConverterSequenceUByte.write(value.`commit`, buf)
             FfiConverterSequenceUByte.write(value.`welcome`, buf)
-            FfiConverterSequenceUByte.write(value.`publicGroupState`, buf)
+            FfiConverterTypePublicGroupStateBundle.write(value.`publicGroupState`, buf)
     }
 }
 
@@ -1669,6 +1657,39 @@ public object FfiConverterTypeProposalBundle: FfiConverterRustBuffer<ProposalBun
 
 
 
+data class PublicGroupStateBundle (
+    var `encryptionType`: MlsPublicGroupStateEncryptionType, 
+    var `ratchetTreeType`: MlsRatchetTreeType, 
+    var `payload`: List<UByte>
+) {
+    
+}
+
+public object FfiConverterTypePublicGroupStateBundle: FfiConverterRustBuffer<PublicGroupStateBundle> {
+    override fun read(buf: ByteBuffer): PublicGroupStateBundle {
+        return PublicGroupStateBundle(
+            FfiConverterTypeMlsPublicGroupStateEncryptionType.read(buf),
+            FfiConverterTypeMlsRatchetTreeType.read(buf),
+            FfiConverterSequenceUByte.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: PublicGroupStateBundle) = (
+            FfiConverterTypeMlsPublicGroupStateEncryptionType.allocationSize(value.`encryptionType`) +
+            FfiConverterTypeMlsRatchetTreeType.allocationSize(value.`ratchetTreeType`) +
+            FfiConverterSequenceUByte.allocationSize(value.`payload`)
+    )
+
+    override fun write(value: PublicGroupStateBundle, buf: ByteBuffer) {
+            FfiConverterTypeMlsPublicGroupStateEncryptionType.write(value.`encryptionType`, buf)
+            FfiConverterTypeMlsRatchetTreeType.write(value.`ratchetTreeType`, buf)
+            FfiConverterSequenceUByte.write(value.`payload`, buf)
+    }
+}
+
+
+
+
 enum class CiphersuiteName {
     MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,MLS_128_DHKEMP256_AES128GCM_SHA256_P256,MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519,MLS_256_DHKEMX448_AES256GCM_SHA512_ED448,MLS_256_DHKEMP521_AES256GCM_SHA512_P521,MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_ED448,MLS_256_DHKEMP384_AES256GCM_SHA384_P384;
 }
@@ -1683,6 +1704,52 @@ public object FfiConverterTypeCiphersuiteName: FfiConverterRustBuffer<Ciphersuit
     override fun allocationSize(value: CiphersuiteName) = 4
 
     override fun write(value: CiphersuiteName, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
+enum class MlsPublicGroupStateEncryptionType {
+    PLAINTEXT,JWE_ENCRYPTED;
+}
+
+public object FfiConverterTypeMlsPublicGroupStateEncryptionType: FfiConverterRustBuffer<MlsPublicGroupStateEncryptionType> {
+    override fun read(buf: ByteBuffer) = try {
+        MlsPublicGroupStateEncryptionType.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: MlsPublicGroupStateEncryptionType) = 4
+
+    override fun write(value: MlsPublicGroupStateEncryptionType, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
+enum class MlsRatchetTreeType {
+    FULL,DELTA,BY_REF;
+}
+
+public object FfiConverterTypeMlsRatchetTreeType: FfiConverterRustBuffer<MlsRatchetTreeType> {
+    override fun read(buf: ByteBuffer) = try {
+        MlsRatchetTreeType.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: MlsRatchetTreeType) = 4
+
+    override fun write(value: MlsRatchetTreeType, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
@@ -2156,35 +2223,6 @@ public object FfiConverterOptionalTypeClientId: FfiConverterRustBuffer<ClientId?
 
 
 
-public object FfiConverterOptionalTypeTlsCommitBundle: FfiConverterRustBuffer<TlsCommitBundle?> {
-    override fun read(buf: ByteBuffer): TlsCommitBundle? {
-        if (buf.get().toInt() == 0) {
-            return null
-        }
-        return FfiConverterTypeTlsCommitBundle.read(buf)
-    }
-
-    override fun allocationSize(value: TlsCommitBundle?): Int {
-        if (value == null) {
-            return 1
-        } else {
-            return 1 + FfiConverterTypeTlsCommitBundle.allocationSize(value)
-        }
-    }
-
-    override fun write(value: TlsCommitBundle?, buf: ByteBuffer) {
-        if (value == null) {
-            buf.put(0)
-        } else {
-            buf.put(1)
-            FfiConverterTypeTlsCommitBundle.write(value, buf)
-        }
-    }
-}
-
-
-
-
 public object FfiConverterSequenceUByte: FfiConverterRustBuffer<List<UByte>> {
     override fun read(buf: ByteBuffer): List<UByte> {
         val len = buf.getInt()
@@ -2422,16 +2460,6 @@ public typealias FfiConverterTypeConversationId = FfiConverterSequenceUByte
  */
 public typealias MemberId = List<UByte>
 public typealias FfiConverterTypeMemberId = FfiConverterSequenceUByte
-
-
-
-/**
- * Typealias from the type name used in the UDL file to the builtin type.  This
- * is needed because the UDL type name is used in function/method signatures.
- * It's also what we have an external type that references a custom type.
- */
-public typealias TlsCommitBundle = List<UByte>
-public typealias FfiConverterTypeTlsCommitBundle = FfiConverterSequenceUByte
 @Throws(CryptoException::class)
 
 fun `initWithPathAndKey`(`path`: String, `key`: String, `clientId`: String, `entropySeed`: List<UByte>?): CoreCrypto {
