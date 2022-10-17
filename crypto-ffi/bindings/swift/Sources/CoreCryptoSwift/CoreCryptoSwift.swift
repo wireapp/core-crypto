@@ -431,10 +431,6 @@ public protocol CoreCryptoProtocol {
     func removeClientsFromConversation(conversationId: ConversationId, clients: [ClientId]) throws -> CommitBundle
     func updateKeyingMaterial(conversationId: ConversationId) throws -> CommitBundle
     func commitPendingProposals(conversationId: ConversationId) throws -> CommitBundle?
-    func finalAddClientsToConversation(conversationId: ConversationId, clients: [Invitee]) throws -> TlsCommitBundle
-    func finalRemoveClientsFromConversation(conversationId: ConversationId, clients: [ClientId]) throws -> TlsCommitBundle
-    func finalUpdateKeyingMaterial(conversationId: ConversationId) throws -> TlsCommitBundle
-    func finalCommitPendingProposals(conversationId: ConversationId) throws -> TlsCommitBundle?
     func wipeConversation(conversationId: ConversationId) throws
     func decryptMessage(conversationId: ConversationId, payload: [UInt8]) throws -> DecryptedMessage
     func encryptMessage(conversationId: ConversationId, message: [UInt8]) throws -> [UInt8]
@@ -984,11 +980,11 @@ fileprivate struct FfiConverterTypeCoreCrypto: FfiConverter {
 public struct CommitBundle {
     public var welcome: [UInt8]?
     public var commit: [UInt8]
-    public var publicGroupState: [UInt8]
+    public var publicGroupState: PublicGroupStateBundle
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(welcome: [UInt8]?, commit: [UInt8], publicGroupState: [UInt8]) {
+    public init(welcome: [UInt8]?, commit: [UInt8], publicGroupState: PublicGroupStateBundle) {
         self.welcome = welcome
         self.commit = commit
         self.publicGroupState = publicGroupState
@@ -1023,14 +1019,14 @@ fileprivate struct FfiConverterTypeCommitBundle: FfiConverterRustBuffer {
         return try CommitBundle(
             welcome: FfiConverterOptionSequenceUInt8.read(from: buf), 
             commit: FfiConverterSequenceUInt8.read(from: buf), 
-            publicGroupState: FfiConverterSequenceUInt8.read(from: buf)
+            publicGroupState: FfiConverterTypePublicGroupStateBundle.read(from: buf)
         )
     }
 
     fileprivate static func write(_ value: CommitBundle, into buf: Writer) {
         FfiConverterOptionSequenceUInt8.write(value.welcome, into: buf)
         FfiConverterSequenceUInt8.write(value.commit, into: buf)
-        FfiConverterSequenceUInt8.write(value.publicGroupState, into: buf)
+        FfiConverterTypePublicGroupStateBundle.write(value.publicGroupState, into: buf)
     }
 }
 
@@ -1100,11 +1096,11 @@ fileprivate struct FfiConverterTypeConversationConfiguration: FfiConverterRustBu
 public struct ConversationInitBundle {
     public var conversationId: [UInt8]
     public var commit: [UInt8]
-    public var publicGroupState: [UInt8]
+    public var publicGroupState: PublicGroupStateBundle
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(conversationId: [UInt8], commit: [UInt8], publicGroupState: [UInt8]) {
+    public init(conversationId: [UInt8], commit: [UInt8], publicGroupState: PublicGroupStateBundle) {
         self.conversationId = conversationId
         self.commit = commit
         self.publicGroupState = publicGroupState
@@ -1139,14 +1135,14 @@ fileprivate struct FfiConverterTypeConversationInitBundle: FfiConverterRustBuffe
         return try ConversationInitBundle(
             conversationId: FfiConverterSequenceUInt8.read(from: buf), 
             commit: FfiConverterSequenceUInt8.read(from: buf), 
-            publicGroupState: FfiConverterSequenceUInt8.read(from: buf)
+            publicGroupState: FfiConverterTypePublicGroupStateBundle.read(from: buf)
         )
     }
 
     fileprivate static func write(_ value: ConversationInitBundle, into buf: Writer) {
         FfiConverterSequenceUInt8.write(value.conversationId, into: buf)
         FfiConverterSequenceUInt8.write(value.commit, into: buf)
-        FfiConverterSequenceUInt8.write(value.publicGroupState, into: buf)
+        FfiConverterTypePublicGroupStateBundle.write(value.publicGroupState, into: buf)
     }
 }
 
@@ -1278,11 +1274,11 @@ fileprivate struct FfiConverterTypeInvitee: FfiConverterRustBuffer {
 public struct MemberAddedMessages {
     public var commit: [UInt8]
     public var welcome: [UInt8]
-    public var publicGroupState: [UInt8]
+    public var publicGroupState: PublicGroupStateBundle
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(commit: [UInt8], welcome: [UInt8], publicGroupState: [UInt8]) {
+    public init(commit: [UInt8], welcome: [UInt8], publicGroupState: PublicGroupStateBundle) {
         self.commit = commit
         self.welcome = welcome
         self.publicGroupState = publicGroupState
@@ -1317,14 +1313,14 @@ fileprivate struct FfiConverterTypeMemberAddedMessages: FfiConverterRustBuffer {
         return try MemberAddedMessages(
             commit: FfiConverterSequenceUInt8.read(from: buf), 
             welcome: FfiConverterSequenceUInt8.read(from: buf), 
-            publicGroupState: FfiConverterSequenceUInt8.read(from: buf)
+            publicGroupState: FfiConverterTypePublicGroupStateBundle.read(from: buf)
         )
     }
 
     fileprivate static func write(_ value: MemberAddedMessages, into buf: Writer) {
         FfiConverterSequenceUInt8.write(value.commit, into: buf)
         FfiConverterSequenceUInt8.write(value.welcome, into: buf)
-        FfiConverterSequenceUInt8.write(value.publicGroupState, into: buf)
+        FfiConverterTypePublicGroupStateBundle.write(value.publicGroupState, into: buf)
     }
 }
 
@@ -1371,6 +1367,60 @@ fileprivate struct FfiConverterTypeProposalBundle: FfiConverterRustBuffer {
     fileprivate static func write(_ value: ProposalBundle, into buf: Writer) {
         FfiConverterSequenceUInt8.write(value.proposal, into: buf)
         FfiConverterSequenceUInt8.write(value.proposalRef, into: buf)
+    }
+}
+
+
+public struct PublicGroupStateBundle {
+    public var encryptionType: MlsPublicGroupStateEncryptionType
+    public var ratchetTreeType: MlsRatchetTreeType
+    public var payload: [UInt8]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(encryptionType: MlsPublicGroupStateEncryptionType, ratchetTreeType: MlsRatchetTreeType, payload: [UInt8]) {
+        self.encryptionType = encryptionType
+        self.ratchetTreeType = ratchetTreeType
+        self.payload = payload
+    }
+}
+
+
+extension PublicGroupStateBundle: Equatable, Hashable {
+    public static func ==(lhs: PublicGroupStateBundle, rhs: PublicGroupStateBundle) -> Bool {
+        if lhs.encryptionType != rhs.encryptionType {
+            return false
+        }
+        if lhs.ratchetTreeType != rhs.ratchetTreeType {
+            return false
+        }
+        if lhs.payload != rhs.payload {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(encryptionType)
+        hasher.combine(ratchetTreeType)
+        hasher.combine(payload)
+    }
+}
+
+
+fileprivate struct FfiConverterTypePublicGroupStateBundle: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> PublicGroupStateBundle {
+        return try PublicGroupStateBundle(
+            encryptionType: FfiConverterTypeMlsPublicGroupStateEncryptionType.read(from: buf), 
+            ratchetTreeType: FfiConverterTypeMlsRatchetTreeType.read(from: buf), 
+            payload: FfiConverterSequenceUInt8.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: PublicGroupStateBundle, into buf: Writer) {
+        FfiConverterTypeMlsPublicGroupStateEncryptionType.write(value.encryptionType, into: buf)
+        FfiConverterTypeMlsRatchetTreeType.write(value.ratchetTreeType, into: buf)
+        FfiConverterSequenceUInt8.write(value.payload, into: buf)
     }
 }
 
@@ -1449,6 +1499,97 @@ fileprivate struct FfiConverterTypeCiphersuiteName: FfiConverterRustBuffer {
 
 
 extension CiphersuiteName: Equatable, Hashable {}
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum MlsPublicGroupStateEncryptionType {
+    
+    case plaintext
+    case jweEncrypted
+}
+
+fileprivate struct FfiConverterTypeMlsPublicGroupStateEncryptionType: FfiConverterRustBuffer {
+    typealias SwiftType = MlsPublicGroupStateEncryptionType
+
+    static func read(from buf: Reader) throws -> MlsPublicGroupStateEncryptionType {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        
+        case 1: return .plaintext
+        
+        case 2: return .jweEncrypted
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    static func write(_ value: MlsPublicGroupStateEncryptionType, into buf: Writer) {
+        switch value {
+        
+        
+        case .plaintext:
+            buf.writeInt(Int32(1))
+        
+        
+        case .jweEncrypted:
+            buf.writeInt(Int32(2))
+        
+        }
+    }
+}
+
+
+extension MlsPublicGroupStateEncryptionType: Equatable, Hashable {}
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum MlsRatchetTreeType {
+    
+    case full
+    case delta
+    case byRef
+}
+
+fileprivate struct FfiConverterTypeMlsRatchetTreeType: FfiConverterRustBuffer {
+    typealias SwiftType = MlsRatchetTreeType
+
+    static func read(from buf: Reader) throws -> MlsRatchetTreeType {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        
+        case 1: return .full
+        
+        case 2: return .delta
+        
+        case 3: return .byRef
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    static func write(_ value: MlsRatchetTreeType, into buf: Writer) {
+        switch value {
+        
+        
+        case .full:
+            buf.writeInt(Int32(1))
+        
+        
+        case .delta:
+            buf.writeInt(Int32(2))
+        
+        
+        case .byRef:
+            buf.writeInt(Int32(3))
+        
+        }
+    }
+}
+
+
+extension MlsRatchetTreeType: Equatable, Hashable {}
 
 
 
@@ -2123,27 +2264,6 @@ fileprivate struct FfiConverterOptionTypeClientId: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterOptionTypeTlsCommitBundle: FfiConverterRustBuffer {
-    typealias SwiftType = TlsCommitBundle?
-
-    static func write(_ value: SwiftType, into buf: Writer) {
-        guard let value = value else {
-            buf.writeInt(Int8(0))
-            return
-        }
-        buf.writeInt(Int8(1))
-        FfiConverterTypeTlsCommitBundle.write(value, into: buf)
-    }
-
-    static func read(from buf: Reader) throws -> SwiftType {
-        switch try buf.readInt() as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterTypeTlsCommitBundle.read(from: buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
 fileprivate struct FfiConverterSequenceUInt8: FfiConverterRustBuffer {
     typealias SwiftType = [UInt8]
 
@@ -2344,14 +2464,6 @@ fileprivate typealias FfiConverterTypeConversationId = FfiConverterSequenceUInt8
  */
 public typealias MemberId = [UInt8]
 fileprivate typealias FfiConverterTypeMemberId = FfiConverterSequenceUInt8
-
-
-/**
- * Typealias from the type name used in the UDL file to the builtin type.  This
- * is needed because the UDL type name is used in function/method signatures.
- */
-public typealias TlsCommitBundle = [UInt8]
-fileprivate typealias FfiConverterTypeTlsCommitBundle = FfiConverterSequenceUInt8
 
 public func initWithPathAndKey(path: String, key: String, clientId: String, entropySeed: [UInt8]?) throws -> CoreCrypto {
     return try FfiConverterTypeCoreCrypto.lift(

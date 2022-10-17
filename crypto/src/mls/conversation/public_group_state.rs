@@ -1,28 +1,62 @@
-use std::io::{Read, Write};
-
-use openmls::prelude::{PublicGroupState, Verifiable, VerifiablePublicGroupState};
-use tls_codec::{Error, TlsDeserialize, TlsSerialize, TlsSize};
+use openmls::prelude::PublicGroupState;
+use serde::{Deserialize, Serialize};
 
 use crate::{CryptoResult, MlsError};
 
-/// # PublicGroupStateEncryption
+/// A [PublicGroupState] with metadata
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MlsPublicGroupStateBundle {
+    /// Indicates if the [payload] is encrypted or not
+    pub encryption_type: MlsPublicGroupStateEncryptionType,
+    /// Indicates if the [payload] contains a full, partial or referenced [PublicGroupState]
+    pub ratchet_tree_type: MlsRatchetTreeType,
+    /// The [PublicGroupState]
+    pub payload: PublicGroupStatePayload,
+}
+
+impl MlsPublicGroupStateBundle {
+    /// Creates a new [PublicGroupStateBundle] with complete and unencrypted [PublicGroupState]
+    pub(crate) fn try_new_full_plaintext(pgs: PublicGroupState) -> CryptoResult<Self> {
+        use tls_codec::Serialize as _;
+        let payload = pgs.tls_serialize_detached().map_err(MlsError::from)?.into();
+        Ok(Self {
+            encryption_type: MlsPublicGroupStateEncryptionType::Plaintext,
+            ratchet_tree_type: MlsRatchetTreeType::Full,
+            payload: PublicGroupStatePayload::Plaintext(payload),
+        })
+    }
+}
+
+#[cfg(test)]
+impl MlsPublicGroupStateBundle {
+    pub fn get_pgs(mut self) -> openmls::prelude::VerifiablePublicGroupState {
+        use tls_codec::Deserialize as _;
+        match &mut self.payload {
+            PublicGroupStatePayload::Plaintext(pgs) => {
+                openmls::prelude::VerifiablePublicGroupState::tls_deserialize(&mut pgs.as_slice()).unwrap()
+            }
+        }
+    }
+}
+
+/// # PublicGroupStateEncryptionType
 ///
 /// In order to guarantee confidentiality of the [PublicGroupState] on the wire a domain can
 /// request it to be encrypted when sent to the Delivery Service.
 ///
 /// ```text
 /// enum {
-///     reserved(0),
-///     unencrypted(1),
+///     plaintext(1),
 ///     jwe_encrypted(2),
 ///     (255)
-/// } PublicGroupStateEncryption;
+/// } PublicGroupStateEncryptionType;
 /// ```
-#[derive(Debug, Clone, Eq, PartialEq, TlsSerialize, TlsDeserialize, TlsSize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 #[repr(u8)]
-pub enum PublicGroupStateEncryption {
-    Reserved = 0,
-    Unencrypted = 1,
+pub enum MlsPublicGroupStateEncryptionType {
+    /// Unencrypted [PublicGroupState]
+    Plaintext = 1,
+    /// [PublicGroupState] encrypted in a JWE
     JweEncrypted = 2,
 }
 
@@ -32,106 +66,45 @@ pub enum PublicGroupStateEncryption {
 ///
 /// ```text
 /// enum {
-///     reserved(0),
 ///     full(1),
 ///     delta(2),
 ///     by_ref(3),
 ///     (255)
 /// } RatchetTreeType;
 /// ```
-#[derive(Debug, Clone, Eq, PartialEq, TlsSerialize, TlsDeserialize, TlsSize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 #[repr(u8)]
-pub enum RatchetTreeType {
-    Reserved = 0,
+pub enum MlsRatchetTreeType {
     /// Plain old and complete [PublicGroupState]
     Full = 1,
-    /// Contains [PublicGroupState] changes since previous epoch (Not yet implemented)
+    /// Contains [PublicGroupState] changes since previous epoch (not yet implemented)
     /// (see [draft](https://github.com/rohan-wire/ietf-drafts/blob/main/mahy-mls-ratchet-tree-delta/draft-mahy-mls-ratchet-tree-delta.md))
     Delta = 2,
+    /// TODO: to define
     ByRef = 3,
 }
 
 /// Represents the byte array in [PublicGroupStateBundle]
-#[derive(Debug)]
-pub(crate) enum PublicGroupStatePayload {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum PublicGroupStatePayload {
     /// Unencrypted [PublicGroupState]
     Plaintext(tls_codec::TlsByteVecU32),
     // TODO: expose when fully implemented
     // Encrypted(Vec<u8>),
 }
 
-/// Contains a [PublicGroupState] alongside metadatas
-#[derive(Debug)]
-pub struct PublicGroupStateBundle {
-    /// Indicates if the [payload] is encrypted or not
-    encryption_type: PublicGroupStateEncryption,
-    /// Indicates if the [payload] contains a full, partial or referenced [PublicGroupState]
-    ratchet_tree_type: RatchetTreeType,
-    /// The [PublicGroupState]
-    payload: PublicGroupStatePayload,
-}
-
-impl PublicGroupStateBundle {
-    /// Creates a new [PublicGroupStateBundle] with complete and unencrypted [PublicGroupState]
-    pub(crate) fn try_new_full_unencrypted(pgs: PublicGroupState) -> CryptoResult<Self> {
-        use tls_codec::Serialize as _;
-        let payload = pgs.tls_serialize_detached().map_err(MlsError::from)?.into();
-        Ok(Self {
-            encryption_type: PublicGroupStateEncryption::Unencrypted,
-            ratchet_tree_type: RatchetTreeType::Full,
-            payload: PublicGroupStatePayload::Plaintext(payload),
-        })
-    }
-}
-
-#[cfg(test)]
-impl PublicGroupStateBundle {
-    pub fn get_pgs(mut self) -> VerifiablePublicGroupState {
-        use tls_codec::Deserialize as _;
-        match &mut self.payload {
-            PublicGroupStatePayload::Plaintext(pgs) => {
-                VerifiablePublicGroupState::tls_deserialize(&mut pgs.as_slice()).unwrap()
-            }
+impl tls_codec::Size for PublicGroupStatePayload {
+    fn tls_serialized_len(&self) -> usize {
+        match &self {
+            Self::Plaintext(pgs) => pgs.tls_serialized_len(),
         }
     }
 }
 
-impl tls_codec::Size for PublicGroupStateBundle {
-    fn tls_serialized_len(&self) -> usize {
-        self.encryption_type.tls_serialized_len()
-            + self.ratchet_tree_type.tls_serialized_len()
-            + match &self.payload {
-                PublicGroupStatePayload::Plaintext(pgs) => pgs.tls_serialized_len(),
-            }
-    }
-}
-
-impl tls_codec::Serialize for PublicGroupStateBundle {
-    fn tls_serialize<W: Write>(&self, writer: &mut W) -> Result<usize, Error> {
-        self.encryption_type
-            .tls_serialize(writer)
-            .and_then(|w| self.ratchet_tree_type.tls_serialize(writer).map(|l| l + w))
-            .and_then(|w| match &self.payload {
-                PublicGroupStatePayload::Plaintext(pgs) => pgs.tls_serialize(writer).map(|l| l + w),
-            })
-    }
-}
-
-impl tls_codec::Deserialize for PublicGroupStateBundle {
-    fn tls_deserialize<R: Read>(bytes: &mut R) -> Result<Self, Error> {
-        let encryption_type = PublicGroupStateEncryption::tls_deserialize(bytes)?;
-        let ratchet_tree_type = RatchetTreeType::tls_deserialize(bytes)?;
-        match encryption_type {
-            PublicGroupStateEncryption::Unencrypted => {
-                let payload = VerifiablePublicGroupState::tls_deserialize(bytes)?;
-                let payload = PublicGroupStatePayload::Plaintext(payload.unsigned_payload()?.into());
-                Ok(Self {
-                    encryption_type,
-                    ratchet_tree_type,
-                    payload,
-                })
-            }
-            _ => Err(Error::DecodingError("Unsupported encryption type".to_string())),
+impl tls_codec::Serialize for PublicGroupStatePayload {
+    fn tls_serialize<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, tls_codec::Error> {
+        match self {
+            Self::Plaintext(pgs) => pgs.tls_serialize(writer),
         }
     }
 }

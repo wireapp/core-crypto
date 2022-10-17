@@ -13,7 +13,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::mls::conversation::public_group_state::PublicGroupStateBundle;
+use crate::mls::conversation::public_group_state::MlsPublicGroupStateBundle;
 use crate::prelude::MlsProposalRef;
 use crate::{
     mls::member::ConversationMember, mls::ClientId, mls::ConversationId, mls::MlsCentral, CryptoError, CryptoResult,
@@ -113,7 +113,7 @@ pub struct MlsConversationCreationMessage {
     /// Commit message adding members to the group
     pub commit: MlsMessageOut,
     /// [`PublicGroupState`] (aka GroupInfo) if the commit is merged
-    pub public_group_state: PublicGroupStateBundle,
+    pub public_group_state: MlsPublicGroupStateBundle,
 }
 
 impl MlsConversationCreationMessage {
@@ -121,16 +121,11 @@ impl MlsConversationCreationMessage {
     /// 0 -> welcome
     /// 1 -> commit
     /// 2 -> public_group_state
-    pub fn to_bytes_triple(&self) -> CryptoResult<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+    pub fn to_bytes_triple(self) -> CryptoResult<(Vec<u8>, Vec<u8>, MlsPublicGroupStateBundle)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self.welcome.tls_serialize_detached().map_err(MlsError::from)?;
         let msg = self.commit.to_bytes().map_err(MlsError::from)?;
-        let public_group_state = self
-            .public_group_state
-            .tls_serialize_detached()
-            .map_err(MlsError::from)?;
-
-        Ok((welcome, msg, public_group_state))
+        Ok((welcome, msg, self.public_group_state))
     }
 }
 
@@ -142,7 +137,7 @@ pub struct MlsCommitBundle {
     /// The commit message
     pub commit: MlsMessageOut,
     /// [`PublicGroupState`] (aka GroupInfo) if the commit is merged
-    pub public_group_state: PublicGroupStateBundle,
+    pub public_group_state: MlsPublicGroupStateBundle,
 }
 
 impl MlsCommitBundle {
@@ -151,7 +146,7 @@ impl MlsCommitBundle {
     /// 1 -> message
     /// 2 -> public group state
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes_triple(&self) -> CryptoResult<(Option<Vec<u8>>, Vec<u8>, Vec<u8>)> {
+    pub fn to_bytes_triple(self) -> CryptoResult<(Option<Vec<u8>>, Vec<u8>, MlsPublicGroupStateBundle)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self
             .welcome
@@ -159,12 +154,7 @@ impl MlsCommitBundle {
             .map(|w| w.tls_serialize_detached().map_err(MlsError::from))
             .transpose()?;
         let commit = self.commit.to_bytes().map_err(MlsError::from)?;
-        let public_group_state = self
-            .public_group_state
-            .tls_serialize_detached()
-            .map_err(MlsError::from)?;
-
-        Ok((welcome, commit, public_group_state))
+        Ok((welcome, commit, self.public_group_state))
     }
 }
 
@@ -195,7 +185,7 @@ impl MlsConversation {
         Ok(MlsConversationCreationMessage {
             welcome,
             commit,
-            public_group_state: PublicGroupStateBundle::try_new_full_unencrypted(pgs)?,
+            public_group_state: MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?,
         })
     }
 
@@ -234,7 +224,7 @@ impl MlsConversation {
         Ok(MlsCommitBundle {
             commit,
             welcome,
-            public_group_state: PublicGroupStateBundle::try_new_full_unencrypted(pgs)?,
+            public_group_state: MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?,
         })
     }
 
@@ -251,7 +241,7 @@ impl MlsConversation {
         Ok(MlsCommitBundle {
             welcome,
             commit,
-            public_group_state: PublicGroupStateBundle::try_new_full_unencrypted(pgs)?,
+            public_group_state: MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?,
         })
     }
 
@@ -273,7 +263,7 @@ impl MlsConversation {
             Ok(Some(MlsCommitBundle {
                 welcome,
                 commit,
-                public_group_state: PublicGroupStateBundle::try_new_full_unencrypted(pgs)?,
+                public_group_state: MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?,
             }))
         } else {
             Ok(None)

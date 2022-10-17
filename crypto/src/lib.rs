@@ -67,7 +67,10 @@ pub mod prelude {
             conversation::{
                 decrypt::MlsConversationDecryptMessage,
                 handshake::{MlsCommitBundle, MlsConversationCreationMessage, MlsProposalBundle},
-                public_group_state::PublicGroupStateBundle,
+                public_group_state::{
+                    MlsPublicGroupStateBundle, MlsPublicGroupStateEncryptionType, MlsRatchetTreeType,
+                    PublicGroupStatePayload,
+                },
                 *,
             },
             credential::CertificateBundle,

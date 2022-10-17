@@ -101,17 +101,17 @@ pub type FfiClientId = Box<[u8]>;
 pub struct MemberAddedMessages {
     welcome: Vec<u8>,
     commit: Vec<u8>,
-    public_group_state: Vec<u8>,
+    public_group_state: PublicGroupStateBundle,
 }
 
 #[wasm_bindgen]
 impl MemberAddedMessages {
     #[wasm_bindgen(constructor)]
-    pub fn new(welcome: Uint8Array, commit: Uint8Array, public_group_state: Uint8Array) -> Self {
+    pub fn new(welcome: Uint8Array, commit: Uint8Array, public_group_state: PublicGroupStateBundle) -> Self {
         Self {
             welcome: welcome.to_vec(),
             commit: commit.to_vec(),
-            public_group_state: public_group_state.to_vec(),
+            public_group_state,
         }
     }
 
@@ -126,8 +126,8 @@ impl MemberAddedMessages {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn public_group_state(&self) -> Uint8Array {
-        Uint8Array::from(&*self.public_group_state)
+    pub fn public_group_state(&self) -> PublicGroupStateBundle {
+        self.public_group_state.clone()
     }
 }
 
@@ -135,11 +135,11 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     type Error = WasmCryptoError;
 
     fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, commit, public_group_state) = msg.to_bytes_triple()?;
+        let (welcome, commit, pgs) = msg.to_bytes_triple()?;
         Ok(Self {
             welcome,
             commit,
-            public_group_state,
+            public_group_state: pgs.try_into()?,
         })
     }
 }
@@ -149,7 +149,7 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
 pub struct CommitBundle {
     commit: Vec<u8>,
     welcome: Option<Vec<u8>>,
-    public_group_state: Vec<u8>,
+    public_group_state: PublicGroupStateBundle,
 }
 
 #[wasm_bindgen]
@@ -165,8 +165,8 @@ impl CommitBundle {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn public_group_state(&self) -> Uint8Array {
-        Uint8Array::from(&*self.public_group_state)
+    pub fn public_group_state(&self) -> PublicGroupStateBundle {
+        self.public_group_state.clone()
     }
 }
 
@@ -174,12 +174,88 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
     type Error = WasmCryptoError;
 
     fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
-        let (welcome, commit, public_group_state) = msg.to_bytes_triple()?;
+        let (welcome, commit, pgs) = msg.to_bytes_triple()?;
         Ok(Self {
             welcome,
             commit,
-            public_group_state,
+            public_group_state: pgs.try_into()?,
         })
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct PublicGroupStateBundle {
+    encryption_type: PublicGroupStateEncryptionType,
+    ratchet_tree_type: RatchetTreeType,
+    payload: Vec<u8>,
+}
+
+#[wasm_bindgen]
+impl PublicGroupStateBundle {
+    #[wasm_bindgen(getter)]
+    pub fn encryption_type(&self) -> PublicGroupStateEncryptionType {
+        self.encryption_type
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn ratchet_tree_type(&self) -> RatchetTreeType {
+        self.ratchet_tree_type
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn payload(&self) -> Uint8Array {
+        Uint8Array::from(&*self.payload)
+    }
+}
+
+impl TryFrom<MlsPublicGroupStateBundle> for PublicGroupStateBundle {
+    type Error = WasmCryptoError;
+
+    fn try_from(pgs: MlsPublicGroupStateBundle) -> Result<Self, Self::Error> {
+        Ok(Self {
+            encryption_type: pgs.encryption_type.into(),
+            ratchet_tree_type: pgs.ratchet_tree_type.into(),
+            payload: pgs.payload.tls_serialize_detached().map_err(MlsError::from)?,
+        })
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[wasm_bindgen]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+/// see [core_crypto::prelude::mls::conversation::public_group_state::MlsPublicGroupStateEncryptionType]
+pub enum PublicGroupStateEncryptionType {
+    Plaintext = 0x0001,
+    JweEncrypted = 0x0002,
+}
+
+impl From<MlsPublicGroupStateEncryptionType> for PublicGroupStateEncryptionType {
+    fn from(from: MlsPublicGroupStateEncryptionType) -> Self {
+        match from {
+            MlsPublicGroupStateEncryptionType::Plaintext => Self::Plaintext,
+            MlsPublicGroupStateEncryptionType::JweEncrypted => Self::JweEncrypted,
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[wasm_bindgen]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+/// see [core_crypto::prelude::mls::conversation::public_group_state::MlsRatchetTreeType]
+pub enum RatchetTreeType {
+    Full = 0x0001,
+    Delta = 0x0002,
+    ByRef = 0x0003,
+}
+
+impl From<MlsRatchetTreeType> for RatchetTreeType {
+    fn from(from: MlsRatchetTreeType) -> Self {
+        match from {
+            MlsRatchetTreeType::Full => Self::Full,
+            MlsRatchetTreeType::Delta => Self::Delta,
+            MlsRatchetTreeType::ByRef => Self::ByRef,
+        }
     }
 }
 
@@ -217,7 +293,7 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
 pub struct ConversationInitBundle {
     conversation_id: ConversationId,
     commit: Vec<u8>,
-    public_group_state: Vec<u8>,
+    public_group_state: PublicGroupStateBundle,
 }
 
 #[wasm_bindgen]
@@ -233,21 +309,21 @@ impl ConversationInitBundle {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn public_group_state(&self) -> Uint8Array {
-        Uint8Array::from(&*self.public_group_state)
+    pub fn public_group_state(&self) -> PublicGroupStateBundle {
+        self.public_group_state.clone()
     }
 }
 
 impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
     type Error = WasmCryptoError;
 
-    fn try_from(from: MlsConversationInitBundle) -> Result<Self, Self::Error> {
-        let (commit, public_group_state) = from.to_bytes_pair()?;
-
+    fn try_from(mut from: MlsConversationInitBundle) -> Result<Self, Self::Error> {
+        let conversation_id = std::mem::take(&mut from.conversation_id);
+        let (commit, pgs) = from.to_bytes_pair()?;
         Ok(Self {
-            conversation_id: from.conversation_id,
+            conversation_id,
             commit,
-            public_group_state,
+            public_group_state: pgs.try_into()?,
         })
     }
 }

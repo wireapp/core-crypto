@@ -21,7 +21,7 @@ use core_crypto_keystore::CryptoKeystoreMls;
 
 use crate::{
     mls::{ConversationId, MlsCentral},
-    prelude::{ClientId, MlsConversation, MlsConversationConfiguration, PublicGroupStateBundle},
+    prelude::{ClientId, MlsConversation, MlsConversationConfiguration, MlsPublicGroupStateBundle},
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };
 
@@ -33,7 +33,7 @@ pub struct MlsConversationInitBundle {
     /// The external commit message
     pub commit: MlsMessageOut,
     /// [`PublicGroupState`] (aka GroupInfo) which becomes valid when the external commit is accepted by the Delivery Service
-    pub public_group_state: PublicGroupStateBundle,
+    pub public_group_state: MlsPublicGroupStateBundle,
 }
 
 impl MlsConversationInitBundle {
@@ -41,15 +41,9 @@ impl MlsConversationInitBundle {
     /// 0 -> external commit
     /// 1 -> public group state
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes_pair(&self) -> CryptoResult<(Vec<u8>, Vec<u8>)> {
-        use openmls::prelude::TlsSerializeTrait as _;
+    pub fn to_bytes_pair(self) -> CryptoResult<(Vec<u8>, MlsPublicGroupStateBundle)> {
         let commit = self.commit.to_bytes().map_err(MlsError::from)?;
-        let public_group_state = self
-            .public_group_state
-            .tls_serialize_detached()
-            .map_err(MlsError::from)?;
-
-        Ok((commit, public_group_state))
+        Ok((commit, self.public_group_state))
     }
 }
 
@@ -104,7 +98,7 @@ impl MlsCentral {
         Ok(MlsConversationInitBundle {
             conversation_id: group.group_id().to_vec(),
             commit,
-            public_group_state: PublicGroupStateBundle::try_new_full_unencrypted(pgs)?,
+            public_group_state: MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?,
         })
     }
 

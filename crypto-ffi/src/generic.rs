@@ -20,6 +20,7 @@ use std::collections::HashMap;
 use core_crypto::prelude::*;
 pub use core_crypto::prelude::{
     tls_codec::Serialize, CiphersuiteName, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, MemberId,
+    MlsPublicGroupStateBundle, MlsPublicGroupStateEncryptionType, MlsRatchetTreeType, PublicGroupStatePayload,
 };
 
 cfg_if::cfg_if! {
@@ -39,18 +40,18 @@ cfg_if::cfg_if! {
 pub struct MemberAddedMessages {
     pub welcome: Vec<u8>,
     pub commit: Vec<u8>,
-    pub public_group_state: Vec<u8>,
+    pub public_group_state: PublicGroupStateBundle,
 }
 
 impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     type Error = CryptoError;
 
     fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, commit, public_group_state) = msg.to_bytes_triple()?;
+        let (welcome, commit, pgs) = msg.to_bytes_triple()?;
         Ok(Self {
             welcome,
             commit,
-            public_group_state,
+            public_group_state: pgs.try_into()?,
         })
     }
 }
@@ -60,18 +61,39 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
 pub struct CommitBundle {
     pub welcome: Option<Vec<u8>>,
     pub commit: Vec<u8>,
-    pub public_group_state: Vec<u8>,
+    pub public_group_state: PublicGroupStateBundle,
 }
 
 impl TryFrom<MlsCommitBundle> for CommitBundle {
     type Error = CryptoError;
 
     fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
-        let (welcome, commit, public_group_state) = msg.to_bytes_triple()?;
+        let (welcome, commit, pgs) = msg.to_bytes_triple()?;
         Ok(Self {
             welcome,
             commit,
-            public_group_state,
+            public_group_state: pgs.try_into()?,
+        })
+    }
+}
+
+#[cfg_attr(feature = "c-api", repr(C))]
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct PublicGroupStateBundle {
+    pub encryption_type: MlsPublicGroupStateEncryptionType,
+    pub ratchet_tree_type: MlsRatchetTreeType,
+    pub payload: Vec<u8>,
+}
+
+impl TryFrom<MlsPublicGroupStateBundle> for PublicGroupStateBundle {
+    type Error = CryptoError;
+
+    fn try_from(pgs: MlsPublicGroupStateBundle) -> Result<Self, Self::Error> {
+        Ok(Self {
+            encryption_type: pgs.encryption_type,
+            ratchet_tree_type: pgs.ratchet_tree_type,
+            payload: pgs.payload.tls_serialize_detached().map_err(MlsError::from)?,
         })
     }
 }
@@ -104,18 +126,19 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
 pub struct ConversationInitBundle {
     pub conversation_id: ConversationId,
     pub commit: Vec<u8>,
-    pub public_group_state: Vec<u8>,
+    pub public_group_state: PublicGroupStateBundle,
 }
 
 impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
     type Error = CryptoError;
 
-    fn try_from(from: MlsConversationInitBundle) -> Result<Self, Self::Error> {
-        let (commit, public_group_state) = from.to_bytes_pair()?;
+    fn try_from(mut from: MlsConversationInitBundle) -> Result<Self, Self::Error> {
+        let conversation_id = std::mem::take(&mut from.conversation_id);
+        let (commit, pgs) = from.to_bytes_pair()?;
         Ok(Self {
-            conversation_id: from.conversation_id,
+            conversation_id,
             commit,
-            public_group_state,
+            public_group_state: pgs.try_into()?,
         })
     }
 }
