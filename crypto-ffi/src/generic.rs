@@ -133,6 +133,7 @@ pub struct DecryptedMessage {
     pub is_active: bool,
     pub commit_delay: Option<u64>,
     pub sender_client_id: Option<ClientId>,
+    pub has_epoch_changed: bool,
 }
 
 impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
@@ -151,6 +152,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             is_active: from.is_active,
             commit_delay: from.delay,
             sender_client_id: from.sender_client_id,
+            has_epoch_changed: from.has_epoch_changed,
         })
     }
 }

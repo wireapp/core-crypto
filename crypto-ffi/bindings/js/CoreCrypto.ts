@@ -247,6 +247,10 @@ export interface DecryptedMessage {
      * Client identifier of the sender of the message being decrypted. Only present for application messages.
      */
     senderClientId?: ClientId;
+    /**
+     * true when the decrypted message resulted in an epoch change i.e. it was a commit
+     */
+    hasEpochChanged: boolean;
 }
 
 /**
@@ -569,6 +573,7 @@ export class CoreCrypto {
             isActive: ffiDecryptedMessage.is_active,
             senderClientId: ffiDecryptedMessage.sender_client_id,
             commitDelay,
+            hasEpochChanged: ffiDecryptedMessage.has_epoch_changed,
         };
 
         return ret;
