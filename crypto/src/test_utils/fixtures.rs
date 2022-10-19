@@ -82,3 +82,12 @@ impl TestCase {
         (self.credential)(self.cfg.ciphersuite)
     }
 }
+
+impl Default for TestCase {
+    fn default() -> Self {
+        Self {
+            credential: |_| None,
+            cfg: MlsConversationConfiguration::default(),
+        }
+    }
+}
