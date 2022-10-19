@@ -366,24 +366,35 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn self_joining_by_external_commit_should_fail(case: TestCase) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
-            Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .new_conversation(id.clone(), case.cfg.clone())
-                    .await
-                    .unwrap();
-                let public_group_state = alice_central.verifiable_public_group_state(&id).await;
-                let join_self = alice_central
-                    .join_by_external_commit(public_group_state, case.cfg.clone())
-                    .await;
-                assert!(matches!(
-                    join_self.unwrap_err(),
-                    crate::CryptoError::MlsError(MlsError::MlsExternalCommitError(ExternalCommitError::CommitError))
-                ))
-            })
-        })
+    pub async fn existing_clients_can_join_by_external_commit(case: TestCase) {
+        run_test_with_client_ids(
+            case.clone(),
+            ["alice", "bob"],
+            move |[mut alice_central, mut bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(id.clone(), case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central
+                        .invite(&id, case.cfg.clone(), &mut bob_central)
+                        .await
+                        .unwrap();
+                    let public_group_state = alice_central.verifiable_public_group_state(&id).await;
+                    // Alice can rejoin by external commit
+                    let alice_join = alice_central
+                        .join_by_external_commit(public_group_state.clone(), case.cfg.clone())
+                        .await;
+                    assert!(alice_join.is_ok());
+                    // So can Bob
+                    let bob_join = bob_central
+                        .join_by_external_commit(public_group_state, case.cfg.clone())
+                        .await;
+                    assert!(bob_join.is_ok());
+                })
+            },
+        )
         .await
     }
 
