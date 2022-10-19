@@ -72,7 +72,7 @@ dictionary DecryptedMessage {
     boolean is_active;
     u64? commit_delay;
     ClientId? sender_client_id;
-    boolean is_epoch_changed;
+    boolean has_epoch_changed;
 };
 
 dictionary Invitee {

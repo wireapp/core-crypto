@@ -41,7 +41,7 @@ pub struct MlsConversationDecryptMessage {
     /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
     pub sender_client_id: Option<ClientId>,
     /// Is the epoch changed after decrypting this message
-    pub is_epoch_changed: bool,
+    pub has_epoch_changed: bool,
 }
 
 /// Abstraction over a MLS group capable of decrypting a MLS message
@@ -73,7 +73,7 @@ impl MlsConversation {
                 is_active: true,
                 delay: None,
                 sender_client_id,
-                is_epoch_changed: false,
+                has_epoch_changed: false,
             },
             ProcessedMessage::ProposalMessage(proposal) => {
                 self.validate_external_proposal(&proposal, callbacks, backend.crypto())?;
@@ -85,7 +85,7 @@ impl MlsConversation {
                     is_active: true,
                     delay: self.compute_next_commit_delay(),
                     sender_client_id: None,
-                    is_epoch_changed: false,
+                    has_epoch_changed: false,
                 }
             }
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
@@ -116,7 +116,7 @@ impl MlsConversation {
                     is_active: self.group.is_active(),
                     delay: self.compute_next_commit_delay(),
                     sender_client_id: None,
-                    is_epoch_changed: true,
+                    has_epoch_changed: true,
                 }
             }
         };
@@ -294,7 +294,7 @@ pub mod tests {
                         assert!(alice_central[&id].members().get(&charlie.id).is_none());
                         // Previous commit to add Charlie has been discarded but its proposals will be renewed
                         assert!(alice_central.pending_commit(&id).is_none());
-                        assert!(decrypted.is_epoch_changed)
+                        assert!(decrypted.has_epoch_changed)
                     })
                 },
             )
@@ -375,7 +375,7 @@ pub mod tests {
                             .unwrap();
                         // Bob also has Charlie in the group
                         assert!(bob_central[&id].members().get(&charlie.id).is_some());
-                        assert!(decrypted.is_epoch_changed);
+                        assert!(decrypted.has_epoch_changed);
 
                         // Charlie can join with the Welcome from renewed Add proposal
                         let id = charlie_central
@@ -426,7 +426,7 @@ pub mod tests {
                         let MlsConversationDecryptMessage {
                             proposals,
                             delay,
-                            is_epoch_changed,
+                            has_epoch_changed,
                             ..
                         } = alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
@@ -435,7 +435,7 @@ pub mod tests {
                         assert!(proposals.is_empty());
                         assert!(delay.is_none());
                         assert!(alice_central.pending_proposals(&id).is_empty());
-                        assert!(is_epoch_changed)
+                        assert!(has_epoch_changed)
                     })
                 },
             )
@@ -510,7 +510,7 @@ pub mod tests {
                         // Bob also has Charlie in the group
                         bob_central.commit_accepted(&id).await.unwrap();
                         assert!(bob_central[&id].members().get(&b"charlie".to_vec()).is_some());
-                        assert!(decrypted.is_epoch_changed);
+                        assert!(decrypted.has_epoch_changed);
                     })
                 },
             )
@@ -639,7 +639,7 @@ pub mod tests {
                             .unwrap();
                         assert!(decrypted.app_msg.is_none());
                         assert!(decrypted.delay.is_some());
-                        assert!(!decrypted.is_epoch_changed)
+                        assert!(!decrypted.has_epoch_changed)
                     })
                 },
             )
@@ -781,7 +781,7 @@ pub mod tests {
                         bob_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         bob_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(bob_central[&id].members().len(), 3);
-                        assert!(!decrypted.is_epoch_changed)
+                        assert!(!decrypted.has_epoch_changed)
                     })
                 },
             )
@@ -852,7 +852,7 @@ pub mod tests {
                         let decrypted = bob_central.decrypt_message(&id, encrypted).await.unwrap();
                         let dec_msg = decrypted.app_msg.unwrap();
                         assert_eq!(&dec_msg[..], &msg[..]);
-                        assert!(!decrypted.is_epoch_changed);
+                        assert!(!decrypted.has_epoch_changed);
                     })
                 },
             )

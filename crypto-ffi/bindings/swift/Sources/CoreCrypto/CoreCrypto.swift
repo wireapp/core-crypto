@@ -187,21 +187,21 @@ public struct DecryptedMessage: ConvertToInner {
     /// Client identifier of the sender of the message being decrypted. Only present for application messages.
     public var senderClientId: ClientId?
     /// It is set to true if the decrypted messages resulted in a epoch change (AKA it was a commit)
-    public var isEpochChanged: Bool
+    public var hasEpochChanged: Bool
 
-    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?, isEpochChanged: Bool) {
+    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?, hasEpochChanged: Bool) {
         self.message = message
         self.proposals = proposals
         self.isActive = isActive
         self.commitDelay = commitDelay
         self.senderClientId = senderClientId
-        self.isEpochChanged = isEpochChanged
+        self.hasEpochChanged = hasEpochChanged
     }
 
     func convert() -> Inner {
         return CoreCryptoSwift.DecryptedMessage(message: self.message, proposals: self.proposals.map({ (bundle) -> CoreCryptoSwift.ProposalBundle in
             bundle.convert()
-        }), isActive: self.isActive, commitDelay: self.commitDelay, senderClientId: self.senderClientId, self.isEpochChanged)
+        }), isActive: self.isActive, commitDelay: self.commitDelay, senderClientId: self.senderClientId, self.hasEpochChanged)
     }
 }
 

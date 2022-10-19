@@ -261,7 +261,7 @@ pub struct DecryptedMessage {
     is_active: bool,
     commit_delay: Option<u32>,
     sender_client_id: Option<Vec<u8>>,
-    is_epoch_changed: bool,
+    has_epoch_changed: bool,
 }
 
 impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
@@ -286,7 +286,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             is_active: from.is_active,
             commit_delay,
             sender_client_id: from.sender_client_id.map(ClientId::into),
-            is_epoch_changed: from.is_epoch_changed,
+            has_epoch_changed: from.has_epoch_changed,
         })
     }
 }
@@ -323,8 +323,8 @@ impl DecryptedMessage {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn is_epoch_changed(&self) -> bool {
-        self.is_epoch_changed
+    pub fn has_epoch_changed(&self) -> bool {
+        self.has_epoch_changed
     }
 }
 

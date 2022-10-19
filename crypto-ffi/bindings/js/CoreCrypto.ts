@@ -250,7 +250,7 @@ export interface DecryptedMessage {
     /**
      * true when the decrypted message resulted in an epoch change i.e. it was a commit
      */
-    isEpochChanged: boolean;
+    hasEpochChanged: boolean;
 }
 
 /**
@@ -573,7 +573,7 @@ export class CoreCrypto {
             isActive: ffiDecryptedMessage.is_active,
             senderClientId: ffiDecryptedMessage.sender_client_id,
             commitDelay,
-            isEpochChanged: ffiDecryptedMessage.is_epoch_changed,
+            hasEpochChanged: ffiDecryptedMessage.has_epoch_changed,
         };
 
         return ret;
