@@ -248,7 +248,7 @@ export interface DecryptedMessage {
      */
     senderClientId?: ClientId;
     /**
-     * It is set to true if the decrypted messages resulted in a epoch change (AKA it was a commit)
+     * true when the decrypted message resulted in an epoch change i.e. it was a commit
      */
     isEpochChanged: boolean;
 }
