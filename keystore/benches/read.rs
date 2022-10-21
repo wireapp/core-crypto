@@ -42,8 +42,8 @@ fn benchmark_reads_proteus(c: &mut Criterion) {
     #[cfg(feature = "memory-cache")]
     store_uncached.cache(false);
 
-    let prekey_id = proteus::keys::PreKeyId::new(28273);
-    let prekey = proteus::keys::PreKey::new(prekey_id);
+    let prekey_id = proteus_wasm::keys::PreKeyId::new(28273);
+    let prekey = proteus_wasm::keys::PreKey::new(prekey_id);
 
     use core_crypto_keystore::CryptoKeystoreProteus as _;
     let prekey_id_value = prekey_id.value();

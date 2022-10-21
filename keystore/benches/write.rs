@@ -32,7 +32,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 #[cfg(feature = "proteus-keystore")]
 fn benchmark_writes_proteus(c: &mut Criterion) {
     use core_crypto_keystore::CryptoKeystoreProteus as _;
-    use proteus::keys::{PreKey, PreKeyId};
+    use proteus_wasm::keys::{PreKey, PreKeyId};
     use rand::Rng as _;
 
     let store = block_on(async { CryptoKeystore::open_with_key("bench_write", "key").await.unwrap() });
@@ -47,7 +47,10 @@ fn benchmark_writes_proteus(c: &mut Criterion) {
                 let pk = PreKey::new(PreKeyId::new(u16::from_le_bytes(prng.gen())));
                 (pk.key_id.value(), pk.serialise().unwrap())
             },
-            |(pk_id, pk_ser)| async move { black_box(store.proteus_store_prekey(pk_id, &pk_ser).await.unwrap()) },
+            |(pk_id, pk_ser)| async move {
+                store.proteus_store_prekey(pk_id, &pk_ser).await.unwrap();
+                black_box(())
+            },
             BatchSize::SmallInput,
         )
     });
