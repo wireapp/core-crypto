@@ -7,7 +7,7 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
-## [0.6.1-pre.1] - 2022-10-21
+## [0.6.0-pre.1] - 2022-10.21
 
 <details>
     <summary>git-conventional changelog</summary>
@@ -68,6 +68,10 @@ Platform support legends:
 ### Documentation
 
 - Add installation instructions for e2e runner on macos
+
+### Miscellaneous Tasks
+
+- Release v0.5.2
 
 </details>
 
