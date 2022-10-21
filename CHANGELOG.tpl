@@ -14,6 +14,8 @@ Platform support legends:
 {{git-cliff tag="v0.6.0-pre.2" unreleased=true}}
 </details>
 
+* Enable proteus support
+
 ## [0.6.0-pre.1] - 2022-10.21
 
 <details>

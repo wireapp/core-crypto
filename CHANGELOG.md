@@ -14,6 +14,8 @@ Platform support legends:
 
 </details>
 
+* Enable proteus support
+
 ## [0.6.0-pre.1] - 2022-10.21
 
 <details>
