@@ -7,6 +7,13 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.6.0-pre.2] - 2022-10.21
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+</details>
+
 ## [0.6.0-pre.1] - 2022-10.21
 
 <details>

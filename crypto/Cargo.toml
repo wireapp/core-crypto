@@ -2,7 +2,7 @@
 name = "core-crypto"
 description = "Abstraction over OpenMLS with persistent keystore"
 repository = "https://github.com/wireapp/core-crypto"
-version = "0.6.0-pre.1"
+version = "0.6.0-pre.2"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
@@ -12,7 +12,7 @@ name = "core_crypto"
 crate-type = ["lib", "cdylib"]
 
 [features]
-default = []
+default = ["proteus", "cryptobox-migrate"]
 proteus = [
     "dep:proteus-wasm",
     "core-crypto-keystore/proteus-keystore"
@@ -57,7 +57,7 @@ serde-wasm-bindgen = "0.4"
 rexie = { version = "0.4", optional = true }
 
 [dependencies.core-crypto-keystore]
-version = "0.6.0-pre.1"
+version = "0.6.0-pre.2"
 path = "../keystore"
 
 [dependencies.mls-crypto-provider]
@@ -90,7 +90,7 @@ version = "0.3"
 features = ["async_futures", "html_reports"]
 
 [dev-dependencies.core-crypto-attributes]
-version = "0.6.0-pre.1"
+version = "0.6.0-pre.2"
 path = "../crypto-attributes"
 
 [package.metadata.wasm-pack.profile.release]
