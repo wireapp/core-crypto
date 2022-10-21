@@ -7,6 +7,54 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.6.0-pre.1] - 2022-10.21
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- 'join_by_external_commit' returns a non TLS serialized conversation id
+
+### Features
+
+- [**breaking**] Expose a 'PublicGroupStateBundle' struct used in 'CommitBundle' variants
+- [**breaking**] Remove all the final_* methods returning a TLS encoded CommitBundle
+- Returning if decrypted message changed the epoch - CL-92 ([#152](https://github.com/wireapp/core-crypto/issues/152))
+- Exporting secret key derived from the group and client ids from the members - CL-97 - CL-98 ([#142](https://github.com/wireapp/core-crypto/issues/142))
+- Added API to generate Proteus prekeys
+- Fixed Cryptobox import for WASM
+- Added support for migrating Cryptobox data
+- Added FFI for CoreCrypto-Proteus
+- Added support for Proteus
+- Validate received external commits making sure the sender's user already belongs to the MLS group and has the right role
+- [**breaking**] Rename callback~~`client_id_belongs_to_one_of`~~ into `client_is_existing_group_user`
+- [**breaking**] External commit returns a bundle containing the PGS
+- [**breaking**] Add `clear_pending_group_from_external_commit` to cleanly abort an external commit. Also renamed `group_state` argument into `public_group_state` wherever found which can be considered a breaking change in some languages
+- [**breaking**] Rename `MlsConversationInitMessage#group` into `MlsConversationInitMessage#conversation_id` because it was misleading about the actual returned value
+
+### Miscellaneous Tasks
+
+- Apply suggestions from code review
+- Updated bundled FFI files
+- Added Proteus testing infra
+- Added missing docs
+- Nits, fmt & cargo-deny tweak
+- Add m1 support for the jvm bindings ([#139](https://github.com/wireapp/core-crypto/issues/139))
+- Remove unneeded `map_err(CryptoError::from)`
+- Remove useless code
+
+### Testing
+
+- Fix external commit tests allowing member to rejoin a group by external commit
+- Add a default impl for 'TestCase', very useful when one has to debug on IntelliJ
+- Parameterize ciphers
+- Ensure external senders can be inferred when joining by external commit or welcome
+- Fix rcgen failing on WASM due to some unsupported elliptic curve methods invoked at compile time
+- Ensure external commit are retriable
+
+</details>
+
 ## [0.5.2] - 2022-27-09
 
 <details>
@@ -20,6 +68,10 @@ Platform support legends:
 ### Documentation
 
 - Add installation instructions for e2e runner on macos
+
+### Miscellaneous Tasks
+
+- Release v0.5.2
 
 </details>
 
