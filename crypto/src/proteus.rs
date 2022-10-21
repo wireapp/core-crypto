@@ -105,9 +105,8 @@ impl ProteusCentral {
             let sk = identity.sk_raw();
             let pk = identity.pk_raw();
             // SAFETY: Byte lengths are ensured at the keystore level so this function is safe to call, despite being cursed
-            let kp = unsafe { IdentityKeyPair::from_raw_key_pair(*sk, *pk) };
 
-            kp
+            unsafe { IdentityKeyPair::from_raw_key_pair(*sk, *pk) }
         } else {
             Self::create_identity(keystore).await?
         };

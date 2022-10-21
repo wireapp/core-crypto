@@ -326,6 +326,6 @@ impl CoreCrypto {
     ///The client can then be initialized with [CoreCrypto::proteus_init]
     pub async fn proteus_cryptobox_migrate(&self, path: &str) -> CryptoResult<()> {
         let keystore = self.mls.mls_backend.borrow_keystore();
-        Ok(crate::proteus::ProteusCentral::cryptobox_migrate(keystore, path).await?)
+        crate::proteus::ProteusCentral::cryptobox_migrate(keystore, path).await
     }
 }
