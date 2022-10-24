@@ -1,4 +1,4 @@
-name: Publish packages
+name: Publish Node packages
 
 on:
   push:
@@ -12,7 +12,7 @@ env:
   RUSTUP_MAX_RETRIES: 10
 
 jobs:
-  publish:
+  publish-wasm:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
     steps:
@@ -21,20 +21,17 @@ jobs:
         with:
           node-version: 16
 
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown
 
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
 
-
       - name: Install wasm-pack
         uses: jetli/wasm-pack-action@v0.3.0
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: Build WASM package
         run: |

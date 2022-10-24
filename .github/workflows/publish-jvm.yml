@@ -1,0 +1,39 @@
+name: Publish JVM/Android packages
+
+on:
+  [push]
+  # push:
+  #   tags:
+  #     - "**"
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUSTFLAGS: "-D warnings -W unreachable-pub"
+  RUSTUP_MAX_RETRIES: 10
+
+jobs:
+  publish-jvm:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: "x86_64-apple-darwin,aarch64-apple-darwin,x86_64-unknown-linux-gnu,armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android,i686-linux-android"
+
+      - name: Setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+
+      - name: Build JVM package
+        run: |
+          cd crypto-ffi
+          cargo make copy-jvm-resources
+          cargo make copy-android-resources
+
+      - name: Push release to wire-maven repo
+        uses: dmnemec/copy_file_to_another_repo_action@main
+        with:
+          source_file: ../wire-maven
+          destination_repo: wireapp/wire-maven
+          commit_message: "Release of core-crypto $GITHUB_REF_NAME"

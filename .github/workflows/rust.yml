@@ -9,16 +9,11 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
           components: rustfmt
       - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+      - run: cargo fmt --all -- --check
 
   check:
     runs-on: ubuntu-latest
@@ -26,19 +21,10 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-      - name: "Check benches"
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --benches
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check
+      - run: cargo check --benches
 
   build:
     runs-on: ubuntu-latest
@@ -46,20 +32,12 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
           components: clippy
       - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --verbose
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
+      - run: cargo build --verbose
+      - run: cargo clippy -- -D warnings
 
   test:
     runs-on: ubuntu-latest
@@ -67,22 +45,13 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v1
       - uses: taiki-e/install-action@nextest
       - name: "Test CoreCrypto"
-        uses: actions-rs/cargo@v1
-        with:
-          command: nextest
-          args: run --verbose --release
+        run: cargo nextest run --verbose --release
       - name: "Test CoreCrypto documentation"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --doc
+        run: cargo test --doc
 
   proteus-test:
     runs-on: ubuntu-latest
@@ -90,17 +59,11 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v1
       - uses: taiki-e/install-action@nextest
       - name: "Test CoreCrypto's proteus implementation"
-        uses: actions-rs/cargo@v1
-        with:
-          command: nextest
-          args: run --verbose --features proteus,cryptobox-migrate,proteus-keystore proteus
+        run: cargo nextest run --verbose --features proteus,cryptobox-migrate,proteus-keystore proteus
 
   # extract things unrelated to main tests not to slow them down
   tooling-test:
@@ -109,17 +72,11 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v1
       - uses: taiki-e/install-action@nextest
       - name: "Test CoreCrypto xtask tooling"
-        uses: actions-rs/cargo@v1
-        with:
-          command: nextest
-          args: run --verbose --manifest-path xtask/Cargo.toml
+        run: cargo nextest run --verbose --manifest-path xtask/Cargo.toml
       - name: "Test CoreCrypto benchmarks"
         run: sh crypto/benches/scripts/test.sh
 
@@ -132,11 +89,9 @@ jobs:
         workspace: [ "crypto", "keystore", "mls-provider" ]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - uses: Swatinem/rust-cache@v1
@@ -152,11 +107,9 @@ jobs:
         workspace: ["crypto", "keystore", "mls-provider"]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - uses: Swatinem/rust-cache@v1
@@ -169,11 +122,9 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - uses: Swatinem/rust-cache@v1
@@ -188,11 +139,9 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: Install wasm-pack
@@ -207,10 +156,7 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
+      - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v1
       - name: cargo/hack (verify features compile in isolation)
