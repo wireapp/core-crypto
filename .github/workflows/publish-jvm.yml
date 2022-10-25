@@ -15,7 +15,7 @@ env:
 jobs:
   publish-jvm:
     if: github.repository == 'wireapp/core-crypto'
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
