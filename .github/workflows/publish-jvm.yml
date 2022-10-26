@@ -32,15 +32,23 @@ jobs:
           AR_x86_64_unknown_linux_gnu: x86_64-unknown-linux-gnu-ar
           CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: x86_64-unknown-linux-gnu-gcc
         run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          cd ../
+          git clone https://github.com/wireapp/wire-maven.git
           brew tap messense/macos-cross-toolchains
           brew install x86_64-unknown-linux-gnu
-          cd crypto-ffi
+          cd ../core-crypto/crypto-ffi
           cargo make copy-jvm-resources
           cargo make copy-android-resources
+          cd ../kotlin
+          ./gradlew android:publishMavenPublicationToWireRepository
+          ./gradlew jvm:publishMavenPublicationToWireRepository
+          cd ../../wire-maven
+          git commit -am "Release of core-crypto $GITHUB_REF_NAME"
 
       - name: Push release to wire-maven repo
-        uses: dmnemec/copy_file_to_another_repo_action@main
+        uses: ad-m/github-push-action@master
         with:
-          source_file: ../wire-maven
-          destination_repo: wireapp/wire-maven
-          commit_message: "Release of core-crypto $GITHUB_REF_NAME"
+          directory: ../wire-maven
+          repository: wireapp/wire-maven
