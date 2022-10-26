@@ -99,9 +99,17 @@ cargo make wasm
 
 ## Publishing
 
+### Versioning
+
+* Run `cargo xtask bump [major|minor|patch|rc|pre]`
+* Update the internal dependencies of the updated crates to use the new version
+* Update the version in the `package.json`
+* Update the version in the `build.gradle.kts` inside `./kotlin/android` and `./kotlin/jvm`
+
 ### Changelog
 
 * Update <CHANGELOG.tpl> accordingly
+* Fetch the latest tags from the remote
 * run `cargo xtask documentation changelog` to update <CHANGELOG.md> with the git-conventional history
 
 ### Android / JVM

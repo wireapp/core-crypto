@@ -1,10 +1,9 @@
 name: Publish JVM/Android packages
 
 on:
-  [push]
-  # push:
-  #   tags:
-  #     - "**"
+  push:
+    tags:
+      - "**"
 
 env:
   CARGO_INCREMENTAL: 0
@@ -54,9 +53,4 @@ jobs:
           ./gradlew jvm:publishMavenPublicationToWireRepository
           cd ../../wire-maven
           git commit -am "Release of core-crypto $GITHUB_REF_NAME"
-
-      - name: Push release to wire-maven repo
-        uses: ad-m/github-push-action@master
-        with:
-          directory: ../wire-maven
-          repository: wireapp/wire-maven
+          git push https://${{ secrets.MAVEN_GITHUB_TOKEN }}@github.com/wireapp/wire-maven.git
