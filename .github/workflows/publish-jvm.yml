@@ -52,5 +52,5 @@ jobs:
           ./gradlew android:publishMavenPublicationToWireRepository
           ./gradlew jvm:publishMavenPublicationToWireRepository
           cd ../../wire-maven
-          git commit -am "Release of core-crypto $GITHUB_REF_NAME"
+          git commit -am "chore: release of core-crypto $GITHUB_REF_NAME"
           git push https://${{ secrets.MAVEN_GITHUB_TOKEN }}@github.com/wireapp/wire-maven.git
