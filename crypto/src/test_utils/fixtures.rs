@@ -53,6 +53,13 @@ pub use rstest_reuse::{self, *};
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
     */
+    case::pure_ciphertext(TestCase {
+        credential: $crate::mls::credential::CertificateBundle::rand_basic(),
+        cfg: crate::prelude::MlsConversationConfiguration {
+            policy: openmls::group::PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
+            ..Default::default()
+        }
+    }),
 )]
 #[allow(non_snake_case)]
 pub fn all_cred_cipher(case: TestCase) {}

@@ -29,7 +29,7 @@
 
 use std::collections::HashMap;
 
-use openmls::prelude::{ExternalSender, SignaturePublicKey};
+use openmls::prelude::{ExternalSender, SignaturePublicKey, WireFormatPolicy};
 use openmls::{group::MlsGroup, messages::Welcome, prelude::Credential, prelude::SenderRatchetConfiguration};
 use openmls_traits::types::SignatureScheme;
 use openmls_traits::OpenMlsCryptoProvider;
@@ -57,7 +57,7 @@ mod renew;
 pub type ConversationId = Vec<u8>;
 
 /// The configuration parameters for a group/conversation
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct MlsConversationConfiguration {
     /// Admins of the group/conversation
     pub admins: Vec<MemberId>,
@@ -68,6 +68,20 @@ pub struct MlsConversationConfiguration {
     pub key_rotation_span: Option<std::time::Duration>,
     /// Delivery service public signature key and credential
     pub external_senders: Vec<ExternalSender>,
+    /// Defines if handshake messages are encrypted or not
+    pub policy: WireFormatPolicy,
+}
+
+impl Default for MlsConversationConfiguration {
+    fn default() -> Self {
+        Self {
+            admins: Default::default(),
+            ciphersuite: Default::default(),
+            key_rotation_span: Default::default(),
+            external_senders: Default::default(),
+            policy: openmls::group::MIXED_PLAINTEXT_WIRE_FORMAT_POLICY,
+        }
+    }
 }
 
 impl MlsConversationConfiguration {
@@ -79,7 +93,7 @@ impl MlsConversationConfiguration {
     #[inline(always)]
     pub fn as_openmls_default_configuration(&self) -> CryptoResult<openmls::group::MlsGroupConfig> {
         Ok(openmls::group::MlsGroupConfig::builder()
-            .wire_format_policy(openmls::group::MIXED_PLAINTEXT_WIRE_FORMAT_POLICY)
+            .wire_format_policy(self.policy)
             .max_past_epochs(3)
             .padding_size(Self::PADDING_SIZE)
             .number_of_resumtion_secrets(1)
