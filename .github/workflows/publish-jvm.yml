@@ -1,9 +1,10 @@
 name: Publish JVM/Android packages
 
 on:
-  push:
-    tags:
-      - "**"
+  [push]
+  # push:
+  #   tags:
+  #     - "**"
 
 env:
   CARGO_INCREMENTAL: 0
@@ -39,18 +40,11 @@ jobs:
           AR_x86_64_unknown_linux_gnu: x86_64-unknown-linux-gnu-ar
           CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: x86_64-unknown-linux-gnu-gcc
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          cd ../
-          git clone https://github.com/wireapp/wire-maven.git
           brew tap messense/macos-cross-toolchains
           brew install x86_64-unknown-linux-gnu
-          cd ./core-crypto/crypto-ffi
+          cd crypto-ffi
           cargo make copy-jvm-resources
           cargo make copy-android-resources
           cd ../kotlin
           ./gradlew android:publishMavenPublicationToWireRepository
           ./gradlew jvm:publishMavenPublicationToWireRepository
-          cd ../../wire-maven
-          git commit -am "chore: release of core-crypto $GITHUB_REF_NAME"
-          git push https://${{ secrets.MAVEN_GITHUB_TOKEN }}@github.com/wireapp/wire-maven.git
