@@ -1,10 +1,9 @@
 name: Publish Android packages
 
 on:
-  [push]
-  # push:
-  #   tags:
-  #     - "**"
+  push:
+    tags:
+      - "**"
 
 env:
   CARGO_INCREMENTAL: 0
