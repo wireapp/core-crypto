@@ -25,11 +25,12 @@ jobs:
           distribution: "adopt"
       - name: Gradle Setup
         uses: gradle/gradle-build-action@v2
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
       - name: "Setup rust"
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: "x86_64-apple-darwin,aarch64-apple-darwin,x86_64-unknown-linux-gnu,armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android,i686-linux-android"
-
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
 
@@ -45,5 +46,9 @@ jobs:
           cd crypto-ffi
           cargo make copy-jvm-resources
           cargo make copy-android-resources
-          cd ../kotlin
-          ./gradlew publishMavenPublicationToGithubRepository
+      - name: Publish package
+        uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
+        with:
+          arguments: publishMavenPublicationToGithubRepository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
