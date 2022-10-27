@@ -46,5 +46,4 @@ jobs:
           cargo make copy-jvm-resources
           cargo make copy-android-resources
           cd ../kotlin
-          ./gradlew android:publishMavenPublicationToWireRepository
-          ./gradlew jvm:publishMavenPublicationToWireRepository
+          ./gradlew publishMavenPublicationToGithubRepository
