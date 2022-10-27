@@ -7,7 +7,7 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
-## [0.6.0-rc.4] - 2022-12-??
+## [0.6.0-rc.4] - 2023-01-09
 
 <details>
     <summary>git-conventional changelog</summary>
@@ -23,6 +23,7 @@ Platform support legends:
     * WASM: If the provided store `path` is missing or doesn't have the expected tables, we now throw a `CryptoboxMigrationError::ProvidedPathDoesNotExist` error
     * Other platforms: If the provided cryptobox folder at `path` is missing, we now throw a `CryptoboxMigrationError::ProvidedPathDoesNotExist` error
     * Likewise, on all platforms, if the Cryptobox Identity is not present, we now throw a `CryptoboxMigrationError::IdentityNotFound` error and abort the process
+* Tooling: Added a custom WASM test runner based on WebDriver (BiDi interactive test progress reporting in progress still)
 
 ## [0.6.0-rc.3] - 2022-12-15
 

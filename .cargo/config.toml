@@ -25,7 +25,16 @@ build-std = ["std", "panic_abort"]
 [alias]
 xtask = "run --manifest-path ./xtask/Cargo.toml --"
 
-# [target.wasm32-unknown-unknown]
+[target.wasm32-unknown-unknown]
+runner = [
+    "cargo", "run",
+    "--bin", "wasm-browser-test-runner",
+    "--manifest-path", "../extras/wasm-browser-test-runner/Cargo.toml",
+    "--",
+    "--no-bidi",
+    "--webdriver=chrome",
+    "--timeout=600"
+]
 # rustflags = "-C target-feature=+atomics,+bulk-memory,+mutable-globals"
 
 # Android linkage

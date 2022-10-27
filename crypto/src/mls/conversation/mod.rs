@@ -306,7 +306,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn create_100_people_conversation(case: TestCase) {
+    pub async fn create_many_people_conversation(case: TestCase) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -350,6 +350,7 @@ pub mod tests {
                 assert_eq!(alice_central[&id].members().len(), 1 + number_of_friends);
 
                 let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
+                // TODO: Do things in parallel, this is waaaaay too slow (takes around 5 minutes)
                 for mut c in bob_and_friends {
                     c.process_welcome_message(welcome.clone(), case.custom_cfg())
                         .await
