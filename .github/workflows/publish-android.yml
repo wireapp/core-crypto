@@ -1,9 +1,10 @@
-name: Publish JVM packages
+name: Publish Android packages
 
 on:
-  push:
-    tags:
-      - "**"
+  [push]
+  # push:
+  #   tags:
+  #     - "**"
 
 env:
   CARGO_INCREMENTAL: 0
@@ -12,9 +13,9 @@ env:
   RUSTUP_MAX_RETRIES: 10
 
 jobs:
-  publish-jvm:
+  publish-android:
     if: github.repository == 'wireapp/core-crypto'
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK 11
@@ -29,25 +30,20 @@ jobs:
       - name: "Setup rust"
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: "x86_64-apple-darwin,aarch64-apple-darwin,x86_64-unknown-linux-gnu"
+          targets: "armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android,i686-linux-android"
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
 
-      - name: Build JVM package
-        env:
-          CC_x86_64_unknown_linux_gnu: x86_64-unknown-linux-gnu-gcc
-          CXX_x86_64_unknown_linux_gnu: x86_64-unknown-linux-gnu-g++
-          AR_x86_64_unknown_linux_gnu: x86_64-unknown-linux-gnu-ar
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: x86_64-unknown-linux-gnu-gcc
+      - name: Build Android package
         run: |
           brew tap messense/macos-cross-toolchains
           brew install x86_64-unknown-linux-gnu
           cd crypto-ffi
-          cargo make copy-jvm-resources
+          cargo make copy-android-resources
       - name: Publish package
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: kotlin
-          arguments: "jvm:publishMavenPublicationToGithubRepository"
+          arguments: "android:publishMavenPublicationToGithubRepository"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
