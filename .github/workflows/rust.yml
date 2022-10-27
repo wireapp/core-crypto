@@ -1,6 +1,13 @@
 name: Rust compile & test
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on: [push]
+
+env:
+  RUST_BACKTRACE: 1
 
 jobs:
   fmt:
@@ -104,17 +111,21 @@ jobs:
       CARGO_TERM_COLOR: always
     strategy:
       matrix:
-        workspace: ["crypto", "keystore", "mls-provider"]
+        workspace: ["core-crypto", "core-crypto-keystore", "mls-crypto-provider"]
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      # - name: Install wasm-pack
+      #   run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - uses: browser-actions/setup-chrome@latest
+        with:
+          chrome-version: stable
       - uses: Swatinem/rust-cache@v2
       - name: Run tests (wasm)
-        run: wasm-pack test --release --headless --chrome ${{ matrix.workspace }}
+        run: cargo test --release --target wasm32-unknown-unknown -p ${{ matrix.workspace }}
+        # run: cargo test --target wasm32-unknown-unknown
 
   proteus-wasm-test:
     runs-on: ubuntu-latest
@@ -146,6 +157,9 @@ jobs:
         uses: davidB/rust-cargo-make@v1
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - uses: browser-actions/setup-chrome@latest
+        with:
+          chrome-version: stable
       - uses: Swatinem/rust-cache@v2
       - name: Run E2E interop test
         run: cargo run --bin interop

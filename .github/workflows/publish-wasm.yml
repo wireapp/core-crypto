@@ -1,5 +1,8 @@
 name: Publish Node packages
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
 on:
   push:
     tags:

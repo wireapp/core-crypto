@@ -1,5 +1,8 @@
 name: Publish Android packages
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
 on:
   push:
     tags:
