@@ -1,0 +1,37 @@
+name: Publish Swift package
+
+on:
+  push:
+    tags:
+      - "**"
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUSTFLAGS: "-D warnings -W unreachable-pub"
+  RUSTUP_MAX_RETRIES: 10
+
+jobs:
+  publish-swift:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: "Setup rust"
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: "aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim"
+      - name: Setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+
+      - name: Build and Publish Swift package
+        run: |
+          cd crypto-ffi
+          cargo make create-swift-package
+          cd ../../
+          git clone https://github.com/wireapp/core-crypto-swift.git
+          cd core-crypto-swift
+          cp -r crypto-ffi/bindings/swift/* ./
+          git commit -am "chore: release of core-crypto $GITHUB_REF_NAME"
+          git tag $GITHUB_REF_NAME
+          git push https://${{ secrets.SWIFT_GITHUB_TOKEN }}@github.com/wireapp/core-crypto-swift.git
