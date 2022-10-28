@@ -20,7 +20,7 @@ name = "write"
 harness = false
 
 [features]
-default = ["mls-keystore"]
+default = ["mls-keystore", "proteus-keystore"]
 mls-keystore = ["openmls_traits"]
 proteus-keystore = ["proteus-traits"]
 ios-wal-compat = ["security-framework"]
