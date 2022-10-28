@@ -9,15 +9,19 @@ buildscript {
     }
 }
 
-plugins {
-    id("maven-publish")
-}
+plugins { id("maven-publish") }
 
 publishing {
     repositories {
         maven {
-            name = "WireMaven"
-            url = uri("../../wire-maven/releases")
+            name = "GitHub"
+            url = uri("https://maven.pkg.github.com/wireapp/core-crypto")
+            credentials {
+                username =
+                        project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+                password =
+                        project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+            }
         }
     }
 }
@@ -28,4 +32,3 @@ allprojects {
         mavenCentral()
     }
 }
-

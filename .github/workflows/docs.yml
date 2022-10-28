@@ -19,11 +19,9 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - uses: actions-rs/toolchain@v1
+    - uses: dtolnay/rust-toolchain@stable
       with:
-        profile: minimal
-        toolchain: stable
-        target: wasm32-unknown-unknown
+        targets: wasm32-unknown-unknown
 
     - name: Setup cargo-make
       uses: davidB/rust-cargo-make@v1

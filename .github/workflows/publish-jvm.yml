@@ -1,0 +1,53 @@
+name: Publish JVM packages
+
+on:
+  push:
+    tags:
+      - "**"
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUSTFLAGS: "-D warnings -W unreachable-pub"
+  RUSTUP_MAX_RETRIES: 10
+
+jobs:
+  publish-jvm:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: "11"
+          distribution: "adopt"
+      - name: Gradle Setup
+        uses: gradle/gradle-build-action@v2
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@v1
+      - name: "Setup rust"
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: "x86_64-apple-darwin,aarch64-apple-darwin,x86_64-unknown-linux-gnu"
+      - name: Setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+
+      - name: Build JVM package
+        env:
+          CC_x86_64_unknown_linux_gnu: x86_64-unknown-linux-gnu-gcc
+          CXX_x86_64_unknown_linux_gnu: x86_64-unknown-linux-gnu-g++
+          AR_x86_64_unknown_linux_gnu: x86_64-unknown-linux-gnu-ar
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: x86_64-unknown-linux-gnu-gcc
+        run: |
+          brew tap messense/macos-cross-toolchains
+          brew install x86_64-unknown-linux-gnu
+          cd crypto-ffi
+          cargo make copy-jvm-resources
+      - name: Publish package
+        uses: gradle/gradle-build-action@v2
+        with:
+          build-root-directory: kotlin
+          arguments: "jvm:publishMavenPublicationToGithubRepository"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
