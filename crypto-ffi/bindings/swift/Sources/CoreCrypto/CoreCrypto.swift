@@ -25,19 +25,19 @@ private protocol ConvertToInner {
 
 extension CoreCryptoSwift.CommitBundle {
     func convertTo() -> CommitBundle {
-        return CommitBundle(welcome: self.welcome, commit: self.commit, publicGroupState: self.publicGroupState)
+        return CommitBundle(welcome: self.welcome, commit: self.commit, publicGroupState: self.publicGroupState.convertTo())
     }
 }
 
 extension CoreCryptoSwift.MemberAddedMessages {
     func convertTo() -> MemberAddedMessages {
-        return MemberAddedMessages(commit: self.commit, welcome: self.welcome, publicGroupState: self.publicGroupState)
+        return MemberAddedMessages(commit: self.commit, welcome: self.welcome, publicGroupState: self.publicGroupState.convertTo())
     }
 }
 
 extension CoreCryptoSwift.ConversationInitBundle {
     func convertTo() -> ConversationInitBundle {
-        return ConversationInitBundle(conversationId: self.conversationId, commit: self.commit, publicGroupState: self.publicGroupState)
+        return ConversationInitBundle(conversationId: self.conversationId, commit: self.commit, publicGroupState: self.publicGroupState.convertTo())
     }
 }
 
@@ -45,13 +45,38 @@ extension CoreCryptoSwift.DecryptedMessage {
     func convertTo() -> DecryptedMessage {
         return DecryptedMessage(message: self.message, proposals: self.proposals.map({ (bundle) -> ProposalBundle in
             return bundle.convertTo()
-        }), isActive: self.isActive, commitDelay: self.commitDelay)
+        }), isActive: self.isActive, commitDelay: self.commitDelay, senderClientId: self.senderClientId, hasEpochChanged: self.hasEpochChanged)
     }
 }
 
 extension CoreCryptoSwift.ProposalBundle {
     func convertTo() -> ProposalBundle {
         return ProposalBundle(proposal: self.proposal, proposalRef: self.proposalRef)
+    }
+}
+
+extension CoreCryptoSwift.PublicGroupStateBundle {
+    func convertTo() -> PublicGroupStateBundle {
+        return PublicGroupStateBundle(encryptionType: self.encryptionType.convertTo(), ratchetTreeType: self.ratchetTreeType.convertTo(), payload: self.payload)
+    }
+}
+
+extension CoreCryptoSwift.MlsPublicGroupStateEncryptionType {
+    func convertTo() -> PublicGroupStateEncryptionType {
+        switch self {
+            case .jweEncrypted: return PublicGroupStateEncryptionType.JweEncrypted
+            case .plaintext: return PublicGroupStateEncryptionType.Plaintext
+        }
+    }
+}
+
+extension CoreCryptoSwift.MlsRatchetTreeType {
+    func convertTo() -> RatchetTreeType {
+        switch self {
+            case .full: return RatchetTreeType.Full
+            case .delta: return RatchetTreeType.Delta
+            case .byRef: return RatchetTreeType.ByRef
+        }
     }
 }
 
@@ -156,7 +181,7 @@ public struct MemberAddedMessages: ConvertToInner {
     }
 
     func convert() -> Inner {
-        return CoreCryptoSwift.MemberAddedMessages(commit: self.commit, welcome: self.welcome, publicGroupState: self.publicGroupState)
+        return CoreCryptoSwift.MemberAddedMessages(commit: self.commit, welcome: self.welcome, publicGroupState: self.publicGroupState.convert())
     }
 }
 
@@ -193,7 +218,7 @@ public struct DecryptedMessage: ConvertToInner {
     func convert() -> Inner {
         return CoreCryptoSwift.DecryptedMessage(message: self.message, proposals: self.proposals.map({ (bundle) -> CoreCryptoSwift.ProposalBundle in
             bundle.convert()
-        }), isActive: self.isActive, commitDelay: self.commitDelay, senderClientId: self.senderClientId, self.hasEpochChanged)
+        }), isActive: self.isActive, commitDelay: self.commitDelay, senderClientId: self.senderClientId, hasEpochChanged: self.hasEpochChanged)
     }
 }
 
@@ -234,7 +259,7 @@ public struct ConversationInitBundle: ConvertToInner {
     }
 
     func convert() -> Inner {
-        return CoreCryptoSwift.ConversationInitBundle(conversationId: self.conversationId, commit: self.commit, publicGroupState: self.publicGroupState)
+        return CoreCryptoSwift.ConversationInitBundle(conversationId: self.conversationId, commit: self.commit, publicGroupState: self.publicGroupState.convert())
     }
 }
 
@@ -257,7 +282,7 @@ public struct CommitBundle: ConvertToInner {
     typealias Inner = CoreCryptoSwift.CommitBundle
 
     func convert() -> Inner {
-        return CoreCryptoSwift.CommitBundle(welcome: self.welcome, commit: self.commit, publicGroupState: self.publicGroupState)
+        return CoreCryptoSwift.CommitBundle(welcome: self.welcome, commit: self.commit, publicGroupState: self.publicGroupState.convert())
     }
 }
 
@@ -275,10 +300,10 @@ public struct PublicGroupStateBundle: ConvertToInner {
         self.ratchetTreeType = ratchetTreeType
         self.payload = payload
     }
-    typealias Inner = CoreCryptoSwift.MlsPublicGroupStateBundle
+    typealias Inner = CoreCryptoSwift.PublicGroupStateBundle
 
     func convert() -> Inner {
-        return CoreCryptoSwift.MlsPublicGroupStateBundle(encryptionType: self.encryptionType, ratchetTreeType: self.ratchetTreeType, payload: self.payload)
+        return CoreCryptoSwift.PublicGroupStateBundle(encryptionType: self.encryptionType.convert(), ratchetTreeType: self.ratchetTreeType.convert(), payload: self.payload)
     }
 }
 
@@ -294,9 +319,9 @@ private extension PublicGroupStateEncryptionType {
     func convert() -> Inner {
         switch self {
         case .Plaintext:
-            return CoreCryptoSwift.MlsPublicGroupStateEncryptionType.Plaintext
+            return CoreCryptoSwift.MlsPublicGroupStateEncryptionType.plaintext
         case .JweEncrypted:
-            return CoreCryptoSwift.MlsPublicGroupStateEncryptionType.JweEncrypted
+            return CoreCryptoSwift.MlsPublicGroupStateEncryptionType.jweEncrypted
         }
     }
 }
@@ -314,11 +339,11 @@ private extension RatchetTreeType {
     func convert() -> Inner {
         switch self {
         case .Full:
-            return CoreCryptoSwift.MlsRatchetTreeType.Full
+            return CoreCryptoSwift.MlsRatchetTreeType.full
         case .Delta:
-            return CoreCryptoSwift.MlsRatchetTreeType.Delta
+            return CoreCryptoSwift.MlsRatchetTreeType.delta
         case .ByRef:
-            return CoreCryptoSwift.MlsRatchetTreeType.ByRef
+            return CoreCryptoSwift.MlsRatchetTreeType.byRef
         }
     }
 }
@@ -630,16 +655,16 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter sessionId: ID of the Proteus session
     /// - parameter prekey: CBOR-encoded Proteus prekey of the other client
-    public func proteusSessionFromPrekey(sessionId: String) throws {
-        try self.coreCrypto.proteusSessionFromPrekey(sessionId: sessionId)
+    public func proteusSessionFromPrekey(sessionId: String, prekey: [UInt8]) throws {
+        try self.coreCrypto.proteusSessionFromPrekey(sessionId: sessionId, prekey: prekey)
     }
 
     /// Create a Proteus session from a handshake message
     ///
     /// - parameter sessionId: ID of the Proteus session
     /// - parameter envelope: CBOR-encoded Proteus message
-    public func proteusSessionFromMessage(sessionId: String, prekey: [UInt8]) throws {
-        try self.coreCrypto.proteusSessionFromMessage(sessionId: sessionId, prekey: prekey)
+    public func proteusSessionFromMessage(sessionId: String, envelope: [UInt8]) throws -> [UInt8]{
+        return try self.coreCrypto.proteusSessionFromMessage(sessionId: sessionId, envelope: envelope)
     }
 
     /// Locally persists a session to the keystore
@@ -682,7 +707,7 @@ public class CoreCryptoWrapper {
     /// - parameter plaintext: payload to encrypt
     /// - returns: A map indexed by each session ID and the corresponding CBOR-serialized encrypted message for this session
     public func proteusEncryptBatched(sessions: [String], plaintext: [UInt8]) throws -> [String: [UInt8]] {
-        try self.coreCrypto.proteusEncryptBatched(sessions: sessions, plaintext: plaintext)
+        try self.coreCrypto.proteusEncryptBatched(sessionId: sessions, plaintext: plaintext)
     }
 
     /// Creates a new prekey with the requested ID.
