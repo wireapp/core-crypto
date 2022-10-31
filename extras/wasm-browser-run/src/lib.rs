@@ -6,6 +6,8 @@ pub enum WasmBrowserRunError {
     IoError(#[from] std::io::Error),
     #[error(transparent)]
     WebDriverError(#[from] WebdriverError),
+    #[error("The mount point [{0}] does not exist")]
+    MountPointNotFound(String),
     #[error("The {0} WebDriver isn't supported yet.")]
     UnsupportedWebdriver(String),
     #[error("The platform you're running this code on isn't supported")]
@@ -102,7 +104,7 @@ impl WebdriverKind {
                 };
 
                 format!("geckodriver-{version}-{os_filename}{ext}.tar.gz")
-            },
+            }
             WebdriverKind::Edge => {
                 let (os_filename, ext) = match os {
                     "macos" => ("mac", if is_aarch64 { "64_m1" } else { "64" }),
@@ -113,7 +115,7 @@ impl WebdriverKind {
                 };
 
                 format!("edgedriver_{os_filename}{ext}.zip")
-            },
+            }
             WebdriverKind::Safari => "".to_string(),
         })
     }
@@ -123,11 +125,12 @@ impl WebdriverKind {
         let latest_version = match self {
             WebdriverKind::Chrome => reqwest::get(Self::CHROME_RELEASE_URL).await?.text().await?,
             WebdriverKind::Gecko => {
-                let gh_response: GithubResponseLatestRelease = reqwest::get(Self::GECKO_RELEASE_URL).await?.json().await?;
+                let gh_response: GithubResponseLatestRelease =
+                    reqwest::get(Self::GECKO_RELEASE_URL).await?.json().await?;
                 let version = gh_response.tag_name.clone();
                 geckodriver_response = Some(gh_response);
                 version
-            },
+            }
             WebdriverKind::Edge => reqwest::get(Self::EDGE_RELEASE_URL).await?.text().await?,
             WebdriverKind::Safari => "".to_string(),
         };
@@ -136,20 +139,27 @@ impl WebdriverKind {
 
         let download_url = match self {
             WebdriverKind::Chrome => {
-                format!("https://chromedriver.storage.googleapis.com/index.html?path={latest_version}/{download_filename}")
+                format!(
+                    "https://chromedriver.storage.googleapis.com/index.html?path={latest_version}/{download_filename}"
+                )
             }
             WebdriverKind::Gecko => {
                 let gh_response = geckodriver_response.take().unwrap();
 
-                if let Some(url) = gh_response.assets.into_iter().find(|asset| asset.name == download_filename).map(|asset| asset.url) {
+                if let Some(url) = gh_response
+                    .assets
+                    .into_iter()
+                    .find(|asset| asset.name == download_filename)
+                    .map(|asset| asset.url)
+                {
                     url
                 } else {
                     return Err(WasmBrowserRunError::UnsupportedPlatform);
                 }
-            },
+            }
             WebdriverKind::Edge => {
                 format!("https://msedgedriver.azureedge.net/{latest_version}/{download_filename}")
-            },
+            }
             WebdriverKind::Safari => "".to_string(),
         };
 
@@ -238,30 +248,34 @@ impl WebdriverContext {
             .spawn()?;
 
         let caps = serde_json::Map::from_iter(
-            vec![(
-                "goog:chromeOptions".to_string(),
-                serde_json::json!({
-                    "args": [
-                        "headless",
-                        "disable-dev-shm-usage",
-                        "no-sandbox"
-                    ]
-                }),
-            ), (
-                "ms:edgeOptions".to_string(),
-                serde_json::json!({
-                    "args": [
-                        "headless",
-                        "disable-dev-shm-usage",
-                        "no-sandbox"
-                    ]
-                })
-            ), (
-                "moz:firefoxOptions".to_string(),
-                serde_json::json!({
-                    "args": ["-headless"]
-                })
-            )]
+            vec![
+                (
+                    "goog:chromeOptions".to_string(),
+                    serde_json::json!({
+                        "args": [
+                            "headless",
+                            "disable-dev-shm-usage",
+                            "no-sandbox"
+                        ]
+                    }),
+                ),
+                (
+                    "ms:edgeOptions".to_string(),
+                    serde_json::json!({
+                        "args": [
+                            "headless",
+                            "disable-dev-shm-usage",
+                            "no-sandbox"
+                        ]
+                    }),
+                ),
+                (
+                    "moz:firefoxOptions".to_string(),
+                    serde_json::json!({
+                        "args": ["-headless"]
+                    }),
+                ),
+            ]
             .into_iter(),
         );
 
@@ -279,20 +293,48 @@ impl WebdriverContext {
         })
     }
 
+    async fn run_http_server(addr: std::net::SocketAddr, mount_point: String) -> WasmBrowserRunResult<()> {
+        let mount_point_path = std::path::PathBuf::from(&mount_point);
+        if !mount_point_path.exists() {
+            return Err(WasmBrowserRunError::MountPointNotFound(mount_point));
+        }
+        use warp::http::header::{HeaderMap, HeaderValue};
+        use warp::Filter as _;
+
+        let mut headers = HeaderMap::new();
+        headers.insert("Cross-Origin-Opener-Policy", HeaderValue::from_static("same-origin"));
+        headers.insert("Cross-Origin-Embedder-Policy", HeaderValue::from_static("require-corp"));
+
+        let filter = warp::fs::dir(mount_point_path).with(warp::reply::with::headers(headers));
+
+        warp::serve(filter).bind(addr).await;
+
+        Ok(())
+    }
+
+    async fn spawn_http_server(
+        mount_point: &str,
+    ) -> WasmBrowserRunResult<(tokio::task::JoinHandle<WasmBrowserRunResult<()>>, std::net::SocketAddr)> {
+        let addr = tokio::net::TcpListener::bind("127.0.0.1:0").await?.local_addr()?;
+        let hwnd = tokio::task::spawn(Self::run_http_server(addr.clone(), mount_point.to_string()));
+        Ok((hwnd, addr))
+    }
+
+    // TODO: Test-specific
+    // - Use `walrus` crate to load the symbol table and read the exports starting with "__wbgt_" (wasm-bindgen-test)
+
     // TODO: Load wasm file
-        // - Generate HTML support code
-        // - spawn http server
-        // - goto page
+    // - Generate HTML support code
+    // - spawn http server
+    // - goto page
     // TODO: Load HTML file
-        // - spawn http server
-        // - goto page
+    // - spawn http server
+    // - goto page
     // TODO: Load arbitrary js
-        // - Bundle with rollup
-        // - generate html with rollup
-        // - spawn http server
-        // - goto page
+    // - Bundle with rollup
+    // - generate html with rollup
+    // - spawn http server
+    // - goto page
 
     // TODO: create JS support code to get back console stuff when --nocapture is enabled
 }
-
-

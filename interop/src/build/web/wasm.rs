@@ -173,8 +173,7 @@ pub async fn spawn_http_server() -> Result<()> {
     let warp_filter_cc = warp::path("core-crypto").and(warp::fs::dir("platforms/web".to_string()));
     let warp_filter_cbox =
         warp::path("cryptobox").and(warp::fs::dir("interop/src/build/web/cryptobox-esm/dist".to_string()));
-    // TODO: Refactor how paths are called in the web versions of tests so that we address the correct files each time
-    // TODO: Update the WASM build process to build the cbox-esm wrappper as well.
+
     warp::serve(warp_filter_cc.or(warp_filter_cbox).boxed())
         .bind(addr)
         .await;
