@@ -21,7 +21,6 @@ use js_sys::{Promise, Uint8Array};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
-use core_crypto::prelude::tls_codec::Serialize;
 use core_crypto::prelude::*;
 pub use core_crypto::CryptoError;
 
@@ -139,7 +138,7 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
         Ok(Self {
             welcome,
             commit,
-            public_group_state: pgs.try_into()?,
+            public_group_state: pgs.into(),
         })
     }
 }
@@ -178,7 +177,7 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
         Ok(Self {
             welcome,
             commit,
-            public_group_state: pgs.try_into()?,
+            public_group_state: pgs.into(),
         })
     }
 }
@@ -209,15 +208,13 @@ impl PublicGroupStateBundle {
     }
 }
 
-impl TryFrom<MlsPublicGroupStateBundle> for PublicGroupStateBundle {
-    type Error = WasmCryptoError;
-
-    fn try_from(pgs: MlsPublicGroupStateBundle) -> Result<Self, Self::Error> {
-        Ok(Self {
+impl From<MlsPublicGroupStateBundle> for PublicGroupStateBundle {
+    fn from(pgs: MlsPublicGroupStateBundle) -> Self {
+        Self {
             encryption_type: pgs.encryption_type.into(),
             ratchet_tree_type: pgs.ratchet_tree_type.into(),
-            payload: pgs.payload.tls_serialize_detached().map_err(MlsError::from)?,
-        })
+            payload: pgs.payload.bytes(),
+        }
     }
 }
 
@@ -323,7 +320,7 @@ impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
         Ok(Self {
             conversation_id,
             commit,
-            public_group_state: pgs.try_into()?,
+            public_group_state: pgs.into(),
         })
     }
 }

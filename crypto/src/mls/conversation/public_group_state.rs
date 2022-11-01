@@ -18,7 +18,7 @@ impl MlsPublicGroupStateBundle {
     /// Creates a new [PublicGroupStateBundle] with complete and unencrypted [PublicGroupState]
     pub(crate) fn try_new_full_plaintext(pgs: PublicGroupState) -> CryptoResult<Self> {
         use tls_codec::Serialize as _;
-        let payload = pgs.tls_serialize_detached().map_err(MlsError::from)?.into();
+        let payload = pgs.tls_serialize_detached().map_err(MlsError::from)?;
         Ok(Self {
             encryption_type: MlsPublicGroupStateEncryptionType::Plaintext,
             ratchet_tree_type: MlsRatchetTreeType::Full,
@@ -88,23 +88,16 @@ pub enum MlsRatchetTreeType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PublicGroupStatePayload {
     /// Unencrypted [PublicGroupState]
-    Plaintext(tls_codec::TlsByteVecU32),
+    Plaintext(Vec<u8>),
     // TODO: expose when fully implemented
     // Encrypted(Vec<u8>),
 }
 
-impl tls_codec::Size for PublicGroupStatePayload {
-    fn tls_serialized_len(&self) -> usize {
-        match &self {
-            Self::Plaintext(pgs) => pgs.tls_serialized_len(),
-        }
-    }
-}
-
-impl tls_codec::Serialize for PublicGroupStatePayload {
-    fn tls_serialize<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, tls_codec::Error> {
+impl PublicGroupStatePayload {
+    /// Returns the internal byte array
+    pub fn bytes(self) -> Vec<u8> {
         match self {
-            Self::Plaintext(pgs) => pgs.tls_serialize(writer),
+            PublicGroupStatePayload::Plaintext(pgs) => pgs,
         }
     }
 }
