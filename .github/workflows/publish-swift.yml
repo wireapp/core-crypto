@@ -25,13 +25,23 @@ jobs:
         uses: davidB/rust-cargo-make@v1
 
       - name: Build and Publish Swift package
+        env:
+          GIT_SSH_COMMAND: "ssh -i /Users/runner/.ssh/id_rsa -o UserKnownHostsFile=/Users/runner/.ssh/known_hosts"
         run: |
+          mkdir -p /Users/runner/.ssh
+          echo "${{ secrets.SSH_DEPLOY_KEY }}" > /Users/runner/.ssh/id_rsa
+          chmod 600 /Users/runner/.ssh/id_rsa
           cd crypto-ffi
+          ssh-keyscan -H github.com > /Users/runner/.ssh/known_hosts
           cargo make create-swift-package
           cd ../../
-          git clone https://github.com/wireapp/core-crypto-swift.git
+          git clone git@github.com:wireapp/core-crypto-swift.git
           cd core-crypto-swift
-          cp -r crypto-ffi/bindings/swift/* ./
-          git commit -am "chore: release of core-crypto $GITHUB_REF_NAME"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          cp -r ../core-crypto/crypto-ffi/bindings/swift/* ./
+          git add .
+          git commit -m "chore: release of core-crypto $GITHUB_REF_NAME"
           git tag $GITHUB_REF_NAME
-          git push https://${{ secrets.SWIFT_GITHUB_TOKEN }}@github.com/wireapp/core-crypto-swift.git
+          git push origin main
+          git push origin $GITHUB_REF_NAME
