@@ -7,11 +7,11 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
-## [0.6] - TBD
+## [0.6.0.pre.3] - 2022-11-01
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.6.0" unreleased=true}}
+{{git-cliff tag="v0.6.0.pre.3" unreleased=true}}
 </details>
 
 * Move github action for rust to a maintained one. (More info: https://github.com/actions-rs/toolchain/issues/216)

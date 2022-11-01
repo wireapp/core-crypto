@@ -2,7 +2,7 @@
 name = "core-crypto-ffi"
 description = "Platform-specific bindings (Android, iOS, WASM) for CoreCrypto"
 repository = "https://github.com/wireapp/core-crypto"
-version = "0.6.0-pre.2"
+version = "0.6.0-pre.3"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
@@ -18,7 +18,7 @@ mobile = ["uniffi", "uniffi_macros", "uniffi_build", "uniffi_bindgen"]
 # c-api = ["libc"] # FIXME: Disabled until it becomes compatible with the internal APIs again
 
 [dependencies]
-core-crypto = { version = "0.6.0-pre.2", path = "../crypto" }
+core-crypto = { version = "0.6.0-pre.3", path = "../crypto" }
 thiserror = "1.0"
 cfg-if = "1.0"
 futures-util = "0.3"

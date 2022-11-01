@@ -7,6 +7,25 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.6.0.pre.3] - 2022-11-01
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Change the internal type of the public group info to Vec<u8> so we don't have extra bytes in the serialized message - FS-1127
+
+### Miscellaneous Tasks
+
+- Adding actions to check bindings and to publish swift package - CL-49
+- Add action to publish jvm/android packages and change rust toolchain in ci ([#157](https://github.com/wireapp/core-crypto/issues/157))
+- Add support for Proteus within interop runner
+
+</details>
+
+* Move github action for rust to a maintained one. (More info: https://github.com/actions-rs/toolchain/issues/216)
+
 ## [0.6.0-pre.2] - 2022-10.21
 
 <details>
