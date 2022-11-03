@@ -28,6 +28,7 @@ jobs:
         env:
           GIT_SSH_COMMAND: "ssh -i /Users/runner/.ssh/id_rsa -o UserKnownHostsFile=/Users/runner/.ssh/known_hosts"
         run: |
+          export SEMANTIC_VERSION=$(echo $GITHUB_REF_NAME | sed 's/^v\(.*\)/\1/')
           mkdir -p /Users/runner/.ssh
           echo "${{ secrets.SSH_DEPLOY_KEY }}" > /Users/runner/.ssh/id_rsa
           chmod 600 /Users/runner/.ssh/id_rsa
@@ -42,6 +43,6 @@ jobs:
           cp -r ../core-crypto/crypto-ffi/bindings/swift/* ./
           git add .
           git commit -m "chore: release of core-crypto $GITHUB_REF_NAME"
-          git tag $GITHUB_REF_NAME
+          git tag $SEMANTIC_VERSION
           git push origin main
-          git push origin $GITHUB_REF_NAME
+          git push origin $SEMANTIC_VERSION
