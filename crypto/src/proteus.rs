@@ -224,6 +224,11 @@ impl ProteusCentral {
         self.proteus_sessions.get_mut(session_id)
     }
 
+    /// Session exists
+    pub fn session_exists(&self, session_id: &str) -> bool {
+        self.proteus_sessions.contains_key(session_id)
+    }
+
     /// Decrypt a proteus message for an already existing session
     /// Note: This cannot be used for handshake messages, see [ProteusCentral::session_from_message]
     pub async fn decrypt(

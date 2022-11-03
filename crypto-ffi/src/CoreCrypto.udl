@@ -230,6 +230,9 @@ interface CoreCrypto {
     void proteus_session_delete([ByRef] string session_id);
 
     [Throws=CryptoError]
+    boolean proteus_session_exists([ByRef] string session_id);
+
+    [Throws=CryptoError]
     sequence<u8> proteus_decrypt([ByRef] string session_id, [ByRef] sequence<u8> ciphertext);
 
     [Throws=CryptoError]

@@ -248,6 +248,17 @@ impl CoreCrypto {
         }
     }
 
+    /// Proteus session exists
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub fn proteus_session_exists(&self, session_id: &str) -> CryptoResult<bool> {
+        if let Some(proteus) = &self.proteus {
+            Ok(proteus.session_exists(session_id))
+        } else {
+            Err(CryptoError::ProteusNotInitialized)
+        }
+    }
+
     /// Decrypts a proteus message envelope
     ///
     /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned

@@ -682,6 +682,13 @@ public class CoreCryptoWrapper {
         try self.coreCrypto.proteusSessionDelete(sessionId: sessionId)
     }
 
+    /// Checks if a session exists
+    ///
+    /// - parameter sessionId: ID of the Proteus session
+    public func proteusSessionExists(sessionId: String) throws -> Bool {
+        try self.coreCrypto.proteusSessionExists(sessionId: sessionId)
+    }
+
     /// Decrypt an incoming message for an existing Proteus session
     ///
     /// - parameter sessionId: ID of the Proteus session

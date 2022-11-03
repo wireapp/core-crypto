@@ -788,6 +788,16 @@ impl CoreCrypto<'_> {
         }}
     }
 
+    /// See [core_crypto::proteus::ProteusCentral::session_exists]
+    pub fn proteus_session_exists(&self, session_id: &str) -> CryptoResult<bool> {
+        proteus_impl! {{
+            self.central
+                .lock()
+                .map_err(|_| CryptoError::LockPoisonError)?
+                .proteus_session_exists(session_id)
+        }}
+    }
+
     /// See [core_crypto::proteus::ProteusCentral::decrypt]
     pub fn proteus_decrypt(&self, session_id: &str, ciphertext: &[u8]) -> CryptoResult<Vec<u8>> {
         proteus_impl! {{
