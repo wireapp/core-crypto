@@ -1071,6 +1071,15 @@ export class CoreCrypto {
     }
 
     /**
+     * Checks if a session exists
+     *
+     * @param sessionId - ID of the Proteus session
+     */
+    async proteusSessionExists(sessionId: string): Promise<void> {
+        return await this.#cc.proteus_session_exists(sessionId);
+    }
+
+    /**
      * Decrypt an incoming message for an existing Proteus session
      *
      * @param sessionId - ID of the Proteus session

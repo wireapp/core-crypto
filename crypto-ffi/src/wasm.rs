@@ -1346,6 +1346,23 @@ impl CoreCrypto {
         )
     }
 
+    /// Returns: [`WasmCryptoResult<bool>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::session_exists]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub fn proteus_session_exists(&self, session_id: String) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                proteus_impl!({
+                    let exists = this.write().await.proteus_session_exists(&session_id)?;
+                    WasmCryptoResult::Ok(JsValue::from_bool(exists))
+                } or throw WasmCryptoResult<_>)
+            }
+            .err_into(),
+        )
+    }
+
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::proteus::ProteusCentral::decrypt]
