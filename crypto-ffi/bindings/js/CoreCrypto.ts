@@ -170,11 +170,11 @@ export enum PublicGroupStateEncryptionType {
     /**
      * Unencrypted
      */
-    Plaintext = 0x00001,
+    Plaintext = 0x01,
     /**
      * Encrypted in a JWE (not yet implemented)
      */
-    JweEncrypted = 0x00002,
+    JweEncrypted = 0x02,
 }
 
 /**
@@ -185,15 +185,15 @@ export enum RatchetTreeType {
     /**
      * Complete PublicGroupState
      */
-    Full = 0x00001,
+    Full = 0x01,
     /**
      * Contains the difference since previous epoch (not yet implemented)
      */
-    Delta = 0x00002,
+    Delta = 0x02,
     /**
      * To define (not yet implemented)
      */
-    ByRef = 0x00003,
+    ByRef = 0x03,
 }
 
 /**
@@ -697,13 +697,15 @@ export class CoreCrypto {
 
         ffiClients.forEach(c => c.free());
 
+        const pgs = ffiRet.public_group_state;
+
         const ret: MemberAddedMessages = {
             welcome: ffiRet.welcome,
             commit: ffiRet.commit,
             publicGroupState: {
-                encryptionType: ffiRet.public_group_state.encryption_type,
-                ratchetTreeType: ffiRet.public_group_state.ratchet_tree_type,
-                payload: ffiRet.public_group_state.payload
+                encryptionType: pgs.encryption_type,
+                ratchetTreeType: pgs.ratchet_tree_type,
+                payload: pgs.payload
             },
         };
 
@@ -732,13 +734,15 @@ export class CoreCrypto {
             clientIds
         );
 
+        const pgs = ffiRet.public_group_state;
+
         const ret: CommitBundle = {
             welcome: ffiRet.welcome,
             commit: ffiRet.commit,
             publicGroupState: {
-                encryptionType: ffiRet.public_group_state.encryption_type,
-                ratchetTreeType: ffiRet.public_group_state.ratchet_tree_type,
-                payload: ffiRet.public_group_state.payload
+                encryptionType: pgs.encryption_type,
+                ratchetTreeType: pgs.ratchet_tree_type,
+                payload: pgs.payload
             },
         };
 
@@ -761,13 +765,15 @@ export class CoreCrypto {
             conversationId
         );
 
+        const pgs = ffiRet.public_group_state;
+
         const ret: CommitBundle = {
             welcome: ffiRet.welcome,
             commit: ffiRet.commit,
             publicGroupState: {
-                encryptionType: ffiRet.public_group_state.encryption_type,
-                ratchetTreeType: ffiRet.public_group_state.ratchet_tree_type,
-                payload: ffiRet.public_group_state.payload
+                encryptionType: pgs.encryption_type,
+                ratchetTreeType: pgs.ratchet_tree_type,
+                payload: pgs.payload
             },
         };
 
@@ -790,15 +796,21 @@ export class CoreCrypto {
             conversationId
         );
 
-            return ffiCommitBundle ? {
-                welcome: ffiCommitBundle.welcome,
-                commit: ffiCommitBundle.commit,
-                publicGroupState: {
-                    encryptionType: ffiCommitBundle.public_group_state.encryption_type,
-                    ratchetTreeType: ffiCommitBundle.public_group_state.ratchet_tree_type,
-                    payload: ffiCommitBundle.public_group_state.payload
-                },
-            } : undefined;
+        if (!ffiCommitBundle) {
+            return undefined;
+        }
+
+        const pgs = ffiCommitBundle.public_group_state;
+
+        return {
+            welcome: ffiCommitBundle.welcome,
+            commit: ffiCommitBundle.commit,
+            publicGroupState: {
+                encryptionType: pgs.encryption_type,
+                ratchetTreeType: pgs.ratchet_tree_type,
+                payload: pgs.payload
+            },
+        };
     }
 
     /**
@@ -894,13 +906,15 @@ export class CoreCrypto {
     async joinByExternalCommit(publicGroupState: Uint8Array): Promise<ConversationInitBundle> {
         const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await this.#cc.join_by_external_commit(publicGroupState);
 
+        const pgs = ffiInitMessage.public_group_state;
+
         const ret: ConversationInitBundle = {
             conversationId: ffiInitMessage.conversation_id,
             commit: ffiInitMessage.commit,
             publicGroupState: {
-                encryptionType: ffiInitMessage.public_group_state.encryption_type,
-                ratchetTreeType: ffiInitMessage.public_group_state.ratchet_tree_type,
-                payload: ffiInitMessage.public_group_state.payload
+                encryptionType: pgs.encryption_type,
+                ratchetTreeType: pgs.ratchet_tree_type,
+                payload: pgs.payload
             },
         };
 

@@ -12,6 +12,69 @@ async function initBrowser() {
   return [context, page];
 }
 
+test("can use pgs enums", async () => {
+  const [ctx, page] = await initBrowser();
+
+  const [PublicGroupStateEncryptionType, RatchetTreeType] = await page.evaluate(async () => {
+    const { CoreCrypto, PublicGroupStateEncryptionType, RatchetTreeType } = await import ("./corecrypto.js");
+
+    window.PublicGroupStateEncryptionType = PublicGroupStateEncryptionType;
+    window.RatchetTreeType = RatchetTreeType;
+    window.CoreCrypto = CoreCrypto;
+
+    return [PublicGroupStateEncryptionType, RatchetTreeType];
+  });
+
+  expect(PublicGroupStateEncryptionType.Plaintext).toBe(0x01);
+  expect(PublicGroupStateEncryptionType.JweEncrypted).toBe(0x02);
+  expect(await page.evaluate(() => window.PublicGroupStateEncryptionType.Plaintext)).toBe(0x01);
+  expect(await page.evaluate(() => window.PublicGroupStateEncryptionType.JweEncrypted)).toBe(0x02);
+  expect(RatchetTreeType.Full).toBe(0x01);
+  expect(RatchetTreeType.Delta).toBe(0x02);
+  expect(RatchetTreeType.ByRef).toBe(0x03);
+  expect(await page.evaluate(() => window.RatchetTreeType.Full)).toBe(0x01);
+  expect(await page.evaluate(() => window.RatchetTreeType.Delta)).toBe(0x02);
+  expect(await page.evaluate(() => window.RatchetTreeType.ByRef)).toBe(0x03);
+
+  const pgs = await page.evaluate(async () => {
+    const client1Config = {
+      databaseName: "test init",
+      key: "test",
+      clientId: "test",
+    };
+
+    const client2Config = {
+      databaseName: "roundtrip message test 2",
+      key: "test2",
+      clientId: "test2",
+    };
+
+    const cc = await window.CoreCrypto.init(client1Config);
+    const cc2 = await window.CoreCrypto.init(client2Config);
+
+    const [kp] = await cc2.clientKeypackages(1);
+
+    const encoder = new TextEncoder();
+    const conversationId = encoder.encode("testConversation");
+
+    await cc.createConversation(conversationId);
+
+    const { publicGroupState } = await cc.addClientsToConversation(conversationId, [
+      { id: encoder.encode(client2Config.clientId), kp },
+    ]);
+
+    return publicGroupState;
+  });
+
+  expect(pgs.encryptionType).toBe(0x01);
+  expect(pgs.encryptionType).toBe(PublicGroupStateEncryptionType.Plaintext);
+  expect(pgs.ratchetTreeType).toBe(0x01);
+  expect(pgs.ratchetTreeType).toBe(RatchetTreeType.Full);
+
+  await page.close();
+  await ctx.close();
+});
+
 test("init", async () => {
   const [ctx, page] = await initBrowser();
 
@@ -27,7 +90,7 @@ test("init", async () => {
     return CoreCrypto.version();
   });
 
-  expect(version).toBe("0.5.1");
+  expect(version).toMatch("0.6.0");
 
   await page.close();
   await ctx.close();
@@ -240,13 +303,13 @@ test("roundtrip message", async () => {
 
     await cc.createConversation(conversationIdBuffer);
 
-    const welcome = await cc.addClientsToConversation(conversationIdBuffer, [
+    const memberAdded = await cc.addClientsToConversation(conversationIdBuffer, [
       { id: encoder.encode(client2Config.clientId), kp: Uint8Array.from(Object.values(kp)) },
     ]);
 
     await cc.commitAccepted(conversationIdBuffer);
 
-    if (!welcome) {
+    if (!memberAdded) {
       throw new Error("no welcome message was generated");
     }
 
@@ -255,7 +318,7 @@ test("roundtrip message", async () => {
       encoder.encode(messageText)
     );
 
-    return [welcome, message];
+    return [memberAdded, message];
   }, kp, messageText, conversationId, client1Config, client2Config);
 
   welcome.welcome = Uint8Array.from(welcome.welcome);

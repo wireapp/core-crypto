@@ -33,6 +33,7 @@ pub type WasmCryptoResult<T> = Result<T, WasmCryptoError>;
 #[allow(non_camel_case_types)]
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[repr(u16)]
 /// see [core_crypto::prelude::CiphersuiteName]
 pub enum Ciphersuite {
     /// DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
@@ -185,20 +186,20 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PublicGroupStateBundle {
-    encryption_type: PublicGroupStateEncryptionType,
-    ratchet_tree_type: RatchetTreeType,
+    encryption_type: u8,
+    ratchet_tree_type: u8,
     payload: Vec<u8>,
 }
 
 #[wasm_bindgen]
 impl PublicGroupStateBundle {
     #[wasm_bindgen(getter)]
-    pub fn encryption_type(&self) -> PublicGroupStateEncryptionType {
+    pub fn encryption_type(&self) -> u8 {
         self.encryption_type
     }
 
     #[wasm_bindgen(getter)]
-    pub fn ratchet_tree_type(&self) -> RatchetTreeType {
+    pub fn ratchet_tree_type(&self) -> u8 {
         self.ratchet_tree_type
     }
 
@@ -211,47 +212,9 @@ impl PublicGroupStateBundle {
 impl From<MlsPublicGroupStateBundle> for PublicGroupStateBundle {
     fn from(pgs: MlsPublicGroupStateBundle) -> Self {
         Self {
-            encryption_type: pgs.encryption_type.into(),
-            ratchet_tree_type: pgs.ratchet_tree_type.into(),
+            encryption_type: pgs.encryption_type as u8,
+            ratchet_tree_type: pgs.ratchet_tree_type as u8,
             payload: pgs.payload.bytes(),
-        }
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[wasm_bindgen]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-/// see [core_crypto::prelude::mls::conversation::public_group_state::MlsPublicGroupStateEncryptionType]
-pub enum PublicGroupStateEncryptionType {
-    Plaintext = 0x0001,
-    JweEncrypted = 0x0002,
-}
-
-impl From<MlsPublicGroupStateEncryptionType> for PublicGroupStateEncryptionType {
-    fn from(from: MlsPublicGroupStateEncryptionType) -> Self {
-        match from {
-            MlsPublicGroupStateEncryptionType::Plaintext => Self::Plaintext,
-            MlsPublicGroupStateEncryptionType::JweEncrypted => Self::JweEncrypted,
-        }
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[wasm_bindgen]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-/// see [core_crypto::prelude::mls::conversation::public_group_state::MlsRatchetTreeType]
-pub enum RatchetTreeType {
-    Full = 0x0001,
-    Delta = 0x0002,
-    ByRef = 0x0003,
-}
-
-impl From<MlsRatchetTreeType> for RatchetTreeType {
-    fn from(from: MlsRatchetTreeType) -> Self {
-        match from {
-            MlsRatchetTreeType::Full => Self::Full,
-            MlsRatchetTreeType::Delta => Self::Delta,
-            MlsRatchetTreeType::ByRef => Self::ByRef,
         }
     }
 }
@@ -367,8 +330,12 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
 #[wasm_bindgen]
 impl DecryptedMessage {
     #[wasm_bindgen(getter)]
-    pub fn message(&self) -> Option<Uint8Array> {
-        self.message.as_ref().map(|m| Uint8Array::from(m.as_slice()))
+    pub fn message(&self) -> JsValue {
+        if let Some(message) = &self.message {
+            Uint8Array::from(message.as_slice()).into()
+        } else {
+            JsValue::NULL
+        }
     }
 
     #[wasm_bindgen(getter)]
@@ -391,8 +358,12 @@ impl DecryptedMessage {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn sender_client_id(&self) -> Option<Uint8Array> {
-        self.sender_client_id.as_ref().map(|p| Uint8Array::from(p.as_slice()))
+    pub fn sender_client_id(&self) -> JsValue {
+        if let Some(cid) = &self.sender_client_id {
+            Uint8Array::from(cid.as_slice()).into()
+        } else {
+            JsValue::NULL
+        }
     }
 
     #[wasm_bindgen(getter)]
