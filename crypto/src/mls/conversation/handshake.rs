@@ -179,13 +179,14 @@ impl MlsConversation {
             .add_members(backend, &keypackages)
             .await
             .map_err(MlsError::from)?;
+        let public_group_state = MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?;
 
         self.persist_group_when_changed(backend, false).await?;
 
         Ok(MlsConversationCreationMessage {
             welcome,
             commit,
-            public_group_state: MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?,
+            public_group_state,
         })
     }
 
@@ -218,13 +219,14 @@ impl MlsConversation {
             .remove_members(backend, &member_kps)
             .await
             .map_err(MlsError::from)?;
+        let public_group_state = MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?;
 
         self.persist_group_when_changed(backend, false).await?;
 
         Ok(MlsCommitBundle {
             commit,
             welcome,
-            public_group_state: MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?,
+            public_group_state,
         })
     }
 
@@ -235,13 +237,14 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsCommitBundle> {
         let (commit, welcome, pgs) = self.group.self_update(backend, None).await.map_err(MlsError::from)?;
+        let public_group_state = MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?;
 
         self.persist_group_when_changed(backend, false).await?;
 
         Ok(MlsCommitBundle {
             welcome,
             commit,
-            public_group_state: MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?,
+            public_group_state,
         })
     }
 
@@ -257,13 +260,14 @@ impl MlsConversation {
                 .commit_to_pending_proposals(backend)
                 .await
                 .map_err(MlsError::from)?;
+            let public_group_state = MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?;
 
             self.persist_group_when_changed(backend, false).await?;
 
             Ok(Some(MlsCommitBundle {
                 welcome,
                 commit,
-                public_group_state: MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?,
+                public_group_state,
             }))
         } else {
             Ok(None)
