@@ -91,7 +91,7 @@ pub mod tests {
         backend.key_store().save(identity).await.unwrap();
 
         let mut conn = backend.key_store().borrow_conn().await.unwrap();
-        let identity2 = MlsIdentity::find_by_signature(&mut *conn, &signature)
+        let identity2 = MlsIdentity::find_by_signature(&mut conn, &signature)
             .await
             .unwrap()
             .unwrap();
@@ -105,7 +105,7 @@ pub mod tests {
         assert_eq!(b1_sk.as_slice(), b2_sk.as_slice());
 
         let mut conn = backend.key_store().borrow_conn().await.unwrap();
-        MlsIdentity::delete_by_signature(&mut *conn, &signature).await.unwrap();
+        MlsIdentity::delete_by_signature(&mut conn, &signature).await.unwrap();
 
         drop(conn);
 
