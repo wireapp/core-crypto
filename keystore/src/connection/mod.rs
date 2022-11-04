@@ -126,7 +126,7 @@ impl Connection {
         entity: E,
     ) -> CryptoKeystoreResult<E> {
         let mut conn = self.conn.lock().await;
-        entity.save(&mut *conn).await?;
+        entity.save(&mut conn).await?;
         Ok(entity)
     }
 
@@ -146,7 +146,7 @@ impl Connection {
         //     }
         // }
         let mut conn = self.conn.lock().await;
-        E::find_one(&mut *conn, &id.as_ref().into()).await
+        E::find_one(&mut conn, &id.as_ref().into()).await
     }
 
     pub async fn find_all<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
@@ -154,7 +154,7 @@ impl Connection {
         params: EntityFindParams,
     ) -> CryptoKeystoreResult<Vec<E>> {
         let mut conn = self.conn.lock().await;
-        E::find_all(&mut *conn, params).await
+        E::find_all(&mut conn, params).await
     }
 
     pub async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
@@ -163,7 +163,7 @@ impl Connection {
     ) -> CryptoKeystoreResult<Vec<E>> {
         let entity_ids: Vec<StringEntityId> = ids.iter().map(|id| id.as_ref().into()).collect();
         let mut conn = self.conn.lock().await;
-        E::find_many(&mut *conn, &entity_ids).await
+        E::find_many(&mut conn, &entity_ids).await
     }
 
     pub async fn remove<E: Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
@@ -171,13 +171,13 @@ impl Connection {
         id: S,
     ) -> CryptoKeystoreResult<()> {
         let mut conn = self.conn.lock().await;
-        E::delete(&mut *conn, &[id.as_ref().into()]).await?;
+        E::delete(&mut conn, &[id.as_ref().into()]).await?;
         Ok(())
     }
 
     pub async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize> {
         let mut conn = self.conn.lock().await;
-        E::count(&mut *conn).await
+        E::count(&mut conn).await
     }
 
     pub async fn wipe(self) -> CryptoKeystoreResult<()> {
