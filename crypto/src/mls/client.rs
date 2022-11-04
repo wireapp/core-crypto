@@ -361,7 +361,7 @@ impl Client {
         let keystore = backend.key_store();
 
         let mut conn = keystore.borrow_conn().await?;
-        let kps = MlsKeypackage::find_all(&mut *conn, EntityFindParams::default()).await?;
+        let kps = MlsKeypackage::find_all(&mut conn, EntityFindParams::default()).await?;
 
         let valid_count = kps.into_iter().try_fold(0usize, |mut valid_count, kp| {
             let kpb = KeyPackageBundle::from_key_store_value(&kp.key).map_err(MlsError::from)?;
@@ -407,7 +407,7 @@ impl Client {
 
         let mut conn = keystore.borrow_conn().await?;
 
-        let kps = MlsKeypackage::find_all(&mut *conn, EntityFindParams::default()).await?;
+        let kps = MlsKeypackage::find_all(&mut conn, EntityFindParams::default()).await?;
 
         let ids_to_delete = kps.into_iter().try_fold(Vec::new(), |mut acc, kp| {
             let kpb = KeyPackageBundle::from_key_store_value(&kp.key).map_err(MlsError::from)?;
@@ -432,7 +432,7 @@ impl Client {
 
         let entity_ids_to_delete: Vec<StringEntityId> = ids_to_delete.iter().map(|e| e.as_bytes().into()).collect();
 
-        MlsKeypackage::delete(&mut *conn, &entity_ids_to_delete).await?;
+        MlsKeypackage::delete(&mut conn, &entity_ids_to_delete).await?;
 
         Ok(())
     }

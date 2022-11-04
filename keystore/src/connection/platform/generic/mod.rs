@@ -134,7 +134,7 @@ impl SqlCipherConnection {
     }
 
     fn run_migrations(&mut self) -> CryptoKeystoreResult<()> {
-        migrations::runner().run(&mut self.conn)?;
+        migrations::runner().run(&mut self.conn).map_err(Box::new)?;
 
         Ok(())
     }

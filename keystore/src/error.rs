@@ -79,7 +79,7 @@ pub enum CryptoKeystoreError {
     DbError(#[from] rusqlite::Error),
     #[cfg(not(target_family = "wasm"))]
     #[error(transparent)]
-    DbMigrationError(#[from] refinery::Error),
+    DbMigrationError(#[from] Box<refinery::Error>),
     #[cfg(test)]
     #[error(transparent)]
     MlsKeyPackageIdError(#[from] openmls::prelude::KeyPackageIdError),
