@@ -58,7 +58,7 @@ mod tests {
 
         assert!(store.prekey(prekey_id.value()).await.unwrap().is_some());
 
-        let _ = proteus_traits::PreKeyStore::remove(&mut store, prekey.key_id.value())
+        proteus_traits::PreKeyStore::remove(&mut store, prekey.key_id.value())
             .await
             .unwrap();
 
