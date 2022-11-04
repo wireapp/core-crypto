@@ -320,21 +320,36 @@ impl WebdriverContext {
         Ok((hwnd, addr))
     }
 
-    // TODO: Test-specific
-    // - Use `walrus` crate to load the symbol table and read the exports starting with "__wbgt_" (wasm-bindgen-test)
+    fn detect_test_exports(&self, wasm_file_path: impl AsRef<std::path::Path>) -> WasmBrowserRunResult<Vec<String>> {
+        // FIXME: Errors
+        let module = walrus::Module::from_file(wasm_file_path).unwrap();
+        let test_exports = module
+            .exports
+            .iter()
+            // exports starting with "__wbgt_" (wasm-bindgen-test) are `#[wasm_bindgen::test]`-marked functions
+            .filter(|e| e.name.starts_with("__wbgt_"))
+            .map(|e| e.name.clone())
+            .collect();
+
+        Ok(test_exports)
+    }
 
     // TODO: Load wasm file
-    // - Generate HTML support code
+    // - Generate HTML/js support code
     // - spawn http server
     // - goto page
-    // TODO: Load HTML file
-    // - spawn http server
-    // - goto page
+    pub async fn run_wasm(&self, _wasm_file_path: &std::path::Path) -> WasmBrowserRunResult<wasm_bindgen::JsValue> {
+        todo!()
+    }
+
     // TODO: Load arbitrary js
     // - Bundle with rollup
     // - generate html with rollup
     // - spawn http server
     // - goto page
+    pub async fn run_js(&self, _js: &str) -> WasmBrowserRunResult<wasm_bindgen::JsValue> {
+        todo!()
+    }
 
     // TODO: create JS support code to get back console stuff when --nocapture is enabled
 }
