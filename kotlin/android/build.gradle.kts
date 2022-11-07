@@ -42,9 +42,9 @@ publishing {
             url = uri("https://maven.pkg.github.com/wireapp/core-crypto")
             credentials {
                 username =
-                    project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+                        project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
                 password =
-                    project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+                        project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
             }
         }
     }
@@ -56,12 +56,12 @@ afterEvaluate {
             create<MavenPublication>("maven") {
                 groupId = "com.wire"
                 artifactId = "core-crypto-android"
-                version = "0.6.0-pre.3"
+                version = "0.6.0-pre.4"
                 from(components["release"])
                 pom {
                     name.set("core-crypto-android")
                     description.set(
-                        "MLS/Proteus multiplexer abstraction with encrypted persistent storage in Rust."
+                            "MLS/Proteus multiplexer abstraction with encrypted persistent storage in Rust."
                     )
                     url.set("https://github.com/wireapp/core-crypto")
                     licenses {
