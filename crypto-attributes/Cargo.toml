@@ -2,7 +2,7 @@
 name = "core-crypto-attributes"
 description = "Macros for core-crypto"
 repository = "https://github.com/wireapp/core-crypto"
-version = "0.6.0-pre.3"
+version = "0.6.0-pre.4"
 edition = "2021"
 license = "GPL-3.0-only"
 
