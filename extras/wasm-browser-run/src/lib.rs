@@ -321,8 +321,7 @@ impl WebdriverContext {
     }
 
     fn detect_test_exports(&self, wasm_file_path: impl AsRef<std::path::Path>) -> WasmBrowserRunResult<Vec<String>> {
-        // FIXME: Errors
-        let module = walrus::Module::from_file(wasm_file_path).unwrap();
+        let module = walrus::Module::from_file(wasm_file_path).map_err(|e| eyre::eyre!("{e:?}"))?;
         let test_exports = module
             .exports
             .iter()
@@ -352,4 +351,8 @@ impl WebdriverContext {
     }
 
     // TODO: create JS support code to get back console stuff when --nocapture is enabled
+    async fn compile_js_support(&self, _js: Option<&str>) -> WasmBrowserRunResult<()> {
+        // TODO: run js_builder and provide the actual runnable code via stdin
+        todo!()
+    }
 }
