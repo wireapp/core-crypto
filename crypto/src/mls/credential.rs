@@ -316,12 +316,17 @@ pub mod tests {
         let id = conversation_id();
 
         let alice_path = tmp_db_file();
-        let alice_cfg =
-            MlsCentralConfiguration::try_new(alice_path.0, "alice".into(), "alice".into(), vec![cfg.ciphersuite])?;
+        let alice_cfg = MlsCentralConfiguration::try_new(
+            alice_path.0,
+            "alice".into(),
+            Some("alice".into()),
+            vec![cfg.ciphersuite],
+        )?;
         let mut alice_central = MlsCentral::try_new(alice_cfg, alice_cred(cfg.ciphersuite)).await?;
 
         let bob_path = tmp_db_file();
-        let bob_cfg = MlsCentralConfiguration::try_new(bob_path.0, "bob".into(), "bob".into(), vec![cfg.ciphersuite])?;
+        let bob_cfg =
+            MlsCentralConfiguration::try_new(bob_path.0, "bob".into(), Some("bob".into()), vec![cfg.ciphersuite])?;
         let mut bob_central = MlsCentral::try_new(bob_cfg, bob_cred(cfg.ciphersuite)).await?;
 
         alice_central.new_conversation(id.clone(), cfg.clone()).await?;

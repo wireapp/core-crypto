@@ -620,7 +620,7 @@ impl CoreCrypto {
         entropy_seed: Option<Box<[u8]>>,
     ) -> WasmCryptoResult<CoreCrypto> {
         let ciphersuites = vec![MlsCiphersuite::default()];
-        let mut configuration = MlsCentralConfiguration::try_new(path, key, client_id, ciphersuites)?;
+        let mut configuration = MlsCentralConfiguration::try_new(path, key, Some(client_id), ciphersuites)?;
 
         if let Some(seed) = entropy_seed {
             let owned_seed = EntropySeed::try_from_slice(&seed[..EntropySeed::EXPECTED_LEN])?;
@@ -628,8 +628,45 @@ impl CoreCrypto {
         }
 
         // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
-        let central = MlsCentral::try_new(configuration, None).await?;
+        let certificate_bundle = None;
+        let central = MlsCentral::try_new(configuration, certificate_bundle).await?;
         Ok(CoreCrypto(async_lock::RwLock::new(central.into()).into()))
+    }
+
+    /// see [core_crypto::MlsCentral::try_new]
+    pub async fn deferred_init(
+        path: String,
+        key: String,
+        entropy_seed: Option<Box<[u8]>>,
+    ) -> WasmCryptoResult<CoreCrypto> {
+        let ciphersuites = vec![MlsCiphersuite::default()];
+        let mut configuration = MlsCentralConfiguration::try_new(path, key, None, ciphersuites)?;
+
+        if let Some(seed) = entropy_seed {
+            let owned_seed = EntropySeed::try_from_slice(&seed[..EntropySeed::EXPECTED_LEN])?;
+            configuration.set_entropy(owned_seed);
+        }
+
+        // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
+        let certificate_bundle = None;
+        let central = MlsCentral::try_new(configuration, certificate_bundle).await?;
+        Ok(CoreCrypto(async_lock::RwLock::new(central.into()).into()))
+    }
+
+    /// see [core_crypto::MlsCentral::mls_init]
+    pub async fn mls_init(&self, client_id: String) -> Promise {
+        let this = self.0.clone();
+        future_to_promise(
+            async move {
+                let ciphersuites = vec![MlsCiphersuite::default()];
+                // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
+                let certificate_bundle = None;
+                let mut central = this.write().await;
+                central.mls_init(client_id, ciphersuites, certificate_bundle).await?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
+        )
     }
 
     /// Returns: [`WasmCryptoResult<()>`]
@@ -639,7 +676,7 @@ impl CoreCrypto {
         if let Ok(cc) = std::sync::Arc::try_unwrap(self.0).map(async_lock::RwLock::into_inner) {
             future_to_promise(
                 async move {
-                    cc.unwrap_mls().close().await?;
+                    cc.take().close().await?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 }
                 .err_into(),
@@ -658,7 +695,7 @@ impl CoreCrypto {
         if let Ok(cc) = std::sync::Arc::try_unwrap(self.0).map(async_lock::RwLock::into_inner) {
             future_to_promise(
                 async move {
-                    cc.unwrap_mls().wipe().await?;
+                    cc.take().wipe().await?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 }
                 .err_into(),
@@ -693,7 +730,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let cc = this.read().await;
-                let pk = cc.client_public_key();
+                let pk = cc.client_public_key()?;
                 WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
             }
             .err_into(),

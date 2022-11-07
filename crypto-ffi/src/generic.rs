@@ -247,31 +247,66 @@ impl CoreCrypto<'_> {
         client_id: &'s str,
         entropy_seed: Option<Vec<u8>>,
     ) -> CryptoResult<Self> {
+        let executor = async_executor::Executor::new();
         let ciphersuites = vec![MlsCiphersuite::default()];
         let mut configuration =
-            MlsCentralConfiguration::try_new(path.into(), key.into(), client_id.into(), ciphersuites)?;
+            MlsCentralConfiguration::try_new(path.into(), key.into(), Some(client_id.into()), ciphersuites)?;
 
         if let Some(seed) = entropy_seed {
             let owned_seed = EntropySeed::try_from_slice(&seed[..EntropySeed::EXPECTED_LEN])?;
             configuration.set_entropy(owned_seed);
         }
-
-        let executor = async_executor::Executor::new();
-
         // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
-        let central = future::block_on(executor.run(MlsCentral::try_new(configuration, None)))?;
+        let certificate_bundle = None;
+        let central = future::block_on(executor.run(MlsCentral::try_new(configuration, certificate_bundle)))?;
         let central = std::sync::Arc::new(core_crypto::CoreCrypto::from(central).into());
-        Ok(CoreCrypto {
+        Ok(Self {
             central,
             executor: std::sync::Arc::new(executor.into()),
         })
+    }
+
+    /// Similar to [CoreCrypto::new] but defers MLS initialization. It can be initialized later
+    /// with [CoreCrypto::init_mls].
+    /// This should stay as long as proteus is supported. Then it should be removed.
+    pub fn deferred_init<'s>(path: &'s str, key: &'s str, entropy_seed: Option<Vec<u8>>) -> CryptoResult<Self> {
+        let executor = async_executor::Executor::new();
+        let ciphersuites = vec![MlsCiphersuite::default()];
+        let mut configuration = MlsCentralConfiguration::try_new(path.into(), key.into(), None, ciphersuites)?;
+
+        if let Some(seed) = entropy_seed {
+            let owned_seed = EntropySeed::try_from_slice(&seed[..EntropySeed::EXPECTED_LEN])?;
+            configuration.set_entropy(owned_seed);
+        }
+        // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
+        let certificate_bundle = None;
+        let central = future::block_on(executor.run(MlsCentral::try_new(configuration, certificate_bundle)))?;
+        let central = std::sync::Arc::new(core_crypto::CoreCrypto::from(central).into());
+        Ok(Self {
+            central,
+            executor: std::sync::Arc::new(executor.into()),
+        })
+    }
+
+    /// See [core_crypto::MlsCentral::init_mls]
+    pub fn mls_init(&self, client_id: &str) -> CryptoResult<()> {
+        let ciphersuites = vec![MlsCiphersuite::default()];
+        // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
+        let certificate_bundle = None;
+        future::block_on(self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+            self.central.lock().map_err(|_| CryptoError::LockPoisonError)?.mls_init(
+                client_id.to_string(),
+                ciphersuites,
+                certificate_bundle,
+            ),
+        ))
     }
 
     /// See [core_crypto::MlsCentral::close]
     pub fn close(self) -> CryptoResult<()> {
         if let Ok(central_lock) = std::sync::Arc::try_unwrap(self.central) {
             let central = central_lock.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
-            future::block_on(central.unwrap_mls().close())?;
+            future::block_on(central.take().close())?;
             Ok(())
         } else {
             Err(CryptoError::LockPoisonError)
@@ -282,7 +317,7 @@ impl CoreCrypto<'_> {
     pub fn wipe(self) -> CryptoResult<()> {
         if let Ok(central_lock) = std::sync::Arc::try_unwrap(self.central) {
             let central = central_lock.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
-            future::block_on(central.unwrap_mls().wipe())?;
+            future::block_on(central.take().wipe())?;
             Ok(())
         } else {
             Err(CryptoError::LockPoisonError)
@@ -301,11 +336,10 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::MlsCentral::client_public_key]
     pub fn client_public_key(&self) -> CryptoResult<Vec<u8>> {
-        Ok(self
-            .central
+        self.central
             .lock()
             .map_err(|_| CryptoError::LockPoisonError)?
-            .client_public_key())
+            .client_public_key()
     }
 
     /// See [core_crypto::MlsCentral::client_keypackages]

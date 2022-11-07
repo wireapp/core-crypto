@@ -3,7 +3,8 @@ use crate::prelude::{
     MlsConversationConfiguration, MlsConversationInitBundle, MlsError,
 };
 use openmls::prelude::{
-    KeyPackage, KeyPackageBundle, PublicGroupState, QueuedProposal, StagedCommit, VerifiablePublicGroupState, Welcome,
+    KeyPackage, KeyPackageBundle, PublicGroupState, QueuedProposal, SignaturePublicKey, StagedCommit,
+    VerifiablePublicGroupState, Welcome,
 };
 
 impl MlsCentral {
@@ -16,16 +17,26 @@ impl MlsCentral {
     }
 
     pub async fn rnd_member(&self) -> ConversationMember {
-        let id = self.mls_client.id();
-        self.mls_client.gen_keypackage(&self.mls_backend).await.unwrap();
+        let id = self.mls_client.as_ref().unwrap().id();
+        self.mls_client
+            .as_ref()
+            .unwrap()
+            .gen_keypackage(&self.mls_backend)
+            .await
+            .unwrap();
         let clients = std::collections::HashMap::from([(
             id.clone(),
-            self.mls_client.keypackages(&self.mls_backend).await.unwrap(),
+            self.mls_client
+                .as_ref()
+                .unwrap()
+                .keypackages(&self.mls_backend)
+                .await
+                .unwrap(),
         )]);
         ConversationMember {
             id: id.to_vec(),
             clients,
-            local_client: Some(self.mls_client.clone()),
+            local_client: Some(self.mls_client.as_ref().unwrap().clone()),
         }
     }
 
@@ -144,6 +155,15 @@ impl MlsCentral {
             .find(|k| k.credential().identity() == client_id.as_bytes())
             .unwrap()
             .clone()
+    }
+
+    pub fn client_signature_key(&self) -> &SignaturePublicKey {
+        self.mls_client
+            .as_ref()
+            .unwrap()
+            .credentials()
+            .credential()
+            .signature_key()
     }
 }
 

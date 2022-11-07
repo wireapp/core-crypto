@@ -483,6 +483,31 @@ export class CoreCrypto {
         return new this(cc);
     }
 
+    /**
+     * Almost identical to {@link CoreCrypto.init} but allows a 2 phase initialization of MLS.
+     * First, calling this will set up the keystore and will allow generating proteus prekeys.
+     * Then, those keys can be traded for a clientId.
+     * Use this clientId to initialize MLS with {@link CoreCrypto.mlsInit}.
+     */
+    static async deferredInit(databaseName: string, key: string, entropySeed?: Uint8Array, wasmFilePath?: string): Promise<CoreCrypto> {
+        if (!this.#module) {
+            const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
+            const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
+            this.#module = exports;
+        }
+        const cc = await this.#module.CoreCrypto.deferred_init(databaseName, key, entropySeed);
+        return new this(cc);
+    }
+
+    /**
+     * Use this after {@link CoreCrypto.deferredInit} when you have a clientId. It initializes MLS.
+     *
+     * @param clientId - {@link CoreCryptoParams#clientId} but required
+     */
+    async mlsInit(clientId: string): Promise<void> {
+        return await this.#cc.mls_init(clientId);
+    }
+
     /** @hidden */
     private constructor(cc: CoreCryptoFfiTypes.CoreCrypto) {
         this.#cc = cc;
@@ -505,7 +530,6 @@ export class CoreCrypto {
     async close() {
         await this.#cc.close();
     }
-
 
     /**
      * Registers the callbacks for CoreCrypto to use in order to gain additional information

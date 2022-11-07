@@ -83,7 +83,7 @@ pub fn new_central(credential: &Option<CertificateBundle>) -> (MlsCentral, tempf
     let client_id = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
     let secret = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
     let ciphersuites = vec![MlsCiphersuite::default()];
-    let cfg = MlsCentralConfiguration::try_new(path, secret, client_id, ciphersuites).unwrap();
+    let cfg = MlsCentralConfiguration::try_new(path, secret, Some(client_id), ciphersuites).unwrap();
     let central = block_on(async { MlsCentral::try_new(cfg, credential.clone()).await.unwrap() });
     (central, tmp_file)
 }
@@ -174,7 +174,7 @@ pub fn invite(from: &mut MlsCentral, other: &mut MlsCentral, id: &ConversationId
             .unwrap()
             .key_package()
             .clone();
-        let other_member = ConversationMember::new(other.client_id(), other_kp);
+        let other_member = ConversationMember::new(other.client_id().unwrap(), other_kp);
         let welcome = from
             .add_members_to_conversation(id, &mut [other_member])
             .await

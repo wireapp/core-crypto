@@ -76,7 +76,11 @@ impl MlsCentral {
         public_group_state: VerifiablePublicGroupState,
         configuration: MlsConversationConfiguration,
     ) -> CryptoResult<MlsConversationInitBundle> {
-        let credentials = self.mls_client.credentials();
+        let credentials = self
+            .mls_client
+            .as_ref()
+            .ok_or(CryptoError::MlsNotInitialized)?
+            .credentials();
         let (mut group, commit, pgs) = MlsGroup::join_by_external_commit(
             &self.mls_backend,
             None,

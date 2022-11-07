@@ -60,7 +60,7 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                         let (bob_central, ..) = new_central(&credential);
                         let bob_kpbs = block_on(async { bob_central.client_keypackages(1).await.unwrap() });
                         let bob_kp = bob_kpbs.first().unwrap().key_package().clone();
-                        let bob_member = ConversationMember::new(bob_central.client_id(), bob_kp);
+                        let bob_member = ConversationMember::new(bob_central.client_id().unwrap(), bob_kp);
                         let welcome = block_on(async {
                             alice_central
                                 .add_members_to_conversation(&id, &mut [bob_member])

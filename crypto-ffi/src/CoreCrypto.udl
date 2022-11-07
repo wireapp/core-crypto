@@ -78,6 +78,7 @@ enum CryptoError {
     "CryptoboxMigrationError",
     "ProteusNotInitialized",
     "ProteusSupportNotEnabled",
+    "MlsNotInitialized",
 };
 
 dictionary DecryptedMessage {
@@ -121,6 +122,12 @@ callback interface CoreCryptoCallbacks {
 interface CoreCrypto {
     [Throws=CryptoError, Name=new]
     constructor([ByRef] string path, [ByRef] string key, [ByRef] string client_id, sequence<u8>? entropy_seed);
+
+    [Throws=CryptoError, Name=deferred_init]
+    constructor([ByRef] string path, [ByRef] string key, sequence<u8>? entropy_seed);
+
+    [Throws=CryptoError]
+    void mls_init([ByRef] string client_id);
 
     [Throws=CryptoError]
     void set_callbacks(CoreCryptoCallbacks callbacks);
