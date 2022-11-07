@@ -55,7 +55,7 @@ pub use rstest_reuse::{self, *};
     */
     case::pure_ciphertext(TestCase {
         credential: $crate::mls::credential::CertificateBundle::rand_basic(),
-        cfg: crate::prelude::MlsConversationConfiguration {
+        cfg: $crate::prelude::MlsConversationConfiguration {
             policy: openmls::group::PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
             ..Default::default()
         }

@@ -113,6 +113,9 @@ pub enum CryptoError {
     /// CoreCrypto hasn't been built with the `proteus` feature enabled, meaning proteus isn't built in
     #[error("CoreCrypto hasn't been built with Proteus support enabled; The feature `{0}` isn't enabled")]
     ProteusSupportNotEnabled(String),
+    /// A MLS operation was requested but MLS hasn't been initialized on this instance
+    #[error("A MLS operation was requested but MLS hasn't been initialized on this instance")]
+    MlsNotInitialized,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

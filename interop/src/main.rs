@@ -125,8 +125,12 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     ));
 
     let ciphersuites = vec![MlsCiphersuite::default()];
-    let configuration =
-        MlsCentralConfiguration::try_new("whatever".into(), "test".into(), MLS_MAIN_CLIENTID.into(), ciphersuites)?;
+    let configuration = MlsCentralConfiguration::try_new(
+        "whatever".into(),
+        "test".into(),
+        Some(MLS_MAIN_CLIENTID.into()),
+        ciphersuites,
+    )?;
     let mut master_client = MlsCentral::try_new_in_memory(configuration, None).await?;
 
     let conversation_id = MLS_CONVERSATION_ID.to_vec();
@@ -243,10 +247,10 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
     let configuration = MlsCentralConfiguration::try_new(
         "whatever".into(),
         "test".into(),
-        MLS_MAIN_CLIENTID.into(),
+        Some(MLS_MAIN_CLIENTID.into()),
         vec![MlsCiphersuite::default()],
     )?;
-    let mut master_client: CoreCrypto = MlsCentral::try_new_in_memory(configuration, None).await?.into();
+    let mut master_client = CoreCrypto::from(MlsCentral::try_new_in_memory(configuration, None).await?);
     master_client.proteus_init().await?;
 
     let master_fingerprint = master_client.proteus_fingerprint()?;

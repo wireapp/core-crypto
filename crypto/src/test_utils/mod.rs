@@ -53,7 +53,7 @@ pub async fn run_test_with_client_ids<const N: usize>(
                 let client_id = client_id[i].to_string();
                 let ciphersuites = vec![case.cfg.ciphersuite];
                 let configuration =
-                    MlsCentralConfiguration::try_new(p, "test".into(), client_id, ciphersuites).unwrap();
+                    MlsCentralConfiguration::try_new(p, "test".into(), Some(client_id), ciphersuites).unwrap();
                 let mut central = MlsCentral::try_new(configuration, (case.credential)(case.cfg.ciphersuite))
                     .await
                     .unwrap();

@@ -35,11 +35,11 @@ impl CoreCryptoNativeClient {
         let configuration = MlsCentralConfiguration::try_new(
             "whatever".into(),
             "test".into(),
-            client_id.as_hyphenated().to_string(),
+            Some(client_id.as_hyphenated().to_string()),
             ciphersuites,
         )?;
 
-        let cc = MlsCentral::try_new_in_memory(configuration, None).await?.into();
+        let cc = CoreCrypto::from(MlsCentral::try_new_in_memory(configuration, None).await?);
 
         Ok(Self {
             cc,
@@ -69,7 +69,7 @@ impl EmulatedClient for CoreCryptoNativeClient {
     }
 
     async fn wipe(mut self) -> Result<()> {
-        self.cc.unwrap_mls().wipe().await?;
+        self.cc.take().wipe().await?;
         Ok(())
     }
 }

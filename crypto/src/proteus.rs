@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{CryptoError, CryptoResult, ProteusError};
+use crate::{CoreCrypto, CryptoError, CryptoResult, ProteusError};
 use core_crypto_keystore::{
     entities::{ProteusIdentity, ProteusSession},
     Connection as CryptoKeystore,
@@ -73,6 +73,139 @@ impl ProteusConversationSession {
     /// Returns the public key fingerprint of the remote identity (= client you're communicating with)
     pub fn fingerprint_remote(&self) -> String {
         self.session.remote_identity().fingerprint()
+    }
+}
+
+impl CoreCrypto {
+    /// Initializes the proteus client
+    pub async fn proteus_init(&mut self) -> CryptoResult<()> {
+        // ? Cannot inline the statement or the borrow checker gets really confused about the type of `keystore`
+        let keystore = self.mls.mls_backend.borrow_keystore();
+        let proteus_client = ProteusCentral::try_new(keystore).await?;
+        self.proteus = Some(proteus_client);
+        Ok(())
+    }
+
+    /// Creates a proteus session from a prekey
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub async fn proteus_session_from_prekey(
+        &mut self,
+        session_id: &str,
+        prekey: &[u8],
+    ) -> CryptoResult<&mut ProteusConversationSession> {
+        let proteus = self.proteus.as_mut().ok_or(CryptoError::ProteusNotInitialized)?;
+        proteus.session_from_prekey(session_id, prekey).await
+    }
+
+    /// Creates a proteus session from a Proteus message envelope
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub async fn proteus_session_from_message(
+        &mut self,
+        session_id: &str,
+        envelope: &[u8],
+    ) -> CryptoResult<(&mut ProteusConversationSession, Vec<u8>)> {
+        let proteus = self.proteus.as_mut().ok_or(CryptoError::ProteusNotInitialized)?;
+        let keystore = self.mls.mls_backend.borrow_keystore_mut();
+        proteus.session_from_message(keystore, session_id, envelope).await
+    }
+
+    /// Saves a proteus session in the keystore
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub async fn proteus_session_save(&self, session_id: &str) -> CryptoResult<()> {
+        let proteus = self.proteus.as_ref().ok_or(CryptoError::ProteusNotInitialized)?;
+        let keystore = self.mls.mls_backend.borrow_keystore();
+        proteus.session_save(keystore, session_id).await
+    }
+
+    /// Deletes a proteus session from the keystore
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub async fn proteus_session_delete(&mut self, session_id: &str) -> CryptoResult<()> {
+        let proteus = self.proteus.as_mut().ok_or(CryptoError::ProteusNotInitialized)?;
+        let keystore = self.mls.mls_backend.borrow_keystore();
+        proteus.session_delete(keystore, session_id).await
+    }
+
+    /// Proteus session accessor
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub fn proteus_session(&mut self, session_id: &str) -> CryptoResult<Option<&mut ProteusConversationSession>> {
+        let proteus = self.proteus.as_mut().ok_or(CryptoError::ProteusNotInitialized)?;
+        Ok(proteus.session(session_id))
+    }
+
+    /// Proteus session exists
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub fn proteus_session_exists(&self, session_id: &str) -> CryptoResult<bool> {
+        let proteus = self.proteus.as_ref().ok_or(CryptoError::ProteusNotInitialized)?;
+        Ok(proteus.session_exists(session_id))
+    }
+
+    /// Decrypts a proteus message envelope
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub async fn proteus_decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> CryptoResult<Vec<u8>> {
+        let proteus = self.proteus.as_mut().ok_or(CryptoError::ProteusNotInitialized)?;
+        let keystore = self.mls.mls_backend.borrow_keystore_mut();
+        proteus.decrypt(keystore, session_id, ciphertext).await
+    }
+
+    /// Encrypts proteus message for a given session ID
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub fn proteus_encrypt(&mut self, session_id: &str, plaintext: &[u8]) -> CryptoResult<Vec<u8>> {
+        let proteus = self.proteus.as_mut().ok_or(CryptoError::ProteusNotInitialized)?;
+        proteus.encrypt(session_id, plaintext)
+    }
+
+    /// Encrypts a proteus message for several sessions ID. This is more efficient than other methods as the calls are batched.
+    /// This also reduces the rountrips when crossing over the FFI
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub fn proteus_encrypt_batched(
+        &mut self,
+        sessions: &[impl AsRef<str>],
+        plaintext: &[u8],
+    ) -> CryptoResult<std::collections::HashMap<String, Vec<u8>>> {
+        let proteus = self.proteus.as_mut().ok_or(CryptoError::ProteusNotInitialized)?;
+        proteus.encrypt_batched(sessions, plaintext)
+    }
+
+    /// Creates a new Proteus prekey and returns the CBOR-serialized version of the prekey bundle
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub async fn proteus_new_prekey(&self, prekey_id: u16) -> CryptoResult<Vec<u8>> {
+        let proteus = self.proteus.as_ref().ok_or(CryptoError::ProteusNotInitialized)?;
+        let keystore = self.mls.mls_backend.borrow_keystore();
+        proteus.new_prekey(prekey_id, keystore).await
+    }
+
+    /// Returns the proteus identity keypair
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub fn proteus_identity(&self) -> CryptoResult<&proteus_wasm::keys::IdentityKeyPair> {
+        let proteus = self.proteus.as_ref().ok_or(CryptoError::ProteusNotInitialized)?;
+        Ok(proteus.identity())
+    }
+
+    /// Returns the proteus identity's public key fingerprint
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub fn proteus_fingerprint(&self) -> CryptoResult<String> {
+        let proteus = self.proteus.as_ref().ok_or(CryptoError::ProteusNotInitialized)?;
+        Ok(proteus.fingerprint())
+    }
+
+    /// Migrates an existing Cryptobox data store (whether a folder or an IndexedDB database) located at `path` to the keystore.
+    ///
+    ///The client can then be initialized with [CoreCrypto::proteus_init]
+    pub async fn proteus_cryptobox_migrate(&self, path: &str) -> CryptoResult<()> {
+        let keystore = self.mls.mls_backend.borrow_keystore();
+        ProteusCentral::cryptobox_migrate(keystore, path).await
     }
 }
 
@@ -578,6 +711,10 @@ impl ProteusCentral {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        prelude::{MlsCentral, MlsCentralConfiguration},
+        test_utils::*,
+    };
     #[allow(unused_imports)]
     use proteus_traits::PreKeyStore;
     use proteus_wasm::keys::PreKey;
@@ -613,10 +750,43 @@ mod tests {
         }
     }
 
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    async fn cc_can_init(case: TestCase) {
+        let (path, db_file) = tmp_db_file();
+        let client_id = "alice".to_string();
+        let cfg = MlsCentralConfiguration::try_new(path, "test".to_string(), Some(client_id), vec![case.ciphersuite()])
+            .unwrap();
+        let mut cc: CoreCrypto = MlsCentral::try_new(cfg, case.credential()).await.unwrap().into();
+        assert!(cc.proteus_init().await.is_ok());
+        assert!(cc.proteus_new_prekey(1).await.is_ok());
+        drop(db_file);
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    async fn cc_can_2_phase_init(case: TestCase) {
+        let (path, db_file) = tmp_db_file();
+        // we are deferring MLS initialization here, not passing a MLS 'client_id' yet
+        let cfg = MlsCentralConfiguration::try_new(path, "test".to_string(), None, vec![case.ciphersuite()]).unwrap();
+        let mut cc: CoreCrypto = MlsCentral::try_new(cfg, case.credential()).await.unwrap().into();
+        assert!(cc.proteus_init().await.is_ok());
+        // proteus is initialized, prekeys can be generated
+        assert!(cc.proteus_new_prekey(1).await.is_ok());
+        // 👇 and so a unique 'client_id' can be fetched from wire-server
+        let client_id = "alice".to_string();
+        cc.mls_init(client_id, vec![case.ciphersuite()], case.credential())
+            .await
+            .unwrap();
+        // expect MLS to work
+        assert_eq!(cc.client_keypackages(2).await.unwrap().len(), 2);
+        drop(db_file);
+    }
+
     #[async_std::test]
     #[wasm_bindgen_test]
     async fn can_init() {
-        let (path, db_file) = crate::test_utils::tmp_db_file();
+        let (path, db_file) = tmp_db_file();
         let keystore = core_crypto_keystore::Connection::open_with_key(&path, "test")
             .await
             .unwrap();
@@ -639,7 +809,7 @@ mod tests {
     #[wasm_bindgen_test]
     async fn can_talk_with_proteus() {
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
-        let (path, db_file) = crate::test_utils::tmp_db_file();
+        let (path, db_file) = tmp_db_file();
 
         let mut keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
             .await
@@ -685,7 +855,7 @@ mod tests {
     #[wasm_bindgen_test]
     async fn can_produce_proteus_consumed_prekeys() {
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
-        let (path, db_file) = crate::test_utils::tmp_db_file();
+        let (path, db_file) = tmp_db_file();
 
         let mut keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
             .await

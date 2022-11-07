@@ -85,7 +85,7 @@ extension CoreCryptoSwift.MlsRatchetTreeType {
 public typealias ConversationId = [UInt8]
 
 /// Alias for ClientId within a conversation.
-public typealias MemberId = [UInt8]
+public typealias ClientId = [UInt8]
 
 /// Conversation ciphersuite variants
 public enum CiphersuiteName: ConvertToInner {
@@ -129,7 +129,7 @@ public struct ConversationConfiguration: ConvertToInner {
     }
 
     ///  List of client IDs with administrative permissions
-    public var admins: [MemberId]
+    public var admins: [ClientId]
     /// Conversation ciphersuite
     public var ciphersuite: CiphersuiteName?
     /// Duration in seconds after which we will automatically force a self_update commit
@@ -138,7 +138,7 @@ public struct ConversationConfiguration: ConvertToInner {
     /// List of client IDs that are allowed to be external senders of commits
     public var externalSenders: [[UInt8]]
 
-    public init(admins: [MemberId], ciphersuite: CiphersuiteName?, keyRotationSpan: TimeInterval?, externalSenders: [[UInt8]]) {
+    public init(admins: [ClientId], ciphersuite: CiphersuiteName?, keyRotationSpan: TimeInterval?, externalSenders: [[UInt8]]) {
         self.admins = admins
         self.ciphersuite = ciphersuite
         self.keyRotationSpan = keyRotationSpan
@@ -366,6 +366,20 @@ public class CoreCryptoWrapper {
     ///
     public init(path: String, key: String, clientId: String, entropySeed: [UInt8]?) throws {
         self.coreCrypto = try CoreCrypto(path: path, key: key, clientId: clientId, entropySeed: entropySeed)
+    }
+
+    /// Almost identical to ```CoreCrypto/init``` but allows a 2 phase initialization of MLS.First, calling this will
+    /// set up the keystore and will allow generating proteus prekeys.Then, those keys can be traded for a clientId.
+    /// Use this clientId to initialize MLS with ```CoreCrypto/mlsInit```.
+    public static func deferredInit(path: String, key: String, entropySeed: [UInt8]?) throws -> CoreCrypto {
+        try CoreCrypto.deferredInit(path: path, key: key, entropySeed: entropySeed)
+    }
+
+    /// Use this after ```CoreCrypto/deferredInit``` when you have a clientId. It initializes MLS.
+    ///
+    /// - parameter clientId: client identifier
+    public func mlsInit(clientId: String) throws {
+        try self.coreCrypto.mlsInit(clientId: clientId)
     }
 
     /// Sets the callback interface, required by some operations from `CoreCrypto`

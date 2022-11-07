@@ -393,13 +393,9 @@ pub mod tests {
                     let uuid = uuid::Uuid::new_v4();
                     let name = uuid.hyphenated().to_string();
                     let path = tmp_db_file();
-                    let config = MlsCentralConfiguration::try_new(
-                        path.0,
-                        name.as_str().into(),
-                        name.as_str().into(),
-                        vec![case.ciphersuite()],
-                    )
-                    .unwrap();
+                    let config =
+                        MlsCentralConfiguration::try_new(path.0, name.clone(), Some(name), vec![case.ciphersuite()])
+                            .unwrap();
                     let central = MlsCentral::try_new(config, case.credential()).await.unwrap();
                     bob_and_friends.push(central);
                 }

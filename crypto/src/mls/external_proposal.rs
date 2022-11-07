@@ -85,12 +85,21 @@ impl MlsCentral {
         epoch: GroupEpoch,
     ) -> CryptoResult<MlsMessageOut> {
         let group_id = GroupId::from_slice(&conversation_id[..]);
-        let (key_package, ..) = self.mls_client.gen_keypackage(&self.mls_backend).await?.into_parts();
+        let (key_package, ..) = self
+            .mls_client
+            .as_ref()
+            .ok_or(CryptoError::MlsNotInitialized)?
+            .gen_keypackage(&self.mls_backend)
+            .await?
+            .into_parts();
         ExternalProposal::new_add(
             key_package,
             group_id,
             epoch,
-            self.mls_client.credentials(),
+            self.mls_client
+                .as_ref()
+                .ok_or(CryptoError::MlsNotInitialized)?
+                .credentials(),
             &self.mls_backend,
         )
         .map_err(MlsError::from)
@@ -121,7 +130,10 @@ impl MlsCentral {
             key_package_ref,
             group_id,
             epoch,
-            self.mls_client.credentials(),
+            self.mls_client
+                .as_ref()
+                .ok_or(CryptoError::MlsNotInitialized)?
+                .credentials(),
             // TODO: should inferred from group's extensions
             0,
             &self.mls_backend,
@@ -217,13 +229,7 @@ mod tests {
                         if case.ciphersuite().0.signature_algorithm() == SignatureScheme::ED25519 {
                             let id = conversation_id();
 
-                            let remove_key = ds
-                                .mls_client
-                                .credentials()
-                                .credential()
-                                .signature_key()
-                                .as_slice()
-                                .to_vec();
+                            let remove_key = ds.client_signature_key().as_slice().to_vec();
                             let mut cfg = case.cfg.clone();
                             cfg.set_raw_external_senders(vec![remove_key]);
                             owner_central.new_conversation(id.clone(), cfg).await.unwrap();
@@ -286,13 +292,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         // Delivery service key is used in the group..
-                        let remove_key = ds
-                            .mls_client
-                            .credentials()
-                            .credential()
-                            .signature_key()
-                            .as_slice()
-                            .to_vec();
+                        let remove_key = ds.client_signature_key().as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
                         cfg.set_raw_external_senders(vec![remove_key]);
                         owner_central.new_conversation(id.clone(), cfg).await.unwrap();
@@ -346,7 +346,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
 
-                        let remove_key = ds.mls_client.credentials().credential().signature_key();
+                        let remove_key = ds.client_signature_key();
                         let short_remove_key =
                             SignaturePublicKey::new(remove_key.as_slice()[1..].to_vec(), remove_key.signature_scheme())
                                 .unwrap();
@@ -407,13 +407,7 @@ mod tests {
                         Box::pin(async move {
                             let id = conversation_id();
 
-                            let remove_key = ds
-                                .mls_client
-                                .credentials()
-                                .credential()
-                                .signature_key()
-                                .as_slice()
-                                .to_vec();
+                            let remove_key = ds.client_signature_key().as_slice().to_vec();
                             let mut cfg = case.cfg.clone();
                             cfg.set_raw_external_senders(vec![remove_key]);
                             alice_central.new_conversation(id.clone(), cfg).await.unwrap();
@@ -507,13 +501,7 @@ mod tests {
                         Box::pin(async move {
                             let id = conversation_id();
 
-                            let remove_key = ds
-                                .mls_client
-                                .credentials()
-                                .credential()
-                                .signature_key()
-                                .as_slice()
-                                .to_vec();
+                            let remove_key = ds.client_signature_key().as_slice().to_vec();
                             let mut cfg = case.cfg.clone();
                             cfg.set_raw_external_senders(vec![remove_key]);
                             alice_central.new_conversation(id.clone(), cfg).await.unwrap();
