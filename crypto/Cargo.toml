@@ -24,7 +24,10 @@ cryptobox-migrate = [
     "dep:futures-lite",
     "dep:rexie"
 ]
+# for test/bench all ciphersuites
 test-all-cipher = []
+# execute benches with also real db to better see overhead
+bench-in-db = []
 
 [dependencies]
 async-recursion = "1.0"
@@ -118,4 +121,8 @@ harness = false
 
 [[bench]]
 name = "create_group"
+harness = false
+
+[[bench]]
+name = "mls_proteus"
 harness = false

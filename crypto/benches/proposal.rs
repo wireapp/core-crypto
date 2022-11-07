@@ -1,35 +1,22 @@
-use criterion::{
-    async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion,
-};
+use criterion::{async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, Criterion};
 
-use core_crypto::{
-    mls::MlsCiphersuite,
-    prelude::{CertificateBundle, MlsProposal},
-};
+use core_crypto::prelude::MlsProposal;
 
 use crate::utils::*;
 
-#[path = "utils.rs"]
+#[path = "utils/mod.rs"]
 mod utils;
 
-// FIXME: currently operations do not work for other ciphersuites
-fn working_test_cases() -> impl Iterator<Item = (MlsTestCase, MlsCiphersuite, Option<CertificateBundle>)> {
-    MlsTestCase::values().filter(|(c, ..)| match c {
-        MlsTestCase::Basic_Ciphersuite1 => true,
-        _ => false,
-    })
-}
-
-fn add_proposal_bench(c: &mut Criterion) {
-    for (case, ciphersuite, credential) in working_test_cases() {
-        let mut group = c.benchmark_group(format!("Add proposal ({})", case));
-        for i in (GROUP_MIN..GROUP_MAX).step_by(GROUP_STEP) {
-            group.bench_with_input(BenchmarkId::from_parameter(i), &i, |b, i| {
+fn proposal_add_bench(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Add proposal f(group size)");
+    for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
+        for i in (GROUP_RANGE).step_by(GROUP_STEP) {
+            group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup(&ciphersuite, &credential);
-                        add_clients(&mut central, &id, &ciphersuite, *i);
-                        let (kp, ..) = rand_key_package(&ciphersuite);
+                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
+                        add_clients(&mut central, &id, ciphersuite, *i);
+                        let (kp, ..) = rand_key_package(ciphersuite);
                         (central, id, kp)
                     },
                     |(mut central, id, kp)| async move {
@@ -39,19 +26,19 @@ fn add_proposal_bench(c: &mut Criterion) {
                 )
             });
         }
-        group.finish();
     }
+    group.finish();
 }
 
-fn remove_proposal_bench(c: &mut Criterion) {
-    for (case, ciphersuite, credential) in working_test_cases() {
-        let mut group = c.benchmark_group(format!("Remove proposal ({})", case));
-        for i in (GROUP_MIN..GROUP_MAX).step_by(GROUP_STEP) {
-            group.bench_with_input(BenchmarkId::from_parameter(i), &i, |b, i| {
+fn proposal_remove_bench(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Remove proposal f(group size)");
+    for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
+        for i in (GROUP_RANGE).step_by(GROUP_STEP) {
+            group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup(&ciphersuite, &credential);
-                        let client_ids = add_clients(&mut central, &id, &ciphersuite, *i);
+                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
+                        let client_ids = add_clients(&mut central, &id, ciphersuite, *i);
                         (central, id, client_ids.first().unwrap().clone())
                     },
                     |(mut central, id, client_id)| async move {
@@ -61,19 +48,19 @@ fn remove_proposal_bench(c: &mut Criterion) {
                 )
             });
         }
-        group.finish();
     }
+    group.finish();
 }
 
-fn update_proposal_bench(c: &mut Criterion) {
-    for (case, ciphersuite, credential) in working_test_cases() {
-        let mut group = c.benchmark_group(format!("Update proposal ({})", case));
-        for i in (GROUP_MIN..GROUP_MAX).step_by(GROUP_STEP) {
-            group.bench_with_input(BenchmarkId::from_parameter(i), &i, |b, i| {
+fn proposal_update_bench(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Update proposal f(group size)");
+    for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
+        for i in (GROUP_RANGE).step_by(GROUP_STEP) {
+            group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup(&ciphersuite, &credential);
-                        add_clients(&mut central, &id, &ciphersuite, *i);
+                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
+                        add_clients(&mut central, &id, ciphersuite, *i);
                         (central, id)
                     },
                     |(mut central, id)| async move {
@@ -83,13 +70,16 @@ fn update_proposal_bench(c: &mut Criterion) {
                 )
             });
         }
-        group.finish();
     }
+    group.finish();
 }
 
 criterion_group!(
     name = proposal;
-    config = Criterion::default().sample_size(SAMPLE_SIZE);
-    targets = add_proposal_bench, remove_proposal_bench, update_proposal_bench
+    config = criterion();
+    targets =
+    proposal_add_bench,
+    proposal_remove_bench,
+    proposal_update_bench,
 );
 criterion_main!(proposal);
