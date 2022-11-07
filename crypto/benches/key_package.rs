@@ -1,20 +1,18 @@
-use criterion::{
-    async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion,
-};
+use criterion::{async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, Criterion};
 use futures_lite::future::block_on;
 
 use crate::utils::*;
 
-#[path = "utils.rs"]
+#[path = "utils/mod.rs"]
 mod utils;
 
-fn generate_key_packages(c: &mut Criterion) {
-    for (case, ciphersuite, credential) in MlsTestCase::values() {
-        let mut group = c.benchmark_group(format!("Generate Key Package ({})", case));
-        for i in (GROUP_MIN..GROUP_MAX).step_by(GROUP_STEP) {
-            group.bench_with_input(BenchmarkId::from_parameter(i), &i, |b, i| {
+fn generate_key_package_bench(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Generate KeyPackage f(group size)");
+    for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
+        for i in (GROUP_RANGE).step_by(GROUP_STEP) {
+            group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
-                    || setup(&ciphersuite, &credential),
+                    || setup_mls(ciphersuite, &credential, in_memory),
                     |(central, _)| async move {
                         black_box(central.client_keypackages(*i).await.unwrap());
                     },
@@ -22,18 +20,18 @@ fn generate_key_packages(c: &mut Criterion) {
                 )
             });
         }
-        group.finish();
     }
+    group.finish();
 }
 
-fn count_key_packages(c: &mut Criterion) {
-    for (case, ciphersuite, credential) in MlsTestCase::values() {
-        let mut group = c.benchmark_group(format!("Count Key Package ({})", case));
-        for i in (GROUP_MIN..GROUP_MAX).step_by(GROUP_STEP) {
-            group.bench_with_input(BenchmarkId::from_parameter(i), &i, |b, i| {
+fn count_key_packages_bench(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Count KeyPackage");
+    for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
+        for i in (GROUP_RANGE).step_by(GROUP_STEP) {
+            group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (central, ..) = setup(&ciphersuite, &credential);
+                        let (central, ..) = setup_mls(ciphersuite, &credential, in_memory);
                         block_on(async {
                             central.client_keypackages(*i).await.unwrap();
                         });
@@ -46,13 +44,15 @@ fn count_key_packages(c: &mut Criterion) {
                 )
             });
         }
-        group.finish();
     }
+    group.finish();
 }
 
 criterion_group!(
     name = key_package;
-    config = Criterion::default().sample_size(SAMPLE_SIZE);
-    targets = generate_key_packages, count_key_packages
+    config = criterion();
+    targets =
+    generate_key_package_bench,
+    count_key_packages_bench,
 );
 criterion_main!(key_package);
