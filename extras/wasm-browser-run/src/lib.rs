@@ -12,6 +12,8 @@ pub enum WasmBrowserRunError {
     UnsupportedWebdriver(String),
     #[error("The platform you're running this code on isn't supported")]
     UnsupportedPlatform,
+    #[error("Error while building test JS bundle: {0}")]
+    NpmError(String),
     #[error(transparent)]
     Other(#[from] eyre::Report),
 }
@@ -249,6 +251,7 @@ impl WebdriverContext {
 
         let caps = serde_json::Map::from_iter(
             vec![
+                ("websocketUrl".to_string(), true.into()),
                 (
                     "goog:chromeOptions".to_string(),
                     serde_json::json!({
@@ -338,6 +341,17 @@ impl WebdriverContext {
     // - spawn http server
     // - goto page
     pub async fn run_wasm(&self, _wasm_file_path: &std::path::Path) -> WasmBrowserRunResult<wasm_bindgen::JsValue> {
+        let mount_point = self.compile_js_support(None).await?;
+        let (hwnd, socket_addr) = Self::spawn_http_server(&mount_point).await?;
+        self.browser
+            .goto(&format!("http://{socket_addr}/"))
+            .await
+            .map_err(WebdriverError::from)?;
+
+        // self.browser.execute_async(script, args)
+
+        hwnd.abort();
+        let _ = hwnd.await;
         todo!()
     }
 
@@ -351,8 +365,30 @@ impl WebdriverContext {
     }
 
     // TODO: create JS support code to get back console stuff when --nocapture is enabled
-    async fn compile_js_support(&self, _js: Option<&str>) -> WasmBrowserRunResult<()> {
-        // TODO: run js_builder and provide the actual runnable code via stdin
-        todo!()
+    async fn compile_js_support(&self, mut js: Option<&str>) -> WasmBrowserRunResult<String> {
+        let mut builder_hwnd = tokio::process::Command::new("npm")
+            .current_dir("./js-builder")
+            .arg("start")
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()?;
+
+        if let Some(js) = js.take() {
+            let mut stdin = builder_hwnd.stdin.take().expect("No stdin in npm process!");
+
+            use tokio::io::AsyncWriteExt as _;
+            stdin.write_all(js.as_bytes()).await?;
+
+            drop(stdin);
+        }
+
+        let out_status = builder_hwnd.wait_with_output().await?;
+        if out_status.status.success() {
+            Ok(std::path::Path::new("./dist").canonicalize()?.to_string_lossy().into())
+        } else {
+            let output_str = String::from_utf8_lossy(&out_status.stdout);
+            Err(WasmBrowserRunError::NpmError(output_str.to_string()))
+        }
     }
 }
