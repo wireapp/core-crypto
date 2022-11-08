@@ -1172,6 +1172,24 @@ export class CoreCrypto {
     }
 
     /**
+     * Proteus session local fingerprint
+     *
+     * @returns Hex-encoded public key string
+     */
+    async proteusFingerprintLocal(sessionId: string): Promise<string> {
+        return await this.#cc.proteus_fingerprint_local(sessionId);
+    }
+
+    /**
+     * Proteus session remote fingerprint
+     *
+     * @returns Hex-encoded public key string
+     */
+    async proteusFingerprintRemote(sessionId: string): Promise<string> {
+        return await this.#cc.proteus_fingerprint_remote(sessionId);
+    }
+
+    /**
      * Imports all the data stored by Cryptobox into the CoreCrypto keystore
      *
      * @param storeName - The name of the IndexedDB store where the data is stored

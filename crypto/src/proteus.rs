@@ -134,7 +134,7 @@ impl CoreCrypto {
     /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
     pub fn proteus_session(&mut self, session_id: &str) -> CryptoResult<Option<&mut ProteusConversationSession>> {
         let proteus = self.proteus.as_mut().ok_or(CryptoError::ProteusNotInitialized)?;
-        Ok(proteus.session(session_id))
+        Ok(proteus.session_mut(session_id))
     }
 
     /// Proteus session exists
@@ -198,6 +198,28 @@ impl CoreCrypto {
     pub fn proteus_fingerprint(&self) -> CryptoResult<String> {
         let proteus = self.proteus.as_ref().ok_or(CryptoError::ProteusNotInitialized)?;
         Ok(proteus.fingerprint())
+    }
+
+    /// Returns the proteus identity's public key fingerprint
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub fn proteus_fingerprint_local(&self, session_id: &str) -> CryptoResult<String> {
+        if let Some(proteus) = &self.proteus {
+            proteus.fingerprint_local(session_id)
+        } else {
+            Err(CryptoError::ProteusNotInitialized)
+        }
+    }
+
+    /// Returns the proteus identity's public key fingerprint
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub fn proteus_fingerprint_remote(&self, session_id: &str) -> CryptoResult<String> {
+        if let Some(proteus) = &self.proteus {
+            proteus.fingerprint_remote(session_id)
+        } else {
+            Err(CryptoError::ProteusNotInitialized)
+        }
     }
 
     /// Migrates an existing Cryptobox data store (whether a folder or an IndexedDB database) located at `path` to the keystore.
@@ -352,9 +374,14 @@ impl ProteusCentral {
         Ok(())
     }
 
-    /// Session accessor
-    pub fn session(&mut self, session_id: &str) -> Option<&mut ProteusConversationSession> {
+    /// Session mut accessor
+    pub fn session_mut(&mut self, session_id: &str) -> Option<&mut ProteusConversationSession> {
         self.proteus_sessions.get_mut(session_id)
+    }
+
+    /// Session accessor
+    pub fn session(&self, session_id: &str) -> Option<&ProteusConversationSession> {
+        self.proteus_sessions.get(session_id)
     }
 
     /// Session exists
@@ -379,7 +406,7 @@ impl ProteusCentral {
 
     /// Encrypt a message for a session
     pub fn encrypt(&mut self, session_id: &str, plaintext: &[u8]) -> CryptoResult<Vec<u8>> {
-        if let Some(session) = self.session(session_id) {
+        if let Some(session) = self.session_mut(session_id) {
             session.encrypt(plaintext)
         } else {
             Err(CryptoError::ConversationNotFound(session_id.as_bytes().into()))
@@ -395,7 +422,7 @@ impl ProteusCentral {
     ) -> CryptoResult<HashMap<String, Vec<u8>>> {
         let mut acc = HashMap::new();
         for session_id in sessions {
-            if let Some(session) = self.session(session_id.as_ref()) {
+            if let Some(session) = self.session_mut(session_id.as_ref()) {
                 acc.insert(session.identifier.clone(), session.encrypt(plaintext)?);
             }
         }
@@ -426,6 +453,30 @@ impl ProteusCentral {
     /// Proteus Public key hex-encoded fingerprint
     pub fn fingerprint(&self) -> String {
         self.proteus_identity.as_ref().public_key.fingerprint()
+    }
+
+    /// Proteus Session local hex-encoded fingerprint
+    ///
+    /// # Errors
+    /// When the session is not found
+    pub fn fingerprint_local(&self, session_id: &str) -> CryptoResult<String> {
+        if let Some(session) = self.session(session_id) {
+            Ok(session.fingerprint_local())
+        } else {
+            Err(CryptoError::ConversationNotFound(session_id.as_bytes().into()))
+        }
+    }
+
+    /// Proteus Session remote hex-encoded fingerprint
+    ///
+    /// # Errors
+    /// When the session is not found
+    pub fn fingerprint_remote(&self, session_id: &str) -> CryptoResult<String> {
+        if let Some(session) = self.session(session_id) {
+            Ok(session.fingerprint_remote())
+        } else {
+            Err(CryptoError::ConversationNotFound(session_id.as_bytes().into()))
+        }
     }
 
     /// Cryptobox -> CoreCrypto migration
@@ -945,7 +996,7 @@ mod tests {
         assert_eq!(proteus_central.fingerprint(), alice_fingerprint);
 
         // Session integrity check
-        let session = proteus_central.session(session_id).unwrap();
+        let session = proteus_central.session_mut(session_id).unwrap();
         assert_eq!(
             session.session.local_identity().fingerprint(),
             alice_session.fingerprint_local()
