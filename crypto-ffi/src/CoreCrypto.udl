@@ -255,6 +255,13 @@ interface CoreCrypto {
     string proteus_fingerprint();
 
     [Throws=CryptoError]
+    string proteus_fingerprint_local([ByRef] string session_id);
+
+    [Throws=CryptoError]
+    string proteus_fingerprint_remote([ByRef] string session_id);
+
+
+    [Throws=CryptoError]
     void proteus_cryptobox_migrate([ByRef] string path);
 };
 

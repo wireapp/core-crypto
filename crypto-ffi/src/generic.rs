@@ -882,6 +882,26 @@ impl CoreCrypto<'_> {
         }}
     }
 
+    /// See [core_crypto::proteus::ProteusCentral::fingerprint_local]
+    pub fn proteus_fingerprint_local(&self, session_id: &str) -> CryptoResult<String> {
+        proteus_impl! {{
+            self.central
+                .lock()
+                .map_err(|_| CryptoError::LockPoisonError)?
+                .proteus_fingerprint_local(session_id)
+        }}
+    }
+
+    /// See [core_crypto::proteus::ProteusCentral::fingerprint_remote]
+    pub fn proteus_fingerprint_remote(&self, session_id: &str) -> CryptoResult<String> {
+        proteus_impl! {{
+            self.central
+                .lock()
+                .map_err(|_| CryptoError::LockPoisonError)?
+                .proteus_fingerprint_remote(session_id)
+        }}
+    }
+
     /// See [core_crypto::proteus::ProteusCentral::cryptobox_migrate]
     pub fn proteus_cryptobox_migrate(&self, path: &str) -> CryptoResult<()> {
         proteus_impl! {{

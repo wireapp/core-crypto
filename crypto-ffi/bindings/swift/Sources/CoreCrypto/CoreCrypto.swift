@@ -660,6 +660,33 @@ public class CoreCryptoWrapper {
         try self.coreCrypto.commitAccepted(conversationId: conversationId)
     }
 
+    /// Allows to remove a pending (uncommitted) proposal. Use this when backend rejects the proposal
+    /// you just sent e.g. if permissions have changed meanwhile.
+    ///
+    /// **CAUTION**: only use this when you had an explicit response from the Delivery Service
+    /// e.g. 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc..
+    ///
+    /// - parameter conversation_id - the group/conversation id
+    /// - parameter proposal_ref - unique proposal identifier which is present in MlsProposalBundle and
+    /// returned from all operation creating a proposal
+    public func clearPendingProposal(conversationId: ConversationId, proposalRef: [UInt8]) throws {
+        try self.coreCrypto.clearPendingProposal(conversationId: conversationId, proposalRef: proposalRef)
+
+    }
+
+    /// Allows to remove a pending commit. Use this when backend rejects the commit
+    /// you just sent e.g. if permissions have changed meanwhile.
+    ///
+    /// **CAUTION**: only use this when you had an explicit response from the Delivery Service
+    /// e.g. 403. Do not use otherwise e.g. 5xx responses, timeout etc..
+    /// **DO NOT** use when Delivery Service responds 409, pending state will be renewed
+    /// in [MlsCentral::decrypt_message]
+    ///
+    /// - parameter conversation_id - the group/conversation id
+    public func clearPendingCommit(conversationId: ConversationId) throws {
+        try self.coreCrypto.clearPendingCommit(conversationId: conversationId)
+    }
+
     /// Initiailizes the proteus client
     public func proteusInit() throws {
         try self.coreCrypto.proteusInit()
@@ -746,6 +773,21 @@ public class CoreCryptoWrapper {
     public func proteusFingerprint() throws -> String {
         try self.coreCrypto.proteusFingerprint()
     }
+
+    /// Proteus session local fingerprint
+    ///
+    /// - returns: Hex-encoded public key string
+    public func proteusFingerprintLocal(sessionId: String) throws -> String {
+        try self.coreCrypto.proteusFingerprintLocal(sessionId: sessionId)
+    }
+
+    /// Proteus session remote fingerprint
+    ///
+    /// - returns: Hex-encoded public key string
+    public func proteusFingerprintRemote(sessionId: String) throws -> String {
+        try self.coreCrypto.proteusFingerprintRemote(sessionId: sessionId)
+    }
+
 
      /// Imports all the data stored by Cryptobox into the CoreCrypto keystore
      ///

@@ -1440,6 +1440,28 @@ impl CoreCrypto {
         } or throw WasmCryptoResult<_>)
     }
 
+    /// Returns: [`WasmCryptoResult<String>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::fingerprint_local]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub async fn proteus_fingerprint_local(&self, session_id: String) -> WasmCryptoResult<String> {
+        proteus_impl!({
+            self.0.read().await.proteus_fingerprint_local(&session_id)
+                .map_err(Into::into).map(Into::into)
+        } or throw WasmCryptoResult<_>)
+    }
+
+    /// Returns: [`WasmCryptoResult<String>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::fingerprint_remote]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub async fn proteus_fingerprint_remote(&self, session_id: String) -> WasmCryptoResult<String> {
+        proteus_impl!({
+            self.0.read().await.proteus_fingerprint_remote(&session_id)
+                .map_err(Into::into).map(Into::into)
+        } or throw WasmCryptoResult<_>)
+    }
+
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::proteus::ProteusCentral::cryptobox_migrate]
