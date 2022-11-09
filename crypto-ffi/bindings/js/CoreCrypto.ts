@@ -214,7 +214,7 @@ export interface CoreCryptoParams {
      * MLS Client ID.
      * This should stay consistent as it will be verified against the stored signature & identity to validate the persisted credential
      */
-    clientId: string;
+    clientId: ClientId;
     /**
      * External PRNG entropy pool seed.
      * This **must** be exactly 32 bytes
@@ -504,7 +504,7 @@ export class CoreCrypto {
      *
      * @param clientId - {@link CoreCryptoParams#clientId} but required
      */
-    async mlsInit(clientId: string): Promise<void> {
+    async mlsInit(clientId: ClientId): Promise<void> {
         return await this.#cc.mls_init(clientId);
     }
 

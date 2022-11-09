@@ -83,7 +83,7 @@ pub fn new_central(credential: &Option<CertificateBundle>) -> (MlsCentral, tempf
     let client_id = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
     let secret = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
     let ciphersuites = vec![MlsCiphersuite::default()];
-    let cfg = MlsCentralConfiguration::try_new(path, secret, Some(client_id), ciphersuites).unwrap();
+    let cfg = MlsCentralConfiguration::try_new(path, secret, Some(client_id.as_bytes().into()), ciphersuites).unwrap();
     let central = block_on(async { MlsCentral::try_new(cfg, credential.clone()).await.unwrap() });
     (central, tmp_file)
 }

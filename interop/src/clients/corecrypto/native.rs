@@ -35,7 +35,7 @@ impl CoreCryptoNativeClient {
         let configuration = MlsCentralConfiguration::try_new(
             "whatever".into(),
             "test".into(),
-            Some(client_id.as_hyphenated().to_string()),
+            Some(client_id.as_hyphenated().to_string().as_bytes().into()),
             ciphersuites,
         )?;
 

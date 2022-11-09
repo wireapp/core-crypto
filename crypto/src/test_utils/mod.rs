@@ -50,7 +50,7 @@ pub async fn run_test_with_client_ids<const N: usize>(
     run_tests(move |paths: [String; N]| {
         Box::pin(async move {
             let stream = paths.into_iter().enumerate().map(|(i, p)| async move {
-                let client_id = client_id[i].to_string();
+                let client_id = client_id[i].into();
                 let ciphersuites = vec![case.cfg.ciphersuite];
                 let configuration =
                     MlsCentralConfiguration::try_new(p, "test".into(), Some(client_id), ciphersuites).unwrap();
