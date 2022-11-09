@@ -15,7 +15,6 @@ crate-type = ["cdylib", "staticlib"]
 default = ["proteus"]
 proteus = ["core-crypto/proteus", "core-crypto/cryptobox-migrate"]
 mobile = ["uniffi", "uniffi_macros", "uniffi_build", "uniffi_bindgen"]
-# c-api = ["libc"] # FIXME: Disabled until it becomes compatible with the internal APIs again
 
 [dependencies]
 core-crypto = { version = "0.6.0-pre.4", path = "../crypto" }
@@ -26,9 +25,6 @@ futures-util = "0.3"
 # UniFFI - Android + iOS bindings - Runtime support
 uniffi = { version = "0.21", optional = true }
 uniffi_macros = { version = "0.21", optional = true }
-
-# C-API support
-libc = { version = "0.2", optional = true }
 
 # see https://github.com/RustCrypto/hashes/issues/404
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "x86")))'.dependencies]

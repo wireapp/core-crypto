@@ -28,13 +28,8 @@ cfg_if::cfg_if! {
         mod uniffi_support;
         pub use self::uniffi_support::*;
     }
-    // else if #[cfg(feature = "c-api")] {
-    //     mod c_api;
-    //     pub use self::c_api::*;
-    // }
 }
 
-#[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
 /// see [core_crypto::prelude::MlsConversationCreationMessage]
 pub struct MemberAddedMessages {
@@ -56,7 +51,6 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     }
 }
 
-#[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
 pub struct CommitBundle {
     pub welcome: Option<Vec<u8>>,
@@ -77,7 +71,6 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
     }
 }
 
-#[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct PublicGroupStateBundle {
@@ -96,14 +89,12 @@ impl From<MlsPublicGroupStateBundle> for PublicGroupStateBundle {
     }
 }
 
-#[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug, Clone)]
 pub struct Invitee {
     pub id: ClientId,
     pub kp: Vec<u8>,
 }
 
-#[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
 pub struct ProposalBundle {
     pub proposal: Vec<u8>,
@@ -119,7 +110,6 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
     }
 }
 
-#[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
 pub struct ConversationInitBundle {
     pub conversation_id: ConversationId,
@@ -141,7 +131,6 @@ impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
     }
 }
 
-#[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug)]
 /// See [core_crypto::prelude::decrypt::MlsConversationDecryptMessage]
 pub struct DecryptedMessage {
@@ -203,7 +192,6 @@ impl TryInto<ConversationMember> for Invitee {
     }
 }
 
-#[cfg_attr(feature = "c-api", repr(C))]
 #[derive(Debug, Clone)]
 /// See [core_crypto::prelude::MlsConversationConfiguration]
 pub struct ConversationConfiguration {

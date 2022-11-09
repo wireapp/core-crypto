@@ -259,8 +259,6 @@ interface CoreCrypto {
 };
 
 namespace CoreCrypto {
-    [Throws=CryptoError]
-    CoreCrypto init_with_path_and_key([ByRef] string path, [ByRef] string key, [ByRef] string client_id, sequence<u8>? entropy_seed);
 
     string version();
 };
