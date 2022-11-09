@@ -14,6 +14,8 @@ pub enum WasmBrowserRunError {
     UnsupportedPlatform,
     #[error("Error while building test JS bundle: {0}")]
     NpmError(String),
+    #[error("Cannot find the WASM file located at {0}")]
+    WasmFileNotFound(String),
     #[error(transparent)]
     Other(#[from] eyre::Report),
 }
@@ -336,35 +338,134 @@ impl WebdriverContext {
         Ok(test_exports)
     }
 
-    // TODO: Load wasm file
-    // - Generate HTML/js support code
-    // - spawn http server
-    // - goto page
-    pub async fn run_wasm(&self, _wasm_file_path: &std::path::Path) -> WasmBrowserRunResult<wasm_bindgen::JsValue> {
+    pub async fn run_wasm_tests(&self, wasm_file_path: &std::path::Path) -> WasmBrowserRunResult<serde_json::Value> {
+        if !wasm_file_path.exists() {
+            return Err(WasmBrowserRunError::WasmFileNotFound(
+                wasm_file_path.to_str().unwrap().into(),
+            ));
+        }
+
+        let wasm_tests = self.detect_test_exports(wasm_file_path)?;
+
         let mount_point = self.compile_js_support(None).await?;
+        let wasm_file_name: std::path::PathBuf = wasm_file_path.file_name().unwrap().to_str().unwrap().into();
+        let mount_point_path = std::path::PathBuf::from(&mount_point);
+        tokio::fs::copy(wasm_file_path, mount_point_path.join(&wasm_file_name)).await?;
         let (hwnd, socket_addr) = Self::spawn_http_server(&mount_point).await?;
+
+        let window = self.browser.new_window(true).await.map_err(WebdriverError::from)?;
+        self.browser
+            .switch_to_window(window.handle)
+            .await
+            .map_err(WebdriverError::from)?;
+
         self.browser
             .goto(&format!("http://{socket_addr}/"))
             .await
             .map_err(WebdriverError::from)?;
 
-        // self.browser.execute_async(script, args)
+        let result = self
+            .browser
+            .execute_async(
+                r#"
+const [wasmFileLocation, testList, callback] = arguments;
+window.runTests(wasmFileLocation, testsList).then(callback);"#,
+                vec![wasm_file_name.to_string_lossy().into(), wasm_tests.into()],
+            )
+            .await
+            .map_err(WebdriverError::from)?;
+
+        self.browser.close_window().await.map_err(WebdriverError::from)?;
 
         hwnd.abort();
         let _ = hwnd.await;
-        todo!()
+
+        Ok(result)
     }
 
-    // TODO: Load arbitrary js
-    // - Bundle with rollup
-    // - generate html with rollup
-    // - spawn http server
-    // - goto page
-    pub async fn run_js(&self, _js: &str) -> WasmBrowserRunResult<wasm_bindgen::JsValue> {
-        todo!()
+    pub async fn run_wasm_calls(
+        &self,
+        wasm_file_path: &std::path::Path,
+        js: &str,
+    ) -> WasmBrowserRunResult<serde_json::Value> {
+        if !wasm_file_path.exists() {
+            return Err(WasmBrowserRunError::WasmFileNotFound(
+                wasm_file_path.to_str().unwrap().into(),
+            ));
+        }
+
+        let mount_point = self
+            .compile_js_support(Some(&format!("window.__wbr__jsCall = async () => {{ {js} }};")))
+            .await?;
+        let (hwnd, socket_addr) = Self::spawn_http_server(&mount_point).await?;
+
+        let window = self.browser.new_window(true).await.map_err(WebdriverError::from)?;
+        self.browser
+            .switch_to_window(window.handle)
+            .await
+            .map_err(WebdriverError::from)?;
+
+        self.browser
+            .goto(&format!("http://{socket_addr}/"))
+            .await
+            .map_err(WebdriverError::from)?;
+
+        let result = self
+            .browser
+            .execute_async(
+                r#"
+const [wasm_path, callback] = arguments;
+const wasm = await import(wasm_path);
+window.__wbr__jsCall().then(callback);"#,
+                vec![wasm_file_path.to_string_lossy().into()],
+            )
+            .await
+            .map_err(WebdriverError::from)?;
+
+        self.browser.close_window().await.map_err(WebdriverError::from)?;
+
+        hwnd.abort();
+        let _ = hwnd.await;
+
+        Ok(result)
     }
 
-    // TODO: create JS support code to get back console stuff when --nocapture is enabled
+    pub async fn run_js(&self, js: &str) -> WasmBrowserRunResult<serde_json::Value> {
+        let mount_point = self
+            .compile_js_support(Some(&format!("window.__wbr__jsCall = async () => {{ {js} }};")))
+            .await?;
+        let (hwnd, socket_addr) = Self::spawn_http_server(&mount_point).await?;
+
+        let window = self.browser.new_window(true).await.map_err(WebdriverError::from)?;
+        self.browser
+            .switch_to_window(window.handle)
+            .await
+            .map_err(WebdriverError::from)?;
+
+        self.browser
+            .goto(&format!("http://{socket_addr}/"))
+            .await
+            .map_err(WebdriverError::from)?;
+
+        let result = self
+            .browser
+            .execute_async(
+                r#"
+const [callback] = arguments;
+window.__wbr__jsCall().then(callback);"#,
+                vec![],
+            )
+            .await
+            .map_err(WebdriverError::from)?;
+
+        self.browser.close_window().await.map_err(WebdriverError::from)?;
+
+        hwnd.abort();
+        let _ = hwnd.await;
+
+        Ok(result)
+    }
+
     async fn compile_js_support(&self, mut js: Option<&str>) -> WasmBrowserRunResult<String> {
         let mut builder_hwnd = tokio::process::Command::new("npm")
             .current_dir("./js-builder")
