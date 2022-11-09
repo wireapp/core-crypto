@@ -28,7 +28,7 @@ struct Args {
     #[arg(long)]
     webdriver: CliWebdriverKind,
     #[arg(short, long)]
-    force_install: bool,
+    force_install_webdriver: bool,
     #[arg(last = true)]
     wasm_test_bin_path: String,
 }
@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
     femme::start();
 
     let args = Args::parse();
-    let ctx = WebdriverContext::init(args.webdriver.into(), args.force_install).await?;
+    let ctx = WebdriverContext::init(args.webdriver.into(), args.force_install_webdriver).await?;
 
     let path = std::path::Path::new(&args.wasm_test_bin_path);
 
