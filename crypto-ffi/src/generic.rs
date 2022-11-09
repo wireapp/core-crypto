@@ -244,13 +244,13 @@ impl CoreCrypto<'_> {
     pub fn new<'s>(
         path: &'s str,
         key: &'s str,
-        client_id: &'s str,
+        client_id: &'s ClientId,
         entropy_seed: Option<Vec<u8>>,
     ) -> CryptoResult<Self> {
         let executor = async_executor::Executor::new();
         let ciphersuites = vec![MlsCiphersuite::default()];
         let mut configuration =
-            MlsCentralConfiguration::try_new(path.into(), key.into(), Some(client_id.into()), ciphersuites)?;
+            MlsCentralConfiguration::try_new(path.into(), key.into(), Some(client_id.clone()), ciphersuites)?;
 
         if let Some(seed) = entropy_seed {
             let owned_seed = EntropySeed::try_from_slice(&seed[..EntropySeed::EXPECTED_LEN])?;
@@ -289,13 +289,13 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::MlsCentral::init_mls]
-    pub fn mls_init(&self, client_id: &str) -> CryptoResult<()> {
+    pub fn mls_init(&self, client_id: &ClientId) -> CryptoResult<()> {
         let ciphersuites = vec![MlsCiphersuite::default()];
         // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
         let certificate_bundle = None;
         future::block_on(self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
             self.central.lock().map_err(|_| CryptoError::LockPoisonError)?.mls_init(
-                client_id.to_string(),
+                client_id.clone(),
                 ciphersuites,
                 certificate_bundle,
             ),

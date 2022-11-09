@@ -754,7 +754,7 @@ mod tests {
     #[wasm_bindgen_test]
     async fn cc_can_init(case: TestCase) {
         let (path, db_file) = tmp_db_file();
-        let client_id = "alice".to_string();
+        let client_id = "alice".into();
         let cfg = MlsCentralConfiguration::try_new(path, "test".to_string(), Some(client_id), vec![case.ciphersuite()])
             .unwrap();
         let mut cc: CoreCrypto = MlsCentral::try_new(cfg, case.credential()).await.unwrap().into();
@@ -774,7 +774,7 @@ mod tests {
         // proteus is initialized, prekeys can be generated
         assert!(cc.proteus_new_prekey(1).await.is_ok());
         // 👇 and so a unique 'client_id' can be fetched from wire-server
-        let client_id = "alice".to_string();
+        let client_id = "alice".into();
         cc.mls_init(client_id, vec![case.ciphersuite()], case.credential())
             .await
             .unwrap();

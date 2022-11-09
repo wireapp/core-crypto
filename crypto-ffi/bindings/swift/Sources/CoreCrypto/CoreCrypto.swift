@@ -364,7 +364,7 @@ public class CoreCryptoWrapper {
     /// 2. ``clientId`` should stay consistent as it will be verified against the stored signature & identity to validate the persisted credential
     /// 3. ``key`` should be appropriately stored in a secure location (i.e. WebCrypto private key storage)
     ///
-    public init(path: String, key: String, clientId: String, entropySeed: [UInt8]?) throws {
+    public init(path: String, key: String, clientId: ClientId, entropySeed: [UInt8]?) throws {
         self.coreCrypto = try CoreCrypto(path: path, key: key, clientId: clientId, entropySeed: entropySeed)
     }
 
@@ -378,7 +378,7 @@ public class CoreCryptoWrapper {
     /// Use this after ```CoreCrypto/deferredInit``` when you have a clientId. It initializes MLS.
     ///
     /// - parameter clientId: client identifier
-    public func mlsInit(clientId: String) throws {
+    public func mlsInit(clientId: ClientId) throws {
         try self.coreCrypto.mlsInit(clientId: clientId)
     }
 

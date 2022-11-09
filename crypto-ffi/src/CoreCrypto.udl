@@ -121,13 +121,13 @@ callback interface CoreCryptoCallbacks {
 
 interface CoreCrypto {
     [Throws=CryptoError, Name=new]
-    constructor([ByRef] string path, [ByRef] string key, [ByRef] string client_id, sequence<u8>? entropy_seed);
+    constructor([ByRef] string path, [ByRef] string key, [ByRef] ClientId client_id, sequence<u8>? entropy_seed);
 
     [Throws=CryptoError, Name=deferred_init]
     constructor([ByRef] string path, [ByRef] string key, sequence<u8>? entropy_seed);
 
     [Throws=CryptoError]
-    void mls_init([ByRef] string client_id);
+    void mls_init([ByRef] ClientId client_id);
 
     [Throws=CryptoError]
     void set_callbacks(CoreCryptoCallbacks callbacks);
@@ -259,8 +259,6 @@ interface CoreCrypto {
 };
 
 namespace CoreCrypto {
-    [Throws=CryptoError]
-    CoreCrypto init_with_path_and_key([ByRef] string path, [ByRef] string key, [ByRef] string client_id, sequence<u8>? entropy_seed);
 
     string version();
 };

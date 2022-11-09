@@ -30,7 +30,7 @@ const TEST_SERVER_PORT: &str = "8000";
 #[cfg(not(target_family = "wasm"))]
 const TEST_SERVER_URI: &str = const_format::concatcp!("http://localhost:", TEST_SERVER_PORT);
 
-const MLS_MAIN_CLIENTID: &str = "test_main";
+const MLS_MAIN_CLIENTID: &[u8] = b"test_main";
 const MLS_CONVERSATION_ID: &[u8] = b"test_conversation";
 const ROUNDTRIP_MSG_AMOUNT: usize = 100;
 
