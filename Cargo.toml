@@ -7,12 +7,12 @@ members = [
     "mls-provider",
     "interop",
     "extras/wasm-browser-run",
+    "extras/wasm-browser-test-runner"
 ]
 exclude = [
     "xtask",
     "extras/anycrypto",
-    "extras/core-ds",
-    "extras/wasm-browser-test-runner"
+    "extras/core-ds"
 ]
 resolver = "2"
 
