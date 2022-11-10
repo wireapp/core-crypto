@@ -8,9 +8,10 @@ use openmls::{
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize, Serialize};
 
+use crate::prelude::config::{MlsConversationConfiguration, MlsCustomConfiguration};
 use client::{Client, ClientId};
 use config::MlsCentralConfiguration;
-use conversation::{ConversationId, MlsConversation, MlsConversationConfiguration};
+use conversation::{ConversationId, MlsConversation};
 use credential::CertificateBundle;
 use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
 
@@ -408,8 +409,12 @@ impl MlsCentral {
     pub async fn process_welcome_message(
         &mut self,
         welcome: Welcome,
-        configuration: MlsConversationConfiguration,
+        custom_cfg: MlsCustomConfiguration,
     ) -> CryptoResult<ConversationId> {
+        let configuration = MlsConversationConfiguration {
+            custom: custom_cfg,
+            ..Default::default()
+        };
         let conversation = MlsConversation::from_welcome_message(welcome, configuration, &self.mls_backend).await?;
         let conversation_id = conversation.id().clone();
         self.mls_groups.insert(conversation_id.clone(), conversation);
@@ -431,11 +436,11 @@ impl MlsCentral {
     pub async fn process_raw_welcome_message(
         &mut self,
         welcome: Vec<u8>,
-        configuration: MlsConversationConfiguration,
+        custom_cfg: MlsCustomConfiguration,
     ) -> CryptoResult<ConversationId> {
         let mut cursor = std::io::Cursor::new(welcome);
         let welcome = Welcome::tls_deserialize(&mut cursor).map_err(MlsError::from)?;
-        self.process_welcome_message(welcome, configuration).await
+        self.process_welcome_message(welcome, custom_cfg).await
     }
 
     /// Exports a TLS-serialized view of the current group state corresponding to the provided conversation ID.
@@ -539,7 +544,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
                         let epoch = alice_central.conversation_epoch(&id).unwrap();

@@ -1,6 +1,6 @@
 use crate::prelude::{
     ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral, MlsConversation,
-    MlsConversationConfiguration, MlsConversationInitBundle, MlsError,
+    MlsConversationInitBundle, MlsCustomConfiguration, MlsError,
 };
 use openmls::prelude::{
     KeyPackage, KeyPackageBundle, PublicGroupState, QueuedProposal, SignaturePublicKey, StagedCommit,
@@ -74,15 +74,15 @@ impl MlsCentral {
     pub async fn invite(
         &mut self,
         id: &ConversationId,
-        cfg: MlsConversationConfiguration,
         other: &mut MlsCentral,
+        custom_cfg: MlsCustomConfiguration,
     ) -> CryptoResult<()> {
         let size_before = self[id].members().len();
         let welcome = self
             .add_members_to_conversation(id, &mut [other.rnd_member().await])
             .await?
             .welcome;
-        other.process_welcome_message(welcome, cfg).await?;
+        other.process_welcome_message(welcome, custom_cfg).await?;
         self.commit_accepted(id).await?;
         assert_eq!(self[id].members().len(), size_before + 1);
         assert_eq!(other[id].members().len(), size_before + 1);
@@ -94,7 +94,7 @@ impl MlsCentral {
         &mut self,
         id: &ConversationId,
         public_group_state: VerifiablePublicGroupState,
-        cfg: MlsConversationConfiguration,
+        custom_cfg: MlsCustomConfiguration,
         others: Vec<&mut Self>,
     ) -> CryptoResult<()> {
         use tls_codec::{Deserialize as _, Serialize as _};
@@ -105,9 +105,8 @@ impl MlsCentral {
             conversation_id,
             commit,
             ..
-        } = self.join_by_external_commit(public_group_state, cfg.clone()).await?;
-        self.merge_pending_group_from_external_commit(&conversation_id, cfg)
-            .await?;
+        } = self.join_by_external_commit(public_group_state, custom_cfg).await?;
+        self.merge_pending_group_from_external_commit(&conversation_id).await?;
         assert_eq!(conversation_id.as_slice(), id.as_slice());
         for other in others {
             let commit = commit.to_bytes().map_err(MlsError::from)?;
@@ -120,11 +119,11 @@ impl MlsCentral {
     pub async fn try_join_from_welcome(
         &mut self,
         id: &ConversationId,
-        cfg: MlsConversationConfiguration,
         welcome: Welcome,
+        custom_cfg: MlsCustomConfiguration,
         others: Vec<&mut Self>,
     ) -> CryptoResult<()> {
-        self.process_welcome_message(welcome, cfg).await?;
+        self.process_welcome_message(welcome, custom_cfg).await?;
         for other in others {
             self.talk_to(id, other).await?;
         }

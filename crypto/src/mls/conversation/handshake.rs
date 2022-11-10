@@ -423,7 +423,7 @@ pub mod tests {
                         assert_eq!(alice_central[&id].members().len(), 2);
 
                         bob_central
-                            .process_welcome_message(welcome, case.cfg.clone())
+                            .process_welcome_message(welcome, case.custom_cfg())
                             .await
                             .unwrap();
                         assert_eq!(alice_central[&id].id(), bob_central[&id].id());
@@ -457,7 +457,7 @@ pub mod tests {
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         bob_central
-                            .process_welcome_message(welcome, case.cfg.clone())
+                            .process_welcome_message(welcome, case.custom_cfg())
                             .await
                             .unwrap();
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
@@ -492,7 +492,7 @@ pub mod tests {
                             .try_join_from_public_group_state(
                                 &id,
                                 public_group_state.get_pgs(),
-                                case.cfg.clone(),
+                                case.custom_cfg(),
                                 vec![&mut alice_central]
                             )
                             .await
@@ -521,7 +521,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
                         let charlie_kp = charlie_central.get_one_key_package().await;
@@ -553,8 +553,8 @@ pub mod tests {
                         charlie_central
                             .try_join_from_welcome(
                                 &id,
-                                case.cfg.clone(),
                                 welcome.unwrap(),
+                                case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central],
                             )
                             .await
@@ -585,7 +585,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -632,7 +632,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -653,7 +653,7 @@ pub mod tests {
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_welcome(&id, case.cfg.clone(), welcome.unwrap(), vec![&mut alice_central])
+                            .try_join_from_welcome(&id, welcome.unwrap(), case.custom_cfg(), vec![&mut alice_central])
                             .await
                             .is_ok());
                         // because Bob has been removed from the group
@@ -679,7 +679,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -694,7 +694,7 @@ pub mod tests {
                             .try_join_from_public_group_state(
                                 &id,
                                 public_group_state.get_pgs(),
-                                case.cfg.clone(),
+                                case.custom_cfg(),
                                 vec![&mut alice_central]
                             )
                             .await
@@ -725,7 +725,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
@@ -733,7 +733,7 @@ pub mod tests {
                             .try_join_from_public_group_state(
                                 &id,
                                 pgs,
-                                case.cfg.clone(),
+                                case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central],
                             )
                             .await
@@ -785,7 +785,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -837,7 +837,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -872,7 +872,7 @@ pub mod tests {
 
                         // create the group on charlie's side
                         charlie_central
-                            .process_welcome_message(welcome.unwrap(), case.cfg.clone())
+                            .process_welcome_message(welcome.unwrap(), case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -918,7 +918,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -944,8 +944,8 @@ pub mod tests {
                         assert!(guest_central
                             .try_join_from_welcome(
                                 &id,
-                                case.cfg.clone(),
                                 welcome.unwrap(),
+                                case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central]
                             )
                             .await
@@ -970,7 +970,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -985,7 +985,7 @@ pub mod tests {
                             .try_join_from_public_group_state(
                                 &id,
                                 public_group_state.get_pgs(),
-                                case.cfg.clone(),
+                                case.custom_cfg(),
                                 vec![&mut alice_central]
                             )
                             .await
@@ -1014,7 +1014,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -1085,7 +1085,7 @@ pub mod tests {
                         assert_eq!(alice_central[&id].members().len(), 2);
 
                         bob_central
-                            .process_welcome_message(welcome.unwrap(), case.cfg.clone())
+                            .process_welcome_message(welcome.unwrap(), case.custom_cfg())
                             .await
                             .unwrap();
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
@@ -1126,7 +1126,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
                         let proposal = bob_central
@@ -1179,7 +1179,7 @@ pub mod tests {
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         bob_central
-                            .process_welcome_message(welcome.unwrap(), case.cfg.clone())
+                            .process_welcome_message(welcome.unwrap(), case.custom_cfg())
                             .await
                             .unwrap();
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
@@ -1214,7 +1214,7 @@ pub mod tests {
                             .try_join_from_public_group_state(
                                 &id,
                                 public_group_state.get_pgs(),
-                                case.cfg.clone(),
+                                case.custom_cfg(),
                                 vec![&mut alice_central]
                             )
                             .await
@@ -1228,6 +1228,7 @@ pub mod tests {
 
     pub mod delivery_semantics {
         use super::*;
+        use crate::prelude::MlsWirePolicy;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -1243,7 +1244,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -1281,7 +1282,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -1336,7 +1337,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -1357,7 +1358,7 @@ pub mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_prevent_replayed_encrypted_handshake_messages(case: TestCase) {
-            if case.cfg.policy == openmls::group::PURE_CIPHERTEXT_WIRE_FORMAT_POLICY {
+            if case.custom_cfg().wire_policy == MlsWirePolicy::Ciphertext {
                 run_test_with_client_ids(
                     case.clone(),
                     ["alice", "bob"],
@@ -1369,7 +1370,7 @@ pub mod tests {
                                 .await
                                 .unwrap();
                             alice_central
-                                .invite(&id, case.cfg.clone(), &mut bob_central)
+                                .invite(&id, &mut bob_central, case.custom_cfg())
                                 .await
                                 .unwrap();
 
@@ -1433,7 +1434,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 

@@ -80,7 +80,7 @@ pub mod tests {
                         .await
                         .unwrap();
                     alice_central
-                        .invite(&id, case.cfg.clone(), &mut bob_central)
+                        .invite(&id, &mut bob_central, case.custom_cfg())
                         .await
                         .unwrap();
 
@@ -115,7 +115,7 @@ pub mod tests {
                         .await
                         .unwrap();
                     alice_central
-                        .invite(&id, case.cfg.clone(), &mut bob_central)
+                        .invite(&id, &mut bob_central, case.custom_cfg())
                         .await
                         .unwrap();
 

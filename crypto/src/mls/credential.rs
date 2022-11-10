@@ -330,7 +330,7 @@ pub mod tests {
         let mut bob_central = MlsCentral::try_new(bob_cfg, bob_cred(cfg.ciphersuite)).await?;
 
         alice_central.new_conversation(id.clone(), cfg.clone()).await?;
-        alice_central.invite(&id, cfg.clone(), &mut bob_central).await?;
+        alice_central.invite(&id, &mut bob_central, cfg.custom).await?;
         alice_central.talk_to(&id, &mut bob_central).await
     }
 }

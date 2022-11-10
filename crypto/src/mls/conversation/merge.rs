@@ -153,7 +153,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
                         assert_eq!(alice_central[&id].members().len(), 2);
@@ -217,7 +217,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
                         assert!(alice_central.pending_proposals(&id).is_empty());

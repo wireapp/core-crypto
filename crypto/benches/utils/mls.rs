@@ -7,10 +7,13 @@ use futures_lite::future::block_on;
 use openmls::prelude::{CredentialBundle, Extension, KeyPackage, KeyPackageBundle, LifetimeExtension};
 use openmls_traits::types::Ciphersuite;
 
-use core_crypto::prelude::{
-    CertificateBundle, ClientId, ConversationId, ConversationMember, MlsConversationConfiguration,
+use core_crypto::{
+    mls::{MlsCentral, MlsCiphersuite},
+    prelude::{
+        CertificateBundle, ClientId, ConversationId, ConversationMember, MlsCentralConfiguration,
+        MlsConversationConfiguration, MlsCustomConfiguration,
+    },
 };
-use core_crypto::{mls::MlsCentral, mls::MlsCiphersuite, prelude::MlsCentralConfiguration};
 use mls_crypto_provider::MlsCryptoProvider;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -213,7 +216,7 @@ pub fn rand_member(ciphersuite: MlsCiphersuite) -> ConversationMember {
     ConversationMember::new(client_id, kp)
 }
 
-pub fn invite(from: &mut MlsCentral, other: &mut MlsCentral, id: &ConversationId, ciphersuite: MlsCiphersuite) {
+pub fn invite(from: &mut MlsCentral, other: &mut MlsCentral, id: &ConversationId) {
     block_on(async {
         let other_kp = other
             .client_keypackages(1)
@@ -230,13 +233,7 @@ pub fn invite(from: &mut MlsCentral, other: &mut MlsCentral, id: &ConversationId
             .unwrap()
             .welcome;
         other
-            .process_welcome_message(
-                welcome,
-                MlsConversationConfiguration {
-                    ciphersuite: ciphersuite.clone(),
-                    ..Default::default()
-                },
-            )
+            .process_welcome_message(welcome, MlsCustomConfiguration::default())
             .await
             .unwrap();
         from.commit_accepted(id).await.unwrap();

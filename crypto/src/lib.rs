@@ -65,6 +65,7 @@ pub mod prelude {
             client::*,
             config::MlsCentralConfiguration,
             conversation::{
+                config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
                 decrypt::MlsConversationDecryptMessage,
                 handshake::{MlsCommitBundle, MlsConversationCreationMessage, MlsProposalBundle},
                 public_group_state::{

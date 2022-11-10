@@ -200,7 +200,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -230,7 +230,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -267,7 +267,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -315,7 +315,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -379,7 +379,7 @@ pub mod tests {
 
                         // Charlie can join with the Welcome from renewed Add proposal
                         let id = charlie_central
-                            .process_welcome_message(welcome.unwrap(), case.cfg.clone())
+                            .process_welcome_message(welcome.unwrap(), case.custom_cfg())
                             .await
                             .unwrap();
                         assert!(charlie_central.talk_to(&id, &mut alice_central).await.is_ok());
@@ -403,7 +403,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -457,7 +457,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -531,7 +531,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -578,7 +578,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -616,7 +616,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -661,7 +661,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -711,7 +711,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -760,7 +760,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -802,7 +802,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -842,7 +842,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -874,7 +874,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -905,7 +905,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -948,7 +948,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
 

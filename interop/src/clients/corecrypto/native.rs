@@ -109,7 +109,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
     async fn process_welcome(&mut self, welcome: &[u8]) -> Result<Vec<u8>> {
         Ok(self
             .cc
-            .process_raw_welcome_message(welcome.into(), MlsConversationConfiguration::default())
+            .process_raw_welcome_message(welcome.into(), MlsCustomConfiguration::default())
             .await?)
     }
 

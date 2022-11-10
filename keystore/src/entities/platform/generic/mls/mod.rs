@@ -17,3 +17,4 @@
 pub mod group;
 pub mod identity;
 pub mod keypackage;
+pub mod pending_group;

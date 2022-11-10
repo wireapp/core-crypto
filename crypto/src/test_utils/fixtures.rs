@@ -1,5 +1,5 @@
 pub use crate::mls::credential::CredentialSupplier;
-use crate::prelude::MlsConversationConfiguration;
+use crate::prelude::{MlsConversationConfiguration, MlsCustomConfiguration};
 
 use crate::mls::MlsCiphersuite;
 pub use rstest::*;
@@ -56,7 +56,10 @@ pub use rstest_reuse::{self, *};
     case::pure_ciphertext(TestCase {
         credential: $crate::mls::credential::CertificateBundle::rand_basic(),
         cfg: $crate::prelude::MlsConversationConfiguration {
-            policy: openmls::group::PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
+            custom: $crate::prelude::MlsCustomConfiguration {
+                wire_policy: $crate::prelude::MlsWirePolicy::Ciphertext,
+                ..Default::default()
+            },
             ..Default::default()
         }
     }),
@@ -83,6 +86,10 @@ impl TestCase {
 
     pub fn ciphersuite(&self) -> MlsCiphersuite {
         self.cfg.ciphersuite
+    }
+
+    pub fn custom_cfg(&self) -> MlsCustomConfiguration {
+        self.cfg.custom.clone()
     }
 
     pub fn credential(&self) -> Option<crate::mls::credential::CertificateBundle> {

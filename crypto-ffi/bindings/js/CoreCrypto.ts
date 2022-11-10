@@ -59,23 +59,47 @@ export enum Ciphersuite {
  */
 export interface ConversationConfiguration {
     /**
-     * List of client IDs with administrative permissions
-     * Note: This is currently unused
-     */
-    admins?: Uint8Array[];
-    /**
      * Conversation ciphersuite
      */
     ciphersuite?: Ciphersuite;
+    /**
+     * List of client IDs that are allowed to be external senders of commits
+     */
+    externalSenders?: Uint8Array[];
+    /**
+     * Implementation specific configuration
+     */
+    custom?: CustomConfiguration;
+}
+
+/**
+ * see [core_crypto::prelude::MlsWirePolicy]
+ */
+export enum WirePolicy {
+    /**
+     * Handshake messages are never encrypted
+     */
+    Plaintext = 0x0001,
+    /**
+     * Handshake messages are always encrypted
+     */
+    Ciphertext = 0x0002,
+}
+
+/**
+ * Implementation specific configuration object for a conversation
+ */
+export interface CustomConfiguration {
     /**
      * Duration in seconds after which we will automatically force a self_update commit
      * Note: This isn't currently implemented
      */
     keyRotationSpan?: number;
     /**
-     * List of client IDs that are allowed to be external senders of commits
+     * Defines if handshake messages are encrypted or not
+     * Note: Ciphertext is not currently supported by wire-server
      */
-    externalSenders?: Uint8Array[];
+    wirePolicy?: WirePolicy;
 }
 
 /**
@@ -595,21 +619,20 @@ export class CoreCrypto {
      * You will want to use {@link CoreCrypto.addClientsToConversation} afterwards to add clients to this conversation
      *
      * @param conversationId - The conversation ID; You can either make them random or let the backend attribute MLS group IDs
-     * @param configuration.admins - An array of client IDs that will have administrative permissions over the group
+     * @param configuration - configuration of the MLS group
      * @param configuration.ciphersuite - The {@link Ciphersuite} that is chosen to be the group's
-     * @param configuration.keyRotationSpan - The amount of time in milliseconds after which the MLS Keypackages will be rotated
      * @param configuration.externalSenders - Array of Client IDs that are qualified as external senders within the group
+     * @param configuration.custom - {@link CustomConfiguration}
      */
     async createConversation(
         conversationId: ConversationId,
         configuration: ConversationConfiguration = {}
     ) {
-        const {admins, ciphersuite, keyRotationSpan, externalSenders} = configuration || {};
+        const {ciphersuite, externalSenders, custom = {}} = configuration || {};
         const config = new CoreCrypto.#module.ConversationConfiguration(
-            admins,
             ciphersuite,
-            keyRotationSpan,
             externalSenders,
+            custom?.keyRotationSpan,
         );
         const ret = await this.#cc.create_conversation(conversationId, config);
         return ret;
@@ -661,13 +684,16 @@ export class CoreCrypto {
     }
 
     /**
-     * Ingest a TLS-serialized MLS welcome message to join a an existing MLS group
+     * Ingest a TLS-serialized MLS welcome message to join an existing MLS group
      *
      * @param welcomeMessage - TLS-serialized MLS Welcome message
+     * @param configuration - configuration of the MLS group
      * @returns The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages
      */
-    async processWelcomeMessage(welcomeMessage: Uint8Array): Promise<ConversationId> {
-        return await this.#cc.process_welcome_message(welcomeMessage);
+    async processWelcomeMessage(welcomeMessage: Uint8Array, configuration: CustomConfiguration = {}): Promise<ConversationId> {
+        const {keyRotationSpan, wirePolicy} = configuration || {};
+        const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
+        return await this.#cc.process_welcome_message(welcomeMessage, config);
     }
 
     /**
@@ -925,10 +951,13 @@ export class CoreCrypto {
      * bad can happen if you forget to except some storage space wasted.
      *
      * @param publicGroupState - a TLS encoded PublicGroupState fetched from the Delivery Service
+     * @param configuration - configuration of the MLS group
      * @returns see {@link ConversationInitBundle}
      */
-    async joinByExternalCommit(publicGroupState: Uint8Array): Promise<ConversationInitBundle> {
-        const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await this.#cc.join_by_external_commit(publicGroupState);
+    async joinByExternalCommit(publicGroupState: Uint8Array, configuration: CustomConfiguration = {}): Promise<ConversationInitBundle> {
+        const {keyRotationSpan, wirePolicy} = configuration || {};
+        const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
+        const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await this.#cc.join_by_external_commit(publicGroupState, config);
 
         const pgs = ffiInitMessage.public_group_state;
 
@@ -950,17 +979,9 @@ export class CoreCrypto {
      * and deletes the temporary one. This step makes the group operational and ready to encrypt/decrypt message
      *
      * @param conversationId - The ID of the conversation
-     * @param configuration - Configuration of the group, see {@link ConversationConfiguration}
      */
-    async mergePendingGroupFromExternalCommit(conversationId: ConversationId, configuration: ConversationConfiguration): Promise<void> {
-        const {admins, ciphersuite, keyRotationSpan, externalSenders} = configuration || {};
-        const config = new CoreCrypto.#module.ConversationConfiguration(
-            admins,
-            ciphersuite,
-            keyRotationSpan,
-            externalSenders,
-        );
-        return await this.#cc.merge_pending_group_from_external_commit(conversationId, config);
+    async mergePendingGroupFromExternalCommit(conversationId: ConversationId): Promise<void> {
+        return await this.#cc.merge_pending_group_from_external_commit(conversationId);
     }
 
     /**

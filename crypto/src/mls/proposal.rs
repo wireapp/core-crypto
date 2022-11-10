@@ -137,7 +137,7 @@ pub mod proposal_tests {
                         alice_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(alice_central[&id].members().len(), 2);
                         let new_id = bob_central
-                            .process_welcome_message(welcome.unwrap(), case.cfg.clone())
+                            .process_welcome_message(welcome.unwrap(), case.custom_cfg())
                             .await
                             .unwrap();
                         assert_eq!(id, new_id);
@@ -185,7 +185,7 @@ pub mod proposal_tests {
                         .await
                         .unwrap();
                     alice_central
-                        .invite(&id, case.cfg.clone(), &mut bob_central)
+                        .invite(&id, &mut bob_central, case.custom_cfg())
                         .await
                         .unwrap();
                     assert_eq!(alice_central[&id].members().len(), 2);
