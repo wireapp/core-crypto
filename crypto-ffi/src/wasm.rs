@@ -439,29 +439,20 @@ impl TryInto<ConversationMember> for Invitee {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// see [core_crypto::prelude::MlsConversationConfiguration]
 pub struct ConversationConfiguration {
-    admins: Vec<Vec<u8>>,
     ciphersuite: Option<Ciphersuite>,
-    key_rotation_span: Option<u32>,
     external_senders: Vec<Vec<u8>>,
+    custom: CustomConfiguration,
 }
 
 #[wasm_bindgen]
 impl ConversationConfiguration {
     #[wasm_bindgen(constructor)]
     pub fn new(
-        admins: Option<Vec<Uint8Array>>,
         ciphersuite: Option<Ciphersuite>,
-        key_rotation_span: Option<u32>,
         external_senders: Option<Vec<Uint8Array>>,
+        key_rotation_span: Option<u32>,
+        wire_policy: Option<WirePolicy>,
     ) -> Self {
-        let admins = admins
-            .map(|a| {
-                a.to_vec()
-                    .into_iter()
-                    .map(|jsv| Uint8Array::from(jsv).to_vec())
-                    .collect()
-            })
-            .unwrap_or_default();
         let external_senders = external_senders
             .map(|exs| {
                 exs.to_vec()
@@ -470,12 +461,10 @@ impl ConversationConfiguration {
                     .collect()
             })
             .unwrap_or_default();
-
         Self {
-            admins,
             ciphersuite,
-            key_rotation_span,
             external_senders,
+            custom: CustomConfiguration::new(key_rotation_span, wire_policy),
         }
     }
 }
@@ -483,13 +472,8 @@ impl ConversationConfiguration {
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     type Error = WasmCryptoError;
     fn try_into(mut self) -> WasmCryptoResult<MlsConversationConfiguration> {
-        let key_rotation_span = self
-            .key_rotation_span
-            .map(|span| std::time::Duration::from_secs(span as u64));
-
         let mut cfg = MlsConversationConfiguration {
-            admins: self.admins,
-            key_rotation_span,
+            custom: self.custom.into(),
             ..Default::default()
         };
 
@@ -501,6 +485,59 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
         }
 
         Ok(cfg)
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+/// see [core_crypto::prelude::MlsCustomConfiguration]
+pub struct CustomConfiguration {
+    key_rotation_span: Option<u32>,
+    wire_policy: Option<WirePolicy>,
+}
+
+#[wasm_bindgen]
+impl CustomConfiguration {
+    #[wasm_bindgen(constructor)]
+    pub fn new(key_rotation_span: Option<u32>, wire_policy: Option<WirePolicy>) -> Self {
+        Self {
+            key_rotation_span,
+            wire_policy,
+        }
+    }
+}
+
+impl From<CustomConfiguration> for MlsCustomConfiguration {
+    fn from(cfg: CustomConfiguration) -> Self {
+        let key_rotation_span = cfg
+            .key_rotation_span
+            .map(|span| std::time::Duration::from_secs(span as u64));
+        let wire_policy = cfg.wire_policy.map(WirePolicy::into).unwrap_or_default();
+        Self {
+            key_rotation_span,
+            wire_policy,
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[wasm_bindgen]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[repr(u16)]
+/// see [core_crypto::prelude::MlsWirePolicy]
+pub enum WirePolicy {
+    /// Handshake messages are never encrypted
+    Plaintext = 0x0001,
+    /// Handshake messages are always encrypted
+    Ciphertext = 0x0002,
+}
+
+impl From<WirePolicy> for MlsWirePolicy {
+    fn from(policy: WirePolicy) -> Self {
+        match policy {
+            WirePolicy::Plaintext => Self::Plaintext,
+            WirePolicy::Ciphertext => Self::Ciphertext,
+        }
     }
 }
 
@@ -838,14 +875,18 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<Uint8Array>`]
     ///
     /// see [core_crypto::MlsCentral::process_raw_welcome_message]
-    pub fn process_welcome_message(&self, welcome_message: Box<[u8]>) -> Promise {
+    pub fn process_welcome_message(
+        &self,
+        welcome_message: Box<[u8]>,
+        custom_configuration: CustomConfiguration,
+    ) -> Promise {
         let this = self.0.clone();
         future_to_promise(
             async move {
                 let conversation_id = this
                     .write()
                     .await
-                    .process_raw_welcome_message(welcome_message.into(), MlsConversationConfiguration::default())
+                    .process_raw_welcome_message(welcome_message.into(), custom_configuration.into())
                     .await?;
                 WasmCryptoResult::Ok(Uint8Array::from(conversation_id.as_slice()).into())
             }
@@ -1137,7 +1178,11 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<ConversationInitBundle>`]
     ///
     /// see [core_crypto::MlsCentral::join_by_external_commit]
-    pub fn join_by_external_commit(&self, public_group_state: Box<[u8]>) -> Promise {
+    pub fn join_by_external_commit(
+        &self,
+        public_group_state: Box<[u8]>,
+        custom_configuration: CustomConfiguration,
+    ) -> Promise {
         use core_crypto::prelude::tls_codec::Deserialize as _;
 
         let this = self.0.clone();
@@ -1150,7 +1195,7 @@ impl CoreCrypto {
                 let result: ConversationInitBundle = this
                     .read()
                     .await
-                    .join_by_external_commit(group_state, MlsConversationConfiguration::default())
+                    .join_by_external_commit(group_state, custom_configuration.into())
                     .await?
                     .try_into()?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&result)?)
@@ -1162,17 +1207,13 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::MlsCentral::merge_pending_group_from_external_commit]
-    pub fn merge_pending_group_from_external_commit(
-        &self,
-        conversation_id: ConversationId,
-        configuration: ConversationConfiguration,
-    ) -> Promise {
+    pub fn merge_pending_group_from_external_commit(&self, conversation_id: ConversationId) -> Promise {
         let this = self.0.clone();
         future_to_promise(
             async move {
                 this.write()
                     .await
-                    .merge_pending_group_from_external_commit(&conversation_id, configuration.try_into()?)
+                    .merge_pending_group_from_external_commit(&conversation_id)
                     .await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }

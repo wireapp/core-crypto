@@ -20,9 +20,9 @@ use std::collections::HashMap;
 use core_crypto::prelude::*;
 pub use core_crypto::prelude::{
     tls_codec::Serialize, CiphersuiteName, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, MemberId,
-    MlsPublicGroupStateBundle, MlsPublicGroupStateEncryptionType, MlsRatchetTreeType, PublicGroupStatePayload,
+    MlsPublicGroupStateBundle, MlsPublicGroupStateEncryptionType, MlsRatchetTreeType, MlsWirePolicy,
+    PublicGroupStatePayload,
 };
-use core_crypto::proteus::ProteusCentral;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "mobile")] {
@@ -196,18 +196,16 @@ impl TryInto<ConversationMember> for Invitee {
 #[derive(Debug, Clone)]
 /// See [core_crypto::prelude::MlsConversationConfiguration]
 pub struct ConversationConfiguration {
-    pub admins: Vec<MemberId>,
     pub ciphersuite: Option<CiphersuiteName>,
-    pub key_rotation_span: Option<std::time::Duration>,
     pub external_senders: Vec<Vec<u8>>,
+    pub custom: CustomConfiguration,
 }
 
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     type Error = CryptoError;
     fn try_into(mut self) -> CryptoResult<MlsConversationConfiguration> {
         let mut cfg = MlsConversationConfiguration {
-            admins: self.admins,
-            key_rotation_span: self.key_rotation_span,
+            custom: self.custom.into(),
             ..Default::default()
         };
 
@@ -218,6 +216,22 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
         }
 
         Ok(cfg)
+    }
+}
+
+#[derive(Debug, Clone)]
+/// See [core_crypto::prelude::MlsCustomConfiguration]
+pub struct CustomConfiguration {
+    pub key_rotation_span: Option<std::time::Duration>,
+    pub wire_policy: Option<MlsWirePolicy>,
+}
+
+impl From<CustomConfiguration> for MlsCustomConfiguration {
+    fn from(cfg: CustomConfiguration) -> Self {
+        Self {
+            key_rotation_span: cfg.key_rotation_span,
+            wire_policy: cfg.wire_policy.unwrap_or_default(),
+        }
     }
 }
 
@@ -391,13 +405,17 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::MlsCentral::process_raw_welcome_message]
-    pub fn process_welcome_message(&self, welcome_message: &[u8]) -> CryptoResult<ConversationId> {
+    pub fn process_welcome_message(
+        &self,
+        welcome_message: &[u8],
+        custom_configuration: CustomConfiguration,
+    ) -> CryptoResult<ConversationId> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .process_raw_welcome_message(welcome_message.into(), MlsConversationConfiguration::default()),
+                    .process_raw_welcome_message(welcome_message.into(), custom_configuration.into()),
             ),
         )
     }
@@ -615,7 +633,11 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::MlsCentral::join_by_external_commit]
-    pub fn join_by_external_commit(&self, public_group_state: Vec<u8>) -> CryptoResult<ConversationInitBundle> {
+    pub fn join_by_external_commit(
+        &self,
+        public_group_state: Vec<u8>,
+        custom_configuration: CustomConfiguration,
+    ) -> CryptoResult<ConversationInitBundle> {
         use core_crypto::prelude::tls_codec::Deserialize as _;
 
         let group_state =
@@ -625,24 +647,20 @@ impl CoreCrypto<'_> {
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .join_by_external_commit(group_state, MlsConversationConfiguration::default()),
+                    .join_by_external_commit(group_state, custom_configuration.into()),
             ),
         )?
         .try_into()
     }
 
     /// See [core_crypto::MlsCentral::merge_pending_group_from_external_commit]
-    pub fn merge_pending_group_from_external_commit(
-        &self,
-        conversation_id: ConversationId,
-        configuration: ConversationConfiguration,
-    ) -> CryptoResult<()> {
+    pub fn merge_pending_group_from_external_commit(&self, conversation_id: ConversationId) -> CryptoResult<()> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .merge_pending_group_from_external_commit(&conversation_id, configuration.try_into()?),
+                    .merge_pending_group_from_external_commit(&conversation_id),
             ),
         )?;
 
@@ -907,7 +925,7 @@ impl CoreCrypto<'_> {
     /// NOTE: uniffi doesn't support associated functions, so we have to have the self here
     pub fn proteus_fingerprint_prekeybundle(&self, prekey: &[u8]) -> CryptoResult<String> {
         proteus_impl! {{
-            ProteusCentral::fingerprint_prekeybundle(prekey)
+            core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(prekey)
         }}
     }
 

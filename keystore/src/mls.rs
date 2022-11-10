@@ -97,17 +97,23 @@ pub trait CryptoKeystoreMls: Sized {
     /// for example.
     async fn mls_group_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()>;
     /// Saves a `MlsGroup` in a temporary table (typically used in scenarios where the group cannot
-    /// be commited until the backend acknowledges it, like external commits)
+    /// be committed until the backend acknowledges it, like external commits)
     ///
     /// # Arguments
     /// * `group_id` - group/conversation id
     /// * `mls_group` - the group/conversation state
+    /// * `custom_configuration` - local group configuration
     ///
     /// # Errors
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
-    async fn mls_pending_groups_save(&self, group_id: &[u8], mls_group: &[u8]) -> CryptoKeystoreResult<()>;
-    /// Loads a temporary `MlsGroup` from the database
+    async fn mls_pending_groups_save(
+        &self,
+        group_id: &[u8],
+        mls_group: &[u8],
+        custom_configuration: &[u8],
+    ) -> CryptoKeystoreResult<()>;
+    /// Loads a temporary `MlsGroup` and its configuration from the database
     ///
     /// # Arguments
     /// * `id` - group/conversation id
@@ -115,7 +121,7 @@ pub trait CryptoKeystoreMls: Sized {
     /// # Errors
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
-    async fn mls_pending_groups_load(&self, group_id: &[u8]) -> CryptoKeystoreResult<Vec<u8>>;
+    async fn mls_pending_groups_load(&self, group_id: &[u8]) -> CryptoKeystoreResult<(Vec<u8>, Vec<u8>)>;
     /// Deletes a temporary `MlsGroup` from the database
     ///
     /// # Arguments
@@ -356,24 +362,28 @@ impl CryptoKeystoreMls for crate::connection::Connection {
             .collect())
     }
 
-    async fn mls_pending_groups_save(&self, group_id: &[u8], mls_group: &[u8]) -> CryptoKeystoreResult<()> {
+    async fn mls_pending_groups_save(
+        &self,
+        group_id: &[u8],
+        mls_group: &[u8],
+        custom_configuration: &[u8],
+    ) -> CryptoKeystoreResult<()> {
         self.save(PersistedMlsPendingGroup {
             id: group_id.into(),
             state: mls_group.into(),
+            custom_configuration: custom_configuration.into(),
         })
         .await?;
         Ok(())
     }
 
-    async fn mls_pending_groups_load(&self, group_id: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
-        let group = self
-            .find(group_id)
+    async fn mls_pending_groups_load(&self, group_id: &[u8]) -> CryptoKeystoreResult<(Vec<u8>, Vec<u8>)> {
+        self.find(group_id)
             .await?
-            .map(|r: PersistedMlsPendingGroup| r.state.clone())
+            .map(|r: PersistedMlsPendingGroup| (r.state.clone(), r.custom_configuration.clone()))
             .ok_or(CryptoKeystoreError::MissingKeyInStore(
                 MissingKeyErrorKind::MlsPendingGroup,
-            ))?;
-        Ok(group)
+            ))
     }
 
     async fn mls_pending_groups_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()> {

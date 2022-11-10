@@ -1,0 +1,116 @@
+// Wire
+// Copyright (C) 2022 Wire Swiss GmbH
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see http://www.gnu.org/licenses/.
+
+//! Conversation configuration.
+//!
+//! Either use [MlsConversationConfiguration] when creating a conversation or [MlsCustomConfiguration]
+//! when joining one by Welcome or external commit
+
+use openmls::prelude::{
+    ExternalSender, SenderRatchetConfiguration, SignaturePublicKey, WireFormatPolicy,
+    PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
+};
+use openmls_traits::types::SignatureScheme;
+use serde::{Deserialize, Serialize};
+
+use crate::{mls::MlsCiphersuite, CryptoError, CryptoResult, MlsError};
+
+/// The configuration parameters for a group/conversation
+#[derive(Debug, Clone, Default)]
+pub struct MlsConversationConfiguration {
+    /// The `OpenMls` Ciphersuite used in the group
+    pub ciphersuite: MlsCiphersuite,
+    /// Delivery service public signature key and credential
+    pub external_senders: Vec<ExternalSender>,
+    /// Implementation specific configuration
+    pub custom: MlsCustomConfiguration,
+}
+
+impl MlsConversationConfiguration {
+    // TODO: pending a long term solution with a real certificate
+    const WIRE_SERVER_IDENTITY: &'static str = "wire-server";
+    const PADDING_SIZE: usize = 128;
+
+    /// Generates an `MlsGroupConfig` from this configuration
+    #[inline(always)]
+    pub fn as_openmls_default_configuration(&self) -> CryptoResult<openmls::group::MlsGroupConfig> {
+        Ok(openmls::group::MlsGroupConfig::builder()
+            .wire_format_policy(self.custom.wire_policy.into())
+            .max_past_epochs(3)
+            .padding_size(Self::PADDING_SIZE)
+            .number_of_resumtion_secrets(1)
+            .sender_ratchet_configuration(SenderRatchetConfiguration::new(2, 1000))
+            .use_ratchet_tree_extension(true)
+            .external_senders(self.external_senders.clone())
+            .build())
+    }
+
+    /// Parses supplied key from Delivery Service in order to build back an [ExternalSender]
+    /// Note that this only works currently with Ed25519 keys and will have to be changed to accept
+    /// other key schemes
+    pub fn set_raw_external_senders(&mut self, external_senders: Vec<Vec<u8>>) {
+        let external_senders = external_senders
+            .iter()
+            .map(|key| {
+                SignaturePublicKey::new(key.clone(), SignatureScheme::ED25519)
+                    .map_err(MlsError::from)
+                    .map_err(CryptoError::from)
+            })
+            .filter_map(|r: CryptoResult<SignaturePublicKey>| r.ok())
+            .map(|signature_key| ExternalSender::new_basic(Self::WIRE_SERVER_IDENTITY, signature_key))
+            .collect();
+        self.external_senders = external_senders;
+    }
+}
+
+/// The configuration parameters for a group/conversation which are not handled natively by openmls
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MlsCustomConfiguration {
+    // TODO: Not implemented yet
+    /// Duration in seconds after which we will automatically force a self_update commit
+    pub key_rotation_span: Option<std::time::Duration>,
+    /// Defines if handshake messages are encrypted or not
+    pub wire_policy: MlsWirePolicy,
+}
+
+impl Default for MlsCustomConfiguration {
+    fn default() -> Self {
+        Self {
+            wire_policy: MlsWirePolicy::Plaintext,
+            key_rotation_span: Default::default(),
+        }
+    }
+}
+
+/// Wrapper over [WireFormatPolicy](openmls::prelude::WireFormatPolicy)
+#[derive(Debug, Copy, Clone, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[repr(u8)]
+pub enum MlsWirePolicy {
+    /// Handshake messages are never encrypted
+    #[default]
+    Plaintext = 1,
+    /// Handshake messages are always encrypted
+    Ciphertext = 2,
+}
+
+impl From<MlsWirePolicy> for WireFormatPolicy {
+    fn from(policy: MlsWirePolicy) -> Self {
+        match policy {
+            MlsWirePolicy::Ciphertext => PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
+            MlsWirePolicy::Plaintext => PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
+        }
+    }
+}

@@ -21,7 +21,9 @@ use core_crypto_keystore::CryptoKeystoreMls;
 
 use crate::{
     mls::{ConversationId, MlsCentral},
-    prelude::{ClientId, MlsConversation, MlsConversationConfiguration, MlsPublicGroupStateBundle},
+    prelude::{
+        ClientId, MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration, MlsPublicGroupStateBundle,
+    },
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };
 
@@ -63,7 +65,7 @@ impl MlsCentral {
     /// # Arguments
     /// * `group_state` - a verifiable public group state. it can be obtained by deserializing a TLS
     /// serialized `PublicGroupState` object
-    /// * `configuration` - configuration of the MLS conversation fetched from the Delivery Service
+    /// * `custom_cfg` - configuration of the MLS conversation fetched from the Delivery Service
     ///
     /// # Return type
     /// It will return a tuple with the group/conversation id and the message containing the
@@ -74,13 +76,20 @@ impl MlsCentral {
     pub async fn join_by_external_commit(
         &self,
         public_group_state: VerifiablePublicGroupState,
-        configuration: MlsConversationConfiguration,
+        custom_cfg: MlsCustomConfiguration,
     ) -> CryptoResult<MlsConversationInitBundle> {
         let credentials = self
             .mls_client
             .as_ref()
             .ok_or(CryptoError::MlsNotInitialized)?
             .credentials();
+
+        let serialized_cfg = serde_json::to_vec(&custom_cfg).map_err(MlsError::MlsKeystoreSerializationError)?;
+
+        let configuration = MlsConversationConfiguration {
+            custom: custom_cfg,
+            ..Default::default()
+        };
         let (mut group, commit, pgs) = MlsGroup::join_by_external_commit(
             &self.mls_backend,
             None,
@@ -97,7 +106,7 @@ impl MlsCentral {
 
         self.mls_backend
             .key_store()
-            .mls_pending_groups_save(group.group_id().as_slice(), &group_serialized)
+            .mls_pending_groups_save(group.group_id().as_slice(), &group_serialized, &serialized_cfg)
             .await?;
         Ok(MlsConversationInitBundle {
             conversation_id: group.group_id().to_vec(),
@@ -111,22 +120,24 @@ impl MlsCentral {
     ///
     /// # Arguments
     /// * `id` - the conversation id
-    /// * `configuration` - the configuration to be applied by the new group on this client
     ///
     /// # Errors
     /// Errors resulting from OpenMls, the KeyStore calls and deserialization
-    pub async fn merge_pending_group_from_external_commit(
-        &mut self,
-        id: &ConversationId,
-        configuration: MlsConversationConfiguration,
-    ) -> CryptoResult<()> {
+    pub async fn merge_pending_group_from_external_commit(&mut self, id: &ConversationId) -> CryptoResult<()> {
         // Retrieve the pending MLS group from the keystore
         let keystore = self.mls_backend.key_store();
-        let buf = keystore.mls_pending_groups_load(id).await?;
-        let mut mls_group = MlsGroup::load(&mut &buf[..])?;
+        let (group, cfg) = keystore.mls_pending_groups_load(id).await?;
+        let mut mls_group = MlsGroup::load(&mut &group[..])?;
 
         // Merge it aka bring the MLS group to life and make it usable
         mls_group.merge_pending_commit().map_err(MlsError::from)?;
+
+        // Restore the custom configuration and build a conversation from it
+        let custom_cfg = serde_json::from_slice(&cfg).map_err(MlsError::MlsKeystoreSerializationError)?;
+        let configuration = MlsConversationConfiguration {
+            custom: custom_cfg,
+            ..Default::default()
+        };
 
         // Persist the now usable MLS group in the keystore
         // TODO: find a way to make the insertion of the MlsGroup and deletion of the pending group transactional
@@ -219,7 +230,7 @@ mod tests {
                         commit: external_commit,
                         ..
                     } = bob_central
-                        .join_by_external_commit(public_group_state, case.cfg.clone())
+                        .join_by_external_commit(public_group_state, case.custom_cfg())
                         .await
                         .unwrap();
                     assert_eq!(group_id.as_slice(), &id);
@@ -235,10 +246,7 @@ mod tests {
                     // Let's say backend accepted our external commit.
                     // So Bob can merge the commit and update the local state
                     assert!(bob_central.get_conversation(&id).is_err());
-                    bob_central
-                        .merge_pending_group_from_external_commit(&id, case.cfg.clone())
-                        .await
-                        .unwrap();
+                    bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
                     assert!(bob_central.get_conversation(&id).is_ok());
                     assert_eq!(bob_central[&id].members().len(), 2);
                     assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
@@ -278,7 +286,7 @@ mod tests {
 
                     // Bob tries to join Alice's group
                     bob_central
-                        .join_by_external_commit(public_group_state.clone(), case.cfg.clone())
+                        .join_by_external_commit(public_group_state.clone(), case.custom_cfg())
                         .await
                         .unwrap();
                     // BUT for some reason the Delivery Service will reject this external commit
@@ -290,7 +298,7 @@ mod tests {
                         commit: external_commit,
                         ..
                     } = bob_central
-                        .join_by_external_commit(public_group_state, case.cfg.clone())
+                        .join_by_external_commit(public_group_state, case.custom_cfg())
                         .await
                         .unwrap();
                     assert_eq!(conversation_id.as_slice(), &id);
@@ -304,10 +312,7 @@ mod tests {
                     assert_eq!(alice_central[&id].members().len(), 2);
 
                     // And Bob can merge its external commit
-                    bob_central
-                        .merge_pending_group_from_external_commit(&id, case.cfg.clone())
-                        .await
-                        .unwrap();
+                    bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
                     assert!(bob_central.get_conversation(&id).is_ok());
                     assert_eq!(bob_central[&id].members().len(), 2);
                     assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
@@ -337,7 +342,7 @@ mod tests {
                         commit: external_commit,
                         ..
                     } = bob_central
-                        .join_by_external_commit(public_group_state, case.cfg.clone())
+                        .join_by_external_commit(public_group_state, case.custom_cfg())
                         .await
                         .unwrap();
 
@@ -376,18 +381,18 @@ mod tests {
                         .await
                         .unwrap();
                     alice_central
-                        .invite(&id, case.cfg.clone(), &mut bob_central)
+                        .invite(&id, &mut bob_central, case.custom_cfg())
                         .await
                         .unwrap();
                     let public_group_state = alice_central.verifiable_public_group_state(&id).await;
                     // Alice can rejoin by external commit
                     let alice_join = alice_central
-                        .join_by_external_commit(public_group_state.clone(), case.cfg.clone())
+                        .join_by_external_commit(public_group_state.clone(), case.custom_cfg())
                         .await;
                     assert!(alice_join.is_ok());
                     // So can Bob
                     let bob_join = bob_central
-                        .join_by_external_commit(public_group_state, case.cfg.clone())
+                        .join_by_external_commit(public_group_state, case.custom_cfg())
                         .await;
                     assert!(bob_join.is_ok());
                 })
@@ -403,9 +408,7 @@ mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 // try to merge an inexisting pending group
-                let merge_unknown = central
-                    .merge_pending_group_from_external_commit(&id, case.cfg.clone())
-                    .await;
+                let merge_unknown = central.merge_pending_group_from_external_commit(&id).await;
 
                 assert!(matches!(
                     merge_unknown.unwrap_err(),
@@ -441,7 +444,7 @@ mod tests {
                         public_group_state,
                         ..
                     } = bob_central
-                        .join_by_external_commit(public_group_state, case.cfg.clone())
+                        .join_by_external_commit(public_group_state, case.custom_cfg())
                         .await
                         .unwrap();
 
@@ -453,10 +456,7 @@ mod tests {
                     assert_eq!(alice_central[&id].members().len(), 2);
 
                     // Bob merges the commit, he's also in !
-                    bob_central
-                        .merge_pending_group_from_external_commit(&id, case.cfg.clone())
-                        .await
-                        .unwrap();
+                    bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
                     assert!(bob_central.get_conversation(&id).is_ok());
                     assert_eq!(bob_central[&id].members().len(), 2);
                     assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
@@ -467,7 +467,7 @@ mod tests {
                         commit: charlie_external_commit,
                         ..
                     } = charlie_central
-                        .join_by_external_commit(bob_pgs, case.cfg.clone())
+                        .join_by_external_commit(bob_pgs, case.custom_cfg())
                         .await
                         .unwrap();
 
@@ -485,7 +485,7 @@ mod tests {
 
                     // Charlie merges the commit, he's also in !
                     charlie_central
-                        .merge_pending_group_from_external_commit(&id, case.cfg.clone())
+                        .merge_pending_group_from_external_commit(&id)
                         .await
                         .unwrap();
                     assert!(charlie_central.get_conversation(&id).is_ok());
@@ -523,7 +523,7 @@ mod tests {
 
                     // Bob tries to join Alice's group
                     let MlsConversationInitBundle { commit, .. } = bob_central
-                        .join_by_external_commit(public_group_state, case.cfg.clone())
+                        .join_by_external_commit(public_group_state, case.custom_cfg())
                         .await
                         .unwrap();
                     let alice_accepts_ext_commit =
@@ -563,7 +563,7 @@ mod tests {
 
                     // Bob tries to join Alice's group
                     let MlsConversationInitBundle { commit, .. } = bob_central
-                        .join_by_external_commit(public_group_state, case.cfg.clone())
+                        .join_by_external_commit(public_group_state, case.custom_cfg())
                         .await
                         .unwrap();
                     let alice_accepts_ext_commit =
@@ -597,7 +597,7 @@ mod tests {
 
                     // Bob tries to join Alice's group
                     bob_central
-                        .join_by_external_commit(public_group_state, case.cfg.clone())
+                        .join_by_external_commit(public_group_state, case.custom_cfg())
                         .await
                         .unwrap();
 
@@ -605,9 +605,7 @@ mod tests {
                     bob_central.clear_pending_group_from_external_commit(&id).await.unwrap();
 
                     // Hence trying to merge the pending should fail
-                    let result = bob_central
-                        .merge_pending_group_from_external_commit(&id, case.cfg.clone())
-                        .await;
+                    let result = bob_central.merge_pending_group_from_external_commit(&id).await;
                     assert!(matches!(
                         result.unwrap_err(),
                         CryptoError::KeyStoreError(CryptoKeystoreError::MissingKeyInStore(

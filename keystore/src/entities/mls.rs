@@ -34,6 +34,7 @@ pub struct PersistedMlsGroup {
 pub struct PersistedMlsPendingGroup {
     pub id: Vec<u8>,
     pub state: Vec<u8>,
+    pub custom_configuration: Vec<u8>,
 }
 
 /// Entity representing a persisted `MlsIdentity`

@@ -4,7 +4,9 @@ use criterion::{
 use futures_lite::future::block_on;
 use openmls::prelude::VerifiablePublicGroupState;
 
-use core_crypto::prelude::{ConversationMember, MlsConversationConfiguration, MlsConversationInitBundle};
+use core_crypto::prelude::{
+    ConversationMember, MlsConversationConfiguration, MlsConversationInitBundle, MlsCustomConfiguration,
+};
 
 use crate::utils::*;
 
@@ -60,14 +62,15 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                                 .unwrap()
                                 .welcome
                         });
-                        let cfg = MlsConversationConfiguration {
-                            ciphersuite: ciphersuite.clone(),
-                            ..Default::default()
-                        };
-                        (bob_central, welcome, cfg)
+                        (bob_central, welcome)
                     },
-                    |(mut central, welcome, cfg)| async move {
-                        black_box(central.process_welcome_message(welcome, cfg).await.unwrap());
+                    |(mut central, welcome)| async move {
+                        black_box(
+                            central
+                                .process_welcome_message(welcome, MlsCustomConfiguration::default())
+                                .await
+                                .unwrap(),
+                        );
                     },
                     BatchSize::SmallInput,
                 )
@@ -91,22 +94,18 @@ fn join_from_public_group_state_bench(c: &mut Criterion) {
                         let pgs: VerifiablePublicGroupState =
                             VerifiablePublicGroupState::tls_deserialize(&mut pgs.as_slice()).unwrap();
                         let (bob_central, ..) = new_central(ciphersuite, &credential, in_memory);
-                        let cfg = MlsConversationConfiguration {
-                            ciphersuite: ciphersuite.clone(),
-                            ..Default::default()
-                        };
-                        (bob_central, pgs, cfg)
+                        (bob_central, pgs)
                     },
-                    |(mut central, pgs, cfg)| async move {
+                    |(mut central, pgs)| async move {
                         let MlsConversationInitBundle { conversation_id, .. } = black_box(
                             central
-                                .join_by_external_commit(pgs, MlsConversationConfiguration::default())
+                                .join_by_external_commit(pgs, MlsCustomConfiguration::default())
                                 .await
                                 .unwrap(),
                         );
                         black_box(
                             central
-                                .merge_pending_group_from_external_commit(&conversation_id, cfg)
+                                .merge_pending_group_from_external_commit(&conversation_id)
                                 .await
                                 .unwrap(),
                         );

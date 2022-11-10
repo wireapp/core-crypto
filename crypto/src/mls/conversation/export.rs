@@ -167,7 +167,7 @@ pub mod tests {
                         assert_eq!(alice_central.get_client_ids(&id).unwrap().len(), 1);
 
                         alice_central
-                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
                         assert_eq!(alice_central.get_client_ids(&id).unwrap().len(), 2);

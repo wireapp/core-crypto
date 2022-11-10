@@ -200,7 +200,7 @@ mod tests {
                         assert_eq!(owner_central[&id].members().len(), 2);
 
                         guest_central
-                            .process_welcome_message(welcome.unwrap(), case.cfg.clone())
+                            .process_welcome_message(welcome.unwrap(), case.custom_cfg())
                             .await
                             .unwrap();
                         assert_eq!(guest_central[&id].members().len(), 2);
@@ -235,7 +235,7 @@ mod tests {
                             owner_central.new_conversation(id.clone(), cfg).await.unwrap();
 
                             owner_central
-                                .invite(&id, case.cfg.clone(), &mut guest_central)
+                                .invite(&id, &mut guest_central, case.custom_cfg())
                                 .await
                                 .unwrap();
                             assert_eq!(owner_central[&id].members().len(), 2);
@@ -298,7 +298,7 @@ mod tests {
                         owner_central.new_conversation(id.clone(), cfg).await.unwrap();
 
                         owner_central
-                            .invite(&id, case.cfg.clone(), &mut guest_central)
+                            .invite(&id, &mut guest_central, case.custom_cfg())
                             .await
                             .unwrap();
                         assert_eq!(owner_central[&id].members().len(), 2);
@@ -356,7 +356,7 @@ mod tests {
                         owner_central.new_conversation(id.clone(), cfg).await.unwrap();
 
                         owner_central
-                            .invite(&id, case.cfg.clone(), &mut guest_central)
+                            .invite(&id, &mut guest_central, case.custom_cfg())
                             .await
                             .unwrap();
                         assert_eq!(owner_central[&id].members().len(), 2);
@@ -413,7 +413,7 @@ mod tests {
                             alice_central.new_conversation(id.clone(), cfg).await.unwrap();
 
                             alice_central
-                                .invite(&id, case.cfg.clone(), &mut bob_central)
+                                .invite(&id, &mut bob_central, case.custom_cfg())
                                 .await
                                 .unwrap();
                             assert_eq!(alice_central[&id].members().len(), 2);
@@ -431,8 +431,10 @@ mod tests {
                                 .await
                                 .unwrap();
                             // Purposely have a configuration without `external_senders`
-                            let cfg = case.cfg.clone();
-                            charlie_central.process_welcome_message(welcome, cfg).await.unwrap();
+                            charlie_central
+                                .process_welcome_message(welcome, case.custom_cfg())
+                                .await
+                                .unwrap();
                             assert_eq!(charlie_central[&id].members().len(), 3);
                             assert!(charlie_central.talk_to(&id, &mut alice_central).await.is_ok());
                             assert!(charlie_central.talk_to(&id, &mut bob_central).await.is_ok());
@@ -507,7 +509,7 @@ mod tests {
                             alice_central.new_conversation(id.clone(), cfg).await.unwrap();
 
                             alice_central
-                                .invite(&id, case.cfg.clone(), &mut bob_central)
+                                .invite(&id, &mut bob_central, case.custom_cfg())
                                 .await
                                 .unwrap();
                             assert_eq!(alice_central[&id].members().len(), 2);
@@ -516,13 +518,12 @@ mod tests {
                             // from PGS and not from configuration
                             let public_group_state = alice_central.verifiable_public_group_state(&id).await;
                             let MlsConversationInitBundle { commit, .. } = charlie_central
-                                .join_by_external_commit(public_group_state, case.cfg.clone())
+                                .join_by_external_commit(public_group_state, case.custom_cfg())
                                 .await
                                 .unwrap();
                             // Purposely have a configuration without `external_senders`
-                            let cfg = case.cfg.clone();
                             charlie_central
-                                .merge_pending_group_from_external_commit(&id, cfg)
+                                .merge_pending_group_from_external_commit(&id)
                                 .await
                                 .unwrap();
 

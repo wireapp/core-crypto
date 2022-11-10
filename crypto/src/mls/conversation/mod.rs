@@ -29,20 +29,21 @@
 
 use std::collections::HashMap;
 
-use openmls::prelude::{ExternalSender, SignaturePublicKey, WireFormatPolicy};
-use openmls::{group::MlsGroup, messages::Welcome, prelude::Credential, prelude::SenderRatchetConfiguration};
-use openmls_traits::types::SignatureScheme;
+use openmls::{group::MlsGroup, messages::Welcome, prelude::Credential};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
 
+use config::MlsConversationConfiguration;
+
 use crate::{
-    mls::{client::Client, member::MemberId, ClientId, MlsCentral, MlsCiphersuite},
+    mls::{client::Client, member::MemberId, ClientId, MlsCentral},
     CryptoError, CryptoResult, MlsError,
 };
 
 mod commit_delay;
+pub mod config;
 pub mod decrypt;
 #[cfg(test)]
 mod durability;
@@ -56,71 +57,6 @@ mod renew;
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 pub type ConversationId = Vec<u8>;
 
-/// The configuration parameters for a group/conversation
-#[derive(Debug, Clone)]
-pub struct MlsConversationConfiguration {
-    /// Admins of the group/conversation
-    pub admins: Vec<MemberId>,
-    /// The `OpenMls` Ciphersuite used in the group
-    pub ciphersuite: MlsCiphersuite,
-    // TODO: Implement the key rotation manually instead.
-    /// The duration for which a key must be rotated
-    pub key_rotation_span: Option<std::time::Duration>,
-    /// Delivery service public signature key and credential
-    pub external_senders: Vec<ExternalSender>,
-    /// Defines if handshake messages are encrypted or not
-    pub policy: WireFormatPolicy,
-}
-
-impl Default for MlsConversationConfiguration {
-    fn default() -> Self {
-        Self {
-            admins: Default::default(),
-            ciphersuite: Default::default(),
-            key_rotation_span: Default::default(),
-            external_senders: Default::default(),
-            policy: openmls::group::MIXED_PLAINTEXT_WIRE_FORMAT_POLICY,
-        }
-    }
-}
-
-impl MlsConversationConfiguration {
-    // TODO: pending a long term solution with a real certificate
-    const WIRE_SERVER_IDENTITY: &'static str = "wire-server";
-    const PADDING_SIZE: usize = 128;
-
-    /// Generates an `MlsGroupConfig` from this configuration
-    #[inline(always)]
-    pub fn as_openmls_default_configuration(&self) -> CryptoResult<openmls::group::MlsGroupConfig> {
-        Ok(openmls::group::MlsGroupConfig::builder()
-            .wire_format_policy(self.policy)
-            .max_past_epochs(3)
-            .padding_size(Self::PADDING_SIZE)
-            .number_of_resumtion_secrets(1)
-            .sender_ratchet_configuration(SenderRatchetConfiguration::new(2, 1000))
-            .use_ratchet_tree_extension(true)
-            .external_senders(self.external_senders.clone())
-            .build())
-    }
-
-    /// Parses supplied key from Delivery Service in order to build back an [ExternalSender]
-    /// Note that this only works currently with Ed25519 keys and will have to be changed to accept
-    /// other key schemes
-    pub fn set_raw_external_senders(&mut self, external_senders: Vec<Vec<u8>>) {
-        let external_senders = external_senders
-            .iter()
-            .map(|key| {
-                SignaturePublicKey::new(key.clone(), SignatureScheme::ED25519)
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)
-            })
-            .filter_map(|r: CryptoResult<SignaturePublicKey>| r.ok())
-            .map(|signature_key| ExternalSender::new_basic(Self::WIRE_SERVER_IDENTITY, signature_key))
-            .collect();
-        self.external_senders = external_senders;
-    }
-}
-
 /// This type will store the state of a group. With the [MlsGroup] it holds, it provides all
 /// operations that can be done in a group, such as creating proposals and commits.
 /// More information [here](https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-general-setting)
@@ -129,7 +65,6 @@ impl MlsConversationConfiguration {
 pub struct MlsConversation {
     pub(crate) id: ConversationId,
     pub(crate) group: MlsGroup,
-    pub(crate) admins: Vec<MemberId>,
     configuration: MlsConversationConfiguration,
 }
 
@@ -164,7 +99,6 @@ impl MlsConversation {
         let mut conversation = Self {
             id,
             group,
-            admins: config.admins.clone(),
             configuration: config,
         };
 
@@ -210,7 +144,6 @@ impl MlsConversation {
 
         Ok(Self {
             id,
-            admins: configuration.admins.clone(),
             group,
             configuration,
         })
@@ -229,7 +162,6 @@ impl MlsConversation {
             id,
             group,
             configuration,
-            admins: Default::default(),
         })
     }
 
@@ -247,11 +179,6 @@ impl MlsConversation {
             acc.entry(member_id).or_insert_with(Vec::new).push(credential.clone());
             acc
         })
-    }
-
-    /// Checks if the user can perform an operation (AKA if the user is an admin)
-    pub fn can_user_act(&self, uuid: MemberId) -> bool {
-        self.admins.contains(&uuid)
     }
 
     pub(crate) async fn persist_group_when_changed(
@@ -365,7 +292,7 @@ pub mod tests {
                     assert_eq!(alice_central[&id].members().len(), 2);
 
                     bob_central
-                        .process_welcome_message(welcome, case.cfg.clone())
+                        .process_welcome_message(welcome, case.custom_cfg())
                         .await
                         .unwrap();
 
@@ -424,7 +351,7 @@ pub mod tests {
 
                 let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
                 for mut c in bob_and_friends {
-                    c.process_welcome_message(welcome.clone(), case.cfg.clone())
+                    c.process_welcome_message(welcome.clone(), case.custom_cfg())
                         .await
                         .unwrap();
                     assert!(c.talk_to(&id, &mut alice_central).await.is_ok());
@@ -471,7 +398,7 @@ pub mod tests {
 
                     // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
                     bob_central
-                        .process_welcome_message(welcome, case.cfg.clone())
+                        .process_welcome_message(welcome, case.custom_cfg())
                         .await
                         .unwrap();
 

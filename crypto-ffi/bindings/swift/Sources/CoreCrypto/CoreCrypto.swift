@@ -125,24 +125,59 @@ private extension CiphersuiteName {
 public struct ConversationConfiguration: ConvertToInner {
     typealias Inner = CoreCryptoSwift.ConversationConfiguration
     func convert() -> Inner {
-        return CoreCryptoSwift.ConversationConfiguration(admins: self.admins, ciphersuite: self.ciphersuite?.convert(), keyRotationSpan: self.keyRotationSpan, externalSenders: self.externalSenders)
+        return CoreCryptoSwift.ConversationConfiguration(ciphersuite: self.ciphersuite?.convert(), externalSenders: self.externalSenders, custom: self.custom.convert())
     }
 
-    ///  List of client IDs with administrative permissions
-    public var admins: [ClientId]
     /// Conversation ciphersuite
     public var ciphersuite: CiphersuiteName?
+    /// List of client IDs that are allowed to be external senders of commits
+    public var externalSenders: [[UInt8]]
+    /// Implementation specific configuration
+    public var custom: CustomConfiguration
+
+    public init(ciphersuite: CiphersuiteName?, externalSenders: [[UInt8]], custom: CustomConfiguration) {
+        self.ciphersuite = ciphersuite
+        self.externalSenders = externalSenders
+        self.custom = custom
+    }
+}
+
+/// Defines if handshake messages are encrypted or not
+public enum WirePolicy: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.MlsWirePolicy
+
+    case plaintext
+    case ciphertext
+}
+
+private extension WirePolicy {
+    func convert() -> Inner {
+        switch self {
+        case .plaintext:
+            return CoreCryptoSwift.MlsWirePolicy.plaintext
+        case .ciphertext:
+            return CoreCryptoSwift.MlsWirePolicy.ciphertext
+        }
+    }
+}
+
+/// Implementation specific configuration object for a conversation
+public struct CustomConfiguration: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.CustomConfiguration
+    func convert() -> Inner {
+        return CoreCryptoSwift.CustomConfiguration(keyRotationSpan: self.keyRotationSpan, wirePolicy: self.wirePolicy?.convert())
+    }
+
     /// Duration in seconds after which we will automatically force a self_update commit
     /// Note: This isn't currently implemented
     public var keyRotationSpan: TimeInterval?
-    /// List of client IDs that are allowed to be external senders of commits
-    public var externalSenders: [[UInt8]]
+    /// Defines if handshake messages are encrypted or not
+    /// Note: Ciphertext is not currently supported by wire-server
+    public var wirePolicy: WirePolicy?
 
-    public init(admins: [ClientId], ciphersuite: CiphersuiteName?, keyRotationSpan: TimeInterval?, externalSenders: [[UInt8]]) {
-        self.admins = admins
-        self.ciphersuite = ciphersuite
+    public init(keyRotationSpan: TimeInterval?, wirePolicy: WirePolicy?) {
         self.keyRotationSpan = keyRotationSpan
-        self.externalSenders = externalSenders
+        self.wirePolicy = wirePolicy
     }
 }
 
@@ -430,9 +465,10 @@ public class CoreCryptoWrapper {
 
     /// Ingest a TLS-serialized MLS welcome message to join a an existing MLS group
     /// - parameter welcomeMessage: - TLS-serialized MLS Welcome message
+    /// - parameter config: - configuration of the MLS group
     /// - returns: The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages
-    public func processWelcomeMessage(welcomeMessage: [UInt8]) throws -> ConversationId {
-        return try self.coreCrypto.processWelcomeMessage(welcomeMessage: welcomeMessage)
+    public func processWelcomeMessage(welcomeMessage: [UInt8], configuration: CustomConfiguration) throws -> ConversationId {
+        return try self.coreCrypto.processWelcomeMessage(welcomeMessage: welcomeMessage, customConfiguration: configuration.convert())
     }
 
     /// Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation
@@ -588,9 +624,10 @@ public class CoreCryptoWrapper {
     /// bad can happen if you forget to except some storage space wasted.
     ///
     /// - parameter publicGroupState: a TLS encoded `PublicGroupState` fetched from the Delivery Service
+    /// - parameter config: - configuration of the MLS group
     /// - returns: an object of type `ConversationInitBundle`
-    public func joinByExternalCommit(publicGroupState: [UInt8]) throws -> ConversationInitBundle {
-        try self.coreCrypto.joinByExternalCommit(publicGroupState: publicGroupState).convertTo()
+    public func joinByExternalCommit(publicGroupState: [UInt8], configuration: CustomConfiguration) throws -> ConversationInitBundle {
+        try self.coreCrypto.joinByExternalCommit(publicGroupState: publicGroupState, customConfiguration: configuration.convert()).convertTo()
     }
 
     /// Exports a TLS-serialized view of the current group state corresponding to the provided conversation ID.
@@ -605,9 +642,8 @@ public class CoreCryptoWrapper {
     /// deletes the temporary one. After merging, the group should be fully functional.
     ///
     /// - parameter conversationId: conversation identifier
-    /// - parameter config: the configuration to be applied by the new group on this client
-    public func mergePendingGroupFromExternalCommit(conversationId: ConversationId, config: ConversationConfiguration) throws {
-        try self.coreCrypto.mergePendingGroupFromExternalCommit(conversationId: conversationId, config: config.convert())
+    public func mergePendingGroupFromExternalCommit(conversationId: ConversationId) throws {
+        try self.coreCrypto.mergePendingGroupFromExternalCommit(conversationId: conversationId)
     }
 
     /// In case the external commit generated by ``CoreCryptoWrapper/joinByExternalCommit`` is rejected by the Delivery Service,
