@@ -22,6 +22,7 @@ pub use core_crypto::prelude::{
     tls_codec::Serialize, CiphersuiteName, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, MemberId,
     MlsPublicGroupStateBundle, MlsPublicGroupStateEncryptionType, MlsRatchetTreeType, PublicGroupStatePayload,
 };
+use core_crypto::proteus::ProteusCentral;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "mobile")] {
@@ -899,6 +900,14 @@ impl CoreCrypto<'_> {
                 .lock()
                 .map_err(|_| CryptoError::LockPoisonError)?
                 .proteus_fingerprint_remote(session_id)
+        }}
+    }
+
+    /// See [core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle]
+    /// NOTE: uniffi doesn't support associated functions, so we have to have the self here
+    pub fn proteus_fingerprint_prekeybundle(&self, prekey: &[u8]) -> CryptoResult<String> {
+        proteus_impl! {{
+            ProteusCentral::fingerprint_prekeybundle(prekey)
         }}
     }
 

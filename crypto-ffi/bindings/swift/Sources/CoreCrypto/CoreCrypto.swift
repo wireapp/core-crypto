@@ -776,6 +776,7 @@ public class CoreCryptoWrapper {
 
     /// Proteus session local fingerprint
     ///
+    /// - parameter sessionId: ID of the Proteus session
     /// - returns: Hex-encoded public key string
     public func proteusFingerprintLocal(sessionId: String) throws -> String {
         try self.coreCrypto.proteusFingerprintLocal(sessionId: sessionId)
@@ -783,11 +784,19 @@ public class CoreCryptoWrapper {
 
     /// Proteus session remote fingerprint
     ///
+    /// - parameter sessionId: ID of the Proteus session
     /// - returns: Hex-encoded public key string
     public func proteusFingerprintRemote(sessionId: String) throws -> String {
         try self.coreCrypto.proteusFingerprintRemote(sessionId: sessionId)
     }
 
+    /// Hex-encoded fingerprint of the given prekey
+    ///
+    /// - parameter prekey: the prekey bundle to get the fingerprint from
+    /// - returns: Hex-encoded public key string
+    public func proteusFingerprintPrekeybundle(prekey: [UInt8]) throws -> String {
+        try self.coreCrypto.proteusFingerprintPrekeybundle(prekey: prekey)
+    }
 
      /// Imports all the data stored by Cryptobox into the CoreCrypto keystore
      ///

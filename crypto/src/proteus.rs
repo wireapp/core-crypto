@@ -479,6 +479,15 @@ impl ProteusCentral {
         }
     }
 
+    /// Hex-encoded fingerprint of the given prekey
+    ///
+    /// # Errors
+    /// If the prekey cannot be deserialized
+    pub fn fingerprint_prekeybundle(prekey: &[u8]) -> CryptoResult<String> {
+        let prekey = PreKeyBundle::deserialise(prekey).map_err(ProteusError::from)?;
+        Ok(prekey.identity_key.fingerprint())
+    }
+
     /// Cryptobox -> CoreCrypto migration
     #[cfg_attr(not(feature = "cryptobox-migrate"), allow(unused_variables))]
     pub async fn cryptobox_migrate(keystore: &CryptoKeystore, path: &str) -> CryptoResult<()> {

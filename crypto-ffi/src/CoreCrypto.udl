@@ -260,6 +260,8 @@ interface CoreCrypto {
     [Throws=CryptoError]
     string proteus_fingerprint_remote([ByRef] string session_id);
 
+    [Throws=CryptoError]
+    string proteus_fingerprint_prekeybundle([ByRef] sequence<u8> prekey);
 
     [Throws=CryptoError]
     void proteus_cryptobox_migrate([ByRef] string path);
