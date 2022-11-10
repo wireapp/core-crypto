@@ -1174,6 +1174,7 @@ export class CoreCrypto {
     /**
      * Proteus session local fingerprint
      *
+     * @param sessionId - ID of the Proteus session
      * @returns Hex-encoded public key string
      */
     async proteusFingerprintLocal(sessionId: string): Promise<string> {
@@ -1183,10 +1184,21 @@ export class CoreCrypto {
     /**
      * Proteus session remote fingerprint
      *
+     * @param sessionId - ID of the Proteus session
      * @returns Hex-encoded public key string
      */
     async proteusFingerprintRemote(sessionId: string): Promise<string> {
         return await this.#cc.proteus_fingerprint_remote(sessionId);
+    }
+
+    /**
+     * Hex-encoded fingerprint of the given prekey
+     *
+     * @param prekey - the prekey bundle to get the fingerprint from
+     * @returns Hex-encoded public key string
+    **/
+    static proteusFingerprintPrekeybundle(prekey: Uint8Array): string {
+        return this.#module.CoreCrypto.proteus_fingerprint_prekeybundle(prekey);
     }
 
     /**

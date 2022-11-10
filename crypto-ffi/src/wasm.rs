@@ -22,6 +22,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
 use core_crypto::prelude::*;
+use core_crypto::proteus::ProteusCentral;
 pub use core_crypto::CryptoError;
 
 #[allow(dead_code)]
@@ -1458,6 +1459,17 @@ impl CoreCrypto {
     pub async fn proteus_fingerprint_remote(&self, session_id: String) -> WasmCryptoResult<String> {
         proteus_impl!({
             self.0.read().await.proteus_fingerprint_remote(&session_id)
+                .map_err(Into::into).map(Into::into)
+        } or throw WasmCryptoResult<_>)
+    }
+
+    /// Returns: [`WasmCryptoResult<String>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCproteus_fingerprint_prekeybundle]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub fn proteus_fingerprint_prekeybundle(prekey: Box<[u8]>) -> WasmCryptoResult<String> {
+        proteus_impl!({
+            ProteusCentral::fingerprint_prekeybundle(&prekey)
                 .map_err(Into::into).map(Into::into)
         } or throw WasmCryptoResult<_>)
     }
