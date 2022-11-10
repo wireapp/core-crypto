@@ -5,14 +5,14 @@ members = [
     "crypto-attributes",
     "keystore",
     "mls-provider",
-    "interop",
-    "extras/wasm-browser-run",
-    "extras/wasm-browser-test-runner"
+    "interop"
 ]
 exclude = [
     "xtask",
     "extras/anycrypto",
-    "extras/core-ds"
+    "extras/core-ds",
+    "extras/wasm-browser-run",
+    "extras/wasm-browser-test-runner"
 ]
 resolver = "2"
 
