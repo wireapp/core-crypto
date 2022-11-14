@@ -35,6 +35,7 @@ jobs:
 
       - name: Build Android package
         run: |
+          ANDROID_ROOT=/usr/local/lib/android ANDROID_SDK_ROOT=${ANDROID_ROOT}/sdk SDKMANAGER=${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager echo "y" | $SDKMANAGER "ndk;21.4.7075529"
           cd crypto-ffi
           cargo make copy-android-resources
       - name: Publish package
