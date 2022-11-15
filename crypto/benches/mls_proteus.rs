@@ -73,9 +73,14 @@ fn encrypt_message_bench(c: &mut Criterion) {
                         let text = Alphanumeric.sample_string(&mut rand::thread_rng(), MSG_MAX);
                         (central, keystore, session_material, text)
                     },
-                    |(mut central, keystore, session_material, text)| async move {
+                    |(mut central, mut keystore, session_material, text)| async move {
                         for (session_id, _) in session_material {
-                            black_box(central.encrypt(&session_id, text.as_bytes()).unwrap());
+                            black_box(
+                                central
+                                    .encrypt(&mut keystore, &session_id, text.as_bytes())
+                                    .await
+                                    .unwrap(),
+                            );
                             black_box(central.session_save(&keystore, &session_id).await.unwrap());
                         }
                     },

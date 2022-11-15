@@ -49,11 +49,10 @@ fantoccini = "0.19"
 
 [dependencies.proteus-wasm]
 version = "2.0"
-package = "proteus"
 features = ["hazmat"]
 optional = true
 git = "https://github.com/wireapp/proteus"
-branch = "otak/oxidize-wasm-v2"
+branch = "otak/2.0"
 
 
 

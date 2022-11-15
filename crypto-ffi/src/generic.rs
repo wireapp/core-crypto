@@ -869,10 +869,14 @@ impl CoreCrypto<'_> {
     /// See [core_crypto::proteus::ProteusCentral::encrypt]
     pub fn proteus_encrypt(&self, session_id: &str, plaintext: &[u8]) -> CryptoResult<Vec<u8>> {
         proteus_impl! {{
-            self.central
-                .lock()
-                .map_err(|_| CryptoError::LockPoisonError)?
-                .proteus_encrypt(session_id, plaintext)
+            future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_encrypt(session_id, plaintext)
+                ),
+            )
         }}
     }
 
@@ -883,10 +887,14 @@ impl CoreCrypto<'_> {
         plaintext: &[u8],
     ) -> CryptoResult<std::collections::HashMap<String, Vec<u8>>> {
         proteus_impl! {{
-            self.central
-                .lock()
-                .map_err(|_| CryptoError::LockPoisonError)?
-                .proteus_encrypt_batched(sessions.as_slice(), plaintext)
+            future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_encrypt_batched(sessions.as_slice(), plaintext)
+                )
+            )
         }}
     }
 

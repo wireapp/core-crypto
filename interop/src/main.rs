@@ -317,7 +317,9 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
 
         prng.fill_bytes(&mut message);
 
-        let mut messages_to_decrypt = master_client.proteus_encrypt_batched(&master_sessions, &message)?;
+        let mut messages_to_decrypt = master_client
+            .proteus_encrypt_batched(&master_sessions, &message)
+            .await?;
 
         for c in clients.iter_mut() {
             let fingerprint = c.fingerprint().await?;

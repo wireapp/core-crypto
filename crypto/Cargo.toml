@@ -46,11 +46,10 @@ serde_json = "1.0"
 
 [dependencies.proteus-wasm]
 version = "2.0"
-package = "proteus"
 features = ["hazmat"]
 optional = true
 git = "https://github.com/wireapp/proteus"
-branch = "otak/oxidize-wasm-v2"
+branch = "otak/2.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = { version = "1.6", optional = true }
@@ -87,8 +86,8 @@ proteus-traits = "2.0"
 async-trait = "0.1"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
-cryptobox = { git = "https://github.com/wireapp/cryptobox" }
-proteus = { git = "https://github.com/wireapp//proteus", branch = "otak/fix-1.0.3" }
+cryptobox = { git = "https://github.com/wireapp/cryptobox", tag = "v1.0.3" }
+proteus = { git = "https://github.com/wireapp//proteus", branch = "otak/fix-1.0.3", features = [] }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
 version = "0.3"

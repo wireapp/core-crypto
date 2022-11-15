@@ -30,12 +30,14 @@ impl ProteusIdentity {
 
     pub fn sk_raw(&self) -> zeroize::Zeroizing<[u8; Self::SK_KEY_SIZE]> {
         let mut slice = zeroize::Zeroizing::new([0u8; Self::SK_KEY_SIZE]);
+        debug_assert_eq!(self.sk.len(), Self::SK_KEY_SIZE);
         slice.copy_from_slice(&self.sk[..Self::SK_KEY_SIZE]);
         slice
     }
 
     pub fn pk_raw(&self) -> zeroize::Zeroizing<[u8; Self::PK_KEY_SIZE]> {
         let mut slice = zeroize::Zeroizing::new([0u8; Self::PK_KEY_SIZE]);
+        debug_assert_eq!(self.pk.len(), Self::PK_KEY_SIZE);
         slice.copy_from_slice(&self.pk[..Self::PK_KEY_SIZE]);
         slice
     }
@@ -77,6 +79,11 @@ impl ProteusPrekey {
     pub fn set_id(&mut self, id: u16) {
         self.id = id;
         self.id_bytes = self.id.to_le_bytes().into();
+    }
+
+    pub async fn get_free_id(conn: &crate::Connection) -> crate::CryptoKeystoreResult<u16> {
+        let count = conn.count::<Self>().await?;
+        Ok((count % u16::MAX as usize) as u16)
     }
 }
 
