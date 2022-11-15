@@ -1439,7 +1439,7 @@ impl CoreCrypto {
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub async fn proteus_encrypt(&self, session_id: String, plaintext: Box<[u8]>) -> WasmCryptoResult<Uint8Array> {
         proteus_impl!({
-            let encrypted = self.0.write().await.proteus_encrypt(&session_id, &plaintext)?;
+            let encrypted = self.0.write().await.proteus_encrypt(&session_id, &plaintext).await?;
             WasmCryptoResult::Ok(Uint8Array::from(encrypted.as_slice()).into())
         } or throw WasmCryptoResult<_>)
     }
@@ -1455,7 +1455,7 @@ impl CoreCrypto {
     ) -> WasmCryptoResult<js_sys::Map> {
         proteus_impl!({
             let session_ids: Vec<String> = sessions.into_iter().map(String::from).collect();
-            let batch = self.0.write().await.proteus_encrypt_batched(session_ids.as_slice(), &plaintext)?;
+            let batch = self.0.write().await.proteus_encrypt_batched(session_ids.as_slice(), &plaintext).await?;
             let js_obj = js_sys::Map::new();
             for (key, payload) in batch.into_iter() {
                 js_obj.set(&js_sys::JsString::from(key).into(), &Uint8Array::from(payload.as_slice()));

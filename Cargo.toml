@@ -17,7 +17,7 @@ branch = "otak/fix-1.0.3"
 [patch.crates-io.proteus-traits]
 package = "proteus-traits"
 git = "https://github.com/wireapp/proteus"
-branch = "otak/oxidize-wasm-v2"
+branch = "otak/2.0"
 
 [patch.crates-io.openmls]
 git = "https://github.com/wireapp/openmls"

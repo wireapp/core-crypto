@@ -149,7 +149,7 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoNativeClient {
     }
 
     async fn encrypt(&mut self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
-        Ok(self.cc.proteus_encrypt(session_id, plaintext)?)
+        Ok(self.cc.proteus_encrypt(session_id, plaintext).await?)
     }
 
     async fn decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
