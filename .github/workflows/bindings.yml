@@ -45,7 +45,7 @@ jobs:
           targets: "aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim"
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: |
           cd crypto-ffi
           cargo make create-swift-package
