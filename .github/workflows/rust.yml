@@ -12,7 +12,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all -- --check
 
   check:
@@ -35,7 +35,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: cargo build --verbose
       - run: cargo clippy -- -D warnings
 
@@ -46,7 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@nextest
       - name: "Test CoreCrypto"
         run: cargo nextest run --verbose --release
@@ -60,7 +60,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@nextest
       - name: "Test CoreCrypto's proteus implementation"
         run: cargo nextest run --verbose --features proteus,cryptobox-migrate,proteus-keystore proteus
@@ -73,7 +73,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@nextest
       - name: "Test CoreCrypto xtask tooling"
         run: cargo nextest run --verbose --manifest-path xtask/Cargo.toml
@@ -94,7 +94,7 @@ jobs:
           targets: wasm32-unknown-unknown
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - name: WASM build
         run: wasm-pack build --dev --target web ${{ matrix.workspace }}
 
@@ -112,7 +112,7 @@ jobs:
           targets: wasm32-unknown-unknown
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - name: Run tests (wasm)
         run: wasm-pack test --release --headless --chrome ${{ matrix.workspace }}
 
@@ -127,7 +127,7 @@ jobs:
           targets: wasm32-unknown-unknown
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - name: Run tests (wasm)
         run: |
           wasm-pack test --chrome --headless keystore --features proteus-keystore -- proteus
@@ -146,7 +146,7 @@ jobs:
         uses: davidB/rust-cargo-make@v1
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - name: Run E2E interop test
         run: cargo run --bin interop
 
@@ -158,6 +158,6 @@ jobs:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@cargo-hack
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - name: cargo/hack (verify features compile in isolation)
         run: cargo hack check --each-feature --no-dev-deps
