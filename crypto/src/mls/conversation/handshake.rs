@@ -386,6 +386,8 @@ pub mod tests {
 
     use crate::{mls::proposal::MlsProposal, test_utils::*};
 
+    use openmls::prelude::{ParseMessageError, ValidationError};
+
     use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -1217,6 +1219,246 @@ pub mod tests {
                             )
                             .await
                             .is_ok());
+                    })
+                },
+            )
+            .await;
+        }
+    }
+
+    pub mod delivery_semantics {
+        use super::*;
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_prevent_commit_duplicates(case: TestCase) {
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
+
+                        let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
+
+                        let _decrypt_once = bob_central
+                            .decrypt_message(&id, &commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        // fails when we try to decrypt a commit for current epoch
+                        let decrypt_twice = bob_central.decrypt_message(&id, &commit.to_bytes().unwrap()).await;
+                        assert!(matches!(
+                            decrypt_twice.unwrap_err(),
+                            CryptoError::MlsError(MlsError::MlsParseMessageError(ParseMessageError::ValidationError(
+                                ValidationError::WrongEpoch
+                            )))
+                        ));
+                    })
+                },
+            )
+            .await;
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_prevent_out_of_order_commits(case: TestCase) {
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
+
+                        let commit1 = alice_central.update_keying_material(&id).await.unwrap().commit;
+                        alice_central.commit_accepted(&id).await.unwrap();
+                        let commit2 = alice_central.update_keying_material(&id).await.unwrap().commit;
+                        alice_central.commit_accepted(&id).await.unwrap();
+
+                        // fails when a commit is skipped
+                        let out_of_order = bob_central.decrypt_message(&id, &commit2.to_bytes().unwrap()).await;
+                        assert!(matches!(
+                            out_of_order.unwrap_err(),
+                            CryptoError::MlsError(MlsError::MlsParseMessageError(ParseMessageError::ValidationError(
+                                ValidationError::WrongEpoch
+                            )))
+                        ));
+                        // works in the right order though
+                        assert!(bob_central
+                            .decrypt_message(&id, &commit1.to_bytes().unwrap())
+                            .await
+                            .is_ok());
+                        assert!(bob_central
+                            .decrypt_message(&id, &commit2.to_bytes().unwrap())
+                            .await
+                            .is_ok());
+
+                        // and then fails again when trying to decrypt a commit with an epoch in the past
+                        let past_commit = bob_central.decrypt_message(&id, &commit2.to_bytes().unwrap()).await;
+                        assert!(matches!(
+                            past_commit.unwrap_err(),
+                            CryptoError::MlsError(MlsError::MlsParseMessageError(ParseMessageError::ValidationError(
+                                ValidationError::WrongEpoch
+                            )))
+                        ));
+                    })
+                },
+            )
+            .await;
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_allow_dropped_commits(case: TestCase) {
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
+
+                        let _alice_commit = alice_central.update_keying_material(&id).await.unwrap().commit;
+                        let bob_commit = bob_central.update_keying_material(&id).await.unwrap().commit;
+                        // Bob commit arrives first and has precedence hence Alice's commit is dropped
+                        alice_central
+                            .decrypt_message(&id, bob_commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        bob_central.commit_accepted(&id).await.unwrap();
+                    })
+                },
+            )
+            .await;
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_prevent_replayed_encrypted_handshake_messages(case: TestCase) {
+            if case.cfg.policy == openmls::group::PURE_CIPHERTEXT_WIRE_FORMAT_POLICY {
+                run_test_with_client_ids(
+                    case.clone(),
+                    ["alice", "bob"],
+                    move |[mut alice_central, mut bob_central]| {
+                        Box::pin(async move {
+                            let id = conversation_id();
+                            alice_central
+                                .new_conversation(id.clone(), case.cfg.clone())
+                                .await
+                                .unwrap();
+                            alice_central
+                                .invite(&id, case.cfg.clone(), &mut bob_central)
+                                .await
+                                .unwrap();
+
+                            let proposal1 = alice_central
+                                .new_proposal(&id, MlsProposal::Update)
+                                .await
+                                .unwrap()
+                                .proposal;
+                            let proposal2 = proposal1.clone();
+                            alice_central[&id].group.clear_pending_proposals();
+
+                            let commit1 = alice_central.update_keying_material(&id).await.unwrap().commit;
+                            let commit2 = commit1.clone();
+
+                            // replayed encrypted proposal should fail
+                            bob_central
+                                .decrypt_message(&id, proposal1.to_bytes().unwrap())
+                                .await
+                                .unwrap();
+                            assert!(matches!(
+                                bob_central
+                                    .decrypt_message(&id, proposal2.to_bytes().unwrap())
+                                    .await
+                                    .unwrap_err(),
+                                CryptoError::GenerationOutOfBound
+                            ));
+                            bob_central[&id].group.clear_pending_proposals();
+
+                            // replayed encrypted commit should fail
+                            bob_central
+                                .decrypt_message(&id, commit1.to_bytes().unwrap())
+                                .await
+                                .unwrap();
+                            assert!(matches!(
+                                bob_central
+                                    .decrypt_message(&id, commit2.to_bytes().unwrap())
+                                    .await
+                                    .unwrap_err(),
+                                CryptoError::MlsError(MlsError::MlsParseMessageError(
+                                    ParseMessageError::ValidationError(ValidationError::WrongEpoch)
+                                ))
+                            ));
+                        })
+                    },
+                )
+                .await;
+            }
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_prevent_out_of_order_proposals(case: TestCase) {
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central
+                            .invite(&id, case.cfg.clone(), &mut bob_central)
+                            .await
+                            .unwrap();
+
+                        let proposal = alice_central
+                            .new_proposal(&id, MlsProposal::Update)
+                            .await
+                            .unwrap()
+                            .proposal;
+
+                        bob_central
+                            .decrypt_message(&id, &proposal.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        bob_central.commit_pending_proposals(&id).await.unwrap();
+                        // epoch++
+                        bob_central.commit_accepted(&id).await.unwrap();
+
+                        // fails when we try to decrypt a proposal for past epoch
+                        let past_proposal = bob_central.decrypt_message(&id, &proposal.to_bytes().unwrap()).await;
+                        assert!(matches!(
+                            past_proposal.unwrap_err(),
+                            CryptoError::MlsError(MlsError::MlsParseMessageError(ParseMessageError::ValidationError(
+                                ValidationError::WrongEpoch
+                            )))
+                        ));
                     })
                 },
             )
