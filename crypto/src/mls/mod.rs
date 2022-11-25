@@ -277,12 +277,13 @@ impl MlsCentral {
     /// Restore existing groups from the KeyStore.
     async fn restore_groups(backend: &MlsCryptoProvider) -> CryptoResult<HashMap<ConversationId, MlsConversation>> {
         use core_crypto_keystore::CryptoKeystoreMls as _;
-        let states = backend.key_store().mls_groups_restore().await?;
-        if states.is_empty() {
+        let groups = backend.key_store().mls_groups_restore().await?;
+
+        if groups.is_empty() {
             return Ok(HashMap::new());
         }
 
-        let groups = states.into_iter().try_fold(
+        let groups = groups.into_iter().try_fold(
             HashMap::new(),
             |mut acc, (group_id, state)| -> CryptoResult<HashMap<ConversationId, MlsConversation>> {
                 let conversation = MlsConversation::from_serialized_state(state)?;
@@ -291,6 +292,16 @@ impl MlsCentral {
             },
         )?;
         Ok(groups)
+    }
+
+    /// [MlsCentral] is supposed to be a singleton. Knowing that, it does some optimizations by
+    /// keeping MLS groups in memory. Sometimes, especially on iOS, it is required to use extensions
+    /// to perform tasks in the background. Extensions are executed in another process so another
+    /// [MlsCentral] instance has to be used. This method has to be used to synchronize instances.
+    /// It simply fetches the MLS group from keystore in memory.
+    pub async fn restore_from_disk(&mut self) -> CryptoResult<()> {
+        self.mls_groups = Self::restore_groups(&self.mls_backend).await?;
+        Ok(())
     }
 
     /// Sets the consumer callbacks (i.e authorization callbacks for CoreCrypto to perform authorization calls when needed)
@@ -416,7 +427,7 @@ impl MlsCentral {
             ..Default::default()
         };
         let conversation = MlsConversation::from_welcome_message(welcome, configuration, &self.mls_backend).await?;
-        let conversation_id = conversation.id().clone();
+        let conversation_id = conversation.id.clone();
         self.mls_groups.insert(conversation_id.clone(), conversation);
 
         Ok(conversation_id)
@@ -649,10 +660,10 @@ pub mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn can_persist_group_state(case: TestCase) {
-            run_tests(move |[tmp_dir_argument]| {
+            run_tests(move |[store_path]| {
                 Box::pin(async move {
                     let configuration = MlsCentralConfiguration::try_new(
-                        tmp_dir_argument,
+                        store_path,
                         "test".to_string(),
                         Some("potato".into()),
                         vec![case.ciphersuite()],
@@ -670,6 +681,64 @@ pub mod tests {
                     let _ = central.encrypt_message(&id, b"Test").await.unwrap();
 
                     central.mls_backend.destroy_and_reset().await.unwrap();
+                })
+            })
+            .await
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn can_restore_group_from_db(case: TestCase) {
+            run_tests(move |[alice_path, bob_path]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+
+                    let alice_cfg = MlsCentralConfiguration::try_new(
+                        alice_path,
+                        "test".to_string(),
+                        Some("alice".into()),
+                        vec![case.ciphersuite()],
+                    )
+                    .unwrap();
+                    let mut alice_central = MlsCentral::try_new(alice_cfg.clone(), case.credential()).await.unwrap();
+                    let bob_cfg = MlsCentralConfiguration::try_new(
+                        bob_path,
+                        "test".to_string(),
+                        Some("bob".into()),
+                        vec![case.ciphersuite()],
+                    )
+                    .unwrap();
+                    let mut bob_central = MlsCentral::try_new(bob_cfg, case.credential()).await.unwrap();
+
+                    alice_central
+                        .new_conversation(id.clone(), case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central
+                        .invite(&id, &mut bob_central, case.custom_cfg())
+                        .await
+                        .unwrap();
+
+                    // Create another central which will be desynchronized at some point
+                    let mut alice_central_mirror = MlsCentral::try_new(alice_cfg, case.credential()).await.unwrap();
+                    assert!(alice_central_mirror.talk_to(&id, &mut bob_central).await.is_ok());
+
+                    // alice original instance will update its key without synchronizing with its mirror
+                    let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
+                    alice_central.commit_accepted(&id).await.unwrap();
+                    // at this point using mirror instance is unsafe since it will erase the other
+                    // instance state in keystore...
+                    bob_central
+                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    // so here we cannot test that mirror instance can talk to Bob because it would
+                    // mess up the test, but trust me, it does !
+
+                    // after restoring from disk, mirror instance got the right key material for
+                    // the current epoch hence can talk to Bob
+                    alice_central_mirror.restore_from_disk().await.unwrap();
+                    assert!(alice_central_mirror.talk_to(&id, &mut bob_central).await.is_ok());
                 })
             })
             .await

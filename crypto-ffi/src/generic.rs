@@ -306,6 +306,18 @@ impl CoreCrypto<'_> {
         ))
     }
 
+    /// See [core_crypto::MlsCentral::restore_from_disk]
+    pub fn restore_from_disk(&self) -> CryptoResult<()> {
+        future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .restore_from_disk(),
+            ),
+        )
+    }
+
     /// See [core_crypto::MlsCentral::close]
     pub fn close(self) -> CryptoResult<()> {
         if let Ok(central_lock) = std::sync::Arc::try_unwrap(self.central) {

@@ -140,6 +140,9 @@ interface CoreCrypto {
     void mls_init([ByRef] ClientId client_id);
 
     [Throws=CryptoError]
+    void restore_from_disk();
+
+    [Throws=CryptoError]
     void set_callbacks(CoreCryptoCallbacks callbacks);
 
     [Throws=CryptoError]

@@ -417,6 +417,15 @@ public class CoreCryptoWrapper {
         try self.coreCrypto.mlsInit(clientId: clientId)
     }
 
+    /// `CoreCrypto` is supposed to be a singleton. Knowing that, it does some optimizations by
+    /// keeping MLS groups in memory. Sometimes, especially on iOS, it is required to use extensions
+    /// to perform tasks in the background. Extensions are executed in another process so another
+    /// `CoreCrypto` instance has to be used. This method has to be used to synchronize instances.
+    /// It simply fetches the MLS group from keystore in memory.
+    public func restoreFromDisk() throws {
+        return try self.coreCrypto.restoreFromDisk()
+    }
+
     /// Sets the callback interface, required by some operations from `CoreCrypto`
     ///
     /// - parameter callbacks: the object that implements the ``CoreCryptoCallbacks`` interface
