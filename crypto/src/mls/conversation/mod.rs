@@ -82,14 +82,14 @@ impl MlsConversation {
     pub async fn create(
         id: ConversationId,
         author_client: &mut Client,
-        config: MlsConversationConfiguration,
+        configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
         let kp_hash = author_client.keypackage_raw_hash(backend).await?;
 
         let group = MlsGroup::new(
             backend,
-            &config.as_openmls_default_configuration()?,
+            &configuration.as_openmls_default_configuration()?,
             openmls::group::GroupId::from_slice(&id),
             &kp_hash,
         )
@@ -99,7 +99,7 @@ impl MlsConversation {
         let mut conversation = Self {
             id,
             group,
-            configuration: config,
+            configuration,
         };
 
         conversation.persist_group_when_changed(backend, true).await?;
