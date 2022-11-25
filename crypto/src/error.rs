@@ -101,6 +101,9 @@ pub enum CryptoError {
     /// implementation has a loophole and it'd better be evicted from the group.
     #[error("Decrypted an application message twice")]
     GenerationOutOfBound,
+    /// Tried to decrypt a message in the wrong epoch
+    #[error("Decrypted an application message from the wrong epoch")]
+    DecryptionError,
     /// Proteus Error Wrapper
     #[error(transparent)]
     ProteusError(#[from] ProteusError),
