@@ -231,6 +231,7 @@ impl From<CustomConfiguration> for MlsCustomConfiguration {
         Self {
             key_rotation_span: cfg.key_rotation_span,
             wire_policy: cfg.wire_policy.unwrap_or_default(),
+            ..Default::default()
         }
     }
 }

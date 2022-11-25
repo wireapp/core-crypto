@@ -516,6 +516,7 @@ impl From<CustomConfiguration> for MlsCustomConfiguration {
         Self {
             key_rotation_span,
             wire_policy,
+            ..Default::default()
         }
     }
 }

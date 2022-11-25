@@ -52,7 +52,10 @@ impl MlsConversationConfiguration {
             .max_past_epochs(3)
             .padding_size(Self::PADDING_SIZE)
             .number_of_resumtion_secrets(1)
-            .sender_ratchet_configuration(SenderRatchetConfiguration::new(2, 1000))
+            .sender_ratchet_configuration(SenderRatchetConfiguration::new(
+                self.custom.out_of_order_tolerance,
+                self.custom.maximum_forward_distance,
+            ))
             .use_ratchet_tree_extension(true)
             .external_senders(self.external_senders.clone())
             .build())
@@ -84,6 +87,13 @@ pub struct MlsCustomConfiguration {
     pub key_rotation_span: Option<std::time::Duration>,
     /// Defines if handshake messages are encrypted or not
     pub wire_policy: MlsWirePolicy,
+    /// Window for which decryption secrets are kept within an epoch. Use this with caution since
+    /// this affects forward secrecy within an epoch. Use this when the Delivery Service cannot
+    /// guarantee application messages order.
+    pub out_of_order_tolerance: u32,
+    /// How many application messages can be skipped. Use this when the Delivery Service can drop
+    /// application messages
+    pub maximum_forward_distance: u32,
 }
 
 impl Default for MlsCustomConfiguration {
@@ -91,6 +101,8 @@ impl Default for MlsCustomConfiguration {
         Self {
             wire_policy: MlsWirePolicy::Plaintext,
             key_rotation_span: Default::default(),
+            out_of_order_tolerance: 2,
+            maximum_forward_distance: 1000,
         }
     }
 }
