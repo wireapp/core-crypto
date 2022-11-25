@@ -893,7 +893,10 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_decrypt_app_message_in_any_order(case: TestCase) {
+        pub async fn can_decrypt_app_message_in_any_order(mut case: TestCase) {
+            // otherwise the test would fail because we decrypt messages in reverse order which is
+            // kinda dropping them
+            case.cfg.custom.maximum_forward_distance = 0;
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -909,25 +912,28 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let msg1 = b"Hello bob once";
-                        let encrypted1 = alice_central.encrypt_message(&id, msg1).await.unwrap();
-                        let msg2 = b"Hello bob twice";
-                        let encrypted2 = alice_central.encrypt_message(&id, msg2).await.unwrap();
+                        let out_of_order_tolerance = case.custom_cfg().out_of_order_tolerance;
+                        let nb_messages = out_of_order_tolerance * 2;
+                        let mut messages = vec![];
 
-                        let decrypted2 = bob_central
-                            .decrypt_message(&id, encrypted2)
-                            .await
-                            .unwrap()
-                            .app_msg
-                            .unwrap();
-                        assert_eq!(&decrypted2[..], &msg2[..]);
-                        let decrypted1 = bob_central
-                            .decrypt_message(&id, encrypted1)
-                            .await
-                            .unwrap()
-                            .app_msg
-                            .unwrap();
-                        assert_eq!(&decrypted1[..], &msg1[..]);
+                        // stack up encrypted messages..
+                        for i in 0..nb_messages {
+                            let msg = format!("Hello {i}");
+                            let encrypted = alice_central.encrypt_message(&id, &msg).await.unwrap();
+                            messages.push((msg, encrypted));
+                        }
+
+                        // ..then unstack them to see out_of_order_tolerance come into play
+                        messages.reverse();
+                        for (i, (original, encrypted)) in messages.iter().enumerate() {
+                            let decrypt = bob_central.decrypt_message(&id, encrypted).await;
+                            if i > out_of_order_tolerance as usize {
+                                let decrypted = decrypt.unwrap().app_msg.unwrap();
+                                assert_eq!(decrypted, original.as_bytes());
+                            } else {
+                                assert!(matches!(decrypt.unwrap_err(), CryptoError::GenerationOutOfBound))
+                            }
+                        }
                     })
                 },
             )
