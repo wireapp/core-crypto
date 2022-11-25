@@ -636,7 +636,7 @@ pub mod tests {
                         Some("".into()),
                         ciphersuites,
                     );
-                    assert!(matches!(configuration.unwrap_err(), CryptoError::MalformedIdentifier(v) if v == ""));
+                    assert!(matches!(configuration.unwrap_err(), CryptoError::MalformedIdentifier(v) if v.is_empty()));
                 })
             })
             .await

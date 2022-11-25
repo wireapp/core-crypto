@@ -131,6 +131,9 @@ impl MlsConversation {
             ParseMessageError::ValidationError(ValidationError::UnableToDecrypt(
                 MessageDecryptionError::GenerationOutOfBound,
             )) => CryptoError::GenerationOutOfBound,
+            ParseMessageError::ValidationError(ValidationError::UnableToDecrypt(MessageDecryptionError::AeadError)) => {
+                CryptoError::DecryptionError
+            }
             _ => CryptoError::from(MlsError::from(e)),
         })
     }
@@ -885,6 +888,46 @@ pub mod tests {
                         assert!(decrypt_once.is_ok());
                         let decrypt_twice = bob_central.decrypt_message(&id, encrypted).await;
                         assert!(matches!(decrypt_twice.unwrap_err(), CryptoError::GenerationOutOfBound))
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn cannot_decrypt_app_message_after_rejoining(case: TestCase) {
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central
+                            .invite(&id, &mut bob_central, case.custom_cfg())
+                            .await
+                            .unwrap();
+
+                        // encrypt a message in epoch 1
+                        let msg = b"Hello bob";
+                        let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
+
+                        // Now Bob will rejoin the group and try to decrypt Alice's message
+                        // in epoch 2 which should fail
+                        let pgs = alice_central.verifiable_public_group_state(&id).await;
+                        bob_central
+                            .join_by_external_commit(pgs, case.custom_cfg())
+                            .await
+                            .unwrap();
+                        bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
+
+                        // fails because of Forward Secrecy
+                        let decrypt = bob_central.decrypt_message(&id, &encrypted).await;
+                        assert!(matches!(decrypt.unwrap_err(), CryptoError::DecryptionError));
                     })
                 },
             )
