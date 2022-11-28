@@ -197,13 +197,11 @@ impl MlsConversation {
 
 #[cfg(test)]
 mod tests {
-    use crate::{test_utils::*, CryptoError, MlsError};
+    use crate::{prelude::MlsConversationInitBundle, test_utils::*, CryptoError};
     use openmls::prelude::*;
     use wasm_bindgen_test::*;
 
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
-
-    use crate::prelude::MlsConversationInitBundle;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -355,12 +353,7 @@ mod tests {
                     let result = alice_central
                         .decrypt_message(&id, &external_commit.to_bytes().unwrap())
                         .await;
-                    assert!(matches!(
-                        result.unwrap_err(),
-                        crate::CryptoError::MlsError(MlsError::MlsParseMessageError(
-                            ParseMessageError::ValidationError(ValidationError::WrongEpoch)
-                        ))
-                    ));
+                    assert!(matches!(result.unwrap_err(), crate::CryptoError::WrongEpoch));
                 })
             },
         )

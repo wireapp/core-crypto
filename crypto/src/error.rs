@@ -104,6 +104,9 @@ pub enum CryptoError {
     /// Tried to decrypt a message in the wrong epoch
     #[error("Decrypted an application message from the wrong epoch")]
     DecryptionError,
+    /// Incoming message is for the wrong epoch
+    #[error("Incoming message is for the wrong epoch")]
+    WrongEpoch,
     /// Proteus Error Wrapper
     #[error(transparent)]
     ProteusError(#[from] ProteusError),

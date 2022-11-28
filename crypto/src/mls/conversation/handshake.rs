@@ -386,8 +386,6 @@ pub mod tests {
 
     use crate::{mls::proposal::MlsProposal, test_utils::*};
 
-    use openmls::prelude::{ParseMessageError, ValidationError};
-
     use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -1256,12 +1254,7 @@ pub mod tests {
                             .unwrap();
                         // fails when we try to decrypt a commit for current epoch
                         let decrypt_twice = bob_central.decrypt_message(&id, &commit.to_bytes().unwrap()).await;
-                        assert!(matches!(
-                            decrypt_twice.unwrap_err(),
-                            CryptoError::MlsError(MlsError::MlsParseMessageError(ParseMessageError::ValidationError(
-                                ValidationError::WrongEpoch
-                            )))
-                        ));
+                        assert!(matches!(decrypt_twice.unwrap_err(), CryptoError::WrongEpoch));
                     })
                 },
             )
@@ -1293,12 +1286,7 @@ pub mod tests {
 
                         // fails when a commit is skipped
                         let out_of_order = bob_central.decrypt_message(&id, &commit2.to_bytes().unwrap()).await;
-                        assert!(matches!(
-                            out_of_order.unwrap_err(),
-                            CryptoError::MlsError(MlsError::MlsParseMessageError(ParseMessageError::ValidationError(
-                                ValidationError::WrongEpoch
-                            )))
-                        ));
+                        assert!(matches!(out_of_order.unwrap_err(), CryptoError::WrongEpoch));
                         // works in the right order though
                         assert!(bob_central
                             .decrypt_message(&id, &commit1.to_bytes().unwrap())
@@ -1311,12 +1299,7 @@ pub mod tests {
 
                         // and then fails again when trying to decrypt a commit with an epoch in the past
                         let past_commit = bob_central.decrypt_message(&id, &commit2.to_bytes().unwrap()).await;
-                        assert!(matches!(
-                            past_commit.unwrap_err(),
-                            CryptoError::MlsError(MlsError::MlsParseMessageError(ParseMessageError::ValidationError(
-                                ValidationError::WrongEpoch
-                            )))
-                        ));
+                        assert!(matches!(past_commit.unwrap_err(), CryptoError::WrongEpoch));
                     })
                 },
             )
@@ -1409,9 +1392,7 @@ pub mod tests {
                                     .decrypt_message(&id, commit2.to_bytes().unwrap())
                                     .await
                                     .unwrap_err(),
-                                CryptoError::MlsError(MlsError::MlsParseMessageError(
-                                    ParseMessageError::ValidationError(ValidationError::WrongEpoch)
-                                ))
+                                CryptoError::WrongEpoch
                             ));
                         })
                     },
@@ -1454,12 +1435,7 @@ pub mod tests {
 
                         // fails when we try to decrypt a proposal for past epoch
                         let past_proposal = bob_central.decrypt_message(&id, &proposal.to_bytes().unwrap()).await;
-                        assert!(matches!(
-                            past_proposal.unwrap_err(),
-                            CryptoError::MlsError(MlsError::MlsParseMessageError(ParseMessageError::ValidationError(
-                                ValidationError::WrongEpoch
-                            )))
-                        ));
+                        assert!(matches!(past_proposal.unwrap_err(), CryptoError::WrongEpoch));
                     })
                 },
             )
