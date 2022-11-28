@@ -73,6 +73,7 @@ enum CryptoError {
     "UnauthorizedExternalCommit",
     "InvalidHashReference",
     "GenerationOutOfBound",
+    "WrongEpoch",
     "DecryptionError",
     "HexDecodeError",
     "ProteusError",

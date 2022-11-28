@@ -57,6 +57,7 @@ impl MlsConversation {
         let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
 
         let parsed_message = self.parse_message(backend, msg_in)?;
+        let msg_epoch = parsed_message.epoch();
 
         let sender_client_id = parsed_message.credential().map(|c| c.identity().into());
 
@@ -67,14 +68,19 @@ impl MlsConversation {
             .map_err(MlsError::from)?;
 
         let decrypted = match message {
-            ProcessedMessage::ApplicationMessage(app_msg) => MlsConversationDecryptMessage {
-                app_msg: Some(app_msg.into_bytes()),
-                proposals: vec![],
-                is_active: true,
-                delay: None,
-                sender_client_id,
-                has_epoch_changed: false,
-            },
+            ProcessedMessage::ApplicationMessage(app_msg) => {
+                if msg_epoch.as_u64() < self.group.epoch().as_u64() {
+                    return Err(CryptoError::WrongEpoch);
+                }
+                MlsConversationDecryptMessage {
+                    app_msg: Some(app_msg.into_bytes()),
+                    proposals: vec![],
+                    is_active: true,
+                    delay: None,
+                    sender_client_id,
+                    has_epoch_changed: false,
+                }
+            }
             ProcessedMessage::ProposalMessage(proposal) => {
                 self.validate_external_proposal(&proposal, callbacks, backend.crypto())?;
                 self.group.store_pending_proposal(*proposal);
@@ -131,6 +137,7 @@ impl MlsConversation {
             ParseMessageError::ValidationError(ValidationError::UnableToDecrypt(
                 MessageDecryptionError::GenerationOutOfBound,
             )) => CryptoError::GenerationOutOfBound,
+            ParseMessageError::ValidationError(ValidationError::WrongEpoch) => CryptoError::WrongEpoch,
             ParseMessageError::ValidationError(ValidationError::UnableToDecrypt(MessageDecryptionError::AeadError)) => {
                 CryptoError::DecryptionError
             }
@@ -936,6 +943,46 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
+        pub async fn cannot_decrypt_app_message_after_epoch_change(case: TestCase) {
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central
+                            .invite(&id, &mut bob_central, case.custom_cfg())
+                            .await
+                            .unwrap();
+
+                        // encrypt a message in epoch 1
+                        let msg = b"Hello bob";
+                        let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
+
+                        // Now Bob will rejoin the group and try to decrypt Alice's message
+                        // in epoch 2 which should fail
+                        let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
+                        alice_central.commit_accepted(&id).await.unwrap();
+                        bob_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+
+                        // fails because of Forward Secrecy
+                        let decrypt = bob_central.decrypt_message(&id, &encrypted).await;
+                        assert!(matches!(decrypt.unwrap_err(), CryptoError::WrongEpoch));
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
         pub async fn can_decrypt_app_message_in_any_order(mut case: TestCase) {
             // otherwise the test would fail because we decrypt messages in reverse order which is
             // kinda dropping them
@@ -1011,6 +1058,69 @@ pub mod tests {
                             .sender_client_id
                             .unwrap();
                         assert_eq!(sender_client_id, b"alice"[..].into());
+                    })
+                },
+            )
+            .await
+        }
+    }
+
+    pub mod epoch_sync {
+        use super::*;
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_throw_specialized_error_when_epoch_desynchronized(mut case: TestCase) {
+            case.cfg.custom.out_of_order_tolerance = 0;
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central
+                            .invite(&id, &mut bob_central, case.custom_cfg())
+                            .await
+                            .unwrap();
+
+                        // Alice generates a bunch of soon to be outdated messages
+                        let msg = b"Hello bob";
+                        let old_app_msg = alice_central.encrypt_message(&id, msg).await.unwrap();
+                        let old_proposal = alice_central
+                            .new_proposal(&id, MlsProposal::Update)
+                            .await
+                            .unwrap()
+                            .proposal
+                            .to_bytes()
+                            .unwrap();
+                        alice_central[&id].group.clear_pending_proposals();
+                        let old_commit = alice_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit
+                            .to_bytes()
+                            .unwrap();
+                        alice_central.clear_pending_commit(&id).await.unwrap();
+                        let outdated_messages = vec![old_app_msg, old_proposal, old_commit];
+
+                        // Now let's jump to next epoch
+                        let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
+                        alice_central.commit_accepted(&id).await.unwrap();
+                        bob_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+
+                        // trying to consume outdated messages should fail with a dedicated error
+                        for outdated in outdated_messages {
+                            let decrypt = bob_central.decrypt_message(&id, &outdated).await;
+                            assert!(matches!(decrypt.unwrap_err(), CryptoError::WrongEpoch));
+                        }
                     })
                 },
             )
