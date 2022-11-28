@@ -68,7 +68,7 @@ jobs:
         uses: davidB/rust-cargo-make@v1
       - uses: Swatinem/rust-cache@v2
       - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v0.3.0
+        uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: "latest"
       - name: Build WASM package
