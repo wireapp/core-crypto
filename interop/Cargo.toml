@@ -42,7 +42,7 @@ cryptobox = { git = "https://github.com/wireapp/cryptobox", optional = true }
 proteus = { git = "https://github.com/wireapp//proteus", branch = "otak/sodiumoxide-0.2.7", optional = true }
 tokio = { version = "1.20", features = ["full"] }
 # Http Server
-warp = "0.3"
+warp = { version = "0.3", default-features = false }
 # Webdriver stuff
 webdriver-install = "0.3"
 fantoccini = "0.19"
