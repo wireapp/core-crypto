@@ -1105,8 +1105,10 @@ export class CoreCrypto {
      *
      * @param sessionId - ID of the Proteus session
      * @param envelope - CBOR-encoded Proteus message
+     *
+     * @returns A `Uint8Array` containing the message that was sent along with the session handshake
      */
-    async proteusSessionFromMessage(sessionId: string, envelope: Uint8Array): Promise<void> {
+    async proteusSessionFromMessage(sessionId: string, envelope: Uint8Array): Promise<Uint8Array> {
         return await this.#cc.proteus_session_from_message(sessionId, envelope);
     }
 
@@ -1133,8 +1135,10 @@ export class CoreCrypto {
      * Checks if a session exists
      *
      * @param sessionId - ID of the Proteus session
+     *
+     * @returns whether the session exists or not
      */
-    async proteusSessionExists(sessionId: string): Promise<void> {
+    async proteusSessionExists(sessionId: string): Promise<bool> {
         return await this.#cc.proteus_session_exists(sessionId);
     }
 
