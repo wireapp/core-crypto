@@ -22,7 +22,8 @@ cryptobox-migrate = [
     "proteus-wasm?/cryptobox-identity",
     "dep:async-fs",
     "dep:futures-lite",
-    "dep:rexie"
+    "dep:rexie",
+    "dep:base64"
 ]
 # for test/bench all ciphersuites
 test-all-cipher = []
@@ -58,6 +59,7 @@ futures-lite = { version = "1.12", optional = true }
 [target.'cfg(target_family = "wasm")'.dependencies]
 serde-wasm-bindgen = "0.4"
 rexie = { version = "0.4", optional = true }
+base64 = { version = "0.13", optional = true }
 
 [dependencies.core-crypto-keystore]
 version = "0.6.0-pre.5"
@@ -86,7 +88,7 @@ async-trait = "0.1"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 cryptobox = { git = "https://github.com/wireapp/cryptobox" }
-proteus = { git = "https://github.com/wireapp//proteus", branch = "otak/sodiumoxide-0.2.7" }
+proteus = { git = "https://github.com/wireapp//proteus", branch = "otak/fix-1.0.3" }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
 version = "0.3"

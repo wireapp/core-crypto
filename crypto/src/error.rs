@@ -237,4 +237,14 @@ pub enum CryptoboxMigrationError {
     #[error(transparent)]
     /// Error when parsing/serializing JSON payloads from the WASM boundary
     JsonParseError(#[from] serde_wasm_bindgen::Error),
+    #[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
+    #[error(transparent)]
+    /// Error when decoding base64
+    Base64DecodeError(#[from] base64::DecodeError),
+    #[error("The targeted value does not possess the targeted key ({0})")]
+    /// Error when trying to fetch a certain key from a structured value
+    MissingKeyInValue(String),
+    #[error("The value cannot be coerced to the {0} type")]
+    /// Error when trying to coerce a certain value to a certain type
+    WrongValueType(String),
 }

@@ -616,6 +616,22 @@ impl ProteusCentral {
     }
 
     #[cfg(target_family = "wasm")]
+    fn get_cbor_bytes_from_map(map: serde_json::map::Map<String, serde_json::Value>) -> CryptoResult<Vec<u8>> {
+        use crate::CryptoboxMigrationError;
+
+        let Some(js_value) = map.get("serialised") else {
+            return Err(CryptoboxMigrationError::MissingKeyInValue("serialised".to_string()).into());
+        };
+
+        let Some(b64_value) = js_value.as_str() else {
+            return Err(CryptoboxMigrationError::WrongValueType("string".to_string()).into());
+        };
+
+        let cbor_bytes = base64::decode(b64_value).map_err(CryptoboxMigrationError::from)?;
+        Ok(cbor_bytes)
+    }
+
+    #[cfg(target_family = "wasm")]
     async fn cryptobox_migrate_impl(keystore: &CryptoKeystore, path: &str) -> CryptoResult<()> {
         use rexie::{Rexie, TransactionMode};
 
@@ -659,11 +675,7 @@ impl ProteusCentral {
                 let js_value: serde_json::map::Map<String, serde_json::Value> =
                     serde_wasm_bindgen::from_value(cryptobox_js_value).map_err(CryptoboxMigrationError::from)?;
 
-                let kp_js_value =
-                    serde_wasm_bindgen::to_value(&js_value["serialised"]).map_err(CryptoboxMigrationError::from)?;
-
-                let kp_cbor: Vec<u8> =
-                    serde_wasm_bindgen::from_value(kp_js_value).map_err(CryptoboxMigrationError::from)?;
+                let kp_cbor = Self::get_cbor_bytes_from_map(js_value)?;
 
                 let kp = proteus_wasm::keys::IdentityKeyPair::deserialise(&kp_cbor).map_err(ProteusError::from)?;
 
@@ -702,16 +714,16 @@ impl ProteusCentral {
                 .await
                 .map_err(CryptoboxMigrationError::from)?;
 
-            for (session_id, session_cbor) in sessions
-                .into_iter()
-                .map(|(k, v)| (k.as_string().unwrap(), v.as_string().unwrap()))
-            {
+            for (session_id, session_js_value) in sessions.into_iter().map(|(k, v)| (k.as_string().unwrap(), v)) {
                 // If the session is already in store, skip ahead
                 if keystore.find::<ProteusSession>(session_id.as_bytes()).await?.is_some() {
                     continue;
                 }
 
-                let session_cbor_bytes = session_cbor.into_bytes();
+                let js_value: serde_json::map::Map<String, serde_json::Value> =
+                    serde_wasm_bindgen::from_value(session_js_value).map_err(CryptoboxMigrationError::from)?;
+
+                let session_cbor_bytes = Self::get_cbor_bytes_from_map(js_value)?;
 
                 // Integrity check
                 if proteus_wasm::session::Session::deserialise(&proteus_identity, &session_cbor_bytes).is_ok() {
@@ -741,12 +753,11 @@ impl ProteusCentral {
                 .await
                 .map_err(CryptoboxMigrationError::from)?;
 
-            for (prekey_id, prekey_cbor) in prekeys
+            for (prekey_id, prekey_js_value) in prekeys
                 .into_iter()
-                .map(|(id, cbor)| (id.as_string().unwrap(), cbor.as_string().unwrap()))
+                .map(|(id, prekey_js_value)| (id.as_string().unwrap(), prekey_js_value))
             {
                 let prekey_id: u16 = prekey_id.parse()?;
-                let raw_prekey_cbor = prekey_cbor.into_bytes();
 
                 // Check if the prekey ID is already existing
                 if keystore
@@ -756,6 +767,11 @@ impl ProteusCentral {
                 {
                     continue;
                 }
+
+                let js_value: serde_json::map::Map<String, serde_json::Value> =
+                    serde_wasm_bindgen::from_value(prekey_js_value).map_err(CryptoboxMigrationError::from)?;
+
+                let raw_prekey_cbor = Self::get_cbor_bytes_from_map(js_value)?;
 
                 // Integrity check to see if the PreKey is actually correct
                 if proteus_wasm::keys::PreKey::deserialise(&raw_prekey_cbor).is_ok() {
@@ -773,42 +789,15 @@ impl ProteusCentral {
 mod tests {
     use crate::{
         prelude::{MlsCentral, MlsCentralConfiguration},
-        test_utils::*,
+        test_utils::{proteus_utils::*, *},
     };
-    #[allow(unused_imports)]
+
     use proteus_traits::PreKeyStore;
-    use proteus_wasm::keys::PreKey;
     use wasm_bindgen_test::*;
 
     use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
-
-    #[derive(Debug, Default)]
-    struct TestStore {
-        prekeys: Vec<PreKey>,
-    }
-
-    #[async_trait::async_trait(?Send)]
-    impl proteus_traits::PreKeyStore for TestStore {
-        type Error = ();
-
-        async fn prekey(&mut self, id: proteus_traits::RawPreKeyId) -> Result<Option<proteus_traits::RawPreKey>, ()> {
-            if let Some(prekey) = self.prekeys.iter().find(|k| k.key_id.value() == id) {
-                Ok(Some(prekey.serialise().unwrap()))
-            } else {
-                Ok(None)
-            }
-        }
-
-        async fn remove(&mut self, id: proteus_traits::RawPreKeyId) -> Result<(), ()> {
-            self.prekeys
-                .iter()
-                .position(|k| k.key_id.value() == id)
-                .map(|ix| self.prekeys.swap_remove(ix));
-            Ok(())
-        }
-    }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
@@ -875,11 +864,9 @@ mod tests {
             .await
             .unwrap();
         let mut alice = ProteusCentral::try_new(&keystore).await.unwrap();
-        let bob = proteus_wasm::keys::IdentityKeyPair::new();
-        let mut bob_store = TestStore::default();
-        let prekey = proteus_wasm::keys::PreKey::new(proteus_wasm::keys::PreKeyId::new(1));
-        bob_store.prekeys.push(prekey.clone());
-        let bob_pk_bundle = proteus_wasm::keys::PreKeyBundle::new(bob.public_key.clone(), &prekey);
+
+        let mut bob = CryptoboxLike::init();
+        let bob_pk_bundle = bob.new_prekey();
 
         alice
             .session_from_prekey(&session_id, &bob_pk_bundle.serialise().unwrap())
@@ -889,22 +876,11 @@ mod tests {
         let message = b"Hello world";
 
         let encrypted = alice.encrypt(&session_id, message).unwrap();
-        let envelope = proteus_wasm::message::Envelope::deserialise(&encrypted).unwrap();
-
-        let (mut bob_session, decrypted) =
-            proteus_wasm::session::Session::init_from_message(bob, &mut bob_store, &envelope)
-                .await
-                .unwrap();
-
+        let decrypted = bob.decrypt(&session_id, &encrypted).await;
         assert_eq!(decrypted, message);
 
-        let encrypted = bob_session.encrypt(message).unwrap();
-
-        let decrypted = alice
-            .decrypt(&mut keystore, &session_id, &encrypted.serialise().unwrap())
-            .await
-            .unwrap();
-
+        let encrypted = bob.encrypt(&session_id, message);
+        let decrypted = alice.decrypt(&mut keystore, &session_id, &encrypted).await.unwrap();
         assert_eq!(decrypted, message);
 
         keystore.wipe().await.unwrap();
@@ -921,15 +897,14 @@ mod tests {
             .await
             .unwrap();
         let mut alice = ProteusCentral::try_new(&keystore).await.unwrap();
-        let bob = proteus_wasm::keys::IdentityKeyPair::new();
-        let mut bob_store = TestStore::default();
+
+        let mut bob = CryptoboxLike::init();
 
         let alice_prekey_bundle_ser = alice.new_prekey(1, &keystore).await.unwrap();
-        let alice_prekey_bundle = proteus_wasm::keys::PreKeyBundle::deserialise(&alice_prekey_bundle_ser).unwrap();
-        let mut bob_session =
-            proteus_wasm::session::Session::init_from_prekey::<()>(&bob, alice_prekey_bundle).unwrap();
+
+        bob.init_session_from_prekey_bundle(&session_id, &alice_prekey_bundle_ser);
         let message = b"Hello world!";
-        let encrypted = bob_session.encrypt(message).unwrap().serialise().unwrap();
+        let encrypted = bob.encrypt(&session_id, message);
 
         let (_, decrypted) = alice
             .session_from_message(&mut keystore, &session_id, &encrypted)
@@ -939,14 +914,7 @@ mod tests {
         assert_eq!(message, decrypted.as_slice());
 
         let encrypted = alice.encrypt(&session_id, message).unwrap();
-        let decrypted = bob_session
-            .decrypt(
-                &mut bob_store,
-                &proteus_wasm::message::Envelope::deserialise(&encrypted).unwrap(),
-            )
-            .await
-            .unwrap();
-
+        let decrypted = bob.decrypt(&session_id, &encrypted).await;
         assert_eq!(message, decrypted.as_slice());
 
         keystore.wipe().await.unwrap();
@@ -956,31 +924,25 @@ mod tests {
     #[cfg(all(feature = "cryptobox-migrate", not(target_family = "wasm")))]
     #[async_std::test]
     async fn can_import_cryptobox() {
+        let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
+
         let cryptobox_folder = tempfile::tempdir().unwrap();
         let alice = cryptobox::CBox::file_open(cryptobox_folder.path()).unwrap();
         let alice_fingerprint = alice.fingerprint();
 
-        let bob = proteus_wasm::keys::IdentityKeyPair::new();
-        let mut bob_store = TestStore::default();
-        let prekey = proteus_wasm::keys::PreKey::new(proteus_wasm::keys::PreKeyId::new(1));
-        bob_store.prekeys.push(prekey.clone());
-        let bob_pk_bundle = proteus_wasm::keys::PreKeyBundle::new(bob.public_key.clone(), &prekey);
+        let mut bob = CryptoboxLike::init();
+        let bob_pk_bundle = bob.new_prekey();
 
-        let alice_pk = alice.new_prekey(proteus::keys::PreKeyId::new(1)).unwrap();
-        let session_id = "test";
+        let alice_pk_id = proteus::keys::PreKeyId::new(1u16);
+        let alice_pk = alice.new_prekey(alice_pk_id).unwrap();
 
         let mut alice_session = alice
-            .session_from_prekey(session_id.into(), &bob_pk_bundle.serialise().unwrap())
+            .session_from_prekey(session_id.clone(), &bob_pk_bundle.serialise().unwrap())
             .unwrap();
+
         let message = b"Hello world!";
-        let alice_msg_envelope =
-            proteus_wasm::message::Envelope::deserialise(&alice_session.encrypt(message).unwrap()).unwrap();
-
-        let (mut bob_session, decrypted) =
-            proteus_wasm::session::Session::init_from_message(bob, &mut bob_store, &alice_msg_envelope)
-                .await
-                .unwrap();
-
+        let alice_msg_envelope = alice_session.encrypt(message).unwrap();
+        let decrypted = bob.decrypt(&session_id, &alice_msg_envelope).await;
         assert_eq!(decrypted, message);
 
         alice.session_save(&mut alice_session).unwrap();
@@ -1005,7 +967,7 @@ mod tests {
         assert_eq!(proteus_central.fingerprint(), alice_fingerprint);
 
         // Session integrity check
-        let session = proteus_central.session_mut(session_id).unwrap();
+        let session = proteus_central.session_mut(&session_id).unwrap();
         assert_eq!(
             session.session.local_identity().fingerprint(),
             alice_session.fingerprint_local()
@@ -1025,16 +987,18 @@ mod tests {
         );
 
         // Make sure ProteusCentral can still keep communicating with bob
-        let encrypted = proteus_central.encrypt(session_id, &message[..]).unwrap();
-        let decrypted = bob_session
-            .decrypt(
-                &mut bob_store,
-                &proteus_wasm::message::Envelope::deserialise(&encrypted).unwrap(),
-            )
-            .await
-            .unwrap();
+        let encrypted = proteus_central.encrypt(&session_id, &message[..]).unwrap();
+        let decrypted = bob.decrypt(&session_id, &encrypted).await;
 
         assert_eq!(&decrypted, &message[..]);
+
+        // FIXME: Known bug, see CL-110
+        // let encrypted = bob.encrypt(&session_id, &message[..]);
+        // let decrypted = proteus_central
+        //     .decrypt(&mut keystore, &session_id, &encrypted)
+        //     .await
+        //     .unwrap();
+        // assert_eq!(&decrypted, &message[..]);
 
         keystore.wipe().await.unwrap();
     }
@@ -1062,18 +1026,16 @@ mod tests {
 
             // ! So instead we emulate how cryptobox-js works
             // Returns Promise<JsString>
-            fn run_cryptobox() -> js_sys::Promise {
+            fn run_cryptobox(alice: CryptoboxLike) -> js_sys::Promise {
                 wasm_bindgen_futures::future_to_promise(async move {
                     use rexie::{Rexie, ObjectStore, TransactionMode};
-                    use proteus_wasm::keys::IdentityKeyPair;
-                    use js_sys::JsString;
+                    use wasm_bindgen::JsValue;
 
                     // Delete the maybe past database to make sure we start fresh
                     Rexie::builder(CRYPTOBOX_JS_DBNAME)
                         .delete()
                         .await?;
 
-                    let kp = IdentityKeyPair::new();
                     let rexie = Rexie::builder(CRYPTOBOX_JS_DBNAME)
                         .version(1)
                         .add_object_store(ObjectStore::new("keys").auto_increment(false))
@@ -1082,31 +1044,134 @@ mod tests {
                         .build()
                         .await?;
 
+                    // Add identity key
                     let transaction = rexie.transaction(&["keys"], TransactionMode::ReadWrite)?;
                     let store = transaction.store("keys")?;
                     let json = serde_json::json!({
                         "created": 0,
                         "id": "local_identity",
-                        "serialised": kp.serialise().unwrap(),
+                        "serialised": base64::encode(alice.identity.serialise().unwrap()),
                         "version": "1.0"
                     });
                     let js_value = serde_wasm_bindgen::to_value(&json)?;
 
-                    store.add(&js_value, Some(&JsString::from("local_identity").into())).await?;
+                    store.add(&js_value, Some(&JsValue::from_str("local_identity"))).await?;
 
-                    Ok(JsString::from(kp.public_key.fingerprint().as_str()).into())
+                    // Add prekeys
+                    let transaction = rexie.transaction(&["prekeys"], TransactionMode::ReadWrite)?;
+                    let store = transaction.store("prekeys")?;
+                    for prekey in alice.prekeys.0.into_iter() {
+                        let id = prekey.key_id.value().to_string();
+                        let json = serde_json::json!({
+                            "created": 0,
+                            "id": &id,
+                            "serialised": base64::encode(prekey.serialise().unwrap()),
+                            "version": "1.0"
+                        });
+                        let js_value = serde_wasm_bindgen::to_value(&json)?;
+                        store.add(&js_value, Some(&JsValue::from_str(&id))).await?;
+                    }
+
+                    // Add sessions
+                    let transaction = rexie.transaction(&["sessions"], TransactionMode::ReadWrite)?;
+                    let store = transaction.store("sessions")?;
+                    for (session_id, session) in alice.sessions.into_iter() {
+                        let json = serde_json::json!({
+                            "created": 0,
+                            "id": session_id,
+                            "serialised": base64::encode(session.serialise().unwrap()),
+                            "version": "1.0"
+                        });
+
+                        let js_value = serde_wasm_bindgen::to_value(&json)?;
+                        store.add(&js_value, Some(&JsValue::from_str(&session_id))).await?;
+                    }
+
+                    Ok(JsValue::UNDEFINED)
                 })
             }
 
             #[wasm_bindgen_test]
             async fn can_import_cryptobox() {
-                let fingerprint = wasm_bindgen_futures::JsFuture::from(run_cryptobox()).await.unwrap().as_string().unwrap();
-                let keystore = core_crypto_keystore::Connection::open_with_key(&format!("{CRYPTOBOX_JS_DBNAME}-imported"), "test").await.unwrap();
+                let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
+
+                let mut alice = CryptoboxLike::init();
+                let alice_fingerprint = alice.fingerprint();
+                const PREKEY_COUNT: usize = 10;
+                let prekey_iter_range = 0..PREKEY_COUNT;
+                // Save prekey bundles for later to check if they're the same after migration
+                let prekey_bundles: Vec<proteus_wasm::keys::PreKeyBundle> = prekey_iter_range.clone().map(|_| alice.new_prekey()).collect();
+
+                // Ensure alice and bob can communicate before migration
+                let mut bob = CryptoboxLike::init();
+                let bob_pk_bundle = bob.new_prekey();
+                let message = b"Hello world!";
+
+                alice.init_session_from_prekey_bundle(&session_id, &bob_pk_bundle.serialise().unwrap());
+                let alice_to_bob_message = alice.encrypt(&session_id, message);
+                let decrypted = bob.decrypt(&session_id, &alice_to_bob_message).await;
+                assert_eq!(&message[..], decrypted.as_slice());
+
+                let bob_to_alice_message = bob.encrypt(&session_id, message);
+                let decrypted = alice.decrypt(&session_id, &bob_to_alice_message).await;
+                assert_eq!(&message[..], decrypted.as_slice());
+
+                let alice_session = alice.session(&session_id);
+                let alice_session_fingerprint_local = alice_session.local_identity().fingerprint();
+                let alice_session_fingerprint_remote = alice_session.remote_identity().fingerprint();
+
+                let _ = wasm_bindgen_futures::JsFuture::from(run_cryptobox(alice)).await.unwrap();
+                let mut keystore = core_crypto_keystore::Connection::open_with_key(&format!("{CRYPTOBOX_JS_DBNAME}-imported"), "test").await.unwrap();
                 ProteusCentral::cryptobox_migrate(&keystore, CRYPTOBOX_JS_DBNAME).await.unwrap();
 
-                let proteus_central = ProteusCentral::try_new(&keystore).await.unwrap();
+                let mut proteus_central = ProteusCentral::try_new(&keystore).await.unwrap();
 
-                assert_eq!(fingerprint, proteus_central.identity().public_key.fingerprint());
+                // Identity check
+                assert_eq!(proteus_central.fingerprint(), alice_fingerprint);
+
+                // Session integrity check
+                let session = proteus_central.session_mut(&session_id).unwrap();
+                assert_eq!(
+                    session.session.local_identity().fingerprint(),
+                    alice_session_fingerprint_local
+                );
+                assert_eq!(
+                    session.session.remote_identity().fingerprint(),
+                    alice_session_fingerprint_remote
+                );
+
+                // Prekey integrity check
+                for i in prekey_iter_range {
+                    let prekey_id = (i + 1) as u16;
+                    let keystore_pk = keystore.prekey(prekey_id).await.unwrap().unwrap();
+                    let keystore_pk = proteus_wasm::keys::PreKey::deserialise(&keystore_pk).unwrap();
+                    let alice_pk = &prekey_bundles[i];
+
+                    assert_eq!(alice_pk.prekey_id.value(), keystore_pk.key_id.value());
+                    assert_eq!(
+                        alice_pk.public_key.fingerprint(),
+                        keystore_pk.key_pair.public_key.fingerprint()
+                    );
+                }
+
+
+                // Make sure ProteusCentral can still keep communicating with bob
+                let encrypted = proteus_central.encrypt(&session_id, &message[..]).unwrap();
+                let decrypted = bob.decrypt(&session_id, &encrypted).await;
+
+                assert_eq!(&decrypted, &message[..]);
+
+                // FIXME: Known bug, see CL-110
+                // This is passing for now because the keys / prekeys are generated using proteus 2.0,
+                // which seems to not trigger the bug
+                let encrypted = bob.encrypt(&session_id, &message[..]);
+                let decrypted = proteus_central
+                    .decrypt(&mut keystore, &session_id, &encrypted)
+                    .await
+                    .unwrap();
+                assert_eq!(&decrypted, &message[..]);
+
+                keystore.wipe().await.unwrap();
             }
         }
     }
