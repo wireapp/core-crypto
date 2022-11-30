@@ -1138,7 +1138,7 @@ export class CoreCrypto {
      *
      * @returns whether the session exists or not
      */
-    async proteusSessionExists(sessionId: string): Promise<bool> {
+    async proteusSessionExists(sessionId: string): Promise<boolean> {
         return await this.#cc.proteus_session_exists(sessionId);
     }
 

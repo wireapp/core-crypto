@@ -39,7 +39,7 @@ spinoff = "0.5"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 cryptobox = { git = "https://github.com/wireapp/cryptobox", optional = true }
-proteus = { git = "https://github.com/wireapp//proteus", branch = "otak/sodiumoxide-0.2.7", optional = true }
+proteus = { git = "https://github.com/wireapp//proteus", branch = "otak/fix-1.0.3", optional = true }
 tokio = { version = "1.20", features = ["full"] }
 # Http Server
 warp = { version = "0.3", default-features = false }

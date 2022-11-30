@@ -25,6 +25,9 @@ use crate::{
 
 pub mod central;
 pub mod fixtures;
+// Cannot name it `proteus` because then it conflicts with proteus the crate :(
+#[cfg(feature = "proteus")]
+pub mod proteus_utils;
 
 pub use central::*;
 pub use fixtures::TestCase;

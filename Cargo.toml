@@ -12,7 +12,7 @@ package = "proteus"
 # Keep the extra / in the url, it prevents this error:
 # `patch for `proteus` in `https://github.com/wireapp/proteus` points to the same source, but patches must point to different sources`
 git = "https://github.com/wireapp//proteus"
-branch = "otak/sodiumoxide-0.2.7"
+branch = "otak/fix-1.0.3"
 
 [patch.crates-io.proteus-traits]
 package = "proteus-traits"

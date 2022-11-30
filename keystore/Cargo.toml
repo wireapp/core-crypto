@@ -65,9 +65,9 @@ features = [
 ]
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.refinery]
-# version = "0.8"
-git = "https://github.com/rust-db/refinery"
-rev = "36e2c219de236c95853a0aa6cd606a2d52d255f8"
+version = "0.8"
+# git = "https://github.com/rust-db/refinery"
+# rev = "36e2c219de236c95853a0aa6cd606a2d52d255f8"
 default-features = false
 features = ["rusqlite"]
 
