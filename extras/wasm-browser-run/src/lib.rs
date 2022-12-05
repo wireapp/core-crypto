@@ -51,9 +51,23 @@ impl WebdriverContext {
             .stderr(std::process::Stdio::null())
             .spawn()?;
 
+        let timeout = std::time::Duration::from_secs(5);
+        let start = std::time::Instant::now();
+        let mut webdriver_ready = false;
+        while start.elapsed() < timeout {
+            webdriver_ready = tokio::net::TcpStream::connect(&driver_addr).await.is_ok();
+            if webdriver_ready {
+                break;
+            }
+        }
+
+        if !webdriver_ready {
+            return Err(WasmBrowserRunError::WebDriverTimeoutError);
+        }
+
         let caps = serde_json::Map::from_iter(
             vec![
-                ("websocketUrl".to_string(), true.into()),
+                ("webSocketUrl".to_string(), true.into()),
                 (
                     "goog:chromeOptions".to_string(),
                     serde_json::json!({
@@ -122,6 +136,7 @@ impl WebdriverContext {
     ) -> WasmBrowserRunResult<(tokio::task::JoinHandle<WasmBrowserRunResult<()>>, std::net::SocketAddr)> {
         let addr = tokio::net::TcpListener::bind("127.0.0.1:0").await?.local_addr()?;
         let hwnd = tokio::task::spawn(Self::run_http_server(addr.clone(), mount_point.to_string()));
+        log::debug!("HTTP server address spawned at http://{addr}");
         Ok((hwnd, addr))
     }
 
@@ -209,12 +224,22 @@ window.__wbr__jsCall().then(callback);"#,
     }
 
     async fn compile_js_support(&self, mut js: Option<&str>) -> WasmBrowserRunResult<String> {
+        // FIXME: js-builder path is wrong because the executables are at a different location than source.
+        // FIXME: Find a way to get back the realpath relative to this source file
+        let js_builder_path = std::path::PathBuf::from(file!())
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("js-builder");
+
+        log::warn!("Starting JS support compilation at {js_builder_path:?}");
         let mut builder_hwnd = tokio::process::Command::new("npm")
-            .current_dir("./js-builder")
+            .current_dir(&js_builder_path)
             .arg("start")
-            .stdin(std::process::Stdio::piped())
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
+            // .stdin(std::process::Stdio::piped())
+            // .stdout(std::process::Stdio::piped())
+            // .stderr(std::process::Stdio::piped())
             .spawn()?;
 
         if let Some(js) = js.take() {
@@ -312,7 +337,9 @@ impl WebdriverContext {
             return Ok("No tests to run".into());
         }
 
+        log::warn!("Getting wasm-bindgen tmp dir");
         let tmpdir = wasm_tests_ctx.bindgen_get_tmpdir().await?;
+        log::warn!("wasm-bindgen tmp dir: {tmpdir:?}");
 
         let module_name = "wasm-bindgen-test";
 
@@ -320,9 +347,9 @@ impl WebdriverContext {
         bindgen
             .web(true)
             .map_err(|e| eyre::eyre!("{e}"))?
-            .debug(true)
+            .debug(false)
             .input_module(module_name, wasm_tests_ctx.module)
-            .keep_debug(true)
+            .keep_debug(false)
             .emit_start(false)
             .generate(&tmpdir)
             .map_err(|e| eyre::eyre!("{e}"))?;
@@ -330,6 +357,7 @@ impl WebdriverContext {
         let mount_point = self.compile_js_support(None).await?;
         let wasm_file_name: std::path::PathBuf = wasm_file_path.file_name().unwrap().to_str().unwrap().into();
         let mount_point_path = std::path::PathBuf::from(&mount_point);
+        log::warn!("Mount point path: {mount_point_path:?}");
         tokio::fs::copy(wasm_file_path, mount_point_path.join(&wasm_file_name)).await?;
         let (hwnd, socket_addr) = Self::spawn_http_server(&mount_point).await?;
 

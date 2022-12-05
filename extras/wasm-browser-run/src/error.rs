@@ -22,6 +22,10 @@ pub enum WasmBrowserRunError {
     IoError(#[from] std::io::Error),
     #[error(transparent)]
     WebDriverError(#[from] WebdriverError),
+    #[error(
+        "For some reason the webdriver implementation is not responding within the allotted timeout (5s by default)."
+    )]
+    WebDriverTimeoutError,
     #[error("The mount point [{0}] does not exist")]
     MountPointNotFound(String),
     #[error("The {0} WebDriver isn't supported yet.")]

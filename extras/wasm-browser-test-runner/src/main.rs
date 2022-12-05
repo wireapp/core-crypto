@@ -29,8 +29,10 @@ struct Args {
     webdriver: CliWebdriverKind,
     #[arg(short, long)]
     force_install_webdriver: bool,
-    #[arg(last = true)]
+    #[arg(long)]
+    verbose: bool,
     wasm_test_bin_path: String,
+    wasm_lib_name: Option<String>,
 }
 
 // FIXME: Args support:
@@ -68,12 +70,23 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    femme::start();
-
     let args = Args::parse();
+    if args.verbose {
+        femme::with_level(femme::LevelFilter::Warn);
+    } else {
+        femme::start();
+    }
+
+    log::warn!("Args: {args:?}");
+
     let ctx = WebdriverContext::init(args.webdriver.into(), args.force_install_webdriver).await?;
 
     let wasm_file_to_test = std::path::PathBuf::from(args.wasm_test_bin_path);
+    log::warn!("WASM file path: {wasm_file_to_test:?}");
+
+    if !wasm_file_to_test.exists() {
+        panic!("The file at {wasm_file_to_test:?} does not exist!");
+    }
 
     ctx.run_wasm_tests(&wasm_file_to_test).await?;
 

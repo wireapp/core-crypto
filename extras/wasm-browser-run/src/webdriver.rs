@@ -38,7 +38,7 @@ pub enum WebdriverKind {
 }
 
 impl WebdriverKind {
-    const CHROMIUM_MAJOR_VERSION: &str = "107";
+    const CHROMIUM_MAJOR_VERSION: &str = "108";
     const CHROME_RELEASE_URL: &str = const_format::concatcp!(
         "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_",
         WebdriverKind::CHROMIUM_MAJOR_VERSION
@@ -153,10 +153,24 @@ impl WebdriverKind {
     }
 
     pub async fn install_webdriver(&self, wd_dir: &std::path::Path, force: bool) -> WasmBrowserRunResult<()> {
-        let exe_path = wd_dir.join(self.as_exe_name());
-        if force && exe_path.exists() {
+        let exe_name = self.as_exe_name();
+        let exe_path = wd_dir.join(&exe_name);
+        let remove = force && exe_path.exists();
+
+        if remove {
             tokio::fs::remove_file(&exe_path).await?;
         }
+
+        // if exe_path.exists() {
+        //     // TODO: Check version
+        //     let output = tokio::process::Command::new(exe_path.clone())
+        //         .args(["--version"])
+        //         .output()
+        //         .await?;
+
+        //     let output = String::from_utf8_lossy(&output.stdout);
+        //     output.contains()
+        // }
 
         if exe_path.exists() {
             return Ok(());
