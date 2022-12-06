@@ -4,6 +4,10 @@ const wrapConsoleMethod = method => {
     console[method] = function(...args) {
         const event = new CustomEvent(eventName, { detail: { ...args } } );
         window.dispatchEvent(event);
+        const elem = document.getElementById(`console_${method}`);
+        if (elem) {
+            elem.append(`${args.join("\n")}\n`);
+        }
         og.apply(this, args);
     };
 };
@@ -60,6 +64,11 @@ logMethods.forEach(wrapConsoleMethod);
     Object.entries(listeners).forEach(([method, listener]) => {
         window.removeEventListener(`on_console_${method}` as unknown as keyof WindowEventMap, listener);
     });
+
+    // Output control div for no-WS compat
+    const controlDiv = document.createElement("div");
+    controlDiv.id = `control_${wasmFileLocation}`;
+    document.appendChild(controlDiv);
 
     return testsPassed;
 };

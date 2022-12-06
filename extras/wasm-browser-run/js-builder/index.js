@@ -7,13 +7,42 @@ import html from "@rollup/plugin-html";
 import { temporaryFile } from "tempy";
 import fs from "node:fs/promises";
 
+const template = ({ attributes, bundle, files, publicPath, title }) => `
+<!DOCTYPE html>
+<html ${attributes}>
+  <head>
+    ${metas}
+    <title>${title}</title>
+    ${links}
+  </head>
+  <body>
+    <div id="output"></div>
+    <div id="console_debug"></div>
+    <div id="console_log"></div>
+    <div id="console_info"></div>
+    <div id="console_warn"></div>
+    <div id="console_error"></div>
+    ${scripts}
+  </body>
+</html>
+`;
+
 const rollupBaseOptions = {
     output: {
         file: "dist/bundle.js",
         format: 'esm',
     },
     context: "window",
-    plugins: [auto(), resolve(), typescript(), html(),],
+    plugins: [
+        auto(),
+        resolve(),
+        typescript({
+            compilerOptions: {
+                target: "es2020",
+            },
+        }),
+        html({ template }),
+    ],
 };
 
 async function main() {
@@ -49,6 +78,8 @@ async function main() {
         await bundle.write(rollupOptions.output);
         await bundle.close();
     }
+
+    console.log("Build finished!");
 
     process.exit(buildFailed ? 1 : 0);
 }

@@ -69,6 +69,12 @@ impl WebdriverContext {
             vec![
                 ("webSocketUrl".to_string(), true.into()),
                 (
+                    "timeouts".to_string(),
+                    serde_json::json!({
+                        "script": 600000
+                    }),
+                ),
+                (
                     "goog:chromeOptions".to_string(),
                     serde_json::json!({
                         "args": [
@@ -228,10 +234,13 @@ window.__wbr__jsCall().then(callback);"#,
         // FIXME: Find a way to get back the realpath relative to this source file
         let js_builder_path = std::path::PathBuf::from(file!())
             .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
+            .and_then(std::path::Path::parent)
+            .expect("Incorrect folder structure, cannot find the `js-builder` folder")
             .join("js-builder");
+
+        if !js_builder_path.exists() {
+            return Err(eyre::eyre!("Incorrect folder structure, cannot find the `js-builder` folder").into());
+        }
 
         log::warn!("Starting JS support compilation at {js_builder_path:?}");
         let mut builder_hwnd = tokio::process::Command::new("npm")
@@ -253,7 +262,7 @@ window.__wbr__jsCall().then(callback);"#,
 
         let out_status = builder_hwnd.wait_with_output().await?;
         if out_status.status.success() {
-            Ok(std::path::Path::new("./dist").canonicalize()?.to_string_lossy().into())
+            Ok(js_builder_path.join("dist").canonicalize()?.to_string_lossy().into())
         } else {
             let output_str = String::from_utf8_lossy(&out_status.stdout);
             Err(WasmBrowserRunError::NpmError(output_str.to_string()))
@@ -313,7 +322,7 @@ impl WasmTestFileContext {
                 .and_then(std::path::Path::parent)
         }
         .map(|p| p.join("wbg-tmp"))
-        .ok_or_else(|| eyre::eyre!("file to test doens't follow the expected Cargo conventions"))?;
+        .ok_or_else(|| eyre::eyre!("file to test doesn't follow the expected Cargo conventions"))?;
 
         // Make sure no stale state is there, and recreate tempdir
         tokio::fs::remove_dir_all(&tmpdir).await?;
@@ -324,7 +333,7 @@ impl WasmTestFileContext {
 }
 
 impl WebdriverContext {
-    pub async fn run_wasm_tests(&self, wasm_file_path: &std::path::Path) -> WasmBrowserRunResult<serde_json::Value> {
+    pub async fn run_wasm_tests(&self, wasm_file_path: &std::path::Path) -> WasmBrowserRunResult<bool> {
         if !wasm_file_path.exists() {
             return Err(WasmBrowserRunError::WasmFileNotFound(
                 wasm_file_path.to_str().unwrap().into(),
@@ -347,8 +356,8 @@ impl WebdriverContext {
         bindgen
             .web(true)
             .map_err(|e| eyre::eyre!("{e}"))?
-            .debug(false)
             .input_module(module_name, wasm_tests_ctx.module)
+            .debug(false)
             .keep_debug(false)
             .emit_start(false)
             .generate(&tmpdir)
@@ -372,16 +381,32 @@ impl WebdriverContext {
             .await
             .map_err(WebdriverError::from)?;
 
-        let result = self
-            .browser
-            .execute_async(
+        self.browser
+            .execute(
                 r#"
-const [wasmFileLocation, testList, callback] = arguments;
-window.runTests(wasmFileLocation, testsList).then(callback);"#,
+const [wasmFileLocation, testsList] = arguments;
+window.runTests(wasmFileLocation, testsList)"#,
                 vec![wasm_file_name.to_string_lossy().into(), wasm_tests_ctx.tests.into()],
             )
             .await
             .map_err(WebdriverError::from)?;
+
+        // Wait for control element (inserted when tests are done)
+        let control_elem_id = format!("control_{}", wasm_file_name.to_string_lossy());
+
+        let wait_result = self
+            .browser
+            .wait()
+            .for_element(fantoccini::Locator::Id(&control_elem_id))
+            .await;
+
+        let result = match wait_result {
+            Ok(_) => true,
+            Err(fantoccini::error::CmdError::WaitTimeout) => false,
+            Err(e) => return Err(WebdriverError::from(e).into()),
+        };
+
+        // TODO: Pull the logs from the appropriate divs
 
         self.browser.close_window().await.map_err(WebdriverError::from)?;
 
