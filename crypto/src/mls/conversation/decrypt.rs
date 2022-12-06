@@ -9,8 +9,8 @@
 //! | 1+ pend. Proposal | ✅              | ✅              |
 
 use openmls::{
-    framing::errors::MessageDecryptionError,
-    prelude::{MlsMessageIn, ParseMessageError, ProcessedMessage, UnverifiedMessage, ValidationError},
+    framing::{errors::MessageDecryptionError, Sender},
+    prelude::{MlsMessageIn, Node, ParseMessageError, ProcessedMessage, UnverifiedMessage, ValidationError},
 };
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -59,6 +59,10 @@ impl MlsConversation {
         let parsed_message = self.parse_message(backend, msg_in)?;
         let msg_epoch = parsed_message.epoch();
 
+        let sender = match parsed_message.sender() {
+            Sender::Member(kpr) => Some(*kpr),
+            _ => None,
+        };
         let sender_client_id = parsed_message.credential().map(|c| c.identity().into());
 
         let message = self
@@ -71,6 +75,22 @@ impl MlsConversation {
             ProcessedMessage::ApplicationMessage(app_msg) => {
                 if msg_epoch.as_u64() < self.group.epoch().as_u64() {
                     return Err(CryptoError::WrongEpoch);
+                }
+                // TODO: this should be guaranteed by openmls and removed when fixed on openmls side
+                if let Some(sender_kpr) = sender {
+                    let is_valid = self.group.export_ratchet_tree().iter().any(|node| match node {
+                        Some(Node::LeafNode(node)) => {
+                            if node.key_package_ref() == Some(&sender_kpr) {
+                                node.key_package().verify(backend).is_ok()
+                            } else {
+                                false
+                            }
+                        }
+                        _ => false,
+                    });
+                    if !is_valid {
+                        return Err(CryptoError::InvalidKeyPackage);
+                    }
                 }
                 MlsConversationDecryptMessage {
                     app_msg: Some(app_msg.into_bytes()),
@@ -185,11 +205,15 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
-    use wasm_bindgen_test::*;
-
-    use crate::{mls::proposal::MlsProposal, prelude::handshake::MlsCommitBundle, test_utils::*};
-
     use super::*;
+    use crate::{
+        mls::proposal::MlsProposal,
+        prelude::{handshake::MlsCommitBundle, MlsWirePolicy},
+        test_utils::*,
+    };
+    use openmls::{framing::errors::MlsMessageError, prelude::KeyPackageRef};
+    use std::time::Duration;
+    use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -983,6 +1007,49 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
+        pub async fn cannot_decrypt_app_message_from_future_epoch(case: TestCase) {
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central
+                            .invite(&id, &mut bob_central, case.custom_cfg())
+                            .await
+                            .unwrap();
+
+                        // only Alice which change epoch without notifying Bob
+                        let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
+                        alice_central.commit_accepted(&id).await.unwrap();
+
+                        // Now in epoch 2 Alice will encrypt a message
+                        let msg = b"Hello bob";
+                        let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
+
+                        // which Bob cannot decrypt because of Post CompromiseSecurity
+                        let decrypt = bob_central.decrypt_message(&id, &encrypted).await;
+                        assert!(matches!(decrypt.unwrap_err(), CryptoError::WrongEpoch));
+
+                        bob_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        let decrypted = bob_central.decrypt_message(&id, encrypted).await.unwrap();
+
+                        assert_eq!(&decrypted.app_msg.unwrap(), msg);
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
         pub async fn can_decrypt_app_message_in_any_order(mut case: TestCase) {
             // otherwise the test would fail because we decrypt messages in reverse order which is
             // kinda dropping them
@@ -1121,6 +1188,108 @@ pub mod tests {
                             let decrypt = bob_central.decrypt_message(&id, &outdated).await;
                             assert!(matches!(decrypt.unwrap_err(), CryptoError::WrongEpoch));
                         }
+                    })
+                },
+            )
+            .await
+        }
+    }
+
+    pub mod expired {
+        use super::*;
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_fail_when_message_signed_by_expired_key_package(case: TestCase) {
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), case.cfg.clone())
+                            .await
+                            .unwrap();
+
+                        // Bob will have generated a bunch of long to expire KeyPackage, no suitable for a test.
+                        // So we will prune all his KeyPackages and replace them by shorter ones
+                        let bob_client = bob_central.mls_client.as_mut().unwrap();
+                        let bob_kps = bob_client.keypackages(&bob_central.mls_backend).await.unwrap();
+                        let bob_kp_refs = bob_kps
+                            .iter()
+                            .map(|k| k.hash_ref(bob_central.mls_backend.crypto()).unwrap())
+                            .collect::<Vec<KeyPackageRef>>();
+                        bob_client
+                            .prune_keypackages(&bob_kp_refs, &bob_central.mls_backend)
+                            .await
+                            .unwrap();
+                        let bob_nb_kps = bob_client
+                            .valid_keypackages_count(&bob_central.mls_backend)
+                            .await
+                            .unwrap();
+                        // Alright Bob does not have any KeyPackage
+                        assert_eq!(bob_nb_kps, 0);
+
+                        bob_client.keypackage_lifetime(Duration::from_secs(2));
+
+                        // Now Bob will have shorter KeyPackages. Let's add Bob to the group before those expire
+                        alice_central
+                            .invite(&id, &mut bob_central, case.custom_cfg())
+                            .await
+                            .unwrap();
+
+                        // Now Bob will generate AND SIGN some messages with a signature key
+                        // in his soon to expire KeyPackage
+                        let msg = b"Hello alice";
+                        let expired_app_msg = bob_central.encrypt_message(&id, msg).await.unwrap();
+                        let expired_proposal = bob_central
+                            .new_proposal(&id, MlsProposal::Update)
+                            .await
+                            .unwrap()
+                            .proposal
+                            .to_bytes()
+                            .unwrap();
+                        bob_central[&id].group.clear_pending_proposals();
+                        let expired_commit = bob_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit
+                            .to_bytes()
+                            .unwrap();
+                        bob_central.clear_pending_commit(&id).await.unwrap();
+                        let expired_handshakes = vec![expired_proposal, expired_commit];
+
+                        // Sleep to trigger the expiration
+                        async_std::task::sleep(Duration::from_secs(5)).await;
+
+                        // Expired handshake messages should fail
+                        for expired_handshake in expired_handshakes {
+                            let decrypted = alice_central.decrypt_message(&id, expired_handshake).await;
+                            if case.custom_cfg().wire_policy == MlsWirePolicy::Ciphertext {
+                                // Cannot return a precise error here this this could fail for so many reasons
+                                assert!(matches!(
+                                    decrypted.unwrap_err(),
+                                    CryptoError::MlsError(MlsError::MlsParseMessageError(
+                                        ParseMessageError::ValidationError(ValidationError::UnableToDecrypt(
+                                            MessageDecryptionError::MalformedContent
+                                        ))
+                                    ))
+                                ));
+                            } else {
+                                // Unfortunately this errors cannot be pattern matched because KeyPackage
+                                // expiry validation happens when TLS decoding
+                                assert!(matches!(
+                                    decrypted.unwrap_err(),
+                                    CryptoError::MlsError(MlsError::MlsMessageError(MlsMessageError::UnableToDecode))
+                                ));
+                            }
+                        }
+
+                        // So is expired application message
+                        let decrypted = alice_central.decrypt_message(&id, expired_app_msg).await;
+                        assert!(matches!(decrypted.unwrap_err(), CryptoError::InvalidKeyPackage));
                     })
                 },
             )

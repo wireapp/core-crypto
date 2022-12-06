@@ -122,6 +122,9 @@ pub enum CryptoError {
     /// A MLS operation was requested but MLS hasn't been initialized on this instance
     #[error("A MLS operation was requested but MLS hasn't been initialized on this instance")]
     MlsNotInitialized,
+    /// Decrypted message uses an invalid KeyPackage (probably expired)
+    #[error("Decrypted message uses an invalid KeyPackage")]
+    InvalidKeyPackage,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]
