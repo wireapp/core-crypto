@@ -21,6 +21,8 @@ use crate::error::*;
 
 pub use crate::webdriver::WebdriverKind;
 
+pub const DEFAULT_TIMEOUT_SECS: u64 = 20;
+
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct WebdriverContext {
@@ -28,10 +30,19 @@ pub struct WebdriverContext {
     browser: fantoccini::Client,
     driver: tokio::process::Child,
     driver_addr: std::net::SocketAddr,
+    timeout: std::time::Duration,
 }
 
 impl WebdriverContext {
     pub async fn init(kind: WebdriverKind, force_install: bool) -> WasmBrowserRunResult<Self> {
+        Self::init_with_timeout(kind, force_install, None).await
+    }
+
+    pub async fn init_with_timeout(
+        kind: WebdriverKind,
+        force_install: bool,
+        timeout: Option<std::time::Duration>,
+    ) -> WasmBrowserRunResult<Self> {
         match kind {
             WebdriverKind::Chrome => {}
             k => return Err(WasmBrowserRunError::UnsupportedWebdriver(k.to_string())),
@@ -51,10 +62,10 @@ impl WebdriverContext {
             .stderr(std::process::Stdio::null())
             .spawn()?;
 
-        let timeout = std::time::Duration::from_secs(5);
+        let webdriver_start_timeout = std::time::Duration::from_secs(5);
         let start = std::time::Instant::now();
         let mut webdriver_ready = false;
-        while start.elapsed() < timeout {
+        while start.elapsed() < webdriver_start_timeout {
             webdriver_ready = tokio::net::TcpStream::connect(&driver_addr).await.is_ok();
             if webdriver_ready {
                 break;
@@ -65,13 +76,15 @@ impl WebdriverContext {
             return Err(WasmBrowserRunError::WebDriverTimeoutError);
         }
 
+        let timeout = timeout.unwrap_or_else(|| std::time::Duration::from_secs(DEFAULT_TIMEOUT_SECS));
+
         let caps = serde_json::Map::from_iter(
             vec![
                 ("webSocketUrl".to_string(), true.into()),
                 (
                     "timeouts".to_string(),
                     serde_json::json!({
-                        "script": 600000
+                        "script": timeout.as_secs() * 1000
                     }),
                 ),
                 (
@@ -115,6 +128,7 @@ impl WebdriverContext {
             kind,
             driver,
             driver_addr,
+            timeout,
         })
     }
 
@@ -246,7 +260,7 @@ window.__wbr__jsCall().then(callback);"#,
         let mut builder_hwnd = tokio::process::Command::new("npm")
             .current_dir(&js_builder_path)
             .arg("start")
-            // .stdin(std::process::Stdio::piped())
+            .stdin(std::process::Stdio::piped())
             // .stdout(std::process::Stdio::piped())
             // .stderr(std::process::Stdio::piped())
             .spawn()?;
@@ -333,6 +347,15 @@ impl WasmTestFileContext {
 }
 
 impl WebdriverContext {
+    async fn get_text_from_div(browser: &fantoccini::Client, id: &str) -> WasmBrowserRunResult<String> {
+        let element = browser
+            .find(fantoccini::Locator::Id(id))
+            .await
+            .map_err(WebdriverError::from)?;
+
+        Ok(element.text().await.map_err(WebdriverError::from)?)
+    }
+
     pub async fn run_wasm_tests(&self, wasm_file_path: &std::path::Path) -> WasmBrowserRunResult<bool> {
         if !wasm_file_path.exists() {
             return Err(WasmBrowserRunError::WasmFileNotFound(
@@ -342,8 +365,11 @@ impl WebdriverContext {
 
         let wasm_tests_ctx = WasmTestFileContext::new(wasm_file_path)?;
 
+        log::warn!("Tests to run: {:?}", wasm_tests_ctx.tests);
+
         if wasm_tests_ctx.tests.is_empty() {
-            return Ok("No tests to run".into());
+            log::info!("No tests to run!");
+            return Ok(true);
         }
 
         log::warn!("Getting wasm-bindgen tmp dir");
@@ -392,21 +418,61 @@ window.runTests(wasmFileLocation, testsList)"#,
             .map_err(WebdriverError::from)?;
 
         // Wait for control element (inserted when tests are done)
+        use fantoccini::Locator;
+
         let control_elem_id = format!("control_{}", wasm_file_name.to_string_lossy());
 
         let wait_result = self
             .browser
             .wait()
-            .for_element(fantoccini::Locator::Id(&control_elem_id))
+            .at_most(self.timeout)
+            .for_element(Locator::Id(&control_elem_id))
             .await;
 
         let result = match wait_result {
             Ok(_) => true,
-            Err(fantoccini::error::CmdError::WaitTimeout) => false,
+            Err(fantoccini::error::CmdError::WaitTimeout) => {
+                log::error!(
+                    "Tests have not finished within the allotted timeout ({} seconds)",
+                    self.timeout.as_secs()
+                );
+                false
+            }
             Err(e) => return Err(WebdriverError::from(e).into()),
         };
 
-        // TODO: Pull the logs from the appropriate divs
+        if result {
+            log::info!("Tests OK");
+        } else {
+            log::error!("Tests finished with one or more errors");
+        }
+
+        // FIXME: This is way too janky when it comes to how it operates within JS
+        // TODO: Fork fantoccini to add the websocket address and use shit properly
+        log::info!(
+            "Raw output: {}\n",
+            Self::get_text_from_div(&self.browser, "output").await?
+        );
+        log::info!(
+            "console.log output: {}\n",
+            Self::get_text_from_div(&self.browser, "console_log").await?
+        );
+        log::info!(
+            "console.info output: {}\n",
+            Self::get_text_from_div(&self.browser, "console_info").await?
+        );
+        log::warn!(
+            "console.warn output: {}\n",
+            Self::get_text_from_div(&self.browser, "console_warn").await?
+        );
+        log::info!(
+            "console.debug output: {}\n",
+            Self::get_text_from_div(&self.browser, "console_debug").await?
+        );
+        log::error!(
+            "console.error output: {}\n",
+            Self::get_text_from_div(&self.browser, "console_error").await?
+        );
 
         self.browser.close_window().await.map_err(WebdriverError::from)?;
 

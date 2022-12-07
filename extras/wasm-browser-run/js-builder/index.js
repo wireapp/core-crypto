@@ -7,7 +7,39 @@ import html from "@rollup/plugin-html";
 import { temporaryFile } from "tempy";
 import fs from "node:fs/promises";
 
-const template = ({ attributes, bundle, files, publicPath, title }) => `
+const template = ({ attributes, files, meta, publicPath, title }) => {
+    const makeHtmlAttributes = (attributes) => {
+        if (!attributes) {
+            return "";
+        }
+
+        const keys = Object.keys(attributes);
+        // eslint-disable-next-line no-param-reassign
+        return keys.reduce((result, key) => (result += ` ${key}="${attributes[key]}"`), '');
+    };
+
+    const scripts = (files.js ?? [])
+    .map(({ fileName }) => {
+      const attrs = makeHtmlAttributes(attributes.script);
+      return `<script src="${publicPath}${fileName}"${attrs}></script>`;
+    })
+    .join('\n');
+
+  const links = (files.css ?? [])
+    .map(({ fileName }) => {
+      const attrs = makeHtmlAttributes(attributes.link);
+      return `<link href="${publicPath}${fileName}" rel="stylesheet"${attrs}>`;
+    })
+    .join('\n');
+
+  const metas = meta
+    .map((input) => {
+      const attrs = makeHtmlAttributes(input);
+      return `<meta${attrs}>`;
+    })
+    .join('\n');
+
+    return `
 <!DOCTYPE html>
 <html ${attributes}>
   <head>
@@ -24,8 +56,8 @@ const template = ({ attributes, bundle, files, publicPath, title }) => `
     <div id="console_error"></div>
     ${scripts}
   </body>
-</html>
-`;
+</html>`;
+};
 
 const rollupBaseOptions = {
     output: {
@@ -57,7 +89,7 @@ async function main() {
     process.stdin.pipe(dest);
     await tempFileHwnd.sync();
 
-    const { size } = await tempFileHwnd.stat();
+    const { size } = await fs.stat(tempFile);
     await tempFileHwnd.close();
     if (size > 0) {
         input.push(tempFile);

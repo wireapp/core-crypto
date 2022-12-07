@@ -29,57 +29,47 @@ struct Args {
     webdriver: CliWebdriverKind,
     #[arg(short, long)]
     force_install_webdriver: bool,
+    #[arg(short, long)]
+    timeout: Option<u64>,
     #[arg(long)]
     verbose: bool,
     wasm_test_bin_path: String,
     wasm_lib_name: Option<String>,
 }
 
-// FIXME: Args support:
-// corelib on  chore/wasm-test-runner [!?] is 📦 v0.6.0-pre.4 via  v16.16.0 via 🦀 v1.65.0
-// ❯ cargo test --lib crypto --target wasm32-unknown-unknown
-//     Finished test [unoptimized + debuginfo] target(s) in 0.16s
-//      Running unittests src/lib.rs (target/wasm32-unknown-unknown/debug/deps/core_crypto-a8b9273bc359ac72.wasm)
-//     Finished dev [unoptimized + debuginfo] target(s) in 0.08s
-//      Running `/home/otak/Dev/wire/corelib/extras/wasm-browser-test-runner/target/debug/wasm-browser-test-runner --webdriver chrome /home/otak/Dev/wire/corelib/target/wasm32-unknown-unknown/debug/deps/core_crypto-a8b9273bc359ac72.wasm crypto`
-// error: Found argument '/home/otak/Dev/wire/corelib/target/wasm32-unknown-unknown/debug/deps/core_crypto-a8b9273bc359ac72.wasm' which wasn't expected, or isn't valid in this context
+fn init_logger(verbose: bool) {
+    let default_log_level = if verbose { "debug" } else { "info" };
+    let log_setting = if let Ok(log_setting) = std::env::var("RUST_LOG") {
+        format!("{default_log_level},{log_setting}")
+    } else {
+        default_log_level.to_string()
+    };
+    std::env::set_var("RUST_LOG", log_setting);
 
-// Usage: wasm-browser-test-runner [OPTIONS] --webdriver <WEBDRIVER> -- <WASM_TEST_BIN_PATH>
-
-// For more information try '--help'
-// error: test failed, to rerun pass `-p core-crypto --lib`
-
-// Caused by:
-//   process didn't exit successfully: `cargo run --bin wasm-browser-test-runner --manifest-path ../extras/wasm-browser-test-runner/Cargo.toml -- --webdriver chrome /home/otak/Dev/wire/corelib/target/wasm32-unknown-unknown/debug/deps/core_crypto-a8b9273bc359ac72.wasm crypto` (exit status: 2)
-
-// corelib on  chore/wasm-test-runner [!?] is 📦 v0.6.0-pre.4 via  v16.16.0 via 🦀 v1.65.0
-// ❯ cargo test --target wasm32-unknown-unknown
-//     Finished test [unoptimized + debuginfo] target(s) in 0.16s
-//      Running unittests src/lib.rs (target/wasm32-unknown-unknown/debug/deps/core_crypto-a8b9273bc359ac72.wasm)
-//     Finished dev [unoptimized + debuginfo] target(s) in 0.08s
-//      Running `/home/otak/Dev/wire/corelib/extras/wasm-browser-test-runner/target/debug/wasm-browser-test-runner --webdriver chrome /home/otak/Dev/wire/corelib/target/wasm32-unknown-unknown/debug/deps/core_crypto-a8b9273bc359ac72.wasm`
-// error: Found argument '/home/otak/Dev/wire/corelib/target/wasm32-unknown-unknown/debug/deps/core_crypto-a8b9273bc359ac72.wasm' which wasn't expected, or isn't valid in this context
-
-// Usage: wasm-browser-test-runner [OPTIONS] --webdriver <WEBDRIVER> -- <WASM_TEST_BIN_PATH>
-
-// For more information try '--help'
-// error: test failed, to rerun pass `-p core-crypto --lib`
-
-// Caused by:
-//   process didn't exit successfully: `cargo run --bin wasm-browser-test-runner --manifest-path ../extras/wasm-browser-test-runner/Cargo.toml -- --webdriver chrome /home/otak/Dev/wire/corelib/target/wasm32-unknown-unknown/debug/deps/core_crypto-a8b9273bc359ac72.wasm` (exit status: 2)
+    pretty_env_logger::init();
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let args = Args::parse();
-    if args.verbose {
-        femme::with_level(femme::LevelFilter::Warn);
-    } else {
-        femme::start();
-    }
+    let mut args = Args::parse();
+
+    init_logger(args.verbose);
 
     log::warn!("Args: {args:?}");
 
-    let ctx = WebdriverContext::init(args.webdriver.into(), args.force_install_webdriver).await?;
+    if args.timeout.is_none() {
+        // Compatibility layer with wasm-bindgen-test-runner
+        if let Ok(timeout) = std::env::var("WASM_BINDGEN_TEST_TIMEOUT") {
+            args.timeout = Some(timeout.parse()?);
+        }
+    }
+
+    let ctx = WebdriverContext::init_with_timeout(
+        args.webdriver.into(),
+        args.force_install_webdriver,
+        args.timeout.map(std::time::Duration::from_secs),
+    )
+    .await?;
 
     let wasm_file_to_test = std::path::PathBuf::from(args.wasm_test_bin_path);
     log::warn!("WASM file path: {wasm_file_to_test:?}");

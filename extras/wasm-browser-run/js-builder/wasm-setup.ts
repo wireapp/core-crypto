@@ -2,7 +2,7 @@ const wrapConsoleMethod = method => {
     const eventName = `on_console_${method}`;
     const og = console[method];
     console[method] = function(...args) {
-        const event = new CustomEvent(eventName, { detail: { ...args } } );
+        const event = new CustomEvent(eventName, { detail: args } );
         window.dispatchEvent(event);
         const elem = document.getElementById(`console_${method}`);
         if (elem) {
