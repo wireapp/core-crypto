@@ -65,6 +65,10 @@ pub enum WebdriverError {
     CmdError(#[from] fantoccini::error::CmdError),
     #[error(transparent)]
     NewSessionError(#[from] fantoccini::error::NewSessionError),
+    #[error("The session handshake didn't contain a `webSocketUrl` meaning that this WebDriver implementation doesn't support WebDriver BiDi protocol.")]
+    NoWebDriverBidiSupport,
+    #[error(transparent)]
+    WebsocketError(#[from] tokio_tungstenite::tungstenite::Error),
 }
 
 pub type WasmBrowserRunResult<T> = Result<T, WasmBrowserRunError>;

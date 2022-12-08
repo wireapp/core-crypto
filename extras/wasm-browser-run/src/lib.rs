@@ -16,6 +16,7 @@
 
 pub mod error;
 mod webdriver;
+mod webdriver_bidi;
 
 use crate::error::*;
 
@@ -120,6 +121,19 @@ impl WebdriverContext {
         let browser = fantoccini::ClientBuilder::native()
             .capabilities(caps)
             .connect(&format!("http://{driver_addr}"))
+            .await
+            .map_err(WebdriverError::from)?;
+
+        let browser_session_handshake = browser.get_session_handshake();
+        let ws_bidi_uri = browser_session_handshake["capabilities"]
+            .get("webSocketUrl")
+            .ok_or_else(|| WebdriverError::NoWebDriverBidiSupport)?
+            .as_str()
+            .ok_or_else(|| WebdriverError::NoWebDriverBidiSupport)?
+            .to_string();
+
+        // TODO: init ws session
+        let (ws_client, _) = tokio_tungstenite::connect_async(&ws_bidi_uri)
             .await
             .map_err(WebdriverError::from)?;
 
