@@ -11,45 +11,48 @@ pub mod session;
 pub mod remote {
     use crate::webdriver_bidi::Extensible;
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     #[non_exhaustive]
     pub struct Command {
-        id: u64,
-        data: CommandData,
-        rest: Extensible,
+        pub id: u64,
+        pub data: CommandData,
+        pub rest: Extensible,
     }
 
     // TODO: Add actual commands
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     pub enum CommandData {
         BrowsingContextCommand, //(BrowsingContextCommand),
         ScriptCommand,          //(ScriptCommand),
         SessionCommand,         //(SessionCommand),
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     #[repr(transparent)]
-    pub struct EmptyParams(Extensible);
+    pub struct EmptyParams(pub Extensible);
 }
 
 pub mod local {
+    use crate::webdriver_bidi::browsing_context::BrowsingContextEvent;
+    use crate::webdriver_bidi::log::LogEvent;
+    use crate::webdriver_bidi::script::ScriptEvent;
     use crate::webdriver_bidi::Extensible;
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     pub enum Message {
         CommandResponse(CommandResponse),
         ErrorResponse(ErrorResponse),
         Event(Event),
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     pub struct CommandResponse {
-        id: u64,
-        result: ResultData,
-        rest: Extensible,
+        pub id: u64,
+        pub result: ResultData,
+        pub rest: Extensible,
     }
 
-    #[derive(Debug, Clone, thiserror::Error)]
+    #[derive(Debug, Clone, thiserror::Error, serde::Serialize, serde::Deserialize)]
     pub enum ErrorCode {
         #[error("invalid argument")]
         InvalidArgument,
@@ -67,34 +70,35 @@ pub mod local {
         UnsupportedOperation,
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     pub struct ErrorResponse {
-        id: Option<u64>,
-        error: ErrorCode,
-        message: String,
-        stacktrace: Option<String>,
-        rest: Extensible,
+        pub id: Option<u64>,
+        pub error: ErrorCode,
+        pub message: String,
+        pub stacktrace: Option<String>,
+        pub rest: Extensible,
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     #[repr(transparent)]
     pub struct EmptyResult(Extensible);
 
-    // TODO: Add actual events
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     pub enum EventData {
-        BrowsingContextEvent,
-        ScriptEvent,
-        LogEvent,
+        BrowsingContextEvent(BrowsingContextEvent),
+        ScriptEvent(ScriptEvent),
+        LogEvent(LogEvent),
     }
 
-    #[derive(Debug, Clone)]
-    pub enum Event {
-        EventData(EventData),
-        Extensible(Extensible),
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+    pub struct Event {
+        #[serde(flatten)]
+        pub data: EventData,
+        #[serde(flatten)]
+        pub rest: Extensible,
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     pub enum ResultData {
         EmptyResult(EmptyResult),
         SessionResult,
@@ -104,9 +108,9 @@ pub mod local {
 
     pub type Handle = String;
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     pub struct RemoteReference {
-        handle: Handle,
-        rest: Extensible,
+        pub handle: Handle,
+        pub rest: Extensible,
     }
 }

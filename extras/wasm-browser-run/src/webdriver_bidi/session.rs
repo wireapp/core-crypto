@@ -1,6 +1,6 @@
 use crate::webdriver_bidi::browsing_context::BrowsingContext;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum ProxyCapabilityType {
     Pac,
     Direct,
@@ -9,35 +9,39 @@ pub enum ProxyCapabilityType {
     Manual,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ProxyCapability {
-    proxy_type: Option<ProxyCapabilityType>,
-    proxy_autoconfig_url: Option<String>,
-    ftp_proxy: Option<String>,
-    http_proxy: Option<String>,
-    ssl_proxy: Option<String>,
-    socks_proxy: Option<String>,
-    socks_version: Option<u8>,
+    pub proxy_type: Option<ProxyCapabilityType>,
+    pub proxy_autoconfig_url: Option<String>,
+    pub ftp_proxy: Option<String>,
+    pub http_proxy: Option<String>,
+    pub ssl_proxy: Option<String>,
+    pub socks_proxy: Option<String>,
+    pub socks_version: Option<u8>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[non_exhaustive]
 pub struct SessionCapabilityRequest {
-    accept_insecure_certs: Option<bool>,
-    browser_name: Option<String>,
-    browser_version: Option<String>,
-    platform_name: Option<String>,
-    proxy: Option<ProxyCapability>,
+    pub accept_insecure_certs: Option<bool>,
+    pub browser_name: Option<String>,
+    pub browser_version: Option<String>,
+    pub platform_name: Option<String>,
+    pub proxy: Option<ProxyCapability>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SessionCapabilitiesRequest {
-    always_match: Option<SessionCapabilityRequest>,
-    first_match: Option<Vec<SessionCapabilityRequest>>,
+    pub always_match: Option<SessionCapabilityRequest>,
+    pub first_match: Option<Vec<SessionCapabilityRequest>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SessionSubscriptionRequest {
-    events: Vec<String>,
-    contexts: Option<Vec<BrowsingContext>>,
+    pub events: Vec<String>,
+    pub contexts: Option<Vec<BrowsingContext>>,
+}
+
+pub mod commands {
+    // pub fn session_status() ->
 }

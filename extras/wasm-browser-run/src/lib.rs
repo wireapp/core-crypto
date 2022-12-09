@@ -133,9 +133,41 @@ impl WebdriverContext {
             .to_string();
 
         // TODO: init ws session
-        let (ws_client, _) = tokio_tungstenite::connect_async(&ws_bidi_uri)
+        let (mut ws_client, _) = tokio_tungstenite::connect_async(&ws_bidi_uri)
             .await
             .map_err(WebdriverError::from)?;
+
+        tokio::spawn(async move {
+            use futures_util::{
+                // SinkExt as _,
+                StreamExt as _
+            };
+            use crate::webdriver_bidi::{log::{LogEvent, LogEntryInner}, local::{Event, EventData}};
+            while let Some(Ok(msg)) = ws_client.next().await {
+                let event: Event = serde_json::from_slice(&msg.into_data()).unwrap();
+                match event.data {
+                    EventData::BrowsingContextEvent(_data) => {
+                        // TODO: This
+                    }
+                    EventData::ScriptEvent(_data) => {
+                        // TODO: This
+                    }
+                    EventData::LogEvent(log_event) => {
+                        match log_event {
+                            LogEvent::EntryAdded(log_entry) => {
+                                match log_entry.entry_data {
+                                    LogEntryInner::Console(console_log) => {
+                                        let method_call = console_log.to_string();
+
+                                    },
+                                    LogEntryInner::Base(base_log) => {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
 
         Ok(Self {
             browser,

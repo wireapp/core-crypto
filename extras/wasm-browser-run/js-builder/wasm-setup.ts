@@ -1,4 +1,4 @@
-const wrapConsoleMethod = method => {
+const wrapConsoleMethod = (method: string) => {
     const eventName = `on_console_${method}`;
     const og = console[method];
     console[method] = function(...args) {
