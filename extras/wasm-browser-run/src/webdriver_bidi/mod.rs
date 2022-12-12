@@ -84,6 +84,7 @@ pub mod local {
     pub struct EmptyResult(Extensible);
 
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+    #[serde(untagged)]
     pub enum EventData {
         BrowsingContextEvent(BrowsingContextEvent),
         ScriptEvent(ScriptEvent),

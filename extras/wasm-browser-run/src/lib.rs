@@ -132,41 +132,73 @@ impl WebdriverContext {
             .ok_or_else(|| WebdriverError::NoWebDriverBidiSupport)?
             .to_string();
 
-        // TODO: init ws session
+        log::info!("WebDriver BiDi ws url: {ws_bidi_uri}");
+
         let (mut ws_client, _) = tokio_tungstenite::connect_async(&ws_bidi_uri)
             .await
             .map_err(WebdriverError::from)?;
 
         tokio::spawn(async move {
-            use futures_util::{
-                // SinkExt as _,
-                StreamExt as _
+            use crate::webdriver_bidi::{
+                local::{Event, EventData},
+                log::{LogEntryInner, LogEvent},
             };
-            use crate::webdriver_bidi::{log::{LogEvent, LogEntryInner}, local::{Event, EventData}};
-            while let Some(Ok(msg)) = ws_client.next().await {
-                let event: Event = serde_json::from_slice(&msg.into_data()).unwrap();
-                match event.data {
-                    EventData::BrowsingContextEvent(_data) => {
-                        // TODO: This
-                    }
-                    EventData::ScriptEvent(_data) => {
-                        // TODO: This
-                    }
-                    EventData::LogEvent(log_event) => {
-                        match log_event {
-                            LogEvent::EntryAdded(log_entry) => {
-                                match log_entry.entry_data {
-                                    LogEntryInner::Console(console_log) => {
-                                        let method_call = console_log.to_string();
+            use futures_util::{SinkExt as _, StreamExt as _};
+            use tokio_tungstenite::tungstenite::protocol::Message;
 
-                                    },
-                                    LogEntryInner::Base(base_log) => {}
-                                }
-                            }
+            while let Some(msg) = ws_client.next().await {
+                let msg_raw = match msg {
+                    Ok(msg) => match msg {
+                        Message::Close(_) => {
+                            break;
                         }
+                        Message::Ping(payload) => {
+                            ws_client.send(Message::Pong(payload)).await?;
+                            continue;
+                        }
+                        Message::Pong(_) => continue,
+                        msg @ _ => msg.into_data(),
+                    },
+                    Err(e) => {
+                        log::error!("{e}");
+                        return Err(e.into());
                     }
+                };
+                dbg!(&msg_raw);
+                let event: Event = match serde_json::from_slice(&msg_raw) {
+                    Ok(event) => event,
+                    // FIXME: Failed to deserialize payload: Error("data did not match any variant of untagged enum EventData", line: 1, column: 862)
+                    Err(e) => {
+                        log::error!("Failed to deserialize payload: {e:?}");
+                        continue;
+                    }
+                };
+                dbg!(&event);
+                match event.data {
+                    EventData::BrowsingContextEvent(data) => {
+                        log::info!("Unimplemented event handling: {:?}", data);
+                    }
+                    EventData::ScriptEvent(data) => {
+                        log::info!("Unimplemented event handling: {:?}", data);
+                    }
+                    EventData::LogEvent(log_event) => match log_event {
+                        LogEvent::EntryAdded(log_entry) => {
+                            match log_entry.entry_data {
+                                LogEntryInner::Console(console_log) => {
+                                    let level = console_log.entry.level.into();
+                                    log::log!(target: "webdriver_bidi", level, "{}", console_log);
+                                }
+                                LogEntryInner::Base(base_log) => {
+                                    let level = base_log.level.into();
+                                    log::log!(target: "webdriver_bidi", level, "{}", base_log);
+                                }
+                            };
+                        }
+                    },
                 }
             }
+
+            WasmBrowserRunResult::Ok(())
         });
 
         Ok(Self {
@@ -290,8 +322,6 @@ window.__wbr__jsCall().then(callback);"#,
     }
 
     async fn compile_js_support(&self, mut js: Option<&str>) -> WasmBrowserRunResult<String> {
-        // FIXME: js-builder path is wrong because the executables are at a different location than source.
-        // FIXME: Find a way to get back the realpath relative to this source file
         let js_builder_path = std::path::PathBuf::from(file!())
             .parent()
             .and_then(std::path::Path::parent)
@@ -454,77 +484,77 @@ impl WebdriverContext {
             .map_err(WebdriverError::from)?;
 
         self.browser
-            .execute(
+            .execute_async(
                 r#"
-const [wasmFileLocation, testsList] = arguments;
-window.runTests(wasmFileLocation, testsList)"#,
+const [wasmFileLocation, testsList, callback] = arguments;
+window.runTests(wasmFileLocation, testsList).then(callback)"#,
                 vec![wasm_file_name.to_string_lossy().into(), wasm_tests_ctx.tests.into()],
             )
             .await
             .map_err(WebdriverError::from)?;
 
         // Wait for control element (inserted when tests are done)
-        use fantoccini::Locator;
+        // use fantoccini::Locator;
 
-        let control_elem_id = format!("control_{}", wasm_file_name.to_string_lossy());
+        // let control_elem_id = format!("control_{}", wasm_file_name.to_string_lossy());
 
-        let wait_result = self
-            .browser
-            .wait()
-            .at_most(self.timeout)
-            .for_element(Locator::Id(&control_elem_id))
-            .await;
+        // let wait_result = self
+        //     .browser
+        //     .wait()
+        //     .at_most(self.timeout)
+        //     .for_element(Locator::Id(&control_elem_id))
+        //     .await;
 
-        let result = match wait_result {
-            Ok(_) => true,
-            Err(fantoccini::error::CmdError::WaitTimeout) => {
-                log::error!(
-                    "Tests have not finished within the allotted timeout ({} seconds)",
-                    self.timeout.as_secs()
-                );
-                false
-            }
-            Err(e) => return Err(WebdriverError::from(e).into()),
-        };
+        // let result = match wait_result {
+        //     Ok(_) => true,
+        //     Err(fantoccini::error::CmdError::WaitTimeout) => {
+        //         log::error!(
+        //             "Tests have not finished within the allotted timeout ({} seconds)",
+        //             self.timeout.as_secs()
+        //         );
+        //         false
+        //     }
+        //     Err(e) => return Err(WebdriverError::from(e).into()),
+        // };
 
-        if result {
-            log::info!("Tests OK");
-        } else {
-            log::error!("Tests finished with one or more errors");
-        }
+        // if result {
+        //     log::info!("Tests OK");
+        // } else {
+        //     log::error!("Tests finished with one or more errors");
+        // }
 
         // FIXME: This is way too janky when it comes to how it operates within JS
         // TODO: Fork fantoccini to add the websocket address and use shit properly
-        log::info!(
-            "Raw output: {}\n",
-            Self::get_text_from_div(&self.browser, "output").await?
-        );
-        log::info!(
-            "console.log output: {}\n",
-            Self::get_text_from_div(&self.browser, "console_log").await?
-        );
-        log::info!(
-            "console.info output: {}\n",
-            Self::get_text_from_div(&self.browser, "console_info").await?
-        );
-        log::warn!(
-            "console.warn output: {}\n",
-            Self::get_text_from_div(&self.browser, "console_warn").await?
-        );
-        log::info!(
-            "console.debug output: {}\n",
-            Self::get_text_from_div(&self.browser, "console_debug").await?
-        );
-        log::error!(
-            "console.error output: {}\n",
-            Self::get_text_from_div(&self.browser, "console_error").await?
-        );
+        // log::info!(
+        //     "Raw output: {}\n",
+        //     Self::get_text_from_div(&self.browser, "output").await?
+        // );
+        // log::info!(
+        //     "console.log output: {}\n",
+        //     Self::get_text_from_div(&self.browser, "console_log").await?
+        // );
+        // log::info!(
+        //     "console.info output: {}\n",
+        //     Self::get_text_from_div(&self.browser, "console_info").await?
+        // );
+        // log::warn!(
+        //     "console.warn output: {}\n",
+        //     Self::get_text_from_div(&self.browser, "console_warn").await?
+        // );
+        // log::info!(
+        //     "console.debug output: {}\n",
+        //     Self::get_text_from_div(&self.browser, "console_debug").await?
+        // );
+        // log::error!(
+        //     "console.error output: {}\n",
+        //     Self::get_text_from_div(&self.browser, "console_error").await?
+        // );
 
         self.browser.close_window().await.map_err(WebdriverError::from)?;
 
         hwnd.abort();
         let _ = hwnd.await;
 
-        Ok(result)
+        Ok(true)
     }
 }

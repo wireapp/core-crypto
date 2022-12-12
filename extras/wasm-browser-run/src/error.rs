@@ -30,6 +30,10 @@ pub enum WasmBrowserRunError {
     MountPointNotFound(String),
     #[error("The {0} WebDriver isn't supported yet.")]
     UnsupportedWebdriver(String),
+    #[error(transparent)]
+    JsonError(#[from] serde_json::Error),
+    #[error(transparent)]
+    WebDriverBiDiWebsocketError(#[from] tokio_tungstenite::tungstenite::Error),
     #[error("The platform you're running this code on isn't supported")]
     UnsupportedPlatform,
     #[error("Error while building test JS bundle: {0}")]

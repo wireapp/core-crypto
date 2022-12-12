@@ -1,13 +1,13 @@
 use crate::webdriver_bidi::protocol::RemoteValue;
 use crate::webdriver_bidi::script::{ScriptSource, ScriptStackTrace};
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
-    Debug,
-    Info,
-    Warn,
     Error,
+    Warn,
+    Info,
+    Debug,
 }
 
 impl std::fmt::Display for LogLevel {
@@ -25,6 +25,17 @@ impl std::fmt::Display for LogLevel {
     }
 }
 
+impl Into<log::Level> for LogLevel {
+    fn into(self) -> log::Level {
+        match self {
+            Self::Error => log::Level::Error,
+            Self::Warn => log::Level::Warn,
+            Self::Info => log::Level::Info,
+            Self::Debug => log::Level::Debug,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct BaseLogEntry {
     pub level: LogLevel,
@@ -34,17 +45,21 @@ pub struct BaseLogEntry {
     pub stack_trace: Option<ScriptStackTrace>,
 }
 
-// TODO: FInish this
-// impl std::fmt::Display for BaseLogEntry {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(f, "{} {} from {}", self.timestamp, self.level, self.source)?;
+impl std::fmt::Display for BaseLogEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "[{}] at {}:", self.timestamp, self.source)?;
+        if let Some(text) = &self.text {
+            writeln!(f, "{text}")?;
+        }
+        if let Some(strace) = &self.stack_trace {
+            for (i, sframe) in strace.iter().enumerate() {
+                writeln!(f, "\t#{i} {sframe}")?;
+            }
+        }
 
-//         writeln!(f, "[{}] at {}:", self.timestamp, self.source)?;
-//         write!(f, "")
-
-//         Ok(())
-//     }
-// }
+        Ok(())
+    }
+}
 
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ConsoleLogEntry {
@@ -64,7 +79,7 @@ impl std::fmt::Display for ConsoleLogEntry {
             .join(", ");
 
         writeln!(f, "\tcallsite:: {}({})", self.method, args)?;
-        // writeln!(f, "{}", self.entry)?;
+        writeln!(f, "{}", self.entry)?;
 
         Ok(())
     }

@@ -29,6 +29,17 @@ pub struct ScriptSource {
     pub context: Option<BrowsingContext>,
 }
 
+impl std::fmt::Display for ScriptSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.realm)?;
+        if let Some(ctx) = &self.context {
+            write!(f, " [ctx = {ctx}]")?;
+        }
+
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ScriptRealmTarget {
     pub realm: ScriptRealm,
@@ -52,6 +63,16 @@ pub struct ScriptStackFrame {
     pub line_number: u64,
     pub function_name: String,
     pub url: String,
+}
+
+impl std::fmt::Display for ScriptStackFrame {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        writeln!(
+            f,
+            "{} at {}:{}:{}",
+            self.function_name, self.url, self.line_number, self.column_number
+        )
+    }
 }
 
 pub type ScriptStackTrace = Vec<ScriptStackFrame>;
