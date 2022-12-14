@@ -1042,6 +1042,9 @@ mod tests {
         assert_eq!(&decrypted, &message[..]);
 
         // CL-110 assertion
+        // Happens when a migrated client ratchets just after migration. It does not happen when ratchet is not required
+        // Having alice(A), bob(B) and migration(M), you can reproduce this behaviour with `[A->B][B->A] M [A->B][B->A]`
+        // However you won't reproduce it like this because migrated alice does not ratchet `[A->B][B->A] M [B->A][A->B]`
         let encrypted = bob.encrypt(&session_id, &message[..]);
         let decrypted = proteus_central
             .decrypt(&mut keystore, &session_id, &encrypted)
