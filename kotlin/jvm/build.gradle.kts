@@ -58,7 +58,7 @@ afterEvaluate {
             create<MavenPublication>("maven") {
                 groupId = "com.wire"
                 artifactId = "core-crypto-jvm"
-                version = "0.6.0-pre.5"
+                version = "0.6.0-rc.1"
 
                 from(components["java"])
 

@@ -7,12 +7,38 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.6.0-rc.1] - 2022-12-14
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.6.0-rc" unreleased=true}}
+</details>
+
+* Fixed a compilation issue related to the `sha1` crate's ASM
+* Added a `restore_from_disk` API to enable using CoreCrypto from various instances
+* Various internal improvements to testing to increase resistance to uncommon scenarios
+* Proteus:
+    * Expose proteus prekey fingerprint
+    * Fixed the TypeScript exposed types
+    * Fixed Cryptobox import
+    * Fixed broken Proteus implementation that led to decryption errors after key import
+* MLS:
+    * Expose a `WrongEpoch` error
+    * Added an error when trying to break PFS
+    * **BREAKING**: Tweaked the configuration format, removed and added some options
+
 ## [0.6.0-pre.5] - 2022-11-10
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.6.0-pre.5" unreleased=true}}
+{{git-cliff tag="v0.6.0-pre.5"}}
 </details>
+
+* chore: Get rid of the C-FFI
+* feature: Added support for deferred MLS initialization
+* Proteus:
+    * Expose Proteus session Fingerprints (local & remote)
+
 
 ## [0.6.0-pre.4] - 2022-11-07
 
@@ -20,6 +46,18 @@ Platform support legends:
     <summary>git-conventional changelog</summary>
 {{git-cliff tag="v0.6.0-pre.4"}}
 </details>
+
+* fix: Publication of swift packages [CL-49] by @augustocdias in https://github.com/wireapp/core-crypto/pull/165
+* fix: Make tags have semantic versioning names and downgrading to swift 5.5 - CL-49 by @augustocdias in https://github.com/wireapp/core-crypto/pull/166
+* feat: Expose session exists through the ffi - CL-101 by @augustocdias in https://github.com/wireapp/core-crypto/pull/167
+* chore: fix new clippy warnings in 1.65 by @beltram in https://github.com/wireapp/core-crypto/pull/170
+* fix: consistent commits by @beltram in https://github.com/wireapp/core-crypto/pull/169
+* fix!: Incorrect handling of enums across WASM FFI [CL-104] by @OtaK in https://github.com/wireapp/core-crypto/pull/168
+* test: pure ciphertext by @beltram in https://github.com/wireapp/core-crypto/pull/160
+* Release 0.6.0-pre.4 by @augustocdias in https://github.com/wireapp/core-crypto/pull/171
+
+
+**Full Changelog**: https://github.com/wireapp/core-crypto/blob/develop/CHANGELOG.md
 
 ## [0.6.0-pre.3] - 2022-11-01
 
@@ -45,6 +83,18 @@ Platform support legends:
     <summary>git-conventional changelog</summary>
 {{git-cliff tag="v0.6.0-pre.1"}}
 </details>
+
+* Add Apple M1 support for the JVM bindings
+* Rename callback `client_id_belongs_to_one_of`
+* Added Proteus compatibility layer support
+* Added API to export secret key derived from the group and client ids from the members
+* Change CommitBundle signature
+    * The `decrypt` API now returns if the decrypted message changed the epoch
+* Members can now rejoin group by external commits
+    * Validate received external commits
+    * Added `clear_pending_group_from_external_commit`
+    * External commit returns a bundle containing the PGS
+
 
 ## [0.5.2] - 2022-27-09
 
