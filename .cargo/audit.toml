@@ -1,0 +1,11 @@
+[advisories]
+ignore = [
+    # ? `time` is only used in the interop driver's deps. Don't really care as it's not exposed code
+    "RUSTSEC-2020-0071",
+    # ? `ansi_term` works as is, despite being unmaintained
+    "RUSTSEC-2021-0139",
+    # ? `sodiumoxide` is only used in tests to check against our proteus compat layer
+    "RUSTSEC-2021-0137",
+    # ? `atty` only has a vuln on windows
+    "RUSTSEC-2021-0145",
+]

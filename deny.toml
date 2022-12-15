@@ -15,6 +15,7 @@ targets = [
     # Android
     { triple = "aarch64-linux-android" },
     { triple = "armv7-linux-androideabi" },
+    { triple = "thumbv7neon-linux-androideabi" },
     { triple = "x86_64-linux-android" },
 ]
 
@@ -24,6 +25,12 @@ vulnerability = "warn"
 ignore = [
     # ? ansi_term works well as is, despite being unmaintained
     "RUSTSEC-2021-0139",
+    # ? `time` is only used in the interop runner
+    "RUSTSEC-2020-0071",
+    # ? `sodiumoxide` is only used in tests
+    "RUSTSEC-2021-0137",
+    # ? `atty` only has a vuln on windows
+    "RUSTSEC-2021-0145",
 ]
 
 [bans]
@@ -65,8 +72,6 @@ private = [
     "https://github.com/otak",
     # TODO: remove when a stable ring version is published
     "https://github.com/briansmith",
-    # TODO: Remove when refinery is up to date
-    "https://github.com/rust-db/refinery",
 ]
 
 [sources.allow-org]
