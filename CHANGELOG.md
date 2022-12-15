@@ -7,6 +7,25 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.6.0-rc.2] - 2022-12-14
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Functional Android NDK 21 CI
+- Publish android CI
+- Unreachable pub makes docs build fail
+
+### Miscellaneous Tasks
+
+- Fix advisory stuff
+
+</details>
+
+* This release contains nothing. It's only there to fix the faulty Android release CI.
+
 ## [0.6.0-rc.1] - 2022-12-14
 
 <details>
@@ -30,6 +49,7 @@ Platform support legends:
 
 ### Miscellaneous Tasks
 
+- Release v0.6.0-rc.1
 - Use NDK 21 for android artifacts - CL-111
 
 ### Testing

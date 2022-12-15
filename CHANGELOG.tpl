@@ -7,11 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.6.0-rc.2] - 2022-12-14
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.6.0-rc.2" unreleased=true}}
+</details>
+
+* This release contains nothing. It's only there to fix the faulty Android release CI.
+
 ## [0.6.0-rc.1] - 2022-12-14
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.6.0-rc" unreleased=true}}
+{{git-cliff tag="v0.6.0-rc.1"}}
 </details>
 
 * Fixed a compilation issue related to the `sha1` crate's ASM
