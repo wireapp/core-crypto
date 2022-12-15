@@ -815,6 +815,7 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::proteus::ProteusCentral::session_save]
+    /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
     pub fn proteus_session_save(&self, session_id: &str) -> CryptoResult<()> {
         proteus_impl! {{
             future::block_on(
@@ -907,6 +908,20 @@ impl CoreCrypto<'_> {
                         .lock()
                         .map_err(|_| CryptoError::LockPoisonError)?
                         .proteus_new_prekey(prekey_id),
+                ),
+            )
+        }}
+    }
+
+    /// See [core_crypto::proteus::ProteusCentral::new_prekey_auto]
+    pub fn proteus_new_prekey_auto(&self) -> CryptoResult<Vec<u8>> {
+        proteus_impl! {{
+            future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_new_prekey_auto(),
                 ),
             )
         }}

@@ -267,6 +267,9 @@ interface CoreCrypto {
     sequence<u8> proteus_new_prekey(u16 prekey_id);
 
     [Throws=CryptoError]
+    sequence<u8> proteus_new_prekey_auto();
+
+    [Throws=CryptoError]
     string proteus_fingerprint();
 
     [Throws=CryptoError]

@@ -1115,6 +1115,8 @@ export class CoreCrypto {
     /**
      * Locally persists a session to the keystore
      *
+     * **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
+     *
      * @param sessionId - ID of the Proteus session
      */
     async proteusSessionSave(sessionId: string): Promise<void> {
@@ -1184,6 +1186,15 @@ export class CoreCrypto {
      */
     async proteusNewPrekey(prekeyId: number): Promise<Uint8Array> {
         return await this.#cc.proteus_new_prekey(prekeyId);
+    }
+
+    /**
+     * Creates a new prekey with an automatically generated ID..
+     *
+     * @returns: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
+     */
+    async proteusNewPrekeyAuto(): Promise<Uint8Array> {
+        return await this.#cc.proteus_new_prekey_auto();
     }
 
     /**

@@ -1367,6 +1367,8 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
+    /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
+    ///
     /// see [core_crypto::proteus::ProteusCentral::session_save]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub fn proteus_session_save(&self, session_id: String) -> Promise {
@@ -1471,6 +1473,17 @@ impl CoreCrypto {
     pub async fn proteus_new_prekey(&self, prekey_id: u16) -> WasmCryptoResult<Uint8Array> {
         proteus_impl!({
             let prekey_raw = self.0.read().await.proteus_new_prekey(prekey_id).await?;
+            WasmCryptoResult::Ok(Uint8Array::from(prekey_raw.as_slice()))
+        } or throw WasmCryptoResult<_>)
+    }
+
+    /// Returns: [`WasmCryptoResult<Uint8Array>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::new_prekey]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub async fn proteus_new_prekey_auto(&self) -> WasmCryptoResult<Uint8Array> {
+        proteus_impl!({
+            let prekey_raw = self.0.read().await.proteus_new_prekey_auto().await?;
             WasmCryptoResult::Ok(Uint8Array::from(prekey_raw.as_slice()))
         } or throw WasmCryptoResult<_>)
     }
