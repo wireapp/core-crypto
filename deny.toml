@@ -15,7 +15,6 @@ targets = [
     # Android
     { triple = "aarch64-linux-android" },
     { triple = "armv7-linux-androideabi" },
-    { triple = "thumbv7neon-linux-androideabi" },
     { triple = "x86_64-linux-android" },
 ]
 
