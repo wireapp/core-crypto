@@ -32,27 +32,31 @@ xtask = "run --manifest-path ./xtask/Cargo.toml --"
 [target.armv7-linux-androideabi]
 ar = "llvm-ar"
 linker = "armv7a-linux-androideabi30-clang"
-rustflags = [
-    "-C", "link-args=-Lsupport/android"
-]
+# ? Doesn't work with NDK r21. But will be needed for Rust 1.66 and NDK 25.
+# rustflags = [
+#     "-C", "link-args=-Lsupport/android"
+# ]
 
 [target.aarch64-linux-android]
 ar = "llvm-ar"
 linker = "aarch64-linux-android30-clang"
-rustflags = [
-    "-C", "link-args=-Lsupport/android"
-]
+# ? Doesn't work with NDK r21. But will be needed for Rust 1.66 and NDK 25.
+# rustflags = [
+#     "-C", "link-args=-Lsupport/android"
+# ]
 
 [target.x86_64-linux-android]
 ar = "llvm-ar"
 linker = "x86_64-linux-android30-clang"
-rustflags = [
-    "-C", "link-args=-Lsupport/android"
-]
+# ? Doesn't work with NDK r21. But will be needed for Rust 1.66 and NDK 25.
+# rustflags = [
+#     "-C", "link-args=-Lsupport/android"
+# ]
 
 [target.i686-linux-android]
 ar = "llvm-ar"
 linker = "i686-linux-android30-clang"
-rustflags = [
-    "-C", "link-args=-Lsupport/android"
-]
+# ? Doesn't work with NDK r21. But will be needed for Rust 1.66 and NDK 25.
+# rustflags = [
+#     "-C", "link-args=-Lsupport/android"
+# ]

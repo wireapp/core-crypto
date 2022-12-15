@@ -10,8 +10,6 @@ env:
   CARGO_NET_RETRY: 10
   RUSTFLAGS: "-D warnings -W unreachable-pub"
   RUSTUP_MAX_RETRIES: 10
-  ANDROID_ROOT: "/usr/local/lib/android"
-  ANDROID_SDK_ROOT: "/usr/local/lib/android/sdk"
 
 jobs:
   publish-android:
@@ -34,11 +32,14 @@ jobs:
           targets: "armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android,i686-linux-android"
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+      - name: Install NDK 21
+        run: echo "y" | sdkmanager --install "ndk;21.4.7075529"
       - name: Build Android package
         env:
-          SDKMANAGER: "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/21.4.7075529
         run: |
-          echo "y" | $SDKMANAGER --install "ndk;21.4.7075529"
           cd crypto-ffi
           cargo make copy-android-resources
       - name: Publish package

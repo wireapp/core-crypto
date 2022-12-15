@@ -1,3 +1,6 @@
+[env]
+ANDROID_NDK_PREFER_VERSION = "21"
+
 [tasks.clean]
 command = "cargo"
 args = ["clean"]
@@ -290,10 +293,25 @@ fn autodetect_android_env
 
         ndk_versions_hwnd = glob_array "${platform_dir}/Android/Sdk/ndk/*"
         for path in ${ndk_versions_hwnd}
-            ndk_latest_version = set ${path}
+            ndk_latest_version_path = set ${path}
+
+            split_path_hwnd = split ${path} "/"
+            ndk_version = array_pop ${split_path_hwnd}
+            ndk_version_components_hwnd = split ${ndk_version} "."
+            ndk_build_version = array_pop ${ndk_version_components_hwnd}
+            ndk_minor_version = array_pop ${ndk_version_components_hwnd}
+            ndk_major_version = array_pop ${ndk_version_components_hwnd}
+
+            if eq ${ANDROID_NDK_PREFER_VERSION} ${ndk_major_version}
+                print -c bright_blue "Found preferred NDK version [${ANDROID_NDK_PREFER_VERSION}] => ${ndk_major_version}.${ndk_minor_version}.${ndk_build_version}. Exiting autodetect!\n"
+                goto :autodetect_end
+            }
+            end
         end
-        print -c bright_blue "Autodetected NDK: host:${platform} @ v${ndk_latest_version}\n"
-        return ${ndk_latest_version}
+
+        :autodetect_end noop
+        print -c bright_blue "Autodetected NDK: host:${platform} @ v${ndk_version} [${ndk_latest_version_path}]\n"
+        return ${ndk_latest_version_path}
     end
 end
 
