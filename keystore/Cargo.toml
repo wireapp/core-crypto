@@ -2,7 +2,7 @@
 name = "core-crypto-keystore"
 description = "Encrypted keystore with support for OpenMLS and Proteus"
 repository = "https://github.com/wireapp/core-crypto"
-version = "0.6.0-rc.2"
+version = "0.6.0-rc.3"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
