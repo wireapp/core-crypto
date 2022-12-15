@@ -7,7 +7,7 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
-## [0.6.0-rc.3] - 2022-12-??
+## [0.6.0-rc.3] - 2022-12-15
 
 <details>
     <summary>git-conventional changelog</summary>
@@ -28,7 +28,7 @@ Platform support legends:
         * Initializing Sessions through PreKeyBundles or incoming Messages
 
 
-## [0.6.0-rc.2] - 2022-12-14
+## [0.6.0-rc.2] - 2022-12-15
 
 <details>
     <summary>git-conventional changelog</summary>
