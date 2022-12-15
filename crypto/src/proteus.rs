@@ -192,6 +192,15 @@ impl CoreCrypto {
         proteus.new_prekey(prekey_id, keystore).await
     }
 
+    /// Creates a new Proteus prekey with an automatically incremented ID and returns the CBOR-serialized version of the prekey bundle
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    pub async fn proteus_new_prekey_auto(&self) -> CryptoResult<Vec<u8>> {
+        let proteus = self.proteus.as_ref().ok_or(CryptoError::ProteusNotInitialized)?;
+        let keystore = self.mls.mls_backend.borrow_keystore();
+        proteus.new_prekey_auto(keystore).await
+    }
+
     /// Returns the proteus identity keypair
     ///
     /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
@@ -362,6 +371,8 @@ impl ProteusCentral {
     }
 
     /// Persists a session in store
+    ///
+    /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
     pub async fn session_save(&self, keystore: &CryptoKeystore, session_id: &str) -> CryptoResult<()> {
         if let Some(session) = self.proteus_sessions.get(session_id) {
             Self::session_save_by_ref(keystore, session).await?;

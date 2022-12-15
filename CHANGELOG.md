@@ -7,6 +7,27 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.6.0-rc.3] - 2022-12-??
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Added missing Proteus APIs and docs
+
+</details>
+
+* Added missing Proteus APIs to bindings and FFI:
+    * `proteus_new_prekey_auto`: generates a new PreKeyBundle with an automatically incremented ID
+        * To do this, CoreCrypto finds the first "free" ID within the `0..u16::MAX` range and creates a PreKey using this ID.
+* Added missing documentation when it comes to Proteus eager Session persistence.
+    * Previously undocumented change, but since `0.6.0-rc.1`, CoreCrypto eagerly persists Proteus Sessions (much like it does with MLS groups) when needed:
+        * Decrypting or Encrypting messages, as ratcheting key material can be produced and as such must be persisted
+            * We'll add a more "manual" API later on if you want to control when data is persisted (because it is performance heavy)
+        * Initializing Sessions through PreKeyBundles or incoming Messages
+
+
 ## [0.6.0-rc.2] - 2022-12-14
 
 <details>
@@ -20,6 +41,7 @@ Platform support legends:
 
 ### Miscellaneous Tasks
 
+- Release v0.6.0-rc.2
 - Fix advisory stuff
 
 </details>
