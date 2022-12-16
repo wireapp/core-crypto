@@ -52,6 +52,8 @@ strum = "0.24"
 # UniFFI - Android + iOS bindings - Build support
 uniffi_build = { version = "0.23", features = ["builtin-bindgen"], optional = true }
 uniffi_bindgen = { version = "0.23", optional = true }
+uniffi-kotlin-multiplatform = { git = "https://github.com/wireapp/uniffi-kotlin-multiplatform-bindings", branch = "untested" }
+camino = "1.1.1"
 cfg-if = "1.0"
 
 [target.wasm32-unknown-unknown.dev-dependencies]

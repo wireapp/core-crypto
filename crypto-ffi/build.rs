@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use camino::Utf8Path;
+use uniffi_kotlin_multiplatform::KotlinBindingGenerator;
+
 #[allow(dead_code)]
 const UDL_FILE: &str = "./src/CoreCrypto.udl";
 
@@ -36,6 +39,13 @@ fn main() {
                 false,
             )
             .unwrap();
+
+            uniffi_bindgen::generate_external_bindings(
+                KotlinBindingGenerator {},
+                UDL_FILE,
+                 None::<&Utf8Path>,
+                Some("./bindings/kotlin-native"),
+           ).unwrap();
 
             uniffi_bindgen::generate_bindings(
                 UDL_FILE.into(),
