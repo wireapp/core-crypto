@@ -39,6 +39,7 @@ jobs:
         cd crypto-ffi
         cargo make wasm-build
         cargo make docs-ts
+        cargo make docs-kotlin
 
     - name: Deploy Docs
       uses: peaceiris/actions-gh-pages@v3

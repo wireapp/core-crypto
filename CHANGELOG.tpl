@@ -7,11 +7,23 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.6.0-rc.4] - 2022-12-??
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.6.0-rc.4" unreleased=true}}
+</details>
+
+* Fixed `cargo-make` Makefile.toml to allow building JVM bindings whatever the platform you're running
+    * This is done by adding tests to the relevant tasks, allowing to conditionally execute them.
+* Added a Makefile task to build the `core_crypto_ffi` Kotlin binding docs (via Dokka) and integrate them into the doc package
+
+
 ## [0.6.0-rc.3] - 2022-12-15
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.6.0-rc.3" unreleased=true}}
+{{git-cliff tag="v0.6.0-rc.3"}}
 </details>
 
 * Added missing Proteus APIs to bindings and FFI:
