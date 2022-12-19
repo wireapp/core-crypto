@@ -417,6 +417,24 @@ public class CoreCryptoWrapper {
         try self.coreCrypto.mlsInit(clientId: clientId)
     }
 
+    /// Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID.
+    /// This method is designed to be used in conjunction with ```CoreCrypto/mlsInitWithClientId``` and represents the first step in this process
+    ///
+    /// - returns: the TLS-serialized identity key (i.e. the signature keypair's public key)
+    public func mlsGenerateKeypair() throws -> [UInt8] {
+        try self.coreCrypto.mlsGenerateKeypair()
+    }
+
+    /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
+    ///
+    /// Important: This is designed to be called after ```CoreCrypto/mlsGenerateKeypair```
+    ///
+    /// - parameter clientId: The newly allocated Client ID from the MLS Authentication Service
+    /// - parameter signaturePublicKey: The public key you obtained at step 1, for authentication purposes
+    public func mlsInitWithClientId(clientId: ClientId, signaturePublicKey: [UInt8]) throws {
+        try self.coreCrypto.mlsInitWithClientId(clientId: clientId, signaturePublicKey: signaturePublicKey)
+    }
+
     /// `CoreCrypto` is supposed to be a singleton. Knowing that, it does some optimizations by
     /// keeping MLS groups in memory. Sometimes, especially on iOS, it is required to use extensions
     /// to perform tasks in the background. Extensions are executed in another process so another

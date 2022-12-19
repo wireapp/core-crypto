@@ -51,7 +51,7 @@ export class CoreCryptoError extends Error {
     }
 
     private static fallback(msg: string, ...params: any[]): Error {
-        console.warn("Cannot build CoreCryptoError, falling back to standard Error");
+        console.warn(`Cannot build CoreCryptoError, falling back to standard Error! ctx: ${msg}`);
         // @ts-ignore
         return new Error(msg, ...params);
     }
@@ -614,6 +614,28 @@ export class CoreCrypto {
      */
     async mlsInit(clientId: ClientId): Promise<void> {
         return await CoreCryptoError.asyncMapErr(this.#cc.mls_init(clientId));
+    }
+
+    /**
+     * Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID.
+     * This method is designed to be used in conjunction with {@link CoreCrypto.mlsInitWithClientID} and represents the first step in this process
+     *
+     * @returns This returns the TLS-serialized identity key (i.e. the signature keypair's public key)
+     */
+    async mlsGenerateKeypair(): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.mls_generate_keypair());
+    }
+
+    /**
+     * Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
+     *
+     * Important: This is designed to be called after {@link CoreCrypto.mlsGenerateKeyPair}
+     *
+     * @param clientId - The newly-allocated client ID by the MLS Authentication Service
+     * @param signaturePublicKey - The public key you were given at the first step; This is for authentication purposes
+     */
+    async mlsInitWithClientId(clientId: ClientId, signaturePublicKey: Uint8Array): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.mls_init_with_client_id(clientId, signaturePublicKey));
     }
 
     /** @hidden */

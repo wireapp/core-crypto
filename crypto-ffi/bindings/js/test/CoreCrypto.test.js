@@ -49,7 +49,7 @@ test("tsc import of package", async () => {
       cause
     });
   }
-});
+}, 10000);
 
 test("init", async () => {
   const [ctx, page] = await initBrowser();
@@ -214,6 +214,95 @@ test("external entropy", async () => {
   await page.close();
   await ctx.close();
 });
+
+test("externally generated clients", async () => {
+  const [ctx, page] = await initBrowser();
+
+  await page.evaluate(async () => {
+    const { CoreCrypto } = await import("./corecrypto.js");
+
+    const alice = await CoreCrypto.deferredInit({
+      databaseName: "extgen alice test",
+      key: "test"
+    });
+
+    const signaturePk = await alice.mlsGenerateKeypair();
+
+    const shinyClientId = "my:shiny:client@wire.com";
+    const encoder = new TextEncoder();
+    const clientId = encoder.encode(shinyClientId);
+
+    await alice.mlsInitWithClientId(clientId, signaturePk);
+
+    const bob = await CoreCrypto.init({
+      databaseName: "extgen bob test",
+      key: "test",
+      clientId: "bob",
+    });
+
+    const [bobKp, ] = await bob.clientKeypackages(1);
+
+    const conversationId = encoder.encode("testConversation");
+
+    await alice.createConversation(conversationId);
+
+    const memberAdded = await alice.addClientsToConversation(conversationId, [
+      { id: encoder.encode("bob"), kp: bobKp },
+    ]);
+
+    if (!memberAdded) {
+      throw new Error("no welcome message was generated");
+    }
+
+    await alice.commitAccepted(conversationId);
+
+    const welcomeConversationId = await bob.processWelcomeMessage(memberAdded.welcome);
+
+    if (!conversationId.every((val, i) => val === welcomeConversationId[i])) {
+      throw new Error(`conversationId mismatch, got ${welcomeConversationId}, expected ${conversationId}`);
+    }
+
+    const messageText = "Hello world!";
+    const messageBuffer = encoder.encode(messageText);
+
+    const encryptedMessage = await alice.encryptMessage(
+      conversationId,
+      messageBuffer,
+    );
+
+    const decryptedMessage = await bob.decryptMessage(welcomeConversationId, encryptedMessage);
+
+    if (!decryptedMessage.message) {
+      return new Error("alice -> bob decrypted message isn't an application message");
+    }
+
+    if (!decryptedMessage.message.every((val, i) => val === messageBuffer[i])) {
+      throw new Error("alice -> bob message differs from bob's point of view");
+    }
+
+    const bobEncryptedMessage = await bob.encryptMessage(
+      conversationId,
+      messageBuffer
+    );
+
+    const aliceDecryptedMessage = await alice.decryptMessage(
+      conversationId,
+      bobEncryptedMessage
+    );
+
+    if (!aliceDecryptedMessage.message) {
+      return new Error("bob -> alice decrypted message isn't an application message");
+    }
+
+    if (!aliceDecryptedMessage.message.every((val, i) => val === messageBuffer[i])) {
+      throw new Error("bob -> alice message differs from alice's point of view");
+    }
+  })
+
+  await page.close();
+  await ctx.close();
+});
+
 
 test("get client public key", async () => {
   const [ctx, page] = await initBrowser();

@@ -263,13 +263,46 @@ impl MlsCentral {
             // prevents wrong usage of the method instead of silently hiding the mistake
             return Err(CryptoError::ImplementationError);
         }
-        let mls_client = Client::init(
-            client_id,
-            certificate_bundle,
-            ciphersuites.as_slice(),
-            &self.mls_backend,
-        )
-        .await?;
+        let mls_client = Client::init(client_id, certificate_bundle, &ciphersuites, &self.mls_backend).await?;
+        self.mls_client = Some(mls_client);
+        Ok(())
+    }
+
+    /// Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID.
+    /// This method is designed to be used in conjunction with [MlsCentral::mls_init_with_client_id] and represents the first step in this process
+    ///
+    /// This returns the TLS-serialized identity key (i.e. the signature keypair's public key)
+    pub async fn mls_generate_keypair(
+        &self,
+        ciphersuites: Vec<MlsCiphersuite>,
+        certificate_bundle: Option<CertificateBundle>,
+    ) -> CryptoResult<Vec<u8>> {
+        if self.mls_client.is_some() {
+            // prevents wrong usage of the method instead of silently hiding the mistake
+            return Err(CryptoError::ImplementationError);
+        }
+
+        Client::generate_raw_keypair(certificate_bundle, &ciphersuites, &self.mls_backend).await
+    }
+
+    /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
+    ///
+    /// Important: This is designed to be called after [MlsCentral::mls_generate_keypair]
+    pub async fn mls_init_with_client_id(
+        &mut self,
+        client_id: ClientId,
+        signature_public_key: &[u8],
+        ciphersuites: Vec<MlsCiphersuite>,
+    ) -> CryptoResult<()> {
+        if self.mls_client.is_some() {
+            // prevents wrong usage of the method instead of silently hiding the mistake
+            return Err(CryptoError::ImplementationError);
+        }
+
+        let mls_client =
+            Client::init_with_external_client_id(client_id, signature_public_key, &ciphersuites, &self.mls_backend)
+                .await?;
+
         self.mls_client = Some(mls_client);
         Ok(())
     }

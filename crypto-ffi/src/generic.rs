@@ -309,6 +309,34 @@ impl CoreCrypto<'_> {
         ))
     }
 
+    /// See [core_crypto::MlsCentral::mls_generate_keypair]
+    pub fn mls_generate_keypair(&self) -> CryptoResult<Vec<u8>> {
+        let ciphersuites = vec![MlsCiphersuite::default()];
+        // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
+        let certificate_bundle = None;
+        future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .mls_generate_keypair(ciphersuites, certificate_bundle),
+            ),
+        )
+    }
+
+    /// See [core_crypto::MlsCentral::mls_init_with_client_id]
+    pub fn mls_init_with_client_id(&self, client_id: &ClientId, signature_public_key: &[u8]) -> CryptoResult<()> {
+        let ciphersuites = vec![MlsCiphersuite::default()];
+        future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .mls_init_with_client_id(client_id.clone(), signature_public_key, ciphersuites),
+            ),
+        )
+    }
+
     /// See [core_crypto::MlsCentral::restore_from_disk]
     pub fn restore_from_disk(&self) -> CryptoResult<()> {
         future::block_on(
