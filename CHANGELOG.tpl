@@ -18,6 +18,7 @@ Platform support legends:
     * This is done by adding tests to the relevant tasks, allowing to conditionally execute them.
 * Added a Makefile task to build the `core_crypto_ffi` Kotlin binding docs (via Dokka) and integrate them into the doc package
 * Updated UniFFI to 0.22
+* Other minor improvements on internal build/release tools (mainly our `cargo xtask` command)
 
 
 ## [0.6.0-rc.3] - 2022-12-15
@@ -165,6 +166,22 @@ Currently, only native & WASM are supported. Most of all, those tests can be run
 {{git-cliff tag="v0.5.0"}}
 </details>
 
+Platform support status:
+
+* x86_64-unknown-linux-gnu ✅
+* x86_64-apple-darwin ✅
+* x86_64-pc-windows-msvc ❌
+* armv7-linux-androideabi ✅ (⚠️)
+* aarch64-linux-android ✅ (⚠️)
+* i686-linux-android ✅ (⚠️)
+* x86_64-linux-android ✅ (⚠️)
+* aarch64-apple-ios ✅
+* aarch64-apple-ios-sim ✅
+* x86_64-apple-ios ✅
+* wasm32-unknown-unknown ✅
+
+Note: all the platforms marked with (⚠️) above will get a round of polish for the build process & documentation in the next release.
+
 * **[BREAKING]**: `commit_pending_proposals` now returns an optional `CommitBundle`
     * This was made to handle the case where there are no queued proposals to commit and this method would be called, causing the operation to fail.
 * **[BREAKING]**: Changed the API for callbacks for clarity
@@ -198,6 +215,27 @@ Currently, only native & WASM are supported. Most of all, those tests can be run
 
 ## [0.4.0] - 2022-08-31
 
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.4.0"}}
+</details>
+
+Platform support status:
+
+* x86_64-unknown-linux-gnu ✅
+* x86_64-apple-darwin ✅
+* x86_64-pc-windows-msvc ❌
+* armv7-linux-androideabi ✅ (⚠️)
+* aarch64-linux-android ✅ (⚠️)
+* i686-linux-android ✅ (⚠️)
+* x86_64-linux-android ✅ (⚠️)
+* aarch64-apple-ios ✅
+* aarch64-apple-ios-sim ✅
+* x86_64-apple-ios ✅
+* wasm32-unknown-unknown ✅
+
+Note: all the platforms marked with (⚠️) above will get a round of polish for the build process & documentation in the next release.
+
 ### CoreCrypto
 
 * Allow rollbacking proposals. Now every method for creating a proposal also returns a proposal reference
@@ -217,10 +255,6 @@ be used now since wire-server does not yet have an endpoint for supplying it. It
 In the end, the `final_` prefix will removed and the not prefixed methods will be deprecated.
 * Benchmarks have been improved and now also cover MLS operations
 
-<details>
-    <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.4.0"}}
-</details>
 
 ## [0.3.1] - 2022-08-16
 

@@ -5,6 +5,11 @@ use xshell::{cmd, Shell};
 pub fn changelog(dry_run: bool) -> Result<()> {
     let mut handlebars = Handlebars::new();
     let sh = Shell::new()?;
+
+    // Make sure we have a fresh state before generating anything
+    log::info!("Updating git refs to make sure everything is fresh and dandy...");
+    cmd!(sh, "git fetch --all --tags").ignore_stdout().run()?;
+
     let repo = git2::Repository::open(".")?;
     let mut refs = serde_json::Map::new();
 
