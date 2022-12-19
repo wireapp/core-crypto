@@ -840,6 +840,51 @@ impl CoreCrypto {
         )
     }
 
+    /// Returns [`WasmCryptoResult<Vec<u8>>`]
+    ///
+    /// See [core_crypto::MlsCentral::mls_generate_keypair]
+    pub fn mls_generate_keypair(&self) -> Promise {
+        let this = self.inner.clone();
+
+        future_to_promise(
+            async move {
+                let ciphersuites = vec![MlsCiphersuite::default()];
+                // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
+                let certificate_bundle = None;
+
+                let central = this.read().await;
+                let pk = central
+                    .mls_generate_keypair(ciphersuites, certificate_bundle)
+                    .await
+                    .map_err(CoreCryptoError::from)?;
+                WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns [`WasmCryptoResult<()>`]
+    ///
+    /// See [core_crypto::MlsCentral::mls_init_with_client_id]
+    pub fn mls_init_with_client_id(&self, client_id: FfiClientId, signature_public_key: Box<[u8]>) -> Promise {
+        let this = self.inner.clone();
+
+        future_to_promise(
+            async move {
+                let ciphersuites = vec![MlsCiphersuite::default()];
+
+                let mut central = this.write().await;
+                central
+                    .mls_init_with_client_id(client_id.into(), &signature_public_key, ciphersuites)
+                    .await
+                    .map_err(CoreCryptoError::from)?;
+
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
+        )
+    }
+
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::MlsCentral::close]

@@ -82,6 +82,9 @@ enum CryptoError {
     "ProteusSupportNotEnabled",
     "MlsNotInitialized",
     "InvalidKeyPackage",
+    "IdentityAlreadyPresent",
+    "NoProvisionalIdentityFound",
+    "TooManyIdentitiesPresent",
 };
 
 dictionary DecryptedMessage {
@@ -140,6 +143,12 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     void mls_init([ByRef] ClientId client_id);
+
+    [Throws=CryptoError]
+    sequence<u8> mls_generate_keypair();
+
+    [Throws=CryptoError]
+    void mls_init_with_client_id([ByRef] ClientId client_id, [ByRef] sequence<u8> signature_public_key);
 
     [Throws=CryptoError]
     void restore_from_disk();
