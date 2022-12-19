@@ -1,7 +1,7 @@
 use color_eyre::eyre::{eyre, Result};
 use std::path::Path;
 
-#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 #[clap(rename_all = "kebab-case")]
 pub enum BumpLevel {
     Major,
@@ -66,10 +66,173 @@ fn bump_semver(bump_level: BumpLevel, old_version: &semver::Version) -> Result<s
     Ok(version)
 }
 
+fn bump_npm_version(bump_version: BumpLevel, dry_run: bool) -> Result<()> {
+    let file = std::fs::File::open("./package.json")?;
+    let reader = std::io::BufReader::new(file);
+
+    let mut package_json: serde_json::Value = serde_json::from_reader(reader)?;
+
+    let Some(package_name) = package_json["name"].as_str() else {
+        return Err(eyre!("Cannot read package.json package name"));
+    };
+
+    let Some(former_version) = package_json["version"].as_str() else {
+        return Err(eyre!("Version in package.json cannot be read"));
+    };
+
+    let semver_version = semver::Version::parse(former_version)?;
+
+    let new_semver_version = bump_semver(bump_version, &semver_version)?;
+    log::info!("Bumping NPM package {package_name}: {semver_version} -> {new_semver_version}");
+
+    if !dry_run {
+        package_json["version"] = new_semver_version.to_string().into();
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open("./package.json")?;
+        serde_json::to_writer_pretty(&mut file, &package_json)?;
+    }
+
+    Ok(())
+}
+
+fn bump_gradle_version(file: &str, bump_version: BumpLevel, dry_run: bool) -> Result<()> {
+    const SEARCH_STR: &str = "version = \"";
+
+    let mut gradle_build_file = std::fs::read_to_string(file)?;
+
+    let Some((start_idx, end_idx)) = gradle_build_file
+        .find(SEARCH_STR)
+        .map(|idx| idx + SEARCH_STR.len())
+        .and_then(|idx| gradle_build_file[idx..]
+            .find('"')
+            .map(move |end_idx| (idx, end_idx + idx))
+        ) else {
+            return Err(eyre!("Could not find version in ./kotlin/android/build.gradle.kts"));
+        };
+
+    let semver_version = semver::Version::parse(&gradle_build_file[start_idx..end_idx])?;
+
+    let new_semver_version = bump_semver(bump_version, &semver_version)?;
+    log::info!("Bumping {file}: {semver_version} -> {new_semver_version}");
+
+    if !dry_run {
+        gradle_build_file.replace_range(start_idx..end_idx, &new_semver_version.to_string());
+        std::fs::write(file, gradle_build_file)?;
+        log::debug!("Wrote gradle file at {file}");
+    }
+
+    Ok(())
+}
+
+fn bump_gradle_versions(bump_version: BumpLevel, dry_run: bool) -> Result<()> {
+    let files = ["./kotlin/android/build.gradle.kts", "./kotlin/jvm/build.gradle.kts"];
+
+    for file in files {
+        bump_gradle_version(file, bump_version, dry_run)?;
+    }
+
+    Ok(())
+}
+
+fn bump_deps(
+    package: &cargo::core::Package,
+    manifest: &mut toml_edit::Document,
+    ws_rust_dep_names_to_bump: &[&str],
+    bump_version: BumpLevel,
+    dry_run: bool,
+) -> Result<()> {
+    let package_name = package.name().as_str();
+    for dep in package.dependencies() {
+        // If it's a usual dependency, don't touch it
+        let dep_name = dep.package_name().as_str();
+        if !ws_rust_dep_names_to_bump.contains(&dep_name) {
+            continue;
+        }
+
+        use cargo::core::dependency::DepKind;
+        let dep_field = match dep.kind() {
+            DepKind::Normal => "dependencies",
+            DepKind::Development => "dev-dependencies",
+            DepKind::Build => "build-dependencies",
+        };
+
+        use cargo::util::OptVersionReq;
+        let required_version = match dep.version_req() {
+            // No specific requirement, do nothing
+            OptVersionReq::Any => {
+                continue;
+            }
+            // Otherwise extract the requirement
+            OptVersionReq::Req(req) | OptVersionReq::Locked(_, req) => req,
+        };
+
+        if required_version.comparators.is_empty() {
+            log::warn!("[{package_name}.{dep_field}.{dep_name}] has an empty version requirement, skipping");
+            continue;
+        }
+
+        let required_version_comparator = &required_version.comparators[0];
+        let major = required_version_comparator.major;
+        let minor = match required_version_comparator.minor {
+            Some(minor_ver) => minor_ver,
+            None if bump_version == BumpLevel::Minor => {
+                log::info!("[{package_name}.{dep_field}.{dep_name}]: No requirement for current bump, skipping");
+                continue;
+            }
+            None => {
+                log::warn!("[{package_name}.{dep_field}.{dep_name}]: Empty minor requirement for current bump, you should double check the bump result, it will probably be incorrect");
+                0
+            }
+        };
+        let patch = match required_version_comparator.patch {
+            Some(patch_ver) => patch_ver,
+            None if bump_version == BumpLevel::Patch => {
+                log::info!("[{package_name}.{dep_field}.{dep_name}]: No requirement for current bump, skipping");
+                continue;
+            }
+            None => {
+                log::warn!("[{package_name}.{dep_field}.{dep_name}]: Empty patch requirement for current bump, you should double check the bump result, it will probably be incorrect");
+                0
+            }
+        };
+
+        let pre = required_version_comparator.pre.clone();
+        let required_version_semver = semver::Version {
+            major,
+            minor,
+            patch,
+            pre,
+            build: semver::BuildMetadata::EMPTY,
+        };
+
+        let new_required_version_semver = bump_semver(bump_version, &required_version_semver)?;
+
+        let mut new_required_version = required_version.clone();
+        new_required_version.comparators[0].major = new_required_version_semver.major;
+        new_required_version.comparators[0].minor = Some(new_required_version_semver.minor);
+        new_required_version.comparators[0].patch = Some(new_required_version_semver.patch);
+        new_required_version.comparators[0].pre = new_required_version_semver.pre;
+
+        log::info!("Bumping [{package_name}.{dep_field}.{dep_name}]: {required_version} -> {new_required_version}");
+
+        if !dry_run {
+            manifest[dep_field][dep_name]["version"] = toml_edit::value(new_required_version.to_string());
+        }
+    }
+
+    Ok(())
+}
+
 pub fn bump(bump_version: BumpLevel, dry_run: bool) -> Result<()> {
+    log::warn!("Dry run enabled, no actions will be performed on files");
+
     let cargo_config = cargo::util::Config::default().map_err(|e| eyre!(e.to_string()))?;
     let ws = cargo::core::Workspace::new(&Path::new("./Cargo.toml").canonicalize()?, &cargo_config)
         .map_err(|e| eyre!(e.to_string()))?;
+
+    let ws_rust_dep_names_to_bump: Vec<&str> = ws.members().map(|p| p.name().as_str()).collect();
 
     for package in ws.members() {
         let package_name = package.name();
@@ -85,19 +248,26 @@ pub fn bump(bump_version: BumpLevel, dry_run: bool) -> Result<()> {
                 .ok_or_else(|| eyre!("Could not parse version"))?,
         )?;
 
-        log::info!("Found workspace member {package_name}@{semver_version}");
-
         let new_semver_version = bump_semver(bump_version, &semver_version)?;
-        log::info!("Bumping {package_name}: {semver_version} -> {new_semver_version}");
+        log::info!("Bumping Cargo package {package_name}: {semver_version} -> {new_semver_version}");
+
+        bump_deps(
+            package,
+            &mut manifest,
+            &ws_rust_dep_names_to_bump,
+            bump_version,
+            dry_run,
+        )?;
 
         if !dry_run {
             manifest["package"]["version"] = toml_edit::value(new_semver_version.to_string());
             std::fs::write(manifest_path, manifest.to_string())?;
             log::debug!("Wrote new manifest");
-        } else {
-            log::info!("Dry run selected, doing nothing");
         }
     }
+
+    bump_npm_version(bump_version, dry_run)?;
+    bump_gradle_versions(bump_version, dry_run)?;
 
     Ok(())
 }
