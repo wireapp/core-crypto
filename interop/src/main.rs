@@ -77,7 +77,7 @@ fn run_test() -> Result<()> {
 
         let spinner = util::RunningProcess::new("Starting HTTP server...", false);
         let http_server_hwnd = tokio::task::spawn(build::web::wasm::spawn_http_server());
-        spinner.success(&format!("HTTP server started at 0.0.0.0:{TEST_SERVER_PORT} [OK]"));
+        spinner.success(format!("HTTP server started at 0.0.0.0:{TEST_SERVER_PORT} [OK]"));
 
         let mut spinner = util::RunningProcess::new("Starting WebDriver [ChromeDriver & GeckoDriver]...", false);
         let chrome_driver_addr = TcpListener::bind("127.0.0.1:0").await?.local_addr()?;
@@ -215,7 +215,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
         ));
     }
 
-    spinner.success(&format!(
+    spinner.success(format!(
         "[MLS] Step 3: Roundtripping {ROUNDTRIP_MSG_AMOUNT} messages... [OK]"
     ));
 
@@ -351,7 +351,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
         ));
     }
 
-    spinner.success(&format!(
+    spinner.success(format!(
         "[Proteus] Step 3: Roundtripping {ROUNDTRIP_MSG_AMOUNT} messages... [OK]"
     ));
 
