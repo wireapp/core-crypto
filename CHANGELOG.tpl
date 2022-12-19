@@ -17,6 +17,7 @@ Platform support legends:
 * Fixed `cargo-make` Makefile.toml to allow building JVM bindings whatever the platform you're running
     * This is done by adding tests to the relevant tasks, allowing to conditionally execute them.
 * Added a Makefile task to build the `core_crypto_ffi` Kotlin binding docs (via Dokka) and integrate them into the doc package
+* Updated UniFFI to 0.22
 
 
 ## [0.6.0-rc.3] - 2022-12-15
