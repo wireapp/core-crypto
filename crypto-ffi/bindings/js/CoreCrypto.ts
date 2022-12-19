@@ -1026,7 +1026,7 @@ export class CoreCrypto {
      * **CAUTION**: only use this when you had an explicit response from the Delivery Service
      * e.g. 403. Do not use otherwise e.g. 5xx responses, timeout etc..
      * **DO NOT** use when Delivery Service responds 409, pending state will be renewed
-     * in {@link CoreCrypto.decrypt_message}
+     * in {@link CoreCrypto.decryptMessage}
      *
      * @param conversationId - The group's ID
      */
