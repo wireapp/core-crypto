@@ -553,6 +553,11 @@ impl ProteusCentral {
     #[cfg(not(target_family = "wasm"))]
     async fn cryptobox_migrate_impl(keystore: &CryptoKeystore, path: &str) -> CryptoResult<()> {
         let root_dir = std::path::PathBuf::from(path);
+
+        if !root_dir.exists() {
+            return Err(crate::CryptoboxMigrationError::ProvidedPathDoesNotExist(path.into()).into());
+        }
+
         let session_dir = root_dir.join("sessions");
         let prekey_dir = root_dir.join("prekeys");
 
@@ -600,10 +605,8 @@ impl ProteusCentral {
             }
         };
 
-        let identity = if let Some(identity) = identity.take() {
-            identity
-        } else {
-            Self::create_identity(keystore).await?
+        let Some(identity) = identity.take() else {
+            return Err(crate::CryptoboxMigrationError::IdentityNotFound(path.into()).into());
         };
 
         use futures_lite::stream::StreamExt as _;
@@ -698,9 +701,14 @@ impl ProteusCentral {
 
         let store_names = db.store_names();
 
-        // No identity - no migration
-        if !store_names.contains(&local_identity_store_name.to_string()) {
-            return Ok(());
+        let expected_stores = &[prekeys_store_name, sessions_store_name, local_identity_store_name];
+
+        if !expected_stores
+            .iter()
+            .map(|s| s.to_string())
+            .all(|s| store_names.contains(&s))
+        {
+            return Err(crate::CryptoboxMigrationError::ProvidedPathDoesNotExist(path.into()).into());
         }
 
         let mut proteus_identity = if let Some(store_kp) = keystore.find::<ProteusIdentity>(&[]).await? {
@@ -743,10 +751,8 @@ impl ProteusCentral {
             }
         };
 
-        let proteus_identity = if let Some(identity) = proteus_identity.take() {
-            identity
-        } else {
-            Self::create_identity(keystore).await?
+        let Some(proteus_identity) = proteus_identity.take() else {
+            return Err(crate::CryptoboxMigrationError::IdentityNotFound(path.into()).into());
         };
 
         if store_names.contains(&sessions_store_name.to_string()) {
@@ -1014,6 +1020,10 @@ mod tests {
                 .await
                 .unwrap();
 
+        let Err(crate::CryptoError::CryptoboxMigrationError(crate::CryptoboxMigrationError::ProvidedPathDoesNotExist(_))) = ProteusCentral::cryptobox_migrate(&keystore, "invalid path").await else {
+            panic!("ProteusCentral::cryptobox_migrate did not throw an error on invalid path");
+        };
+
         ProteusCentral::cryptobox_migrate(&keystore, &cryptobox_folder.path().to_string_lossy())
             .await
             .unwrap();
@@ -1187,6 +1197,10 @@ mod tests {
 
                 let _ = wasm_bindgen_futures::JsFuture::from(run_cryptobox(alice)).await.unwrap();
                 let mut keystore = core_crypto_keystore::Connection::open_with_key(&format!("{CRYPTOBOX_JS_DBNAME}-imported"), "test").await.unwrap();
+                let Err(crate::CryptoError::CryptoboxMigrationError(crate::CryptoboxMigrationError::ProvidedPathDoesNotExist(_))) = ProteusCentral::cryptobox_migrate(&keystore, "invalid path").await else {
+                    panic!("ProteusCentral::cryptobox_migrate did not throw an error on invalid path");
+                };
+
                 ProteusCentral::cryptobox_migrate(&keystore, CRYPTOBOX_JS_DBNAME).await.unwrap();
 
                 let mut proteus_central = ProteusCentral::try_new(&keystore).await.unwrap();

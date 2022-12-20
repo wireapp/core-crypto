@@ -250,4 +250,14 @@ pub enum CryptoboxMigrationError {
     #[error("The value cannot be coerced to the {0} type")]
     /// Error when trying to coerce a certain value to a certain type
     WrongValueType(String),
+    #[cfg_attr(target_family = "wasm", error("The provided path [{0}] could not be found."))]
+    #[cfg_attr(
+        not(target_family = "wasm"),
+        error("The provided path store [{0}] is either non-existent or has an incorrect shape.")
+    )]
+    /// Error when trying to open a Cryptobox store that doesn't exist
+    ProvidedPathDoesNotExist(String),
+    #[error("The Cryptobox identity at path [{0}] could not be found.")]
+    /// Error when inspecting a Cryptobox store that doesn't contain an Identity
+    IdentityNotFound(String),
 }
