@@ -164,10 +164,8 @@ impl WebdriverContext {
                         return Err(e.into());
                     }
                 };
-                dbg!(&msg_raw);
                 let event: Event = match serde_json::from_slice(&msg_raw) {
                     Ok(event) => event,
-                    // FIXME: Failed to deserialize payload: Error("data did not match any variant of untagged enum EventData", line: 1, column: 862)
                     Err(e) => {
                         log::error!("Failed to deserialize payload: {e:?}");
                         continue;
@@ -423,14 +421,14 @@ impl WasmTestFileContext {
 }
 
 impl WebdriverContext {
-    async fn get_text_from_div(browser: &fantoccini::Client, id: &str) -> WasmBrowserRunResult<String> {
-        let element = browser
-            .find(fantoccini::Locator::Id(id))
-            .await
-            .map_err(WebdriverError::from)?;
+    // async fn get_text_from_div(browser: &fantoccini::Client, id: &str) -> WasmBrowserRunResult<String> {
+    //     let element = browser
+    //         .find(fantoccini::Locator::Id(id))
+    //         .await
+    //         .map_err(WebdriverError::from)?;
 
-        Ok(element.text().await.map_err(WebdriverError::from)?)
-    }
+    //     Ok(element.text().await.map_err(WebdriverError::from)?)
+    // }
 
     pub async fn run_wasm_tests(&self, wasm_file_path: &std::path::Path) -> WasmBrowserRunResult<bool> {
         if !wasm_file_path.exists() {
@@ -484,44 +482,48 @@ impl WebdriverContext {
             .map_err(WebdriverError::from)?;
 
         self.browser
-            .execute_async(
+//             .execute_async(
+//                 r#"
+// const [wasmFileLocation, testsList, callback] = arguments;
+// window.runTests(wasmFileLocation, testsList).then(callback)"#,
+            .execute(
                 r#"
-const [wasmFileLocation, testsList, callback] = arguments;
-window.runTests(wasmFileLocation, testsList).then(callback)"#,
+const [wasmFileLocation, testsList] = arguments;
+window.runTests(wasmFileLocation, testsList);"#,
                 vec![wasm_file_name.to_string_lossy().into(), wasm_tests_ctx.tests.into()],
             )
             .await
             .map_err(WebdriverError::from)?;
 
         // Wait for control element (inserted when tests are done)
-        // use fantoccini::Locator;
+        use fantoccini::Locator;
 
-        // let control_elem_id = format!("control_{}", wasm_file_name.to_string_lossy());
+        let control_elem_id = format!("control_{}", wasm_file_name.to_string_lossy());
 
-        // let wait_result = self
-        //     .browser
-        //     .wait()
-        //     .at_most(self.timeout)
-        //     .for_element(Locator::Id(&control_elem_id))
-        //     .await;
+        let wait_result = self
+            .browser
+            .wait()
+            .at_most(self.timeout)
+            .for_element(Locator::Id(&control_elem_id))
+            .await;
 
-        // let result = match wait_result {
-        //     Ok(_) => true,
-        //     Err(fantoccini::error::CmdError::WaitTimeout) => {
-        //         log::error!(
-        //             "Tests have not finished within the allotted timeout ({} seconds)",
-        //             self.timeout.as_secs()
-        //         );
-        //         false
-        //     }
-        //     Err(e) => return Err(WebdriverError::from(e).into()),
-        // };
+        let result = match wait_result {
+            Ok(_) => true,
+            Err(fantoccini::error::CmdError::WaitTimeout) => {
+                log::error!(
+                    "Tests have not finished within the allotted timeout ({} seconds)",
+                    self.timeout.as_secs()
+                );
+                false
+            }
+            Err(e) => return Err(WebdriverError::from(e).into()),
+        };
 
-        // if result {
-        //     log::info!("Tests OK");
-        // } else {
-        //     log::error!("Tests finished with one or more errors");
-        // }
+        if result {
+            log::info!("Tests OK");
+        } else {
+            log::error!("Tests finished with one or more errors");
+        }
 
         // FIXME: This is way too janky when it comes to how it operates within JS
         // TODO: Fork fantoccini to add the websocket address and use shit properly

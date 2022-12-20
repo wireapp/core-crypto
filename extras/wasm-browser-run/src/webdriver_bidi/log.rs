@@ -36,12 +36,15 @@ impl Into<log::Level> for LogLevel {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BaseLogEntry {
     pub level: LogLevel,
+    #[serde(flatten)]
     pub source: ScriptSource,
     pub text: Option<String>,
-    pub timestamp: u64,
+    // FIXME: Do something better than a f64; ie std::time::Duration or something like chrono human durations
+    pub timestamp: f64,
     pub stack_trace: Option<ScriptStackTrace>,
 }
 
@@ -52,8 +55,8 @@ impl std::fmt::Display for BaseLogEntry {
             writeln!(f, "{text}")?;
         }
         if let Some(strace) = &self.stack_trace {
-            for (i, sframe) in strace.iter().enumerate() {
-                writeln!(f, "\t#{i} {sframe}")?;
+            for (i, sframe) in strace.call_frames.iter().enumerate() {
+                write!(f, "\t#{i} {sframe}")?;
             }
         }
 
@@ -61,7 +64,7 @@ impl std::fmt::Display for BaseLogEntry {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ConsoleLogEntry {
     pub method: String,
     pub args: Vec<RemoteValue>,
@@ -86,6 +89,7 @@ impl std::fmt::Display for ConsoleLogEntry {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, serde_enum_str::Serialize_enum_str, serde_enum_str::Deserialize_enum_str)]
+#[serde(rename_all = "lowercase")]
 pub enum LogEntryType {
     Console,
     JavaScript,
@@ -93,13 +97,14 @@ pub enum LogEntryType {
     Generic(String),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
 pub enum LogEntryInner {
     Console(ConsoleLogEntry),
     Base(BaseLogEntry),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct LogEntry {
     #[serde(rename = "type")]
     pub entry_type: LogEntryType,
@@ -107,7 +112,7 @@ pub struct LogEntry {
     pub entry_data: LogEntryInner,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "method", content = "params")]
 pub enum LogEvent {
     #[serde(rename = "log.entryAdded")]

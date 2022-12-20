@@ -7,10 +7,7 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.21", features = ["process", "net"] }
-# Http Server
 warp = "0.3"
-# Webdriver stuff
-webdriver-install = "0.3"
 # fantoccini = "0.19"
 fantoccini = { git = "https://github.com/otak/fantoccini", branch = "feat/session-handshake" }
 # Utils
@@ -24,7 +21,7 @@ reqwest = { version = "0.11", features = ["json", "stream"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tempfile = "3.3"
-futures-util = "0.3.25"
+futures-util = "0.3"
 wasm-bindgen = "0.2"
 walrus = "0.19"
 hex = "0.4"
@@ -32,4 +29,4 @@ wasm-bindgen-cli-support = "0.2"
 log = "0.4"
 tokio-tungstenite = "0.18"
 ordered-float = { version = "3.4", features = ["serde"] }
-serde-enum-str = "0.2.5"
+serde-enum-str = "0.3"

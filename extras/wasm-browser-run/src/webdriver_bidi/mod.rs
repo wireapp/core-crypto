@@ -86,9 +86,9 @@ pub mod local {
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     #[serde(untagged)]
     pub enum EventData {
+        LogEvent(LogEvent),
         BrowsingContextEvent(BrowsingContextEvent),
         ScriptEvent(ScriptEvent),
-        LogEvent(LogEvent),
     }
 
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
