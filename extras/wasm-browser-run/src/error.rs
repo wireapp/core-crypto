@@ -40,6 +40,8 @@ pub enum WasmBrowserRunError {
     NpmError(String),
     #[error("Cannot find the WASM file located at {0}")]
     WasmFileNotFound(String),
+    #[error("Tests have failed with the following error\n\n{0}")]
+    ErrorThrownInTest(String),
     #[error("Invalid __wasm_bindgen_test_unstable custom section value - expected to find 0x01, found {0}")]
     InvalidWasmBindgenTestCustomSection(String),
     #[error(

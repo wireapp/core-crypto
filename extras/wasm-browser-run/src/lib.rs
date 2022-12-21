@@ -164,6 +164,7 @@ impl WebdriverContext {
                         return Err(e.into());
                     }
                 };
+                dbg!(serde_json::from_slice::<serde_json::Value>(&msg_raw)?);
                 let event: Event = match serde_json::from_slice(&msg_raw) {
                     Ok(event) => event,
                     Err(e) => {
@@ -421,14 +422,14 @@ impl WasmTestFileContext {
 }
 
 impl WebdriverContext {
-    // async fn get_text_from_div(browser: &fantoccini::Client, id: &str) -> WasmBrowserRunResult<String> {
-    //     let element = browser
-    //         .find(fantoccini::Locator::Id(id))
-    //         .await
-    //         .map_err(WebdriverError::from)?;
+    async fn get_text_from_div(browser: &fantoccini::Client, id: &str) -> WasmBrowserRunResult<String> {
+        let element = browser
+            .find(fantoccini::Locator::Id(id))
+            .await
+            .map_err(WebdriverError::from)?;
 
-    //     Ok(element.text().await.map_err(WebdriverError::from)?)
-    // }
+        Ok(element.text().await.map_err(WebdriverError::from)?)
+    }
 
     pub async fn run_wasm_tests(&self, wasm_file_path: &std::path::Path) -> WasmBrowserRunResult<bool> {
         if !wasm_file_path.exists() {
@@ -450,7 +451,7 @@ impl WebdriverContext {
         let tmpdir = wasm_tests_ctx.bindgen_get_tmpdir().await?;
         log::warn!("wasm-bindgen tmp dir: {tmpdir:?}");
 
-        let module_name = "wasm-bindgen-test";
+        let module_name = wasm_file_path.file_name().unwrap().to_str().unwrap();
 
         let mut bindgen = wasm_bindgen_cli_support::Bindgen::new();
         bindgen
@@ -464,11 +465,25 @@ impl WebdriverContext {
             .map_err(|e| eyre::eyre!("{e}"))?;
 
         let mount_point = self.compile_js_support(None).await?;
-        let wasm_file_name: std::path::PathBuf = wasm_file_path.file_name().unwrap().to_str().unwrap().into();
+        let wasm_file_name: std::path::PathBuf = module_name.into();
         let mount_point_path = std::path::PathBuf::from(&mount_point);
         log::warn!("Mount point path: {mount_point_path:?}");
-        tokio::fs::copy(wasm_file_path, mount_point_path.join(&wasm_file_name)).await?;
+        let base = tmpdir.join(module_name);
+        let dest = mount_point_path.join(&wasm_file_name).with_extension("");
+
+        let from = base.with_extension("js");
+        let to = dest.with_extension("js");
+        log::warn!("cp {from:?} -> {to:?}");
+        tokio::fs::copy(&from, &to).await?;
+
+        let from = base.with_extension("wasm");
+        let to = dest.with_extension("wasm");
+        log::warn!("cp {from:?} -> {to:?}");
+        tokio::fs::copy(&from, &to).await?;
+        // tokio::fs::copy(wasm_file_path, mount_point_path.join(&wasm_file_name)).await?;
         let (hwnd, socket_addr) = Self::spawn_http_server(&mount_point).await?;
+
+        let test_file_name = dest.file_name().unwrap().to_string_lossy();
 
         let window = self.browser.new_window(true).await.map_err(WebdriverError::from)?;
         self.browser
@@ -488,9 +503,9 @@ impl WebdriverContext {
 // window.runTests(wasmFileLocation, testsList).then(callback)"#,
             .execute(
                 r#"
-const [wasmFileLocation, testsList] = arguments;
-window.runTests(wasmFileLocation, testsList);"#,
-                vec![wasm_file_name.to_string_lossy().into(), wasm_tests_ctx.tests.into()],
+const [fileName, testsList] = arguments;
+window.runTests(fileName, testsList);"#,
+                vec![test_file_name.clone().into(), wasm_tests_ctx.tests.into()],
             )
             .await
             .map_err(WebdriverError::from)?;
@@ -498,7 +513,7 @@ window.runTests(wasmFileLocation, testsList);"#,
         // Wait for control element (inserted when tests are done)
         use fantoccini::Locator;
 
-        let control_elem_id = format!("control_{}", wasm_file_name.to_string_lossy());
+        let control_elem_id = format!("control_{test_file_name}");
 
         let wait_result = self
             .browser
@@ -508,7 +523,13 @@ window.runTests(wasmFileLocation, testsList);"#,
             .await;
 
         let result = match wait_result {
-            Ok(_) => true,
+            Ok(element) => {
+                let text = element.text().await.map_err(WebdriverError::from)?;
+                if !text.is_empty() {
+                    return Err(WasmBrowserRunError::ErrorThrownInTest(text));
+                }
+                true
+            }
             Err(fantoccini::error::CmdError::WaitTimeout) => {
                 log::error!(
                     "Tests have not finished within the allotted timeout ({} seconds)",
@@ -527,10 +548,10 @@ window.runTests(wasmFileLocation, testsList);"#,
 
         // FIXME: This is way too janky when it comes to how it operates within JS
         // TODO: Fork fantoccini to add the websocket address and use shit properly
-        // log::info!(
-        //     "Raw output: {}\n",
-        //     Self::get_text_from_div(&self.browser, "output").await?
-        // );
+        log::info!(
+            "Tests output: {}\n",
+            Self::get_text_from_div(&self.browser, "output").await?
+        );
         // log::info!(
         //     "console.log output: {}\n",
         //     Self::get_text_from_div(&self.browser, "console_log").await?

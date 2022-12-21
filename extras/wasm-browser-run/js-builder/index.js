@@ -39,21 +39,21 @@ const template = ({ attributes, files, meta, publicPath, title }) => {
     })
     .join('\n');
 
-    return `
+    return `\
 <!DOCTYPE html>
-<html ${attributes}>
+<html${makeHtmlAttributes(attributes.html)}>
   <head>
     ${metas}
     <title>${title}</title>
     ${links}
   </head>
   <body>
-    <div id="output"></div>
-    <div id="console_debug"></div>
-    <div id="console_log"></div>
-    <div id="console_info"></div>
-    <div id="console_warn"></div>
-    <div id="console_error"></div>
+    <pre id="output"></pre>
+    <pre id="console_debug"></pre>
+    <pre id="console_log"></pre>
+    <pre id="console_info"></pre>
+    <pre id="console_warn"></pre>
+    <pre id="console_error"></pre>
     ${scripts}
   </body>
 </html>`;
