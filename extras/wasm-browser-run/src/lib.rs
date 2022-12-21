@@ -336,8 +336,8 @@ window.__wbr__jsCall().then(callback);"#,
             .current_dir(&js_builder_path)
             .arg("start")
             .stdin(std::process::Stdio::piped())
-            // .stdout(std::process::Stdio::piped())
-            // .stderr(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
             .spawn()?;
 
         if let Some(js) = js.take() {
@@ -370,13 +370,21 @@ impl WasmTestFileContext {
     pub fn new(wasm_file_path: impl AsRef<std::path::Path>) -> WasmBrowserRunResult<Self> {
         let location = wasm_file_path.as_ref().to_owned();
         let mut module = walrus::Module::from_file(wasm_file_path).map_err(|e| eyre::eyre!("{e:?}"))?;
-        let test_exports = module
+        let test_exports: Vec<String> = module
             .exports
             .iter()
             // exports starting with "__wbgt_" (wasm-bindgen-test) are `#[wasm_bindgen::test]`-marked functions
             .filter(|e| e.name.starts_with("__wbgt_"))
             .map(|e| e.name.clone())
             .collect();
+
+        if test_exports.is_empty() {
+            return Ok(Self {
+                location,
+                module,
+                tests: test_exports,
+            });
+        }
 
         let section = module
             .customs
@@ -421,7 +429,32 @@ impl WasmTestFileContext {
     }
 }
 
+#[derive(Debug, Clone, serde::Deserialize)]
+struct TestResultContainerSummary {
+    pub successful: bool,
+    pub success: u64,
+    pub fail: u64,
+    pub ignored: u64,
+    pub total: u64,
+}
+
+/// interface TestResultContainer {
+///     details: [string, boolean][],
+///     summary: {
+///         successful: boolean,
+///         success: number,
+///         fail: number,
+///         ignored: number,
+///     },
+/// }
+#[derive(Debug, Clone, serde::Deserialize)]
+struct TestResultContainer {
+    pub details: Vec<(String, bool)>,
+    pub summary: TestResultContainerSummary,
+}
+
 impl WebdriverContext {
+    #[allow(dead_code)]
     async fn get_text_from_div(browser: &fantoccini::Client, id: &str) -> WasmBrowserRunResult<String> {
         let element = browser
             .find(fantoccini::Locator::Id(id))
@@ -431,7 +464,32 @@ impl WebdriverContext {
         Ok(element.text().await.map_err(WebdriverError::from)?)
     }
 
-    pub async fn run_wasm_tests(&self, wasm_file_path: &std::path::Path) -> WasmBrowserRunResult<bool> {
+    pub async fn wasm_tests_list(
+        &self,
+        wasm_file_path: &std::path::Path,
+        only_ignored: bool,
+    ) -> WasmBrowserRunResult<Vec<String>> {
+        // TODO: Support introspecting ignored tests
+        if only_ignored {
+            return Ok(vec![]);
+        }
+
+        if !wasm_file_path.exists() {
+            return Err(WasmBrowserRunError::WasmFileNotFound(
+                wasm_file_path.to_str().unwrap().into(),
+            ));
+        }
+
+        let wasm_tests_ctx = WasmTestFileContext::new(wasm_file_path)?;
+
+        Ok(wasm_tests_ctx.tests)
+    }
+
+    pub async fn run_wasm_tests(
+        &self,
+        wasm_file_path: &std::path::Path,
+        mut exact_test: Option<String>,
+    ) -> WasmBrowserRunResult<bool> {
         if !wasm_file_path.exists() {
             return Err(WasmBrowserRunError::WasmFileNotFound(
                 wasm_file_path.to_str().unwrap().into(),
@@ -480,7 +538,7 @@ impl WebdriverContext {
         let to = dest.with_extension("wasm");
         log::warn!("cp {from:?} -> {to:?}");
         tokio::fs::copy(&from, &to).await?;
-        // tokio::fs::copy(wasm_file_path, mount_point_path.join(&wasm_file_name)).await?;
+
         let (hwnd, socket_addr) = Self::spawn_http_server(&mount_point).await?;
 
         let test_file_name = dest.file_name().unwrap().to_string_lossy();
@@ -496,82 +554,93 @@ impl WebdriverContext {
             .await
             .map_err(WebdriverError::from)?;
 
-        self.browser
-//             .execute_async(
-//                 r#"
-// const [wasmFileLocation, testsList, callback] = arguments;
-// window.runTests(wasmFileLocation, testsList).then(callback)"#,
-            .execute(
+        let now = std::time::Instant::now();
+
+        let tests_list = if let Some(exact_test) = exact_test.take() {
+            wasm_tests_ctx
+                .tests
+                .into_iter()
+                .filter(|test_name| *test_name == exact_test)
+                .collect()
+        } else {
+            wasm_tests_ctx.tests
+        };
+
+        let raw_results = self
+            .browser
+            .execute_async(
                 r#"
-const [fileName, testsList] = arguments;
-window.runTests(fileName, testsList);"#,
-                vec![test_file_name.clone().into(), wasm_tests_ctx.tests.into()],
+const [fileName, testsList, callback] = arguments;
+window.runTests(fileName, testsList).then(callback)"#,
+                vec![test_file_name.clone().into(), tests_list.into()],
             )
             .await
             .map_err(WebdriverError::from)?;
 
-        // Wait for control element (inserted when tests are done)
-        use fantoccini::Locator;
+        let test_results: TestResultContainer = serde_json::from_value(raw_results)?;
 
-        let control_elem_id = format!("control_{test_file_name}");
-
-        let wait_result = self
-            .browser
-            .wait()
-            .at_most(self.timeout)
-            .for_element(Locator::Id(&control_elem_id))
-            .await;
-
-        let result = match wait_result {
-            Ok(element) => {
-                let text = element.text().await.map_err(WebdriverError::from)?;
-                if !text.is_empty() {
-                    return Err(WasmBrowserRunError::ErrorThrownInTest(text));
-                }
-                true
-            }
-            Err(fantoccini::error::CmdError::WaitTimeout) => {
-                log::error!(
-                    "Tests have not finished within the allotted timeout ({} seconds)",
-                    self.timeout.as_secs()
-                );
-                false
-            }
-            Err(e) => return Err(WebdriverError::from(e).into()),
-        };
-
-        if result {
-            log::info!("Tests OK");
-        } else {
-            log::error!("Tests finished with one or more errors");
+        println!("\nrunning {} tests\n", test_results.summary.total);
+        for (test_name, test_result) in test_results.details.iter() {
+            let (color, result_str) = if *test_result {
+                (better_term::Color::BrightGreen, "ok")
+            } else {
+                (better_term::Color::Red, "fail")
+            };
+            println!(
+                "test {test_name} ... {color}{result_str}{}",
+                better_term::Color::Default
+            );
         }
 
-        // FIXME: This is way too janky when it comes to how it operates within JS
-        // TODO: Fork fantoccini to add the websocket address and use shit properly
-        log::info!(
-            "Tests output: {}\n",
-            Self::get_text_from_div(&self.browser, "output").await?
+        let (color, result_str) = if test_results.summary.successful {
+            (better_term::Color::BrightGreen, "ok")
+        } else {
+            (better_term::Color::Red, "fail")
+        };
+        println!(
+            "\ntest result: {color}{result_str}{}. {} passed; {} failed; {} ignored; finished in {:.2}s\n",
+            better_term::Color::Default,
+            test_results.summary.success,
+            test_results.summary.fail,
+            test_results.summary.ignored,
+            now.elapsed().as_secs_f64()
         );
-        // log::info!(
-        //     "console.log output: {}\n",
-        //     Self::get_text_from_div(&self.browser, "console_log").await?
-        // );
-        // log::info!(
-        //     "console.info output: {}\n",
-        //     Self::get_text_from_div(&self.browser, "console_info").await?
-        // );
-        // log::warn!(
-        //     "console.warn output: {}\n",
-        //     Self::get_text_from_div(&self.browser, "console_warn").await?
-        // );
-        // log::info!(
-        //     "console.debug output: {}\n",
-        //     Self::get_text_from_div(&self.browser, "console_debug").await?
-        // );
-        // log::error!(
-        //     "console.error output: {}\n",
-        //     Self::get_text_from_div(&self.browser, "console_error").await?
-        // );
+
+        // Wait for control element (inserted when tests are done)
+        // use fantoccini::Locator;
+
+        // let control_elem_id = format!("control_{test_file_name}");
+
+        // let wait_result = self
+        //     .browser
+        //     .wait()
+        //     .at_most(self.timeout)
+        //     .for_element(Locator::Id(&control_elem_id))
+        //     .await;
+
+        // let result = match wait_result {
+        //     Ok(element) => {
+        //         let text = element.text().await.map_err(WebdriverError::from)?;
+        //         if !text.is_empty() {
+        //             return Err(WasmBrowserRunError::ErrorThrownInTest(text));
+        //         }
+        //         true
+        //     }
+        //     Err(fantoccini::error::CmdError::WaitTimeout) => {
+        //         log::error!(
+        //             "Tests have not finished within the allotted timeout ({} seconds)",
+        //             self.timeout.as_secs()
+        //         );
+        //         false
+        //     }
+        //     Err(e) => return Err(WebdriverError::from(e).into()),
+        // };
+
+        // if result {
+        //     log::info!("Tests OK");
+        // } else {
+        //     log::error!("Tests finished with one or more errors");
+        // }
 
         self.browser.close_window().await.map_err(WebdriverError::from)?;
 

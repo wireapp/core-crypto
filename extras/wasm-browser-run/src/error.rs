@@ -45,7 +45,7 @@ pub enum WasmBrowserRunError {
     #[error("Invalid __wasm_bindgen_test_unstable custom section value - expected to find 0x01, found {0}")]
     InvalidWasmBindgenTestCustomSection(String),
     #[error(
-        r#"\
+        r#"
 This test suite is only configured to run in node.js, but we're only running
 browser tests so skipping. If you'd like to run the tests in a browser
 include this in your crate when testing:
@@ -53,7 +53,7 @@ include this in your crate when testing:
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
 You'll likely want to put that in a `#[cfg(test)]` module or at the top of an
-integration test.\
+integration test.
 "#
     )]
     InvalidBuildTarget,

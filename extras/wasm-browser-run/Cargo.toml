@@ -30,3 +30,4 @@ log = "0.4"
 tokio-tungstenite = "0.18"
 ordered-float = { version = "3.4", features = ["serde"] }
 serde-enum-str = "0.3"
+better_term = "1.3"

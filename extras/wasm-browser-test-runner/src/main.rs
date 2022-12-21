@@ -22,6 +22,15 @@ impl Into<WebdriverKind> for CliWebdriverKind {
     }
 }
 
+#[derive(clap::ValueEnum, Clone, Copy, Debug)]
+#[repr(u8)]
+enum CliFormat {
+    Pretty,
+    Terse,
+    Json,
+    Junit,
+}
+
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -31,18 +40,33 @@ struct Args {
     force_install_webdriver: bool,
     #[arg(short, long)]
     timeout: Option<u64>,
+    #[arg(short, long, action = clap::ArgAction::Count)]
+    verbose: u8,
     #[arg(long)]
-    verbose: bool,
+    list: bool,
+    #[arg(long)]
+    ignored: bool,
+    #[arg(long)]
+    nocapture: bool,
+    #[arg(long)]
+    exact: Option<String>,
+    #[arg(long)]
+    format: Option<CliFormat>,
     wasm_test_bin_path: String,
     wasm_lib_name: Option<String>,
 }
 
-fn init_logger(verbose: bool) {
-    let default_log_level = if verbose { "debug" } else { "info" };
+fn init_logger(verbose: u8) {
+    if verbose == 0 {
+        return;
+    }
+    let verbose_level = std::cmp::min(verbose, log::Level::max() as usize as u8) as usize;
+    // SAFETY: Safe because we clamped the level above
+    let default_log_level = log::Level::iter().nth(verbose_level).unwrap();
     let log_setting = if let Ok(log_setting) = std::env::var("RUST_LOG") {
-        format!("{default_log_level},{log_setting}")
+        format!("{},{log_setting}", default_log_level.as_str().to_lowercase())
     } else {
-        default_log_level.to_string()
+        default_log_level.as_str().to_lowercase().to_string()
     };
     std::env::set_var("RUST_LOG", log_setting);
 
@@ -51,6 +75,10 @@ fn init_logger(verbose: bool) {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // TODO: To achieve nextest compat, we need to spawn some sort of daemon then only issue commands to it.
+    // TODO: Otherwise, the whole process of spawning stuff is too costly and causes errors as we recompile stuff with different hashes.
+    // TODO: Basically everything is too sequential
+
     let mut args = Args::parse();
 
     init_logger(args.verbose);
@@ -78,7 +106,13 @@ async fn main() -> Result<()> {
         panic!("The file at {wasm_file_to_test:?} does not exist!");
     }
 
-    ctx.run_wasm_tests(&wasm_file_to_test).await?;
+    if args.list {
+        for test in ctx.wasm_tests_list(&wasm_file_to_test, args.ignored).await? {
+            println!("{test}: test");
+        }
+    } else {
+        ctx.run_wasm_tests(&wasm_file_to_test, args.exact).await?;
+    }
 
     Ok(())
 }
