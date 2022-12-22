@@ -1,4 +1,4 @@
-use crate::webdriver_bidi::local::Handle;
+use crate::webdriver_bidi_protocol::local::Handle;
 use ordered_float::OrderedFloat;
 use std::collections::{BTreeMap, BTreeSet};
 

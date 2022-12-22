@@ -15,8 +15,9 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 pub mod error;
+mod wasm_test;
 mod webdriver;
-mod webdriver_bidi;
+mod webdriver_bidi_protocol;
 
 use crate::error::*;
 
@@ -32,6 +33,7 @@ pub struct WebdriverContext {
     driver: tokio::process::Child,
     driver_addr: std::net::SocketAddr,
     timeout: std::time::Duration,
+    webdriver_bidi_uri: Option<String>,
 }
 
 impl WebdriverContext {
@@ -79,52 +81,41 @@ impl WebdriverContext {
 
         let timeout = timeout.unwrap_or_else(|| std::time::Duration::from_secs(DEFAULT_TIMEOUT_SECS));
 
-        let caps = serde_json::Map::from_iter(
-            vec![
-                ("webSocketUrl".to_string(), true.into()),
-                (
-                    "timeouts".to_string(),
-                    serde_json::json!({
-                        "script": timeout.as_secs() * 1000
-                    }),
-                ),
-                (
-                    "goog:chromeOptions".to_string(),
-                    serde_json::json!({
-                        "args": [
-                            "headless",
-                            "disable-dev-shm-usage",
-                            "no-sandbox"
-                        ]
-                    }),
-                ),
-                (
-                    "ms:edgeOptions".to_string(),
-                    serde_json::json!({
-                        "args": [
-                            "headless",
-                            "disable-dev-shm-usage",
-                            "no-sandbox"
-                        ]
-                    }),
-                ),
-                (
-                    "moz:firefoxOptions".to_string(),
-                    serde_json::json!({
-                        "args": ["-headless"]
-                    }),
-                ),
-            ]
-            .into_iter(),
-        );
+        let serde_json::Value::Object(caps) = serde_json::json!({
+            "webSocketUrl": true,
+            "goog:chromeOptions": {
+                "args": [
+                    "headless",
+                    "disable-dev-shm-usage",
+                    "no-sandbox"
+                ]
+            },
+            "ms:edgeOptions": {
+                "args": [
+                    "headless",
+                    "disable-dev-shm-usage",
+                    "no-sandbox"
+                ]
+            },
+            "moz:firefoxOptions": {
+                "args": ["-headless"]
+            }
+        }) else {
+            unreachable!("`serde_json::json!()` did not produce an object when provided an object. Something is broken.")
+        };
 
-        let browser = fantoccini::ClientBuilder::native()
+        let browser = fantoccini::ClientBuilder::rustls()
             .capabilities(caps)
             .connect(&format!("http://{driver_addr}"))
             .await
             .map_err(WebdriverError::from)?;
 
         let browser_session_handshake = browser.get_session_handshake();
+        let webdriver_bidi_uri = browser_session_handshake["capabilities"]
+            .get("webSocketUrl")
+            .and_then(|s| s.as_str())
+            .map(|s| s.to_string());
+
         let ws_bidi_uri = browser_session_handshake["capabilities"]
             .get("webSocketUrl")
             .ok_or_else(|| WebdriverError::NoWebDriverBidiSupport)?
@@ -132,14 +123,18 @@ impl WebdriverContext {
             .ok_or_else(|| WebdriverError::NoWebDriverBidiSupport)?
             .to_string();
 
-        log::info!("WebDriver BiDi ws url: {ws_bidi_uri}");
+        if let Some(ws_bidi_uri) = &webdriver_bidi_uri {
+            log::info!("WebDriver BiDi Supported; url: {ws_bidi_uri}");
+        } else {
+            log::warn!("WebDriver implementation does not support BiDi!");
+        }
 
         let (mut ws_client, _) = tokio_tungstenite::connect_async(&ws_bidi_uri)
             .await
             .map_err(WebdriverError::from)?;
 
         tokio::spawn(async move {
-            use crate::webdriver_bidi::{
+            use crate::webdriver_bidi_protocol::{
                 local::{Event, EventData},
                 log::{LogEntryInner, LogEvent},
             };
@@ -206,6 +201,7 @@ impl WebdriverContext {
             driver,
             driver_addr,
             timeout,
+            webdriver_bidi_uri,
         })
     }
 
@@ -357,296 +353,59 @@ window.__wbr__jsCall().then(callback);"#,
             Err(WasmBrowserRunError::NpmError(output_str.to_string()))
         }
     }
-}
 
-#[derive(Debug)]
-struct WasmTestFileContext {
-    pub location: std::path::PathBuf,
-    pub tests: Vec<String>,
-    pub module: walrus::Module,
-}
+    async fn connect_bidi(
+        &self,
+    ) -> WasmBrowserRunResult<
+        impl futures_util::Stream<Item = WasmBrowserRunResult<crate::webdriver_bidi_protocol::local::Event>>,
+    > {
+        use crate::webdriver_bidi_protocol::local::Event;
+        use futures_util::StreamExt as _;
+        use tokio_tungstenite::tungstenite::protocol::Message;
 
-impl WasmTestFileContext {
-    pub fn new(wasm_file_path: impl AsRef<std::path::Path>) -> WasmBrowserRunResult<Self> {
-        let location = wasm_file_path.as_ref().to_owned();
-        let mut module = walrus::Module::from_file(wasm_file_path).map_err(|e| eyre::eyre!("{e:?}"))?;
-        let test_exports: Vec<String> = module
-            .exports
-            .iter()
-            // exports starting with "__wbgt_" (wasm-bindgen-test) are `#[wasm_bindgen::test]`-marked functions
-            .filter(|e| e.name.starts_with("__wbgt_"))
-            .map(|e| e.name.clone())
-            .collect();
-
-        if test_exports.is_empty() {
-            return Ok(Self {
-                location,
-                module,
-                tests: test_exports,
-            });
-        }
-
-        let section = module
-            .customs
-            .remove_raw("__wasm_bindgen_test_unstable")
-            .ok_or_else(|| WasmBrowserRunError::InvalidBuildTarget)?;
-
-        if !section.data.contains(&0x01) {
-            return Err(WasmBrowserRunError::InvalidWasmBindgenTestCustomSection(hex::encode(
-                section.data,
-            )));
-        }
-
-        let ctx = Self {
-            location,
-            tests: test_exports,
-            module,
+        let Some(ws_bidi_uri) = &self.webdriver_bidi_uri else {
+            return Err(WebdriverError::NoWebDriverBidiSupport.into());
         };
 
-        Ok(ctx)
-    }
-
-    /// This is for WASM bindgen compatibility purposes;
-    ///
-    /// See: https://github.com/rustwasm/wasm-bindgen/blob/main/crates/cli/src/bin/wasm-bindgen-test-runner/main.rs#L50
-    async fn bindgen_get_tmpdir(&self) -> WasmBrowserRunResult<std::path::PathBuf> {
-        let tmpdir = if self.location.to_string_lossy().starts_with("/tmp/rustdoc") {
-            self.location.parent()
-        } else {
-            self.location
-                .parent()
-                .and_then(std::path::Path::parent)
-                .and_then(std::path::Path::parent)
-        }
-        .map(|p| p.join("wbg-tmp"))
-        .ok_or_else(|| eyre::eyre!("file to test doesn't follow the expected Cargo conventions"))?;
-
-        // Make sure no stale state is there, and recreate tempdir
-        tokio::fs::remove_dir_all(&tmpdir).await?;
-        tokio::fs::create_dir(&tmpdir).await?;
-
-        Ok(tmpdir)
-    }
-}
-
-#[derive(Debug, Clone, serde::Deserialize)]
-struct TestResultContainerSummary {
-    pub successful: bool,
-    pub success: u64,
-    pub fail: u64,
-    pub ignored: u64,
-    pub total: u64,
-}
-
-/// interface TestResultContainer {
-///     details: [string, boolean][],
-///     summary: {
-///         successful: boolean,
-///         success: number,
-///         fail: number,
-///         ignored: number,
-///     },
-/// }
-#[derive(Debug, Clone, serde::Deserialize)]
-struct TestResultContainer {
-    pub details: Vec<(String, bool)>,
-    pub summary: TestResultContainerSummary,
-}
-
-impl WebdriverContext {
-    #[allow(dead_code)]
-    async fn get_text_from_div(browser: &fantoccini::Client, id: &str) -> WasmBrowserRunResult<String> {
-        let element = browser
-            .find(fantoccini::Locator::Id(id))
+        let (ws_client, _) = tokio_tungstenite::connect_async(ws_bidi_uri)
             .await
             .map_err(WebdriverError::from)?;
 
-        Ok(element.text().await.map_err(WebdriverError::from)?)
-    }
+        let (mut ws_client_tx, ws_client_rx) = ws_client.split();
 
-    pub async fn wasm_tests_list(
-        &self,
-        wasm_file_path: &std::path::Path,
-        only_ignored: bool,
-    ) -> WasmBrowserRunResult<Vec<String>> {
-        // TODO: Support introspecting ignored tests
-        if only_ignored {
-            return Ok(vec![]);
-        }
+        let wrapped_stream = ws_client_rx.filter_map(|msg| async move {
+            let msg_raw = match msg {
+                Ok(msg) => match msg {
+                    Message::Close(_) => {
+                        return None;
+                    }
+                    Message::Ping(payload) => {
+                        // TODO: Support answering ping
+                        use futures_util::SinkExt as _;
 
-        if !wasm_file_path.exists() {
-            return Err(WasmBrowserRunError::WasmFileNotFound(
-                wasm_file_path.to_str().unwrap().into(),
-            ));
-        }
-
-        let wasm_tests_ctx = WasmTestFileContext::new(wasm_file_path)?;
-
-        Ok(wasm_tests_ctx.tests)
-    }
-
-    pub async fn run_wasm_tests(
-        &self,
-        wasm_file_path: &std::path::Path,
-        mut exact_test: Option<String>,
-    ) -> WasmBrowserRunResult<bool> {
-        if !wasm_file_path.exists() {
-            return Err(WasmBrowserRunError::WasmFileNotFound(
-                wasm_file_path.to_str().unwrap().into(),
-            ));
-        }
-
-        let wasm_tests_ctx = WasmTestFileContext::new(wasm_file_path)?;
-
-        log::warn!("Tests to run: {:?}", wasm_tests_ctx.tests);
-
-        if wasm_tests_ctx.tests.is_empty() {
-            log::info!("No tests to run!");
-            return Ok(true);
-        }
-
-        log::warn!("Getting wasm-bindgen tmp dir");
-        let tmpdir = wasm_tests_ctx.bindgen_get_tmpdir().await?;
-        log::warn!("wasm-bindgen tmp dir: {tmpdir:?}");
-
-        let module_name = wasm_file_path.file_name().unwrap().to_str().unwrap();
-
-        let mut bindgen = wasm_bindgen_cli_support::Bindgen::new();
-        bindgen
-            .web(true)
-            .map_err(|e| eyre::eyre!("{e}"))?
-            .input_module(module_name, wasm_tests_ctx.module)
-            .debug(false)
-            .keep_debug(false)
-            .emit_start(false)
-            .generate(&tmpdir)
-            .map_err(|e| eyre::eyre!("{e}"))?;
-
-        let mount_point = self.compile_js_support(None).await?;
-        let wasm_file_name: std::path::PathBuf = module_name.into();
-        let mount_point_path = std::path::PathBuf::from(&mount_point);
-        log::warn!("Mount point path: {mount_point_path:?}");
-        let base = tmpdir.join(module_name);
-        let dest = mount_point_path.join(&wasm_file_name).with_extension("");
-
-        let from = base.with_extension("js");
-        let to = dest.with_extension("js");
-        log::warn!("cp {from:?} -> {to:?}");
-        tokio::fs::copy(&from, &to).await?;
-
-        let from = base.with_extension("wasm");
-        let to = dest.with_extension("wasm");
-        log::warn!("cp {from:?} -> {to:?}");
-        tokio::fs::copy(&from, &to).await?;
-
-        let (hwnd, socket_addr) = Self::spawn_http_server(&mount_point).await?;
-
-        let test_file_name = dest.file_name().unwrap().to_string_lossy();
-
-        let window = self.browser.new_window(true).await.map_err(WebdriverError::from)?;
-        self.browser
-            .switch_to_window(window.handle)
-            .await
-            .map_err(WebdriverError::from)?;
-
-        self.browser
-            .goto(&format!("http://{socket_addr}/"))
-            .await
-            .map_err(WebdriverError::from)?;
-
-        let now = std::time::Instant::now();
-
-        let tests_list = if let Some(exact_test) = exact_test.take() {
-            wasm_tests_ctx
-                .tests
-                .into_iter()
-                .filter(|test_name| *test_name == exact_test)
-                .collect()
-        } else {
-            wasm_tests_ctx.tests
-        };
-
-        let raw_results = self
-            .browser
-            .execute_async(
-                r#"
-const [fileName, testsList, callback] = arguments;
-window.runTests(fileName, testsList).then(callback)"#,
-                vec![test_file_name.clone().into(), tests_list.into()],
-            )
-            .await
-            .map_err(WebdriverError::from)?;
-
-        let test_results: TestResultContainer = serde_json::from_value(raw_results)?;
-
-        println!("\nrunning {} tests\n", test_results.summary.total);
-        for (test_name, test_result) in test_results.details.iter() {
-            let (color, result_str) = if *test_result {
-                (better_term::Color::BrightGreen, "ok")
-            } else {
-                (better_term::Color::Red, "fail")
+                        ws_client_tx.send(Message::Pong(payload)).await.ok()?;
+                        return None;
+                    }
+                    Message::Pong(_) => return None,
+                    msg @ _ => msg.into_data(),
+                },
+                Err(e) => {
+                    log::error!("{e}");
+                    return Some(Err(e.into()));
+                }
             };
-            println!(
-                "test {test_name} ... {color}{result_str}{}",
-                better_term::Color::Default
-            );
-        }
 
-        let (color, result_str) = if test_results.summary.successful {
-            (better_term::Color::BrightGreen, "ok")
-        } else {
-            (better_term::Color::Red, "fail")
-        };
-        println!(
-            "\ntest result: {color}{result_str}{}. {} passed; {} failed; {} ignored; finished in {:.2}s\n",
-            better_term::Color::Default,
-            test_results.summary.success,
-            test_results.summary.fail,
-            test_results.summary.ignored,
-            now.elapsed().as_secs_f64()
-        );
+            let event: Event = match serde_json::from_slice(&msg_raw) {
+                Ok(event) => event,
+                Err(e) => {
+                    log::error!("Failed to deserialize payload: {e:?}");
+                    return None;
+                }
+            };
 
-        // Wait for control element (inserted when tests are done)
-        // use fantoccini::Locator;
+            Some(WasmBrowserRunResult::Ok(event))
+        });
 
-        // let control_elem_id = format!("control_{test_file_name}");
-
-        // let wait_result = self
-        //     .browser
-        //     .wait()
-        //     .at_most(self.timeout)
-        //     .for_element(Locator::Id(&control_elem_id))
-        //     .await;
-
-        // let result = match wait_result {
-        //     Ok(element) => {
-        //         let text = element.text().await.map_err(WebdriverError::from)?;
-        //         if !text.is_empty() {
-        //             return Err(WasmBrowserRunError::ErrorThrownInTest(text));
-        //         }
-        //         true
-        //     }
-        //     Err(fantoccini::error::CmdError::WaitTimeout) => {
-        //         log::error!(
-        //             "Tests have not finished within the allotted timeout ({} seconds)",
-        //             self.timeout.as_secs()
-        //         );
-        //         false
-        //     }
-        //     Err(e) => return Err(WebdriverError::from(e).into()),
-        // };
-
-        // if result {
-        //     log::info!("Tests OK");
-        // } else {
-        //     log::error!("Tests finished with one or more errors");
-        // }
-
-        self.browser.close_window().await.map_err(WebdriverError::from)?;
-
-        hwnd.abort();
-        let _ = hwnd.await;
-
-        Ok(true)
+        Ok(wrapped_stream)
     }
 }

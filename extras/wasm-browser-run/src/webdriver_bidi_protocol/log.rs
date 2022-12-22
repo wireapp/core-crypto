@@ -1,5 +1,5 @@
-use crate::webdriver_bidi::protocol::RemoteValue;
-use crate::webdriver_bidi::script::{ScriptSource, ScriptStackTrace};
+use crate::webdriver_bidi_protocol::protocol::RemoteValue;
+use crate::webdriver_bidi_protocol::script::{ScriptSource, ScriptStackTrace};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]

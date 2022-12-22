@@ -48,7 +48,10 @@ const parseTestResultString = (logStr: string) => {
         return;
     }
 
-    if (summary.length === 0) {
+    const mainLogMatches: Array<[string, boolean]> = [...mainLog.matchAll(/test ([\w:]+) \.{3} (\w+)/gi)].map(([, testName, testStatus]) => [testName, testStatus === "ok"]);
+    testResults.details.push(...mainLogMatches);
+
+    if (!summary || summary.length === 0) {
         return;
     }
 
@@ -57,19 +60,10 @@ const parseTestResultString = (logStr: string) => {
         return;
     }
 
-
     testResults.summary.successful = summaryMatches[1] === "ok";
     testResults.summary.success = parseInt(summaryMatches[2], 10);
     testResults.summary.fail = parseInt(summaryMatches[3], 10);
     testResults.summary.ignored = parseInt(summaryMatches[4], 10);
-
-    const testCount = testResults.summary.success + testResults.summary.fail;
-    if (testCount === 0) {
-        return;
-    }
-
-    const mainLogMatches: Array<[string, boolean]> = [...mainLog.matchAll(/test ([\w:]+) \.{3} (\w+)/gi)].map(([, testName, testStatus]) => [testName, testStatus === "ok"]);
-    testResults.details.push(...mainLogMatches);
 };
 
 const setupOutputObserver = () => {

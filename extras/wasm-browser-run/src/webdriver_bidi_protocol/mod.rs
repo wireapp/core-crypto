@@ -9,7 +9,7 @@ pub mod script;
 pub mod session;
 
 pub mod remote {
-    use crate::webdriver_bidi::Extensible;
+    use crate::webdriver_bidi_protocol::Extensible;
 
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     #[non_exhaustive]
@@ -33,10 +33,10 @@ pub mod remote {
 }
 
 pub mod local {
-    use crate::webdriver_bidi::browsing_context::BrowsingContextEvent;
-    use crate::webdriver_bidi::log::LogEvent;
-    use crate::webdriver_bidi::script::ScriptEvent;
-    use crate::webdriver_bidi::Extensible;
+    use crate::webdriver_bidi_protocol::browsing_context::BrowsingContextEvent;
+    use crate::webdriver_bidi_protocol::log::LogEvent;
+    use crate::webdriver_bidi_protocol::script::ScriptEvent;
+    use crate::webdriver_bidi_protocol::Extensible;
 
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     pub enum Message {

@@ -1,4 +1,4 @@
-use crate::webdriver_bidi::browsing_context::BrowsingContext;
+use crate::webdriver_bidi_protocol::browsing_context::BrowsingContext;
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum ProxyCapabilityType {

@@ -8,8 +8,6 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.21", features = ["process", "net"] }
 warp = "0.3"
-# fantoccini = "0.19"
-fantoccini = { git = "https://github.com/otak/fantoccini", branch = "feat/session-handshake" }
 # Utils
 thiserror = "1.0"
 eyre = "0.6"
@@ -31,3 +29,10 @@ tokio-tungstenite = "0.18"
 ordered-float = { version = "3.4", features = ["serde"] }
 serde-enum-str = "0.3"
 better_term = "1.3"
+
+[dependencies.fantoccini]
+#version = "0.19"
+git = "https://github.com/otak/fantoccini"
+branch = "feat/session-handshake"
+default-features = false
+features = ["rustls-tls"]
