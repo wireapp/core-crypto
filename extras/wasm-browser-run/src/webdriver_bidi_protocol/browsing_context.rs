@@ -3,6 +3,7 @@ pub type BrowsingContextInfoList = Vec<BrowsingContextInfo>;
 pub type BrowsingContextNavigation = String;
 
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BrowsingContextInfo {
     pub context: BrowsingContext,
     pub url: String,
@@ -11,6 +12,7 @@ pub struct BrowsingContextInfo {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BrowsingContextNavigationInfo {
     pub context: BrowsingContext,
     pub navigation: Option<BrowsingContextNavigation>,
@@ -35,6 +37,23 @@ pub enum BrowsingContextUserPromptType {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BrowsingContextUserPromptOpened {
+    pub context: BrowsingContext,
+    #[serde(rename = "type")]
+    pub prompt_type: BrowsingContextUserPromptType,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BrowsingContextUserPromptClosed {
+    pub context: BrowsingContext,
+    pub accepted: bool,
+    pub user_text: Option<String>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "method", content = "params")]
 pub enum BrowsingContextEvent {
     #[serde(rename = "browsingContext.contextCreated")]
@@ -56,16 +75,7 @@ pub enum BrowsingContextEvent {
     #[serde(rename = "browsingContext.navigationFailed")]
     NavigationFailed(BrowsingContextNavigationInfo),
     #[serde(rename = "browsingContext.userPromptClosed")]
-    UserPromptClosed {
-        context: BrowsingContext,
-        accepted: bool,
-        user_text: Option<String>,
-    },
+    UserPromptClosed(BrowsingContextUserPromptClosed),
     #[serde(rename = "browsingContext.userPromptOpened")]
-    UserPromptOpened {
-        context: BrowsingContext,
-        #[serde(rename = "type")]
-        prompt_type: BrowsingContextUserPromptType,
-        message: String,
-    },
+    UserPromptOpened(BrowsingContextUserPromptOpened),
 }

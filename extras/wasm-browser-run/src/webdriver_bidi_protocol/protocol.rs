@@ -1,4 +1,4 @@
-use crate::webdriver_bidi_protocol::local::Handle;
+use super::local::Handle;
 use ordered_float::OrderedFloat;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -41,6 +41,7 @@ pub enum RemoteValue {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, serde::Serialize, serde::Deserialize)]
+// FIXME: Wrong annotation. There's no content to parse so it cannot work
 #[serde(tag = "type", content = "value", rename_all = "lowercase")]
 pub enum RemoteValueType {
     Symbol,
@@ -61,8 +62,9 @@ pub enum RemoteValueType {
     Node,
     Window,
 }
-
+//FIXME: Those two are wrong. RemoteValueType should contain instances of RemoteValue
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RemoteValueInternal {
     #[serde(rename = "type")]
     pub value_type: RemoteValueType,
@@ -80,6 +82,7 @@ pub enum ConcreteRemoteValue {
 }
 
 #[derive(Debug, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NodeProperties {
     pub node_type: u64,
     pub child_node_count: u64,

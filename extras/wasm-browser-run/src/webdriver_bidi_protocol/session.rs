@@ -1,4 +1,4 @@
-use crate::webdriver_bidi_protocol::browsing_context::BrowsingContext;
+use super::browsing_context::BrowsingContext;
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum ProxyCapabilityType {
@@ -10,6 +10,7 @@ pub enum ProxyCapabilityType {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProxyCapability {
     pub proxy_type: Option<ProxyCapabilityType>,
     pub proxy_autoconfig_url: Option<String>,
@@ -21,6 +22,7 @@ pub struct ProxyCapability {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct SessionCapabilityRequest {
     pub accept_insecure_certs: Option<bool>,
@@ -31,12 +33,14 @@ pub struct SessionCapabilityRequest {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SessionCapabilitiesRequest {
     pub always_match: Option<SessionCapabilityRequest>,
     pub first_match: Option<Vec<SessionCapabilityRequest>>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SessionSubscriptionRequest {
     pub events: Vec<String>,
     pub contexts: Option<Vec<BrowsingContext>>,

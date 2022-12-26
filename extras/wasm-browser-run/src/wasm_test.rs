@@ -55,6 +55,10 @@ impl WasmTestFileContext {
         Ok(ctx)
     }
 
+    pub fn only_tests_starting_with(&mut self, filter: &str) {
+        self.tests.retain(|t| t.contains(filter))
+    }
+
     /// This is for WASM bindgen compatibility purposes;
     ///
     /// See: https://github.com/rustwasm/wasm-bindgen/blob/main/crates/cli/src/bin/wasm-bindgen-test-runner/main.rs#L50
@@ -146,8 +150,15 @@ struct TestResultContainer {
     pub summary: TestResultSummary,
 }
 
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum TestResultReport {
+    Partial(TestResultContainer),
+    Complete(TestResultContainer),
+}
+
 #[derive(Debug, Clone, Default)]
-struct TestResultWrapper {
+pub struct TestResultWrapper {
     results: Option<TestResultContainer>,
     test_started: Option<std::time::Instant>,
     expected_test_count: u64,
@@ -159,10 +170,27 @@ impl TestResultWrapper {
         println!("\nrunning {expected_test_count} tests\n");
         self.test_started = Some(std::time::Instant::now());
     }
+
+    pub fn fail(expected_test_count: u64) -> Self {
+        Self {
+            results: None,
+            test_started: None,
+            expected_test_count,
+        }
+    }
+
+    pub fn parse_full_results(&mut self, raw_results: serde_json::Value) -> WasmBrowserRunResult<()> {
+        self.results = Some(serde_json::from_value(raw_results)?);
+        Ok(())
+    }
 }
 
 impl std::fmt::Display for TestResultWrapper {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.expected_test_count == 0 {
+            return writeln!(f, "No tests to run!");
+        }
+
         let Some(results) = &self.results else {
             return Err(std::fmt::Error::default());
         };
@@ -185,12 +213,12 @@ impl std::fmt::Display for TestResultWrapper {
         }
 
         for test in results.details.iter().cloned().map(ExpandedTestResult::from) {
-            writeln!(f, "{test}")?;
+            write!(f, "{test}")?;
         }
 
         writeln!(
             f,
-            "\ntest result: {}; finished in {:.2}s\n",
+            "\ntest result: {}; finished in {:.2}s",
             results.summary,
             self.test_started
                 .map(|started| started.elapsed().as_secs_f64())
@@ -236,21 +264,26 @@ impl WebdriverContext {
     pub async fn run_wasm_tests(
         &self,
         wasm_file_path: &std::path::Path,
+        avoid_bidi: bool,
+        mut test_filter: Option<String>,
         mut exact_test: Option<String>,
-    ) -> WasmBrowserRunResult<bool> {
+    ) -> WasmBrowserRunResult<TestResultWrapper> {
         if !wasm_file_path.exists() {
             return Err(WasmBrowserRunError::WasmFileNotFound(
                 wasm_file_path.to_str().unwrap().into(),
             ));
         }
 
-        let wasm_tests_ctx = WasmTestFileContext::new(wasm_file_path)?;
+        let mut wasm_tests_ctx = WasmTestFileContext::new(wasm_file_path)?;
 
         log::warn!("Tests to run: {:?}", wasm_tests_ctx.tests);
 
         if wasm_tests_ctx.tests.is_empty() {
-            log::info!("No tests to run!");
-            return Ok(true);
+            return Ok(TestResultWrapper::fail(0));
+        }
+
+        if let Some(test_filter) = test_filter.take() {
+            wasm_tests_ctx.only_tests_starting_with(&test_filter);
         }
 
         log::warn!("Getting wasm-bindgen tmp dir");
@@ -315,65 +348,76 @@ impl WebdriverContext {
         let test_count = tests_list.len();
 
         let mut test_results = TestResultWrapper::default();
-
         test_results.start(test_count as u64);
 
-        let raw_results = self
-            .browser
-            .execute_async(
-                r#"
+        if !avoid_bidi && self.webdriver_bidi_uri.is_some() {
+            let mut stream = self.connect_bidi().await?;
+            use crate::webdriver_bidi_protocol::{local::EventData, log::LogEvent};
+            use futures_util::TryStreamExt as _;
+            // Start tests
+            self.browser
+                .execute(
+                    r#"
+const [fileName, testsList] = arguments;
+window.runTests(fileName, testsList);"#,
+                    vec![test_file_name.clone().into(), tests_list.into()],
+                )
+                .await
+                .map_err(WebdriverError::from)?;
+
+            let bar = indicatif::ProgressBar::new(test_count as u64);
+
+            while let Some(event) = stream.try_next().await? {
+                match event.data {
+                    EventData::BrowsingContextEvent(data) => {
+                        log::info!("Unimplemented event handling: {:?}", data);
+                    }
+                    EventData::ScriptEvent(data) => {
+                        log::info!("Unimplemented event handling: {:?}", data);
+                    }
+                    EventData::LogEvent(log_event) => match log_event {
+                        LogEvent::EntryAdded(log_entry) => {
+                            if let Some(log_text) = log_entry.get_text() {
+                                match serde_json::from_str::<TestResultReport>(log_text)? {
+                                    TestResultReport::Partial(report) => {
+                                        for test in report.details.into_iter().map(ExpandedTestResult::from) {
+                                            bar.set_message(test.to_string());
+                                            bar.inc(1);
+                                        }
+                                    }
+                                    TestResultReport::Complete(report) => {
+                                        test_results.results = Some(report);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                }
+            }
+
+            bar.finish_and_clear();
+        } else {
+            // Fallback on no BiDi support
+
+            let raw_results = self
+                .browser
+                .execute_async(
+                    r#"
 const [fileName, testsList, callback] = arguments;
 window.runTests(fileName, testsList).then(callback)"#,
-                vec![test_file_name.clone().into(), tests_list.into()],
-            )
-            .await
-            .map_err(WebdriverError::from)?;
-
-        test_results.results = Some(serde_json::from_value(raw_results)?);
-
-        println!("{test_results}");
-
-        // Wait for control element (inserted when tests are done)
-        // use fantoccini::Locator;
-
-        // let control_elem_id = format!("control_{test_file_name}");
-
-        // let wait_result = self
-        //     .browser
-        //     .wait()
-        //     .at_most(self.timeout)
-        //     .for_element(Locator::Id(&control_elem_id))
-        //     .await;
-
-        // let result = match wait_result {
-        //     Ok(element) => {
-        //         let text = element.text().await.map_err(WebdriverError::from)?;
-        //         if !text.is_empty() {
-        //             return Err(WasmBrowserRunError::ErrorThrownInTest(text));
-        //         }
-        //         true
-        //     }
-        //     Err(fantoccini::error::CmdError::WaitTimeout) => {
-        //         log::error!(
-        //             "Tests have not finished within the allotted timeout ({} seconds)",
-        //             self.timeout.as_secs()
-        //         );
-        //         false
-        //     }
-        //     Err(e) => return Err(WebdriverError::from(e).into()),
-        // };
-
-        // if result {
-        //     log::info!("Tests OK");
-        // } else {
-        //     log::error!("Tests finished with one or more errors");
-        // }
+                    vec![test_file_name.clone().into(), tests_list.into()],
+                )
+                .await
+                .map_err(WebdriverError::from)?;
+            test_results.parse_full_results(raw_results)?;
+        }
 
         self.browser.close_window().await.map_err(WebdriverError::from)?;
 
         hwnd.abort();
         let _ = hwnd.await;
 
-        Ok(true)
+        Ok(test_results)
     }
 }

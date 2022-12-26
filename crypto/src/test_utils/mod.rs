@@ -33,10 +33,11 @@ pub use central::*;
 pub use fixtures::TestCase;
 pub use fixtures::*;
 
-#[cfg(debug_assertions)]
+// FIXME: This takes around 10 minutes on WASM
+// #[cfg(debug_assertions)]
 pub const GROUP_SAMPLE_SIZE: usize = 9;
-#[cfg(not(debug_assertions))]
-pub const GROUP_SAMPLE_SIZE: usize = 99;
+// #[cfg(not(debug_assertions))]
+// pub const GROUP_SAMPLE_SIZE: usize = 99;
 
 pub async fn run_test_with_central(
     case: TestCase,

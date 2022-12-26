@@ -38,14 +38,15 @@ let testResults: TestResultContainer = {
     },
 };
 
-const parseTestResultString = (logStr: string) => {
+const parseTestResultString = (logStr: string): TestResultContainer => {
+    const partialTestResult = JSON.parse(JSON.stringify(testResults));
     const [mainLog, summary] = logStr.split("\n\n");
 
     const introMatch = mainLog.match(/running (\d+) tests/);
     if (introMatch !== null) {
         const [, totalTests] = introMatch;
         testResults.summary.total = parseInt(totalTests, 10);
-        return;
+        return partialTestResult;
     }
 
     const mainLogMatches: Array<[string, boolean]> = [...mainLog.matchAll(/test ([\w:]+) \.{3} (\w+)/gi)].map(([, testName, testStatus]) => [testName, testStatus === "ok"]);
@@ -93,7 +94,7 @@ const setupOutputObserver = () => {
             }
 
             parseTestResultString(output.textContent);
-            // console.info(output.textContent);
+            console.debug(JSON.stringify({ partial: testResults }));
             output.textContent = "";
         });
     });
@@ -178,6 +179,8 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
         }
 
         outputControlDiv(fileName);
+
+        console.debug(JSON.stringify({ complete: testResults }));
 
         return testResults;
     } catch (e) {

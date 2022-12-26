@@ -1,5 +1,5 @@
-use crate::webdriver_bidi_protocol::protocol::RemoteValue;
-use crate::webdriver_bidi_protocol::script::{ScriptSource, ScriptStackTrace};
+use super::protocol::RemoteValue;
+use super::script::{ScriptSource, ScriptStackTrace};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -110,6 +110,15 @@ pub struct LogEntry {
     pub entry_type: LogEntryType,
     #[serde(flatten)]
     pub entry_data: LogEntryInner,
+}
+
+impl LogEntry {
+    pub fn get_text(&self) -> Option<&str> {
+        match &self.entry_data {
+            LogEntryInner::Console(console_log) => console_log.entry.text.as_ref().map(|s| s.as_ref()),
+            LogEntryInner::Base(generic_log) => generic_log.text.as_ref().map(|s| s.as_ref()),
+        }
+    }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

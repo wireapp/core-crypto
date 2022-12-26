@@ -35,7 +35,6 @@ mod tests {
     }
 
     #[cfg_attr(not(target_family = "wasm"), async_std::test)]
-
     async fn group_info_size() {
         let mut root_client = generate_client().await;
 

@@ -43,6 +43,8 @@ struct Args {
     #[arg(short, long, action = clap::ArgAction::Count)]
     verbose: u8,
     #[arg(long)]
+    no_bidi: bool,
+    #[arg(long)]
     list: bool,
     #[arg(long)]
     ignored: bool,
@@ -54,6 +56,7 @@ struct Args {
     format: Option<CliFormat>,
     wasm_test_bin_path: String,
     wasm_lib_name: Option<String>,
+    test_filter: Option<String>,
 }
 
 fn init_logger(verbose: u8) {
@@ -95,6 +98,7 @@ async fn main() -> Result<()> {
     let ctx = WebdriverContext::init_with_timeout(
         args.webdriver.into(),
         args.force_install_webdriver,
+        args.verbose > 1,
         args.timeout.map(std::time::Duration::from_secs),
     )
     .await?;
@@ -111,7 +115,10 @@ async fn main() -> Result<()> {
             println!("{test}: test");
         }
     } else {
-        ctx.run_wasm_tests(&wasm_file_to_test, args.exact).await?;
+        let test_results = ctx
+            .run_wasm_tests(&wasm_file_to_test, args.no_bidi, args.test_filter, args.exact)
+            .await?;
+        println!("{test_results}");
     }
 
     Ok(())

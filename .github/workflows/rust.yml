@@ -102,19 +102,20 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CARGO_TERM_COLOR: always
-    strategy:
-      matrix:
-        workspace: ["crypto", "keystore", "mls-provider"]
+    # strategy:
+    #   matrix:
+    #     workspace: ["crypto", "keystore", "mls-provider"]
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      # - name: Install wasm-pack
+      #   run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - uses: Swatinem/rust-cache@v2
       - name: Run tests (wasm)
-        run: wasm-pack test --release --headless --chrome ${{ matrix.workspace }}
+        # run: cargo test --release --target wasm32-unknown-unknown ${{ matrix.workspace }}
+        run: cargo test --target wasm32-unknown-unknown
 
   proteus-wasm-test:
     runs-on: ubuntu-latest

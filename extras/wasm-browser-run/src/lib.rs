@@ -34,16 +34,18 @@ pub struct WebdriverContext {
     driver_addr: std::net::SocketAddr,
     timeout: std::time::Duration,
     webdriver_bidi_uri: Option<String>,
+    debug: bool,
 }
 
 impl WebdriverContext {
-    pub async fn init(kind: WebdriverKind, force_install: bool) -> WasmBrowserRunResult<Self> {
-        Self::init_with_timeout(kind, force_install, None).await
+    pub async fn init(kind: WebdriverKind, force_install: bool, debug: bool) -> WasmBrowserRunResult<Self> {
+        Self::init_with_timeout(kind, force_install, debug, None).await
     }
 
     pub async fn init_with_timeout(
         kind: WebdriverKind,
         force_install: bool,
+        debug: bool,
         timeout: Option<std::time::Duration>,
     ) -> WasmBrowserRunResult<Self> {
         match kind {
@@ -116,84 +118,11 @@ impl WebdriverContext {
             .and_then(|s| s.as_str())
             .map(|s| s.to_string());
 
-        let ws_bidi_uri = browser_session_handshake["capabilities"]
-            .get("webSocketUrl")
-            .ok_or_else(|| WebdriverError::NoWebDriverBidiSupport)?
-            .as_str()
-            .ok_or_else(|| WebdriverError::NoWebDriverBidiSupport)?
-            .to_string();
-
         if let Some(ws_bidi_uri) = &webdriver_bidi_uri {
             log::info!("WebDriver BiDi Supported; url: {ws_bidi_uri}");
         } else {
             log::warn!("WebDriver implementation does not support BiDi!");
         }
-
-        let (mut ws_client, _) = tokio_tungstenite::connect_async(&ws_bidi_uri)
-            .await
-            .map_err(WebdriverError::from)?;
-
-        tokio::spawn(async move {
-            use crate::webdriver_bidi_protocol::{
-                local::{Event, EventData},
-                log::{LogEntryInner, LogEvent},
-            };
-            use futures_util::{SinkExt as _, StreamExt as _};
-            use tokio_tungstenite::tungstenite::protocol::Message;
-
-            while let Some(msg) = ws_client.next().await {
-                let msg_raw = match msg {
-                    Ok(msg) => match msg {
-                        Message::Close(_) => {
-                            break;
-                        }
-                        Message::Ping(payload) => {
-                            ws_client.send(Message::Pong(payload)).await?;
-                            continue;
-                        }
-                        Message::Pong(_) => continue,
-                        msg @ _ => msg.into_data(),
-                    },
-                    Err(e) => {
-                        log::error!("{e}");
-                        return Err(e.into());
-                    }
-                };
-                dbg!(serde_json::from_slice::<serde_json::Value>(&msg_raw)?);
-                let event: Event = match serde_json::from_slice(&msg_raw) {
-                    Ok(event) => event,
-                    Err(e) => {
-                        log::error!("Failed to deserialize payload: {e:?}");
-                        continue;
-                    }
-                };
-                dbg!(&event);
-                match event.data {
-                    EventData::BrowsingContextEvent(data) => {
-                        log::info!("Unimplemented event handling: {:?}", data);
-                    }
-                    EventData::ScriptEvent(data) => {
-                        log::info!("Unimplemented event handling: {:?}", data);
-                    }
-                    EventData::LogEvent(log_event) => match log_event {
-                        LogEvent::EntryAdded(log_entry) => {
-                            match log_entry.entry_data {
-                                LogEntryInner::Console(console_log) => {
-                                    let level = console_log.entry.level.into();
-                                    log::log!(target: "webdriver_bidi", level, "{}", console_log);
-                                }
-                                LogEntryInner::Base(base_log) => {
-                                    let level = base_log.level.into();
-                                    log::log!(target: "webdriver_bidi", level, "{}", base_log);
-                                }
-                            };
-                        }
-                    },
-                }
-            }
-
-            WasmBrowserRunResult::Ok(())
-        });
 
         Ok(Self {
             browser,
@@ -202,6 +131,7 @@ impl WebdriverContext {
             driver_addr,
             timeout,
             webdriver_bidi_uri,
+            debug,
         })
     }
 
@@ -357,7 +287,9 @@ window.__wbr__jsCall().then(callback);"#,
     async fn connect_bidi(
         &self,
     ) -> WasmBrowserRunResult<
-        impl futures_util::Stream<Item = WasmBrowserRunResult<crate::webdriver_bidi_protocol::local::Event>>,
+        std::pin::Pin<
+            Box<impl futures_util::Stream<Item = WasmBrowserRunResult<crate::webdriver_bidi_protocol::local::Event>>>,
+        >,
     > {
         use crate::webdriver_bidi_protocol::local::Event;
         use futures_util::StreamExt as _;
@@ -367,45 +299,55 @@ window.__wbr__jsCall().then(callback);"#,
             return Err(WebdriverError::NoWebDriverBidiSupport.into());
         };
 
+        log::warn!(target: "webdriver_bidi", "Connecting to WebDriver BiDi server at {ws_bidi_uri}");
+
         let (ws_client, _) = tokio_tungstenite::connect_async(ws_bidi_uri)
             .await
             .map_err(WebdriverError::from)?;
 
-        let (mut ws_client_tx, ws_client_rx) = ws_client.split();
+        let (tx, rx) = tokio::sync::mpsc::channel::<Vec<u8>>(10);
+        let rx = tokio_stream::wrappers::ReceiverStream::new(rx);
+        let (ws_client_tx, ws_client_rx) = ws_client.split();
 
-        let wrapped_stream = ws_client_rx.filter_map(|msg| async move {
-            let msg_raw = match msg {
-                Ok(msg) => match msg {
-                    Message::Close(_) => {
+        log::warn!(target: "webdriver_bidi", "Setting up stream and WebSocket ping/pong handler");
+        tokio::task::spawn(rx.map(|payload| Ok(Message::Pong(payload))).forward(ws_client_tx));
+
+        let debug = self.debug;
+
+        let wrapped_stream = ws_client_rx.filter_map(move |msg| {
+            let tx_inner = tx.clone();
+            async move {
+                let msg_raw = match msg {
+                    Ok(msg) => match msg {
+                        Message::Ping(payload) => {
+                            let _ = tx_inner.send(payload).await;
+                            return None;
+                        }
+                        Message::Close(_) | Message::Pong(_) => return None,
+                        msg @ _ => msg.into_data(),
+                    },
+                    Err(e) => {
+                        log::error!("{e}");
+                        return Some(Err(e.into()));
+                    }
+                };
+
+                let event: Event = match serde_json::from_slice(&msg_raw) {
+                    Ok(event) => event,
+                    Err(e) => {
+                        log::error!("Failed to deserialize payload: {e:?}");
                         return None;
                     }
-                    Message::Ping(payload) => {
-                        // TODO: Support answering ping
-                        use futures_util::SinkExt as _;
+                };
 
-                        ws_client_tx.send(Message::Pong(payload)).await.ok()?;
-                        return None;
-                    }
-                    Message::Pong(_) => return None,
-                    msg @ _ => msg.into_data(),
-                },
-                Err(e) => {
-                    log::error!("{e}");
-                    return Some(Err(e.into()));
+                if debug {
+                    dbg!(&event);
                 }
-            };
 
-            let event: Event = match serde_json::from_slice(&msg_raw) {
-                Ok(event) => event,
-                Err(e) => {
-                    log::error!("Failed to deserialize payload: {e:?}");
-                    return None;
-                }
-            };
-
-            Some(WasmBrowserRunResult::Ok(event))
+                Some(WasmBrowserRunResult::Ok(event))
+            }
         });
 
-        Ok(wrapped_stream)
+        Ok(Box::pin(wrapped_stream))
     }
 }

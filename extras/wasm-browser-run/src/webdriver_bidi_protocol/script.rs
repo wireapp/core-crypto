@@ -1,5 +1,5 @@
-use crate::webdriver_bidi_protocol::browsing_context::BrowsingContext;
-use crate::webdriver_bidi_protocol::protocol::RemoteValue;
+use super::browsing_context::BrowsingContext;
+use super::protocol::RemoteValue;
 
 pub type ScriptRealm = String;
 
