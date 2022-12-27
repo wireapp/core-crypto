@@ -48,6 +48,10 @@ impl WebdriverContext {
 
         let wd_dir = dirs::home_dir().unwrap().join(".webdrivers");
 
+        if !wd_dir.exists() {
+            tokio::fs::create_dir_all(&wd_dir).await?;
+        }
+
         let driver_location = wd_dir.join(kind.as_exe_name());
         if !driver_location.exists() {
             kind.install_webdriver(&wd_dir, force_install).await?;
