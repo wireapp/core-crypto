@@ -34,29 +34,47 @@ enum CliFormat {
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
+    /// Choose which WebDriver implementation to download/install/run
     #[arg(long)]
     webdriver: CliWebdriverKind,
+    /// Forces reinstalling the webdriver. Can be useful for local setups where the implementation became outdated over time.
+    ///
+    /// Note: WebDriver versions usually don't mix and match with installed binary browsers. For instance, if you have
+    /// chromedriver 107 with a Google Chrome 108 host, some random problems might occur. Make sure versions do match!
     #[arg(short, long)]
     force_install_webdriver: bool,
+    /// This controls the timeout of WebDriver script execution.
+    /// Not needed in BiDi mode as the script is a fire-and-forget and relies on subsequent BiDi events to learn about test completion
     #[arg(short, long)]
     timeout: Option<u64>,
+    /// Verbose level. This is a multiple flag, i.e. `-vvv` stands for verbose level 3 which corresponds to WARN
     #[arg(short, long, action = clap::ArgAction::Count)]
     verbose: u8,
-    #[arg(long)]
+    /// Avoids communicating over BiDi. Usually not needed as we do a runtime detection of the WebDriver impl's BiDi capabilities
+    #[arg(long, conflicts_with("nocapture"))]
     no_bidi: bool,
+    /// Returns a list of tests. Useful for `cargo-nextest` compatibility
     #[arg(long)]
     list: bool,
+    /// Placeholder flag for `cargo-nextest compat`. Returns nothing.
     #[arg(long)]
     ignored: bool,
+    /// Compat flag. Currently unimplemented.
     #[arg(long)]
     nocapture: bool,
+    /// Perform a single test. `cargo-nextest` stuff. Be warned, executing many tests this way is insanely slow
+    /// and most likely doesn't work
     #[arg(long)]
     exact: Option<String>,
+    /// Output format. Does absolutely nothing right now.
     #[arg(long)]
     format: Option<CliFormat>,
+    /// Path to the wasm binary to test
     wasm_test_bin_path: String,
-    wasm_lib_name: Option<String>,
+    /// Test filter to run a certain sub-selection of tests
     test_filter: Option<String>,
+    /// Sometimes needed arg where the cargo test runner will supply a lib name. Does nothing as far as we're concerned.
+    wasm_lib_name: Option<std::path::PathBuf>,
 }
 
 fn init_logger(verbose: u8) {
@@ -95,13 +113,12 @@ async fn main() -> Result<()> {
         }
     }
 
-    let ctx = WebdriverContext::init_with_timeout(
-        args.webdriver.into(),
-        args.force_install_webdriver,
-        args.verbose > 1,
-        args.timeout.map(std::time::Duration::from_secs),
-    )
-    .await?;
+    let ctx = WebdriverContext::init(args.webdriver.into(), args.force_install_webdriver)
+        .await?
+        .avoid_bidi(args.no_bidi)
+        .disable_log_capture(args.nocapture)
+        .with_timeout(args.timeout.map(std::time::Duration::from_secs))
+        .enable_debug(args.verbose > 1);
 
     let wasm_file_to_test = std::path::PathBuf::from(args.wasm_test_bin_path);
     log::warn!("WASM file path: {wasm_file_to_test:?}");
@@ -116,7 +133,7 @@ async fn main() -> Result<()> {
         }
     } else {
         let test_results = ctx
-            .run_wasm_tests(&wasm_file_to_test, args.no_bidi, args.test_filter, args.exact)
+            .run_wasm_tests(&wasm_file_to_test, args.test_filter, args.exact)
             .await?;
         println!("{test_results}");
     }

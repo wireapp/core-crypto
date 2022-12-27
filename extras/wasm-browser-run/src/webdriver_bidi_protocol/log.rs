@@ -119,6 +119,15 @@ impl LogEntry {
             LogEntryInner::Base(generic_log) => generic_log.text.as_ref().map(|s| s.as_ref()),
         }
     }
+
+    pub fn get_level(&self) -> LogLevel {
+        let entry = match &self.entry_data {
+            LogEntryInner::Console(console_log) => &console_log.entry,
+            LogEntryInner::Base(entry) => entry,
+        };
+
+        entry.level
+    }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

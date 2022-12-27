@@ -24,7 +24,7 @@ impl WasmTestFileContext {
             .iter()
             // exports starting with "__wbgt_" (wasm-bindgen-test) are `#[wasm_bindgen::test]`-marked functions
             .filter(|e| e.name.starts_with("__wbgt_"))
-            .map(|e| e.name.clone())
+            .map(|e| e.name.to_string())
             .collect();
 
         if test_exports.is_empty() {
@@ -55,9 +55,9 @@ impl WasmTestFileContext {
         Ok(ctx)
     }
 
-    pub fn only_tests_starting_with(&mut self, filter: &str) {
-        self.tests.retain(|t| t.contains(filter))
-    }
+    // pub fn only_tests_starting_with(&mut self, filter: &str) {
+    //     self.tests.retain(|t| t.contains(filter))
+    // }
 
     /// This is for WASM bindgen compatibility purposes;
     ///
@@ -91,16 +91,28 @@ struct TestResultSummary {
     pub total: u64,
 }
 
+impl TestResultSummary {
+    pub fn ran_test_count(&self) -> u64 {
+        self.success.saturating_add(self.fail).saturating_add(self.ignored)
+    }
+}
+
 impl std::fmt::Display for TestResultSummary {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let (color, result_str) = test_result_to_color_fmt_pair(self.successful);
+        let (ignored, color, result_str) = if self.success.saturating_add(self.fail) == 0 {
+            (self.total, better_term::Color::Yellow, "skipped")
+        } else {
+            let (color, result_str) = test_result_to_color_fmt_pair(self.successful);
+            (self.ignored, color, result_str)
+        };
+
         write!(
             f,
             "{color}{result_str}{}. {} passed; {} failed; {} ignored",
             better_term::Color::Default,
             self.success,
             self.fail,
-            self.ignored,
+            ignored,
         )
     }
 }
@@ -191,22 +203,33 @@ impl std::fmt::Display for TestResultWrapper {
             return writeln!(f, "No tests to run!");
         }
 
-        let Some(results) = &self.results else {
+        let Some(mut results) = self.results.clone() else {
             return Err(std::fmt::Error::default());
         };
+
+        if results.summary.total == 0 {
+            return writeln!(f, "No tests to run!");
+        }
+
+        let ran_test_count = results.summary.ran_test_count();
+
+        if ran_test_count == 0 {
+            results.summary.successful = true;
+            results.summary.ignored = self.expected_test_count;
+        }
 
         if results.summary.total != self.expected_test_count {
             writeln!(
                 f,
-                "{}WARN Test summary count differs from the tests list retrieved from parsing the binary{}",
+                "{}WARN{} Test summary count differs from the tests list retrieved from parsing the binary",
                 better_term::Color::Yellow,
                 better_term::Color::Default,
             )?;
         }
 
-        if results.details.len() as u64 != self.expected_test_count {
+        if results.details.len() as u64 != results.summary.success.saturating_add(results.summary.fail) {
             writeln!(f,
-                "{}WARN Test details count differs from the tests list retrieved from parsing the binary. Some output might be missing!{}",
+                "{}WARN{} Test details count differs from the tests list retrieved from parsing the binary. Some output might be missing.",
                 better_term::Color::Yellow,
                 better_term::Color::Default,
             )?;
@@ -264,9 +287,8 @@ impl WebdriverContext {
     pub async fn run_wasm_tests(
         &self,
         wasm_file_path: &std::path::Path,
-        avoid_bidi: bool,
-        mut test_filter: Option<String>,
-        mut exact_test: Option<String>,
+        test_filter: Option<String>,
+        exact_test: Option<String>,
     ) -> WasmBrowserRunResult<TestResultWrapper> {
         if !wasm_file_path.exists() {
             return Err(WasmBrowserRunError::WasmFileNotFound(
@@ -274,16 +296,12 @@ impl WebdriverContext {
             ));
         }
 
-        let mut wasm_tests_ctx = WasmTestFileContext::new(wasm_file_path)?;
+        let wasm_tests_ctx = WasmTestFileContext::new(wasm_file_path)?;
 
         log::warn!("Tests to run: {:?}", wasm_tests_ctx.tests);
 
         if wasm_tests_ctx.tests.is_empty() {
             return Ok(TestResultWrapper::fail(0));
-        }
-
-        if let Some(test_filter) = test_filter.take() {
-            wasm_tests_ctx.only_tests_starting_with(&test_filter);
         }
 
         log::warn!("Getting wasm-bindgen tmp dir");
@@ -335,22 +353,18 @@ impl WebdriverContext {
             .await
             .map_err(WebdriverError::from)?;
 
-        let tests_list = if let Some(exact_test) = exact_test.take() {
-            wasm_tests_ctx
-                .tests
-                .into_iter()
-                .filter(|test_name| *test_name == exact_test)
-                .collect()
-        } else {
-            wasm_tests_ctx.tests
-        };
-
-        let test_count = tests_list.len();
+        let test_count = wasm_tests_ctx.tests.len();
 
         let mut test_results = TestResultWrapper::default();
         test_results.start(test_count as u64);
 
-        if !avoid_bidi && self.webdriver_bidi_uri.is_some() {
+        let js_args = vec![
+            test_file_name.clone().into(),
+            wasm_tests_ctx.tests.into(),
+            exact_test.or(test_filter).into(),
+        ];
+
+        if !self.avoid_bidi && self.webdriver_bidi_uri.is_some() {
             let mut stream = self.connect_bidi().await?;
             use crate::webdriver_bidi_protocol::{local::EventData, log::LogEvent};
             use futures_util::TryStreamExt as _;
@@ -358,9 +372,9 @@ impl WebdriverContext {
             self.browser
                 .execute(
                     r#"
-const [fileName, testsList] = arguments;
-window.runTests(fileName, testsList);"#,
-                    vec![test_file_name.clone().into(), tests_list.into()],
+const [fileName, testsList, testFilter] = arguments;
+window.runTests(fileName, testsList, testFilter);"#,
+                    js_args,
                 )
                 .await
                 .map_err(WebdriverError::from)?;
@@ -378,6 +392,9 @@ window.runTests(fileName, testsList);"#,
                     EventData::LogEvent(log_event) => match log_event {
                         LogEvent::EntryAdded(log_entry) => {
                             if let Some(log_text) = log_entry.get_text() {
+                                if self.nocapture {
+                                    println!("{log_text}");
+                                }
                                 match serde_json::from_str::<TestResultReport>(log_text)? {
                                     TestResultReport::Partial(report) => {
                                         for test in report.details.into_iter().map(ExpandedTestResult::from) {
@@ -404,9 +421,9 @@ window.runTests(fileName, testsList);"#,
                 .browser
                 .execute_async(
                     r#"
-const [fileName, testsList, callback] = arguments;
-window.runTests(fileName, testsList).then(callback)"#,
-                    vec![test_file_name.clone().into(), tests_list.into()],
+const [fileName, testsList, testFilter, callback] = arguments;
+window.runTests(fileName, testsList, testFilter).then(callback)"#,
+                    js_args,
                 )
                 .await
                 .map_err(WebdriverError::from)?;

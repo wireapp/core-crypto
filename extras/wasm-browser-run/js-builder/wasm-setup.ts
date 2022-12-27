@@ -51,20 +51,26 @@ const parseTestResultString = (logStr: string): TestResultContainer => {
 
     const mainLogMatches: Array<[string, boolean]> = [...mainLog.matchAll(/test ([\w:]+) \.{3} (\w+)/gi)].map(([, testName, testStatus]) => [testName, testStatus === "ok"]);
     testResults.details.push(...mainLogMatches);
+    partialTestResult.details = mainLogMatches;
 
     if (!summary || summary.length === 0) {
-        return;
+        return partialTestResult;
     }
 
     const summaryMatches = summary.match(/test result: (\w+)\. (\d+) passed; (\d+) failed; (\d+) ignored/);
     if (!summaryMatches) {
-        return;
+        return partialTestResult;
     }
 
     testResults.summary.successful = summaryMatches[1] === "ok";
     testResults.summary.success = parseInt(summaryMatches[2], 10);
     testResults.summary.fail = parseInt(summaryMatches[3], 10);
     testResults.summary.ignored = parseInt(summaryMatches[4], 10);
+    testResults.summary.total = testResults.summary.success + testResults.summary.fail + testResults.summary.ignored;
+
+    partialTestResult.summary = testResults.summary;
+
+    return partialTestResult;
 };
 
 const setupOutputObserver = () => {
@@ -93,8 +99,8 @@ const setupOutputObserver = () => {
                 return;
             }
 
-            parseTestResultString(output.textContent);
-            console.debug(JSON.stringify({ partial: testResults }));
+            const partial = parseTestResultString(output.textContent);
+            console.debug(JSON.stringify({ partial }));
             output.textContent = "";
         });
     });
@@ -126,7 +132,7 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
 
 (window as any).__wbg_test_invoke = f => f();
 
-(window as any).runTests = async (fileName: string, tests: string[], args?: string[]): Promise<TestResultContainer> => {
+(window as any).runTests = async (fileName: string, tests: string[], testFilter?: string, args?: string[]): Promise<TestResultContainer> => {
 
     let listeners: { [key: string]: EventListener };
     let observer: MutationObserver;
@@ -167,8 +173,16 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
 
         const ctx = new WasmBindgenTestContext();
 
-        if (args) {
-            ctx.args(args);
+        if (testFilter || args) {
+            const passedArgs = [];
+            if (args) {
+                passedArgs.push(...args);
+            }
+            if (testFilter) {
+                passedArgs.push(testFilter);
+            }
+
+            ctx.args(passedArgs);
         }
 
         const testMethods = tests.map(testName => wasm[testName]);

@@ -34,20 +34,13 @@ pub struct WebdriverContext {
     driver_addr: std::net::SocketAddr,
     timeout: std::time::Duration,
     webdriver_bidi_uri: Option<String>,
+    avoid_bidi: bool,
+    nocapture: bool,
     debug: bool,
 }
 
 impl WebdriverContext {
-    pub async fn init(kind: WebdriverKind, force_install: bool, debug: bool) -> WasmBrowserRunResult<Self> {
-        Self::init_with_timeout(kind, force_install, debug, None).await
-    }
-
-    pub async fn init_with_timeout(
-        kind: WebdriverKind,
-        force_install: bool,
-        debug: bool,
-        timeout: Option<std::time::Duration>,
-    ) -> WasmBrowserRunResult<Self> {
+    pub async fn init(kind: WebdriverKind, force_install: bool) -> WasmBrowserRunResult<Self> {
         match kind {
             WebdriverKind::Chrome => {}
             k => return Err(WasmBrowserRunError::UnsupportedWebdriver(k.to_string())),
@@ -80,8 +73,6 @@ impl WebdriverContext {
         if !webdriver_ready {
             return Err(WasmBrowserRunError::WebDriverTimeoutError);
         }
-
-        let timeout = timeout.unwrap_or_else(|| std::time::Duration::from_secs(DEFAULT_TIMEOUT_SECS));
 
         let serde_json::Value::Object(caps) = serde_json::json!({
             "webSocketUrl": true,
@@ -129,10 +120,36 @@ impl WebdriverContext {
             kind,
             driver,
             driver_addr,
-            timeout,
+            timeout: std::time::Duration::from_secs(DEFAULT_TIMEOUT_SECS),
             webdriver_bidi_uri,
-            debug,
+            avoid_bidi: false,
+            nocapture: false,
+            debug: false,
         })
+    }
+
+    /// Act as if WebDriver BiDi isn't supported
+    pub fn avoid_bidi(mut self, avoid: bool) -> Self {
+        self.avoid_bidi = avoid;
+        self
+    }
+
+    /// Disables log capture -
+    pub fn disable_log_capture(mut self, nocapture: bool) -> Self {
+        self.nocapture = nocapture;
+        self
+    }
+
+    pub fn with_timeout(mut self, mut timeout: Option<std::time::Duration>) -> Self {
+        if let Some(timeout) = timeout.take() {
+            self.timeout = timeout;
+        }
+        self
+    }
+
+    pub fn enable_debug(mut self, debug: bool) -> Self {
+        self.debug = debug;
+        self
     }
 
     async fn run_http_server(addr: std::net::SocketAddr, mount_point: String) -> WasmBrowserRunResult<()> {
