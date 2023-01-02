@@ -290,6 +290,10 @@ impl WebdriverContext {
         test_filter: Option<String>,
         exact_test: Option<String>,
     ) -> WasmBrowserRunResult<TestResultWrapper> {
+        let Some(ctx) = &self.ctx else {
+            return Err(WasmBrowserRunError::WebDriverContextNotInitialized);
+        };
+
         if !wasm_file_path.exists() {
             return Err(WasmBrowserRunError::WasmFileNotFound(
                 wasm_file_path.to_str().unwrap().into(),
@@ -342,13 +346,13 @@ impl WebdriverContext {
 
         let test_file_name = dest.file_name().unwrap().to_string_lossy();
 
-        let window = self.browser.new_window(true).await.map_err(WebdriverError::from)?;
-        self.browser
+        let window = ctx.browser.new_window(true).await.map_err(WebdriverError::from)?;
+        ctx.browser
             .switch_to_window(window.handle)
             .await
             .map_err(WebdriverError::from)?;
 
-        self.browser
+        ctx.browser
             .goto(&format!("http://{socket_addr}/"))
             .await
             .map_err(WebdriverError::from)?;
@@ -364,12 +368,14 @@ impl WebdriverContext {
             exact_test.or(test_filter).into(),
         ];
 
-        if !self.avoid_bidi && self.webdriver_bidi_uri.is_some() {
+        if !self.avoid_bidi && ctx.webdriver_bidi_uri.is_some() {
             let mut stream = self.connect_bidi().await?;
+            log::warn!(target: "webdriver_bidi", "Connected to WebDriver BiDi");
             use crate::webdriver_bidi_protocol::{local::EventData, log::LogEvent};
             use futures_util::TryStreamExt as _;
+            log::warn!("Starting tests...");
             // Start tests
-            self.browser
+            ctx.browser
                 .execute(
                     r#"
 const [fileName, testsList, testFilter] = arguments;
@@ -379,9 +385,12 @@ window.runTests(fileName, testsList, testFilter);"#,
                 .await
                 .map_err(WebdriverError::from)?;
 
+            log::warn!("JS execution done...");
+
             let bar = indicatif::ProgressBar::new(test_count as u64);
 
             while let Some(event) = stream.try_next().await? {
+                dbg!(&event);
                 match event.data {
                     EventData::BrowsingContextEvent(data) => {
                         log::info!("Unimplemented event handling: {:?}", data);
@@ -417,7 +426,7 @@ window.runTests(fileName, testsList, testFilter);"#,
         } else {
             // Fallback on no BiDi support
 
-            let raw_results = self
+            let raw_results = ctx
                 .browser
                 .execute_async(
                     r#"
@@ -430,7 +439,7 @@ window.runTests(fileName, testsList, testFilter).then(callback)"#,
             test_results.parse_full_results(raw_results)?;
         }
 
-        self.browser.close_window().await.map_err(WebdriverError::from)?;
+        ctx.browser.close_window().await.map_err(WebdriverError::from)?;
 
         hwnd.abort();
         let _ = hwnd.await;

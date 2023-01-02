@@ -22,6 +22,10 @@ pub enum WasmBrowserRunError {
     IoError(#[from] std::io::Error),
     #[error(transparent)]
     WebDriverError(#[from] WebdriverError),
+    #[error(transparent)]
+    ShellError(#[from] xshell::Error),
+    #[error("The WebDriver context hasn't been initialized. Please call WebDriverContext::webdriver_init() first!")]
+    WebDriverContextNotInitialized,
     #[error(
         "For some reason the webdriver implementation is not responding within the allotted timeout (5s by default)."
     )]
@@ -63,6 +67,12 @@ integration test.
 
 #[derive(Debug, thiserror::Error)]
 pub enum WebdriverError {
+    #[error(transparent)]
+    SyncTaskError(#[from] tokio::task::JoinError),
+    #[error(transparent)]
+    SyncIoError(#[from] tokio::sync::oneshot::error::RecvError),
+    #[error(transparent)]
+    WebDriverPackageUnzipError(#[from] zip::result::ZipError),
     #[error(transparent)]
     InvalidWindowHandle(#[from] fantoccini::error::InvalidWindowHandle),
     #[error(transparent)]

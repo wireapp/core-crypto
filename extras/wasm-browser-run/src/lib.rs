@@ -27,41 +27,21 @@ pub const DEFAULT_TIMEOUT_SECS: u64 = 20;
 
 #[derive(Debug)]
 #[allow(dead_code)]
-pub struct WebdriverContext {
-    kind: WebdriverKind,
-    browser: fantoccini::Client,
-    driver: tokio::process::Child,
-    driver_addr: std::net::SocketAddr,
-    timeout: std::time::Duration,
-    webdriver_bidi_uri: Option<String>,
-    avoid_bidi: bool,
-    nocapture: bool,
-    debug: bool,
+struct WebdriverContextInner {
+    pub(crate) browser: fantoccini::Client,
+    pub(crate) driver: tokio::process::Child,
+    pub(crate) driver_addr: std::net::SocketAddr,
+    pub(crate) webdriver_bidi_uri: Option<String>
 }
 
-impl WebdriverContext {
-    pub async fn init(kind: WebdriverKind, force_install: bool) -> WasmBrowserRunResult<Self> {
-        match kind {
-            WebdriverKind::Chrome => {}
-            k => return Err(WasmBrowserRunError::UnsupportedWebdriver(k.to_string())),
-        }
-
-        let wd_dir = dirs::home_dir().unwrap().join(".webdrivers");
-
-        if !wd_dir.exists() {
-            tokio::fs::create_dir_all(&wd_dir).await?;
-        }
-
-        let driver_location = wd_dir.join(kind.as_exe_name());
-        if !driver_location.exists() {
-            kind.install_webdriver(&wd_dir, force_install).await?;
-        }
-
+impl WebdriverContextInner {
+    pub async fn init(driver_location: &std::path::Path, timeout: std::time::Duration) -> WasmBrowserRunResult<Self> {
         let driver_addr = tokio::net::TcpListener::bind("127.0.0.1:0").await?.local_addr()?;
         let driver = tokio::process::Command::new(driver_location)
             .arg(format!("--port={}", driver_addr.port()))
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null())
+            .kill_on_drop(true)
             .spawn()?;
 
         let webdriver_start_timeout = std::time::Duration::from_secs(5);
@@ -80,6 +60,9 @@ impl WebdriverContext {
 
         let serde_json::Value::Object(caps) = serde_json::json!({
             "webSocketUrl": true,
+            "timeouts": {
+                "script": timeout.as_secs() * 1000,
+            },
             "goog:chromeOptions": {
                 "args": [
                     "headless",
@@ -121,11 +104,44 @@ impl WebdriverContext {
 
         Ok(Self {
             browser,
-            kind,
             driver,
             driver_addr,
-            timeout: std::time::Duration::from_secs(DEFAULT_TIMEOUT_SECS),
             webdriver_bidi_uri,
+        })
+    }
+}
+
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct WebdriverContext {
+    kind: WebdriverKind,
+    ctx: Option<WebdriverContextInner>,
+    driver_location: std::path::PathBuf,
+    timeout: std::time::Duration,
+    avoid_bidi: bool,
+    nocapture: bool,
+    debug: bool,
+}
+
+impl WebdriverContext {
+    pub async fn init(kind: WebdriverKind, force_install: bool) -> WasmBrowserRunResult<Self> {
+        match kind {
+            WebdriverKind::Chrome => {}
+            k => return Err(WasmBrowserRunError::UnsupportedWebdriver(k.to_string())),
+        }
+
+        let wd_dir = dirs::home_dir()
+            .ok_or_else(|| WasmBrowserRunError::IoError(std::io::ErrorKind::NotFound.into()))?
+            .join(".webdrivers");
+
+        kind.install_webdriver(&wd_dir, force_install).await?;
+        let driver_location = wd_dir.join(kind.as_exe_name());
+
+        Ok(Self {
+            kind,
+            ctx: None,
+            driver_location,
+            timeout: std::time::Duration::from_secs(DEFAULT_TIMEOUT_SECS),
             avoid_bidi: false,
             nocapture: false,
             debug: false,
@@ -154,6 +170,11 @@ impl WebdriverContext {
     pub fn enable_debug(mut self, debug: bool) -> Self {
         self.debug = debug;
         self
+    }
+
+    pub async fn webdriver_init(&mut self) -> WasmBrowserRunResult<()> {
+        self.ctx = Some(WebdriverContextInner::init(&self.driver_location, self.timeout).await?);
+        Ok(())
     }
 
     async fn run_http_server(addr: std::net::SocketAddr, mount_point: String) -> WasmBrowserRunResult<()> {
@@ -189,6 +210,10 @@ impl WebdriverContext {
         wasm_file_path: &std::path::Path,
         js: &str,
     ) -> WasmBrowserRunResult<serde_json::Value> {
+        let Some(ctx) = &self.ctx else {
+            return Err(WasmBrowserRunError::WebDriverContextNotInitialized);
+        };
+
         if !wasm_file_path.exists() {
             return Err(WasmBrowserRunError::WasmFileNotFound(
                 wasm_file_path.to_str().unwrap().into(),
@@ -200,18 +225,18 @@ impl WebdriverContext {
             .await?;
         let (hwnd, socket_addr) = Self::spawn_http_server(&mount_point).await?;
 
-        let window = self.browser.new_window(true).await.map_err(WebdriverError::from)?;
-        self.browser
+        let window = ctx.browser.new_window(true).await.map_err(WebdriverError::from)?;
+        ctx.browser
             .switch_to_window(window.handle)
             .await
             .map_err(WebdriverError::from)?;
 
-        self.browser
+        ctx.browser
             .goto(&format!("http://{socket_addr}/"))
             .await
             .map_err(WebdriverError::from)?;
 
-        let result = self
+        let result = ctx
             .browser
             .execute_async(
                 r#"
@@ -223,7 +248,7 @@ window.__wbr__jsCall().then(callback);"#,
             .await
             .map_err(WebdriverError::from)?;
 
-        self.browser.close_window().await.map_err(WebdriverError::from)?;
+        ctx.browser.close_window().await.map_err(WebdriverError::from)?;
 
         hwnd.abort();
         let _ = hwnd.await;
@@ -232,23 +257,27 @@ window.__wbr__jsCall().then(callback);"#,
     }
 
     pub async fn run_js(&self, js: &str) -> WasmBrowserRunResult<serde_json::Value> {
+        let Some(ctx) = &self.ctx else {
+            return Err(WasmBrowserRunError::WebDriverContextNotInitialized);
+        };
+
         let mount_point = self
             .compile_js_support(Some(&format!("window.__wbr__jsCall = async () => {{ {js} }};")))
             .await?;
         let (hwnd, socket_addr) = Self::spawn_http_server(&mount_point).await?;
 
-        let window = self.browser.new_window(true).await.map_err(WebdriverError::from)?;
-        self.browser
+        let window = ctx.browser.new_window(true).await.map_err(WebdriverError::from)?;
+        ctx.browser
             .switch_to_window(window.handle)
             .await
             .map_err(WebdriverError::from)?;
 
-        self.browser
+        ctx.browser
             .goto(&format!("http://{socket_addr}/"))
             .await
             .map_err(WebdriverError::from)?;
 
-        let result = self
+        let result = ctx
             .browser
             .execute_async(
                 r#"
@@ -259,7 +288,7 @@ window.__wbr__jsCall().then(callback);"#,
             .await
             .map_err(WebdriverError::from)?;
 
-        self.browser.close_window().await.map_err(WebdriverError::from)?;
+        ctx.browser.close_window().await.map_err(WebdriverError::from)?;
 
         hwnd.abort();
         let _ = hwnd.await;
@@ -312,11 +341,15 @@ window.__wbr__jsCall().then(callback);"#,
             Box<impl futures_util::Stream<Item = WasmBrowserRunResult<crate::webdriver_bidi_protocol::local::Event>>>,
         >,
     > {
+        let Some(ctx) = &self.ctx else {
+            return Err(WasmBrowserRunError::WebDriverContextNotInitialized);
+        };
+
         use crate::webdriver_bidi_protocol::local::Event;
         use futures_util::StreamExt as _;
         use tokio_tungstenite::tungstenite::protocol::Message;
 
-        let Some(ws_bidi_uri) = &self.webdriver_bidi_uri else {
+        let Some(ws_bidi_uri) = &ctx.webdriver_bidi_uri else {
             return Err(WebdriverError::NoWebDriverBidiSupport.into());
         };
 
@@ -336,6 +369,7 @@ window.__wbr__jsCall().then(callback);"#,
         let debug = self.debug;
 
         let wrapped_stream = ws_client_rx.filter_map(move |msg| {
+            dbg!(&msg);
             let tx_inner = tx.clone();
             async move {
                 let msg_raw = match msg {

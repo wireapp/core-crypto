@@ -125,9 +125,7 @@ impl WebdriverKind {
 
         let download_url = match self {
             WebdriverKind::Chrome => {
-                format!(
-                    "https://chromedriver.storage.googleapis.com/index.html?path={latest_version}/{download_filename}"
-                )
+                format!("https://chromedriver.storage.googleapis.com/{latest_version}/{download_filename}")
             }
             WebdriverKind::Gecko => {
                 let gh_response = geckodriver_response.take().unwrap();
@@ -180,23 +178,85 @@ impl WebdriverKind {
 
         let (driver_url, driver_filename) = self.download_url().await?;
 
-        let mut filestream = reqwest::get(driver_url).await?.bytes_stream();
+        if driver_url.is_empty() || driver_filename.is_empty() {
+            return Ok(());
+        }
+
+        let sh = xshell::Shell::new()?;
+
+        // let mut filestream = reqwest::get(driver_url.clone()).await?.bytes_stream();
         let dir = tempfile::tempdir()?;
 
         let tempfile_path = dir.path().join(driver_filename);
+        // let extension = tempfile_path.extension().unwrap().to_str().unwrap().to_string();
 
-        let mut file = tokio::fs::File::create(&tempfile_path).await?;
+        xshell::cmd!(sh, "wget {driver_url} -O {tempfile_path}").quiet().run()?;
 
-        use futures_util::StreamExt as _;
-        use tokio::io::AsyncWriteExt as _;
-        while let Some(chunk) = filestream.next().await {
-            file.write_all(&chunk?).await?;
+        // TODO: Do things properly and download with reqwest & unzip with `zip`, `flate2` and `tar`
+
+        // let mut file = tokio::fs::File::create(&tempfile_path).await?;
+
+        // use futures_util::StreamExt as _;
+        // use tokio::io::AsyncWriteExt as _;
+        // let mut wrote = 0usize;
+        // while let Some(chunk) = filestream.next().await {
+        //     let chunk = chunk?;
+        //     let chunk_len = chunk.len();
+        //     file.write_all(&chunk).await?;
+        //     wrote += chunk_len;
+        // }
+
+        // dbg!(wrote);
+        // dbg!(&tempfile_path);
+
+        // file.sync_all().await?;
+        // let file = file.into_std().await;
+
+        // let wd_dir_inner = wd_dir.to_owned();
+        // dbg!(&wd_dir);
+
+        // let file = match extension.as_str() {
+        //     "zip" => {
+        //         let mut zip = zip::ZipArchive::new(file).map_err(WebdriverError::from)?;
+        //         zip.extract(wd_dir_inner).map_err(WebdriverError::from)?;
+
+        //         zip.into_inner()
+        //     },
+        //     "tar.gz" => {
+        //         let gz = flate2::read::GzDecoder::new(file);
+        //         let mut tar = tar::Archive::new(gz);
+        //         tar.set_preserve_permissions(true);
+        //         tar.set_unpack_xattrs(true);
+        //         tar.unpack(wd_dir_inner)?;
+        //         tar.into_inner().into_inner()
+        //     },
+        //     _ => unreachable!("Unlikely branch encountered. No handling of this kind of file."),
+        // };
+
+        // log::warn!("Got file: {file:?}");
+        // log::warn!("Unzipped {tempfile_path:?} -> {wd_dir:?}");
+
+        // // Make sure the file has the executable bit set
+        // #[cfg(unix)]
+        // {
+        //     let file = tokio::fs::File::from_std(file);
+        //     let mut perms = file.metadata().await?.permissions();
+        //     use std::os::unix::fs::PermissionsExt as _;
+        //     perms.set_mode(0o755);
+        //     file.set_permissions(perms).await?;
+        //     file.sync_all().await?;
+        //     drop(file);
+        // }
+
+        match tempfile_path.extension().unwrap().to_str().unwrap() {
+            "zip" => xshell::cmd!(sh, "unzip {tempfile_path} -d {wd_dir}").quiet().run()?,
+            "tar.gz" => xshell::cmd!(sh, "tar -xzf {tempfile_path} {wd_dir}").quiet().run()?,
+            _ => unreachable!("Unlikely branch encountered. No handling of this kind of file."),
         }
 
-        file.sync_all().await?;
-        drop(file);
+        // tokio::fs::rename(tempfile_path, exe_path).await?;
+        drop(tempfile_path);
 
-        tokio::fs::rename(tempfile_path, exe_path).await?;
 
         Ok(())
     }

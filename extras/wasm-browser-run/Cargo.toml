@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.21", features = ["process", "net"] }
+tokio-stream = "0.1"
 warp = "0.3"
 # Utils
 thiserror = "1.0"
@@ -29,8 +30,11 @@ tokio-tungstenite = "0.18"
 ordered-float = { version = "3.4", features = ["serde"] }
 serde-enum-str = "0.3"
 better_term = "1.3"
-tokio-stream = "0.1.11"
-indicatif = "0.17.2"
+indicatif = "0.17"
+xshell = "0.2"
+zip = "0.6"
+flate2 = "1.0"
+tar = "0.4"
 
 [dependencies.fantoccini]
 #version = "0.19"

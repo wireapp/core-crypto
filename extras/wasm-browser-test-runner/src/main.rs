@@ -96,15 +96,10 @@ fn init_logger(verbose: u8) {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // TODO: To achieve nextest compat, we need to spawn some sort of daemon then only issue commands to it.
-    // TODO: Otherwise, the whole process of spawning stuff is too costly and causes errors as we recompile stuff with different hashes.
-    // TODO: Basically everything is too sequential
 
     let mut args = Args::parse();
 
     init_logger(args.verbose);
-
-    log::warn!("Args: {args:?}");
 
     if args.timeout.is_none() {
         // Compatibility layer with wasm-bindgen-test-runner
@@ -112,13 +107,35 @@ async fn main() -> Result<()> {
             args.timeout = Some(timeout.parse()?);
         }
     }
+    log::warn!("Args: {args:?}");
 
-    let ctx = WebdriverContext::init(args.webdriver.into(), args.force_install_webdriver)
+    tokio::select! {
+        res = test_runner(args) => {
+            if let Err(err) = res {
+                panic!("{err}");
+            }
+        },
+        _ = tokio::signal::ctrl_c() => {
+            println!("Aborted!");
+        }
+    };
+
+    Ok(())
+}
+
+async fn test_runner(args: Args) -> Result<()> {
+    // TODO: To achieve nextest compat, we need to spawn some sort of daemon then only issue commands to it.
+    // TODO: Otherwise, the whole process of spawning stuff is too costly and causes errors as we recompile stuff with different hashes.
+    // TODO: Basically everything is too sequential
+
+    let mut ctx = WebdriverContext::init(args.webdriver.into(), args.force_install_webdriver)
         .await?
         .avoid_bidi(args.no_bidi)
         .disable_log_capture(args.nocapture)
         .with_timeout(args.timeout.map(std::time::Duration::from_secs))
         .enable_debug(args.verbose > 1);
+
+    ctx.webdriver_init().await?;
 
     let wasm_file_to_test = std::path::PathBuf::from(args.wasm_test_bin_path);
     log::warn!("WASM file path: {wasm_file_to_test:?}");
