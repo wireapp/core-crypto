@@ -1,6 +1,5 @@
-use clap::Parser;
 use color_eyre::eyre::Result;
-use wasm_browser_run::{WebdriverContext, WebdriverKind};
+use wasm_browser_run::{WebdriverContext, WebdriverKind, DEFAULT_TIMEOUT_SECS};
 
 #[derive(clap::ValueEnum, Debug, Clone, Copy)]
 #[repr(u8)]
@@ -31,7 +30,7 @@ enum CliFormat {
     Junit,
 }
 
-#[derive(Parser, Debug)]
+#[derive(clap::Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Choose which WebDriver implementation to download/install/run
@@ -59,7 +58,7 @@ struct Args {
     /// Placeholder flag for `cargo-nextest compat`. Returns nothing.
     #[arg(long)]
     ignored: bool,
-    /// Compat flag. Currently unimplemented.
+    /// Echoes back test logs that were captured and silenced. Only does something in BiDi mode
     #[arg(long)]
     nocapture: bool,
     /// Perform a single test. `cargo-nextest` stuff. Be warned, executing many tests this way is insanely slow
@@ -96,7 +95,7 @@ fn init_logger(verbose: u8) {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-
+    use clap::Parser as _;
     let mut args = Args::parse();
 
     init_logger(args.verbose);
@@ -116,8 +115,8 @@ async fn main() -> Result<()> {
             }
         },
         _ = tokio::signal::ctrl_c() => {
-            println!("Aborted!");
-        }
+            log::warn!("Aborted!");
+        },
     };
 
     Ok(())

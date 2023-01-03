@@ -23,22 +23,24 @@ const logMethods = ["debug", "log", "info", "warn", "error"];
 logMethods.forEach(wrapConsoleMethod);
 
 interface TestResultSummary {
-    successful: boolean,
-    success: number,
-    fail: number,
-    ignored: number,
-    total: number,
+    successful: boolean;
+    success: number;
+    fail: number;
+    ignored: number;
+    total: number;
 }
 
-type TestResultDetails = Array<[string, boolean]>;
+interface TestResultDetails {
+    [testName: string]: boolean;
+};
 
 interface SerializableTestResultContainer {
-    details: TestResultDetails,
-    summary: TestResultSummary,
+    details: TestResultDetails;
+    summary: TestResultSummary;
 }
 
-class TestResultContainer {
-    details: TestResultDetails = [];
+class TestResultContainer implements SerializableTestResultContainer {
+    details: TestResultDetails = {};
     summary: TestResultSummary = {
         successful: false,
         success: 0,
@@ -66,8 +68,11 @@ class TestResultContainer {
             return partialTestResult;
         }
 
-        const mainLogMatches: Array<[string, boolean]> = [...mainLog.matchAll(/test ([\w:]+) \.{3} (\w+)/gi)].map(([, testName, testStatus]) => [testName, testStatus === "ok"]);
-        this.details.push(...mainLogMatches);
+        const mainLogMatches: TestResultDetails = [...mainLog.matchAll(/test ([\w:]+) \.{3} (\w+)/gi)].reduce((acc, [, testName, testStatus]) => {
+            acc[testName] = testStatus === "ok";
+            return acc;
+        }, {});
+        this.details = { ...this.details, ...mainLogMatches };
         partialTestResult.details = mainLogMatches;
 
         if (!summary || summary.length === 0) {
@@ -90,7 +95,7 @@ class TestResultContainer {
         return partialTestResult;
     }
 
-    setupObserver() {
+    setupObserver(): MutationObserver {
         this.disconnectObserver();
 
         let output = document.getElementById("output");
@@ -104,13 +109,13 @@ class TestResultContainer {
 
         this.#observer = new MutationObserver(mutationList => {
             mutationList.forEach(mutation => {
-                if (mutation.type !== "childList" || mutation.target.textContent.length === 0) {
+                if (mutation.type !== "childList" || output.textContent.length === 0) {
                     return;
                 }
 
-                const partial = this.parseTestResultString(mutation.target.textContent).serializable();
-                console.log(JSON.stringify({ partial }));
-                mutation.target.textContent = "";
+                const partial = this.parseTestResultString(output.textContent).serializable();
+                console.debug({ partial });
+                output.textContent = "";
             });
         });
 
@@ -120,6 +125,8 @@ class TestResultContainer {
             childList: true,
             subtree: false,
         });
+
+        return this.#observer;
     }
 
     disconnectObserver() {
@@ -155,13 +162,13 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
 (window as any).__wbg_test_invoke = f => f();
 
 (window as any).runTests = async (fileName: string, tests: string[], testFilter?: string, args?: string[]): Promise<SerializableTestResultContainer> => {
+    console.log("TEST!");
 
     let listeners: { [key: string]: EventListener };
     const testResults = new TestResultContainer();
+    const observerRef = testResults.setupObserver();
 
     try {
-        testResults.setupObserver();
-
         const {
             WasmBindgenTestContext,
             __wbgtest_console_debug,
@@ -191,6 +198,8 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
             window.addEventListener(`on_console_${method}` as unknown as keyof WindowEventMap, listener);
         });
 
+        console.log("HELP WHYYY");
+
         const wasm = await initWasm(`${fileName}.wasm`);
 
         const ctx = new WasmBindgenTestContext();
@@ -216,7 +225,7 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
 
         outputControlDiv(fileName);
 
-        console.log(JSON.stringify({ complete: testResults.serializable() }));
+        console.debug({ complete: testResults.serializable() });
 
         return testResults;
     } catch (e) {
@@ -230,6 +239,6 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
             });
         }
 
-        testResults.disconnectObserver();
+        observerRef.disconnect();
     }
 };

@@ -69,6 +69,7 @@ const rollupBaseOptions = {
         auto(),
         resolve(),
         typescript({
+            noEmitOnError: true,
             compilerOptions: {
                 target: "es2020",
             },

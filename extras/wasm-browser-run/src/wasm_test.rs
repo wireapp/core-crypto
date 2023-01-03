@@ -117,25 +117,20 @@ impl std::fmt::Display for TestResultSummary {
     }
 }
 
-#[derive(Debug, Clone, serde::Deserialize)]
-#[serde(transparent)]
-#[repr(transparent)]
-struct TestResult(pub (String, bool));
-
 #[derive(Debug, Clone)]
-struct ExpandedTestResult {
-    pub test_name: String,
+struct ExpandedTestResult<'a> {
+    pub test_name: &'a str,
     pub successful: bool,
 }
 
-impl From<TestResult> for ExpandedTestResult {
-    fn from(r: TestResult) -> Self {
-        let TestResult((test_name, successful)) = r;
+impl<'a> From<(&'a str, bool)> for ExpandedTestResult<'a> {
+    fn from(r: (&'a str, bool)) -> Self {
+        let (test_name, successful) = r;
         Self { test_name, successful }
     }
 }
 
-impl std::fmt::Display for ExpandedTestResult {
+impl std::fmt::Display for ExpandedTestResult<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let (color, result_str) = test_result_to_color_fmt_pair(self.successful);
         writeln!(
@@ -147,18 +142,9 @@ impl std::fmt::Display for ExpandedTestResult {
     }
 }
 
-/// interface TestResultContainer {
-///     details: [string, boolean][],
-///     summary: {
-///         successful: boolean,
-///         success: number,
-///         fail: number,
-///         ignored: number,
-///     },
-/// }
 #[derive(Debug, Clone, serde::Deserialize)]
 struct TestResultContainer {
-    pub details: Vec<TestResult>,
+    pub details: std::collections::HashMap<String, bool>,
     pub summary: TestResultSummary,
 }
 
@@ -235,7 +221,11 @@ impl std::fmt::Display for TestResultWrapper {
             )?;
         }
 
-        for test in results.details.iter().cloned().map(ExpandedTestResult::from) {
+        for test in results
+            .details
+            .iter()
+            .map(|(s, r)| ExpandedTestResult::from((s.as_ref(), *r)))
+        {
             write!(f, "{test}")?;
         }
 
@@ -406,7 +396,11 @@ window.runTests(fileName, testsList, testFilter);"#,
                                 }
                                 match serde_json::from_str::<TestResultReport>(log_text)? {
                                     TestResultReport::Partial(report) => {
-                                        for test in report.details.into_iter().map(ExpandedTestResult::from) {
+                                        for test in report
+                                            .details
+                                            .iter()
+                                            .map(|(s, r)| ExpandedTestResult::from((s.as_ref(), *r)))
+                                        {
                                             bar.set_message(test.to_string());
                                             bar.inc(1);
                                         }
@@ -425,17 +419,20 @@ window.runTests(fileName, testsList, testFilter);"#,
             bar.finish_and_clear();
         } else {
             // Fallback on no BiDi support
-
+            log::warn!("Starting tests...");
             let raw_results = ctx
                 .browser
                 .execute_async(
                     r#"
 const [fileName, testsList, testFilter, callback] = arguments;
-window.runTests(fileName, testsList, testFilter).then(callback)"#,
+window.runTests(fileName, testsList, testFilter).then(callback);"#,
                     js_args,
                 )
                 .await
                 .map_err(WebdriverError::from)?;
+
+            log::warn!("JS execution done...");
+
             test_results.parse_full_results(raw_results)?;
         }
 

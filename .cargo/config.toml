@@ -32,7 +32,6 @@ runner = [
     "--manifest-path", "../extras/wasm-browser-test-runner/Cargo.toml",
     "--",
     "--webdriver=chrome",
-    "--no-bidi",
     "--timeout=600"
 ]
 # rustflags = "-C target-feature=+atomics,+bulk-memory,+mutable-globals"
