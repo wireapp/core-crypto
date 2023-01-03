@@ -1,26 +1,26 @@
-// const wrapConsoleMethod = (method: string) => {
-//     const eventName = `on_console_${method}`;
-//     const og = console[method];
-//     console[method] = function(...args) {
-//         const event = new CustomEvent(eventName, { detail: args } );
-//         window.dispatchEvent(event);
-//         const str = `${args.join("\n")}\n`;
-//         const levelOutput = document.getElementById(`console_${method}`);
-//         if (levelOutput) {
-//             levelOutput.append(str);
-//         }
+const wrapConsoleMethod = (method: string) => {
+    const eventName = `on_console_${method}`;
+    const og = console[method];
+    console[method] = function(...args) {
+        const event = new CustomEvent(eventName, { detail: args } );
+        window.dispatchEvent(event);
+        const str = `${args.join("\n")}\n`;
+        const levelOutput = document.getElementById(`console_${method}`);
+        if (levelOutput) {
+            levelOutput.append(str);
+        }
 
-//         const output = document.getElementById("output");
-//         if (output) {
-//             output.append(str);
-//         }
-//         og.apply(this, args);
-//     };
-// };
+        const output = document.getElementById("output");
+        if (output) {
+            output.append(str);
+        }
+        og.apply(this, args);
+    };
+};
 
-// const logMethods = ["debug", "log", "info", "warn", "error"];
+const logMethods = ["debug", "log", "info", "warn", "error"];
 
-// logMethods.forEach(wrapConsoleMethod);
+logMethods.forEach(wrapConsoleMethod);
 
 interface TestResultSummary {
     successful: boolean,
@@ -109,7 +109,7 @@ class TestResultContainer {
                 }
 
                 const partial = this.parseTestResultString(mutation.target.textContent).serializable();
-                console.debug(JSON.stringify({ partial }));
+                console.log(JSON.stringify({ partial }));
                 mutation.target.textContent = "";
             });
         });
@@ -156,7 +156,7 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
 
 (window as any).runTests = async (fileName: string, tests: string[], testFilter?: string, args?: string[]): Promise<SerializableTestResultContainer> => {
 
-    // let listeners: { [key: string]: EventListener };
+    let listeners: { [key: string]: EventListener };
     const testResults = new TestResultContainer();
 
     try {
@@ -180,16 +180,16 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
             error: __wbgtest_console_debug,
         };
 
-        // listeners = logMethods.reduce((acc, method) => {
-        //     acc[method] = (event: CustomEvent) => {
-        //         wasmLogMethods[method].apply(wasmLogMethods[method], event.detail);
-        //     };
-        //     return acc;
-        // }, {});
+        listeners = logMethods.reduce((acc, method) => {
+            acc[method] = (event: CustomEvent) => {
+                wasmLogMethods[method].apply(wasmLogMethods[method], event.detail);
+            };
+            return acc;
+        }, {});
 
-        // Object.entries(listeners).forEach(([method, listener]) => {
-        //     window.addEventListener(`on_console_${method}` as unknown as keyof WindowEventMap, listener);
-        // });
+        Object.entries(listeners).forEach(([method, listener]) => {
+            window.addEventListener(`on_console_${method}` as unknown as keyof WindowEventMap, listener);
+        });
 
         const wasm = await initWasm(`${fileName}.wasm`);
 
@@ -216,7 +216,7 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
 
         outputControlDiv(fileName);
 
-        console.debug(JSON.stringify({ complete: testResults.serializable() }));
+        console.log(JSON.stringify({ complete: testResults.serializable() }));
 
         return testResults;
     } catch (e) {
@@ -224,11 +224,11 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
         throw e;
     } finally {
         // Cleanup event listeners
-        // if (listeners) {
-        //     Object.entries(listeners).forEach(([method, listener]) => {
-        //         window.removeEventListener(`on_console_${method}` as unknown as keyof WindowEventMap, listener);
-        //     });
-        // }
+        if (listeners) {
+            Object.entries(listeners).forEach(([method, listener]) => {
+                window.removeEventListener(`on_console_${method}` as unknown as keyof WindowEventMap, listener);
+            });
+        }
 
         testResults.disconnectObserver();
     }
