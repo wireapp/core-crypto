@@ -31,7 +31,7 @@ struct WebdriverContextInner {
     pub(crate) browser: fantoccini::Client,
     pub(crate) driver: tokio::process::Child,
     pub(crate) driver_addr: std::net::SocketAddr,
-    pub(crate) webdriver_bidi_uri: Option<String>
+    pub(crate) webdriver_bidi_uri: Option<String>,
 }
 
 impl WebdriverContextInner {
@@ -84,7 +84,7 @@ impl WebdriverContextInner {
             unreachable!("`serde_json::json!()` did not produce an object when provided an object. Something is broken.")
         };
 
-        let browser = fantoccini::ClientBuilder::rustls()
+        let browser = fantoccini::ClientBuilder::native()
             .capabilities(caps)
             .connect(&format!("http://{driver_addr}"))
             .await
@@ -97,9 +97,9 @@ impl WebdriverContextInner {
             .map(|s| s.to_string());
 
         if let Some(ws_bidi_uri) = &webdriver_bidi_uri {
-            log::info!("WebDriver BiDi Supported; url: {ws_bidi_uri}");
+            tracing::info!("WebDriver BiDi Supported; url: {ws_bidi_uri}");
         } else {
-            log::warn!("WebDriver implementation does not support BiDi!");
+            tracing::warn!("WebDriver implementation does not support BiDi!");
         }
 
         Ok(Self {
@@ -201,7 +201,7 @@ impl WebdriverContext {
     ) -> WasmBrowserRunResult<(tokio::task::JoinHandle<WasmBrowserRunResult<()>>, std::net::SocketAddr)> {
         let addr = tokio::net::TcpListener::bind("127.0.0.1:0").await?.local_addr()?;
         let hwnd = tokio::task::spawn(Self::run_http_server(addr.clone(), mount_point.to_string()));
-        log::debug!("HTTP server address spawned at http://{addr}");
+        tracing::debug!("HTTP server address spawned at http://{addr}");
         Ok((hwnd, addr))
     }
 
@@ -307,7 +307,7 @@ window.__wbr__jsCall().then(callback);"#,
             return Err(eyre::eyre!("Incorrect folder structure, cannot find the `js-builder` folder").into());
         }
 
-        log::warn!("Starting JS support compilation at {js_builder_path:?}");
+        tracing::info!("Starting JS support compilation at {js_builder_path:?}");
         let mut builder_hwnd = tokio::process::Command::new("npm")
             .current_dir(&js_builder_path)
             .arg("start")
@@ -353,7 +353,7 @@ window.__wbr__jsCall().then(callback);"#,
             return Err(WebdriverError::NoWebDriverBidiSupport.into());
         };
 
-        log::warn!(target: "webdriver_bidi", "Connecting to WebDriver BiDi server at {ws_bidi_uri}");
+        tracing::info!(target: "webdriver_bidi", "Connecting to WebDriver BiDi server at {ws_bidi_uri}");
 
         let (ws_client, _) = tokio_tungstenite::connect_async(ws_bidi_uri)
             .await
@@ -363,8 +363,11 @@ window.__wbr__jsCall().then(callback);"#,
         let rx = tokio_stream::wrappers::ReceiverStream::new(rx);
         let (ws_client_tx, ws_client_rx) = ws_client.split();
 
-        log::warn!(target: "webdriver_bidi", "Setting up stream and WebSocket ping/pong handler");
-        tokio::task::spawn(rx.map(|payload| Ok(Message::Pong(payload))).forward(ws_client_tx));
+        tracing::debug!(target: "webdriver_bidi", "Setting up stream and WebSocket ping/pong handler");
+        tokio::task::spawn(
+            rx.map(|payload| Ok(Message::Pong(payload)))
+                .forward(Box::pin(ws_client_tx)),
+        );
 
         let debug = self.debug;
 
@@ -372,31 +375,47 @@ window.__wbr__jsCall().then(callback);"#,
             dbg!(&msg);
             let tx_inner = tx.clone();
             async move {
+                if debug {
+                    tracing::debug!(target: "webdriver_bidi", "Got raw msg: {msg:?}");
+                }
+
                 let msg_raw = match msg {
                     Ok(msg) => match msg {
                         Message::Ping(payload) => {
+                            tracing::debug!(target: "webdriver_bidi", "BiDi WS Ping: {}", hex::encode(&payload));
                             let _ = tx_inner.send(payload).await;
                             return None;
                         }
-                        Message::Close(_) | Message::Pong(_) => return None,
+                        Message::Close(msg) => {
+                            tracing::debug!(target: "webdriver_bidi", "Got BiDi WS Close message: {msg:?}");
+                            return None;
+                        }
+                        Message::Pong(payload) => {
+                            tracing::debug!(target: "webdriver_bidi", "BiDi WS Pong: {}", hex::encode(payload));
+                            return None;
+                        }
                         msg @ _ => msg.into_data(),
                     },
                     Err(e) => {
-                        log::error!("{e}");
+                        tracing::error!("{e}");
                         return Some(Err(e.into()));
                     }
                 };
 
+                if debug {
+                    tracing::debug!(target: "webdriver_bidi", "Got raw msg payload: {}", hex::encode(&msg_raw));
+                }
+
                 let event: Event = match serde_json::from_slice(&msg_raw) {
                     Ok(event) => event,
                     Err(e) => {
-                        log::error!("Failed to deserialize payload: {e:?}");
+                        tracing::error!("Failed to deserialize payload: {e:?}");
                         return None;
                     }
                 };
 
                 if debug {
-                    dbg!(&event);
+                    tracing::debug!(target: "webdriver_bidi", "{event:?}");
                 }
 
                 Some(WasmBrowserRunResult::Ok(event))

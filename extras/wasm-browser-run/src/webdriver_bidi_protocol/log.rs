@@ -25,13 +25,13 @@ impl std::fmt::Display for LogLevel {
     }
 }
 
-impl Into<log::Level> for LogLevel {
-    fn into(self) -> log::Level {
+impl Into<tracing::level_filters::LevelFilter> for LogLevel {
+    fn into(self) -> tracing::level_filters::LevelFilter {
         match self {
-            Self::Error => log::Level::Error,
-            Self::Warn => log::Level::Warn,
-            Self::Info => log::Level::Info,
-            Self::Debug => log::Level::Debug,
+            Self::Error => tracing::level_filters::LevelFilter::ERROR,
+            Self::Warn => tracing::level_filters::LevelFilter::WARN,
+            Self::Info => tracing::level_filters::LevelFilter::INFO,
+            Self::Debug => tracing::level_filters::LevelFilter::DEBUG,
         }
     }
 }

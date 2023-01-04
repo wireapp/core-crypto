@@ -1,26 +1,26 @@
-const wrapConsoleMethod = (method: string) => {
-    const eventName = `on_console_${method}`;
-    const og = console[method];
-    console[method] = function(...args) {
-        const event = new CustomEvent(eventName, { detail: args } );
-        window.dispatchEvent(event);
-        const str = `${args.join("\n")}\n`;
-        const levelOutput = document.getElementById(`console_${method}`);
-        if (levelOutput) {
-            levelOutput.append(str);
-        }
+// const wrapConsoleMethod = (method: string) => {
+//     const eventName = `on_console_${method}`;
+//     const og = console[method];
+//     console[method] = function(...args) {
+//         const event = new CustomEvent(eventName, { detail: args } );
+//         window.dispatchEvent(event);
+//         const str = `${args.join("\n")}\n`;
+//         const levelOutput = document.getElementById(`console_${method}`);
+//         if (levelOutput) {
+//             levelOutput.append(str);
+//         }
 
-        const output = document.getElementById("output");
-        if (output) {
-            output.append(str);
-        }
-        og.apply(this, args);
-    };
-};
+//         const output = document.getElementById("output");
+//         if (output) {
+//             output.append(str);
+//         }
+//         og.apply(this, args);
+//     };
+// };
 
-const logMethods = ["debug", "log", "info", "warn", "error"];
+// const logMethods = ["debug", "log", "info", "warn", "error"];
 
-logMethods.forEach(wrapConsoleMethod);
+// logMethods.forEach(wrapConsoleMethod);
 
 interface TestResultSummary {
     successful: boolean;
@@ -49,7 +49,12 @@ class TestResultContainer implements SerializableTestResultContainer {
         total: 0,
     };
 
+    #rawLog: string = "";
     #observer?: MutationObserver = null;
+
+    log(): string {
+        return this.#rawLog;
+    }
 
     /**
      * Parses a test result string from the `wasm-bindgen-test` harness and parses it into a structured dataset
@@ -96,35 +101,38 @@ class TestResultContainer implements SerializableTestResultContainer {
     }
 
     setupObserver(): MutationObserver {
-        this.disconnectObserver();
+        // this.disconnectObserver();
 
-        let output = document.getElementById("output");
-        if (!output) {
-            output = document.createElement("pre");
-            output.id = "output";
-            document.body.appendChild(output);
-        }
+        // let output = document.getElementById("output");
+        // if (!output) {
+        //     output = document.createElement("pre");
+        //     output.id = "output";
+        //     document.body.appendChild(output);
+        // }
 
-        output.textContent = "";
+        // output.textContent = "";
 
-        this.#observer = new MutationObserver(mutationList => {
-            mutationList.forEach(mutation => {
-                if (mutation.type !== "childList" || output.textContent.length === 0) {
-                    return;
-                }
+        // this.#observer = new MutationObserver(mutationList => {
+        //     mutationList.forEach(mutation => {
+        //         if (mutation.type !== "childList" || output.textContent.length === 0) {
+        //             return;
+        //         }
 
-                const partial = this.parseTestResultString(output.textContent).serializable();
-                console.debug({ partial });
-                output.textContent = "";
-            });
-        });
+        //         const currentLog = output.textContent;
 
-        this.#observer.observe(output, {
-            characterData: false,
-            attributes: false,
-            childList: true,
-            subtree: false,
-        });
+        //         this.#rawLog += currentLog;
+        //         const partial = this.parseTestResultString(currentLog).serializable();
+        //         console.debug(JSON.stringify({ partial }));
+        //         output.textContent = "";
+        //     });
+        // });
+
+        // this.#observer.observe(output, {
+        //     characterData: false,
+        //     attributes: false,
+        //     childList: true,
+        //     subtree: false,
+        // });
 
         return this.#observer;
     }
@@ -144,7 +152,7 @@ class TestResultContainer implements SerializableTestResultContainer {
     }
 }
 
-const outputControlDiv = (fileName: string, error?: Error): void => {
+function outputControlDiv(fileName: string, error?: Error): void {
     const id = `control_${fileName}`;
     if (document.getElementById(id) !== null) {
         return;
@@ -157,16 +165,18 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
         controlDiv.textContent = `\t${error.toString()}\n\n\tStacktrace: ${error.stack.toString()}`;
     }
     document.body.appendChild(controlDiv);
-};
+}
 
-(window as any).__wbg_test_invoke = f => f();
+async function runTests(fileName: string, tests: string[], testFilter?: string, args?: string[]): Promise<SerializableTestResultContainer> {
+    console.info("TEST!");
 
-(window as any).runTests = async (fileName: string, tests: string[], testFilter?: string, args?: string[]): Promise<SerializableTestResultContainer> => {
-    console.log("TEST!");
+    // let listeners: { [key: string]: EventListener };
 
-    let listeners: { [key: string]: EventListener };
+
     const testResults = new TestResultContainer();
-    const observerRef = testResults.setupObserver();
+
+    // const observerRef = testResults.setupObserver();
+    // return testResults;
 
     try {
         const {
@@ -179,26 +189,27 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
             default: initWasm,
         } = await import(`./${fileName}.js`);
 
-        const wasmLogMethods = {
-            debug: __wbgtest_console_debug,
-            log: __wbgtest_console_log,
-            info: __wbgtest_console_info,
-            warn: __wbgtest_console_warn,
-            error: __wbgtest_console_debug,
-        };
 
-        listeners = logMethods.reduce((acc, method) => {
-            acc[method] = (event: CustomEvent) => {
-                wasmLogMethods[method].apply(wasmLogMethods[method], event.detail);
-            };
-            return acc;
-        }, {});
+        // const wasmLogMethods = {
+        //     debug: __wbgtest_console_debug,
+        //     log: __wbgtest_console_log,
+        //     info: __wbgtest_console_info,
+        //     warn: __wbgtest_console_warn,
+        //     error: __wbgtest_console_debug,
+        // };
 
-        Object.entries(listeners).forEach(([method, listener]) => {
-            window.addEventListener(`on_console_${method}` as unknown as keyof WindowEventMap, listener);
-        });
+        // listeners = logMethods.reduce((acc, method) => {
+        //     acc[method] = (event: CustomEvent) => {
+        //         wasmLogMethods[method].apply(wasmLogMethods[method], event.detail);
+        //     };
+        //     return acc;
+        // }, {});
 
-        console.log("HELP WHYYY");
+        // Object.entries(listeners).forEach(([method, listener]) => {
+        //     window.addEventListener(`on_console_${method}` as unknown as keyof WindowEventMap, listener);
+        // });
+
+        console.info("HELP WHYYY");
 
         const wasm = await initWasm(`${fileName}.wasm`);
 
@@ -216,7 +227,9 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
             ctx.args(passedArgs);
         }
 
+
         const testMethods = tests.map(testName => wasm[testName]);
+
         const testsPassed = await ctx.run(testMethods);
         if (!testsPassed && testResults.summary.successful) {
             testResults.summary.successful = false;
@@ -225,7 +238,13 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
 
         outputControlDiv(fileName);
 
-        console.debug({ complete: testResults.serializable() });
+        let output = document.getElementById("output");
+        if (output) {
+            testResults.parseTestResultString(output.textContent);
+        }
+
+        console.debug(JSON.stringify({ complete: testResults.serializable(), rawLog: testResults.log() }));
+
 
         return testResults;
     } catch (e) {
@@ -233,12 +252,15 @@ const outputControlDiv = (fileName: string, error?: Error): void => {
         throw e;
     } finally {
         // Cleanup event listeners
-        if (listeners) {
-            Object.entries(listeners).forEach(([method, listener]) => {
-                window.removeEventListener(`on_console_${method}` as unknown as keyof WindowEventMap, listener);
-            });
-        }
+        // if (listeners) {
+        //     Object.entries(listeners).forEach(([method, listener]) => {
+        //         window.removeEventListener(`on_console_${method}` as unknown as keyof WindowEventMap, listener);
+        //     });
+        // }
 
-        observerRef.disconnect();
+        // observerRef.disconnect();
     }
-};
+}
+
+(window as any).__wbg_test_invoke = f => f();
+(window as any).runTests = runTests;

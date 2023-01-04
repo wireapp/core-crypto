@@ -233,8 +233,8 @@ impl WebdriverKind {
         //     _ => unreachable!("Unlikely branch encountered. No handling of this kind of file."),
         // };
 
-        // log::warn!("Got file: {file:?}");
-        // log::warn!("Unzipped {tempfile_path:?} -> {wd_dir:?}");
+        // tracing::warn!("Got file: {file:?}");
+        // tracing::warn!("Unzipped {tempfile_path:?} -> {wd_dir:?}");
 
         // // Make sure the file has the executable bit set
         // #[cfg(unix)]

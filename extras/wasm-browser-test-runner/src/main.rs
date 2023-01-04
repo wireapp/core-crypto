@@ -1,5 +1,5 @@
 use color_eyre::eyre::Result;
-use wasm_browser_run::{WebdriverContext, WebdriverKind, DEFAULT_TIMEOUT_SECS};
+use wasm_browser_run::{WebdriverContext, WebdriverKind};
 
 #[derive(clap::ValueEnum, Debug, Clone, Copy)]
 #[repr(u8)]
@@ -27,7 +27,14 @@ enum CliFormat {
     Pretty,
     Terse,
     Json,
+    // TODO: Support using nextest's `quick-junit`
     Junit,
+}
+
+impl Default for CliFormat {
+    fn default() -> Self {
+        Self::Terse
+    }
 }
 
 #[derive(clap::Parser, Debug)]
@@ -65,7 +72,7 @@ struct Args {
     /// and most likely doesn't work
     #[arg(long)]
     exact: Option<String>,
-    /// Output format. Does absolutely nothing right now.
+    /// Output format.
     #[arg(long)]
     format: Option<CliFormat>,
     /// Path to the wasm binary to test
@@ -76,21 +83,43 @@ struct Args {
     wasm_lib_name: Option<std::path::PathBuf>,
 }
 
-fn init_logger(verbose: u8) {
+fn init_logger(verbose: u8, format: Option<CliFormat>) {
     if verbose == 0 {
         return;
     }
-    let verbose_level = std::cmp::min(verbose, log::Level::max() as usize as u8) as usize;
-    // SAFETY: Safe because we clamped the level above
-    let default_log_level = log::Level::iter().nth(verbose_level).unwrap();
-    let log_setting = if let Ok(log_setting) = std::env::var("RUST_LOG") {
-        format!("{},{log_setting}", default_log_level.as_str().to_lowercase())
-    } else {
-        default_log_level.as_str().to_lowercase().to_string()
+
+    let tracing_verbose = format!("{verbose}")
+        .parse()
+        .unwrap_or(tracing::level_filters::LevelFilter::INFO);
+
+    let Some(default_log_level) = tracing_verbose.into_level() else {
+        // We'll only get `None` when LevelFilter is OFF, which is extremely unlikely as we have checks above.
+        return;
     };
+
+    let crate_log_setting = format!(
+        "wasm_browser_run={LEVEL},wasm_browser_test_runner={LEVEL},webdriver_bidi={LEVEL}",
+        LEVEL = default_log_level.as_str().to_lowercase()
+    );
+
+    let log_setting = if let Ok(log_setting) = std::env::var("RUST_LOG") {
+        format!("{crate_log_setting},{log_setting}")
+    } else {
+        crate_log_setting
+    };
+
     std::env::set_var("RUST_LOG", log_setting);
 
-    pretty_env_logger::init();
+    let builder = tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_timer(tracing_subscriber::fmt::time::uptime());
+
+    match format.unwrap_or_default() {
+        CliFormat::Pretty => builder.pretty().init(),
+        CliFormat::Terse => builder.compact().init(),
+        CliFormat::Json => builder.json().init(),
+        CliFormat::Junit => unimplemented!(),
+    };
 }
 
 #[tokio::main]
@@ -98,7 +127,7 @@ async fn main() -> Result<()> {
     use clap::Parser as _;
     let mut args = Args::parse();
 
-    init_logger(args.verbose);
+    init_logger(args.verbose, args.format);
 
     if args.timeout.is_none() {
         // Compatibility layer with wasm-bindgen-test-runner
@@ -106,7 +135,7 @@ async fn main() -> Result<()> {
             args.timeout = Some(timeout.parse()?);
         }
     }
-    log::warn!("Args: {args:?}");
+    tracing::debug!("Args: {args:?}");
 
     tokio::select! {
         res = test_runner(args) => {
@@ -115,7 +144,7 @@ async fn main() -> Result<()> {
             }
         },
         _ = tokio::signal::ctrl_c() => {
-            log::warn!("Aborted!");
+            println!("Testing aborted!");
         },
     };
 
@@ -137,7 +166,7 @@ async fn test_runner(args: Args) -> Result<()> {
     ctx.webdriver_init().await?;
 
     let wasm_file_to_test = std::path::PathBuf::from(args.wasm_test_bin_path);
-    log::warn!("WASM file path: {wasm_file_to_test:?}");
+    tracing::debug!("WASM file path: {wasm_file_to_test:?}");
 
     if !wasm_file_to_test.exists() {
         panic!("The file at {wasm_file_to_test:?} does not exist!");

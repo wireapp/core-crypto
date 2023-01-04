@@ -292,15 +292,15 @@ impl WebdriverContext {
 
         let wasm_tests_ctx = WasmTestFileContext::new(wasm_file_path)?;
 
-        log::warn!("Tests to run: {:?}", wasm_tests_ctx.tests);
+        tracing::info!("Tests to run: {:?}", wasm_tests_ctx.tests);
 
         if wasm_tests_ctx.tests.is_empty() {
             return Ok(TestResultWrapper::fail(0));
         }
 
-        log::warn!("Getting wasm-bindgen tmp dir");
+        tracing::debug!("Getting wasm-bindgen tmp dir");
         let tmpdir = wasm_tests_ctx.bindgen_get_tmpdir().await?;
-        log::warn!("wasm-bindgen tmp dir: {tmpdir:?}");
+        tracing::debug!("wasm-bindgen tmp dir: {tmpdir:?}");
 
         let module_name = wasm_file_path.file_name().unwrap().to_str().unwrap();
 
@@ -318,18 +318,18 @@ impl WebdriverContext {
         let mount_point = self.compile_js_support(None).await?;
         let wasm_file_name: std::path::PathBuf = module_name.into();
         let mount_point_path = std::path::PathBuf::from(&mount_point);
-        log::warn!("Mount point path: {mount_point_path:?}");
+        tracing::debug!("Mount point path: {mount_point_path:?}");
         let base = tmpdir.join(module_name);
         let dest = mount_point_path.join(&wasm_file_name).with_extension("");
 
         let from = base.with_extension("js");
         let to = dest.with_extension("js");
-        log::warn!("cp {from:?} -> {to:?}");
+        tracing::info!("cp {from:?} -> {to:?}");
         tokio::fs::copy(&from, &to).await?;
 
         let from = base.with_extension("wasm");
         let to = dest.with_extension("wasm");
-        log::warn!("cp {from:?} -> {to:?}");
+        tracing::info!("cp {from:?} -> {to:?}");
         tokio::fs::copy(&from, &to).await?;
 
         let (hwnd, socket_addr) = Self::spawn_http_server(&mount_point).await?;
@@ -360,33 +360,34 @@ impl WebdriverContext {
 
         if !self.avoid_bidi && ctx.webdriver_bidi_uri.is_some() {
             let mut stream = self.connect_bidi().await?;
-            log::warn!(target: "webdriver_bidi", "Connected to WebDriver BiDi");
+            tracing::info!(target: "webdriver_bidi", "Connected to WebDriver BiDi");
             use crate::webdriver_bidi_protocol::{local::EventData, log::LogEvent};
             use futures_util::TryStreamExt as _;
-            log::warn!("Starting tests...");
+            tracing::info!("Starting tests...");
             // Start tests
             ctx.browser
                 .execute(
                     r#"
 const [fileName, testsList, testFilter] = arguments;
-window.runTests(fileName, testsList, testFilter);"#,
+setTimeout(() => window.runTests(fileName, testsList, testFilter), 2000);"#,
                     js_args,
                 )
                 .await
                 .map_err(WebdriverError::from)?;
 
-            log::warn!("JS execution done...");
+            tracing::info!("JS execution done...");
 
             let bar = indicatif::ProgressBar::new(test_count as u64);
+            tracing::debug!("Progress bar should be visible");
 
             while let Some(event) = stream.try_next().await? {
                 dbg!(&event);
                 match event.data {
                     EventData::BrowsingContextEvent(data) => {
-                        log::info!("Unimplemented event handling: {:?}", data);
+                        tracing::warn!("Unimplemented event handling: {:?}", data);
                     }
                     EventData::ScriptEvent(data) => {
-                        log::info!("Unimplemented event handling: {:?}", data);
+                        tracing::warn!("Unimplemented event handling: {:?}", data);
                     }
                     EventData::LogEvent(log_event) => match log_event {
                         LogEvent::EntryAdded(log_entry) => {
@@ -419,7 +420,7 @@ window.runTests(fileName, testsList, testFilter);"#,
             bar.finish_and_clear();
         } else {
             // Fallback on no BiDi support
-            log::warn!("Starting tests...");
+            tracing::info!("Starting tests...");
             let raw_results = ctx
                 .browser
                 .execute_async(
@@ -431,7 +432,7 @@ window.runTests(fileName, testsList, testFilter).then(callback);"#,
                 .await
                 .map_err(WebdriverError::from)?;
 
-            log::warn!("JS execution done...");
+            tracing::info!("JS execution done...");
 
             test_results.parse_full_results(raw_results)?;
         }
