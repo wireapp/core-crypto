@@ -74,7 +74,7 @@ const rollupBaseOptions = {
                 target: "es2020",
             },
         }),
-        html({ template }),
+        html(),
     ],
 };
 

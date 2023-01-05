@@ -57,7 +57,7 @@ struct Args {
     #[arg(short, long, action = clap::ArgAction::Count)]
     verbose: u8,
     /// Avoids communicating over BiDi. Usually not needed as we do a runtime detection of the WebDriver impl's BiDi capabilities
-    #[arg(long, conflicts_with("nocapture"))]
+    #[arg(long)]
     no_bidi: bool,
     /// Returns a list of tests. Useful for `cargo-nextest` compatibility
     #[arg(long)]
@@ -98,8 +98,8 @@ fn init_logger(verbose: u8, format: Option<CliFormat>) {
     };
 
     let crate_log_setting = format!(
-        "wasm_browser_run={LEVEL},wasm_browser_test_runner={LEVEL},webdriver_bidi={LEVEL}",
-        LEVEL = default_log_level.as_str().to_lowercase()
+        "wasm_browser_run={level},wasm_browser_test_runner={level},webdriver_bidi={level}",
+        level = default_log_level.as_str().to_lowercase()
     );
 
     let log_setting = if let Ok(log_setting) = std::env::var("RUST_LOG") {

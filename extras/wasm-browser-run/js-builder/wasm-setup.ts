@@ -1,26 +1,23 @@
-// const wrapConsoleMethod = (method: string) => {
-//     const eventName = `on_console_${method}`;
-//     const og = console[method];
-//     console[method] = function(...args) {
-//         const event = new CustomEvent(eventName, { detail: args } );
-//         window.dispatchEvent(event);
-//         const str = `${args.join("\n")}\n`;
-//         const levelOutput = document.getElementById(`console_${method}`);
-//         if (levelOutput) {
-//             levelOutput.append(str);
-//         }
+const wrapConsoleMethod = (method: string) => {
+    const eventName = `on_console_${method}`;
+    const og = console[method];
+    console[method] = function(...args) {
+        const event = new CustomEvent(eventName, { detail: args } );
+        window.dispatchEvent(event);
+        const str = `${args.join("\n")}\n`;
+        const levelOutput = document.getElementById(`console_${method}`);
+        if (levelOutput) {
+            levelOutput.append(str);
+        }
+        og.apply(this, args);
+    };
+};
 
-//         const output = document.getElementById("output");
-//         if (output) {
-//             output.append(str);
-//         }
-//         og.apply(this, args);
-//     };
-// };
+const logMethods = ["debug", "log", "info", "warn", "error"];
+logMethods.forEach(wrapConsoleMethod);
 
-// const logMethods = ["debug", "log", "info", "warn", "error"];
-
-// logMethods.forEach(wrapConsoleMethod);
+const wasmBindgenDivs = ["output", ...logMethods.map(m => `console_${m}`)];
+wasmBindgenDivs.forEach(id => ensureDiv(id));
 
 interface TestResultSummary {
     successful: boolean;
@@ -49,11 +46,11 @@ class TestResultContainer implements SerializableTestResultContainer {
         total: 0,
     };
 
-    #rawLog: string = "";
-    #observer?: MutationObserver = null;
+    private rawLog: string = "";
+    private observer?: MutationObserver = null;
 
-    log(): string {
-        return this.#rawLog;
+    getRawLog(): string {
+        return this.rawLog;
     }
 
     /**
@@ -64,27 +61,27 @@ class TestResultContainer implements SerializableTestResultContainer {
      */
     parseTestResultString(logStr: string): TestResultContainer {
         const partialTestResult = JSON.parse(JSON.stringify(this));
-        const [mainLog, summary] = logStr.split("\n\n");
 
-        const introMatch = mainLog.match(/running (\d+) tests/);
+        const introMatch = logStr.match(/running (\d+) tests/);
         if (introMatch !== null) {
             const [, totalTests] = introMatch;
             this.summary.total = parseInt(totalTests, 10);
-            return partialTestResult;
         }
 
-        const mainLogMatches: TestResultDetails = [...mainLog.matchAll(/test ([\w:]+) \.{3} (\w+)/gi)].reduce((acc, [, testName, testStatus]) => {
-            acc[testName] = testStatus === "ok";
-            return acc;
-        }, {});
-        this.details = { ...this.details, ...mainLogMatches };
-        partialTestResult.details = mainLogMatches;
-
-        if (!summary || summary.length === 0) {
-            return partialTestResult;
+        const testRegexp = /test ([\w:]+) \.{3} (\w+)/gi;
+        let match;
+        const mainLogMatches: TestResultDetails = {};
+        while ((match = testRegexp.exec(logStr)) !== null) {
+            const [, testName, testStatus] = match;
+            mainLogMatches[testName] = testStatus === "ok";
         }
 
-        const summaryMatches = summary.match(/test result: (\w+)\. (\d+) passed; (\d+) failed; (\d+) ignored/);
+        if (Object.keys(mainLogMatches).length > 0) {
+            this.details = Object.assign(this.details, mainLogMatches);
+            partialTestResult.details = mainLogMatches;
+        }
+
+        const summaryMatches = logStr.match(/test result: (\w+)\. (\d+) passed; (\d+) failed; (\d+) ignored/);
         if (!summaryMatches) {
             return partialTestResult;
         }
@@ -100,54 +97,66 @@ class TestResultContainer implements SerializableTestResultContainer {
         return partialTestResult;
     }
 
-    setupObserver(): MutationObserver {
-        // this.disconnectObserver();
+    setupObserver(noCapture: boolean): MutationObserver {
+        this.disconnectObserver();
+        let prevPartialOutput;
 
-        // let output = document.getElementById("output");
-        // if (!output) {
-        //     output = document.createElement("pre");
-        //     output.id = "output";
-        //     document.body.appendChild(output);
-        // }
+        this.observer = new MutationObserver(mutationList => {
+            for (const mutation of mutationList) {
+                if (mutation.type !== "childList") {
+                    continue;
+                }
 
-        // output.textContent = "";
+                const currentLog = mutation.target.textContent;
+                if (currentLog.length === 0) {
+                    continue;
+                }
 
-        // this.#observer = new MutationObserver(mutationList => {
-        //     mutationList.forEach(mutation => {
-        //         if (mutation.type !== "childList" || output.textContent.length === 0) {
-        //             return;
-        //         }
+                this.rawLog += currentLog;
+                const partial = this.parseTestResultString(currentLog).serializable();
+                if (noCapture) {
+                    // Diff the partial thing to keep it consistent
+                    for (const [k, v] of Object.entries(partial.details)) {
+                        if (!(k in prevPartialOutput.details)) {
+                            continue;
+                        }
 
-        //         const currentLog = output.textContent;
+                        delete partial.details[k];
+                    }
+                } else {
+                    mutation.target.textContent = "";
+                }
 
-        //         this.#rawLog += currentLog;
-        //         const partial = this.parseTestResultString(currentLog).serializable();
-        //         console.debug(JSON.stringify({ partial }));
-        //         output.textContent = "";
-        //     });
-        // });
+                console.debug(JSON.stringify({ partial }));
+                prevPartialOutput = { ...prevPartialOutput, ...partial };
+            }
+        });
 
-        // this.#observer.observe(output, {
-        //     characterData: false,
-        //     attributes: false,
-        //     childList: true,
-        //     subtree: false,
-        // });
 
-        return this.#observer;
+        const output = ensureDiv("output");
+        output.textContent = "";
+
+        this.observer.observe(output, {
+            characterData: false,
+            attributes: false,
+            childList: true,
+            subtree: false,
+        });
+
+        return this.observer;
     }
 
     disconnectObserver() {
-        if (this.#observer !== null) {
-            this.#observer.disconnect();
-            this.#observer = null;
+        if (this.observer !== null) {
+            this.observer.disconnect();
+            this.observer = null;
         }
     }
 
     serializable(): SerializableTestResultContainer {
         return {
-            details: this.details,
-            summary: this.summary,
+            details: JSON.parse(JSON.stringify(this.details)),
+            summary: JSON.parse(JSON.stringify(this.summary)),
         };
     }
 }
@@ -167,16 +176,35 @@ function outputControlDiv(fileName: string, error?: Error): void {
     document.body.appendChild(controlDiv);
 }
 
-async function runTests(fileName: string, tests: string[], testFilter?: string, args?: string[]): Promise<SerializableTestResultContainer> {
-    console.info("TEST!");
+function ensureDiv(id: string, create: boolean = true): Element {
+    let element = document.getElementById(id);
+    if (!element && create) {
+        element = document.createElement("pre");
+        element.id = id;
+        document.body.appendChild(element);
+    }
+    return element;
+}
 
-    // let listeners: { [key: string]: EventListener };
+interface RunTestsParams {
+    fileName: string;
+    tests: string[];
+    testFilter?: string;
+    args?: string[];
+    noCapture?: boolean;
+}
 
+async function runTests(params: RunTestsParams): Promise<SerializableTestResultContainer> {
+    let listeners: { [key: string]: EventListener };
+
+    const { fileName, tests } = params;
+    const testFilter = params.testFilter ?? null;
+    const args = params.args ?? null;
+    const noCapture = params.noCapture ?? false;
 
     const testResults = new TestResultContainer();
-
-    // const observerRef = testResults.setupObserver();
-    // return testResults;
+    // let observerRef;
+    const observerRef = testResults.setupObserver(noCapture);
 
     try {
         const {
@@ -190,26 +218,24 @@ async function runTests(fileName: string, tests: string[], testFilter?: string, 
         } = await import(`./${fileName}.js`);
 
 
-        // const wasmLogMethods = {
-        //     debug: __wbgtest_console_debug,
-        //     log: __wbgtest_console_log,
-        //     info: __wbgtest_console_info,
-        //     warn: __wbgtest_console_warn,
-        //     error: __wbgtest_console_debug,
-        // };
+        const wasmLogMethods = {
+            debug: __wbgtest_console_debug,
+            log: __wbgtest_console_log,
+            info: __wbgtest_console_info,
+            warn: __wbgtest_console_warn,
+            error: __wbgtest_console_debug,
+        };
 
-        // listeners = logMethods.reduce((acc, method) => {
-        //     acc[method] = (event: CustomEvent) => {
-        //         wasmLogMethods[method].apply(wasmLogMethods[method], event.detail);
-        //     };
-        //     return acc;
-        // }, {});
+        listeners = logMethods.reduce((acc, method) => {
+            acc[method] = (event: CustomEvent) => {
+                wasmLogMethods[method].apply(wasmLogMethods[method], event.detail);
+            };
+            return acc;
+        }, {});
 
-        // Object.entries(listeners).forEach(([method, listener]) => {
-        //     window.addEventListener(`on_console_${method}` as unknown as keyof WindowEventMap, listener);
-        // });
-
-        console.info("HELP WHYYY");
+        Object.entries(listeners).forEach(([method, listener]) => {
+            window.addEventListener(`on_console_${method}` as unknown as keyof WindowEventMap, listener);
+        });
 
         const wasm = await initWasm(`${fileName}.wasm`);
 
@@ -227,7 +253,6 @@ async function runTests(fileName: string, tests: string[], testFilter?: string, 
             ctx.args(passedArgs);
         }
 
-
         const testMethods = tests.map(testName => wasm[testName]);
 
         const testsPassed = await ctx.run(testMethods);
@@ -238,13 +263,12 @@ async function runTests(fileName: string, tests: string[], testFilter?: string, 
 
         outputControlDiv(fileName);
 
-        let output = document.getElementById("output");
+        const output = document.getElementById("output");
         if (output) {
             testResults.parseTestResultString(output.textContent);
         }
 
-        console.debug(JSON.stringify({ complete: testResults.serializable(), rawLog: testResults.log() }));
-
+        console.debug(JSON.stringify({ complete: testResults.serializable(), rawLog: testResults.getRawLog() }));
 
         return testResults;
     } catch (e) {
@@ -252,13 +276,15 @@ async function runTests(fileName: string, tests: string[], testFilter?: string, 
         throw e;
     } finally {
         // Cleanup event listeners
-        // if (listeners) {
-        //     Object.entries(listeners).forEach(([method, listener]) => {
-        //         window.removeEventListener(`on_console_${method}` as unknown as keyof WindowEventMap, listener);
-        //     });
-        // }
+        if (listeners) {
+            Object.entries(listeners).forEach(([method, listener]) => {
+                window.removeEventListener(`on_console_${method}` as unknown as keyof WindowEventMap, listener);
+            });
+        }
 
-        // observerRef.disconnect();
+        if (observerRef) {
+            observerRef.disconnect();
+        }
     }
 }
 

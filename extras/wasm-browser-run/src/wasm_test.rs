@@ -352,11 +352,13 @@ impl WebdriverContext {
         let mut test_results = TestResultWrapper::default();
         test_results.start(test_count as u64);
 
-        let js_args = vec![
-            test_file_name.clone().into(),
-            wasm_tests_ctx.tests.into(),
-            exact_test.or(test_filter).into(),
-        ];
+        let js_args = vec![serde_json::json!({
+            "fileName": test_file_name.clone(),
+            "tests": wasm_tests_ctx.tests,
+            "testFilter": exact_test.or(test_filter),
+            "noCapture": self.nocapture,
+        })
+        .into()];
 
         if !self.avoid_bidi && ctx.webdriver_bidi_uri.is_some() {
             let mut stream = self.connect_bidi().await?;
@@ -368,8 +370,8 @@ impl WebdriverContext {
             ctx.browser
                 .execute(
                     r#"
-const [fileName, testsList, testFilter] = arguments;
-setTimeout(() => window.runTests(fileName, testsList, testFilter), 2000);"#,
+const [args] = arguments;
+setTimeout(() => window.runTests(args), 2000);"#,
                     js_args,
                 )
                 .await
@@ -425,16 +427,23 @@ setTimeout(() => window.runTests(fileName, testsList, testFilter), 2000);"#,
                 .browser
                 .execute_async(
                     r#"
-const [fileName, testsList, testFilter, callback] = arguments;
-window.runTests(fileName, testsList, testFilter).then(callback);"#,
+const [args, callback] = arguments;
+window.runTests(args).then(callback);"#,
                     js_args,
                 )
                 .await
                 .map_err(WebdriverError::from)?;
 
-            tracing::info!("JS execution done...");
+            tracing::info!("JS execution done... {raw_results:?}");
 
             test_results.parse_full_results(raw_results)?;
+
+            if self.nocapture {
+                println!(
+                    "--------\nOriginal output: \n{}\n--------",
+                    Self::get_text_from_div(&ctx.browser, "output").await?
+                );
+            }
         }
 
         ctx.browser.close_window().await.map_err(WebdriverError::from)?;
