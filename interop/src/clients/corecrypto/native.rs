@@ -160,3 +160,32 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoNativeClient {
         Ok(self.cc.proteus_fingerprint()?)
     }
 }
+
+#[async_trait::async_trait(?Send)]
+impl crate::clients::EmulatedE2eIdentityClient for CoreCryptoNativeClient {
+    async fn new_acme_enrollment(&mut self, ciphersuite: MlsCiphersuite) -> Result<()> {
+        let enrollment = self.cc.new_acme_enrollment(ciphersuite)?;
+        let directory = serde_json::json!({
+            "newNonce": "https://example.com/acme/new-nonce",
+            "newAccount": "https://example.com/acme/new-account",
+            "newOrder": "https://example.com/acme/new-order"
+        });
+        let directory = serde_json::to_vec(&directory)?;
+        let directory = enrollment.directory_response(directory)?;
+        let previous_nonce = "dmVQallIV29ZZkcwVkNLQTRKbG9HcVdyTWU5WEszdTE";
+
+        enrollment.new_account_request(directory, previous_nonce.to_string())?;
+
+        let account = serde_json::json!({
+            "status": "valid",
+            "contact": [
+                "mailto:cert-admin@example.org",
+                "mailto:admin@example.org"
+            ],
+            "orders": "https://example.com/acme/acct/evOfKhNU60wg/orders"
+        });
+        let account = serde_json::to_vec(&account)?;
+        let _account = enrollment.new_account_response(account)?;
+        Ok(())
+    }
+}

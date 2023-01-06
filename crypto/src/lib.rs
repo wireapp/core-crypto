@@ -41,6 +41,9 @@ mod error;
 /// MLS Abstraction
 pub mod mls;
 
+/// re-export [rusty-jwt-tools](https://github.com/wireapp/rusty-jwt-tools) API
+pub mod e2e_identity;
+
 #[cfg(feature = "proteus")]
 /// Proteus Abstraction
 pub mod proteus;
@@ -60,6 +63,14 @@ pub mod prelude {
     pub use mls_crypto_provider::{EntropySeed, RawEntropySeed};
 
     pub use crate::{
+        e2e_identity::{
+            error::{E2eIdentityError, E2eIdentityResult},
+            types::{
+                E2eiAcmeAccount, E2eiAcmeChall, E2eiAcmeDirectory, E2eiAcmeFinalize, E2eiAcmeOrder, E2eiNewAcmeAuthz,
+                E2eiNewAcmeOrder,
+            },
+            WireE2eIdentity,
+        },
         error::*,
         mls::{
             client::*,

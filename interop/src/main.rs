@@ -99,6 +99,8 @@ fn run_test() -> Result<()> {
         #[cfg(feature = "proteus")]
         run_proteus_test(&chrome_driver_addr).await?;
 
+        run_e2e_identity_test(&chrome_driver_addr).await?;
+
         chrome_webdriver.kill().await?;
         http_server_hwnd.abort();
         Ok(())
@@ -354,6 +356,28 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
     spinner.success(format!(
         "[Proteus] Step 3: Roundtripping {ROUNDTRIP_MSG_AMOUNT} messages... [OK]"
     ));
+
+    Ok(())
+}
+
+#[cfg(not(target_family = "wasm"))]
+async fn run_e2e_identity_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
+    use core_crypto::prelude::*;
+
+    let spinner = util::RunningProcess::new("[E2EI] Step 0: Perform ACME enrollment", true);
+
+    let mut clients: Vec<Box<dyn clients::EmulatedE2eIdentityClient>> = vec![];
+    clients.push(Box::new(
+        clients::corecrypto::native::CoreCryptoNativeClient::new().await?,
+    ));
+    clients.push(Box::new(
+        clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).await?,
+    ));
+
+    for c in clients.iter_mut() {
+        c.new_acme_enrollment(MlsCiphersuite::default()).await?;
+    }
+    spinner.success("[E2EI] Step 0: Perform ACME enrollment [OK]");
 
     Ok(())
 }

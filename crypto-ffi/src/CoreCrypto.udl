@@ -283,9 +283,107 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     void proteus_cryptobox_migrate([ByRef] string path);
+
+    [Throws=CryptoError]
+    WireE2eIdentity new_acme_enrollment(CiphersuiteName ciphersuite);
+};
+
+[Custom]
+typedef sequence<u8> Json;
+
+[Custom]
+typedef sequence<u8> Account;
+
+[Custom]
+typedef sequence<u8> Order;
+
+[Error]
+enum E2eIdentityError {
+    "NotYetSupported",
+    "CryptoError",
+    "IdentityError",
+    "UrlError",
+    "JsonError",
+};
+
+dictionary AcmeDirectory {
+    string new_nonce;
+    string new_account;
+    string new_order;
+};
+
+dictionary NewOrder {
+    Json delegate;
+    sequence<string> authorizations;
+};
+
+dictionary NewAuthz {
+    string identifier;
+    Challenge? wire_http_challenge;
+    Challenge? wire_oidc_challenge;
+};
+
+dictionary Challenge {
+    Json delegate;
+    string url;
+};
+
+dictionary Finalize {
+    Json delegate;
+    string certificate_url;
+};
+
+interface WireE2eIdentity {
+
+    [Throws=E2eIdentityError]
+    AcmeDirectory directory_response(Json directory);
+
+    [Throws=E2eIdentityError]
+    Json new_account_request(AcmeDirectory directory, string previous_nonce);
+
+    [Throws=E2eIdentityError]
+    Json new_account_response(Json account);
+
+    [Throws=E2eIdentityError]
+    Json new_order_request(string handle, string client_id, u32 expiry_days, AcmeDirectory directory, Account account, string previous_nonce);
+
+    [Throws=E2eIdentityError]
+    NewOrder new_order_response(Json order);
+
+    [Throws=E2eIdentityError]
+    Json new_authz_request(string url, Account account, string previous_nonce);
+
+    [Throws=E2eIdentityError]
+    NewAuthz new_authz_response(Json authz);
+
+    [Throws=E2eIdentityError]
+    string create_dpop_token(string access_token_url, string user_id, u64 client_id, string domain, Challenge client_id_challenge, string backend_nonce, u64 expiry_seconds);
+
+    [Throws=E2eIdentityError]
+    Json new_challenge_request(Challenge handle, Account account, string previous_nonce);
+
+    [Throws=E2eIdentityError]
+    void new_challenge_response(Json challenge);
+
+    [Throws=E2eIdentityError]
+    Json check_order_request(string order_url, Account account, string previous_nonce);
+
+    [Throws=E2eIdentityError]
+    Order check_order_response(Json order);
+
+    [Throws=E2eIdentityError]
+    Json finalize_request(sequence<string> domains, Order order, Account account, string previous_nonce);
+
+    [Throws=E2eIdentityError]
+    Finalize finalize_response(Json finalize);
+
+    [Throws=E2eIdentityError]
+    Json certificate_request(Finalize finalize, Account account, string previous_nonce);
+
+    [Throws=E2eIdentityError]
+    sequence<string> certificate_response(string certificate_chain);
 };
 
 namespace CoreCrypto {
-
     string version();
 };

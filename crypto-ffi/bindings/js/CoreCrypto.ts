@@ -1247,6 +1247,16 @@ export class CoreCrypto {
     }
 
     /**
+     * Create a new instance for requesting an end to end identity x509 certificate
+     *
+     * @param ciphersuite - For generating signing key material. Only {@link Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519} is supported currently
+     */
+    async newAcmeEnrollment(): Promise<WireE2eIdentity> {
+        const e2ei = await this.#cc.new_acme_enrollment(Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519);
+        return new WireE2eIdentity(e2ei, CoreCrypto.#module);
+    }
+
+    /**
      * Returns the current version of {@link CoreCrypto}
      *
      * @returns The `core-crypto-ffi` version as defined in its `Cargo.toml` file
@@ -1259,4 +1269,64 @@ export class CoreCrypto {
         }
         return this.#module.version();
     }
+}
+
+export class WireE2eIdentity {
+
+    /** @hidden */
+    static #module: typeof CoreCryptoFfiTypes;
+
+    /** @hidden */
+    #e2ei: CoreCryptoFfiTypes.WireE2eIdentity;
+
+    /** @hidden */
+    public constructor(e2ei: CoreCryptoFfiTypes.WireE2eIdentity, module: typeof CoreCryptoFfiTypes) {
+        this.#e2ei = e2ei;
+        if (!WireE2eIdentity.#module) {
+            WireE2eIdentity.#module = module;
+        }
+    }
+
+    directoryResponse(directory: Json): AcmeDirectory {
+        return this.#e2ei.directory_response(directory)
+    }
+
+    newAccountRequest(directory: AcmeDirectory, previousNonce: string): Json {
+        return this.#e2ei.new_account_request(directory, previousNonce)
+    }
+
+    newAccountResponse(account: Json): AcmeAccount {
+        return this.#e2ei.new_account_response(account)
+    }
+
+    newOrderRequest(handle: string, clientId: string, expiryDays: number, directory: AcmeDirectory, account: AcmeAccount, previousNonce: string): Json {
+        return this.#e2ei.new_order_request(handle, clientId, expiryDays, directory, account, previousNonce)
+    }
+}
+
+type Json = Uint8Array;
+type AcmeAccount = Uint8Array;
+
+/**
+ * Holds URLs of all the standard ACME endpoint supported on an ACME server
+ */
+export interface AcmeDirectory {
+    /**
+     * URL for fetching a new nonce. Use this only for creating a new account.
+     *
+     * @readonly
+     */
+    newNonce: Uint8Array;
+    /**
+     * URL for creating a new account.
+     *
+     * @readonly
+     */
+    newAccount: Uint8Array;
+    /**
+     * URL for creating a new order.
+     *
+     * @readonly
+     */
+    newOrder: Uint8Array;
 }

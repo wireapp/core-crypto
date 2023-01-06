@@ -69,6 +69,14 @@ git = "https://github.com/alexcrichton/openssl-src-rs.git"
 branch = "release/111"
 package = "openssl-src"
 
+[patch.crates-io.jwt-simple]
+git = "https://github.com/beltram/rust-jwt-simple"
+branch = "wire"
+
+[patch.crates-io.biscuit]
+git = "https://github.com/beltram/biscuit"
+branch = "feat/wasm"
+
 # Needed for quick mode and (later) result comparison see (https://www.tweag.io/blog/2022-03-03-criterion-rs/)
 # TODO: remove once branch got merged in 0.4 release
 [patch.crates-io.criterion]
