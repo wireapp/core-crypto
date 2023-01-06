@@ -15,6 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use color_eyre::eyre::Result;
+use core_crypto::prelude::MlsCiphersuite;
 
 pub mod corecrypto;
 #[cfg(feature = "proteus")]
@@ -83,4 +84,9 @@ pub trait EmulatedProteusClient: EmulatedClient {
     async fn encrypt(&mut self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>>;
     async fn decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>>;
     async fn fingerprint(&self) -> Result<String>;
+}
+
+#[async_trait::async_trait(?Send)]
+pub trait EmulatedE2eIdentityClient: EmulatedClient {
+    async fn new_acme_enrollment(&mut self, ciphersuite: MlsCiphersuite) -> Result<()>;
 }

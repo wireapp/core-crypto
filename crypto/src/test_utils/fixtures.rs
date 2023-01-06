@@ -16,6 +16,7 @@
 
 pub use crate::mls::credential::CredentialSupplier;
 use crate::prelude::{MlsConversationConfiguration, MlsCustomConfiguration};
+use openmls_traits::types::SignatureScheme;
 
 use crate::mls::MlsCiphersuite;
 pub use rstest::*;
@@ -102,6 +103,10 @@ impl TestCase {
 
     pub fn ciphersuite(&self) -> MlsCiphersuite {
         self.cfg.ciphersuite
+    }
+
+    pub fn signature_scheme(&self) -> SignatureScheme {
+        openmls::prelude::Ciphersuite::from(self.ciphersuite()).signature_algorithm()
     }
 
     pub fn custom_cfg(&self) -> MlsCustomConfiguration {

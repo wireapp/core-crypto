@@ -19,9 +19,9 @@ use std::collections::HashMap;
 
 use core_crypto::prelude::*;
 pub use core_crypto::prelude::{
-    tls_codec::Serialize, CiphersuiteName, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, MemberId,
-    MlsPublicGroupStateBundle, MlsPublicGroupStateEncryptionType, MlsRatchetTreeType, MlsWirePolicy,
-    PublicGroupStatePayload,
+    tls_codec::Serialize, CiphersuiteName, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError,
+    E2eIdentityError, E2eIdentityResult, MemberId, MlsPublicGroupStateBundle, MlsPublicGroupStateEncryptionType,
+    MlsRatchetTreeType, MlsWirePolicy, PublicGroupStatePayload,
 };
 
 cfg_if::cfg_if! {
@@ -757,12 +757,24 @@ impl CoreCrypto<'_> {
             .map_err(|_| CryptoError::LockPoisonError)?
             .get_client_ids(&conversation_id)
     }
+
     /// See [core_crypto::MlsCentral::export_secret_key]
     pub fn export_secret_key(&self, conversation_id: ConversationId, key_length: u32) -> CryptoResult<Vec<u8>> {
         self.central
             .lock()
             .map_err(|_| CryptoError::LockPoisonError)?
             .export_secret_key(&conversation_id, key_length as usize)
+    }
+
+    /// See [core_crypto::MlsCentral::new_acme_enrollment]
+    pub fn new_acme_enrollment(&self, ciphersuite: CiphersuiteName) -> CryptoResult<std::sync::Arc<WireE2eIdentity>> {
+        self.central
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .new_acme_enrollment(ciphersuite.into())
+            .map(WireE2eIdentity)
+            .map(std::sync::Arc::new)
+            .map_err(|_| CryptoError::ImplementationError)
     }
 }
 
@@ -977,5 +989,261 @@ impl CoreCrypto<'_> {
                 ),
             )
         }}
+    }
+}
+
+#[derive(Debug)]
+pub struct WireE2eIdentity(pub core_crypto::prelude::WireE2eIdentity);
+
+impl WireE2eIdentity {
+    pub fn directory_response(&self, directory: Json) -> E2eIdentityResult<AcmeDirectory> {
+        self.0.directory_response(directory).map(AcmeDirectory::from)
+    }
+
+    pub fn new_account_request(&self, directory: AcmeDirectory, previous_nonce: String) -> E2eIdentityResult<Json> {
+        self.0.new_account_request(directory.into(), previous_nonce)
+    }
+
+    pub fn new_account_response(&self, account: Json) -> E2eIdentityResult<Json> {
+        Ok(self.0.new_account_response(account)?.into())
+    }
+
+    pub fn new_order_request(
+        &self,
+        handle: String,
+        client_id: String,
+        expiry_days: u32,
+        directory: AcmeDirectory,
+        account: Account,
+        previous_nonce: String,
+    ) -> E2eIdentityResult<Json> {
+        self.0.new_order_request(
+            handle,
+            client_id,
+            expiry_days,
+            directory.into(),
+            account.into(),
+            previous_nonce,
+        )
+    }
+
+    pub fn new_order_response(&self, order: Json) -> E2eIdentityResult<NewOrder> {
+        Ok(self.0.new_order_response(order)?.into())
+    }
+
+    pub fn new_authz_request(&self, url: String, account: Account, previous_nonce: String) -> E2eIdentityResult<Json> {
+        self.0.new_authz_request(url, account.into(), previous_nonce)
+    }
+
+    pub fn new_authz_response(&self, authz: Json) -> E2eIdentityResult<NewAuthz> {
+        Ok(self.0.new_authz_response(authz)?.into())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn create_dpop_token(
+        &self,
+        access_token_url: String,
+        user_id: String,
+        client_id: u64,
+        domain: String,
+        client_id_challenge: Challenge,
+        backend_nonce: String,
+        expiry_seconds: u64,
+    ) -> E2eIdentityResult<String> {
+        self.0.create_dpop_token(
+            access_token_url,
+            user_id,
+            client_id,
+            domain,
+            client_id_challenge.into(),
+            backend_nonce,
+            expiry_seconds,
+        )
+    }
+
+    pub fn new_challenge_request(
+        &self,
+        handle: Challenge,
+        account: Account,
+        previous_nonce: String,
+    ) -> E2eIdentityResult<Json> {
+        self.0
+            .new_challenge_request(handle.into(), account.into(), previous_nonce)
+    }
+
+    pub fn new_challenge_response(&self, challenge: Json) -> E2eIdentityResult<()> {
+        self.0.new_challenge_response(challenge)
+    }
+
+    pub fn check_order_request(
+        &self,
+        order_url: String,
+        account: Account,
+        previous_nonce: String,
+    ) -> E2eIdentityResult<Json> {
+        self.0.check_order_request(order_url, account.into(), previous_nonce)
+    }
+
+    pub fn check_order_response(&self, order: Json) -> E2eIdentityResult<Json> {
+        Ok(self.0.check_order_response(order)?.into())
+    }
+
+    pub fn finalize_request(
+        &self,
+        domains: Vec<String>,
+        order: Order,
+        account: Account,
+        previous_nonce: String,
+    ) -> E2eIdentityResult<Json> {
+        self.0
+            .finalize_request(domains, order.into(), account.into(), previous_nonce)
+    }
+
+    pub fn finalize_response(&self, finalize: Json) -> E2eIdentityResult<Finalize> {
+        Ok(self.0.finalize_response(finalize)?.into())
+    }
+
+    pub fn certificate_request(
+        &self,
+        finalize: Finalize,
+        account: Account,
+        previous_nonce: String,
+    ) -> E2eIdentityResult<Json> {
+        self.0
+            .certificate_request(finalize.into(), account.into(), previous_nonce)
+    }
+
+    pub fn certificate_response(&self, certificate_chain: String) -> E2eIdentityResult<Vec<String>> {
+        self.0.certificate_response(certificate_chain)
+    }
+}
+
+pub type Json = Vec<u8>;
+pub type Account = Json;
+pub type Order = Json;
+
+#[derive(Debug)]
+pub struct AcmeDirectory {
+    pub new_nonce: String,
+    pub new_account: String,
+    pub new_order: String,
+}
+
+impl From<core_crypto::prelude::E2eiAcmeDirectory> for AcmeDirectory {
+    fn from(directory: core_crypto::prelude::E2eiAcmeDirectory) -> Self {
+        Self {
+            new_nonce: directory.new_nonce,
+            new_account: directory.new_account,
+            new_order: directory.new_order,
+        }
+    }
+}
+
+impl From<AcmeDirectory> for core_crypto::prelude::E2eiAcmeDirectory {
+    fn from(directory: AcmeDirectory) -> Self {
+        Self {
+            new_nonce: directory.new_nonce,
+            new_account: directory.new_account,
+            new_order: directory.new_order,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct NewOrder {
+    pub delegate: Json,
+    pub authorizations: Vec<String>,
+}
+
+impl From<core_crypto::prelude::E2eiNewAcmeOrder> for NewOrder {
+    fn from(new_order: core_crypto::prelude::E2eiNewAcmeOrder) -> Self {
+        Self {
+            delegate: new_order.delegate,
+            authorizations: new_order.authorizations,
+        }
+    }
+}
+
+impl From<NewOrder> for core_crypto::prelude::E2eiNewAcmeOrder {
+    fn from(new_order: NewOrder) -> Self {
+        Self {
+            delegate: new_order.delegate,
+            authorizations: new_order.authorizations,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct NewAuthz {
+    pub identifier: String,
+    pub wire_http_challenge: Option<Challenge>,
+    pub wire_oidc_challenge: Option<Challenge>,
+}
+
+impl From<core_crypto::prelude::E2eiNewAcmeAuthz> for NewAuthz {
+    fn from(new_authz: core_crypto::prelude::E2eiNewAcmeAuthz) -> Self {
+        Self {
+            identifier: new_authz.identifier,
+            wire_http_challenge: new_authz.wire_http_challenge.map(Into::into),
+            wire_oidc_challenge: new_authz.wire_oidc_challenge.map(Into::into),
+        }
+    }
+}
+
+impl From<NewAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
+    fn from(new_authz: NewAuthz) -> Self {
+        Self {
+            identifier: new_authz.identifier,
+            wire_http_challenge: new_authz.wire_http_challenge.map(Into::into),
+            wire_oidc_challenge: new_authz.wire_oidc_challenge.map(Into::into),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Challenge {
+    pub delegate: Json,
+    pub url: String,
+}
+
+impl From<core_crypto::prelude::E2eiAcmeChall> for Challenge {
+    fn from(chall: core_crypto::prelude::E2eiAcmeChall) -> Self {
+        Self {
+            delegate: chall.delegate,
+            url: chall.url,
+        }
+    }
+}
+
+impl From<Challenge> for core_crypto::prelude::E2eiAcmeChall {
+    fn from(chall: Challenge) -> Self {
+        Self {
+            delegate: chall.delegate,
+            url: chall.url,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Finalize {
+    pub delegate: Json,
+    pub certificate_url: String,
+}
+
+impl From<core_crypto::prelude::E2eiAcmeFinalize> for Finalize {
+    fn from(finalize: core_crypto::prelude::E2eiAcmeFinalize) -> Self {
+        Self {
+            certificate_url: finalize.certificate_url,
+            delegate: finalize.delegate,
+        }
+    }
+}
+
+impl From<Finalize> for core_crypto::prelude::E2eiAcmeFinalize {
+    fn from(finalize: Finalize) -> Self {
+        Self {
+            certificate_url: finalize.certificate_url,
+            delegate: finalize.delegate,
+        }
     }
 }
