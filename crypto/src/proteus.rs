@@ -679,7 +679,10 @@ impl ProteusCentral {
             return Err(CryptoboxMigrationError::WrongValueType("string".to_string()).into());
         };
 
-        let cbor_bytes = base64::decode(b64_value).map_err(CryptoboxMigrationError::from)?;
+        use base64::Engine as _;
+        let cbor_bytes = base64::prelude::BASE64_STANDARD
+            .decode(b64_value)
+            .map_err(CryptoboxMigrationError::from)?;
         Ok(cbor_bytes)
     }
 
@@ -1122,10 +1125,12 @@ mod tests {
                     // Add identity key
                     let transaction = rexie.transaction(&["keys"], TransactionMode::ReadWrite)?;
                     let store = transaction.store("keys")?;
+
+                    use base64::Engine as _;
                     let json = serde_json::json!({
                         "created": 0,
                         "id": "local_identity",
-                        "serialised": base64::encode(alice.identity.serialise().unwrap()),
+                        "serialised": base64::prelude::BASE64_STANDARD.encode(alice.identity.serialise().unwrap()),
                         "version": "1.0"
                     });
                     let js_value = serde_wasm_bindgen::to_value(&json)?;
@@ -1140,7 +1145,7 @@ mod tests {
                         let json = serde_json::json!({
                             "created": 0,
                             "id": &id,
-                            "serialised": base64::encode(prekey.serialise().unwrap()),
+                            "serialised": base64::prelude::BASE64_STANDARD.encode(prekey.serialise().unwrap()),
                             "version": "1.0"
                         });
                         let js_value = serde_wasm_bindgen::to_value(&json)?;
@@ -1154,7 +1159,7 @@ mod tests {
                         let json = serde_json::json!({
                             "created": 0,
                             "id": session_id,
-                            "serialised": base64::encode(session.serialise().unwrap()),
+                            "serialised": base64::prelude::BASE64_STANDARD.encode(session.serialise().unwrap()),
                             "version": "1.0"
                         });
 

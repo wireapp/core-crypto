@@ -108,7 +108,8 @@ callback(key);"#,
 
         let key_b64 = json_response.as_str().unwrap();
 
-        Ok(base64::decode(key_b64)?)
+        use base64::Engine as _;
+        Ok(base64::prelude::BASE64_STANDARD.decode(key_b64)?)
     }
 
     async fn session_from_prekey(&mut self, session_id: &str, prekey: &[u8]) -> Result<()> {

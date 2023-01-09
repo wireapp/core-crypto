@@ -36,7 +36,7 @@ async-lock = "2.5"
 serde_json = "1.0"
 sha2 = "0.10"
 
-lru = { version = "0.7", optional = true }
+lru = { version = "0.9", optional = true }
 
 # iOS specific things
 security-framework = { version = "2.6", optional = true }
