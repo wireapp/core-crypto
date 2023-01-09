@@ -58,7 +58,7 @@ futures-lite = { version = "1.12", optional = true }
 [target.'cfg(target_family = "wasm")'.dependencies]
 serde-wasm-bindgen = "0.4"
 rexie = { version = "0.4", optional = true }
-base64 = { version = "0.20", optional = true }
+base64 = { version = "0.21", optional = true }
 
 [dependencies.core-crypto-keystore]
 version = "0.6.0-rc.3"

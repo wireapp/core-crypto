@@ -36,7 +36,8 @@ use async_trait::async_trait;
 use std::sync::Arc;
 
 #[cfg(feature = "memory-cache")]
-const LRU_CACHE_CAP: usize = 100;
+// SAFETY: Make sure the provided value is > 0 or we're going to have issues
+const LRU_CACHE_CAP: std::num::NonZeroUsize = unsafe { std::num::NonZeroUsize::new_unchecked(100) };
 
 /// Limit on the length of a blob to be stored in the database.
 /// This limit applies to both SQLCipher-backed stores and WASM.
