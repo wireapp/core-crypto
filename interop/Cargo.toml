@@ -52,7 +52,7 @@ version = "2.0"
 features = ["hazmat"]
 optional = true
 git = "https://github.com/wireapp/proteus"
-branch = "otak/2.0"
+branch = "otak/2.0-error-codes"
 
 
 

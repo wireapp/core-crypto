@@ -335,8 +335,9 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
             assert_eq!(
                 decrypted_message,
                 message,
-                "[Proteus] Messages differ [Client = {}]",
-                c.client_type()
+                "[Proteus] Messages differ [Client = {}::{}]",
+                c.client_name(),
+                c.client_type(),
             );
 
             let ciphertext = c.encrypt(&session_id_with_master, &decrypted_message).await?;

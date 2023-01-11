@@ -103,11 +103,23 @@ impl std::ops::DerefMut for PrekeyStore {
     }
 }
 
+#[derive(Debug)]
+pub struct DummyError(());
+
+impl proteus_traits::ProteusErrorCode for DummyError {
+    fn code(&self) -> proteus_traits::ProteusErrorKind {
+        proteus_traits::ProteusErrorKind::Unknown
+    }
+}
+
 #[async_trait::async_trait(?Send)]
 impl proteus_traits::PreKeyStore for PrekeyStore {
-    type Error = ();
+    type Error = DummyError;
 
-    async fn prekey(&mut self, id: proteus_traits::RawPreKeyId) -> Result<Option<proteus_traits::RawPreKey>, ()> {
+    async fn prekey(
+        &mut self,
+        id: proteus_traits::RawPreKeyId,
+    ) -> Result<Option<proteus_traits::RawPreKey>, Self::Error> {
         if let Some(prekey) = self.0.iter().find(|k| k.key_id.value() == id) {
             Ok(Some(prekey.serialise().unwrap()))
         } else {
@@ -115,7 +127,7 @@ impl proteus_traits::PreKeyStore for PrekeyStore {
         }
     }
 
-    async fn remove(&mut self, id: proteus_traits::RawPreKeyId) -> Result<(), ()> {
+    async fn remove(&mut self, id: proteus_traits::RawPreKeyId) -> Result<(), Self::Error> {
         self.0
             .iter()
             .position(|k| k.key_id.value() == id)
