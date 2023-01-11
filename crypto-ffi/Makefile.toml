@@ -122,13 +122,15 @@ command = "cargo"
 args = ["build", "--target", "x86_64-apple-ios", "--features", "mobile", "--release"]
 
 [tasks.ios-simulator-arm]
+# override CFLAGS to fix ring compilation
+env = { "CRATE_CC_NO_DEFAULTS" = 1, "TARGET_CFLAGS" = { script = ["echo \"--target=arm64-apple-ios14.0.0-simulator -mios-simulator-version-min=14.0 -isysroot `xcrun --show-sdk-path --sdk iphonesimulator`\""] } }
 condition = { platforms = ["mac"] }
 command = "cargo"
 args = ["build", "--target", "aarch64-apple-ios-sim", "--features", "mobile", "--release"]
 
 [tasks.ios]
 condition = { platforms = ["mac"] }
-dependencies = ["ios-device", "ios-simulator-x86"]
+dependencies = ["ios-device", "ios-simulator-x86", "ios-simulator-arm"]
 
 [tasks.ios-test-sim-build]
 condition = { platforms = ["mac"] }
