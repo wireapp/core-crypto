@@ -286,6 +286,8 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     WireE2eIdentity new_acme_enrollment(CiphersuiteName ciphersuite);
+
+    u32 proteus_last_error_code();
 };
 
 [Custom]

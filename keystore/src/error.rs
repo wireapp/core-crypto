@@ -142,5 +142,36 @@ impl From<rexie::Error> for CryptoKeystoreError {
     }
 }
 
+#[cfg(feature = "proteus-keystore")]
+impl proteus_traits::ProteusErrorCode for CryptoKeystoreError {
+    fn code(&self) -> proteus_traits::ProteusErrorKind {
+        use proteus_traits::ProteusErrorKind;
+        match self {
+            CryptoKeystoreError::MissingKeyInStore(k) => match k {
+                MissingKeyErrorKind::ProteusPrekey => ProteusErrorKind::PreKeyNotFound,
+                MissingKeyErrorKind::ProteusSession => ProteusErrorKind::SessionStateNotFoundForTag,
+                MissingKeyErrorKind::ProteusIdentity => ProteusErrorKind::Unknown,
+                _ => unreachable!(),
+            },
+            CryptoKeystoreError::KeyReprError(_) => ProteusErrorKind::DecodeError,
+            CryptoKeystoreError::TryFromSliceError(_) => ProteusErrorKind::DecodeError,
+            CryptoKeystoreError::LockPoisonError => ProteusErrorKind::OtherSystemError,
+            CryptoKeystoreError::BlobTooBig => ProteusErrorKind::IoError,
+            #[cfg(feature = "mls-keystore")]
+            CryptoKeystoreError::KeyStoreValueTransformError(_) => ProteusErrorKind::DecodeError,
+            CryptoKeystoreError::IoError(_) => ProteusErrorKind::IoError,
+            #[cfg(not(target_family = "wasm"))]
+            CryptoKeystoreError::DbError(_) => ProteusErrorKind::IoError,
+            #[cfg(not(target_family = "wasm"))]
+            CryptoKeystoreError::DbMigrationError(_) => ProteusErrorKind::IoError,
+            CryptoKeystoreError::InvalidKeySize { .. } => ProteusErrorKind::InvalidArrayLen,
+            CryptoKeystoreError::ParseIntError(_) => ProteusErrorKind::DecodeError,
+            CryptoKeystoreError::HexDecodeError(_) => ProteusErrorKind::DecodeError,
+            CryptoKeystoreError::FromUtf8Error(_) => ProteusErrorKind::DecodeError,
+            _ => unreachable!(),
+        }
+    }
+}
+
 /// A specialized Result for the KeyStore functions
 pub type CryptoKeystoreResult<T> = Result<T, CryptoKeystoreError>;

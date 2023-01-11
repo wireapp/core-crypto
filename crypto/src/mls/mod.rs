@@ -112,16 +112,16 @@ pub(crate) mod config {
         ) -> CryptoResult<Self> {
             // TODO: probably more complex rules to enforce
             if store_path.trim().is_empty() {
-                return Err(CryptoError::MalformedIdentifier(store_path));
+                return Err(CryptoError::MalformedIdentifier("store_path"));
             }
             // TODO: probably more complex rules to enforce
             if identity_key.trim().is_empty() {
-                return Err(CryptoError::MalformedIdentifier(identity_key));
+                return Err(CryptoError::MalformedIdentifier("identity_key"));
             }
             // TODO: probably more complex rules to enforce
             if let Some(client_id) = client_id.as_ref() {
                 if client_id.is_empty() {
-                    return Err(CryptoError::MalformedIdentifier(String::new()));
+                    return Err(CryptoError::MalformedIdentifier("client_id"));
                 }
             }
             Ok(Self {
@@ -614,7 +614,10 @@ pub mod tests {
                 Some("alice".into()),
                 ciphersuites,
             );
-            assert!(matches!(configuration.unwrap_err(), CryptoError::MalformedIdentifier(v) if v == " "));
+            assert!(matches!(
+                configuration.unwrap_err(),
+                CryptoError::MalformedIdentifier("store_path")
+            ));
         }
 
         #[cfg_attr(not(target_family = "wasm"), async_std::test)]
@@ -629,7 +632,10 @@ pub mod tests {
                         Some("alice".into()),
                         ciphersuites,
                     );
-                    assert!(matches!(configuration.unwrap_err(), CryptoError::MalformedIdentifier(v) if v == " "));
+                    assert!(matches!(
+                        configuration.unwrap_err(),
+                        CryptoError::MalformedIdentifier("identity_key")
+                    ));
                 })
             })
             .await
@@ -647,7 +653,10 @@ pub mod tests {
                         Some("".into()),
                         ciphersuites,
                     );
-                    assert!(matches!(configuration.unwrap_err(), CryptoError::MalformedIdentifier(v) if v.is_empty()));
+                    assert!(matches!(
+                        configuration.unwrap_err(),
+                        CryptoError::MalformedIdentifier("client_id")
+                    ));
                 })
             })
             .await

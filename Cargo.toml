@@ -30,7 +30,7 @@ branch = "otak/fix-1.0.3"
 [patch.crates-io.proteus-traits]
 package = "proteus-traits"
 git = "https://github.com/wireapp/proteus"
-branch = "otak/2.0"
+branch = "otak/2.0-error-codes"
 
 [patch.crates-io.openmls]
 git = "https://github.com/wireapp/openmls"

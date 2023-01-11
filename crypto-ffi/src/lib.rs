@@ -15,6 +15,22 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 macro_rules! proteus_impl {
+    ($self:ident => $body:block or throw $err_type:ty) => {{
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "proteus")] {
+                let result = { $body };
+                match result {
+                    Ok(r) => Ok(r),
+                    Err(e) => {
+                        $self.proteus_last_error_code.store(e.proteus_error_code(), std::sync::atomic::Ordering::Relaxed);
+                        Err(e)
+                    }
+                }
+            } else {
+                return <$err_type>::Err(CryptoError::ProteusSupportNotEnabled("proteus".into()).into());
+            }
+        }
+    }};
     ($body:block or throw $err_type:ty) => {{
         cfg_if::cfg_if! {
             if #[cfg(feature = "proteus")] {
@@ -24,8 +40,13 @@ macro_rules! proteus_impl {
             }
         }
     }};
+
     ($body:block) => {
         proteus_impl!($body or throw ::std::result::Result<_, _>)
+    };
+
+    ($self:ident => $body:block) => {
+        proteus_impl!($self => $body or throw ::std::result::Result<_, _>)
     };
 }
 

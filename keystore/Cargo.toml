@@ -21,10 +21,10 @@ harness = false
 
 [features]
 default = ["mls-keystore", "proteus-keystore"]
-mls-keystore = ["openmls_traits"]
-proteus-keystore = ["proteus-traits"]
-ios-wal-compat = ["security-framework"]
-memory-cache = ["lru"]
+mls-keystore = ["dep:openmls_traits"]
+proteus-keystore = ["dep:proteus-traits"]
+ios-wal-compat = ["dep:security-framework"]
+memory-cache = ["dep:lru"]
 
 [dependencies]
 thiserror = "1.0"
@@ -39,7 +39,7 @@ sha2 = "0.10"
 lru = { version = "0.9", optional = true }
 
 # iOS specific things
-security-framework = { version = "2.6", optional = true }
+security-framework = { version = "=2.7.0", optional = true }
 
 openmls_traits = { version = "0.1", optional = true, features = ["single-threaded"] }
 
@@ -47,7 +47,7 @@ openmls_traits = { version = "0.1", optional = true, features = ["single-threade
 optional = true
 package = "proteus-traits"
 git = "https://github.com/wireapp/proteus"
-branch = "otak/2.0"
+branch = "otak/2.0-error-codes"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = "1.5"
@@ -101,7 +101,7 @@ futures-lite = "1.12"
 [dev-dependencies.proteus-wasm]
 version = "2.0"
 git = "https://github.com/wireapp/proteus"
-branch = "otak/2.0"
+branch = "otak/2.0-error-codes"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
 version = "0.3"

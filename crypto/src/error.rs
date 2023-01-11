@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 /// CoreCrypto errors
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
 pub enum CryptoError {
     /// This error is emitted when the requested conversation couldn't be found in our store
     #[error("Couldn't find conversation")]
@@ -30,8 +30,8 @@ pub enum CryptoError {
     #[error("Couldn't find pending commit")]
     PendingCommitNotFound,
     /// This error is emitted when we find a malformed (i.e. not uuid) or empty identifier
-    #[error("Malformed identifier found: {0}")]
-    MalformedIdentifier(String),
+    #[error("Malformed or empty identifier found: {0}")]
+    MalformedIdentifier(&'static str),
     /// The keystore has no knowledge of such client; this shouldn't happen as Client::init is failsafe (find-else-create)
     #[error("The provided client signature has not been found in the keystore")]
     ClientSignatureNotFound,
@@ -130,8 +130,19 @@ pub enum CryptoError {
 /// A simpler definition for Result types that the Error is a [CryptoError]
 pub type CryptoResult<T> = Result<T, CryptoError>;
 
+impl CryptoError {
+    /// Returns the proteus error code
+    pub fn proteus_error_code(&self) -> u32 {
+        if let Self::ProteusError(e) = self {
+            e.error_code()
+        } else {
+            0
+        }
+    }
+}
+
 /// MLS-specific error wrapper - see github.com/openmls/openmls for details
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
 pub enum MlsError {
     /// Welcome error
     #[error(transparent)]
@@ -212,7 +223,7 @@ pub enum MlsError {
     MlsExportSecretError(#[from] openmls::prelude::ExportSecretError),
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
 /// Wrapper for Proteus-related errors
 pub enum ProteusError {
     #[cfg(feature = "proteus")]
@@ -229,7 +240,25 @@ pub enum ProteusError {
     ProteusSessionError(#[from] proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>),
 }
 
-#[derive(Debug, thiserror::Error)]
+impl ProteusError {
+    /// Returns the proteus error code
+    pub fn error_code(&self) -> u32 {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "proteus")] {
+                use proteus_traits::ProteusErrorCode as _;
+                match self {
+                    ProteusError::ProteusDecodeError(e) => e.code() as u32,
+                    ProteusError::ProteusEncodeError(e) => e.code() as u32,
+                    ProteusError::ProteusSessionError(e) => e.code() as u32,
+                }
+            } else {
+                0
+            }
+        }
+    }
+}
+
+#[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
 /// Wrapper for errors that can happen during a Cryptobox migration
 pub enum CryptoboxMigrationError {
     #[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
