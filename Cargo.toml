@@ -63,6 +63,12 @@ package = "hpke-rs-rust-crypto"
 git = "https://github.com/wireapp/rcgen"
 tag = "v1.1.0-pre.core-crypto-0.6.0"
 
+# aarch64-apple-ios-sim target support has not yet been released
+[patch.crates-io.openssl-src]
+git = "https://github.com/alexcrichton/openssl-src-rs.git"
+branch = "release/111"
+package = "openssl-src"
+
 # Needed for quick mode and (later) result comparison see (https://www.tweag.io/blog/2022-03-03-criterion-rs/)
 # TODO: remove once branch got merged in 0.4 release
 [patch.crates-io.criterion]
