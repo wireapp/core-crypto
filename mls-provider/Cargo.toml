@@ -22,7 +22,7 @@ sha2 = "0.10"
 chacha20poly1305 = "0.10"
 hmac = "0.12"
 ed25519-dalek = "1.0"
-ecdsa = { version = "0.14", features = ["der"] }
+ecdsa = { version = "0.15", features = ["der"] }
 p256 = "0.11"
 p384 = "0.11"
 # TODO: Uncomment this once p521 crate is ready
