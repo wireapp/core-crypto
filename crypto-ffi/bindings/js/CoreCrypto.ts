@@ -21,36 +21,36 @@ import wasm from "../../../crypto-ffi/Cargo.toml";
 import type * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi";
 
 /**
-* see [core_crypto::prelude::CiphersuiteName]
-*/
+ * see [core_crypto::prelude::CiphersuiteName]
+ */
 export enum Ciphersuite {
     /**
-    * DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
-    */
+     * DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
+     */
     MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 = 0x0001,
     /**
-    * DH KEM P256 | AES-GCM 128 | SHA2-256 | EcDSA P256
-    */
+     * DH KEM P256 | AES-GCM 128 | SHA2-256 | EcDSA P256
+     */
     MLS_128_DHKEMP256_AES128GCM_SHA256_P256 = 0x0002,
     /**
-    * DH KEM x25519 | Chacha20Poly1305 | SHA2-256 | Ed25519
-    */
+     * DH KEM x25519 | Chacha20Poly1305 | SHA2-256 | Ed25519
+     */
     MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 = 0x0003,
     /**
-    * DH KEM x448 | AES-GCM 256 | SHA2-512 | Ed448
-    */
+     * DH KEM x448 | AES-GCM 256 | SHA2-512 | Ed448
+     */
     MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 = 0x0004,
     /**
-    * DH KEM P521 | AES-GCM 256 | SHA2-512 | EcDSA P521
-    */
+     * DH KEM P521 | AES-GCM 256 | SHA2-512 | EcDSA P521
+     */
     MLS_256_DHKEMP521_AES256GCM_SHA512_P521 = 0x0005,
     /**
-    * DH KEM x448 | Chacha20Poly1305 | SHA2-512 | Ed448
-    */
+     * DH KEM x448 | Chacha20Poly1305 | SHA2-512 | Ed448
+     */
     MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 = 0x0006,
     /**
-    * DH KEM P384 | AES-GCM 256 | SHA2-384 | EcDSA P384
-    */
+     * DH KEM P384 | AES-GCM 256 | SHA2-384 | EcDSA P384
+     */
     MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = 0x0007,
 }
 
@@ -1232,7 +1232,7 @@ export class CoreCrypto {
      *
      * @param prekey - the prekey bundle to get the fingerprint from
      * @returns Hex-encoded public key string
-    **/
+     **/
     static proteusFingerprintPrekeybundle(prekey: Uint8Array): string {
         return this.#module.CoreCrypto.proteus_fingerprint_prekeybundle(prekey);
     }
@@ -1247,7 +1247,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Create a new instance for requesting an end to end identity x509 certificate
+     * Creates an enrollment instance with private key material you can use in order to fetch
+     * a new x509 certificate from the acme server.
+     * Make sure to call [WireE2eIdentity::free] (not yet available) to dispose this instance and its associated
+     * keying material.
      *
      * @param ciphersuite - For generating signing key material. Only {@link Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519} is supported currently
      */
@@ -1271,6 +1274,10 @@ export class CoreCrypto {
     }
 }
 
+type JsonRawData = Uint8Array;
+type AcmeAccount = Uint8Array;
+type AcmeOrder = Uint8Array;
+
 export class WireE2eIdentity {
 
     /** @hidden */
@@ -1287,28 +1294,204 @@ export class WireE2eIdentity {
         }
     }
 
-    directoryResponse(directory: Json): AcmeDirectory {
+    /**
+     * Parses the response from `GET /acme/{provisioner-name}/directory`.
+     * Use this {@link AcmeDirectory} in the next step to fetch the first nonce from the acme server. Use
+     * {@link AcmeDirectory.newNonce}.
+     *
+     * @param directory HTTP response body
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
+     */
+    directoryResponse(directory: JsonRawData): AcmeDirectory {
         return this.#e2ei.directory_response(directory)
     }
 
-    newAccountRequest(directory: AcmeDirectory, previousNonce: string): Json {
+    /**
+     * For creating a new acme account. This returns a signed JWS-alike request body to send to
+     * `POST /acme/{provisioner-name}/new-account`.
+     *
+     * @param directory you got from {@link directoryResponse}
+     * @param previousNonce you got from calling `HEAD {@link AcmeDirectory.newNonce}`
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
+     */
+    newAccountRequest(directory: AcmeDirectory, previousNonce: string): JsonRawData {
         return this.#e2ei.new_account_request(directory, previousNonce)
     }
 
-    newAccountResponse(account: Json): AcmeAccount {
+    /**
+     * Parses the response from `POST /acme/{provisioner-name}/new-account`.
+     * @param account HTTP response body
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
+     */
+    newAccountResponse(account: JsonRawData): AcmeAccount {
         return this.#e2ei.new_account_response(account)
     }
 
-    newOrderRequest(handle: string, clientId: string, expiryDays: number, directory: AcmeDirectory, account: AcmeAccount, previousNonce: string): Json {
+    /**
+     * Creates a new acme order for the handle (userId + display name) and the clientId.
+     *
+     * @param handle domain of the authorization server e.g. `idp.example.org`
+     * @param clientId domain of the wire-server e.g. `wire.example.org`
+     * @param expiryDays generated x509 certificate expiry
+     * @param directory you got from {@link directoryResponse}
+     * @param account you got from {@link newAccountResponse}
+     * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/new-account`
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+     */
+    newOrderRequest(handle: string, clientId: string, expiryDays: number, directory: AcmeDirectory, account: AcmeAccount, previousNonce: string): JsonRawData {
         return this.#e2ei.new_order_request(handle, clientId, expiryDays, directory, account, previousNonce)
+    }
+
+    /**
+     * Parses the response from `POST /acme/{provisioner-name}/new-order`.
+     *
+     * @param order HTTP response body
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+     */
+    newOrderResponse(order: JsonRawData): NewAcmeOrder {
+        return this.#e2ei.new_order_response(order)
+    }
+
+    /**
+     * Creates a new authorization request.
+     *
+     * @param url one of the URL in new order's authorizations (use {@link NewAcmeOrder.authorizations} from {@link newOrderResponse})
+     * @param account you got from {@link newAccountResponse}
+     * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/new-order` (or from the
+     * previous to this method if you are creating the second authorization)
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
+     */
+    newAuthzRequest(url: string, account: AcmeAccount, previousNonce: string): JsonRawData {
+        return this.#e2ei.new_authz_request(url, account, previousNonce)
+    }
+
+    /**
+     * Parses the response from `POST /acme/{provisioner-name}/authz/{authz-id}`
+     *
+     * You then have to map the challenge from this authorization object. The `client_id_challenge`
+     * will be the one with the `client_id_host` (you supplied to {@link newOrderRequest}) identifier,
+     * the other will be your `handle_challenge`.
+     *
+     * @param authz HTTP response body
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
+     */
+    newAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
+        return this.#e2ei.new_authz_response(authz)
+    }
+
+    /**
+     * Generates a new client Dpop JWT token. It demonstrates proof of possession of the nonces
+     * (from wire-server & acme server) and will be verified by the acme server when verifying the
+     * challenge (in order to deliver a certificate).
+     *
+     * Then send it to `POST /clients/{id}/access-token`
+     * {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token} on wire-server.
+     *
+     * @param accessTokenUrl backend endpoint where this token will be sent. Should be this one {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token}
+     * @param userId an UUIDv4 uniquely identifying the user
+     * @param clientId client identifier
+     * @param domain owning backend domain e.g. `wire.com`
+     * @param clientIdChallenge you found after {@link newAuthzResponse}
+     * @param backendNonce you get by calling `GET /clients/token/nonce` on wire-server as defined here {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce}
+     * @param expiryDays token expiry in days
+     */
+    createDpopToken(accessTokenUrl: string, userId: string, clientId: bigint, domain: string, clientIdChallenge: AcmeChallenge, backendNonce: string, expiryDays: number): string {
+        return this.#e2ei.create_dpop_token(accessTokenUrl, userId, clientId, domain, clientIdChallenge, backendNonce, expiryDays)
+    }
+
+    /**
+     * Creates a new challenge request.
+     *
+     * @param handleChallenge you found after {@link newAuthzResponse}
+     * @param account you found after {@link newAccountResponse}
+     * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
+     */
+    newChallengeRequest(handleChallenge: AcmeChallenge, account: AcmeAccount, previousNonce: string): JsonRawData {
+        return this.#e2ei.new_challenge_request(handleChallenge, account, previousNonce)
+    }
+
+    /**
+     * Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}`.
+     *
+     * @param challenge HTTP response body
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
+     */
+    newChallengeResponse(challenge: JsonRawData): void {
+        return this.#e2ei.new_challenge_response(challenge)
+    }
+
+    /**
+     * Verifies that the previous challenge has been completed.
+     *
+     * @param orderUrl `location` header from http response you got from {@link newOrderResponse}
+     * @param account you found after {@link newAccountResponse}
+     * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/challenge/{challenge-id}`
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+     */
+    checkOrderRequest(orderUrl: string, account: AcmeAccount, previousNonce: string): JsonRawData {
+        return this.#e2ei.check_order_request(orderUrl, account, previousNonce)
+    }
+
+    /**
+     * Parses the response from `POST /acme/{provisioner-name}/order/{order-id}`.
+     *
+     * @param order HTTP response body
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+     */
+    checkOrderResponse(order: JsonRawData): AcmeOrder {
+        return this.#e2ei.check_order_response(order)
+    }
+
+    /**
+     * Final step before fetching the certificate.
+     *
+     * @param domains you want to generate a certificate for e.g. `["wire.com"]`
+     * @param order you got from {@link checkOrderResponse}
+     * @param account you found after {@link newAccountResponse}
+     * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+     */
+    finalizeRequest(domains: Uint8Array[], order: AcmeOrder, account: AcmeAccount, previousNonce: string): JsonRawData {
+        return this.#e2ei.finalize_request(domains, order, account, previousNonce)
+    }
+
+    /**
+     * Parses the response from `POST /acme/{provisioner-name}/order/{order-id}/finalize`.
+     *
+     * @param finalize HTTP response body
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+     */
+    finalizeResponse(finalize: JsonRawData): AcmeFinalize {
+        return this.#e2ei.finalize_response(finalize)
+    }
+
+    /**
+     * Creates a request for finally fetching the x509 certificate.
+     *
+     * @param finalize you got from {@link finalizeResponse}
+     * @param account you got from {@link newAccountResponse}
+     * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}/finalize`
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2
+     */
+    certificateRequest(finalize: AcmeFinalize, account: AcmeAccount, previousNonce: string): JsonRawData {
+        return this.#e2ei.certificate_request(finalize, account, previousNonce)
+    }
+
+    /**
+     * Parses the response from `POST /acme/{provisioner-name}/certificate/{certificate-id}`.
+     *
+     * @param certificateChain HTTP string response body
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2
+     */
+    certificateResponse(certificateChain: string): Uint8Array[] {
+        return this.#e2ei.certificate_response(certificateChain)
     }
 }
 
-type Json = Uint8Array;
-type AcmeAccount = Uint8Array;
-
 /**
- * Holds URLs of all the standard ACME endpoint supported on an ACME server
+ * Holds URLs of all the standard ACME endpoint supported on an ACME server.
+ * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
  */
 export interface AcmeDirectory {
     /**
@@ -1316,17 +1499,98 @@ export interface AcmeDirectory {
      *
      * @readonly
      */
-    newNonce: Uint8Array;
+    newNonce: string;
     /**
      * URL for creating a new account.
      *
      * @readonly
      */
-    newAccount: Uint8Array;
+    newAccount: string;
     /**
      * URL for creating a new order.
      *
      * @readonly
      */
-    newOrder: Uint8Array;
+    newOrder: string;
+}
+
+/**
+ * Result of an order creation
+ * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+ */
+export interface NewAcmeOrder {
+    /**
+     * Contains raw JSON data of this order. This is parsed by the underlying Rust library hence should not be accessed
+     *
+     * @readonly
+     */
+    delegate: Uint8Array;
+    /**
+     * An authorization for each domain to create
+     *
+     * @readonly
+     */
+    authorizations: Uint8Array[];
+}
+
+/**
+ * Result of an authorization creation.
+ * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
+ */
+export interface NewAcmeAuthz {
+    /**
+     * DNS entry associated with those challenge
+     *
+     * @readonly
+     */
+    identifier: string;
+    /**
+     * Challenge for the clientId
+     *
+     * @readonly
+     */
+    wireHttpChallenge: AcmeChallenge | null;
+    /**
+     * Challenge for the userId and displayName
+     *
+     * @readonly
+     */
+    wireOidcChallenge: AcmeChallenge | null;
+}
+
+/**
+ * For creating a challenge
+ * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
+ */
+export interface AcmeChallenge {
+    /**
+     * Contains raw JSON data of this challenge. This is parsed by the underlying Rust library hence should not be accessed
+     *
+     * @readonly
+     */
+    delegate: Uint8Array;
+    /**
+     * URL of this challenge
+     *
+     * @readonly
+     */
+    url: string;
+}
+/**
+ * Result from finalize.
+ * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+ */
+export interface AcmeFinalize {
+    /**
+     * Contains raw JSON data of this finalize. This is parsed by the underlying Rust library hence should not be accessed
+     *
+     * @readonly
+     */
+    delegate: Uint8Array;
+    /**
+     * URL of to use for the last request to fetch the x509 certificate
+     *
+     * @readonly
+     */
+    certificateUrl: string;
 }
