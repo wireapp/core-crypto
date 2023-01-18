@@ -238,7 +238,7 @@ async fn e2e_identity() {
         };
 
         // POST http://wire-server/client-dpop-token
-        let _access_token = {
+        let (access_token, client_id, acme_nonce) = {
             d.step("create the client Dpop token with both nonces");
             let user = uuid::Uuid::new_v4().to_string();
             let client_id = random::<u64>();
@@ -246,28 +246,29 @@ async fn e2e_identity() {
             let alice = ClientId::try_new(&user, client_id, domain).unwrap();
             let dpop_url = format!("{wire_server_url}/clients/{client_id}/access-token");
             let htu: Htu = dpop_url.as_str().try_into().unwrap();
-            let acme_challenge: AcmeNonce = client_id_chall.token.as_str().into();
+            let acme_nonce: AcmeNonce = client_id_chall.token.as_str().into();
             let dpop = Dpop {
-                challenge: acme_challenge.clone(),
+                challenge: acme_nonce.clone(),
                 htm: Htm::Post,
                 htu,
                 extra_claims: None,
             };
             let expiry = Duration::from_days(1).into();
             let client_dpop_token =
-                RustyJwtTools::generate_dpop_token(dpop, alice, backend_nonce, expiry, alg, &client_kp).unwrap();
+                RustyJwtTools::generate_dpop_token(dpop, alice.clone(), backend_nonce, expiry, alg, &client_kp)
+                    .unwrap();
             d.token(&client_dpop_token);
             let b64 = |v: &str| base64::encode_config(v, base64::URL_SAFE_NO_PAD);
             let req = wire_server_client
-            .post(&dpop_url)
-            .header("dpop", b64(&client_dpop_token))
-            // cheat to share test context
-            .header("client-id", b64(&alice.to_subject()))
-            .header("backend-kp", b64(backend_kp.as_str()))
-            .header("hash-alg", b64(&hash_alg.to_string()))
-            .header("wire-server-uri", b64(&dpop_url))
-            .build()
-            .unwrap();
+                .post(&dpop_url)
+                .header("dpop", b64(&client_dpop_token))
+                // cheat to share test context
+                .header("client-id", b64(&alice.to_subject()))
+                .header("backend-kp", b64(backend_kp.as_str()))
+                .header("hash-alg", b64(&hash_alg.to_string()))
+                .header("wire-server-uri", b64(&dpop_url))
+                .build()
+                .unwrap();
             d.req(WireClient, WireBe, Some(&req));
 
             d.step("get a Dpop access token from wire-server");
@@ -284,7 +285,7 @@ async fn e2e_identity() {
                 .unwrap()
                 .to_string();
             d.token(&access_token);
-            access_token
+            (access_token, alice, acme_nonce)
         };
 
         // POST http://acme-server/challenge
@@ -345,6 +346,37 @@ async fn e2e_identity() {
                 .expect_content_type_json();
             let resp = resp.json().await.unwrap();
             let _resp = RustyAcme::new_chall_response(resp);
+
+            // in reality, acme server will verify access_token like that
+            let backend_pk: Pem = match alg {
+                JwsAlgorithm::P256 => ES256KeyPair::from_pem(backend_kp.as_str())
+                    .unwrap()
+                    .public_key()
+                    .to_pem()
+                    .unwrap(),
+                JwsAlgorithm::P384 => ES384KeyPair::from_pem(backend_kp.as_str())
+                    .unwrap()
+                    .public_key()
+                    .to_pem()
+                    .unwrap(),
+                JwsAlgorithm::Ed25519 => Ed25519KeyPair::from_pem(backend_kp.as_str())
+                    .unwrap()
+                    .public_key()
+                    .to_pem(),
+            }
+            .into();
+            let max_expiration: u64 = 2136351646; // somewhere in 2037
+            let verify = RustyJwtTools::verify_access_token(
+                &access_token,
+                client_id,
+                acme_nonce,
+                5,
+                max_expiration,
+                backend_pk,
+                hash_alg,
+            );
+            assert!(verify.is_ok());
+
             (previous_nonce, _wiremock_node_1, _wiremock_node_2)
         };
 
