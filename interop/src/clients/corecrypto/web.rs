@@ -305,47 +305,7 @@ window.cc.proteusDecrypt(sessionId, ciphertextBuffer).then(callback);"#,
 #[async_trait::async_trait(?Send)]
 impl crate::clients::EmulatedE2eIdentityClient for CoreCryptoWebClient {
     async fn new_acme_enrollment(&mut self, _ciphersuite: MlsCiphersuite) -> Result<()> {
-        Ok(self
-            .browser
-            .execute_async(
-                r#"
-const [callback] = arguments;
-
-const jsonToByteArray = function (json) {
-    let str = JSON.stringify(json, null, 0);
-    let ret = new Uint8Array(str.length);
-    for (let i = 0; i < str.length; i++) {
-        ret[i] = str.charCodeAt(i);
-    }
-    return ret
-};
-
-window.cc.newAcmeEnrollment().then((enrollment) => {
-    let directoryResponse = {
-        "newNonce": "https://example.com/acme/new-nonce",
-        "newAccount": "https://example.com/acme/new-account",
-        "newOrder": "https://example.com/acme/new-order"
-    };
-    let directory = enrollment.directoryResponse(jsonToByteArray(directoryResponse));
-
-    let previousNonce = "YUVndEZQVTV6ZUNlUkJxRG10c0syQmNWeW1kanlPbjM";
-    let accountRequest = enrollment.newAccountRequest(directory, previousNonce);
-
-    let accountResponse = {
-        "status": "valid",
-        "orders": "https://example.com/acme/acct/evOfKhNU60wg/orders"
-    };
-    let account = enrollment.newAccountResponse(jsonToByteArray(accountResponse));
-
-    // TODO
-    // let order = enrollment.newOrderRequest("idp.example.com", "wire.example.com", 1000, directory, account, previousNonce);
-
-    callback();
-});
-"#,
-                vec![],
-            )
-            .await
-            .map(|_| ())?)
+        let script = include_str!("e2ei.js");
+        Ok(self.browser.execute_async(script, vec![]).await.map(|_| ())?)
     }
 }

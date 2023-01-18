@@ -2,14 +2,16 @@
 
 use super::error::{E2eIdentityError, E2eIdentityResult};
 
-/// TODO
+/// See [RFC 8555 Section 7.1.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1)
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(test, derive(Clone))]
+#[serde(rename_all = "camelCase")]
 pub struct E2eiAcmeDirectory {
-    /// TODO
+    /// For fetching a new nonce used in [crate::prelude::WireE2eIdentity::new_account_request]
     pub new_nonce: String,
-    /// TODO
+    /// URL to call with [crate::prelude::WireE2eIdentity::new_account_request]
     pub new_account: String,
-    /// TODO
+    /// URL to call with [crate::prelude::WireE2eIdentity::new_order_request]
     pub new_order: String,
 }
 
@@ -35,8 +37,11 @@ impl TryFrom<E2eiAcmeDirectory> for wire_e2e_identity::prelude::AcmeDirectory {
     }
 }
 
-/// TODO
+/// Account creation response
+/// see [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3)
 #[derive(Debug, serde::Serialize, serde::Deserialize, derive_more::From, derive_more::Into, derive_more::Deref)]
+#[cfg_attr(test, derive(Clone))]
+#[serde(transparent, rename_all = "camelCase")]
 pub struct E2eiAcmeAccount(super::Json);
 
 impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeAccount> for E2eiAcmeAccount {
@@ -51,16 +56,18 @@ impl TryFrom<E2eiAcmeAccount> for wire_e2e_identity::prelude::E2eiAcmeAccount {
     type Error = E2eIdentityError;
 
     fn try_from(from: E2eiAcmeAccount) -> E2eIdentityResult<Self> {
-        Ok(serde_json::to_value(from)?.into())
+        Ok(serde_json::from_slice(&from.0[..])?)
     }
 }
 
-/// TODO
+/// Result of an order creation
+/// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct E2eiNewAcmeOrder {
-    /// TODO
+    /// Opaque raw json value
     pub delegate: super::Json,
-    /// TODO
+    /// Authorizations to create with [crate::prelude::WireE2eIdentity::new_authz_request]
     pub authorizations: Vec<String>,
 }
 
@@ -92,17 +99,19 @@ impl TryFrom<E2eiNewAcmeOrder> for wire_e2e_identity::prelude::E2eiNewAcmeOrder 
     }
 }
 
-/// TODO
+/// Result of an authorization creation
+/// see [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5)
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct E2eiNewAcmeAuthz {
-    /// TODO
+    /// DNS entry associated with those challenge
     pub identifier: String,
-    /// TODO
+    /// Challenge for the clientId
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub wire_http_challenge: Option<E2eiAcmeChall>,
-    /// TODO
+    pub wire_http_challenge: Option<E2eiAcmeChallenge>,
+    /// Challenge for the handle + display name
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub wire_oidc_challenge: Option<E2eiAcmeChall>,
+    pub wire_oidc_challenge: Option<E2eiAcmeChallenge>,
 }
 
 impl TryFrom<wire_e2e_identity::prelude::E2eiNewAcmeAuthz> for E2eiNewAcmeAuthz {
@@ -129,16 +138,18 @@ impl TryFrom<E2eiNewAcmeAuthz> for wire_e2e_identity::prelude::E2eiNewAcmeAuthz 
     }
 }
 
-/// TODO
+/// For creating a challenge
+/// see [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct E2eiAcmeChall {
-    /// TODO
+#[serde(rename_all = "camelCase")]
+pub struct E2eiAcmeChallenge {
+    /// Opaque raw json value
     pub delegate: super::Json,
-    /// TODO
+    /// URL to call for the acme server to complete the challenge
     pub url: String,
 }
 
-impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeChall> for E2eiAcmeChall {
+impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeChall> for E2eiAcmeChallenge {
     type Error = E2eIdentityError;
 
     fn try_from(chall: wire_e2e_identity::prelude::E2eiAcmeChall) -> E2eIdentityResult<Self> {
@@ -149,19 +160,20 @@ impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeChall> for E2eiAcmeChall {
     }
 }
 
-impl TryFrom<E2eiAcmeChall> for wire_e2e_identity::prelude::E2eiAcmeChall {
+impl TryFrom<E2eiAcmeChallenge> for wire_e2e_identity::prelude::E2eiAcmeChall {
     type Error = E2eIdentityError;
 
-    fn try_from(chall: E2eiAcmeChall) -> E2eIdentityResult<Self> {
+    fn try_from(chall: E2eiAcmeChallenge) -> E2eIdentityResult<Self> {
         Ok(Self {
-            chall: serde_json::to_value(chall.delegate)?,
+            chall: serde_json::from_slice(&chall.delegate[..])?,
             url: chall.url.parse()?,
         })
     }
 }
 
-/// TODO
+/// Result from checking the order status in [crate::prelude::WireE2eIdentity::check_order_response] and then pass this to [crate::prelude::WireE2eIdentity::finalize_request]
 #[derive(Debug, serde::Serialize, serde::Deserialize, derive_more::From, derive_more::Into, derive_more::Deref)]
+#[serde(transparent, rename_all = "camelCase")]
 pub struct E2eiAcmeOrder(super::Json);
 
 impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeOrder> for E2eiAcmeOrder {
@@ -176,17 +188,18 @@ impl TryFrom<E2eiAcmeOrder> for wire_e2e_identity::prelude::E2eiAcmeOrder {
     type Error = E2eIdentityError;
 
     fn try_from(from: E2eiAcmeOrder) -> E2eIdentityResult<Self> {
-        Ok(serde_json::to_value(from)?.into())
+        Ok(serde_json::from_slice(&from.0[..])?)
     }
 }
 
-/// TODO
+/// Result from finalize in [crate::prelude::WireE2eIdentity::finalize_response] and then pass this to [crate::prelude::WireE2eIdentity::certificate_request]
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct E2eiAcmeFinalize {
-    /// TODO
-    pub certificate_url: String,
-    /// TODO
+    /// Opaque raw json value
     pub delegate: super::Json,
+    /// URL to call to fetch a x509 certificate with [crate::prelude::WireE2eIdentity::certificate_request]
+    pub certificate_url: String,
 }
 
 impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeFinalize> for E2eiAcmeFinalize {
@@ -206,7 +219,7 @@ impl TryFrom<E2eiAcmeFinalize> for wire_e2e_identity::prelude::E2eiAcmeFinalize 
     fn try_from(finalize: E2eiAcmeFinalize) -> E2eIdentityResult<Self> {
         Ok(Self {
             certificate_url: finalize.certificate_url.parse()?,
-            finalize: serde_json::to_value(finalize.delegate)?,
+            finalize: serde_json::from_slice(&finalize.delegate[..])?,
         })
     }
 }

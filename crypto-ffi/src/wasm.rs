@@ -1611,22 +1611,26 @@ pub struct WireE2eIdentity(core_crypto::prelude::WireE2eIdentity);
 
 #[wasm_bindgen]
 impl WireE2eIdentity {
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::directory_response]
     pub fn directory_response(&self, directory: Vec<u8>) -> WasmCryptoResult<JsValue> {
         let directory: AcmeDirectory = self.0.directory_response(directory)?.into();
         WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&directory)?)
     }
 
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_account_request]
     pub fn new_account_request(&self, directory: JsValue, previous_nonce: String) -> WasmCryptoResult<Uint8Array> {
         let directory = serde_wasm_bindgen::from_value::<AcmeDirectory>(directory)?;
-        let new_account = self.0.new_account_request(directory.try_into()?, previous_nonce)?;
+        let new_account = self.0.new_account_request(directory.into(), previous_nonce)?;
         WasmCryptoResult::Ok(new_account.as_slice().into())
     }
 
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_account_response]
     pub fn new_account_response(&self, account: Uint8Array) -> WasmCryptoResult<Uint8Array> {
         let account: Vec<u8> = self.0.new_account_response(account.to_vec())?.into();
         WasmCryptoResult::Ok(account.as_slice().into())
     }
 
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_order_request]
     pub fn new_order_request(
         &self,
         handle: String,
@@ -1641,85 +1645,218 @@ impl WireE2eIdentity {
             handle,
             client_id,
             expiry_days,
-            directory.try_into()?,
+            directory.into(),
             account.to_vec().into(),
             previous_nonce,
         )?;
         WasmCryptoResult::Ok(new_order.as_slice().into())
     }
 
-    /*pub fn new_order_response(&self, order: Uint8Array) -> WasmCryptoResult<Uint8Array> {
-        let order: Vec<u8> = self.0.new_order_response(order.to_vec())?.into();
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_order_response]
+    pub fn new_order_response(&self, order: Uint8Array) -> WasmCryptoResult<JsValue> {
+        let order: NewAcmeOrder = self.0.new_order_response(order.to_vec())?.into();
+        WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&order)?)
+    }
+
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_authz_request]
+    pub fn new_authz_request(
+        &self,
+        url: String,
+        account: Uint8Array,
+        previous_nonce: String,
+    ) -> WasmCryptoResult<Uint8Array> {
+        let new_authz = self.0.new_authz_request(url, account.to_vec().into(), previous_nonce)?;
+        WasmCryptoResult::Ok(new_authz.as_slice().into())
+    }
+
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_authz_response]
+    pub fn new_authz_response(&self, authz: Uint8Array) -> WasmCryptoResult<JsValue> {
+        let authz: NewAcmeAuthz = self.0.new_authz_response(authz.to_vec())?.into();
+        WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&authz)?)
+    }
+
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::create_dpop_token]
+    pub fn create_dpop_token(
+        &self,
+        access_token_url: String,
+        user_id: String,
+        client_id: u64,
+        domain: String,
+        client_id_challenge: JsValue,
+        backend_nonce: String,
+        expiry_days: u32,
+    ) -> WasmCryptoResult<String> {
+        let client_id_challenge = serde_wasm_bindgen::from_value::<AcmeChallenge>(client_id_challenge)?;
+        let dpop_token = self.0.create_dpop_token(
+            access_token_url,
+            user_id,
+            client_id,
+            domain,
+            client_id_challenge.into(),
+            backend_nonce,
+            expiry_days,
+        )?;
+        WasmCryptoResult::Ok(dpop_token)
+    }
+
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_challenge_request]
+    pub fn new_challenge_request(
+        &self,
+        handle_challenge: JsValue,
+        account: Uint8Array,
+        previous_nonce: String,
+    ) -> WasmCryptoResult<Uint8Array> {
+        let handle_chall = serde_wasm_bindgen::from_value::<AcmeChallenge>(handle_challenge)?;
+        let chall = self
+            .0
+            .new_challenge_request(handle_chall.into(), account.to_vec().into(), previous_nonce)?;
+        WasmCryptoResult::Ok(chall.as_slice().into())
+    }
+
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_challenge_response]
+    pub fn new_challenge_response(&self, challenge: Uint8Array) -> WasmCryptoResult<()> {
+        self.0.new_challenge_response(challenge.to_vec())?;
+        WasmCryptoResult::Ok(())
+    }
+
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::check_order_request]
+    pub fn check_order_request(
+        &self,
+        order_url: String,
+        account: Uint8Array,
+        previous_nonce: String,
+    ) -> WasmCryptoResult<Uint8Array> {
+        let new_order = self
+            .0
+            .check_order_request(order_url, account.to_vec().into(), previous_nonce)?;
+        WasmCryptoResult::Ok(new_order.as_slice().into())
+    }
+
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::check_order_response]
+    pub fn check_order_response(&self, order: Uint8Array) -> WasmCryptoResult<Uint8Array> {
+        let order: Vec<u8> = self.0.check_order_response(order.to_vec())?.into();
         WasmCryptoResult::Ok(order.as_slice().into())
-    }*/
+    }
+
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_request]
+    pub fn finalize_request(
+        &self,
+        domains: Vec<Uint8Array>,
+        order: Uint8Array,
+        account: Uint8Array,
+        previous_nonce: String,
+    ) -> WasmCryptoResult<Uint8Array> {
+        let domains = domains
+            .into_iter()
+            .try_fold(vec![], |mut acc, a| -> WasmCryptoResult<Vec<String>> {
+                acc.push(String::from_utf8(a.to_vec())?);
+                Ok(acc)
+            })?;
+        let finalize =
+            self.0
+                .finalize_request(domains, order.to_vec().into(), account.to_vec().into(), previous_nonce)?;
+        WasmCryptoResult::Ok(finalize.as_slice().into())
+    }
+
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_response]
+    pub fn finalize_response(&self, finalize: Uint8Array) -> WasmCryptoResult<JsValue> {
+        let finalize: AcmeFinalize = self.0.finalize_response(finalize.to_vec())?.into();
+        WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&finalize)?)
+    }
+
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::certificate_request]
+    pub fn certificate_request(
+        &self,
+        finalize: JsValue,
+        account: Uint8Array,
+        previous_nonce: String,
+    ) -> WasmCryptoResult<Uint8Array> {
+        let finalize = serde_wasm_bindgen::from_value::<AcmeFinalize>(finalize)?;
+        let certificate_req = self
+            .0
+            .certificate_request(finalize.into(), account.to_vec().into(), previous_nonce)?;
+        WasmCryptoResult::Ok(certificate_req.as_slice().into())
+    }
+
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::certificate_response]
+    pub fn certificate_response(&self, certificate_chain: String) -> WasmCryptoResult<Vec<Uint8Array>> {
+        let certificate_chain = self.0.certificate_response(certificate_chain)?;
+        let certificate_chain = certificate_chain
+            .into_iter()
+            .map(|c| Uint8Array::from(c.as_bytes()))
+            .collect();
+        WasmCryptoResult::Ok(certificate_chain)
+    }
 }
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+/// See [core_crypto::e2e_identity::types::E2eiAcmeDirectory]
 pub struct AcmeDirectory {
-    new_nonce: Vec<u8>,
-    new_account: Vec<u8>,
-    new_order: Vec<u8>,
+    new_nonce: String,
+    new_account: String,
+    new_order: String,
 }
 
 #[wasm_bindgen]
 impl AcmeDirectory {
     #[wasm_bindgen(constructor)]
-    pub fn new(new_nonce: Uint8Array, new_account: Uint8Array, new_order: Uint8Array) -> Self {
+    pub fn new(new_nonce: String, new_account: String, new_order: String) -> Self {
         Self {
-            new_nonce: new_nonce.to_vec(),
-            new_account: new_account.to_vec(),
-            new_order: new_order.to_vec(),
+            new_nonce,
+            new_account,
+            new_order,
         }
     }
 
     #[wasm_bindgen(getter)]
-    pub fn new_nonce(&self) -> Uint8Array {
-        Uint8Array::from(&*self.new_nonce)
+    pub fn new_nonce(&self) -> String {
+        self.new_nonce.to_string()
     }
 
     #[wasm_bindgen(getter)]
-    pub fn new_account(&self) -> Uint8Array {
-        Uint8Array::from(&*self.new_account)
+    pub fn new_account(&self) -> String {
+        self.new_account.to_string()
     }
 
     #[wasm_bindgen(getter)]
-    pub fn new_order(&self) -> Uint8Array {
-        Uint8Array::from(&*self.new_order)
+    pub fn new_order(&self) -> String {
+        self.new_order.to_string()
     }
 }
 
 impl From<core_crypto::prelude::E2eiAcmeDirectory> for AcmeDirectory {
     fn from(directory: core_crypto::prelude::E2eiAcmeDirectory) -> Self {
         Self {
-            new_nonce: directory.new_nonce.as_str().as_bytes().to_vec(),
-            new_account: directory.new_account.as_str().as_bytes().to_vec(),
-            new_order: directory.new_order.as_str().as_bytes().to_vec(),
+            new_nonce: directory.new_nonce,
+            new_account: directory.new_account,
+            new_order: directory.new_order,
         }
     }
 }
 
-impl TryFrom<AcmeDirectory> for core_crypto::prelude::E2eiAcmeDirectory {
-    type Error = WasmCryptoError;
-
-    fn try_from(directory: AcmeDirectory) -> WasmCryptoResult<Self> {
-        Ok(Self {
-            new_nonce: std::str::from_utf8(&directory.new_nonce)?.parse()?,
-            new_account: std::str::from_utf8(&directory.new_account)?.parse()?,
-            new_order: std::str::from_utf8(&directory.new_order)?.parse()?,
-        })
+impl From<AcmeDirectory> for core_crypto::prelude::E2eiAcmeDirectory {
+    fn from(directory: AcmeDirectory) -> Self {
+        Self {
+            new_nonce: directory.new_nonce,
+            new_account: directory.new_account,
+            new_order: directory.new_order,
+        }
     }
 }
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct NewOrder {
+#[serde(rename_all = "camelCase")]
+/// See [core_crypto::e2e_identity::types::E2eiNewAcmeOrder]
+pub struct NewAcmeOrder {
     delegate: Vec<u8>,
     authorizations: Vec<Vec<u8>>,
 }
 
 #[wasm_bindgen]
-impl NewOrder {
+impl NewAcmeOrder {
     #[wasm_bindgen(constructor)]
     pub fn new(delegate: Uint8Array, authorizations: Vec<Uint8Array>) -> Self {
         Self {
@@ -1742,19 +1879,19 @@ impl NewOrder {
     }
 }
 
-impl From<core_crypto::prelude::E2eiNewAcmeOrder> for NewOrder {
+impl From<core_crypto::prelude::E2eiNewAcmeOrder> for NewAcmeOrder {
     fn from(new_order: core_crypto::prelude::E2eiNewAcmeOrder) -> Self {
         Self {
             delegate: new_order.delegate,
-            authorizations: new_order.authorizations.into_iter().map(|a| a.into_bytes()).collect(),
+            authorizations: new_order.authorizations.into_iter().map(String::into_bytes).collect(),
         }
     }
 }
 
-impl TryFrom<NewOrder> for core_crypto::prelude::E2eiNewAcmeOrder {
+impl TryFrom<NewAcmeOrder> for core_crypto::prelude::E2eiNewAcmeOrder {
     type Error = WasmCryptoError;
 
-    fn try_from(new_order: NewOrder) -> WasmCryptoResult<Self> {
+    fn try_from(new_order: NewAcmeOrder) -> WasmCryptoResult<Self> {
         Ok(Self {
             delegate: new_order.delegate,
             authorizations: new_order.authorizations.into_iter().try_fold(
@@ -1765,5 +1902,162 @@ impl TryFrom<NewOrder> for core_crypto::prelude::E2eiNewAcmeOrder {
                 },
             )?,
         })
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+/// See [core_crypto::e2e_identity::types::E2eiNewAcmeAuthz]
+pub struct NewAcmeAuthz {
+    identifier: String,
+    wire_http_challenge: Option<AcmeChallenge>,
+    wire_oidc_challenge: Option<AcmeChallenge>,
+}
+
+#[wasm_bindgen]
+impl NewAcmeAuthz {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        identifier: String,
+        wire_http_challenge: Option<AcmeChallenge>,
+        wire_oidc_challenge: Option<AcmeChallenge>,
+    ) -> Self {
+        Self {
+            identifier,
+            wire_http_challenge,
+            wire_oidc_challenge,
+        }
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn identifier(&self) -> String {
+        self.identifier.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn wire_http_challenge(&self) -> Option<AcmeChallenge> {
+        self.wire_http_challenge.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn wire_oidc_challenge(&self) -> Option<AcmeChallenge> {
+        self.wire_oidc_challenge.clone()
+    }
+}
+
+impl From<core_crypto::prelude::E2eiNewAcmeAuthz> for NewAcmeAuthz {
+    fn from(authz: core_crypto::prelude::E2eiNewAcmeAuthz) -> Self {
+        Self {
+            identifier: authz.identifier,
+            wire_http_challenge: authz.wire_http_challenge.map(Into::into),
+            wire_oidc_challenge: authz.wire_oidc_challenge.map(Into::into),
+        }
+    }
+}
+
+impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
+    fn from(authz: NewAcmeAuthz) -> Self {
+        Self {
+            identifier: authz.identifier,
+            wire_http_challenge: authz.wire_http_challenge.map(Into::into),
+            wire_oidc_challenge: authz.wire_oidc_challenge.map(Into::into),
+        }
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+/// See [core_crypto::e2e_identity::types::E2eiAcmeChallenge]
+pub struct AcmeChallenge {
+    delegate: Vec<u8>,
+    url: String,
+}
+
+#[wasm_bindgen]
+impl AcmeChallenge {
+    #[wasm_bindgen(constructor)]
+    pub fn new(delegate: Uint8Array, url: String) -> Self {
+        Self {
+            delegate: delegate.to_vec(),
+            url,
+        }
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn delegate(&self) -> Uint8Array {
+        self.delegate.as_slice().into()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn url(&self) -> String {
+        self.url.clone()
+    }
+}
+
+impl From<core_crypto::prelude::E2eiAcmeChallenge> for AcmeChallenge {
+    fn from(chall: core_crypto::prelude::E2eiAcmeChallenge) -> Self {
+        Self {
+            delegate: chall.delegate,
+            url: chall.url,
+        }
+    }
+}
+
+impl From<AcmeChallenge> for core_crypto::prelude::E2eiAcmeChallenge {
+    fn from(chall: AcmeChallenge) -> Self {
+        Self {
+            delegate: chall.delegate,
+            url: chall.url,
+        }
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+/// See [core_crypto::e2e_identity::types::E2eiAcmeFinalize]
+pub struct AcmeFinalize {
+    delegate: Vec<u8>,
+    certificate_url: String,
+}
+
+#[wasm_bindgen]
+impl AcmeFinalize {
+    #[wasm_bindgen(constructor)]
+    pub fn new(delegate: Uint8Array, certificate_url: String) -> Self {
+        Self {
+            delegate: delegate.to_vec(),
+            certificate_url,
+        }
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn delegate(&self) -> Uint8Array {
+        self.delegate.as_slice().into()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn certificate_url(&self) -> String {
+        self.certificate_url.clone()
+    }
+}
+
+impl From<core_crypto::prelude::E2eiAcmeFinalize> for AcmeFinalize {
+    fn from(finalize: core_crypto::prelude::E2eiAcmeFinalize) -> Self {
+        Self {
+            delegate: finalize.delegate,
+            certificate_url: finalize.certificate_url,
+        }
+    }
+}
+
+impl From<AcmeFinalize> for core_crypto::prelude::E2eiAcmeFinalize {
+    fn from(finalize: AcmeFinalize) -> Self {
+        Self {
+            delegate: finalize.delegate,
+            certificate_url: finalize.certificate_url,
+        }
     }
 }

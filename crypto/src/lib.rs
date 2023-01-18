@@ -66,8 +66,8 @@ pub mod prelude {
         e2e_identity::{
             error::{E2eIdentityError, E2eIdentityResult},
             types::{
-                E2eiAcmeAccount, E2eiAcmeChall, E2eiAcmeDirectory, E2eiAcmeFinalize, E2eiAcmeOrder, E2eiNewAcmeAuthz,
-                E2eiNewAcmeOrder,
+                E2eiAcmeAccount, E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiAcmeFinalize, E2eiAcmeOrder,
+                E2eiNewAcmeAuthz, E2eiNewAcmeOrder,
             },
             WireE2eIdentity,
         },
