@@ -2,7 +2,7 @@
 name = "core-crypto"
 description = "Abstraction over OpenMLS with persistent keystore"
 repository = "https://github.com/wireapp/core-crypto"
-version = "0.6.0-rc.3"
+version = "0.6.0-rc.4"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
@@ -67,11 +67,11 @@ rexie = { version = "0.4", optional = true }
 base64 = { version = "0.21", optional = true }
 
 [dependencies.core-crypto-keystore]
-version = "0.6.0-rc.3"
+version = "0.6.0-rc.4"
 path = "../keystore"
 
 [dependencies.mls-crypto-provider]
-version = "0.6.0-rc.3"
+version = "0.6.0-rc.4"
 path = "../mls-provider"
 
 [dev-dependencies]

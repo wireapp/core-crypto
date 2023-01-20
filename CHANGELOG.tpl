@@ -14,6 +14,7 @@ Platform support legends:
 {{git-cliff tag="v0.6.0-rc.4" unreleased=true}}
 </details>
 
+* First bytes of end to end identity exposed. Thanks to the ACME protocol, it allows requesting a x509 certificate from an authority and then use it to create a MLS Credential.
 * Fixed `cargo-make` Makefile.toml to allow building JVM bindings whatever the platform you're running
     * This is done by adding tests to the relevant tasks, allowing to conditionally execute them.
 * Added a Makefile task to build the `core_crypto_ffi` Kotlin binding docs (via Dokka) and integrate them into the doc package

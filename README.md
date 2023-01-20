@@ -114,7 +114,7 @@ cargo make wasm
 
 ### Android / JVM
 
-You can publish the JVM and Android bindings to maven using gradle after you'be build the corresponding target.
+You can publish the JVM and Android bindings to maven using gradle after you've built the corresponding target.
 
 ```ignore
 cd kotlin
