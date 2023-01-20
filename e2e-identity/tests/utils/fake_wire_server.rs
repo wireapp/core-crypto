@@ -39,7 +39,7 @@ impl FakeWireServer {
             .danger_accept_invalid_certs(true)
             .build()
             .unwrap();
-        let url = format!("http://localhost:{}", addr.port());
+        let url = format!("http://localhost:{}/", addr.port());
         Self { url, http_client }
     }
 }

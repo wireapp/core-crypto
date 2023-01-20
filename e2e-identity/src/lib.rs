@@ -89,25 +89,33 @@ impl RustyE2eIdentity {
     /// See [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
     ///
     /// # Parameters
-    /// * `handle_host` - domain of the authorization server e.g. `idp.example.org`
-    /// * `client_id_host` - domain of the wire-server e.g. `wire.example.org`
+    /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
+    /// * `domain` - DNS name of owning backend e.g. `example.com`
+    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `impp:wireapp=NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ/6add501bacd1d90e@example.com`
+    /// * `handle` - user handle e.g. `impp:wireapp=alice.smith.qa@example.com`
     /// * `expiry` - x509 generated certificate expiry
     /// * `directory` - you got from [Self::acme_directory_response]
     /// * `account` - you got from [Self::acme_new_account_response]
     /// * `previous_nonce` - "replay-nonce" response header from `POST /acme/{provisioner-name}/new-account`
+    #[allow(clippy::too_many_arguments)]
     pub fn acme_new_order_request(
         &self,
-        handle_host: String,
-        client_id_host: String,
+        display_name: String,
+        domain: String,
+        client_id: String,
+        handle: String,
         expiry: core::time::Duration,
         directory: &AcmeDirectory,
         account: &E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
         let account = serde_json::from_value(account.clone().into())?;
+        let client_id = ClientId::try_from(client_id.as_str())?;
         let order_req = RustyAcme::new_order_request(
-            handle_host,
-            client_id_host,
+            display_name,
+            domain,
+            client_id,
+            handle,
             expiry,
             directory,
             &account,
@@ -167,10 +175,10 @@ impl RustyE2eIdentity {
     pub fn acme_new_authz_response(&self, new_authz: Json) -> E2eIdentityResult<E2eiNewAcmeAuthz> {
         let new_authz = serde_json::from_value(new_authz)?;
         let new_authz = RustyAcme::new_authz_response(new_authz)?;
-        let identifier = new_authz.identifier.value().to_string();
+        let identifier = new_authz.identifier.to_json()?;
 
         let wire_http_challenge = new_authz
-            .wire_http_challenge()
+            .wire_dpop_challenge()
             .map(|c| serde_json::to_value(c).map(|chall| (chall, c.url.clone())))
             .transpose()?
             .map(|(chall, url)| E2eiAcmeChall { url, chall });
@@ -239,19 +247,27 @@ impl RustyE2eIdentity {
     /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
     ///
     /// # Parameters
+    /// * `access_token` - returned by wire-server from [this endpoint](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token)
     /// * `handle_challenge` - you found after [Self::acme_new_authz_response]
     /// * `account` - you got from [Self::acme_new_account_response]
     /// * `previous_nonce` - "replay-nonce" response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
     pub fn acme_new_challenge_request(
         &self,
+        access_token: String,
         handle_challenge: &E2eiAcmeChall,
         account: &E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
         let account = serde_json::from_value(account.clone().into())?;
         let handle_chall = serde_json::from_value(handle_challenge.chall.clone())?;
-        let new_challenge_req =
-            RustyAcme::new_chall_request(handle_chall, &account, self.sign_alg, &self.sign_kp, previous_nonce)?;
+        let new_challenge_req = RustyAcme::dpop_chall_request(
+            access_token,
+            handle_chall,
+            &account,
+            self.sign_alg,
+            &self.sign_kp,
+            previous_nonce,
+        )?;
         Ok(serde_json::to_value(new_challenge_req)?)
     }
 
@@ -309,15 +325,13 @@ impl RustyE2eIdentity {
     /// * `previous_nonce` - "replay-nonce" response header from `POST /acme/{provisioner-name}/order/{order-id}`
     pub fn acme_finalize_request(
         &self,
-        domains: Vec<String>,
         order: E2eiAcmeOrder,
         account: &E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
         let order = serde_json::from_value(order.into())?;
         let account = serde_json::from_value(account.clone().into())?;
-        let finalize_req =
-            RustyAcme::finalize_req(domains, order, &account, self.sign_alg, &self.sign_kp, previous_nonce)?;
+        let finalize_req = RustyAcme::finalize_req(order, &account, self.sign_alg, &self.sign_kp, previous_nonce)?;
         Ok(serde_json::to_value(finalize_req)?)
     }
 

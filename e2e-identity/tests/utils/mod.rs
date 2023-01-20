@@ -10,6 +10,8 @@ pub mod keys;
 #[cfg(not(target_family = "wasm"))]
 pub mod server_api;
 
+pub mod oidc;
+
 pub fn rand_base64_str(size: usize) -> String {
     use rand::distributions::{Alphanumeric, DistString};
     let challenge: String = Alphanumeric.sample_string(&mut rand::thread_rng(), size);

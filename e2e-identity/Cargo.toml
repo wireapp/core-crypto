@@ -26,6 +26,11 @@ uuid = "1.2"
 wasm-bindgen-test = "0.3"
 hex = "0.4"
 
+[dev-dependencies.x509-parser]
+git = "https://github.com/wireapp/x509-parser"
+tag = "v1.0.1-pre.core-crypto-0.5.0"
+features = ["verify", "validate"]
+
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 rusty-acme = { version = "0.1", path = "../acme", features = ["docker"] }
 reqwest = { version = "0.11", features = ["json"], default_features = false }

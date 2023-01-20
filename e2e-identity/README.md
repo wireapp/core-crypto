@@ -3,39 +3,35 @@ Ed25519 - SHA256
 ```mermaid
 sequenceDiagram
     autonumber
-    wire-client->>+acme-server: GET /acme/wire-acme/directory
+    wire-client->>+acme-server: GET /acme/acme/directory
     acme-server->>-wire-client: 200
-    wire-client->>+acme-server: HEAD /acme/wire-acme/new-nonce
+    wire-client->>+acme-server: HEAD /acme/acme/new-nonce
     acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/new-account
+    wire-client->>+acme-server: POST /acme/acme/new-account
     acme-server->>-wire-client: 201
-    wire-client->>+acme-server: POST /acme/wire-acme/new-order
+    wire-client->>+acme-server: POST /acme/acme/new-order
     acme-server->>-wire-client: 201
-    wire-client->>+acme-server: POST /acme/wire-acme/authz/JTlWsEpGo8Nw78o1Pm1zCE4SXoR2A4lf
+    wire-client->>+acme-server: POST /acme/acme/authz/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs
     acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/authz/1mx9BBDXlDqo8YGdofNGVephPtiXoZll
-    acme-server->>-wire-client: 200
-    wire-client->>+wire-server: GET /clients/token/nonce
+    wire-client->>+wire-server: GET //clients/token/nonce
     wire-server->>-wire-client: 200
-    wire-client->>+wire-server: POST /clients/9695841546515832898/access-token
+    wire-client->>+wire-server: POST //clients/7332893846330786102/access-token
     wire-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/challenge/JTlWsEpGo8Nw78o1Pm1zCE4SXoR2A4lf/Djz71pioa2ai6TZoK8qQRjKBFL00ck9u
-    acme-server->>+wire-server: GET /.well-known/acme-challenge/J2iDTJbNltlxtngrQbROygRvkR39O93e
-    wire-server->>-acme-server: 200
-    acme-server->>+wire-server: GET /.well-known/acme-challenge/UWRaVu8KOQk576WzPmhDCnV83tKU8RVY
-    wire-server->>-acme-server: 200
+    wire-client->>+acme-server: POST /acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/n7mcr316DajruQd3pDqLEbHlIsAhjih1
     acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/order/91OKTwugsPFzkMTh8mauFNqRGmIXrG4N
+    wire-client->>+acme-server: POST /acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/kpQYi9U70QylwrSo6AqdhM9ASeHtzjMv
     acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/order/91OKTwugsPFzkMTh8mauFNqRGmIXrG4N/finalize
+    wire-client->>+acme-server: POST /acme/acme/order/inuqE3xYTl1NOrwgrWo1TvNDnONlN94a
     acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/certificate/sa9z5Ytd75qCoNbcmZdXGkJ96QzqHwAT
+    wire-client->>+acme-server: POST /acme/acme/order/inuqE3xYTl1NOrwgrWo1TvNDnONlN94a/finalize
+    acme-server->>-wire-client: 200
+    wire-client->>+acme-server: POST /acme/acme/certificate/D9YM1rT8KKqhKMH9C2WbJhHwStYPHPl9
     acme-server->>-wire-client: 200
 ```
 ### Initial setup with ACME server
 #### 1. fetch acme directory for hyperlinks
 ```http request
-GET https://localhost:55093/acme/wire-acme/directory
+GET https://localhost:55195/acme/acme/directory
 
 ```
 #### 2. get the ACME directory with links for newNonce, newAccount & newOrder
@@ -45,36 +41,36 @@ content-type: application/json
 ```
 ```json
 {
-  "newNonce": "https://localhost:55093/acme/wire-acme/new-nonce",
-  "newAccount": "https://localhost:55093/acme/wire-acme/new-account",
-  "newOrder": "https://localhost:55093/acme/wire-acme/new-order"
+  "newNonce": "https://localhost:55195/acme/acme/new-nonce",
+  "newAccount": "https://localhost:55195/acme/acme/new-account",
+  "newOrder": "https://localhost:55195/acme/acme/new-order"
 }
 ```
 #### 3. fetch a new nonce for the very first request
 ```http request
-HEAD https://localhost:55093/acme/wire-acme/new-nonce
+HEAD https://localhost:55195/acme/acme/new-nonce
 
 ```
 #### 4. get a nonce for creating an account
 ```http request
 200
 cache-control: no-store
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-replay-nonce: ZE9IZUtCcTVOaGc3Z09TeHJ2WWtIeEllbXZwTWNYS1I
+link: <https://localhost:55195/acme/acme/directory>;rel="index"
+replay-nonce: c3dQbXFPaWh4bDVxUkpYYWtRWUZtUEN6Qm5vQUlQZlA
 ```
 ```json
-"ZE9IZUtCcTVOaGc3Z09TeHJ2WWtIeEllbXZwTWNYS1I"
+"c3dQbXFPaWh4bDVxUkpYYWtRWUZtUEN6Qm5vQUlQZlA"
 ```
 #### 5. create a new account
 ```http request
-POST https://localhost:55093/acme/wire-acme/new-account
+POST https://localhost:55195/acme/acme/new-account
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6ImlzdjVRZFdoSlYyYXhyVGFnRWdIMzRQM2M5NVJNQW5KMG5YdkZoZUVwVnMifSwibm9uY2UiOiJaRTlJWlV0Q2NUVk9hR2MzWjA5VGVISjJXV3RJZUVsbGJYWndUV05ZUzFJIiwidXJsIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTUwOTMvYWNtZS93aXJlLWFjbWUvbmV3LWFjY291bnQifQ",
+  "protected": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6InlBd09VX0taYmhLR0dUeGdHeGNpZFFHam9SVmRjbWFQY0Z0eE5xcF9sNkkifSwibm9uY2UiOiJjM2RRYlhGUGFXaDRiRFZ4VWtwWVlXdFJXVVp0VUVONlFtNXZRVWxRWmxBIiwidXJsIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTUxOTUvYWNtZS9hY21lL25ldy1hY2NvdW50In0",
   "payload": "eyJ0ZXJtc09mU2VydmljZUFncmVlZCI6dHJ1ZSwiY29udGFjdCI6WyJ1bmtub3duQGV4YW1wbGUuY29tIl0sIm9ubHlSZXR1cm5FeGlzdGluZyI6ZmFsc2V9",
-  "signature": "R5b8zKjwciZid1kIEWX_2ggkZRj029JZZavPYMFFMDKVbzaiC-DvZOsprM89L-etUzFnypIDnVKyNdC_62jDCg"
+  "signature": "Bran58MScz36cRg_VEqc6KnennWd0hFpAOrRYPJD5Mz6B44UCW-QeyjoM-yM3r5F-04-0Kw9KQDdKWWsICsABw"
 }
 ...decoded...
 {
@@ -84,10 +80,10 @@ content-type: application/jose+json
     "jwk": {
       "kty": "OKP",
       "crv": "Ed25519",
-      "x": "isv5QdWhJV2axrTagEgH34P3c95RMAnJ0nXvFheEpVs"
+      "x": "yAwOU_KZbhKGGTxgGxcidQGjoRVdcmaPcFtxNqp_l6I"
     },
-    "nonce": "ZE9IZUtCcTVOaGc3Z09TeHJ2WWtIeEllbXZwTWNYS1I",
-    "url": "https://localhost:55093/acme/wire-acme/new-account"
+    "nonce": "c3dQbXFPaWh4bDVxUkpYYWtRWUZtUEN6Qm5vQUlQZlA",
+    "url": "https://localhost:55195/acme/acme/new-account"
   },
   "payload": {
     "termsOfServiceAgreed": true,
@@ -103,50 +99,46 @@ content-type: application/jose+json
 201
 cache-control: no-store
 content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/account/b5PzmLZBD4EyIs0Gvz2taERCNbHGhYJp
-replay-nonce: MHB4Sm50RnlpaVozbTNPaFZ6c3dwcTFUVE1meTdEU0Y
+link: <https://localhost:55195/acme/acme/directory>;rel="index"
+location: https://localhost:55195/acme/acme/account/5Qla8j6kKyv73qVSVuynAt8CzlShabxR
+replay-nonce: N2tVOVNBYkFDaERIbnBMM0JSZk9MdGlTVjJ3alp3bE8
 ```
 ```json
 {
   "status": "valid",
-  "orders": "https://localhost:55093/acme/wire-acme/account/b5PzmLZBD4EyIs0Gvz2taERCNbHGhYJp/orders"
+  "orders": "https://localhost:55195/acme/acme/account/5Qla8j6kKyv73qVSVuynAt8CzlShabxR/orders"
 }
 ```
 ### Request a certificate with relevant identifiers
 #### 7. create a new order
 ```http request
-POST https://localhost:55093/acme/wire-acme/new-order
+POST https://localhost:55195/acme/acme/new-order
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvYjVQem1MWkJENEV5SXMwR3Z6MnRhRVJDTmJIR2hZSnAiLCJ0eXAiOiJKV1QiLCJub25jZSI6Ik1IQjRTbTUwUm5scGFWb3piVE5QYUZaNmMzZHdjVEZVVkUxbWVUZEVVMFkiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9uZXctb3JkZXIifQ",
-  "payload": "eyJpZGVudGlmaWVycyI6W3sidHlwZSI6ImRucyIsInZhbHVlIjoiaWRwLmV4YW1wbGUuY29tIn0seyJ0eXBlIjoiZG5zIiwidmFsdWUiOiJ3aXJlLmV4YW1wbGUuY29tIn1dLCJub3RCZWZvcmUiOiIyMDIzLTAxLTIwVDA5OjAzOjM1Ljc2NjgzOFoiLCJub3RBZnRlciI6IjIwMjMtMDEtMjBUMTA6MDM6MzUuNzY2ODM4WiJ9",
-  "signature": "2q1uKqv5GLMHehkTs8StYC63yjHe5hYX39TZs4tbEwCPWqg_f0rg4MvmEisLnctrbRZQUmRnwzdXtHIBx9jYDQ"
+  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MTk1L2FjbWUvYWNtZS9hY2NvdW50LzVRbGE4ajZrS3l2NzNxVlNWdXluQXQ4Q3psU2hhYnhSIiwidHlwIjoiSldUIiwibm9uY2UiOiJOMnRWT1ZOQllrRkRhRVJJYm5CTU0wSlNaazlNZEdsVFZqSjNhbHAzYkU4IiwidXJsIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTUxOTUvYWNtZS9hY21lL25ldy1vcmRlciJ9",
+  "payload": "eyJpZGVudGlmaWVycyI6W3sidHlwZSI6IndpcmVhcHAtaWQiLCJ2YWx1ZSI6IntcIm5hbWVcIjpcIlNtaXRoLCBBbGljZSBNIChRQSlcIixcImRvbWFpblwiOlwiZXhhbXBsZS5jb21cIixcImNsaWVudC1pZFwiOlwiaW1wcDp3aXJlYXBwPU5ERXlaR1l3TmpjMk16RmtOREJpTlRsbFltVm1NalF5WlRJek5UYzROV1EvNjVjM2FjMWExNjMxYzEzNkBleGFtcGxlLmNvbVwiLFwiaGFuZGxlXCI6XCJpbXBwOndpcmVhcHA9YWxpY2Uuc21pdGgucWFAZXhhbXBsZS5jb21cIn0ifV0sIm5vdEJlZm9yZSI6IjIwMjMtMDItMDlUMTY6NTU6NTYuMDMyMzA2WiIsIm5vdEFmdGVyIjoiMjAyMy0wMi0wOVQxNzo1NTo1Ni4wMzIzMDZaIn0",
+  "signature": "NwATIFjfqLnVs22Bqo-KR4C4xd0ZiceH6g6AggHOfhRT0Wy81tz7sa_eipejUTppSLdUsBNe0UdBusFNh9ScBg"
 }
 ...decoded...
 {
   "protected": {
     "alg": "EdDSA",
-    "kid": "https://localhost:55093/acme/wire-acme/account/b5PzmLZBD4EyIs0Gvz2taERCNbHGhYJp",
+    "kid": "https://localhost:55195/acme/acme/account/5Qla8j6kKyv73qVSVuynAt8CzlShabxR",
     "typ": "JWT",
-    "nonce": "MHB4Sm50RnlpaVozbTNPaFZ6c3dwcTFUVE1meTdEU0Y",
-    "url": "https://localhost:55093/acme/wire-acme/new-order"
+    "nonce": "N2tVOVNBYkFDaERIbnBMM0JSZk9MdGlTVjJ3alp3bE8",
+    "url": "https://localhost:55195/acme/acme/new-order"
   },
   "payload": {
     "identifiers": [
       {
-        "type": "dns",
-        "value": "idp.example.com"
-      },
-      {
-        "type": "dns",
-        "value": "wire.example.com"
+        "type": "wireapp-id",
+        "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
       }
     ],
-    "notBefore": "2023-01-20T09:03:35.766838Z",
-    "notAfter": "2023-01-20T10:03:35.766838Z"
+    "notBefore": "2023-02-09T16:55:56.032306Z",
+    "notAfter": "2023-02-09T17:55:56.032306Z"
   }
 }
 ```
@@ -155,1304 +147,373 @@ content-type: application/jose+json
 201
 cache-control: no-store
 content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/order/91OKTwugsPFzkMTh8mauFNqRGmIXrG4N
-replay-nonce: eDFCTURGQ09hY3NINjFXYmpxaEVPUnc1d0hSZGhQelI
+link: <https://localhost:55195/acme/acme/directory>;rel="index"
+location: https://localhost:55195/acme/acme/order/inuqE3xYTl1NOrwgrWo1TvNDnONlN94a
+replay-nonce: MzR1czBxS2FyeXZhYlpTcXMwOTU5R3V0bXBFTmdhRzA
 ```
 ```json
 {
   "status": "pending",
-  "finalize": "https://localhost:55093/acme/wire-acme/order/91OKTwugsPFzkMTh8mauFNqRGmIXrG4N/finalize",
+  "finalize": "https://localhost:55195/acme/acme/order/inuqE3xYTl1NOrwgrWo1TvNDnONlN94a/finalize",
   "identifiers": [
     {
-      "type": "dns",
-      "value": "idp.example.com"
-    },
-    {
-      "type": "dns",
-      "value": "wire.example.com"
+      "type": "wireapp-id",
+      "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
     }
   ],
   "authorizations": [
-    "https://localhost:55093/acme/wire-acme/authz/JTlWsEpGo8Nw78o1Pm1zCE4SXoR2A4lf",
-    "https://localhost:55093/acme/wire-acme/authz/1mx9BBDXlDqo8YGdofNGVephPtiXoZll"
+    "https://localhost:55195/acme/acme/authz/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs"
   ],
-  "expires": "2023-01-21T09:03:35Z",
-  "notBefore": "2023-01-20T09:03:35.766838Z",
-  "notAfter": "2023-01-20T10:03:35.766838Z"
+  "expires": "2023-02-10T16:55:56Z",
+  "notBefore": "2023-02-09T16:55:56.032306Z",
+  "notAfter": "2023-02-09T17:55:56.032306Z"
 }
 ```
 ### Display-name and handle already authorized
-#### 9. fetch first challenge
+#### 9. fetch challenge
 ```http request
-POST https://localhost:55093/acme/wire-acme/authz/JTlWsEpGo8Nw78o1Pm1zCE4SXoR2A4lf
+POST https://localhost:55195/acme/acme/authz/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvYjVQem1MWkJENEV5SXMwR3Z6MnRhRVJDTmJIR2hZSnAiLCJ0eXAiOiJKV1QiLCJub25jZSI6ImVERkNUVVJHUTA5aFkzTklOakZYWW1weGFFVlBVbmMxZDBoU1pHaFFlbEkiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9hdXRoei9KVGxXc0VwR284Tnc3OG8xUG0xekNFNFNYb1IyQTRsZiJ9",
+  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MTk1L2FjbWUvYWNtZS9hY2NvdW50LzVRbGE4ajZrS3l2NzNxVlNWdXluQXQ4Q3psU2hhYnhSIiwidHlwIjoiSldUIiwibm9uY2UiOiJNelIxY3pCeFMyRnllWFpoWWxwVGNYTXdPVFU1UjNWMGJYQkZUbWRoUnpBIiwidXJsIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTUxOTUvYWNtZS9hY21lL2F1dGh6L2U1WEJBTHIwV3BUY2l3Nm03cjFpaEk3bFhSYXBVbXZzIn0",
   "payload": "",
-  "signature": "7UWfIoLVAmQQ3ZD7QUgoAP5hK-F7ZDAjFAZ0hflCcLUyFDmZWUaD4ynRdSV3Xq-XTinpY1y1psM0z6zXsHLABQ"
+  "signature": "mKZKM5YnNkPKxpxYbfqwet6wiM4g71mvL0ysbvZuta-6C6H-Z5mxtyey3z4td9GMnpJY3Wq4qwwV6oH6qUwJCw"
 }
 ```
-#### 10. get back first challenge
+#### 10. get back challenge
 ```http request
 200
 cache-control: no-store
 content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/authz/JTlWsEpGo8Nw78o1Pm1zCE4SXoR2A4lf
-replay-nonce: OWR0Z3JUb3djN1BMc2ZCMnh5RUFUTTJmaUhscGVvM3Y
+link: <https://localhost:55195/acme/acme/directory>;rel="index"
+location: https://localhost:55195/acme/acme/authz/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs
+replay-nonce: YWJTVFZjNFY5QU1IUmtIQXM5czFwbVJTYzV6RFZVc1Y
 ```
 ```json
 {
   "status": "pending",
-  "expires": "2023-01-21T09:03:35Z",
+  "expires": "2023-02-10T16:55:56Z",
   "challenges": [
     {
-      "type": "dns-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/JTlWsEpGo8Nw78o1Pm1zCE4SXoR2A4lf/sidG82hIE1C6UvwXFgE5twz8Z4hqnubL",
+      "type": "wire-oidc-01",
+      "url": "https://localhost:55195/acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/kpQYi9U70QylwrSo6AqdhM9ASeHtzjMv",
       "status": "pending",
-      "token": "J2iDTJbNltlxtngrQbROygRvkR39O93e"
+      "token": "SY74tJmAIIhdzRtJvpx389f6EKHbXuxQ"
     },
     {
-      "type": "http-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/JTlWsEpGo8Nw78o1Pm1zCE4SXoR2A4lf/Djz71pioa2ai6TZoK8qQRjKBFL00ck9u",
+      "type": "wire-dpop-01",
+      "url": "https://localhost:55195/acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/n7mcr316DajruQd3pDqLEbHlIsAhjih1",
       "status": "pending",
-      "token": "J2iDTJbNltlxtngrQbROygRvkR39O93e"
-    },
-    {
-      "type": "tls-alpn-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/JTlWsEpGo8Nw78o1Pm1zCE4SXoR2A4lf/aN41wnVsobsB2fs9eQ77KJd7VRewpk0X",
-      "status": "pending",
-      "token": "J2iDTJbNltlxtngrQbROygRvkR39O93e"
+      "token": "SY74tJmAIIhdzRtJvpx389f6EKHbXuxQ"
     }
   ],
   "identifier": {
-    "type": "dns",
-    "value": "idp.example.com"
-  }
-}
-```
-### ACME provides a Wire client ID challenge
-#### 11. fetch second challenge
-```http request
-POST https://localhost:55093/acme/wire-acme/authz/1mx9BBDXlDqo8YGdofNGVephPtiXoZll
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvYjVQem1MWkJENEV5SXMwR3Z6MnRhRVJDTmJIR2hZSnAiLCJ0eXAiOiJKV1QiLCJub25jZSI6Ik9XUjBaM0pVYjNkak4xQk1jMlpDTW5oNVJVRlVUVEptYVVoc2NHVnZNM1kiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9hdXRoei8xbXg5QkJEWGxEcW84WUdkb2ZOR1ZlcGhQdGlYb1psbCJ9",
-  "payload": "",
-  "signature": "CXNeolJQP0x8qON8d2WoOFeNDRT4WzaL2E9X5EInXTuyDPyKjFsPDsr4vsWeWCywgIlvuMWFON54ARpM4k3ACg"
-}
-```
-#### 12. get back second challenge
-```http request
-200
-cache-control: no-store
-content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/authz/1mx9BBDXlDqo8YGdofNGVephPtiXoZll
-replay-nonce: NW8yWmdhbVoyVFdWYW5ySjNoRUVCaVRRbXJZVERCMjU
-```
-```json
-{
-  "status": "pending",
-  "expires": "2023-01-21T09:03:35Z",
-  "challenges": [
-    {
-      "type": "dns-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/1mx9BBDXlDqo8YGdofNGVephPtiXoZll/qvbtfmbfjuKPJAMnYF2mxeZ5lv9r0Eb2",
-      "status": "pending",
-      "token": "UWRaVu8KOQk576WzPmhDCnV83tKU8RVY"
-    },
-    {
-      "type": "http-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/1mx9BBDXlDqo8YGdofNGVephPtiXoZll/NY9jkK7JLKrkoUk2AhNeYfsKjeTT579S",
-      "status": "pending",
-      "token": "UWRaVu8KOQk576WzPmhDCnV83tKU8RVY"
-    },
-    {
-      "type": "tls-alpn-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/1mx9BBDXlDqo8YGdofNGVephPtiXoZll/lF14F2RQr15eAPOHRgWUXZExqWSVoQf5",
-      "status": "pending",
-      "token": "UWRaVu8KOQk576WzPmhDCnV83tKU8RVY"
-    }
-  ],
-  "identifier": {
-    "type": "dns",
-    "value": "wire.example.com"
+    "type": "wireapp-id",
+    "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
   }
 }
 ```
 ### Client fetches JWT DPoP access token (with wire-server)
-#### 13. fetch a nonce from wire-server
+#### 11. fetch a nonce from wire-server
 ```http request
-GET http://localhost:63479/clients/token/nonce
+GET http://localhost:59307//clients/token/nonce
 
 ```
-#### 14. get wire-server nonce
+#### 12. get wire-server nonce
 ```http request
 200
 
 ```
 ```json
-"WDhFa1hiQzdxcXVHeHpnRUJmVzlDaFZ3RmF6OHpqSHQ"
+"b3VIOXNOZTN1UEtoaWJOU3Z0dUVubE03YWVHQWNocE0"
 ```
-#### 15. create the client Dpop token with both nonces
-Token [here](https://jwt.io/#id_token=eyJhbGciOiJFZERTQSIsInR5cCI6ImRwb3Arand0IiwiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoiaXN2NVFkV2hKVjJheHJUYWdFZ0gzNFAzYzk1Uk1Bbkowblh2RmhlRXBWcyJ9fQ.eyJpYXQiOjE2NzQyMDU0MTUsImV4cCI6MTY3NDI5MTgxNSwibmJmIjoxNjc0MjA1NDE1LCJzdWIiOiJpbTp3aXJlYXBwOllqZzNZakpoWldJNVl6Wm1ORE0yTm1JeVpqZzVZMlEyTXpnek1XSmxZVFUvODY4ZThjODQwYThjZTA0MkB3aXJlLmNvbSIsImp0aSI6IjJmOTZkMjk2LTM3ZWMtNGJjYS04Yjg2LTY1NzkwYTVlMDBiNSIsIm5vbmNlIjoiV0RoRmExaGlRemR4Y1hWSGVIcG5SVUptVnpsRGFGWjNSbUY2T0hwcVNIUSIsImh0bSI6IlBPU1QiLCJodHUiOiJodHRwOi8vbG9jYWxob3N0OjYzNDc5L2NsaWVudHMvOTY5NTg0MTU0NjUxNTgzMjg5OC9hY2Nlc3MtdG9rZW4iLCJjaGFsIjoiSjJpRFRKYk5sdGx4dG5nclFiUk95Z1J2a1IzOU85M2UifQ.oq1GnZAdjNoznPhWbN2qAU7urXIlwhXG1p8WqWSZiiBuqnW2rQrzi5oU-bu43vrqiMdrTZMwevL-Mk-8oN6HCA)
+#### 13. create the client Dpop token with both nonces
+[Dpop token](https://jwt.io/#id_token=eyJhbGciOiJFZERTQSIsInR5cCI6ImRwb3Arand0IiwiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoieUF3T1VfS1piaEtHR1R4Z0d4Y2lkUUdqb1JWZGNtYVBjRnR4TnFwX2w2SSJ9fQ.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJzdWIiOiJpbXBwOndpcmVhcHA9TkRFeVpHWXdOamMyTXpGa05EQmlOVGxsWW1WbU1qUXlaVEl6TlRjNE5XUS82NWMzYWMxYTE2MzFjMTM2QGV4YW1wbGUuY29tIiwianRpIjoiNTA3OGZkZTItNTBiOC00ZmVmLWIxNDAtMzBkYTkzYjBkYzk5Iiwibm9uY2UiOiJiM1ZJT1hOT1pUTjFVRXRvYVdKT1UzWjBkVVZ1YkUwM1lXVkhRV05vY0UwIiwiaHRtIjoiUE9TVCIsImh0dSI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTkzMDcvIiwiY2hhbCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRIn0.BMLKV58n7sWHMy12U-LyLsFIJGtMSJquhRFobuze9F4JA7ScvQVHGTLQveV_Qp_Q4Ne8ryOFpJaQ75UnNDtuDQ)
 ```http request
-POST http://localhost:63479/clients/9695841546515832898/access-token
+POST http://localhost:59307//clients/7332893846330786102/access-token
 
 ```
-#### 16. get a Dpop access token from wire-server
+#### 14. get a Dpop access token from wire-server
 ```http request
 200
 
 ```
-Token [here](https://jwt.io/#id_token=eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6ImtZZS0zRGxZWDBNbHhmZjRPMW1Da25pd09MUG5TV1d5ZWozYVR4YWk3NVUifX0.eyJpYXQiOjE2NzQyMDU0MTUsImV4cCI6MTY4MTk4MTQxNSwibmJmIjoxNjc0MjA1NDE1LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjYzNDc5L2NsaWVudHMvOTY5NTg0MTU0NjUxNTgzMjg5OC9hY2Nlc3MtdG9rZW4iLCJzdWIiOiJpbTp3aXJlYXBwOllqZzNZakpoWldJNVl6Wm1ORE0yTm1JeVpqZzVZMlEyTXpnek1XSmxZVFUvODY4ZThjODQwYThjZTA0MkB3aXJlLmNvbSIsImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6NjM0NzkvY2xpZW50cy85Njk1ODQxNTQ2NTE1ODMyODk4L2FjY2Vzcy10b2tlbiIsImp0aSI6IjVjYjc5NTM0LWJmMGUtNDM3Mi05ZmMxLTY3MzZjYWQzMTllNyIsIm5vbmNlIjoiV0RoRmExaGlRemR4Y1hWSGVIcG5SVUptVnpsRGFGWjNSbUY2T0hwcVNIUSIsImNoYWwiOiJKMmlEVEpiTmx0bHh0bmdyUWJST3lnUnZrUjM5TzkzZSIsImNuZiI6eyJraWQiOiI5V1BER09zeTZiSGxWWG1lRTZSSmJ1Y1VjcVZ1MUsySU9rZDRwdmdLVmxrIn0sInByb29mIjoiZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNkltUndiM0FyYW5kMElpd2lhbmRySWpwN0ltdDBlU0k2SWs5TFVDSXNJbU55ZGlJNklrVmtNalUxTVRraUxDSjRJam9pYVhOMk5WRmtWMmhLVmpKaGVISlVZV2RGWjBnek5GQXpZemsxVWsxQmJrb3dibGgyUm1obFJYQldjeUo5ZlEuZXlKcFlYUWlPakUyTnpReU1EVTBNVFVzSW1WNGNDSTZNVFkzTkRJNU1UZ3hOU3dpYm1KbUlqb3hOamMwTWpBMU5ERTFMQ0p6ZFdJaU9pSnBiVHAzYVhKbFlYQndPbGxxWnpOWmFrcG9XbGRKTlZsNldtMU9SRTB5VG0xSmVWcHFaelZaTWxFeVRYcG5lazFYU214WlZGVXZPRFk0WlRoak9EUXdZVGhqWlRBME1rQjNhWEpsTG1OdmJTSXNJbXAwYVNJNklqSm1PVFprTWprMkxUTTNaV010TkdKallTMDRZamcyTFRZMU56a3dZVFZsTURCaU5TSXNJbTV2Ym1ObElqb2lWMFJvUm1FeGFHbFJlbVI0WTFoV1NHVkljRzVTVlVwdFZucHNSR0ZHV2pOU2JVWTJUMGh3Y1ZOSVVTSXNJbWgwYlNJNklsQlBVMVFpTENKb2RIVWlPaUpvZEhSd09pOHZiRzlqWVd4b2IzTjBPall6TkRjNUwyTnNhV1Z1ZEhNdk9UWTVOVGcwTVRVME5qVXhOVGd6TWpnNU9DOWhZMk5sYzNNdGRHOXJaVzRpTENKamFHRnNJam9pU2pKcFJGUktZazVzZEd4NGRHNW5jbEZpVWs5NVoxSjJhMUl6T1U4NU0yVWlmUS5vcTFHblpBZGpOb3puUGhXYk4ycUFVN3VyWElsd2hYRzFwOFdxV1NaaWlCdXFuVzJyUXJ6aTVvVS1idTQzdnJxaU1kclRaTXdldkwtTWstOG9ONkhDQSIsImNsaWVudF9pZCI6ImltOndpcmVhcHA6WWpnM1lqSmhaV0k1WXpabU5ETTJObUl5WmpnNVkyUTJNemd6TVdKbFlUVS84NjhlOGM4NDBhOGNlMDQyQHdpcmUuY29tIiwiYXBpX3ZlcnNpb24iOjMsInNjb3BlIjoid2lyZV9jbGllbnRfaWQifQ.5_3QCF-83P6boczo0768b5rIleiAqVkJ2wUKmD9NZvkf9k2s1PuXbQqciXmDnb4RAE51WuyyRZVtvCvj6paSBQ)
+[Access token](https://jwt.io/#id_token=eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6InlldjZPWlVudWlwbmZrMHRWZFlLRnM5MWpSdjVoVmF6a2llTEhBTmN1UEUifX0.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY4MzczNzc1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjU5MzA3LyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjU5MzA3LyIsImp0aSI6Ijk4NGM1OTA0LWZhM2UtNDVhZi1iZGM1LTlhODMzNjkxOGUyYiIsIm5vbmNlIjoiYjNWSU9YTk9aVE4xVUV0b2FXSk9VM1owZFVWdWJFMDNZV1ZIUVdOb2NFMCIsImNoYWwiOiJTWTc0dEptQUlJaGR6UnRKdnB4Mzg5ZjZFS0hiWHV4USIsImNuZiI6eyJraWQiOiJocG9RV2xNUmtjUURKN2xNcDhaSHp4WVBNVDBJM0Vhc2VqUHZhWmlGUGpjIn0sInByb29mIjoiZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNkltUndiM0FyYW5kMElpd2lhbmRySWpwN0ltdDBlU0k2SWs5TFVDSXNJbU55ZGlJNklrVmtNalUxTVRraUxDSjRJam9pZVVGM1QxVmZTMXBpYUV0SFIxUjRaMGQ0WTJsa1VVZHFiMUpXWkdOdFlWQmpSblI0VG5Gd1gydzJTU0o5ZlEuZXlKcFlYUWlPakUyTnpVNU5qRTNOVFlzSW1WNGNDSTZNVFkzTmpBME9ERTFOaXdpYm1KbUlqb3hOamMxT1RZeE56VTJMQ0p6ZFdJaU9pSnBiWEJ3T25kcGNtVmhjSEE5VGtSRmVWcEhXWGRPYW1NeVRYcEdhMDVFUW1sT1ZHeHNXVzFXYlUxcVVYbGFWRWw2VGxSak5FNVhVUzgyTldNellXTXhZVEUyTXpGak1UTTJRR1Y0WVcxd2JHVXVZMjl0SWl3aWFuUnBJam9pTlRBM09HWmtaVEl0TlRCaU9DMDBabVZtTFdJeE5EQXRNekJrWVRrellqQmtZems1SWl3aWJtOXVZMlVpT2lKaU0xWkpUMWhPVDFwVVRqRlZSWFJ2WVZkS1QxVXpXakJrVlZaMVlrVXdNMWxYVmtoUlYwNXZZMFV3SWl3aWFIUnRJam9pVUU5VFZDSXNJbWgwZFNJNkltaDBkSEE2THk5c2IyTmhiR2h2YzNRNk5Ua3pNRGN2SWl3aVkyaGhiQ0k2SWxOWk56UjBTbTFCU1Vsb1pIcFNkRXAyY0hnek9EbG1Oa1ZMU0dKWWRYaFJJbjAuQk1MS1Y1OG43c1dITXkxMlUtTHlMc0ZJSkd0TVNKcXVoUkZvYnV6ZTlGNEpBN1NjdlFWSEdUTFF2ZVZfUXBfUTROZThyeU9GcEphUTc1VW5ORHR1RFEiLCJjbGllbnRfaWQiOiJpbXBwOndpcmVhcHA9TkRFeVpHWXdOamMyTXpGa05EQmlOVGxsWW1WbU1qUXlaVEl6TlRjNE5XUS82NWMzYWMxYTE2MzFjMTM2QGV4YW1wbGUuY29tIiwiYXBpX3ZlcnNpb24iOjMsInNjb3BlIjoid2lyZV9jbGllbnRfaWQifQ.Tf10dkKrNikGNgGhIdkrMHb0v6Jpde09MaIyBeuY6KORcxuglMGY7_V9Kd0LcVVPMDy1q4xbd39ZqosGz1NUBQ)
 ### Client provides access token
-#### 17. send DPoP access token to acme server to have it validated
+#### 15. validate Dpop challenge (clientId)
 ```http request
-POST https://localhost:55093/acme/wire-acme/challenge/JTlWsEpGo8Nw78o1Pm1zCE4SXoR2A4lf/Djz71pioa2ai6TZoK8qQRjKBFL00ck9u
+POST https://localhost:55195/acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/n7mcr316DajruQd3pDqLEbHlIsAhjih1
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvYjVQem1MWkJENEV5SXMwR3Z6MnRhRVJDTmJIR2hZSnAiLCJ0eXAiOiJKV1QiLCJub25jZSI6Ik5XOHlXbWRoYlZveVZGZFdZVzV5U2pOb1JVVkNhVlJSYlhKWlZFUkNNalUiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9jaGFsbGVuZ2UvSlRsV3NFcEdvOE53NzhvMVBtMXpDRTRTWG9SMkE0bGYvRGp6NzFwaW9hMmFpNlRab0s4cVFSaktCRkwwMGNrOXUifQ",
-  "payload": "",
-  "signature": "LjHAidXYANCu3erG1OUn5g268dldrWSEuvvoQukRYMT-8VT4Vs8-PuEdloZX-FLFfHAEQpxz4unWSNv-fCeOAA"
-}
-```
-#### 18. acme server verifies client-id with an http challenge
-```http request
-GET http://wire.com/.well-known/acme-challenge/J2iDTJbNltlxtngrQbROygRvkR39O93e
-
-```
-
-#### 19. acme server verifies handle + display-name with an OIDC challenge
-```http request
-GET http://wire.com/.well-known/acme-challenge/UWRaVu8KOQk576WzPmhDCnV83tKU8RVY
-
-```
-
-#### 20. both challenges are valid
-```http request
-200
-cache-control: no-store
-content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-link: <https://localhost:55093/acme/wire-acme/authz/JTlWsEpGo8Nw78o1Pm1zCE4SXoR2A4lf>;rel="up"
-location: https://localhost:55093/acme/wire-acme/challenge/JTlWsEpGo8Nw78o1Pm1zCE4SXoR2A4lf/Djz71pioa2ai6TZoK8qQRjKBFL00ck9u
-replay-nonce: ZXlncURoNVJYdnl0OVpqSEw3Yzl6WDVDbGpMV2I1WVE
-```
-```json
-{
-  "type": "http-01",
-  "url": "https://localhost:55093/acme/wire-acme/challenge/JTlWsEpGo8Nw78o1Pm1zCE4SXoR2A4lf/Djz71pioa2ai6TZoK8qQRjKBFL00ck9u",
-  "status": "valid",
-  "token": "J2iDTJbNltlxtngrQbROygRvkR39O93e"
-}
-```
-### Client presents a CSR and gets its certificate
-#### 21. verify the status of the order
-```http request
-POST https://localhost:55093/acme/wire-acme/order/91OKTwugsPFzkMTh8mauFNqRGmIXrG4N
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvYjVQem1MWkJENEV5SXMwR3Z6MnRhRVJDTmJIR2hZSnAiLCJ0eXAiOiJKV1QiLCJub25jZSI6ImMySkZiblZMVFdwdVpuQnFkVVl3YlhVMFFtOXZkbUpCU1Rkd1QzRTBhV3ciLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9vcmRlci85MU9LVHd1Z3NQRnprTVRoOG1hdUZOcVJHbUlYckc0TiJ9",
-  "payload": "",
-  "signature": "hKwhGtUnzKg09gD8sy27az9IZosWWmG7CP0VWw9DAadyPF8Bi92ebB9tVquO6tUqW1u_NaXgNLNOLIQr6tWEBw"
-}
-```
-#### 22. loop (with exponential backoff) until order is ready
-```http request
-200
-cache-control: no-store
-content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/order/91OKTwugsPFzkMTh8mauFNqRGmIXrG4N
-replay-nonce: bFZNdmRoaEdHZlVnbjM0czVQRU1xVFJRTG50MktPYmI
-```
-```json
-{
-  "status": "ready",
-  "finalize": "https://localhost:55093/acme/wire-acme/order/91OKTwugsPFzkMTh8mauFNqRGmIXrG4N/finalize",
-  "identifiers": [
-    {
-      "type": "dns",
-      "value": "idp.example.com"
-    },
-    {
-      "type": "dns",
-      "value": "wire.example.com"
-    }
-  ],
-  "authorizations": [
-    "https://localhost:55093/acme/wire-acme/authz/JTlWsEpGo8Nw78o1Pm1zCE4SXoR2A4lf",
-    "https://localhost:55093/acme/wire-acme/authz/1mx9BBDXlDqo8YGdofNGVephPtiXoZll"
-  ],
-  "expires": "2023-01-21T09:03:35Z",
-  "notBefore": "2023-01-20T09:03:35.766838Z",
-  "notAfter": "2023-01-20T10:03:35.766838Z"
-}
-```
-#### 23. create a CSR and call finalize url
-```http request
-POST https://localhost:55093/acme/wire-acme/order/91OKTwugsPFzkMTh8mauFNqRGmIXrG4N/finalize
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvYjVQem1MWkJENEV5SXMwR3Z6MnRhRVJDTmJIR2hZSnAiLCJ0eXAiOiJKV1QiLCJub25jZSI6ImJGWk5kbVJvYUVkSFpsVm5iak0wY3pWUVJVMXhWRkpSVEc1ME1rdFBZbUkiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9vcmRlci85MU9LVHd1Z3NQRnprTVRoOG1hdUZOcVJHbUlYckc0Ti9maW5hbGl6ZSJ9",
-  "payload": "eyJjc3IiOiJNSUctTUhJQ0FRQXdBREFxTUFVR0F5dGxjQU1oQUlyTC1VSFZvU1ZkbXNhMDJvQklCOS1EOTNQZVVUQUp5ZEoxN3hZWGhLVmJvRDh3UFFZSktvWklodmNOQVFrT01UQXdMakFzQmdOVkhSRUVKVEFqZ2hCM2FYSmxMbVY0WVcxd2JHVXVZMjl0Z2c5cFpIQXVaWGhoYlhCc1pTNWpiMjB3QlFZREsyVndBMEVBR05kdHEyQWVCeFZDZUdxSmktdENiNTJpMkJpZnI0Qzg4aFp3dmVfTHd3YUFSX0FRcDF5R0M0MUdLQ3lnRjYzU18wTUlBYmlpSFBydk9XZVhTRlFqQkEifQ",
-  "signature": "3dUJBV_tehNmQmTKi695K1-PP-28THnCvyybhOs70jEJQsvFv_6aZaSORzvp9wGYGS7yOJY47fRfaujYabPDCQ"
+  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MTk1L2FjbWUvYWNtZS9hY2NvdW50LzVRbGE4ajZrS3l2NzNxVlNWdXluQXQ4Q3psU2hhYnhSIiwidHlwIjoiSldUIiwibm9uY2UiOiJZV0pUVkZaak5GWTVRVTFJVW10SVFYTTVjekZ3YlZKVFl6VjZSRlpWYzFZIiwidXJsIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTUxOTUvYWNtZS9hY21lL2NoYWxsZW5nZS9lNVhCQUxyMFdwVGNpdzZtN3IxaWhJN2xYUmFwVW12cy9uN21jcjMxNkRhanJ1UWQzcERxTEViSGxJc0FoamloMSJ9",
+  "payload": "eyJhY2Nlc3NfdG9rZW4iOiJleUpoYkdjaU9pSkZaRVJUUVNJc0luUjVjQ0k2SW1GMEsycDNkQ0lzSW1wM2F5STZleUpyZEhraU9pSlBTMUFpTENKamNuWWlPaUpGWkRJMU5URTVJaXdpZUNJNklubGxkalpQV2xWdWRXbHdibVpyTUhSV1pGbExSbk01TVdwU2RqVm9WbUY2YTJsbFRFaEJUbU4xVUVVaWZYMC5leUpwWVhRaU9qRTJOelU1TmpFM05UWXNJbVY0Y0NJNk1UWTRNemN6TnpjMU5pd2libUptSWpveE5qYzFPVFl4TnpVMkxDSnBjM01pT2lKb2RIUndPaTh2Ykc5allXeG9iM04wT2pVNU16QTNMeUlzSW5OMVlpSTZJbWx0Y0hBNmQybHlaV0Z3Y0QxT1JFVjVXa2RaZDA1cVl6Sk5la1pyVGtSQ2FVNVViR3haYlZadFRXcFJlVnBVU1hwT1ZHTTBUbGRSTHpZMVl6TmhZekZoTVRZek1XTXhNelpBWlhoaGJYQnNaUzVqYjIwaUxDSmhkV1FpT2lKb2RIUndPaTh2Ykc5allXeG9iM04wT2pVNU16QTNMeUlzSW1wMGFTSTZJams0TkdNMU9UQTBMV1poTTJVdE5EVmhaaTFpWkdNMUxUbGhPRE16TmpreE9HVXlZaUlzSW01dmJtTmxJam9pWWpOV1NVOVlUazlhVkU0eFZVVjBiMkZYU2s5Vk0xb3daRlZXZFdKRk1ETlpWMVpJVVZkT2IyTkZNQ0lzSW1Ob1lXd2lPaUpUV1RjMGRFcHRRVWxKYUdSNlVuUktkbkI0TXpnNVpqWkZTMGhpV0hWNFVTSXNJbU51WmlJNmV5SnJhV1FpT2lKb2NHOVJWMnhOVW10alVVUktOMnhOY0RoYVNIcDRXVkJOVkRCSk0wVmhjMlZxVUhaaFdtbEdVR3BqSW4wc0luQnliMjltSWpvaVpYbEthR0pIWTJsUGFVcEdXa1ZTVkZGVFNYTkpibEkxWTBOSk5rbHRVbmRpTTBGeVlXNWtNRWxwZDJsaGJtUnlTV3B3TjBsdGREQmxVMGsyU1dzNVRGVkRTWE5KYlU1NVpHbEpOa2xyVm10TmFsVXhUVlJyYVV4RFNqUkphbTlwWlZWR00xUXhWbVpUTVhCcFlVVjBTRkl4VWpSYU1HUTBXVEpzYTFWVlpIRmlNVXBYV2tkT2RGbFdRbXBTYmxJMFZHNUdkMWd5ZHpKVFUwbzVabEV1WlhsS2NGbFlVV2xQYWtVeVRucFZOVTVxUlROT1ZGbHpTVzFXTkdORFNUWk5WRmt6VG1wQk1FOUVSVEZPYVhkcFltMUtiVWxxYjNoT2FtTXhUMVJaZUU1NlZUSk1RMHA2WkZkSmFVOXBTbkJpV0VKM1QyNWtjR050Vm1oalNFRTVWR3RTUm1WV2NFaFhXR1JQWVcxTmVWUlljRWRoTURWRlVXMXNUMVpIZUhOWFZ6RlhZbFV4Y1ZWWWJHRldSV3cyVkd4U2FrNUZOVmhWVXpneVRsZE5lbGxYVFhoWlZFVXlUWHBHYWsxVVRUSlJSMVkwV1ZjeGQySkhWWFZaTWpsMFNXbDNhV0Z1VW5CSmFtOXBUbFJCTTA5SFdtdGFWRWwwVGxSQ2FVOURNREJhYlZadFRGZEplRTVFUVhSTmVrSnJXVlJyZWxscVFtdFplbXMxU1dsM2FXSnRPWFZaTWxWcFQybEthVTB4V2twVU1XaFBWREZ3VlZScVJsWlNXRkoyV1Zaa1MxUXhWWHBYYWtKclZsWmFNVmxyVlhkTk1XeFlWbXRvVWxZd05YWlpNRlYzU1dsM2FXRklVblJKYW05cFZVVTVWRlpEU1hOSmJXZ3daRk5KTmtsdGFEQmtTRUUyVEhrNWMySXlUbWhpUjJoMll6TlJOazVVYTNwTlJHTjJTV2wzYVZreWFHaGlRMGsyU1d4T1drNTZVakJUYlRGQ1UxVnNiMXBJY0ZOa1JYQXlZMGhuZWs5RWJHMU9hMVpNVTBkS1dXUllhRkpKYmpBdVFrMU1TMVkxT0c0M2MxZElUWGt4TWxVdFRIbE1jMFpKU2tkMFRWTktjWFZvVWtadlluVjZaVGxHTkVwQk4xTmpkbEZXU0VkVVRGRjJaVlpmVVhCZlVUUk9aVGh5ZVU5R2NFcGhVVGMxVlc1T1JIUjFSRkVpTENKamJHbGxiblJmYVdRaU9pSnBiWEJ3T25kcGNtVmhjSEE5VGtSRmVWcEhXWGRPYW1NeVRYcEdhMDVFUW1sT1ZHeHNXVzFXYlUxcVVYbGFWRWw2VGxSak5FNVhVUzgyTldNellXTXhZVEUyTXpGak1UTTJRR1Y0WVcxd2JHVXVZMjl0SWl3aVlYQnBYM1psY25OcGIyNGlPak1zSW5OamIzQmxJam9pZDJseVpWOWpiR2xsYm5SZmFXUWlmUS5UZjEwZGtLck5pa0dOZ0doSWRrck1IYjB2NkpwZGUwOU1hSXlCZXVZNktPUmN4dWdsTUdZN19WOUtkMExjVlZQTUR5MXE0eGJkMzlacW9zR3oxTlVCUSJ9",
+  "signature": "cp7aKVcDAczS5OxzT8T0KHNl741_fMK68TDqwM2UHLr-7kLrEpO-PYgFxOLBz1Nw0JIAizqn7DpSy73LVuIdAA"
 }
 ...decoded...
 {
   "protected": {
     "alg": "EdDSA",
-    "kid": "https://localhost:55093/acme/wire-acme/account/b5PzmLZBD4EyIs0Gvz2taERCNbHGhYJp",
+    "kid": "https://localhost:55195/acme/acme/account/5Qla8j6kKyv73qVSVuynAt8CzlShabxR",
     "typ": "JWT",
-    "nonce": "bFZNdmRoaEdHZlVnbjM0czVQRU1xVFJRTG50MktPYmI",
-    "url": "https://localhost:55093/acme/wire-acme/order/91OKTwugsPFzkMTh8mauFNqRGmIXrG4N/finalize"
+    "nonce": "YWJTVFZjNFY5QU1IUmtIQXM5czFwbVJTYzV6RFZVc1Y",
+    "url": "https://localhost:55195/acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/n7mcr316DajruQd3pDqLEbHlIsAhjih1"
   },
   "payload": {
-    "csr": "MIG-MHICAQAwADAqMAUGAytlcAMhAIrL-UHVoSVdmsa02oBIB9-D93PeUTAJydJ17xYXhKVboD8wPQYJKoZIhvcNAQkOMTAwLjAsBgNVHREEJTAjghB3aXJlLmV4YW1wbGUuY29tgg9pZHAuZXhhbXBsZS5jb20wBQYDK2VwA0EAGNdtq2AeBxVCeGqJi-tCb52i2Bifr4C88hZwve_LwwaAR_AQp1yGC41GKCygF63S_0MIAbiiHPrvOWeXSFQjBA"
+    "access_token": "eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6InlldjZPWlVudWlwbmZrMHRWZFlLRnM5MWpSdjVoVmF6a2llTEhBTmN1UEUifX0.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY4MzczNzc1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjU5MzA3LyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjU5MzA3LyIsImp0aSI6Ijk4NGM1OTA0LWZhM2UtNDVhZi1iZGM1LTlhODMzNjkxOGUyYiIsIm5vbmNlIjoiYjNWSU9YTk9aVE4xVUV0b2FXSk9VM1owZFVWdWJFMDNZV1ZIUVdOb2NFMCIsImNoYWwiOiJTWTc0dEptQUlJaGR6UnRKdnB4Mzg5ZjZFS0hiWHV4USIsImNuZiI6eyJraWQiOiJocG9RV2xNUmtjUURKN2xNcDhaSHp4WVBNVDBJM0Vhc2VqUHZhWmlGUGpjIn0sInByb29mIjoiZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNkltUndiM0FyYW5kMElpd2lhbmRySWpwN0ltdDBlU0k2SWs5TFVDSXNJbU55ZGlJNklrVmtNalUxTVRraUxDSjRJam9pZVVGM1QxVmZTMXBpYUV0SFIxUjRaMGQ0WTJsa1VVZHFiMUpXWkdOdFlWQmpSblI0VG5Gd1gydzJTU0o5ZlEuZXlKcFlYUWlPakUyTnpVNU5qRTNOVFlzSW1WNGNDSTZNVFkzTmpBME9ERTFOaXdpYm1KbUlqb3hOamMxT1RZeE56VTJMQ0p6ZFdJaU9pSnBiWEJ3T25kcGNtVmhjSEE5VGtSRmVWcEhXWGRPYW1NeVRYcEdhMDVFUW1sT1ZHeHNXVzFXYlUxcVVYbGFWRWw2VGxSak5FNVhVUzgyTldNellXTXhZVEUyTXpGak1UTTJRR1Y0WVcxd2JHVXVZMjl0SWl3aWFuUnBJam9pTlRBM09HWmtaVEl0TlRCaU9DMDBabVZtTFdJeE5EQXRNekJrWVRrellqQmtZems1SWl3aWJtOXVZMlVpT2lKaU0xWkpUMWhPVDFwVVRqRlZSWFJ2WVZkS1QxVXpXakJrVlZaMVlrVXdNMWxYVmtoUlYwNXZZMFV3SWl3aWFIUnRJam9pVUU5VFZDSXNJbWgwZFNJNkltaDBkSEE2THk5c2IyTmhiR2h2YzNRNk5Ua3pNRGN2SWl3aVkyaGhiQ0k2SWxOWk56UjBTbTFCU1Vsb1pIcFNkRXAyY0hnek9EbG1Oa1ZMU0dKWWRYaFJJbjAuQk1MS1Y1OG43c1dITXkxMlUtTHlMc0ZJSkd0TVNKcXVoUkZvYnV6ZTlGNEpBN1NjdlFWSEdUTFF2ZVZfUXBfUTROZThyeU9GcEphUTc1VW5ORHR1RFEiLCJjbGllbnRfaWQiOiJpbXBwOndpcmVhcHA9TkRFeVpHWXdOamMyTXpGa05EQmlOVGxsWW1WbU1qUXlaVEl6TlRjNE5XUS82NWMzYWMxYTE2MzFjMTM2QGV4YW1wbGUuY29tIiwiYXBpX3ZlcnNpb24iOjMsInNjb3BlIjoid2lyZV9jbGllbnRfaWQifQ.Tf10dkKrNikGNgGhIdkrMHb0v6Jpde09MaIyBeuY6KORcxuglMGY7_V9Kd0LcVVPMDy1q4xbd39ZqosGz1NUBQ"
   }
 }
 ```
-#### 24. get back a url for fetching the certificate
+#### 16. client id challenge is valid
 ```http request
 200
 cache-control: no-store
 content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/order/91OKTwugsPFzkMTh8mauFNqRGmIXrG4N
-replay-nonce: Q2JGbm14TGJUc3V6WnlpMENBM2pkQldnVXlsWnluT1k
+link: <https://localhost:55195/acme/acme/directory>;rel="index"
+link: <https://localhost:55195/acme/acme/authz/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs>;rel="up"
+location: https://localhost:55195/acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/n7mcr316DajruQd3pDqLEbHlIsAhjih1
+replay-nonce: em1LdldUZ2NQUmxXSEhrOEJTUTdSUzZGVDN5NTRPems
 ```
 ```json
 {
-  "certificate": "https://localhost:55093/acme/wire-acme/certificate/sa9z5Ytd75qCoNbcmZdXGkJ96QzqHwAT",
+  "type": "wire-dpop-01",
+  "url": "https://localhost:55195/acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/n7mcr316DajruQd3pDqLEbHlIsAhjih1",
   "status": "valid",
-  "finalize": "https://localhost:55093/acme/wire-acme/order/91OKTwugsPFzkMTh8mauFNqRGmIXrG4N/finalize",
-  "identifiers": [
-    {
-      "type": "dns",
-      "value": "idp.example.com"
-    },
-    {
-      "type": "dns",
-      "value": "wire.example.com"
-    }
-  ],
-  "authorizations": [
-    "https://localhost:55093/acme/wire-acme/authz/JTlWsEpGo8Nw78o1Pm1zCE4SXoR2A4lf",
-    "https://localhost:55093/acme/wire-acme/authz/1mx9BBDXlDqo8YGdofNGVephPtiXoZll"
-  ],
-  "expires": "2023-01-21T09:03:35Z",
-  "notBefore": "2023-01-20T09:03:35.766838Z",
-  "notAfter": "2023-01-20T10:03:35.766838Z"
+  "token": "SY74tJmAIIhdzRtJvpx389f6EKHbXuxQ"
 }
 ```
-#### 25. fetch the certificate
+#### 17. validate oidc challenge (userId + displayName)
+[Id token](https://jwt.io/#id_token=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ)
 ```http request
-POST https://localhost:55093/acme/wire-acme/certificate/sa9z5Ytd75qCoNbcmZdXGkJ96QzqHwAT
+POST https://localhost:55195/acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/kpQYi9U70QylwrSo6AqdhM9ASeHtzjMv
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvYjVQem1MWkJENEV5SXMwR3Z6MnRhRVJDTmJIR2hZSnAiLCJ0eXAiOiJKV1QiLCJub25jZSI6IlEySkdibTE0VEdKVWMzVjZXbmxwTUVOQk0ycGtRbGRuVlhsc1dubHVUMWsiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9jZXJ0aWZpY2F0ZS9zYTl6NVl0ZDc1cUNvTmJjbVpkWEdrSjk2UXpxSHdBVCJ9",
-  "payload": "",
-  "signature": "jXOqn85uK2dIes5ItjfDuNQRM1ScuQ9bOTbGUS_8i4STdWTe09eNSWD6LKiGcuD910-BfmaES52agHNfHK4lAg"
-}
-```
-#### 26. get the certificate chain
-```http request
-200
-cache-control: no-store
-content-type: application/pem-certificate-chain
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-replay-nonce: bHVDZW1EWm9aTUM1dWNlZjNFRzRFbVIzOHhwcHZKWFM
-```
-```json
-[
-  "MIIBxDCCAWugAwIBAgIQORN5SqKNwNiHZ7qZVOiIjzAKBggqhkjOPQQDAjAuMQ0w\nCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3aXJlIEludGVybWVkaWF0ZSBDQTAeFw0y\nMzAxMjAwOTAzMzVaFw0yMzAxMjAxMDAzMzVaMAAwKjAFBgMrZXADIQCKy/lB1aEl\nXZrGtNqASAffg/dz3lEwCcnSde8WF4SlW6OBxzCBxDAOBgNVHQ8BAf8EBAMCB4Aw\nHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMB0GA1UdDgQWBBQUJYO6vZRA\njvN9FUfPQekFlun2vjAfBgNVHSMEGDAWgBQFh14W6LYUwLfF176vB9VSEcrEHzAv\nBgNVHREBAf8EJTAjgg9pZHAuZXhhbXBsZS5jb22CEHdpcmUuZXhhbXBsZS5jb20w\nIgYMKwYBBAGCpGTGKEABBBIwEAIBBgQJd2lyZS1hY21lBAAwCgYIKoZIzj0EAwID\nRwAwRAIgKkQdWzjtlF9IkvCQ6E6GUvSEITVe9iHNnrusuWGIUTACIAda7zMruoTy\naK+9GDQDr/R9UamX9RuLe2ZncejgrZ9G",
-  "MIIBuTCCAV+gAwIBAgIRAJdDcbalHF3srFt9bTHdTk8wCgYIKoZIzj0EAwIwJjEN\nMAsGA1UEChMEd2lyZTEVMBMGA1UEAxMMd2lyZSBSb290IENBMB4XDTIzMDEyMDA5\nMDMzMFoXDTMzMDExNzA5MDMzMFowLjENMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMU\nd2lyZSBJbnRlcm1lZGlhdGUgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATB\nbXVWBG0zE9Sxj8h5dO0+LS0lNBd1XV0fRLgbumlhDOyhnWI7XJs3Y7qnMrYz1ZUq\nBDPigaS4PtMFQm//+3Elo2YwZDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgw\nBgEB/wIBADAdBgNVHQ4EFgQUBYdeFui2FMC3xde+rwfVUhHKxB8wHwYDVR0jBBgw\nFoAUsEWSF3ZiE5J4hw7b9xavI00SYIMwCgYIKoZIzj0EAwIDSAAwRQIgQTx6o6lp\nwSm96ghkajsBmSUKhYv4brOhtiXnZgVy8fYCIQChM/zlOIts3qShX0rF5Y5qduqy\n5XUUA7k1kHCTJBbY0Q=="
-]
-```
-P256 - SHA256
-```mermaid
-sequenceDiagram
-    autonumber
-    wire-client->>+acme-server: GET /acme/wire-acme/directory
-    acme-server->>-wire-client: 200
-    wire-client->>+acme-server: HEAD /acme/wire-acme/new-nonce
-    acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/new-account
-    acme-server->>-wire-client: 201
-    wire-client->>+acme-server: POST /acme/wire-acme/new-order
-    acme-server->>-wire-client: 201
-    wire-client->>+acme-server: POST /acme/wire-acme/authz/csKaemo9GC6crni1PpZwRRjmlVN0x8EU
-    acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/authz/ztLGNcicpX9vHKL5BpoWfFUCkVyhuhAN
-    acme-server->>-wire-client: 200
-    wire-client->>+wire-server: GET /clients/token/nonce
-    wire-server->>-wire-client: 200
-    wire-client->>+wire-server: POST /clients/7540493027090625450/access-token
-    wire-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/challenge/csKaemo9GC6crni1PpZwRRjmlVN0x8EU/wJbiP0x5okMfpFSzQPC6IjlkhWPENeKj
-    acme-server->>+wire-server: GET /.well-known/acme-challenge/zDm6C9qKaysaUXPixSXTshGrNHO0EoeL
-    wire-server->>-acme-server: 200
-    acme-server->>+wire-server: GET /.well-known/acme-challenge/Vh82XSlbkzGiZ9jOaz2Wz6P84yho58OG
-    wire-server->>-acme-server: 200
-    acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/order/CA8v6n3K5a98DbSIgzkuxbNBiiWZX9hR
-    acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/order/CA8v6n3K5a98DbSIgzkuxbNBiiWZX9hR/finalize
-    acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/certificate/eiSeuSbD6jMlGEVEpGzbsAfM22k5uoPf
-    acme-server->>-wire-client: 200
-```
-### Initial setup with ACME server
-#### 1. fetch acme directory for hyperlinks
-```http request
-GET https://localhost:55093/acme/wire-acme/directory
-
-```
-#### 2. get the ACME directory with links for newNonce, newAccount & newOrder
-```http request
-200
-content-type: application/json
-```
-```json
-{
-  "newNonce": "https://localhost:55093/acme/wire-acme/new-nonce",
-  "newAccount": "https://localhost:55093/acme/wire-acme/new-account",
-  "newOrder": "https://localhost:55093/acme/wire-acme/new-order"
-}
-```
-#### 3. fetch a new nonce for the very first request
-```http request
-HEAD https://localhost:55093/acme/wire-acme/new-nonce
-
-```
-#### 4. get a nonce for creating an account
-```http request
-200
-cache-control: no-store
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-replay-nonce: VnRpZ3R1THdtc09HM3dpdFBMZTBMaWZJeVNhNXpZTUk
-```
-```json
-"VnRpZ3R1THdtc09HM3dpdFBMZTBMaWZJeVNhNXpZTUk"
-```
-#### 5. create a new account
-```http request
-POST https://localhost:55093/acme/wire-acme/new-account
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImp3ayI6eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6IkpJLXNBc3d6NXluelVjSG9MNDRXU2FqU3lVNnhzWWx3Mm81dG13VlY0NDAiLCJ5IjoiYVBwaUZoa0RxWm9HQTUtLWZhUi1LUmppZUpyMlhKU1JSTFhacHlVeWdZdyJ9LCJub25jZSI6IlZuUnBaM1IxVEhkdGMwOUhNM2RwZEZCTVpUQk1hV1pKZVZOaE5YcFpUVWsiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9uZXctYWNjb3VudCJ9",
-  "payload": "eyJ0ZXJtc09mU2VydmljZUFncmVlZCI6dHJ1ZSwiY29udGFjdCI6WyJ1bmtub3duQGV4YW1wbGUuY29tIl0sIm9ubHlSZXR1cm5FeGlzdGluZyI6ZmFsc2V9",
-  "signature": "_2tcD7EA8ysv5W6JJrtOFGjeCaYZxXY9kFcFXaYCE9lLnwnCgEoth-k5i3GjrPHX80Gp2aIrkcz5WcKTz2Ying"
+  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MTk1L2FjbWUvYWNtZS9hY2NvdW50LzVRbGE4ajZrS3l2NzNxVlNWdXluQXQ4Q3psU2hhYnhSIiwidHlwIjoiSldUIiwibm9uY2UiOiJlbTFMZGxkVVoyTlFVbXhYU0Vock9FSlRVVGRTVXpaR1ZETjVOVFJQZW1zIiwidXJsIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTUxOTUvYWNtZS9hY21lL2NoYWxsZW5nZS9lNVhCQUxyMFdwVGNpdzZtN3IxaWhJN2xYUmFwVW12cy9rcFFZaTlVNzBReWx3clNvNkFxZGhNOUFTZUh0empNdiJ9",
+  "payload": "eyJpZF90b2tlbiI6ImV5SmhiR2NpT2lKRlpFUlRRU0lzSW5SNWNDSTZJa3BYVkNKOS5leUpwWVhRaU9qRTJOelU1TmpFM05UWXNJbVY0Y0NJNk1UWTNOakEwT0RFMU5pd2libUptSWpveE5qYzFPVFl4TnpVMkxDSnBjM01pT2lKb2RIUndPaTh2YVdSd0x5SXNJbk4xWWlJNkltbHRjSEE2ZDJseVpXRndjRDFPUkVWNVdrZFpkMDVxWXpKTmVrWnJUa1JDYVU1VWJHeFpiVlp0VFdwUmVWcFVTWHBPVkdNMFRsZFJMelkxWXpOaFl6RmhNVFl6TVdNeE16WkFaWGhoYlhCc1pTNWpiMjBpTENKaGRXUWlPaUpvZEhSd09pOHZhV1J3THlJc0ltNWhiV1VpT2lKVGJXbDBhQ3dnUVd4cFkyVWdUU0FvVVVFcElpd2lhR0Z1Wkd4bElqb2lhVzF3Y0RwM2FYSmxZWEJ3UFdGc2FXTmxMbk50YVhSb0xuRmhRR1Y0WVcxd2JHVXVZMjl0SWl3aWEyVjVZWFYwYUNJNklsTlpOelIwU20xQlNVbG9aSHBTZEVwMmNIZ3pPRGxtTmtWTFNHSllkWGhSTGkxNVYyOVpWRGxJUWxZd2IwWk1WRWxTUkd3M2NqaFBjbFpHTkZKQ1ZqaE9WbEZPYkV3M2NVeGpiV2NpZlEuMGlpcTNwNUJtbXA4ZWtvRnF2NGpRdV9Hcm5QYkVmeEozNlNDdXctVXZWNmhDaTZHbHhPd1U3Z3d3dGd1YWpoc2Qxc2VkbkdXWnBOOFFzc0tJNV9DRFEifQ",
+  "signature": "k9HCAvfbXNG1PQkEjTfsfHvKPHVpN6a86fOk59LSt7i2pxBVCoKnVSR6eBcW-W2p8gdwcg2ylhW8aKKKHP1iBQ"
 }
 ...decoded...
 {
   "protected": {
-    "alg": "ES256",
+    "alg": "EdDSA",
+    "kid": "https://localhost:55195/acme/acme/account/5Qla8j6kKyv73qVSVuynAt8CzlShabxR",
     "typ": "JWT",
-    "jwk": {
-      "kty": "EC",
-      "crv": "P-256",
-      "x": "JI-sAswz5ynzUcHoL44WSajSyU6xsYlw2o5tmwVV440",
-      "y": "aPpiFhkDqZoGA5--faR-KRjieJr2XJSRRLXZpyUygYw"
-    },
-    "nonce": "VnRpZ3R1THdtc09HM3dpdFBMZTBMaWZJeVNhNXpZTUk",
-    "url": "https://localhost:55093/acme/wire-acme/new-account"
+    "nonce": "em1LdldUZ2NQUmxXSEhrOEJTUTdSUzZGVDN5NTRPems",
+    "url": "https://localhost:55195/acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/kpQYi9U70QylwrSo6AqdhM9ASeHtzjMv"
   },
   "payload": {
-    "termsOfServiceAgreed": true,
-    "contact": [
-      "unknown@example.com"
-    ],
-    "onlyReturnExisting": false
+    "id_token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ"
   }
 }
 ```
-#### 6. account created
+#### 18. handle challenge is valid
 ```http request
-201
+200
 cache-control: no-store
 content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/account/XaBoZD6WN9FNdfDJ2TvhmXq8QCJEi1Sv
-replay-nonce: ZTRuandJNWlhWVBOMFU3d1RpZnRRM3VHRnB1Tjd3Uno
+link: <https://localhost:55195/acme/acme/directory>;rel="index"
+link: <https://localhost:55195/acme/acme/authz/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs>;rel="up"
+location: https://localhost:55195/acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/kpQYi9U70QylwrSo6AqdhM9ASeHtzjMv
+replay-nonce: bkl4QTEwQWpjY0htY2hSc0V1ME9XclN2ZEVSenNrU2o
 ```
 ```json
 {
+  "type": "wire-oidc-01",
+  "url": "https://localhost:55195/acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/kpQYi9U70QylwrSo6AqdhM9ASeHtzjMv",
   "status": "valid",
-  "orders": "https://localhost:55093/acme/wire-acme/account/XaBoZD6WN9FNdfDJ2TvhmXq8QCJEi1Sv/orders"
-}
-```
-### Request a certificate with relevant identifiers
-#### 7. create a new order
-```http request
-POST https://localhost:55093/acme/wire-acme/new-order
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvWGFCb1pENldOOUZOZGZESjJUdmhtWHE4UUNKRWkxU3YiLCJ0eXAiOiJKV1QiLCJub25jZSI6IlpUUnVhbmRKTldsaFdWQk9NRlUzZDFScFpuUlJNM1ZIUm5CMVRqZDNVbm8iLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9uZXctb3JkZXIifQ",
-  "payload": "eyJpZGVudGlmaWVycyI6W3sidHlwZSI6ImRucyIsInZhbHVlIjoiaWRwLmV4YW1wbGUuY29tIn0seyJ0eXBlIjoiZG5zIiwidmFsdWUiOiJ3aXJlLmV4YW1wbGUuY29tIn1dLCJub3RCZWZvcmUiOiIyMDIzLTAxLTIwVDA5OjAzOjM5LjA2OTQwN1oiLCJub3RBZnRlciI6IjIwMjMtMDEtMjBUMTA6MDM6MzkuMDY5NDA3WiJ9",
-  "signature": "3e8BGaiOkEvlRXuY8NYgweb1xpFUg4hl50-CAitRigFKcYluHcr2Gb33aCogIlNpH4LI3B47Z5_tBgi5k3CxWQ"
-}
-...decoded...
-{
-  "protected": {
-    "alg": "ES256",
-    "kid": "https://localhost:55093/acme/wire-acme/account/XaBoZD6WN9FNdfDJ2TvhmXq8QCJEi1Sv",
-    "typ": "JWT",
-    "nonce": "ZTRuandJNWlhWVBOMFU3d1RpZnRRM3VHRnB1Tjd3Uno",
-    "url": "https://localhost:55093/acme/wire-acme/new-order"
-  },
-  "payload": {
-    "identifiers": [
-      {
-        "type": "dns",
-        "value": "idp.example.com"
-      },
-      {
-        "type": "dns",
-        "value": "wire.example.com"
-      }
-    ],
-    "notBefore": "2023-01-20T09:03:39.069407Z",
-    "notAfter": "2023-01-20T10:03:39.069407Z"
-  }
-}
-```
-#### 8. get new order with authorization URLS and finalize URL
-```http request
-201
-cache-control: no-store
-content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/order/CA8v6n3K5a98DbSIgzkuxbNBiiWZX9hR
-replay-nonce: ZDNBVUU2UG5JUUpENzlVNVRWNk5zNTRiUEtlbGhzenA
-```
-```json
-{
-  "status": "pending",
-  "finalize": "https://localhost:55093/acme/wire-acme/order/CA8v6n3K5a98DbSIgzkuxbNBiiWZX9hR/finalize",
-  "identifiers": [
-    {
-      "type": "dns",
-      "value": "idp.example.com"
-    },
-    {
-      "type": "dns",
-      "value": "wire.example.com"
-    }
-  ],
-  "authorizations": [
-    "https://localhost:55093/acme/wire-acme/authz/csKaemo9GC6crni1PpZwRRjmlVN0x8EU",
-    "https://localhost:55093/acme/wire-acme/authz/ztLGNcicpX9vHKL5BpoWfFUCkVyhuhAN"
-  ],
-  "expires": "2023-01-21T09:03:39Z",
-  "notBefore": "2023-01-20T09:03:39.069407Z",
-  "notAfter": "2023-01-20T10:03:39.069407Z"
-}
-```
-### Display-name and handle already authorized
-#### 9. fetch first challenge
-```http request
-POST https://localhost:55093/acme/wire-acme/authz/csKaemo9GC6crni1PpZwRRjmlVN0x8EU
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvWGFCb1pENldOOUZOZGZESjJUdmhtWHE4UUNKRWkxU3YiLCJ0eXAiOiJKV1QiLCJub25jZSI6IlpETkJWVVUyVUc1SlVVcEVOemxWTlZSV05rNXpOVFJpVUV0bGJHaHplbkEiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9hdXRoei9jc0thZW1vOUdDNmNybmkxUHBad1JSam1sVk4weDhFVSJ9",
-  "payload": "",
-  "signature": "E21bVhdFP3zD7UMVp25BZyEgfCJD9vliR6EUrd02ev0XpXtZETOY3wGj1R8ANNYrNo1USTGElQIHWLqxiF18PQ"
-}
-```
-#### 10. get back first challenge
-```http request
-200
-cache-control: no-store
-content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/authz/csKaemo9GC6crni1PpZwRRjmlVN0x8EU
-replay-nonce: VXJXeXhwSDJaMXVoQ05KZ0M4TzR5V3B2SnlrRFJjdXE
-```
-```json
-{
-  "status": "pending",
-  "expires": "2023-01-21T09:03:39Z",
-  "challenges": [
-    {
-      "type": "dns-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/csKaemo9GC6crni1PpZwRRjmlVN0x8EU/D4I1KBzO52y77puxNDqjQX0Ooj0eKZfq",
-      "status": "pending",
-      "token": "zDm6C9qKaysaUXPixSXTshGrNHO0EoeL"
-    },
-    {
-      "type": "http-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/csKaemo9GC6crni1PpZwRRjmlVN0x8EU/wJbiP0x5okMfpFSzQPC6IjlkhWPENeKj",
-      "status": "pending",
-      "token": "zDm6C9qKaysaUXPixSXTshGrNHO0EoeL"
-    },
-    {
-      "type": "tls-alpn-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/csKaemo9GC6crni1PpZwRRjmlVN0x8EU/7snzmqFHphKoLU1HOxUjwo7hHhHGu1EY",
-      "status": "pending",
-      "token": "zDm6C9qKaysaUXPixSXTshGrNHO0EoeL"
-    }
-  ],
-  "identifier": {
-    "type": "dns",
-    "value": "idp.example.com"
-  }
-}
-```
-### ACME provides a Wire client ID challenge
-#### 11. fetch second challenge
-```http request
-POST https://localhost:55093/acme/wire-acme/authz/ztLGNcicpX9vHKL5BpoWfFUCkVyhuhAN
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvWGFCb1pENldOOUZOZGZESjJUdmhtWHE4UUNKRWkxU3YiLCJ0eXAiOiJKV1QiLCJub25jZSI6IlZYSlhlWGh3U0RKYU1YVm9RMDVLWjBNNFR6UjVWM0IyU25sclJGSmpkWEUiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9hdXRoei96dExHTmNpY3BYOXZIS0w1QnBvV2ZGVUNrVnlodWhBTiJ9",
-  "payload": "",
-  "signature": "YVNX3wu95wqRvedIK7MRFb-naNWAUuLCup1XkAMsG8c5ij5sb-xk209yH5abd8pkqxL6RE4dMGv4rN30iookHQ"
-}
-```
-#### 12. get back second challenge
-```http request
-200
-cache-control: no-store
-content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/authz/ztLGNcicpX9vHKL5BpoWfFUCkVyhuhAN
-replay-nonce: eHpTZUJ3dE5QSU5FeWJwcWpUaG9IN2hGellJV3ZiTlo
-```
-```json
-{
-  "status": "pending",
-  "expires": "2023-01-21T09:03:39Z",
-  "challenges": [
-    {
-      "type": "dns-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/ztLGNcicpX9vHKL5BpoWfFUCkVyhuhAN/d5pcYSsugFpEKoqf5cpGsLlrn5h1ZPzH",
-      "status": "pending",
-      "token": "Vh82XSlbkzGiZ9jOaz2Wz6P84yho58OG"
-    },
-    {
-      "type": "http-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/ztLGNcicpX9vHKL5BpoWfFUCkVyhuhAN/s3ZmNbCWfihTIY2ea00gGkRYyXVeEYRV",
-      "status": "pending",
-      "token": "Vh82XSlbkzGiZ9jOaz2Wz6P84yho58OG"
-    },
-    {
-      "type": "tls-alpn-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/ztLGNcicpX9vHKL5BpoWfFUCkVyhuhAN/wtyRTfeer1Zs9OAk1kNYIsQ696tsPKAg",
-      "status": "pending",
-      "token": "Vh82XSlbkzGiZ9jOaz2Wz6P84yho58OG"
-    }
-  ],
-  "identifier": {
-    "type": "dns",
-    "value": "wire.example.com"
-  }
-}
-```
-### Client fetches JWT DPoP access token (with wire-server)
-#### 13. fetch a nonce from wire-server
-```http request
-GET http://localhost:63479/clients/token/nonce
-
-```
-#### 14. get wire-server nonce
-```http request
-200
-
-```
-```json
-"U0xORW5UZEpkUmNBQUdVNGJqNVNROW5IS2ZCS3BsU3A"
-```
-#### 15. create the client Dpop token with both nonces
-Token [here](https://jwt.io/#id_token=eyJhbGciOiJFUzI1NiIsInR5cCI6ImRwb3Arand0IiwiandrIjp7Imt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiSkktc0Fzd3o1eW56VWNIb0w0NFdTYWpTeVU2eHNZbHcybzV0bXdWVjQ0MCIsInkiOiJhUHBpRmhrRHFab0dBNS0tZmFSLUtSamllSnIyWEpTUlJMWFpweVV5Z1l3In19.eyJpYXQiOjE2NzQyMDU0MTksImV4cCI6MTY3NDI5MTgxOSwibmJmIjoxNjc0MjA1NDE5LCJzdWIiOiJpbTp3aXJlYXBwOk5tSXpPREk0TldFeVltSTVORGN6Wm1KbFlqZ3lZbU16T1RrMFpUSmlaVEkvNjhhNTM2NzRmNzBiZjNhYUB3aXJlLmNvbSIsImp0aSI6IjljNWJhODdlLTdkNDgtNGM1Yi1hN2EzLTUwOGI3NTk2M2M5MyIsIm5vbmNlIjoiVTB4T1JXNVVaRXBrVW1OQlFVZFZOR0pxTlZOUk9XNUlTMlpDUzNCc1UzQSIsImh0bSI6IlBPU1QiLCJodHUiOiJodHRwOi8vbG9jYWxob3N0OjYzNDc5L2NsaWVudHMvNzU0MDQ5MzAyNzA5MDYyNTQ1MC9hY2Nlc3MtdG9rZW4iLCJjaGFsIjoiekRtNkM5cUtheXNhVVhQaXhTWFRzaEdyTkhPMEVvZUwifQ.BeVep3evHV-9H78fOl9-3FX7H9jEhWXqSjme6Q1BZkIDuSmOoM73FsG8_dIZ_39u43kpTAG9NLjaq99TCXNBGg)
-```http request
-POST http://localhost:63479/clients/7540493027090625450/access-token
-
-```
-#### 16. get a Dpop access token from wire-server
-```http request
-200
-
-```
-Token [here](https://jwt.io/#id_token=eyJhbGciOiJFUzI1NiIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InBKSFczQ00yRFh0T20ycEFuZ3hza1J3bjB2N0xudUVHbUxkbWk3UEtHUlUiLCJ5IjoiQWtHZHFROWxTV2pVeER2TzY4Z2FjSVZzdHlLd0pVUTlFWjRpbjZDdFU5WSJ9fQ.eyJpYXQiOjE2NzQyMDU0MTksImV4cCI6MTY4MTk4MTQxOSwibmJmIjoxNjc0MjA1NDE5LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjYzNDc5L2NsaWVudHMvNzU0MDQ5MzAyNzA5MDYyNTQ1MC9hY2Nlc3MtdG9rZW4iLCJzdWIiOiJpbTp3aXJlYXBwOk5tSXpPREk0TldFeVltSTVORGN6Wm1KbFlqZ3lZbU16T1RrMFpUSmlaVEkvNjhhNTM2NzRmNzBiZjNhYUB3aXJlLmNvbSIsImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6NjM0NzkvY2xpZW50cy83NTQwNDkzMDI3MDkwNjI1NDUwL2FjY2Vzcy10b2tlbiIsImp0aSI6Ijg4MDdiODdhLWIzNzYtNDczOS1hYWE5LTA2ZGRiYWQ0ODM3OSIsIm5vbmNlIjoiVTB4T1JXNVVaRXBrVW1OQlFVZFZOR0pxTlZOUk9XNUlTMlpDUzNCc1UzQSIsImNoYWwiOiJ6RG02QzlxS2F5c2FVWFBpeFNYVHNoR3JOSE8wRW9lTCIsImNuZiI6eyJraWQiOiJhSkh3aWJtRXB6TlJIbldFRWhWdEowUWRXYkFrLWNpMWNCOXhrUll4NDVzIn0sInByb29mIjoiZXlKaGJHY2lPaUpGVXpJMU5pSXNJblI1Y0NJNkltUndiM0FyYW5kMElpd2lhbmRySWpwN0ltdDBlU0k2SWtWRElpd2lZM0oySWpvaVVDMHlOVFlpTENKNElqb2lTa2t0YzBGemQzbzFlVzU2VldOSWIwdzBORmRUWVdwVGVWVTJlSE5aYkhjeWJ6VjBiWGRXVmpRME1DSXNJbmtpT2lKaFVIQnBSbWhyUkhGYWIwZEJOUzB0Wm1GU0xVdFNhbWxsU25JeVdFcFRVbEpNV0Zwd2VWVjVaMWwzSW4xOS5leUpwWVhRaU9qRTJOelF5TURVME1Ua3NJbVY0Y0NJNk1UWTNOREk1TVRneE9Td2libUptSWpveE5qYzBNakExTkRFNUxDSnpkV0lpT2lKcGJUcDNhWEpsWVhCd09rNXRTWHBQUkVrMFRsZEZlVmx0U1RWT1JHTjZXbTFLYkZscVozbFpiVTE2VDFSck1GcFVTbWxhVkVrdk5qaGhOVE0yTnpSbU56Qmlaak5oWVVCM2FYSmxMbU52YlNJc0ltcDBhU0k2SWpsak5XSmhPRGRsTFRka05EZ3ROR00xWWkxaE4yRXpMVFV3T0dJM05UazJNMk01TXlJc0ltNXZibU5sSWpvaVZUQjRUMUpYTlZWYVJYQnJWVzFPUWxGVlpGWk9SMHB4VGxaT1VrOVhOVWxUTWxwRFV6TkNjMVV6UVNJc0ltaDBiU0k2SWxCUFUxUWlMQ0pvZEhVaU9pSm9kSFJ3T2k4dmJHOWpZV3hvYjNOME9qWXpORGM1TDJOc2FXVnVkSE12TnpVME1EUTVNekF5TnpBNU1EWXlOVFExTUM5aFkyTmxjM010ZEc5clpXNGlMQ0pqYUdGc0lqb2lla1J0TmtNNWNVdGhlWE5oVlZoUWFYaFRXRlJ6YUVkeVRraFBNRVZ2WlV3aWZRLkJlVmVwM2V2SFYtOUg3OGZPbDktM0ZYN0g5akVoV1hxU2ptZTZRMUJaa0lEdVNtT29NNzNGc0c4X2RJWl8zOXU0M2twVEFHOU5MamFxOTlUQ1hOQkdnIiwiY2xpZW50X2lkIjoiaW06d2lyZWFwcDpObUl6T0RJNE5XRXlZbUk1TkRjelptSmxZamd5WW1Nek9UazBaVEppWlRJLzY4YTUzNjc0ZjcwYmYzYWFAd2lyZS5jb20iLCJhcGlfdmVyc2lvbiI6Mywic2NvcGUiOiJ3aXJlX2NsaWVudF9pZCJ9.OflhZCbQisWCkI_CuIp_8BCmRJDbYw3gcmlzdegOru-A7gfuIoU6wq9tSUNTLqKVI1VnPXVAhQM50HP686-86w)
-### Client provides access token
-#### 17. send DPoP access token to acme server to have it validated
-```http request
-POST https://localhost:55093/acme/wire-acme/challenge/csKaemo9GC6crni1PpZwRRjmlVN0x8EU/wJbiP0x5okMfpFSzQPC6IjlkhWPENeKj
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvWGFCb1pENldOOUZOZGZESjJUdmhtWHE4UUNKRWkxU3YiLCJ0eXAiOiJKV1QiLCJub25jZSI6ImVIcFRaVUozZEU1UVNVNUZlV0p3Y1dwVWFHOUlOMmhHZWxsSlYzWmlUbG8iLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9jaGFsbGVuZ2UvY3NLYWVtbzlHQzZjcm5pMVBwWndSUmptbFZOMHg4RVUvd0piaVAweDVva01mcEZTelFQQzZJamxraFdQRU5lS2oifQ",
-  "payload": "",
-  "signature": "yac2bR3GzupYB_oZlufS2tob9KSur3XJAGAoL9x5fDYjtxIyBkXlig_nL9EKCJMzBx7dPbnjutKnA5ZpEZvm6Q"
-}
-```
-#### 18. acme server verifies client-id with an http challenge
-```http request
-GET http://wire.com/.well-known/acme-challenge/zDm6C9qKaysaUXPixSXTshGrNHO0EoeL
-
-```
-
-#### 19. acme server verifies handle + display-name with an OIDC challenge
-```http request
-GET http://wire.com/.well-known/acme-challenge/Vh82XSlbkzGiZ9jOaz2Wz6P84yho58OG
-
-```
-
-#### 20. both challenges are valid
-```http request
-200
-cache-control: no-store
-content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-link: <https://localhost:55093/acme/wire-acme/authz/csKaemo9GC6crni1PpZwRRjmlVN0x8EU>;rel="up"
-location: https://localhost:55093/acme/wire-acme/challenge/csKaemo9GC6crni1PpZwRRjmlVN0x8EU/wJbiP0x5okMfpFSzQPC6IjlkhWPENeKj
-replay-nonce: bEJLekd4ZVdNbXh0c1VWT01CZFlBRnd3RnN6Qjl3T3U
-```
-```json
-{
-  "type": "http-01",
-  "url": "https://localhost:55093/acme/wire-acme/challenge/csKaemo9GC6crni1PpZwRRjmlVN0x8EU/wJbiP0x5okMfpFSzQPC6IjlkhWPENeKj",
-  "status": "valid",
-  "token": "zDm6C9qKaysaUXPixSXTshGrNHO0EoeL"
+  "token": "SY74tJmAIIhdzRtJvpx389f6EKHbXuxQ"
 }
 ```
 ### Client presents a CSR and gets its certificate
-#### 21. verify the status of the order
+#### 19. verify the status of the order
 ```http request
-POST https://localhost:55093/acme/wire-acme/order/CA8v6n3K5a98DbSIgzkuxbNBiiWZX9hR
+POST https://localhost:55195/acme/acme/order/inuqE3xYTl1NOrwgrWo1TvNDnONlN94a
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvWGFCb1pENldOOUZOZGZESjJUdmhtWHE4UUNKRWkxU3YiLCJ0eXAiOiJKV1QiLCJub25jZSI6IlUxbHNkR2R3TTFRMGJHdFRiWGhJVmpJeWFtTnJRa2haWVZwNWEzTlhabVUiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9vcmRlci9DQTh2Nm4zSzVhOThEYlNJZ3prdXhiTkJpaVdaWDloUiJ9",
+  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MTk1L2FjbWUvYWNtZS9hY2NvdW50LzVRbGE4ajZrS3l2NzNxVlNWdXluQXQ4Q3psU2hhYnhSIiwidHlwIjoiSldUIiwibm9uY2UiOiJia2w0UVRFd1FXcGpZMGh0WTJoU2MwVjFNRTlYY2xOMlpFVlNlbk5yVTJvIiwidXJsIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTUxOTUvYWNtZS9hY21lL29yZGVyL2ludXFFM3hZVGwxTk9yd2dyV28xVHZORG5PTmxOOTRhIn0",
   "payload": "",
-  "signature": "9-VpjcWNQK6BVKzR914wKLSY9EWsCqlpwAJ98wDmdXi4oguWn1Z5j4MEquyYYYywnIlwXihPW304v8wWVgtLtA"
+  "signature": "Rf_A1CJxnL-UOYPn75hFaolVS3M_K6uY5pVVFMgtFGngrSTRqwUIxqP17ohZV7Sg20er_8Cmf4_-YfniJk8CAw"
 }
 ```
-#### 22. loop (with exponential backoff) until order is ready
+#### 20. loop (with exponential backoff) until order is ready
 ```http request
 200
 cache-control: no-store
 content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/order/CA8v6n3K5a98DbSIgzkuxbNBiiWZX9hR
-replay-nonce: aWpQRjBwMHlraGtUcW4wTXZaM3NEZ3l2QTRBM3lpbGk
+link: <https://localhost:55195/acme/acme/directory>;rel="index"
+location: https://localhost:55195/acme/acme/order/inuqE3xYTl1NOrwgrWo1TvNDnONlN94a
+replay-nonce: ZkxwZmhSdW1QWmhMVVd5clM0TGhQTVl1SmZ6UmYwN3o
 ```
 ```json
 {
   "status": "ready",
-  "finalize": "https://localhost:55093/acme/wire-acme/order/CA8v6n3K5a98DbSIgzkuxbNBiiWZX9hR/finalize",
+  "finalize": "https://localhost:55195/acme/acme/order/inuqE3xYTl1NOrwgrWo1TvNDnONlN94a/finalize",
   "identifiers": [
     {
-      "type": "dns",
-      "value": "idp.example.com"
-    },
-    {
-      "type": "dns",
-      "value": "wire.example.com"
+      "type": "wireapp-id",
+      "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
     }
   ],
   "authorizations": [
-    "https://localhost:55093/acme/wire-acme/authz/csKaemo9GC6crni1PpZwRRjmlVN0x8EU",
-    "https://localhost:55093/acme/wire-acme/authz/ztLGNcicpX9vHKL5BpoWfFUCkVyhuhAN"
+    "https://localhost:55195/acme/acme/authz/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs"
   ],
-  "expires": "2023-01-21T09:03:39Z",
-  "notBefore": "2023-01-20T09:03:39.069407Z",
-  "notAfter": "2023-01-20T10:03:39.069407Z"
+  "expires": "2023-02-10T16:55:56Z",
+  "notBefore": "2023-02-09T16:55:56.032306Z",
+  "notAfter": "2023-02-09T17:55:56.032306Z"
 }
 ```
-#### 23. create a CSR and call finalize url
+#### 21. create a CSR and call finalize url
 ```http request
-POST https://localhost:55093/acme/wire-acme/order/CA8v6n3K5a98DbSIgzkuxbNBiiWZX9hR/finalize
+POST https://localhost:55195/acme/acme/order/inuqE3xYTl1NOrwgrWo1TvNDnONlN94a/finalize
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvWGFCb1pENldOOUZOZGZESjJUdmhtWHE4UUNKRWkxU3YiLCJ0eXAiOiJKV1QiLCJub25jZSI6ImFXcFFSakJ3TUhscmFHdFVjVzR3VFhaYU0zTkVaM2wyUVRSQk0zbHBiR2siLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9vcmRlci9DQTh2Nm4zSzVhOThEYlNJZ3prdXhiTkJpaVdaWDloUi9maW5hbGl6ZSJ9",
-  "payload": "eyJjc3IiOiJNSUg3TUlHaEFnRUFNQUF3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVFrajZ3Q3pEUG5LZk5Sd2VndmpoWkpxTkxKVHJHeGlYRGFqbTJiQlZYampXajZZaFlaQTZtYUJnT2Z2bjJrZmlrWTRuaWE5bHlVa1VTMTJhY2xNb0dNb0Q4d1BRWUpLb1pJaHZjTkFRa09NVEF3TGpBc0JnTlZIUkVFSlRBamdoQjNhWEpsTG1WNFlXMXdiR1V1WTI5dGdnOXBaSEF1WlhoaGJYQnNaUzVqYjIwd0NnWUlLb1pJemowRUF3SURTUUF3UmdJaEFKWGVoS1ZlY0RYaFhtVmVWNGwtbTZ3bFVzalM2dEVEeWxjZnNIY29HUk5EQWlFQWlCdFRKenFjWjZLTzgydGttRWpvZV9QM0NmVTNFU3h6MjhTWFlHQWFCRFEifQ",
-  "signature": "RPsC3rrFVAeopUauSytoGqrgxu8WbhSmbocGS9mqeekL_bGXSFqFx96K-lvWr2XTg6vRnaucgDhHRb1eBe2_pg"
+  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MTk1L2FjbWUvYWNtZS9hY2NvdW50LzVRbGE4ajZrS3l2NzNxVlNWdXluQXQ4Q3psU2hhYnhSIiwidHlwIjoiSldUIiwibm9uY2UiOiJaa3h3Wm1oU2RXMVFXbWhNVlZkNWNsTTBUR2hRVFZsMVNtWjZVbVl3TjNvIiwidXJsIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTUxOTUvYWNtZS9hY21lL29yZGVyL2ludXFFM3hZVGwxTk9yd2dyV28xVHZORG5PTmxOOTRhL2ZpbmFsaXplIn0",
+  "payload": "eyJjc3IiOiJNSUlCV0RDQ0FRb0NBUUF3TkRFY01Cb0dBMVVFQXd3VFUyMXBkR2dzSUVGc2FXTmxJRTBnS0ZGQktURVVNQklHQTFVRUNnd0xaWGhoYlhCc1pTNWpiMjB3S2pBRkJnTXJaWEFESVFESURBNVQ4cGx1RW9ZWlBHQWJGeUoxQWFPaEZWMXlabzl3VzNFMnFuLVhvcUNCb2pDQm53WUpLb1pJaHZjTkFRa09NWUdSTUlHT01JR0xCZ05WSFJFRWdZTXdnWUNHVldsdGNIQTZkMmx5WldGd2NEMXVaR1Y1ZW1kNWQyNXFZekp0ZW1acmJtUmlhVzUwYkd4NWJYWnRiV3B4ZVhwMGFYcHVkR00wYm5keEx6WTFZek5oWXpGaE1UWXpNV014TXpaQVpYaGhiWEJzWlM1amIyMkdKMmx0Y0hBNmQybHlaV0Z3Y0QxaGJHbGpaUzV6YldsMGFDNXhZVUJsZUdGdGNHeGxMbU52YlRBRkJnTXJaWEFEUVFCQ05pQk5DeHFyQmp3MXFTLUg4bWVrdUp1R1kzUlQ4a05jLVVTbk9DZEM0eG1vNGxIaXY0QzFjNGFvQUtCTUNuVXpwVVFBVEVoRTVLUEFLVlo4VVVvRSJ9",
+  "signature": "TevcJuvviY1Id0hUQfKuS23YJig7kRNZahwaTD-h5unkPF62R4z3jSXxwMnlhTyijZTjFvKYtysc_gH95r3TCQ"
 }
 ...decoded...
 {
   "protected": {
-    "alg": "ES256",
-    "kid": "https://localhost:55093/acme/wire-acme/account/XaBoZD6WN9FNdfDJ2TvhmXq8QCJEi1Sv",
+    "alg": "EdDSA",
+    "kid": "https://localhost:55195/acme/acme/account/5Qla8j6kKyv73qVSVuynAt8CzlShabxR",
     "typ": "JWT",
-    "nonce": "aWpQRjBwMHlraGtUcW4wTXZaM3NEZ3l2QTRBM3lpbGk",
-    "url": "https://localhost:55093/acme/wire-acme/order/CA8v6n3K5a98DbSIgzkuxbNBiiWZX9hR/finalize"
+    "nonce": "ZkxwZmhSdW1QWmhMVVd5clM0TGhQTVl1SmZ6UmYwN3o",
+    "url": "https://localhost:55195/acme/acme/order/inuqE3xYTl1NOrwgrWo1TvNDnONlN94a/finalize"
   },
   "payload": {
-    "csr": "MIH7MIGhAgEAMAAwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQkj6wCzDPnKfNRwegvjhZJqNLJTrGxiXDajm2bBVXjjWj6YhYZA6maBgOfvn2kfikY4nia9lyUkUS12aclMoGMoD8wPQYJKoZIhvcNAQkOMTAwLjAsBgNVHREEJTAjghB3aXJlLmV4YW1wbGUuY29tgg9pZHAuZXhhbXBsZS5jb20wCgYIKoZIzj0EAwIDSQAwRgIhAJXehKVecDXhXmVeV4l-m6wlUsjS6tEDylcfsHcoGRNDAiEAiBtTJzqcZ6KO82tkmEjoe_P3CfU3ESxz28SXYGAaBDQ"
+    "csr": "MIIBWDCCAQoCAQAwNDEcMBoGA1UEAwwTU21pdGgsIEFsaWNlIE0gKFFBKTEUMBIGA1UECgwLZXhhbXBsZS5jb20wKjAFBgMrZXADIQDIDA5T8pluEoYZPGAbFyJ1AaOhFV1yZo9wW3E2qn-XoqCBojCBnwYJKoZIhvcNAQkOMYGRMIGOMIGLBgNVHREEgYMwgYCGVWltcHA6d2lyZWFwcD1uZGV5emd5d25qYzJtemZrbmRiaW50bGx5bXZtbWpxeXp0aXpudGM0bndxLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb22GJ2ltcHA6d2lyZWFwcD1hbGljZS5zbWl0aC5xYUBleGFtcGxlLmNvbTAFBgMrZXADQQBCNiBNCxqrBjw1qS-H8mekuJuGY3RT8kNc-USnOCdC4xmo4lHiv4C1c4aoAKBMCnUzpUQATEhE5KPAKVZ8UUoE"
   }
 }
 ```
-#### 24. get back a url for fetching the certificate
+#### 22. get back a url for fetching the certificate
 ```http request
 200
 cache-control: no-store
 content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/order/CA8v6n3K5a98DbSIgzkuxbNBiiWZX9hR
-replay-nonce: RWNKWkhaOWxlTTV0WndFVnFPVTNEcE9YdzRaVGgyVWo
+link: <https://localhost:55195/acme/acme/directory>;rel="index"
+location: https://localhost:55195/acme/acme/order/inuqE3xYTl1NOrwgrWo1TvNDnONlN94a
+replay-nonce: c3VnczNDaEJ1dHI1eGNmNWc5MU5Zd21rZmdsR2plbzQ
 ```
 ```json
 {
-  "certificate": "https://localhost:55093/acme/wire-acme/certificate/eiSeuSbD6jMlGEVEpGzbsAfM22k5uoPf",
+  "certificate": "https://localhost:55195/acme/acme/certificate/D9YM1rT8KKqhKMH9C2WbJhHwStYPHPl9",
   "status": "valid",
-  "finalize": "https://localhost:55093/acme/wire-acme/order/CA8v6n3K5a98DbSIgzkuxbNBiiWZX9hR/finalize",
+  "finalize": "https://localhost:55195/acme/acme/order/inuqE3xYTl1NOrwgrWo1TvNDnONlN94a/finalize",
   "identifiers": [
     {
-      "type": "dns",
-      "value": "idp.example.com"
-    },
-    {
-      "type": "dns",
-      "value": "wire.example.com"
+      "type": "wireapp-id",
+      "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
     }
   ],
   "authorizations": [
-    "https://localhost:55093/acme/wire-acme/authz/csKaemo9GC6crni1PpZwRRjmlVN0x8EU",
-    "https://localhost:55093/acme/wire-acme/authz/ztLGNcicpX9vHKL5BpoWfFUCkVyhuhAN"
+    "https://localhost:55195/acme/acme/authz/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs"
   ],
-  "expires": "2023-01-21T09:03:39Z",
-  "notBefore": "2023-01-20T09:03:39.069407Z",
-  "notAfter": "2023-01-20T10:03:39.069407Z"
+  "expires": "2023-02-10T16:55:56Z",
+  "notBefore": "2023-02-09T16:55:56.032306Z",
+  "notAfter": "2023-02-09T17:55:56.032306Z"
 }
 ```
-#### 25. fetch the certificate
+#### 23. fetch the certificate
 ```http request
-POST https://localhost:55093/acme/wire-acme/certificate/eiSeuSbD6jMlGEVEpGzbsAfM22k5uoPf
+POST https://localhost:55195/acme/acme/certificate/D9YM1rT8KKqhKMH9C2WbJhHwStYPHPl9
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvWGFCb1pENldOOUZOZGZESjJUdmhtWHE4UUNKRWkxU3YiLCJ0eXAiOiJKV1QiLCJub25jZSI6IlJXTktXa2hhT1d4bFRUVjBXbmRGVm5GUFZUTkVjRTlZZHpSYVZHZ3lWV28iLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9jZXJ0aWZpY2F0ZS9laVNldVNiRDZqTWxHRVZFcEd6YnNBZk0yMms1dW9QZiJ9",
+  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MTk1L2FjbWUvYWNtZS9hY2NvdW50LzVRbGE4ajZrS3l2NzNxVlNWdXluQXQ4Q3psU2hhYnhSIiwidHlwIjoiSldUIiwibm9uY2UiOiJjM1ZuY3pORGFFSjFkSEkxZUdObU5XYzVNVTVaZDIxclptZHNSMnBsYnpRIiwidXJsIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTUxOTUvYWNtZS9hY21lL2NlcnRpZmljYXRlL0Q5WU0xclQ4S0txaEtNSDlDMldiSmhId1N0WVBIUGw5In0",
   "payload": "",
-  "signature": "Tj5MhoBu8eH_SpfVsSwjuGaODGX86IyZ4Z2loCs5H6_r2Phk-KMQ9mpGPQVndJ-B-9PKFIE31rlFb89gmWOjFA"
+  "signature": "Nw6QTLBbFomijmftM5_0lymbg9lhmFYqZiDOyWtjuB7QXFL403N8Op8QrJWGPWxMiVlym1D0TaC-Wc6hkosZDw"
 }
 ```
-#### 26. get the certificate chain
+#### 24. get the certificate chain
 ```http request
 200
 cache-control: no-store
 content-type: application/pem-certificate-chain
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-replay-nonce: bnBWdGxBdUw4UUU0VUU0OE9WZmlTOENncXl2S0RXdUI
+link: <https://localhost:55195/acme/acme/directory>;rel="index"
+replay-nonce: amI2NUk5VmtlMVhqSUxJWjRPYXpaZzVsTjlheHJHZ1o
 ```
 ```json
 [
-  "MIIB9jCCAZugAwIBAgIRAI3D8s3YDyPV2TVE1VJP+A4wCgYIKoZIzj0EAwIwLjEN\nMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMUd2lyZSBJbnRlcm1lZGlhdGUgQ0EwHhcN\nMjMwMTIwMDkwMzM5WhcNMjMwMTIwMTAwMzM5WjAAMFkwEwYHKoZIzj0CAQYIKoZI\nzj0DAQcDQgAEJI+sAswz5ynzUcHoL44WSajSyU6xsYlw2o5tmwVV441o+mIWGQOp\nmgYDn759pH4pGOJ4mvZclJFEtdmnJTKBjKOBxzCBxDAOBgNVHQ8BAf8EBAMCB4Aw\nHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMB0GA1UdDgQWBBQy+PersUmI\nNo+BsHze1f8Z2zXGOjAfBgNVHSMEGDAWgBQFh14W6LYUwLfF176vB9VSEcrEHzAv\nBgNVHREBAf8EJTAjgg9pZHAuZXhhbXBsZS5jb22CEHdpcmUuZXhhbXBsZS5jb20w\nIgYMKwYBBAGCpGTGKEABBBIwEAIBBgQJd2lyZS1hY21lBAAwCgYIKoZIzj0EAwID\nSQAwRgIhAMx/rkuUjzCZ3rPTdAc9UTysO9ZLkiHZtjg/q0c4sqwbAiEA6RldAvAL\n3pevjA5y8/Bb9WNoaAMRSu9d6jGhvcVZQr0=",
-  "MIIBuTCCAV+gAwIBAgIRAJdDcbalHF3srFt9bTHdTk8wCgYIKoZIzj0EAwIwJjEN\nMAsGA1UEChMEd2lyZTEVMBMGA1UEAxMMd2lyZSBSb290IENBMB4XDTIzMDEyMDA5\nMDMzMFoXDTMzMDExNzA5MDMzMFowLjENMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMU\nd2lyZSBJbnRlcm1lZGlhdGUgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATB\nbXVWBG0zE9Sxj8h5dO0+LS0lNBd1XV0fRLgbumlhDOyhnWI7XJs3Y7qnMrYz1ZUq\nBDPigaS4PtMFQm//+3Elo2YwZDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgw\nBgEB/wIBADAdBgNVHQ4EFgQUBYdeFui2FMC3xde+rwfVUhHKxB8wHwYDVR0jBBgw\nFoAUsEWSF3ZiE5J4hw7b9xavI00SYIMwCgYIKoZIzj0EAwIDSAAwRQIgQTx6o6lp\nwSm96ghkajsBmSUKhYv4brOhtiXnZgVy8fYCIQChM/zlOIts3qShX0rF5Y5qduqy\n5XUUA7k1kHCTJBbY0Q=="
+  "MIICaTCCAg+gAwIBAgIRALnjg5FSj7S7dFI7eRo2pSYwCgYIKoZIzj0EAwIwLjEN\nMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMUd2lyZSBJbnRlcm1lZGlhdGUgQ0EwHhcN\nMjMwMjA5MTY1NTU2WhcNMjMwMjA5MTc1NTU2WjA0MRQwEgYDVQQKEwtleGFtcGxl\nLmNvbTEcMBoGA1UEAxMTU21pdGgsIEFsaWNlIE0gKFFBKTAqMAUGAytlcAMhAMgM\nDlPymW4Shhk8YBsXInUBo6EVXXJmj3BbcTaqf5eio4IBNTCCATEwDgYDVR0PAQH/\nBAQDAgeAMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAdBgNVHQ4EFgQU\n+BzWWqumhuF/buv3LSAI/1nRdtUwHwYDVR0jBBgwFoAUxQDR9STgxvptfCqeRgDl\nekgCONYwgaAGA1UdEQSBmDCBlYITc21pdGgsIGFsaWNlIG0gKHFhKYYnaW1wcDp3\naXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29thlVpbXBwOndpcmVhcHA9\nbmRleXpneXduamMybXpma25kYmludGxseW12bW1qcXl6dGl6bnRjNG53cS82NWMz\nYWMxYTE2MzFjMTM2QGV4YW1wbGUuY29tMB0GDCsGAQQBgqRkxihAAQQNMAsCAQYE\nBGFjbWUEADAKBggqhkjOPQQDAgNIADBFAiAs5CT4uzxKYrzd8ykdxLKxwY8l6FAW\nBQZYhH7uyUpUhwIhAPNag0AxSqgl0cgWWtPi74ozfSVYJTkvQ8HlzJTONLWG",
+  "MIIBuTCCAV+gAwIBAgIRAKPdWNwxnFBBnOnvJPoTVaMwCgYIKoZIzj0EAwIwJjEN\nMAsGA1UEChMEd2lyZTEVMBMGA1UEAxMMd2lyZSBSb290IENBMB4XDTIzMDIwOTE2\nNTU1M1oXDTMzMDIwNjE2NTU1M1owLjENMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMU\nd2lyZSBJbnRlcm1lZGlhdGUgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQe\nxO6YkGrcjmcTLLumAlSD9KfnUJ8AZ1APtPkYNciofXfCp8jBj/efK3wjExx6q67f\nJZVzMiDHsf/r0Odedu0po2YwZDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgw\nBgEB/wIBADAdBgNVHQ4EFgQUxQDR9STgxvptfCqeRgDlekgCONYwHwYDVR0jBBgw\nFoAUqv7HVtUZkSbetRdrzPl8eD2rCI8wCgYIKoZIzj0EAwIDSAAwRQIhALTbMMsD\nmKboHca7csH69bpj4Vy0P/Vr8iBO6FPYRj2MAiBywBlA1pqyJOHcolPF7FaowITY\n8ImY70xAtVTkRW81ag=="
 ]
 ```
-P384 - SHA384
-```mermaid
-sequenceDiagram
-    autonumber
-    wire-client->>+acme-server: GET /acme/wire-acme/directory
-    acme-server->>-wire-client: 200
-    wire-client->>+acme-server: HEAD /acme/wire-acme/new-nonce
-    acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/new-account
-    acme-server->>-wire-client: 201
-    wire-client->>+acme-server: POST /acme/wire-acme/new-order
-    acme-server->>-wire-client: 201
-    wire-client->>+acme-server: POST /acme/wire-acme/authz/nQbpbdTvmnfRSdSutzocq5p59tJ1Pa2n
-    acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/authz/RGtKG0QtpxehybPXeDx7MpAHzjvl6JMu
-    acme-server->>-wire-client: 200
-    wire-client->>+wire-server: GET /clients/token/nonce
-    wire-server->>-wire-client: 200
-    wire-client->>+wire-server: POST /clients/17605723069926893826/access-token
-    wire-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/challenge/nQbpbdTvmnfRSdSutzocq5p59tJ1Pa2n/FGvxJ9F3uJPLPZz2HqLTqPOLtJTlyDcs
-    acme-server->>+wire-server: GET /.well-known/acme-challenge/wDfFhWzJFBxL12zOtdK7vGdweJy8kstx
-    wire-server->>-acme-server: 200
-    acme-server->>+wire-server: GET /.well-known/acme-challenge/0ZxU3Yy7tJD3zjpvZb9gdBq8nzFIx9cc
-    wire-server->>-acme-server: 200
-    acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/order/qTBFlz8U5AmwU0BBZKTdWePpG3GNFCtJ
-    acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/order/qTBFlz8U5AmwU0BBZKTdWePpG3GNFCtJ/finalize
-    acme-server->>-wire-client: 200
-    wire-client->>+acme-server: POST /acme/wire-acme/certificate/p0uJ5KxM0xGboVpvo4sEsXwoomzQIgMc
-    acme-server->>-wire-client: 200
+###### Certificate #0
 ```
-### Initial setup with ACME server
-#### 1. fetch acme directory for hyperlinks
-```http request
-GET https://localhost:55093/acme/wire-acme/directory
-
+-----BEGIN CERTIFICATE-----
+MIICaTCCAg+gAwIBAgIRALnjg5FSj7S7dFI7eRo2pSYwCgYIKoZIzj0EAwIwLjEN
+MAsGA1UEChMEd2lyZTEdMBsGA1UEAxMUd2lyZSBJbnRlcm1lZGlhdGUgQ0EwHhcN
+MjMwMjA5MTY1NTU2WhcNMjMwMjA5MTc1NTU2WjA0MRQwEgYDVQQKEwtleGFtcGxl
+LmNvbTEcMBoGA1UEAxMTU21pdGgsIEFsaWNlIE0gKFFBKTAqMAUGAytlcAMhAMgM
+DlPymW4Shhk8YBsXInUBo6EVXXJmj3BbcTaqf5eio4IBNTCCATEwDgYDVR0PAQH/
+BAQDAgeAMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAdBgNVHQ4EFgQU
++BzWWqumhuF/buv3LSAI/1nRdtUwHwYDVR0jBBgwFoAUxQDR9STgxvptfCqeRgDl
+ekgCONYwgaAGA1UdEQSBmDCBlYITc21pdGgsIGFsaWNlIG0gKHFhKYYnaW1wcDp3
+aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29thlVpbXBwOndpcmVhcHA9
+bmRleXpneXduamMybXpma25kYmludGxseW12bW1qcXl6dGl6bnRjNG53cS82NWMz
+YWMxYTE2MzFjMTM2QGV4YW1wbGUuY29tMB0GDCsGAQQBgqRkxihAAQQNMAsCAQYE
+BGFjbWUEADAKBggqhkjOPQQDAgNIADBFAiAs5CT4uzxKYrzd8ykdxLKxwY8l6FAW
+BQZYhH7uyUpUhwIhAPNag0AxSqgl0cgWWtPi74ozfSVYJTkvQ8HlzJTONLWG
+-----END CERTIFICATE-----
 ```
-#### 2. get the ACME directory with links for newNonce, newAccount & newOrder
-```http request
-200
-content-type: application/json
-```
-```json
-{
-  "newNonce": "https://localhost:55093/acme/wire-acme/new-nonce",
-  "newAccount": "https://localhost:55093/acme/wire-acme/new-account",
-  "newOrder": "https://localhost:55093/acme/wire-acme/new-order"
-}
-```
-#### 3. fetch a new nonce for the very first request
-```http request
-HEAD https://localhost:55093/acme/wire-acme/new-nonce
-
-```
-#### 4. get a nonce for creating an account
-```http request
-200
-cache-control: no-store
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-replay-nonce: UWpMcEx2MzNKbHZZMWNSRzQyNjJCeFJDNFBrMkVVNnA
-```
-```json
-"UWpMcEx2MzNKbHZZMWNSRzQyNjJCeFJDNFBrMkVVNnA"
-```
-#### 5. create a new account
-```http request
-POST https://localhost:55093/acme/wire-acme/new-account
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCIsImp3ayI6eyJrdHkiOiJFQyIsImNydiI6IlAtMzg0IiwieCI6Imxod2RFMjBQMUhiVm04cVpoSG5wbDZfVnkzRy1iTG5fNkI5VTc0Nnh0NzB6M0dHMDk2S3F6Y3Nzb2U3U3BIREYiLCJ5IjoiNi1uQXNiNGg5aUU4WGowNUxWRlZUNzJFNVdZYTZMN1hnaE93SkMwdWtiUG5qYnVoSVhIb1dsLVl0VndDSHotbCJ9LCJub25jZSI6IlVXcE1jRXgyTXpOS2JIWlpNV05TUnpReU5qSkNlRkpETkZCck1rVlZObkEiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9uZXctYWNjb3VudCJ9",
-  "payload": "eyJ0ZXJtc09mU2VydmljZUFncmVlZCI6dHJ1ZSwiY29udGFjdCI6WyJ1bmtub3duQGV4YW1wbGUuY29tIl0sIm9ubHlSZXR1cm5FeGlzdGluZyI6ZmFsc2V9",
-  "signature": "KnaWgT6USf6_aC_vvyGMjXq3O3oJt4xU-Sg5QMfapA4VusM9IbmQ68IQPsThgTwGl9Ayv7rvT2MUctopGQExM09b1DHzZIG6U0RAwlXMAB4K7j4-hSIqog-ucAPBUr5M"
-}
-...decoded...
-{
-  "protected": {
-    "alg": "ES384",
-    "typ": "JWT",
-    "jwk": {
-      "kty": "EC",
-      "crv": "P-384",
-      "x": "lhwdE20P1HbVm8qZhHnpl6_Vy3G-bLn_6B9U746xt70z3GG096Kqzcssoe7SpHDF",
-      "y": "6-nAsb4h9iE8Xj05LVFVT72E5WYa6L7XghOwJC0ukbPnjbuhIXHoWl-YtVwCHz-l"
-    },
-    "nonce": "UWpMcEx2MzNKbHZZMWNSRzQyNjJCeFJDNFBrMkVVNnA",
-    "url": "https://localhost:55093/acme/wire-acme/new-account"
-  },
-  "payload": {
-    "termsOfServiceAgreed": true,
-    "contact": [
-      "unknown@example.com"
-    ],
-    "onlyReturnExisting": false
-  }
-}
-```
-#### 6. account created
-```http request
-201
-cache-control: no-store
-content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/account/LpFFSPjN7NlzdBBfS6DePS8XzukFUwyd
-replay-nonce: d3E5NUtWVkRZZWpDTFFSR0drZVE3QUpuNkVGZ01wMnM
-```
-```json
-{
-  "status": "valid",
-  "orders": "https://localhost:55093/acme/wire-acme/account/LpFFSPjN7NlzdBBfS6DePS8XzukFUwyd/orders"
-}
-```
-### Request a certificate with relevant identifiers
-#### 7. create a new order
-```http request
-POST https://localhost:55093/acme/wire-acme/new-order
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFUzM4NCIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvTHBGRlNQak43Tmx6ZEJCZlM2RGVQUzhYenVrRlV3eWQiLCJ0eXAiOiJKV1QiLCJub25jZSI6ImQzRTVOVXRXVmtSWlpXcERURkZTUjBkclpWRTNRVXB1TmtWR1owMXdNbk0iLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9uZXctb3JkZXIifQ",
-  "payload": "eyJpZGVudGlmaWVycyI6W3sidHlwZSI6ImRucyIsInZhbHVlIjoiaWRwLmV4YW1wbGUuY29tIn0seyJ0eXBlIjoiZG5zIiwidmFsdWUiOiJ3aXJlLmV4YW1wbGUuY29tIn1dLCJub3RCZWZvcmUiOiIyMDIzLTAxLTIwVDA5OjAzOjQyLjQ1NjEzNloiLCJub3RBZnRlciI6IjIwMjMtMDEtMjBUMTA6MDM6NDIuNDU2MTM2WiJ9",
-  "signature": "VIqFstN2jA7kawo0zaHYYgr914Lb1vYkmtSvzF5ojqc4Y7q9LIKeoAByKFXPCDIA9Gv-z3I4ozcybRcMNDEQqKwGe8_ToRkBqlhoaCvYyXLIHmHLwG1eTmgGkMDD8aKa"
-}
-...decoded...
-{
-  "protected": {
-    "alg": "ES384",
-    "kid": "https://localhost:55093/acme/wire-acme/account/LpFFSPjN7NlzdBBfS6DePS8XzukFUwyd",
-    "typ": "JWT",
-    "nonce": "d3E5NUtWVkRZZWpDTFFSR0drZVE3QUpuNkVGZ01wMnM",
-    "url": "https://localhost:55093/acme/wire-acme/new-order"
-  },
-  "payload": {
-    "identifiers": [
-      {
-        "type": "dns",
-        "value": "idp.example.com"
-      },
-      {
-        "type": "dns",
-        "value": "wire.example.com"
-      }
-    ],
-    "notBefore": "2023-01-20T09:03:42.456136Z",
-    "notAfter": "2023-01-20T10:03:42.456136Z"
-  }
-}
-```
-#### 8. get new order with authorization URLS and finalize URL
-```http request
-201
-cache-control: no-store
-content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/order/qTBFlz8U5AmwU0BBZKTdWePpG3GNFCtJ
-replay-nonce: SE9PV1A3Szg2WnNZalZUcTB0UUlHSjhJRGo3eFdubXo
-```
-```json
-{
-  "status": "pending",
-  "finalize": "https://localhost:55093/acme/wire-acme/order/qTBFlz8U5AmwU0BBZKTdWePpG3GNFCtJ/finalize",
-  "identifiers": [
-    {
-      "type": "dns",
-      "value": "idp.example.com"
-    },
-    {
-      "type": "dns",
-      "value": "wire.example.com"
-    }
-  ],
-  "authorizations": [
-    "https://localhost:55093/acme/wire-acme/authz/nQbpbdTvmnfRSdSutzocq5p59tJ1Pa2n",
-    "https://localhost:55093/acme/wire-acme/authz/RGtKG0QtpxehybPXeDx7MpAHzjvl6JMu"
-  ],
-  "expires": "2023-01-21T09:03:42Z",
-  "notBefore": "2023-01-20T09:03:42.456136Z",
-  "notAfter": "2023-01-20T10:03:42.456136Z"
-}
-```
-### Display-name and handle already authorized
-#### 9. fetch first challenge
-```http request
-POST https://localhost:55093/acme/wire-acme/authz/nQbpbdTvmnfRSdSutzocq5p59tJ1Pa2n
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFUzM4NCIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvTHBGRlNQak43Tmx6ZEJCZlM2RGVQUzhYenVrRlV3eWQiLCJ0eXAiOiJKV1QiLCJub25jZSI6IlNFOVBWMUEzU3pnMlduTlphbFpVY1RCMFVVbEhTamhKUkdvM2VGZHViWG8iLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9hdXRoei9uUWJwYmRUdm1uZlJTZFN1dHpvY3E1cDU5dEoxUGEybiJ9",
-  "payload": "",
-  "signature": "QytmuhRMwz8UwrF4HzE24v3voVCj73iWJmXC4t_x4_1ftsQQuZuw3Yg4vrgsUZ4JaBQ1-W34EEb7wi8aPkyrLLvVZf_1hozSKOz6IsPcwKyxFz2z9Y5hTF3jQ5UpASUb"
-}
-```
-#### 10. get back first challenge
-```http request
-200
-cache-control: no-store
-content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/authz/nQbpbdTvmnfRSdSutzocq5p59tJ1Pa2n
-replay-nonce: bEVGdlRMRlNXR2tDMVNOQmdOQlAwTlduUzJrbXRnMk8
-```
-```json
-{
-  "status": "pending",
-  "expires": "2023-01-21T09:03:42Z",
-  "challenges": [
-    {
-      "type": "dns-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/nQbpbdTvmnfRSdSutzocq5p59tJ1Pa2n/MmwhPsP6Ii0O2Mjd3AGE9EEFKZpe7xLb",
-      "status": "pending",
-      "token": "wDfFhWzJFBxL12zOtdK7vGdweJy8kstx"
-    },
-    {
-      "type": "http-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/nQbpbdTvmnfRSdSutzocq5p59tJ1Pa2n/FGvxJ9F3uJPLPZz2HqLTqPOLtJTlyDcs",
-      "status": "pending",
-      "token": "wDfFhWzJFBxL12zOtdK7vGdweJy8kstx"
-    },
-    {
-      "type": "tls-alpn-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/nQbpbdTvmnfRSdSutzocq5p59tJ1Pa2n/wAY2bd9Jq1QmSGCmUFgLkeoqnvHDmRWS",
-      "status": "pending",
-      "token": "wDfFhWzJFBxL12zOtdK7vGdweJy8kstx"
-    }
-  ],
-  "identifier": {
-    "type": "dns",
-    "value": "idp.example.com"
-  }
-}
-```
-### ACME provides a Wire client ID challenge
-#### 11. fetch second challenge
-```http request
-POST https://localhost:55093/acme/wire-acme/authz/RGtKG0QtpxehybPXeDx7MpAHzjvl6JMu
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFUzM4NCIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvTHBGRlNQak43Tmx6ZEJCZlM2RGVQUzhYenVrRlV3eWQiLCJ0eXAiOiJKV1QiLCJub25jZSI6ImJFVkdkbFJNUmxOWFIydERNVk5PUW1kT1FsQXdUbGR1VXpKcmJYUm5NazgiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9hdXRoei9SR3RLRzBRdHB4ZWh5YlBYZUR4N01wQUh6anZsNkpNdSJ9",
-  "payload": "",
-  "signature": "H1dWgJtThqHKuQ4WTcAaHOJBwKa-rCezE82G-cTOq3yE2YHocyu5FdUy4DpL1kv-ZgDGvxf0LEJdtQWywKTeVX83yXJRvZoyWPkDO3UAc_l8KBUeQ_dY_z3GXfyUrJ2h"
-}
-```
-#### 12. get back second challenge
-```http request
-200
-cache-control: no-store
-content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/authz/RGtKG0QtpxehybPXeDx7MpAHzjvl6JMu
-replay-nonce: bDIxMW9OamdIeGd1cnNKVW5ob1FRTXB5VlBMZG1LZnc
-```
-```json
-{
-  "status": "pending",
-  "expires": "2023-01-21T09:03:42Z",
-  "challenges": [
-    {
-      "type": "dns-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/RGtKG0QtpxehybPXeDx7MpAHzjvl6JMu/NJiEyNQxTWXruvY9VYDFqysSbHyV0NTX",
-      "status": "pending",
-      "token": "0ZxU3Yy7tJD3zjpvZb9gdBq8nzFIx9cc"
-    },
-    {
-      "type": "http-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/RGtKG0QtpxehybPXeDx7MpAHzjvl6JMu/xMcLxhuDXvTJ6pnnOXlB1oPwOXEPcsCy",
-      "status": "pending",
-      "token": "0ZxU3Yy7tJD3zjpvZb9gdBq8nzFIx9cc"
-    },
-    {
-      "type": "tls-alpn-01",
-      "url": "https://localhost:55093/acme/wire-acme/challenge/RGtKG0QtpxehybPXeDx7MpAHzjvl6JMu/ZrjLs2xBC2G8ebJWehVGupj80ISQn3wA",
-      "status": "pending",
-      "token": "0ZxU3Yy7tJD3zjpvZb9gdBq8nzFIx9cc"
-    }
-  ],
-  "identifier": {
-    "type": "dns",
-    "value": "wire.example.com"
-  }
-}
-```
-### Client fetches JWT DPoP access token (with wire-server)
-#### 13. fetch a nonce from wire-server
-```http request
-GET http://localhost:63479/clients/token/nonce
-
-```
-#### 14. get wire-server nonce
-```http request
-200
-
-```
-```json
-"WlZkSVhwcU1jQ0hZY2FGd2xsbUhoZDBFbEh0dzd0d1k"
-```
-#### 15. create the client Dpop token with both nonces
-Token [here](https://jwt.io/#id_token=eyJhbGciOiJFUzM4NCIsInR5cCI6ImRwb3Arand0IiwiandrIjp7Imt0eSI6IkVDIiwiY3J2IjoiUC0zODQiLCJ4IjoibGh3ZEUyMFAxSGJWbThxWmhIbnBsNl9WeTNHLWJMbl82QjlVNzQ2eHQ3MHozR0cwOTZLcXpjc3NvZTdTcEhERiIsInkiOiI2LW5Bc2I0aDlpRThYajA1TFZGVlQ3MkU1V1lhNkw3WGdoT3dKQzB1a2JQbmpidWhJWEhvV2wtWXRWd0NIei1sIn19.eyJpYXQiOjE2NzQyMDU0MjIsImV4cCI6MTY3NDI5MTgyMiwibmJmIjoxNjc0MjA1NDIyLCJzdWIiOiJpbTp3aXJlYXBwOk5tVXpNemhsWWpBell6SXdORFV3WkdKa1kyUTNZakkzTURJMk16WTJZVEkvZjQ1NDE3ZGE1Y2U0NjkwMkB3aXJlLmNvbSIsImp0aSI6ImEwZDg5NDY5LWJhOTgtNDg2NS1iYWQ3LTc4MTY1ZWYwYTY1NCIsIm5vbmNlIjoiV2xaa1NWaHdjVTFqUTBoWlkyRkdkMnhzYlVob1pEQkZiRWgwZHpkMGQxayIsImh0bSI6IlBPU1QiLCJodHUiOiJodHRwOi8vbG9jYWxob3N0OjYzNDc5L2NsaWVudHMvMTc2MDU3MjMwNjk5MjY4OTM4MjYvYWNjZXNzLXRva2VuIiwiY2hhbCI6IndEZkZoV3pKRkJ4TDEyek90ZEs3dkdkd2VKeThrc3R4In0.8Rr2St4HAQTb7BAu-eT3SGy_QeXaad3FkGkQwIUqWsYZrLtjOOnBmx1DGESgnCd1mmvH7LnkB8UPRrIiZJdn8hpp9bI1zNRZcgxBuzCpa3SlM1Ae8X9PZsabhlghbKtc)
-```http request
-POST http://localhost:63479/clients/17605723069926893826/access-token
-
-```
-#### 16. get a Dpop access token from wire-server
-```http request
-200
-
-```
-Token [here](https://jwt.io/#id_token=eyJhbGciOiJFUzM4NCIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJFQyIsImNydiI6IlAtMzg0IiwieCI6IlFvWHlCNWQxQk1POHRIVEFwODkycDRIb2J1dTFfTXdsNW9JWWdGNG1wQWgzUnRWNFhlTGNldDkwUWFaTzFkbGoiLCJ5IjoiMnVVNWV6MUk1UThKTXVSZVhiQnJ1N0U0TlIzLVlxSUJ0Qy11TEtnbjBHUlMwZXJQZFR1V1FyeXFPLXJxM1NtbSJ9fQ.eyJpYXQiOjE2NzQyMDU0MjIsImV4cCI6MTY4MTk4MTQyMiwibmJmIjoxNjc0MjA1NDIyLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjYzNDc5L2NsaWVudHMvMTc2MDU3MjMwNjk5MjY4OTM4MjYvYWNjZXNzLXRva2VuIiwic3ViIjoiaW06d2lyZWFwcDpObVV6TXpobFlqQXpZekl3TkRVd1pHSmtZMlEzWWpJM01ESTJNelkyWVRJL2Y0NTQxN2RhNWNlNDY5MDJAd2lyZS5jb20iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjYzNDc5L2NsaWVudHMvMTc2MDU3MjMwNjk5MjY4OTM4MjYvYWNjZXNzLXRva2VuIiwianRpIjoiN2EyZThhZjItNTk1ZS00YmQ0LWIzNDAtZTg4OGE0MDdiNTY0Iiwibm9uY2UiOiJXbFprU1Zod2NVMWpRMGhaWTJGR2QyeHNiVWhvWkRCRmJFaDBkemQwZDFrIiwiY2hhbCI6IndEZkZoV3pKRkJ4TDEyek90ZEs3dkdkd2VKeThrc3R4IiwiY25mIjp7ImtpZCI6IlVyQTd2aGxvdkNzSlR1Zl96TXFsNDc1aTZxbUlKUUI1dWhmUHFOOTV5SlpLTGpVS1BxRU5hc21ieXRYRG5YbUkifSwicHJvb2YiOiJleUpoYkdjaU9pSkZVek00TkNJc0luUjVjQ0k2SW1Sd2IzQXJhbmQwSWl3aWFuZHJJanA3SW10MGVTSTZJa1ZESWl3aVkzSjJJam9pVUMwek9EUWlMQ0o0SWpvaWJHaDNaRVV5TUZBeFNHSldiVGh4V21oSWJuQnNObDlXZVROSExXSk1ibDgyUWpsVk56UTJlSFEzTUhvelIwY3dPVFpMY1hwamMzTnZaVGRUY0VoRVJpSXNJbmtpT2lJMkxXNUJjMkkwYURscFJUaFlhakExVEZaR1ZsUTNNa1UxVjFsaE5rdzNXR2RvVDNkS1F6QjFhMkpRYm1waWRXaEpXRWh2VjJ3dFdYUldkME5JZWkxc0luMTkuZXlKcFlYUWlPakUyTnpReU1EVTBNaklzSW1WNGNDSTZNVFkzTkRJNU1UZ3lNaXdpYm1KbUlqb3hOamMwTWpBMU5ESXlMQ0p6ZFdJaU9pSnBiVHAzYVhKbFlYQndPazV0VlhwTmVtaHNXV3BCZWxsNlNYZE9SRlYzV2tkS2Exa3lVVE5aYWtrelRVUkpNazE2V1RKWlZFa3ZaalExTkRFM1pHRTFZMlUwTmprd01rQjNhWEpsTG1OdmJTSXNJbXAwYVNJNkltRXdaRGc1TkRZNUxXSmhPVGd0TkRnMk5TMWlZV1EzTFRjNE1UWTFaV1l3WVRZMU5DSXNJbTV2Ym1ObElqb2lWMnhhYTFOV2FIZGpWVEZxVVRCb1dsa3lSa2RrTW5oellsVm9iMXBFUWtaaVJXZ3daSHBrTUdReGF5SXNJbWgwYlNJNklsQlBVMVFpTENKb2RIVWlPaUpvZEhSd09pOHZiRzlqWVd4b2IzTjBPall6TkRjNUwyTnNhV1Z1ZEhNdk1UYzJNRFUzTWpNd05qazVNalk0T1RNNE1qWXZZV05qWlhOekxYUnZhMlZ1SWl3aVkyaGhiQ0k2SW5kRVprWm9WM3BLUmtKNFRERXllazkwWkVzM2RrZGtkMlZLZVRocmMzUjRJbjAuOFJyMlN0NEhBUVRiN0JBdS1lVDNTR3lfUWVYYWFkM0ZrR2tRd0lVcVdzWVpyTHRqT09uQm14MURHRVNnbkNkMW1tdkg3TG5rQjhVUFJySWlaSmRuOGhwcDliSTF6TlJaY2d4QnV6Q3BhM1NsTTFBZThYOVBac2FiaGxnaGJLdGMiLCJjbGllbnRfaWQiOiJpbTp3aXJlYXBwOk5tVXpNemhsWWpBell6SXdORFV3WkdKa1kyUTNZakkzTURJMk16WTJZVEkvZjQ1NDE3ZGE1Y2U0NjkwMkB3aXJlLmNvbSIsImFwaV92ZXJzaW9uIjozLCJzY29wZSI6IndpcmVfY2xpZW50X2lkIn0.FlEJ7I3uZ80XLnhXMJRyEZxnhreu0Rnrr8ITfZ85LUTEvmA7VWTVIk6owkLOAA6Vvj4XaUWE8Tt--WsS-A6pYaqzquqnIu5sfWldTppejLiR-HQZ8mAuDlFkGXFpqVnW)
-### Client provides access token
-#### 17. send DPoP access token to acme server to have it validated
-```http request
-POST https://localhost:55093/acme/wire-acme/challenge/nQbpbdTvmnfRSdSutzocq5p59tJ1Pa2n/FGvxJ9F3uJPLPZz2HqLTqPOLtJTlyDcs
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFUzM4NCIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvTHBGRlNQak43Tmx6ZEJCZlM2RGVQUzhYenVrRlV3eWQiLCJ0eXAiOiJKV1QiLCJub25jZSI6ImJESXhNVzlPYW1kSWVHZDFjbk5LVlc1b2IxRlJUWEI1VmxCTVpHMUxabmMiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9jaGFsbGVuZ2UvblFicGJkVHZtbmZSU2RTdXR6b2NxNXA1OXRKMVBhMm4vRkd2eEo5RjN1SlBMUFp6MkhxTFRxUE9MdEpUbHlEY3MifQ",
-  "payload": "",
-  "signature": "PhHLyHcotj2NmcccOlWYIYdpGYQ2RJoFzXebzcqp7jlxt2jR_5cq1baA_H8aZCEnS-PH_6p0ihH7tJbPJREHC7xUj_6trl9__0yRR3ReO_3s162jI5N38nagtrQ9yxdQ"
-}
-```
-#### 18. acme server verifies client-id with an http challenge
-```http request
-GET http://wire.com/.well-known/acme-challenge/wDfFhWzJFBxL12zOtdK7vGdweJy8kstx
-
 ```
 
-#### 19. acme server verifies handle + display-name with an OIDC challenge
-```http request
-GET http://wire.com/.well-known/acme-challenge/0ZxU3Yy7tJD3zjpvZb9gdBq8nzFIx9cc
-
+version: V3
+serial: 00:b9:e3:83:91:52:8f:b4:bb:74:52:3b:79:1a:36:a5:26
+subject: O=example.com, CN=Smith, Alice M (QA)
+issuer: O=wire, CN=wire Intermediate CA
+validity:
+  not before: Feb  9 16:55:56 2023 +00:00
+  not after: Feb  9 17:55:56 2023 +00:00
+  is valid: false
+extensions:
+  KeyUsage:Digital Signature
+  SubjectKeyIdentifier:f8:1c:d6:5a:ab:a6:86:e1:7f:6e:eb:f7:2d:20:08:ff:59:d1:76:d5
+  SAN:DNSName: smith, alice m (qa)
+  SAN:URI: impp:wireapp=alice.smith.qa@example.com
+  SAN:URI: impp:wireapp=ndeyzgywnjc2mzfkndbintllymvmmjqyztizntc4nwq/65c3ac1a1631c136@example.com
+                
 ```
 
-#### 20. both challenges are valid
-```http request
-200
-cache-control: no-store
-content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-link: <https://localhost:55093/acme/wire-acme/authz/nQbpbdTvmnfRSdSutzocq5p59tJ1Pa2n>;rel="up"
-location: https://localhost:55093/acme/wire-acme/challenge/nQbpbdTvmnfRSdSutzocq5p59tJ1Pa2n/FGvxJ9F3uJPLPZz2HqLTqPOLtJTlyDcs
-replay-nonce: WTJuRUpTc3dWSEdENnRDWUo5WnNLQVdIczJmM1hJckY
+###### Certificate #1
 ```
-```json
-{
-  "type": "http-01",
-  "url": "https://localhost:55093/acme/wire-acme/challenge/nQbpbdTvmnfRSdSutzocq5p59tJ1Pa2n/FGvxJ9F3uJPLPZz2HqLTqPOLtJTlyDcs",
-  "status": "valid",
-  "token": "wDfFhWzJFBxL12zOtdK7vGdweJy8kstx"
-}
+-----BEGIN CERTIFICATE-----
+MIIBuTCCAV+gAwIBAgIRAKPdWNwxnFBBnOnvJPoTVaMwCgYIKoZIzj0EAwIwJjEN
+MAsGA1UEChMEd2lyZTEVMBMGA1UEAxMMd2lyZSBSb290IENBMB4XDTIzMDIwOTE2
+NTU1M1oXDTMzMDIwNjE2NTU1M1owLjENMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMU
+d2lyZSBJbnRlcm1lZGlhdGUgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQe
+xO6YkGrcjmcTLLumAlSD9KfnUJ8AZ1APtPkYNciofXfCp8jBj/efK3wjExx6q67f
+JZVzMiDHsf/r0Odedu0po2YwZDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgw
+BgEB/wIBADAdBgNVHQ4EFgQUxQDR9STgxvptfCqeRgDlekgCONYwHwYDVR0jBBgw
+FoAUqv7HVtUZkSbetRdrzPl8eD2rCI8wCgYIKoZIzj0EAwIDSAAwRQIhALTbMMsD
+mKboHca7csH69bpj4Vy0P/Vr8iBO6FPYRj2MAiBywBlA1pqyJOHcolPF7FaowITY
+8ImY70xAtVTkRW81ag==
+-----END CERTIFICATE-----
 ```
-### Client presents a CSR and gets its certificate
-#### 21. verify the status of the order
-```http request
-POST https://localhost:55093/acme/wire-acme/order/qTBFlz8U5AmwU0BBZKTdWePpG3GNFCtJ
-content-type: application/jose+json
 ```
-```json
-{
-  "protected": "eyJhbGciOiJFUzM4NCIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvTHBGRlNQak43Tmx6ZEJCZlM2RGVQUzhYenVrRlV3eWQiLCJ0eXAiOiJKV1QiLCJub25jZSI6IldqaDVaa3hWV1hWbE4zaDJURXRZZERaa1JrTkxkbU4yT0c1MFpXRjRhM0UiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9vcmRlci9xVEJGbHo4VTVBbXdVMEJCWktUZFdlUHBHM0dORkN0SiJ9",
-  "payload": "",
-  "signature": "GLZT5gqBEMemMQxUBnQzAvIzN183kBOcnMZ-Ph9ae4tBFcbFAGmusLXytY5RLe2KOlOXgOhDjLZa0RnjT_BQAYyk8Vl9I8muK1OKoyb9rtCj4AjENVVW7xBrkr4gPdev"
-}
-```
-#### 22. loop (with exponential backoff) until order is ready
-```http request
-200
-cache-control: no-store
-content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/order/qTBFlz8U5AmwU0BBZKTdWePpG3GNFCtJ
-replay-nonce: TUZYYjFLWUgxUjVhQlR4TXRUeXZJNFF5TER3dmVtWGs
-```
-```json
-{
-  "status": "ready",
-  "finalize": "https://localhost:55093/acme/wire-acme/order/qTBFlz8U5AmwU0BBZKTdWePpG3GNFCtJ/finalize",
-  "identifiers": [
-    {
-      "type": "dns",
-      "value": "idp.example.com"
-    },
-    {
-      "type": "dns",
-      "value": "wire.example.com"
-    }
-  ],
-  "authorizations": [
-    "https://localhost:55093/acme/wire-acme/authz/nQbpbdTvmnfRSdSutzocq5p59tJ1Pa2n",
-    "https://localhost:55093/acme/wire-acme/authz/RGtKG0QtpxehybPXeDx7MpAHzjvl6JMu"
-  ],
-  "expires": "2023-01-21T09:03:42Z",
-  "notBefore": "2023-01-20T09:03:42.456136Z",
-  "notAfter": "2023-01-20T10:03:42.456136Z"
-}
-```
-#### 23. create a CSR and call finalize url
-```http request
-POST https://localhost:55093/acme/wire-acme/order/qTBFlz8U5AmwU0BBZKTdWePpG3GNFCtJ/finalize
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFUzM4NCIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvTHBGRlNQak43Tmx6ZEJCZlM2RGVQUzhYenVrRlV3eWQiLCJ0eXAiOiJKV1QiLCJub25jZSI6IlRVWllZakZMV1VneFVqVmhRbFI0VFhSVWVYWkpORkY1VEVSM2RtVnRXR3MiLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9vcmRlci9xVEJGbHo4VTVBbXdVMEJCWktUZFdlUHBHM0dORkN0Si9maW5hbGl6ZSJ9",
-  "payload": "eyJjc3IiOiJNSUlCTnpDQnZnSUJBREFBTUhZd0VBWUhLb1pJemowQ0FRWUZLNEVFQUNJRFlnQUVsaHdkRTIwUDFIYlZtOHFaaEhucGw2X1Z5M0ctYkxuXzZCOVU3NDZ4dDcwejNHRzA5NktxemNzc29lN1NwSERGNi1uQXNiNGg5aUU4WGowNUxWRlZUNzJFNVdZYTZMN1hnaE93SkMwdWtiUG5qYnVoSVhIb1dsLVl0VndDSHotbG9EOHdQUVlKS29aSWh2Y05BUWtPTVRBd0xqQXNCZ05WSFJFRUpUQWpnaEIzYVhKbExtVjRZVzF3YkdVdVkyOXRnZzlwWkhBdVpYaGhiWEJzWlM1amIyMHdDZ1lJS29aSXpqMEVBd01EYUFBd1pRSXhBS2dkZ3dWcFp4VU82SW1Ib1Bhb0tENVpMbnZZallwWkxEQ1lqcTE2RUpnY3RRUmdhSFVlX0dlSEdJOTVFME1UdmdJd1FWbkZnQXFkMURnNjZIZ0pRbXVOZHhiMjd0SXYyRTg0cVNtVERyemhWcnBkVGVRaW9JZFo2MTBKNWdjREg5LUMifQ",
-  "signature": "iRILUIEnJliLJBeM2prqBSEgaYYGKh_aOD5KHoSp-8YxMrvuToZxK1VdSAiqVE_htc9tFLBbhAxoQgjeojzIkPko1rX_vAKj23KixssZgiZEDnBd8BPOAMK2uTtJFsRd"
-}
-...decoded...
-{
-  "protected": {
-    "alg": "ES384",
-    "kid": "https://localhost:55093/acme/wire-acme/account/LpFFSPjN7NlzdBBfS6DePS8XzukFUwyd",
-    "typ": "JWT",
-    "nonce": "TUZYYjFLWUgxUjVhQlR4TXRUeXZJNFF5TER3dmVtWGs",
-    "url": "https://localhost:55093/acme/wire-acme/order/qTBFlz8U5AmwU0BBZKTdWePpG3GNFCtJ/finalize"
-  },
-  "payload": {
-    "csr": "MIIBNzCBvgIBADAAMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAElhwdE20P1HbVm8qZhHnpl6_Vy3G-bLn_6B9U746xt70z3GG096Kqzcssoe7SpHDF6-nAsb4h9iE8Xj05LVFVT72E5WYa6L7XghOwJC0ukbPnjbuhIXHoWl-YtVwCHz-loD8wPQYJKoZIhvcNAQkOMTAwLjAsBgNVHREEJTAjghB3aXJlLmV4YW1wbGUuY29tgg9pZHAuZXhhbXBsZS5jb20wCgYIKoZIzj0EAwMDaAAwZQIxAKgdgwVpZxUO6ImHoPaoKD5ZLnvYjYpZLDCYjq16EJgctQRgaHUe_GeHGI95E0MTvgIwQVnFgAqd1Dg66HgJQmuNdxb27tIv2E84qSmTDrzhVrpdTeQioIdZ610J5gcDH9-C"
-  }
-}
-```
-#### 24. get back a url for fetching the certificate
-```http request
-200
-cache-control: no-store
-content-type: application/json
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-location: https://localhost:55093/acme/wire-acme/order/qTBFlz8U5AmwU0BBZKTdWePpG3GNFCtJ
-replay-nonce: WldueTZqMDUyZ05SV0VjbzlvRG8xeEFobWhPaElpb2w
-```
-```json
-{
-  "certificate": "https://localhost:55093/acme/wire-acme/certificate/p0uJ5KxM0xGboVpvo4sEsXwoomzQIgMc",
-  "status": "valid",
-  "finalize": "https://localhost:55093/acme/wire-acme/order/qTBFlz8U5AmwU0BBZKTdWePpG3GNFCtJ/finalize",
-  "identifiers": [
-    {
-      "type": "dns",
-      "value": "idp.example.com"
-    },
-    {
-      "type": "dns",
-      "value": "wire.example.com"
-    }
-  ],
-  "authorizations": [
-    "https://localhost:55093/acme/wire-acme/authz/nQbpbdTvmnfRSdSutzocq5p59tJ1Pa2n",
-    "https://localhost:55093/acme/wire-acme/authz/RGtKG0QtpxehybPXeDx7MpAHzjvl6JMu"
-  ],
-  "expires": "2023-01-21T09:03:42Z",
-  "notBefore": "2023-01-20T09:03:42.456136Z",
-  "notAfter": "2023-01-20T10:03:42.456136Z"
-}
-```
-#### 25. fetch the certificate
-```http request
-POST https://localhost:55093/acme/wire-acme/certificate/p0uJ5KxM0xGboVpvo4sEsXwoomzQIgMc
-content-type: application/jose+json
-```
-```json
-{
-  "protected": "eyJhbGciOiJFUzM4NCIsImtpZCI6Imh0dHBzOi8vbG9jYWxob3N0OjU1MDkzL2FjbWUvd2lyZS1hY21lL2FjY291bnQvTHBGRlNQak43Tmx6ZEJCZlM2RGVQUzhYenVrRlV3eWQiLCJ0eXAiOiJKV1QiLCJub25jZSI6IldsZHVlVFpxTURVeVowNVNWMFZqYnpsdlJHOHhlRUZvYldoUGFFbHBiMnciLCJ1cmwiOiJodHRwczovL2xvY2FsaG9zdDo1NTA5My9hY21lL3dpcmUtYWNtZS9jZXJ0aWZpY2F0ZS9wMHVKNUt4TTB4R2JvVnB2bzRzRXNYd29vbXpRSWdNYyJ9",
-  "payload": "",
-  "signature": "8pPMMtLqMVyekOESS960HCOyQ_9lOAeKji3NuAEF9BuerSTas6ykb7TwInkLjgXxzJv4aU-OS08woF57iqdXxphaK_vbFviYQiW2R6QvTqducw0nac9oQF99xOO0nN6r"
-}
-```
-#### 26. get the certificate chain
-```http request
-200
-cache-control: no-store
-content-type: application/pem-certificate-chain
-link: <https://localhost:55093/acme/wire-acme/directory>;rel="index"
-replay-nonce: eHRRQmM5QjJKZ2Q0a3RJZjhXNU1tZHRtVjFLaHhHdzM
-```
-```json
-[
-  "MIICEDCCAbegAwIBAgIQWBxu2y+aNa+h7LAQOhlZBDAKBggqhkjOPQQDAjAuMQ0w\nCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3aXJlIEludGVybWVkaWF0ZSBDQTAeFw0y\nMzAxMjAwOTAzNDJaFw0yMzAxMjAxMDAzNDJaMAAwdjAQBgcqhkjOPQIBBgUrgQQA\nIgNiAASWHB0TbQ/UdtWbypmEeemXr9XLcb5suf/oH1TvjrG3vTPcYbT3oqrNyyyh\n7tKkcMXr6cCxviH2ITxePTktUVVPvYTlZhrovteCE7AkLS6Rs+eNu6EhcehaX5i1\nXAIfP6WjgccwgcQwDgYDVR0PAQH/BAQDAgeAMB0GA1UdJQQWMBQGCCsGAQUFBwMB\nBggrBgEFBQcDAjAdBgNVHQ4EFgQUNubpZtAeceQeVojcrgduBoIIbqgwHwYDVR0j\nBBgwFoAUBYdeFui2FMC3xde+rwfVUhHKxB8wLwYDVR0RAQH/BCUwI4IPaWRwLmV4\nYW1wbGUuY29tghB3aXJlLmV4YW1wbGUuY29tMCIGDCsGAQQBgqRkxihAAQQSMBAC\nAQYECXdpcmUtYWNtZQQAMAoGCCqGSM49BAMCA0cAMEQCIDuN2WHd725wozaBq3os\n1P39wcPY4xWDELyyc4+zIi6xAiBIRCeZ6MjDlHg6hxmn1zSkw2ZZH52OYzk28lkC\n2Fbpmg==",
-  "MIIBuTCCAV+gAwIBAgIRAJdDcbalHF3srFt9bTHdTk8wCgYIKoZIzj0EAwIwJjEN\nMAsGA1UEChMEd2lyZTEVMBMGA1UEAxMMd2lyZSBSb290IENBMB4XDTIzMDEyMDA5\nMDMzMFoXDTMzMDExNzA5MDMzMFowLjENMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMU\nd2lyZSBJbnRlcm1lZGlhdGUgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATB\nbXVWBG0zE9Sxj8h5dO0+LS0lNBd1XV0fRLgbumlhDOyhnWI7XJs3Y7qnMrYz1ZUq\nBDPigaS4PtMFQm//+3Elo2YwZDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgw\nBgEB/wIBADAdBgNVHQ4EFgQUBYdeFui2FMC3xde+rwfVUhHKxB8wHwYDVR0jBBgw\nFoAUsEWSF3ZiE5J4hw7b9xavI00SYIMwCgYIKoZIzj0EAwIDSAAwRQIgQTx6o6lp\nwSm96ghkajsBmSUKhYv4brOhtiXnZgVy8fYCIQChM/zlOIts3qShX0rF5Y5qduqy\n5XUUA7k1kHCTJBbY0Q=="
-]
+
+version: V3
+serial: 00:a3:dd:58:dc:31:9c:50:41:9c:e9:ef:24:fa:13:55:a3
+subject: O=wire, CN=wire Intermediate CA
+issuer: O=wire, CN=wire Root CA
+validity:
+  not before: Feb  9 16:55:53 2023 +00:00
+  not after: Feb  6 16:55:53 2033 +00:00
+  is valid: true
+extensions:
+  KeyUsage:Key Cert Sign, CRL Sign
+  BasicConstraints:Ca:true
+  PathLenConstraint:0
+  SubjectKeyIdentifier:c5:00:d1:f5:24:e0:c6:fa:6d:7c:2a:9e:46:00:e5:7a:48:02:38:d6
+                
 ```
