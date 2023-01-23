@@ -25,6 +25,7 @@ mls-keystore = ["dep:openmls_traits"]
 proteus-keystore = ["dep:proteus-traits"]
 ios-wal-compat = ["dep:security-framework"]
 memory-cache = ["dep:lru"]
+idb-regression-test = []
 
 [dependencies]
 thiserror = "1.0"
@@ -97,6 +98,7 @@ rstest = "0.16"
 rstest_reuse = "0.4"
 async-std = { version = "1.12", features = ["attributes"] }
 futures-lite = "1.12"
+core-crypto-keystore = { path = ".", features = ["idb-regression-test"] }
 
 [dev-dependencies.proteus-wasm]
 version = "2.0"

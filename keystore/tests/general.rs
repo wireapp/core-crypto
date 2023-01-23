@@ -43,4 +43,42 @@ pub mod tests {
         store2.close().await.unwrap();
         let store1 = setup("ios-wal-compat", false).await;
     }
+
+    #[cfg(target_family = "wasm")]
+    #[wasm_bindgen_test]
+    pub async fn can_migrate_new_idb_db_versions() {
+        let store_name = store_name();
+        let rexie = rexie::Rexie::builder(&store_name)
+            .version(1)
+            .add_object_store(rexie::ObjectStore::new("regression_check").auto_increment(false))
+            .build()
+            .await
+            .unwrap();
+
+        assert!(rexie.store_names().contains(&"regression_check".into()));
+
+        rexie.close();
+
+        let store = core_crypto_keystore::Connection::open_with_key(&store_name, TEST_ENCRYPTION_KEY)
+            .await
+            .unwrap();
+
+        let mut conn = store.borrow_conn().await.unwrap();
+        use core_crypto_keystore::connection::storage::WasmStorageWrapper;
+        let WasmStorageWrapper::Persistent(rexie) = conn.storage_mut().wrapper() else {
+            panic!("Storage isn't persistent");
+        };
+
+        let store_names = rexie.store_names();
+
+        assert!(store_names.contains(&"regression_check".into()));
+
+        assert!(store_names.contains(&"mls_keys".into()));
+        assert!(store_names.contains(&"mls_identities".into()));
+        assert!(store_names.contains(&"mls_groups".into()));
+        assert!(store_names.contains(&"mls_pending_groups".into()));
+        assert!(store_names.contains(&"proteus_prekeys".into()));
+        assert!(store_names.contains(&"proteus_identities".into()));
+        assert!(store_names.contains(&"proteus_sessions".into()));
+    }
 }
