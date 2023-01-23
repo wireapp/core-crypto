@@ -22,11 +22,11 @@ sha2 = "0.10"
 chacha20poly1305 = "0.10"
 hmac = "0.12"
 ed25519-dalek = "1.0"
-ecdsa = { version = "0.14", features = ["der"] }
-p256 = "0.11"
-p384 = "0.11"
+ecdsa = { version = "0.15", features = ["der"] }
+p256 = "0.12"
+p384 = "0.12"
 # TODO: Uncomment this once p521 crate is ready
-# p521 = { version = "0.11", git = "https://github.com/RustCrypto/elliptic-curves", package = "p521" }
+# p521 = { version = "0.12", git = "https://github.com/RustCrypto/elliptic-curves", package = "p521" }
 hkdf = "0.12"
 rand = { version = "0.8", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }

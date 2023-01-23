@@ -367,15 +367,16 @@ impl OpenMlsCrypto for RustCrypto {
         data: &[u8],
         key: &[u8],
     ) -> Result<Vec<u8>, openmls_traits::types::CryptoError> {
+        use ecdsa::signature::Signer as _;
         match alg {
             SignatureScheme::ECDSA_SECP256R1_SHA256 => {
                 let k: p256::ecdsa::SigningKey = SigningKey::from_bytes(key).map_err(|_| CryptoError::InvalidLength)?;
-                let signature = k.sign(data);
+                let signature: p256::ecdsa::Signature = k.sign(data);
                 Ok(signature.to_der().to_bytes().into())
             }
             SignatureScheme::ECDSA_SECP384R1_SHA384 => {
                 let k: p384::ecdsa::SigningKey = SigningKey::from_bytes(key).map_err(|_| CryptoError::InvalidLength)?;
-                let signature = k.sign(data);
+                let signature: p384::ecdsa::Signature = k.sign(data);
                 Ok(signature.to_der().to_bytes().into())
             }
             SignatureScheme::ECDSA_SECP521R1_SHA512 => Err(CryptoError::UnsupportedSignatureScheme),
