@@ -205,4 +205,9 @@ impl Connection {
     pub fn is_cache_enabled(&self) -> bool {
         self.cache_enabled.load(std::sync::atomic::Ordering::Relaxed)
     }
+
+    #[inline]
+    pub fn is_cache_supported(&self) -> bool {
+        cfg!(feature = "memory-cache")
+    }
 }

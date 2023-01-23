@@ -41,8 +41,16 @@ impl DatabaseConnection for WasmConnection {
     async fn open(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
         let name = name.to_string();
         // ? Maybe find a cleaner way to define the schema
+
+        let version_major = u32::from_str_radix(env!("CARGO_PKG_VERSION_MAJOR"), 10).unwrap_or_default();
+        let version_minor = u32::from_str_radix(env!("CARGO_PKG_VERSION_MINOR"), 10).unwrap_or_default();
+        let version_patch = u32::from_str_radix(env!("CARGO_PKG_VERSION_PATCH"), 10).unwrap_or_default();
+
+        // Watch out: we'll have issues after major version 4294.xx.xx lol
+        let version = version_major * 1_000_000 + version_minor * 1_000 + version_patch;
+
         let rexie_builder = rexie::Rexie::builder(&name)
-            .version(1)
+            .version(version)
             .add_object_store(ObjectStore::new("mls_keys").auto_increment(false))
             .add_object_store(
                 ObjectStore::new("mls_identities")
@@ -54,6 +62,9 @@ impl DatabaseConnection for WasmConnection {
             .add_object_store(ObjectStore::new("proteus_prekeys").auto_increment(false))
             .add_object_store(ObjectStore::new("proteus_identities").auto_increment(false))
             .add_object_store(ObjectStore::new("proteus_sessions").auto_increment(false));
+
+        #[cfg(feature = "idb-regression-test")]
+        let rexie_builder = rexie_builder.add_object_store(ObjectStore::new("regression_check").auto_increment(false));
 
         let rexie = rexie_builder.build().await?;
 

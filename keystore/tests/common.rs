@@ -21,7 +21,7 @@ pub use core_crypto_keystore::Connection as CryptoKeystore;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
-const TEST_ENCRYPTION_KEY: &str = "test1234";
+pub const TEST_ENCRYPTION_KEY: &str = "test1234";
 
 #[fixture]
 pub fn store_name() -> String {
