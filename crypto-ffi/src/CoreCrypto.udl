@@ -128,7 +128,7 @@ enum MlsWirePolicy {
 callback interface CoreCryptoCallbacks {
     boolean authorize([ByRef] ConversationId conversation_id, [ByRef] ClientId client_id);
     boolean user_authorize([ByRef] ConversationId conversation_id, [ByRef] ClientId external_client_id, [ByRef] sequence<ClientId> existing_clients);
-    boolean client_is_existing_group_user([ByRef] ClientId client_id, [ByRef] sequence<ClientId> existing_clients);
+    boolean client_is_existing_group_user([ByRef] ConversationId conversation_id, [ByRef] ClientId client_id, [ByRef] sequence<ClientId> existing_clients);
 };
 
 interface CoreCrypto {

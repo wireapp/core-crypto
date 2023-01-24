@@ -27,7 +27,7 @@ impl MlsConversation {
                 let existing_clients = self.members_in_next_epoch(backend);
                 let self_identity = add_proposal.key_package().credential().identity();
                 let is_self_user_in_group =
-                    callbacks.client_is_existing_group_user(self_identity.into(), existing_clients);
+                    callbacks.client_is_existing_group_user(self.id.clone(), self_identity.into(), existing_clients);
                 if !is_self_user_in_group {
                     return Err(CryptoError::UnauthorizedExternalAddProposal);
                 }
