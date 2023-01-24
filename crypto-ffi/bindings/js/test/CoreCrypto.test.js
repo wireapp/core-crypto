@@ -398,7 +398,7 @@ test("callbacks", async () => {
         callbacksResults.authorize = true;
         return true;
       },
-      clientIsExistingGroupUser(clientId, existingClients) {
+      clientIsExistingGroupUser(conversationId, clientId, existingClients) {
         callbacksResults.clientIsExistingGroupUser = true;
         return true;
       }

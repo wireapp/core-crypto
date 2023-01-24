@@ -135,7 +135,12 @@ impl CoreCryptoCallbacks for ValidationCallbacks {
         self.user_authorize
     }
 
-    fn client_is_existing_group_user(&self, _client_id: ClientId, _existing_clients: Vec<ClientId>) -> bool {
+    fn client_is_existing_group_user(
+        &self,
+        _conversation_id: ConversationId,
+        _client_id: ClientId,
+        _existing_clients: Vec<ClientId>,
+    ) -> bool {
         self.client_is_existing_group_user
     }
 }

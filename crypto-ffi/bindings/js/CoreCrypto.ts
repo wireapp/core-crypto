@@ -449,10 +449,11 @@ export interface CoreCryptoCallbacks {
      * Callback to ensure that the given `clientId` belongs to one of the provided `existingClients`
      * This basically allows to defer the client ID parsing logic to the caller - because CoreCrypto is oblivious to such things
      *
+     * @param conversationId - id of the group/conversation
      * @param clientId - id of a client
      * @param existingClients - all the clients currently within the MLS group
      */
-    clientIsExistingGroupUser: (clientId: Uint8Array, existingClients: Uint8Array[]) => boolean;
+    clientIsExistingGroupUser: (conversationId: Uint8Array, clientId: Uint8Array, existingClients: Uint8Array[]) => boolean;
 }
 
 /**

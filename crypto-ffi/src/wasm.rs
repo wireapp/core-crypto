@@ -696,12 +696,18 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
         }
     }
 
-    fn client_is_existing_group_user(&self, client_id: ClientId, existing_clients: Vec<ClientId>) -> bool {
+    fn client_is_existing_group_user(
+        &self,
+        conversation_id: ConversationId,
+        client_id: ClientId,
+        existing_clients: Vec<ClientId>,
+    ) -> bool {
         if let Ok(client_is_existing_group_user) = self.client_is_existing_group_user.try_lock() {
             let this = JsValue::null();
             if let Ok(Some(result)) = client_is_existing_group_user
-                .call2(
+                .call3(
                     &this,
+                    &js_sys::Uint8Array::from(conversation_id.as_slice()),
                     &js_sys::Uint8Array::from(client_id.as_slice()),
                     &existing_clients
                         .into_iter()

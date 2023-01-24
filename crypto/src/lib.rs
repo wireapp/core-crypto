@@ -130,6 +130,7 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     /// * `existing_clients` - all the clients in the MLS group
     fn client_is_existing_group_user(
         &self,
+        conversation_id: prelude::ConversationId,
         client_id: prelude::ClientId,
         existing_clients: Vec<prelude::ClientId>,
     ) -> bool;
