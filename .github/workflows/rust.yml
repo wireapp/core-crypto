@@ -8,12 +8,12 @@ on: [push]
 
 env:
   RUST_BACKTRACE: 1
+  CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
 
 jobs:
   fmt:
     runs-on: ubuntu-latest
-    env:
-      CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -24,8 +24,6 @@ jobs:
 
   check:
     runs-on: ubuntu-latest
-    env:
-      CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -35,8 +33,6 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    env:
-      CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -48,8 +44,6 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    env:
-      CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -62,8 +56,6 @@ jobs:
 
   proteus-test:
     runs-on: ubuntu-latest
-    env:
-      CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -75,8 +67,6 @@ jobs:
   # extract things unrelated to main tests not to slow them down
   tooling-test:
     runs-on: ubuntu-latest
-    env:
-      CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -89,8 +79,6 @@ jobs:
 
   wasm-build:
     runs-on: ubuntu-latest
-    env:
-      CARGO_TERM_COLOR: always
     strategy:
       matrix:
         workspace: [ "crypto", "keystore", "mls-provider" ]
@@ -107,8 +95,6 @@ jobs:
 
   wasm-test:
     runs-on: ubuntu-latest
-    env:
-      CARGO_TERM_COLOR: always
     strategy:
       matrix:
         workspace: ["core-crypto", "core-crypto-keystore", "mls-crypto-provider"]
@@ -129,8 +115,6 @@ jobs:
 
   proteus-wasm-test:
     runs-on: ubuntu-latest
-    env:
-      CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -146,8 +130,6 @@ jobs:
 
   e2e-interop-test:
     runs-on: ubuntu-latest
-    env:
-      CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -166,8 +148,6 @@ jobs:
 
   hack:
     runs-on: ubuntu-latest
-    env:
-      CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
