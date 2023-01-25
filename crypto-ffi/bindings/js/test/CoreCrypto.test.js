@@ -8,9 +8,32 @@ async function initBrowser() {
   }
   const context = await browser.createIncognitoBrowserContext();
   const page = await context.newPage();
+  page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+
   await page.goto("http://localhost:3000");
   return [context, page];
 }
+
+test("init", async () => {
+  const [ctx, page] = await initBrowser();
+
+  const version = await page.evaluate(async () => {
+    const { CoreCrypto } = await import("./corecrypto.js");
+
+    const cc = await CoreCrypto.init({
+      databaseName: "test init",
+      key: "test",
+      clientId: "test",
+    });
+
+    return CoreCrypto.version();
+  });
+
+  expect(version).toMatch("0.6.0");
+
+  await page.close();
+  await ctx.close();
+});
 
 test("can use pgs enums", async () => {
   const [ctx, page] = await initBrowser();
@@ -70,27 +93,6 @@ test("can use pgs enums", async () => {
   expect(pgs.encryptionType).toBe(PublicGroupStateEncryptionType.Plaintext);
   expect(pgs.ratchetTreeType).toBe(0x01);
   expect(pgs.ratchetTreeType).toBe(RatchetTreeType.Full);
-
-  await page.close();
-  await ctx.close();
-});
-
-test("init", async () => {
-  const [ctx, page] = await initBrowser();
-
-  const version = await page.evaluate(async () => {
-    const { CoreCrypto } = await import("./corecrypto.js");
-
-    const cc = await CoreCrypto.init({
-      databaseName: "test init",
-      key: "test",
-      clientId: "test",
-    });
-
-    return CoreCrypto.version();
-  });
-
-  expect(version).toMatch("0.6.0");
 
   await page.close();
   await ctx.close();
@@ -445,6 +447,121 @@ test("callbacks", async () => {
 
   expect(callbacksResults.authorize).toBe(true);
   expect(callbacksResults.clientIsExistingGroupUser).toBe(true);
+
+  await page.close();
+  await ctx.close();
+});
+
+test("proteusError", async () => {
+  const [ctx, page] = await initBrowser();
+
+  await page.evaluate(async () => {
+    const { CoreCryptoError } = await import("./corecrypto.js");
+
+    const richErrorJSON = {
+      errorName: "ErrorTest",
+      message: "Hello world",
+      rustStackTrace: "test",
+      proteusErrorCode: 22
+    };
+
+    const testStr = `${richErrorJSON.message}\n\n${JSON.stringify(richErrorJSON)}`;
+
+    const e = new Error(testStr);
+    const ccErr = CoreCryptoError.fromStdError(e);
+    const ccErr2 = CoreCryptoError.build(e.message);
+
+
+    if (ccErr.name !== ccErr2.name || ccErr.name !== "ErrorTest") {
+      throw new Error("Errors are different", { cause: ccErr });
+    }
+
+    if (ccErr.proteusErrorCode !== 22) {
+      throw new Error("Errors are different", { cause: ccErr });
+    }
+
+    try {
+      throw ccErr;
+    } catch(e) {
+      if (!e instanceof CoreCryptoError) {
+        throw new Error("Error is of the incorrect class");
+      }
+    }
+  });
+
+  await page.close();
+  await ctx.close();
+});
+
+test("proteus", async () => {
+  const [ctx, page] = await initBrowser();
+
+  await page.evaluate(async () => {
+    const { CoreCrypto, CoreCryptoError } = await import("./corecrypto.js");
+
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+
+    const client1Config = {
+      databaseName: "proteus test1",
+      key: "test",
+    };
+
+    const client2Config = {
+      databaseName: "proteus test2",
+      key: "test",
+    };
+
+    const message = "Hello world!";
+
+    const alice = await CoreCrypto.deferredInit(client1Config);
+    await alice.proteusInit();
+
+    const bob = await CoreCrypto.deferredInit(client2Config);
+    await bob.proteusInit();
+
+    const bobPrekey = await bob.proteusNewPrekey(10);
+
+    await alice.proteusSessionFromPrekey("ab", bobPrekey);
+    const aliceBobMessage = await alice.proteusEncrypt("ab", encoder.encode(message));
+
+    const decrypted = decoder.decode(await bob.proteusSessionFromMessage("ba", aliceBobMessage));
+
+    if (decrypted !== message) {
+      throw new Error("Message decrypted by bob doesn't match message sent by alice");
+    }
+
+    let proteusErrCode = 0;
+
+    proteusErrCode = await bob.proteusLastErrorCode();
+    if (proteusErrCode !== 0) {
+      throw new Error(`bob has encountered an unlikely error [code ${proteusErrCode}`);
+    }
+
+    try {
+      await bob.proteusSessionFromMessage("ba", aliceBobMessage);
+      throw new TypeError("Error not thrown when CoreCryptoError[proteus error 101] should be triggered, something is wrong");
+    } catch (e) {
+      if (e instanceof CoreCryptoError) {
+        const errorCode = e.proteusErrorCode;
+        if (errorCode !== 101) {
+          throw new TypeError(`CoreCryptoError has been thrown, but the code isn't correct. Expected 101, got ${errorCode}`);
+        }
+
+        proteusErrCode = await bob.proteusLastErrorCode();
+        if (proteusErrCode !== 101) {
+          throw new TypeError(`The \`proteusLastErrorCode()\` method isn't consistent with the code returned. Expected 101, got ${proteusErrCode}`);
+        }
+
+        return null;
+      } else if (e instanceof TypeError) {
+        throw e;
+      } else {
+        throw new Error(`Unknown error type\nCause[${typeof e}]:\n${e}`, { cause: e });
+      }
+    }
+  });
+
 
   await page.close();
   await ctx.close();

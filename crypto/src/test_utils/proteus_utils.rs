@@ -41,7 +41,7 @@ impl CryptoboxLike {
     }
 
     pub fn new_prekey(&mut self) -> proteus_wasm::keys::PreKeyBundle {
-        let prekey_id = (self.prekeys.len() + 1 % u16::MAX as usize) as u16;
+        let prekey_id = ((self.prekeys.len() + 1) % u16::MAX as usize) as u16;
         let prekey = proteus_wasm::keys::PreKey::new(proteus_wasm::keys::PreKeyId::new(prekey_id));
         let prekey_bundle = proteus_wasm::keys::PreKeyBundle::new(self.identity.public_key.clone(), &prekey);
         self.prekeys.push(prekey);

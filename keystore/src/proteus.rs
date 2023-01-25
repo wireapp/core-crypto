@@ -67,7 +67,7 @@ impl proteus_traits::PreKeyStore for Connection {
             let _ = self.memory_cache.lock().await.pop(format!("proteus:{}", id).as_bytes());
         }
 
-        Connection::remove::<ProteusPrekey, _>(self, &id.to_le_bytes()).await?;
+        Connection::remove::<ProteusPrekey, _>(self, id.to_le_bytes()).await?;
 
         Ok(())
     }
