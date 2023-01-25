@@ -6,6 +6,10 @@ concurrency:
 
 on: [push]
 
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+
 jobs:
   check-android:
     if: github.repository == 'wireapp/core-crypto'
@@ -46,9 +50,6 @@ jobs:
 
   check-swift:
     runs-on: macos-latest
-    env:
-      CARGO_TERM_COLOR: always
-      CARGO_NET_GIT_FETCH_WITH_CLI: true
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -65,8 +66,6 @@ jobs:
 
   check-wasm:
     runs-on: ubuntu-latest
-    env:
-      CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
