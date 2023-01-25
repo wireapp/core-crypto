@@ -7,7 +7,41 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
-## [0.6.0-rc.4] - 2023-01-09
+## [0.6.0-rc.5] - 2023-01-25
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- [**breaking**] Added conversation id to clientIsExistingGroupUser callback
+- Increment IndexedDB store version when crate version changes
+
+### Features
+
+- Added support for Proteus error codes
+
+### Miscellaneous Tasks
+
+- Moved codecov from tarpaulin to llvm-cov
+- Updated RustCrypto primitives & git dep in xtask
+
+</details>
+
+* **BREAKING**: Changed the signature of the `client_is_existing_group_user` callback to add the group id as the first argument
+    * Before: `client_is_existing_group_user(client_id: ClientId, existing_clients: Vec<ClientId>) -> bool`
+    * After: `client_is_existing_group_user(conversation_id: ConversationId, client_id: ClientId, existing_clients: Vec<ClientId>) -> bool`
+* Added support for Proteus error codes
+    * On WASM, the JS Error contains a `proteusError` method that returns the error code as an integer. If there's no error it returns 0.
+    * On other platforms, the FFI has gained a `proteus_last_error_code` method.
+* Fixed a bug where the keystore would not execute its IndexedDB upgrade handler on WASM, leading to older stores and/or new tables not being structurally consistent
+* Updated RustCrypto dependencies
+* Tooling: moved code coverage CI from Tarpaulin to LLVM-Cov
+    * This lowered the execution time of our codecov CI from ~25-30 minutes down to ~15-20 minutes
+    * This leads to more accurate code coverage as well - along with some false negatives such as `#[derive]` statements
+
+
+## [0.6.0-rc.4] - 2023-01-20
 
 <details>
     <summary>git-conventional changelog</summary>
@@ -24,6 +58,7 @@ Platform support legends:
 
 ### Miscellaneous Tasks
 
+- 0.6.0-rc.4 release
 - Updated base64, lru and spinoff deps
 - Added WebDriver-based WASM test runner
 - Xtask improvements
@@ -33,24 +68,6 @@ Platform support legends:
 - Update UniFFI to 0.22
 - Kotlin FFI docs + makefile fixes for other platforms
 
-</details>
-
-* First bytes of end to end identity exposed. Thanks to the ACME protocol, it allows requesting a x509 certificate from an authority and then use it to create a MLS Credential.
-* Fixed `cargo-make` Makefile.toml to allow building JVM bindings whatever the platform you're running
-    * This is done by adding tests to the relevant tasks, allowing to conditionally execute them.
-* Added a Makefile task to build the `core_crypto_ffi` Kotlin binding docs (via Dokka) and integrate them into the doc package
-* Updated UniFFI to 0.22
-* Other minor improvements on internal build/release tools (mainly our `cargo xtask` command)
-* **Semi-breaking**: Behavior change on `ProteusCentral::import_cryptobox` (aka Cryptobox import).
-    * WASM: If the provided store `path` is missing or doesn't have the expected tables, we now throw a `CryptoboxMigrationError::ProvidedPathDoesNotExist` error
-    * Other platforms: If the provided cryptobox folder at `path` is missing, we now throw a `CryptoboxMigrationError::ProvidedPathDoesNotExist` error
-    * Likewise, on all platforms, if the Cryptobox Identity is not present, we now throw a `CryptoboxMigrationError::IdentityNotFound` error and abort the process
-* Tooling: Added a custom WASM test runner based on WebDriver (BiDi interactive test progress reporting in progress still)
-
-## [0.6.0-rc.3] - 2022-12-15
-
-<details>
-    <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
@@ -60,22 +77,6 @@ Platform support legends:
 
 - Release v0.6.0-rc.3
 
-</details>
-
-* Added missing Proteus APIs to bindings and FFI:
-    * `proteus_new_prekey_auto`: generates a new PreKeyBundle with an automatically incremented ID
-        * To do this, CoreCrypto finds the first "free" ID within the `0..u16::MAX` range and creates a PreKey using this ID.
-* Added missing documentation when it comes to Proteus eager Session persistence.
-    * Previously undocumented change, but since `0.6.0-rc.1`, CoreCrypto eagerly persists Proteus Sessions (much like it does with MLS groups) when needed:
-        * Decrypting or Encrypting messages, as ratcheting key material can be produced and as such must be persisted
-            * We'll add a more "manual" API later on if you want to control when data is persisted (because it is performance heavy)
-        * Initializing Sessions through PreKeyBundles or incoming Messages
-
-
-## [0.6.0-rc.2] - 2022-12-15
-
-<details>
-    <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
@@ -88,14 +89,6 @@ Platform support legends:
 - Release v0.6.0-rc.2
 - Fix advisory stuff
 
-</details>
-
-* This release contains nothing. It's only there to fix the faulty Android release CI.
-
-## [0.6.0-rc.1] - 2022-12-14
-
-<details>
-    <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
@@ -122,25 +115,6 @@ Platform support legends:
 
 - Ensure we are immune to duplicate commits and out of order commit/proposal
 
-</details>
-
-* Fixed a compilation issue related to the `sha1` crate's ASM
-* Added a `restore_from_disk` API to enable using CoreCrypto from various instances
-* Various internal improvements to testing to increase resistance to uncommon scenarios
-* Proteus:
-    * Expose proteus prekey fingerprint
-    * Fixed the TypeScript exposed types
-    * Fixed Cryptobox import
-    * Fixed broken Proteus implementation that led to decryption errors after key import
-* MLS:
-    * Expose a `WrongEpoch` error
-    * Added an error when trying to break PFS
-    * **BREAKING**: Tweaked the configuration format, removed and added some options
-
-## [0.6.0-pre.5] - 2022-11-10
-
-<details>
-    <summary>git-conventional changelog</summary>
 
 ### Features
 
@@ -151,18 +125,6 @@ Platform support legends:
 
 - Remove C-FFI
 
-</details>
-
-* chore: Get rid of the C-FFI
-* feature: Added support for deferred MLS initialization
-* Proteus:
-    * Expose Proteus session Fingerprints (local & remote)
-
-
-## [0.6.0-pre.4] - 2022-11-07
-
-<details>
-    <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
@@ -184,24 +146,6 @@ Platform support legends:
 
 - Ensure everything keeps working when pure ciphertext format policy is selected
 
-</details>
-
-* fix: Publication of swift packages [CL-49] by @augustocdias in https://github.com/wireapp/core-crypto/pull/165
-* fix: Make tags have semantic versioning names and downgrading to swift 5.5 - CL-49 by @augustocdias in https://github.com/wireapp/core-crypto/pull/166
-* feat: Expose session exists through the ffi - CL-101 by @augustocdias in https://github.com/wireapp/core-crypto/pull/167
-* chore: fix new clippy warnings in 1.65 by @beltram in https://github.com/wireapp/core-crypto/pull/170
-* fix: consistent commits by @beltram in https://github.com/wireapp/core-crypto/pull/169
-* fix!: Incorrect handling of enums across WASM FFI [CL-104] by @OtaK in https://github.com/wireapp/core-crypto/pull/168
-* test: pure ciphertext by @beltram in https://github.com/wireapp/core-crypto/pull/160
-* Release 0.6.0-pre.4 by @augustocdias in https://github.com/wireapp/core-crypto/pull/171
-
-
-**Full Changelog**: https://github.com/wireapp/core-crypto/blob/develop/CHANGELOG.md
-
-## [0.6.0-pre.3] - 2022-11-01
-
-<details>
-    <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
@@ -213,23 +157,6 @@ Platform support legends:
 - Add action to publish jvm/android packages and change rust toolchain in ci ([#157](https://github.com/wireapp/core-crypto/issues/157))
 - Add support for Proteus within interop runner
 
-</details>
-
-* Move github action for rust to a maintained one. (More info: https://github.com/actions-rs/toolchain/issues/216)
-
-## [0.6.0-pre.2] - 2022-10.21
-
-<details>
-    <summary>git-conventional changelog</summary>
-
-</details>
-
-* Enable proteus support
-
-## [0.6.0-pre.1] - 2022-10.21
-
-<details>
-    <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
@@ -504,6 +431,245 @@ Platform support legends:
 
 - Configure wire maven repository
 - Clean up gradle files
+
+</details>
+
+* First bytes of end to end identity exposed. Thanks to the ACME protocol, it allows requesting a x509 certificate from an authority and then use it to create a MLS Credential.
+* Fixed `cargo-make` Makefile.toml to allow building JVM bindings whatever the platform you're running
+    * This is done by adding tests to the relevant tasks, allowing to conditionally execute them.
+* Added a Makefile task to build the `core_crypto_ffi` Kotlin binding docs (via Dokka) and integrate them into the doc package
+* Updated UniFFI to 0.22
+* Other minor improvements on internal build/release tools (mainly our `cargo xtask` command)
+* **Semi-breaking**: Behavior change on `ProteusCentral::import_cryptobox` (aka Cryptobox import).
+    * WASM: If the provided store `path` is missing or doesn't have the expected tables, we now throw a `CryptoboxMigrationError::ProvidedPathDoesNotExist` error
+    * Other platforms: If the provided cryptobox folder at `path` is missing, we now throw a `CryptoboxMigrationError::ProvidedPathDoesNotExist` error
+    * Likewise, on all platforms, if the Cryptobox Identity is not present, we now throw a `CryptoboxMigrationError::IdentityNotFound` error and abort the process
+* Tooling: Added a custom WASM test runner based on WebDriver (BiDi interactive test progress reporting in progress still)
+
+## [0.6.0-rc.3] - 2022-12-15
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Added missing Proteus APIs and docs
+
+### Miscellaneous Tasks
+
+- Release v0.6.0-rc.3
+
+</details>
+
+* Added missing Proteus APIs to bindings and FFI:
+    * `proteus_new_prekey_auto`: generates a new PreKeyBundle with an automatically incremented ID
+        * To do this, CoreCrypto finds the first "free" ID within the `0..u16::MAX` range and creates a PreKey using this ID.
+* Added missing documentation when it comes to Proteus eager Session persistence.
+    * Previously undocumented change, but since `0.6.0-rc.1`, CoreCrypto eagerly persists Proteus Sessions (much like it does with MLS groups) when needed:
+        * Decrypting or Encrypting messages, as ratcheting key material can be produced and as such must be persisted
+            * We'll add a more "manual" API later on if you want to control when data is persisted (because it is performance heavy)
+        * Initializing Sessions through PreKeyBundles or incoming Messages
+
+
+## [0.6.0-rc.2] - 2022-12-15
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Functional Android NDK 21 CI
+- Publish android CI
+- Unreachable pub makes docs build fail
+
+### Miscellaneous Tasks
+
+- Release v0.6.0-rc.2
+- Fix advisory stuff
+
+</details>
+
+* This release contains nothing. It's only there to fix the faulty Android release CI.
+
+## [0.6.0-rc.1] - 2022-12-14
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Broken Proteus implementation
+- Prevent application messages signed by expired KeyPackages
+- Fix cryptobox import on WASM [CL-119]
+- Incorrect TS return types [CL-118]
+
+### Features
+
+- Expose a 'WrongEpoch' error whenever one attempts to decrypt a message in the wrong epoch
+- Add 'restore_from_disk' to enable using multiple MlsCentral instances in iOS extensions
+- Add specialized error when trying to break forward secrecy
+- Add 'out_of_order_tolerance' & 'maximum_forward_distance' to configuration without exposing them and verify they are actually applied
+- [**breaking**] Change 'client_id' in CoreCrypto constructor from a String to a byte array to remain consistent across the API
+- Expose proteus prekey fingerprint - CL-107
+
+### Miscellaneous Tasks
+
+- Release v0.6.0-rc.1
+- Use NDK 21 for android artifacts - CL-111
+
+### Testing
+
+- Ensure we are immune to duplicate commits and out of order commit/proposal
+
+</details>
+
+* Fixed a compilation issue related to the `sha1` crate's ASM
+* Added a `restore_from_disk` API to enable using CoreCrypto from various instances
+* Various internal improvements to testing to increase resistance to uncommon scenarios
+* Proteus:
+    * Expose proteus prekey fingerprint
+    * Fixed the TypeScript exposed types
+    * Fixed Cryptobox import
+    * Fixed broken Proteus implementation that led to decryption errors after key import
+* MLS:
+    * Expose a `WrongEpoch` error
+    * Added an error when trying to break PFS
+    * **BREAKING**: Tweaked the configuration format, removed and added some options
+
+## [0.6.0-pre.5] - 2022-11-10
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Features
+
+- Expose proteus session fingerprints (local and remote) - CL-108
+- Support deferred MLS initialization for proteus purposes [CL-106]
+
+### Miscellaneous Tasks
+
+- Remove C-FFI
+
+</details>
+
+* chore: Get rid of the C-FFI
+* feature: Added support for deferred MLS initialization
+* Proteus:
+    * Expose Proteus session Fingerprints (local & remote)
+
+
+## [0.6.0-pre.4] - 2022-11-07
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- [**breaking**] Incorrect handling of enums across WASM FFI
+- Commits could lead to inconsistent state in keystore in case PGS serialization fails
+- Make tags have semantic versioning names and downgrading to swift 5.5 - CL-49
+- Publication of swift packages
+
+### Features
+
+- Expose session exists through the ffi - CL-101
+
+### Miscellaneous Tasks
+
+- Fix new clippy test warnings in 1.65
+- Fix new clippy warnings in 1.65
+
+### Testing
+
+- Ensure everything keeps working when pure ciphertext format policy is selected
+
+</details>
+
+* fix: Publication of swift packages [CL-49] by @augustocdias in https://github.com/wireapp/core-crypto/pull/165
+* fix: Make tags have semantic versioning names and downgrading to swift 5.5 - CL-49 by @augustocdias in https://github.com/wireapp/core-crypto/pull/166
+* feat: Expose session exists through the ffi - CL-101 by @augustocdias in https://github.com/wireapp/core-crypto/pull/167
+* chore: fix new clippy warnings in 1.65 by @beltram in https://github.com/wireapp/core-crypto/pull/170
+* fix: consistent commits by @beltram in https://github.com/wireapp/core-crypto/pull/169
+* fix!: Incorrect handling of enums across WASM FFI [CL-104] by @OtaK in https://github.com/wireapp/core-crypto/pull/168
+* test: pure ciphertext by @beltram in https://github.com/wireapp/core-crypto/pull/160
+* Release 0.6.0-pre.4 by @augustocdias in https://github.com/wireapp/core-crypto/pull/171
+
+
+**Full Changelog**: https://github.com/wireapp/core-crypto/blob/develop/CHANGELOG.md
+
+## [0.6.0-pre.3] - 2022-11-01
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Change the internal type of the public group info to Vec<u8> so we don't have extra bytes in the serialized message - FS-1127
+
+### Miscellaneous Tasks
+
+- Adding actions to check bindings and to publish swift package - CL-49
+- Add action to publish jvm/android packages and change rust toolchain in ci ([#157](https://github.com/wireapp/core-crypto/issues/157))
+- Add support for Proteus within interop runner
+
+</details>
+
+* Move github action for rust to a maintained one. (More info: https://github.com/actions-rs/toolchain/issues/216)
+
+## [0.6.0-pre.2] - 2022-10.21
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+</details>
+
+* Enable proteus support
+
+## [0.6.0-pre.1] - 2022-10.21
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- 'join_by_external_commit' returns a non TLS serialized conversation id
+
+### Features
+
+- [**breaking**] Expose a 'PublicGroupStateBundle' struct used in 'CommitBundle' variants
+- [**breaking**] Remove all the final_* methods returning a TLS encoded CommitBundle
+- Returning if decrypted message changed the epoch - CL-92 ([#152](https://github.com/wireapp/core-crypto/issues/152))
+- Exporting secret key derived from the group and client ids from the members - CL-97 - CL-98 ([#142](https://github.com/wireapp/core-crypto/issues/142))
+- Added API to generate Proteus prekeys
+- Fixed Cryptobox import for WASM
+- Added support for migrating Cryptobox data
+- Added FFI for CoreCrypto-Proteus
+- Added support for Proteus
+- Validate received external commits making sure the sender's user already belongs to the MLS group and has the right role
+- [**breaking**] Rename callback~~`client_id_belongs_to_one_of`~~ into `client_is_existing_group_user`
+- [**breaking**] External commit returns a bundle containing the PGS
+- [**breaking**] Add `clear_pending_group_from_external_commit` to cleanly abort an external commit. Also renamed `group_state` argument into `public_group_state` wherever found which can be considered a breaking change in some languages
+- [**breaking**] Rename `MlsConversationInitMessage#group` into `MlsConversationInitMessage#conversation_id` because it was misleading about the actual returned value
+
+### Miscellaneous Tasks
+
+- Apply suggestions from code review
+- Updated bundled FFI files
+- Added Proteus testing infra
+- Added missing docs
+- Nits, fmt & cargo-deny tweak
+- Add m1 support for the jvm bindings ([#139](https://github.com/wireapp/core-crypto/issues/139))
+- Remove unneeded `map_err(CryptoError::from)`
+- Remove useless code
+
+### Testing
+
+- Fix external commit tests allowing member to rejoin a group by external commit
+- Add a default impl for 'TestCase', very useful when one has to debug on IntelliJ
+- Parameterize ciphers
+- Ensure external senders can be inferred when joining by external commit or welcome
+- Fix rcgen failing on WASM due to some unsupported elliptic curve methods invoked at compile time
+- Ensure external commit are retriable
 
 </details>
 

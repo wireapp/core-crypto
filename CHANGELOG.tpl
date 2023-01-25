@@ -7,11 +7,31 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
-## [0.6.0-rc.4] - 2023-01-09
+## [0.6.0-rc.5] - 2023-01-25
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.6.0-rc.4" unreleased=true}}
+{{git-cliff tag="v0.6.0-rc.5" unreleased=true}}
+</details>
+
+* **BREAKING**: Changed the signature of the `client_is_existing_group_user` callback to add the group id as the first argument
+    * Before: `client_is_existing_group_user(client_id: ClientId, existing_clients: Vec<ClientId>) -> bool`
+    * After: `client_is_existing_group_user(conversation_id: ConversationId, client_id: ClientId, existing_clients: Vec<ClientId>) -> bool`
+* Added support for Proteus error codes
+    * On WASM, the JS Error contains a `proteusError` method that returns the error code as an integer. If there's no error it returns 0.
+    * On other platforms, the FFI has gained a `proteus_last_error_code` method.
+* Fixed a bug where the keystore would not execute its IndexedDB upgrade handler on WASM, leading to older stores and/or new tables not being structurally consistent
+* Updated RustCrypto dependencies
+* Tooling: moved code coverage CI from Tarpaulin to LLVM-Cov
+    * This lowered the execution time of our codecov CI from ~25-30 minutes down to ~15-20 minutes
+    * This leads to more accurate code coverage as well - along with some false negatives such as `#[derive]` statements
+
+
+## [0.6.0-rc.4] - 2023-01-20
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.6.0-rc.4"}}
 </details>
 
 * First bytes of end to end identity exposed. Thanks to the ACME protocol, it allows requesting a x509 certificate from an authority and then use it to create a MLS Credential.
