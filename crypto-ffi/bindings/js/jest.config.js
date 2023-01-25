@@ -6,4 +6,8 @@ export default {
   moduleDirectories: ["node_modules"],
   globalSetup: "<rootDir>/test/setup.js",
   globalTeardown: "<rootDir>/test/teardown.js",
+  forceExit: true,
+  cache: false,
+  detectOpenHandles: true,
+  verbose: true,
 };

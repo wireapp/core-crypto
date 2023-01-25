@@ -15,17 +15,34 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 macro_rules! proteus_impl {
-    ($self:ident => $body:block or throw $err_type:ty) => {{
+    ($errcode_dest:expr => $body:block or throw $err_type:ty) => {{
         cfg_if::cfg_if! {
             if #[cfg(feature = "proteus")] {
-                let result = { $body };
-                match result {
-                    Ok(r) => Ok(r),
-                    Err(e) => {
-                        $self.proteus_last_error_code.store(e.proteus_error_code(), std::sync::atomic::Ordering::Relaxed);
-                        Err(e)
+                cfg_if::cfg_if! {
+                    if #[cfg(target_family = "wasm")] {
+                        #[allow(clippy::redundant_closure_call)]
+                        let result = (async move { $body }).await;
+                    } else {
+                        #[allow(clippy::redundant_closure_call)]
+                        let result = (|| { $body })();
                     }
                 }
+
+                if let Err(e) = &result {
+                    let errcode = e.proteus_error_code();
+                    if errcode > 0 {
+                        cfg_if::cfg_if! {
+                            if #[cfg(target_family = "wasm")] {
+                                let mut ec = $errcode_dest.write().await;
+                                *ec = errcode;
+                            } else {
+                                $errcode_dest.store(errcode, std::sync::atomic::Ordering::SeqCst);
+                            }
+                        }
+                    }
+                }
+
+                result
             } else {
                 return <$err_type>::Err(CryptoError::ProteusSupportNotEnabled("proteus".into()).into());
             }
@@ -45,8 +62,8 @@ macro_rules! proteus_impl {
         proteus_impl!($body or throw ::std::result::Result<_, _>)
     };
 
-    ($self:ident => $body:block) => {
-        proteus_impl!($self => $body or throw ::std::result::Result<_, _>)
+    ($errcode_dest:expr => $body:block) => {
+        proteus_impl!($errcode_dest => $body or throw ::std::result::Result<_, _>)
     };
 }
 
@@ -57,7 +74,6 @@ cfg_if::cfg_if! {
     } else {
         mod generic;
         pub use self::generic::*;
-
 
         #[cfg(feature = "mobile")]
         uniffi_macros::include_scaffolding!("CoreCrypto");

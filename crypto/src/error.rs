@@ -133,11 +133,10 @@ pub type CryptoResult<T> = Result<T, CryptoError>;
 impl CryptoError {
     /// Returns the proteus error code
     pub fn proteus_error_code(&self) -> u32 {
-        if let Self::ProteusError(e) = self {
-            e.error_code()
-        } else {
-            0
-        }
+        let Self::ProteusError(e) = self else {
+            return 0;
+        };
+        e.error_code()
     }
 }
 

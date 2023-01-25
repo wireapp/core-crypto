@@ -785,7 +785,7 @@ impl CoreCrypto<'_> {
 impl CoreCrypto<'_> {
     /// See [core_crypto::proteus::ProteusCentral::try_new]
     pub fn proteus_init(&self) -> CryptoResult<()> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             future::block_on(
                 self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                     self.central
@@ -799,7 +799,7 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::proteus::ProteusCentral::session_from_prekey]
     pub fn proteus_session_from_prekey(&self, session_id: &str, prekey: &[u8]) -> CryptoResult<()> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             let _ = future::block_on(
                 self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                     self.central
@@ -815,7 +815,7 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::proteus::ProteusCentral::session_from_message]
     pub fn proteus_session_from_message(&self, session_id: &str, envelope: &[u8]) -> CryptoResult<Vec<u8>> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             let (_, payload) = future::block_on(
                 self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                     self.central
@@ -832,7 +832,7 @@ impl CoreCrypto<'_> {
     /// See [core_crypto::proteus::ProteusCentral::session_save]
     /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
     pub fn proteus_session_save(&self, session_id: &str) -> CryptoResult<()> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             future::block_on(
                 self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                     self.central
@@ -846,7 +846,7 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::proteus::ProteusCentral::session_delete]
     pub fn proteus_session_delete(&self, session_id: &str) -> CryptoResult<()> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             future::block_on(
                 self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                     self.central
@@ -860,7 +860,7 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::proteus::ProteusCentral::session_exists]
     pub fn proteus_session_exists(&self, session_id: &str) -> CryptoResult<bool> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             self.central
                 .lock()
                 .map_err(|_| CryptoError::LockPoisonError)?
@@ -870,7 +870,7 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::proteus::ProteusCentral::decrypt]
     pub fn proteus_decrypt(&self, session_id: &str, ciphertext: &[u8]) -> CryptoResult<Vec<u8>> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             future::block_on(
                 self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                     self.central
@@ -884,7 +884,7 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::proteus::ProteusCentral::encrypt]
     pub fn proteus_encrypt(&self, session_id: &str, plaintext: &[u8]) -> CryptoResult<Vec<u8>> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             future::block_on(
                 self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                     self.central
@@ -902,7 +902,7 @@ impl CoreCrypto<'_> {
         sessions: Vec<String>,
         plaintext: &[u8],
     ) -> CryptoResult<std::collections::HashMap<String, Vec<u8>>> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             future::block_on(
                 self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                     self.central
@@ -916,7 +916,7 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::proteus::ProteusCentral::new_prekey]
     pub fn proteus_new_prekey(&self, prekey_id: u16) -> CryptoResult<Vec<u8>> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             future::block_on(
                 self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                     self.central
@@ -930,7 +930,7 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::proteus::ProteusCentral::new_prekey_auto]
     pub fn proteus_new_prekey_auto(&self) -> CryptoResult<Vec<u8>> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             future::block_on(
                 self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                     self.central
@@ -944,7 +944,7 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::proteus::ProteusCentral::fingerprint]
     pub fn proteus_fingerprint(&self) -> CryptoResult<String> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             self.central
                 .lock()
                 .map_err(|_| CryptoError::LockPoisonError)?
@@ -954,7 +954,7 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::proteus::ProteusCentral::fingerprint_local]
     pub fn proteus_fingerprint_local(&self, session_id: &str) -> CryptoResult<String> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             self.central
                 .lock()
                 .map_err(|_| CryptoError::LockPoisonError)?
@@ -964,7 +964,7 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::proteus::ProteusCentral::fingerprint_remote]
     pub fn proteus_fingerprint_remote(&self, session_id: &str) -> CryptoResult<String> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             self.central
                 .lock()
                 .map_err(|_| CryptoError::LockPoisonError)?
@@ -975,14 +975,14 @@ impl CoreCrypto<'_> {
     /// See [core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle]
     /// NOTE: uniffi doesn't support associated functions, so we have to have the self here
     pub fn proteus_fingerprint_prekeybundle(&self, prekey: &[u8]) -> CryptoResult<String> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(prekey)
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::cryptobox_migrate]
     pub fn proteus_cryptobox_migrate(&self, path: &str) -> CryptoResult<()> {
-        proteus_impl! { self => {
+        proteus_impl! { self.proteus_last_error_code => {
             future::block_on(
                 self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                     self.central
@@ -995,8 +995,11 @@ impl CoreCrypto<'_> {
     }
 
     /// Returns the latest proteus error code. If 0, no error has occured
+    ///
+    /// NOTE: This will clear the last error code.
     pub fn proteus_last_error_code(&self) -> u32 {
-        self.proteus_last_error_code.load(std::sync::atomic::Ordering::Relaxed)
+        self.proteus_last_error_code
+            .swap(0, std::sync::atomic::Ordering::SeqCst)
     }
 }
 

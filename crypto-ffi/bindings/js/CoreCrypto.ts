@@ -20,6 +20,81 @@ import wasm from "../../../crypto-ffi/Cargo.toml";
 
 import type * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi";
 
+interface CoreCryptoRichError {
+    errorName: string;
+    message: string;
+    rustStackTrace: string;
+    proteusErrorCode: number;
+}
+
+/**
+ * Error wrapper that takes care of extracting rich error details across the FFI (through JSON parsing)
+ *
+ * Whenever you're supposed to get this class (that extends `Error`) you might end up with a base `Error`
+ * in case the parsing of the message structure fails. This is unlikely but the case is still covered and fall backs automatically.
+ * More information will be found in the base `Error.cause` to inform you why the parsing has failed.
+ *
+ * Please note that in this case the extra properties will not be available.
+ */
+export class CoreCryptoError extends Error {
+    rustStackTrace: string;
+    proteusErrorCode: number;
+
+    private constructor(msg: string, richError: CoreCryptoRichError, ...params: any[]) {
+        // @ts-ignore
+        super(msg, ...params);
+        Object.setPrototypeOf(this, new.target.prototype);
+
+        this.name = richError.errorName;
+        this.rustStackTrace = richError.rustStackTrace;
+        this.proteusErrorCode = richError.proteusErrorCode;
+    }
+
+    private static fallback(msg: string, ...params: any[]): Error {
+        console.warn("Cannot build CoreCryptoError, falling back to standard Error");
+        // @ts-ignore
+        return new Error(msg, ...params);
+    }
+
+    static build(msg: string, ...params: any[]): CoreCryptoError|Error {
+        const parts = msg.split("\n\n");
+        if (parts.length < 2) {
+            const cause = new Error("CoreCrypto WASM FFI Error doesn't have enough elements to build a rich error");
+            return this.fallback(msg, { cause }, ...params);
+        }
+
+        const [errMsg, richErrorJSON, ] = parts;
+        try {
+            const richError: CoreCryptoRichError = JSON.parse(richErrorJSON);
+            return new this(errMsg, richError, ...params);
+        } catch(cause) {
+            return this.fallback(msg, { cause }, ...params);
+        }
+    }
+
+    static fromStdError(e: Error): CoreCryptoError|Error {
+        const opts = {
+            // @ts-ignore
+            cause: e.cause || undefined,
+            stack: e.stack || undefined,
+        };
+
+        return this.build(e.message, opts);
+    }
+
+    static async asyncMapErr<T>(p: Promise<T>): Promise<T> {
+        const mappedErrorPromise = p.catch((e: Error|CoreCryptoError) => {
+            if (e instanceof CoreCryptoError) {
+                throw e;
+            } else {
+                throw this.fromStdError(e);
+            }
+        });
+
+        return await mappedErrorPromise;
+    }
+}
+
 /**
  * see [core_crypto::prelude::CiphersuiteName]
  */
@@ -221,10 +296,10 @@ export enum RatchetTreeType {
 }
 
 /**
- * Params for CoreCrypto initialization
+ * Params for CoreCrypto deferred initialization
  * Please note that the `entropySeed` parameter MUST be exactly 32 bytes
  */
-export interface CoreCryptoParams {
+export interface CoreCryptoDeferredParams {
     /**
      * Name of the IndexedDB database
      */
@@ -235,11 +310,6 @@ export interface CoreCryptoParams {
      */
     key: string;
     /**
-     * MLS Client ID.
-     * This should stay consistent as it will be verified against the stored signature & identity to validate the persisted credential
-     */
-    clientId: ClientId;
-    /**
      * External PRNG entropy pool seed.
      * This **must** be exactly 32 bytes
      */
@@ -248,6 +318,18 @@ export interface CoreCryptoParams {
      * .wasm file path, this will be useful in case your bundling system likes to relocate files (i.e. what webpack does)
      */
     wasmFilePath?: string;
+}
+
+/**
+ * Params for CoreCrypto initialization
+ * Please note that the `entropySeed` parameter MUST be exactly 32 bytes
+ */
+export interface CoreCryptoParams extends CoreCryptoDeferredParams {
+    /**
+     * MLS Client ID.
+     * This should stay consistent as it will be verified against the stored signature & identity to validate the persisted credential
+     */
+    clientId: ClientId;
 }
 
 /**
@@ -498,13 +580,13 @@ export class CoreCrypto {
      * });
      * ````
      */
-    static async init({databaseName, key, clientId, wasmFilePath, entropySeed}: CoreCryptoParams): Promise<CoreCrypto> {
+    static async init({ databaseName, key, clientId, wasmFilePath, entropySeed }: CoreCryptoParams): Promise<CoreCrypto> {
         if (!this.#module) {
             const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
             const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
             this.#module = exports;
         }
-        const cc = await this.#module.CoreCrypto._internal_new(databaseName, key, clientId, entropySeed);
+        const cc = await CoreCryptoError.asyncMapErr(this.#module.CoreCrypto._internal_new(databaseName, key, clientId, entropySeed));
         return new this(cc);
     }
 
@@ -513,14 +595,15 @@ export class CoreCrypto {
      * First, calling this will set up the keystore and will allow generating proteus prekeys.
      * Then, those keys can be traded for a clientId.
      * Use this clientId to initialize MLS with {@link CoreCrypto.mlsInit}.
+     * @param params - {@link CoreCryptoDeferredParams}
      */
-    static async deferredInit(databaseName: string, key: string, entropySeed?: Uint8Array, wasmFilePath?: string): Promise<CoreCrypto> {
+    static async deferredInit({ databaseName, key, entropySeed, wasmFilePath }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
         if (!this.#module) {
             const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
             const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
             this.#module = exports;
         }
-        const cc = await this.#module.CoreCrypto.deferred_init(databaseName, key, entropySeed);
+        const cc = await CoreCryptoError.asyncMapErr(this.#module.CoreCrypto.deferred_init(databaseName, key, entropySeed));
         return new this(cc);
     }
 
@@ -530,7 +613,7 @@ export class CoreCrypto {
      * @param clientId - {@link CoreCryptoParams#clientId} but required
      */
     async mlsInit(clientId: ClientId): Promise<void> {
-        return await this.#cc.mls_init(clientId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.mls_init(clientId));
     }
 
     /** @hidden */
@@ -544,7 +627,7 @@ export class CoreCrypto {
      * **CAUTION**: This {@link CoreCrypto} instance won't be useable after a call to this method, but there's no way to express this requirement in TypeScript so you'll get errors instead!
      */
     async wipe() {
-        await this.#cc.wipe();
+        await CoreCryptoError.asyncMapErr(this.#cc.wipe());
     }
 
     /**
@@ -553,7 +636,7 @@ export class CoreCrypto {
      * **CAUTION**: This {@link CoreCrypto} instance won't be useable after a call to this method, but there's no way to express this requirement in TypeScript so you'll get errors instead!
      */
     async close() {
-        await this.#cc.close();
+        await CoreCryptoError.asyncMapErr(this.#cc.close());
     }
 
     /**
@@ -562,12 +645,16 @@ export class CoreCrypto {
      * @param callbacks - Any interface following the {@link CoreCryptoCallbacks} interface
      */
     registerCallbacks(callbacks: CoreCryptoCallbacks) {
-        const wasmCallbacks = new CoreCrypto.#module.CoreCryptoWasmCallbacks(
-            callbacks.authorize,
-            callbacks.userAuthorize,
-            callbacks.clientIsExistingGroupUser
-        );
-        this.#cc.set_callbacks(wasmCallbacks);
+        try {
+            const wasmCallbacks = new CoreCrypto.#module.CoreCryptoWasmCallbacks(
+                callbacks.authorize,
+                callbacks.userAuthorize,
+                callbacks.clientIsExistingGroupUser
+            );
+            this.#cc.set_callbacks(wasmCallbacks);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -587,7 +674,7 @@ export class CoreCrypto {
      * ```
      */
     async conversationExists(conversationId: ConversationId): Promise<boolean> {
-        return await this.#cc.conversation_exists(conversationId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.conversation_exists(conversationId));
     }
 
     /**
@@ -603,7 +690,7 @@ export class CoreCrypto {
      * ```
      */
     async conversationEpoch(conversationId: ConversationId): Promise<number> {
-        return await this.#cc.conversation_epoch(conversationId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.conversation_epoch(conversationId));
     }
 
     /**
@@ -612,7 +699,7 @@ export class CoreCrypto {
      * @param conversationId - The ID of the conversation to remove
      */
     async wipeConversation(conversationId: ConversationId): Promise<void> {
-        return await this.#cc.wipe_conversation(conversationId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.wipe_conversation(conversationId));
     }
 
     /**
@@ -629,14 +716,18 @@ export class CoreCrypto {
         conversationId: ConversationId,
         configuration: ConversationConfiguration = {}
     ) {
-        const {ciphersuite, externalSenders, custom = {}} = configuration || {};
-        const config = new CoreCrypto.#module.ConversationConfiguration(
-            ciphersuite,
-            externalSenders,
-            custom?.keyRotationSpan,
-        );
-        const ret = await this.#cc.create_conversation(conversationId, config);
-        return ret;
+        try {
+            const {ciphersuite, externalSenders, custom = {}} = configuration || {};
+            const config = new CoreCrypto.#module.ConversationConfiguration(
+                ciphersuite,
+                externalSenders,
+                custom?.keyRotationSpan,
+            );
+            const ret = await CoreCryptoError.asyncMapErr(this.#cc.create_conversation(conversationId, config));
+            return ret;
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -648,25 +739,29 @@ export class CoreCrypto {
      * @returns a {@link DecryptedMessage}. Note that {@link DecryptedMessage#message} is `undefined` when the encrypted payload contains a system message such a proposal or commit
      */
     async decryptMessage(conversationId: ConversationId, payload: Uint8Array): Promise<DecryptedMessage> {
-        const ffiDecryptedMessage: CoreCryptoFfiTypes.DecryptedMessage = await this.#cc.decrypt_message(
-            conversationId,
-            payload
-        );
+        try {
+            const ffiDecryptedMessage: CoreCryptoFfiTypes.DecryptedMessage = await CoreCryptoError.asyncMapErr(this.#cc.decrypt_message(
+                conversationId,
+                payload
+            ));
 
-        const commitDelay = ffiDecryptedMessage.commit_delay ?
-            ffiDecryptedMessage.commit_delay * 1000 :
-            undefined;
+            const commitDelay = ffiDecryptedMessage.commit_delay ?
+                ffiDecryptedMessage.commit_delay * 1000 :
+                undefined;
 
-        const ret: DecryptedMessage = {
-            message: ffiDecryptedMessage.message,
-            proposals: ffiDecryptedMessage.proposals,
-            isActive: ffiDecryptedMessage.is_active,
-            senderClientId: ffiDecryptedMessage.sender_client_id,
-            commitDelay,
-            hasEpochChanged: ffiDecryptedMessage.has_epoch_changed,
-        };
+            const ret: DecryptedMessage = {
+                message: ffiDecryptedMessage.message,
+                proposals: ffiDecryptedMessage.proposals,
+                isActive: ffiDecryptedMessage.is_active,
+                senderClientId: ffiDecryptedMessage.sender_client_id,
+                commitDelay,
+                hasEpochChanged: ffiDecryptedMessage.has_epoch_changed,
+            };
 
-        return ret;
+            return ret;
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -678,10 +773,10 @@ export class CoreCrypto {
      * @returns The encrypted payload for the given group. This needs to be fanned out to the other members of the group.
      */
     async encryptMessage(conversationId: ConversationId, message: Uint8Array): Promise<Uint8Array> {
-        return await this.#cc.encrypt_message(
+        return await CoreCryptoError.asyncMapErr(this.#cc.encrypt_message(
             conversationId,
             message
-        );
+        ));
     }
 
     /**
@@ -692,23 +787,27 @@ export class CoreCrypto {
      * @returns The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages
      */
     async processWelcomeMessage(welcomeMessage: Uint8Array, configuration: CustomConfiguration = {}): Promise<ConversationId> {
-        const {keyRotationSpan, wirePolicy} = configuration || {};
-        const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
-        return await this.#cc.process_welcome_message(welcomeMessage, config);
+        try {
+            const {keyRotationSpan, wirePolicy} = configuration || {};
+            const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
+            return await CoreCryptoError.asyncMapErr(this.#cc.process_welcome_message(welcomeMessage, config));
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
      * @returns The client's public key
      */
     async clientPublicKey(): Promise<Uint8Array> {
-        return await this.#cc.client_public_key();
+        return await CoreCryptoError.asyncMapErr(this.#cc.client_public_key());
     }
 
     /**
      * @returns The amount of valid, non-expired KeyPackages that are persisted in the backing storage
      */
     async clientValidKeypackagesCount(): Promise<number> {
-        return await this.#cc.client_valid_keypackages_count();
+        return await CoreCryptoError.asyncMapErr(this.#cc.client_valid_keypackages_count());
     }
 
     /**
@@ -718,7 +817,7 @@ export class CoreCrypto {
      * @returns An array of length `amountRequested` containing TLS-serialized KeyPackages
      */
     async clientKeypackages(amountRequested: number): Promise<Array<Uint8Array>> {
-        return await this.#cc.client_keypackages(amountRequested);
+        return await CoreCryptoError.asyncMapErr(this.#cc.client_keypackages(amountRequested));
     }
 
     /**
@@ -737,30 +836,34 @@ export class CoreCrypto {
         conversationId: ConversationId,
         clients: Invitee[]
     ): Promise<MemberAddedMessages> {
-        const ffiClients = clients.map(
-            (invitee) => new CoreCrypto.#module.Invitee(invitee.id, invitee.kp)
-        );
+        try {
+            const ffiClients = clients.map(
+                (invitee) => new CoreCrypto.#module.Invitee(invitee.id, invitee.kp)
+            );
 
-        const ffiRet: CoreCryptoFfiTypes.MemberAddedMessages = await this.#cc.add_clients_to_conversation(
-            conversationId,
-            ffiClients
-        );
+            const ffiRet: CoreCryptoFfiTypes.MemberAddedMessages = await CoreCryptoError.asyncMapErr(this.#cc.add_clients_to_conversation(
+                conversationId,
+                ffiClients
+            ));
 
-        ffiClients.forEach(c => c.free());
+            ffiClients.forEach(c => c.free());
 
-        const pgs = ffiRet.public_group_state;
+            const pgs = ffiRet.public_group_state;
 
-        const ret: MemberAddedMessages = {
-            welcome: ffiRet.welcome,
-            commit: ffiRet.commit,
-            publicGroupState: {
-                encryptionType: pgs.encryption_type,
-                ratchetTreeType: pgs.ratchet_tree_type,
-                payload: pgs.payload
-            },
-        };
+            const ret: MemberAddedMessages = {
+                welcome: ffiRet.welcome,
+                commit: ffiRet.commit,
+                publicGroupState: {
+                    encryptionType: pgs.encryption_type,
+                    ratchetTreeType: pgs.ratchet_tree_type,
+                    payload: pgs.payload
+                },
+            };
 
-        return ret;
+            return ret;
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -780,24 +883,28 @@ export class CoreCrypto {
         conversationId: ConversationId,
         clientIds: ClientId[]
     ): Promise<CommitBundle> {
-        const ffiRet: CoreCryptoFfiTypes.CommitBundle = await this.#cc.remove_clients_from_conversation(
-            conversationId,
-            clientIds
-        );
+        try {
+            const ffiRet: CoreCryptoFfiTypes.CommitBundle = await CoreCryptoError.asyncMapErr(this.#cc.remove_clients_from_conversation(
+                conversationId,
+                clientIds
+            ));
 
-        const pgs = ffiRet.public_group_state;
+            const pgs = ffiRet.public_group_state;
 
-        const ret: CommitBundle = {
-            welcome: ffiRet.welcome,
-            commit: ffiRet.commit,
-            publicGroupState: {
-                encryptionType: pgs.encryption_type,
-                ratchetTreeType: pgs.ratchet_tree_type,
-                payload: pgs.payload
-            },
-        };
+            const ret: CommitBundle = {
+                welcome: ffiRet.welcome,
+                commit: ffiRet.commit,
+                publicGroupState: {
+                    encryptionType: pgs.encryption_type,
+                    ratchetTreeType: pgs.ratchet_tree_type,
+                    payload: pgs.payload
+                },
+            };
 
-        return ret;
+            return ret;
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -812,23 +919,27 @@ export class CoreCrypto {
      * @returns A {@link CommitBundle}
      */
     async updateKeyingMaterial(conversationId: ConversationId): Promise<CommitBundle> {
-        const ffiRet: CoreCryptoFfiTypes.CommitBundle = await this.#cc.update_keying_material(
-            conversationId
-        );
+        try {
+            const ffiRet: CoreCryptoFfiTypes.CommitBundle = await CoreCryptoError.asyncMapErr(this.#cc.update_keying_material(
+                conversationId
+            ));
 
-        const pgs = ffiRet.public_group_state;
+            const pgs = ffiRet.public_group_state;
 
-        const ret: CommitBundle = {
-            welcome: ffiRet.welcome,
-            commit: ffiRet.commit,
-            publicGroupState: {
-                encryptionType: pgs.encryption_type,
-                ratchetTreeType: pgs.ratchet_tree_type,
-                payload: pgs.payload
-            },
-        };
+            const ret: CommitBundle = {
+                welcome: ffiRet.welcome,
+                commit: ffiRet.commit,
+                publicGroupState: {
+                    encryptionType: pgs.encryption_type,
+                    ratchetTreeType: pgs.ratchet_tree_type,
+                    payload: pgs.payload
+                },
+            };
 
-        return ret;
+            return ret;
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -843,25 +954,29 @@ export class CoreCrypto {
      * @returns A {@link CommitBundle} or `undefined` when there was no pending proposal to commit
      */
     async commitPendingProposals(conversationId: ConversationId): Promise<CommitBundle | undefined> {
-        const ffiCommitBundle: CoreCryptoFfiTypes.CommitBundle | undefined = await this.#cc.commit_pending_proposals(
-            conversationId
-        );
+        try {
+            const ffiCommitBundle: CoreCryptoFfiTypes.CommitBundle | undefined = await CoreCryptoError.asyncMapErr(this.#cc.commit_pending_proposals(
+                conversationId
+            ));
 
-        if (!ffiCommitBundle) {
-            return undefined;
+            if (!ffiCommitBundle) {
+                return undefined;
+            }
+
+            const pgs = ffiCommitBundle.public_group_state;
+
+            return {
+                welcome: ffiCommitBundle.welcome,
+                commit: ffiCommitBundle.commit,
+                publicGroupState: {
+                    encryptionType: pgs.encryption_type,
+                    ratchetTreeType: pgs.ratchet_tree_type,
+                    payload: pgs.payload
+                },
+            };
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
         }
-
-        const pgs = ffiCommitBundle.public_group_state;
-
-        return {
-            welcome: ffiCommitBundle.welcome,
-            commit: ffiCommitBundle.commit,
-            publicGroupState: {
-                encryptionType: pgs.encryption_type,
-                ratchetTreeType: pgs.ratchet_tree_type,
-                payload: pgs.payload
-            },
-        };
     }
 
     /**
@@ -881,10 +996,10 @@ export class CoreCrypto {
                 if (!(args as AddProposalArgs).kp) {
                     throw new Error("kp is not contained in the proposal arguments");
                 }
-                return await this.#cc.new_add_proposal(
+                return await CoreCryptoError.asyncMapErr(this.#cc.new_add_proposal(
                     args.conversationId,
                     (args as AddProposalArgs).kp
-                );
+                ));
             }
             case ProposalType.Remove: {
                 if (!(args as RemoveProposalArgs).clientId) {
@@ -892,15 +1007,15 @@ export class CoreCrypto {
                         "clientId is not contained in the proposal arguments"
                     );
                 }
-                return await this.#cc.new_remove_proposal(
+                return await CoreCryptoError.asyncMapErr(this.#cc.new_remove_proposal(
                     args.conversationId,
                     (args as RemoveProposalArgs).clientId
-                );
+                ));
             }
             case ProposalType.Update: {
-                return await this.#cc.new_update_proposal(
+                return await CoreCryptoError.asyncMapErr(this.#cc.new_update_proposal(
                     args.conversationId
-                );
+                ));
             }
             default:
                 throw new Error("Invalid proposal type!");
@@ -913,18 +1028,18 @@ export class CoreCrypto {
     ): Promise<Uint8Array> {
         switch (externalProposalType) {
             case ExternalProposalType.Add: {
-                return await this.#cc.new_external_add_proposal(args.conversationId, args.epoch);
+                return await CoreCryptoError.asyncMapErr(this.#cc.new_external_add_proposal(args.conversationId, args.epoch));
             }
             case ExternalProposalType.Remove: {
                 if (!(args as ExternalRemoveProposalArgs).keyPackageRef) {
                     throw new Error("keyPackageRef is not contained in the external proposal arguments");
                 }
 
-                return await this.#cc.new_external_remove_proposal(
+                return await CoreCryptoError.asyncMapErr(this.#cc.new_external_remove_proposal(
                     args.conversationId,
                     args.epoch,
                     (args as ExternalRemoveProposalArgs).keyPackageRef
-                );
+                ));
             }
             default:
                 throw new Error("Invalid external proposal type!");
@@ -938,7 +1053,7 @@ export class CoreCrypto {
      * @returns TLS-serialized MLS public group state
      */
     async exportGroupState(conversationId: ConversationId): Promise<Uint8Array> {
-        return await this.#cc.export_group_state(conversationId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.export_group_state(conversationId));
     }
 
     /**
@@ -956,23 +1071,27 @@ export class CoreCrypto {
      * @returns see {@link ConversationInitBundle}
      */
     async joinByExternalCommit(publicGroupState: Uint8Array, configuration: CustomConfiguration = {}): Promise<ConversationInitBundle> {
-        const {keyRotationSpan, wirePolicy} = configuration || {};
-        const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
-        const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await this.#cc.join_by_external_commit(publicGroupState, config);
+        try {
+            const {keyRotationSpan, wirePolicy} = configuration || {};
+            const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
+            const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await CoreCryptoError.asyncMapErr(this.#cc.join_by_external_commit(publicGroupState, config));
 
-        const pgs = ffiInitMessage.public_group_state;
+            const pgs = ffiInitMessage.public_group_state;
 
-        const ret: ConversationInitBundle = {
-            conversationId: ffiInitMessage.conversation_id,
-            commit: ffiInitMessage.commit,
-            publicGroupState: {
-                encryptionType: pgs.encryption_type,
-                ratchetTreeType: pgs.ratchet_tree_type,
-                payload: pgs.payload
-            },
-        };
+            const ret: ConversationInitBundle = {
+                conversationId: ffiInitMessage.conversation_id,
+                commit: ffiInitMessage.commit,
+                publicGroupState: {
+                    encryptionType: pgs.encryption_type,
+                    ratchetTreeType: pgs.ratchet_tree_type,
+                    payload: pgs.payload
+                },
+            };
 
-        return ret;
+            return ret;
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -982,7 +1101,7 @@ export class CoreCrypto {
      * @param conversationId - The ID of the conversation
      */
     async mergePendingGroupFromExternalCommit(conversationId: ConversationId): Promise<void> {
-        return await this.#cc.merge_pending_group_from_external_commit(conversationId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.merge_pending_group_from_external_commit(conversationId));
     }
 
     /**
@@ -993,7 +1112,7 @@ export class CoreCrypto {
      * @param conversationId - The ID of the conversation
      */
     async clearPendingGroupFromExternalCommit(conversationId: ConversationId): Promise<void> {
-        return await this.#cc.clear_pending_group_from_external_commit(conversationId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.clear_pending_group_from_external_commit(conversationId));
     }
 
     /**
@@ -1003,7 +1122,7 @@ export class CoreCrypto {
      * @param conversationId - The group's ID
      */
     async commitAccepted(conversationId: ConversationId): Promise<void> {
-        return await this.#cc.commit_accepted(conversationId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.commit_accepted(conversationId));
     }
 
     /**
@@ -1017,7 +1136,7 @@ export class CoreCrypto {
      * @param proposalRef - A reference to the proposal to delete. You get one when using {@link CoreCrypto.newProposal}
      */
     async clearPendingProposal(conversationId: ConversationId, proposalRef: ProposalRef): Promise<void> {
-        return await this.#cc.clear_pending_proposal(conversationId, proposalRef);
+        return await CoreCryptoError.asyncMapErr(this.#cc.clear_pending_proposal(conversationId, proposalRef));
     }
 
     /**
@@ -1032,7 +1151,7 @@ export class CoreCrypto {
      * @param conversationId - The group's ID
      */
     async clearPendingCommit(conversationId: ConversationId): Promise<void> {
-        return await this.#cc.clear_pending_commit(conversationId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.clear_pending_commit(conversationId));
     }
 
     /**
@@ -1045,7 +1164,7 @@ export class CoreCrypto {
      * @returns A `Uint8Array` representing the derived key
      */
     async exportSecretKey(conversationId: ConversationId, keyLength: number): Promise<Uint8Array> {
-        return await this.#cc.export_secret_key(conversationId, keyLength);
+        return await CoreCryptoError.asyncMapErr(this.#cc.export_secret_key(conversationId, keyLength));
     }
 
     /**
@@ -1056,7 +1175,7 @@ export class CoreCrypto {
      * @returns A list of clients from the members of the group
      */
     async getClientIds(conversationId: ConversationId): Promise<ClientId[]> {
-        return await this.#cc.get_client_ids(conversationId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.get_client_ids(conversationId));
     }
 
     /**
@@ -1068,7 +1187,7 @@ export class CoreCrypto {
      * @returns A `Uint8Array` buffer that contains `length` cryptographically-secure random bytes
      */
     async randomBytes(length: number): Promise<Uint8Array> {
-        return await this.#cc.random_bytes(length);
+        return await CoreCryptoError.asyncMapErr(this.#cc.random_bytes(length));
     }
 
     /**
@@ -1081,14 +1200,14 @@ export class CoreCrypto {
             throw new Error(`The seed length needs to be exactly 32 bytes. ${seed.length} bytes provided.`);
         }
 
-        return await this.#cc.reseed_rng(seed);
+        return await CoreCryptoError.asyncMapErr(this.#cc.reseed_rng(seed));
     }
 
     /**
      * Initiailizes the proteus client
      */
     async proteusInit(): Promise<void> {
-        return await this.#cc.proteus_init();
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_init());
     }
 
     /**
@@ -1098,7 +1217,7 @@ export class CoreCrypto {
      * @param prekey - CBOR-encoded Proteus prekey of the other client
      */
     async proteusSessionFromPrekey(sessionId: string, prekey: Uint8Array): Promise<void> {
-        return await this.#cc.proteus_session_from_prekey(sessionId, prekey);
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_session_from_prekey(sessionId, prekey));
     }
 
     /**
@@ -1110,7 +1229,7 @@ export class CoreCrypto {
      * @returns A `Uint8Array` containing the message that was sent along with the session handshake
      */
     async proteusSessionFromMessage(sessionId: string, envelope: Uint8Array): Promise<Uint8Array> {
-        return await this.#cc.proteus_session_from_message(sessionId, envelope);
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_session_from_message(sessionId, envelope));
     }
 
     /**
@@ -1121,7 +1240,7 @@ export class CoreCrypto {
      * @param sessionId - ID of the Proteus session
      */
     async proteusSessionSave(sessionId: string): Promise<void> {
-        return await this.#cc.proteus_session_save(sessionId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_session_save(sessionId));
     }
 
     /**
@@ -1131,7 +1250,7 @@ export class CoreCrypto {
      * @param sessionId - ID of the Proteus session
      */
     async proteusSessionDelete(sessionId: string): Promise<void> {
-        return await this.#cc.proteus_session_delete(sessionId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_session_delete(sessionId));
     }
 
     /**
@@ -1142,7 +1261,7 @@ export class CoreCrypto {
      * @returns whether the session exists or not
      */
     async proteusSessionExists(sessionId: string): Promise<boolean> {
-        return await this.#cc.proteus_session_exists(sessionId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_session_exists(sessionId));
     }
 
     /**
@@ -1153,7 +1272,7 @@ export class CoreCrypto {
      * @returns The decrypted payload contained within the message
      */
     async proteusDecrypt(sessionId: string, ciphertext: Uint8Array): Promise<Uint8Array> {
-        return await this.#cc.proteus_decrypt(sessionId, ciphertext);
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_decrypt(sessionId, ciphertext));
     }
 
     /**
@@ -1164,7 +1283,7 @@ export class CoreCrypto {
      * @returns The CBOR-serialized encrypted message
      */
     async proteusEncrypt(sessionId: string, plaintext: Uint8Array): Promise<Uint8Array> {
-        return await this.#cc.proteus_encrypt(sessionId, plaintext);
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_encrypt(sessionId, plaintext));
     }
 
     /**
@@ -1176,7 +1295,7 @@ export class CoreCrypto {
      * @returns A map indexed by each session ID and the corresponding CBOR-serialized encrypted message for this session
      */
     async proteusEncryptBatched(sessions: string[], plaintext: Uint8Array): Promise<Map<string, Uint8Array>> {
-        return await this.#cc.proteus_encrypt_batched(sessions, plaintext);
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_encrypt_batched(sessions, plaintext));
     }
 
     /**
@@ -1186,7 +1305,7 @@ export class CoreCrypto {
      * @returns: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
      */
     async proteusNewPrekey(prekeyId: number): Promise<Uint8Array> {
-        return await this.#cc.proteus_new_prekey(prekeyId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_new_prekey(prekeyId));
     }
 
     /**
@@ -1195,7 +1314,7 @@ export class CoreCrypto {
      * @returns: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
      */
     async proteusNewPrekeyAuto(): Promise<Uint8Array> {
-        return await this.#cc.proteus_new_prekey_auto();
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_new_prekey_auto());
     }
 
     /**
@@ -1205,7 +1324,7 @@ export class CoreCrypto {
      * @returns Hex-encoded public key string
      */
     async proteusFingerprint(): Promise<string> {
-        return await this.#cc.proteus_fingerprint();
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_fingerprint());
     }
 
     /**
@@ -1215,7 +1334,7 @@ export class CoreCrypto {
      * @returns Hex-encoded public key string
      */
     async proteusFingerprintLocal(sessionId: string): Promise<string> {
-        return await this.#cc.proteus_fingerprint_local(sessionId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_fingerprint_local(sessionId));
     }
 
     /**
@@ -1225,7 +1344,7 @@ export class CoreCrypto {
      * @returns Hex-encoded public key string
      */
     async proteusFingerprintRemote(sessionId: string): Promise<string> {
-        return await this.#cc.proteus_fingerprint_remote(sessionId);
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_fingerprint_remote(sessionId));
     }
 
     /**
@@ -1235,7 +1354,11 @@ export class CoreCrypto {
      * @returns Hex-encoded public key string
      **/
     static proteusFingerprintPrekeybundle(prekey: Uint8Array): string {
-        return this.#module.CoreCrypto.proteus_fingerprint_prekeybundle(prekey);
+        try {
+            return this.#module.CoreCrypto.proteus_fingerprint_prekeybundle(prekey);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1244,7 +1367,15 @@ export class CoreCrypto {
      * @param storeName - The name of the IndexedDB store where the data is stored
      */
     async proteusCryptoboxMigrate(storeName: string): Promise<void> {
-        return await this.#cc.proteus_cryptobox_migrate(storeName);
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_cryptobox_migrate(storeName));
+    }
+
+    /**
+     * Note: this call clears out the code and resets it to 0 (aka no error)
+     * @returns the last proteus error code that occured.
+     */
+    async proteusLastErrorCode(): Promise<number> {
+        return await this.#cc.proteus_last_error_code();
     }
 
     /**
@@ -1256,8 +1387,8 @@ export class CoreCrypto {
      * @param ciphersuite - For generating signing key material. Only {@link Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519} is supported currently
      */
     async newAcmeEnrollment(): Promise<WireE2eIdentity> {
-        const e2ei = await this.#cc.new_acme_enrollment(Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519);
-        return new WireE2eIdentity(e2ei, CoreCrypto.#module);
+        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.new_acme_enrollment(Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519));
+        return new WireE2eIdentity(e2ei);
     }
 
     /**
@@ -1280,19 +1411,12 @@ type AcmeAccount = Uint8Array;
 type AcmeOrder = Uint8Array;
 
 export class WireE2eIdentity {
+    /** @hidden */
+    #e2ei: CoreCryptoFfiTypes.FfiWireE2EIdentity;
 
     /** @hidden */
-    static #module: typeof CoreCryptoFfiTypes;
-
-    /** @hidden */
-    #e2ei: CoreCryptoFfiTypes.WireE2eIdentity;
-
-    /** @hidden */
-    public constructor(e2ei: CoreCryptoFfiTypes.WireE2eIdentity, module: typeof CoreCryptoFfiTypes) {
+    public constructor(e2ei: CoreCryptoFfiTypes.FfiWireE2EIdentity) {
         this.#e2ei = e2ei;
-        if (!WireE2eIdentity.#module) {
-            WireE2eIdentity.#module = module;
-        }
     }
 
     /**
@@ -1304,7 +1428,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
      */
     directoryResponse(directory: JsonRawData): AcmeDirectory {
-        return this.#e2ei.directory_response(directory)
+        try {
+            return this.#e2ei.directory_response(directory);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1316,7 +1444,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
      */
     newAccountRequest(directory: AcmeDirectory, previousNonce: string): JsonRawData {
-        return this.#e2ei.new_account_request(directory, previousNonce)
+        try {
+            return this.#e2ei.new_account_request(directory, previousNonce);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1325,7 +1457,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
      */
     newAccountResponse(account: JsonRawData): AcmeAccount {
-        return this.#e2ei.new_account_response(account)
+        try {
+            return this.#e2ei.new_account_response(account);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1340,7 +1476,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
     newOrderRequest(handle: string, clientId: string, expiryDays: number, directory: AcmeDirectory, account: AcmeAccount, previousNonce: string): JsonRawData {
-        return this.#e2ei.new_order_request(handle, clientId, expiryDays, directory, account, previousNonce)
+        try {
+            return this.#e2ei.new_order_request(handle, clientId, expiryDays, directory, account, previousNonce);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1350,7 +1490,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
     newOrderResponse(order: JsonRawData): NewAcmeOrder {
-        return this.#e2ei.new_order_response(order)
+        try {
+            return this.#e2ei.new_order_response(order);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1363,7 +1507,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
      */
     newAuthzRequest(url: string, account: AcmeAccount, previousNonce: string): JsonRawData {
-        return this.#e2ei.new_authz_request(url, account, previousNonce)
+        try {
+            return this.#e2ei.new_authz_request(url, account, previousNonce);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1377,7 +1525,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
      */
     newAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
-        return this.#e2ei.new_authz_response(authz)
+        try {
+            return this.#e2ei.new_authz_response(authz);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1397,7 +1549,11 @@ export class WireE2eIdentity {
      * @param expiryDays token expiry in days
      */
     createDpopToken(accessTokenUrl: string, userId: string, clientId: bigint, domain: string, clientIdChallenge: AcmeChallenge, backendNonce: string, expiryDays: number): string {
-        return this.#e2ei.create_dpop_token(accessTokenUrl, userId, clientId, domain, clientIdChallenge, backendNonce, expiryDays)
+        try {
+            return this.#e2ei.create_dpop_token(accessTokenUrl, userId, clientId, domain, clientIdChallenge, backendNonce, expiryDays);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1409,7 +1565,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
     newChallengeRequest(handleChallenge: AcmeChallenge, account: AcmeAccount, previousNonce: string): JsonRawData {
-        return this.#e2ei.new_challenge_request(handleChallenge, account, previousNonce)
+        try {
+            return this.#e2ei.new_challenge_request(handleChallenge, account, previousNonce);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1419,7 +1579,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
     newChallengeResponse(challenge: JsonRawData): void {
-        return this.#e2ei.new_challenge_response(challenge)
+        try {
+            return this.#e2ei.new_challenge_response(challenge);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1431,7 +1595,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
     checkOrderRequest(orderUrl: string, account: AcmeAccount, previousNonce: string): JsonRawData {
-        return this.#e2ei.check_order_request(orderUrl, account, previousNonce)
+        try {
+            return this.#e2ei.check_order_request(orderUrl, account, previousNonce);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1441,7 +1609,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
     checkOrderResponse(order: JsonRawData): AcmeOrder {
-        return this.#e2ei.check_order_response(order)
+        try {
+            return this.#e2ei.check_order_response(order);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1454,7 +1626,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
     finalizeRequest(domains: Uint8Array[], order: AcmeOrder, account: AcmeAccount, previousNonce: string): JsonRawData {
-        return this.#e2ei.finalize_request(domains, order, account, previousNonce)
+        try {
+            return this.#e2ei.finalize_request(domains, order, account, previousNonce);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1464,7 +1640,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
     finalizeResponse(finalize: JsonRawData): AcmeFinalize {
-        return this.#e2ei.finalize_response(finalize)
+        try {
+            return this.#e2ei.finalize_response(finalize);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1476,7 +1656,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2
      */
     certificateRequest(finalize: AcmeFinalize, account: AcmeAccount, previousNonce: string): JsonRawData {
-        return this.#e2ei.certificate_request(finalize, account, previousNonce)
+        try {
+            return this.#e2ei.certificate_request(finalize, account, previousNonce);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 
     /**
@@ -1486,7 +1670,11 @@ export class WireE2eIdentity {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2
      */
     certificateResponse(certificateChain: string): Uint8Array[] {
-        return this.#e2ei.certificate_response(certificateChain)
+        try {
+            return this.#e2ei.certificate_response(certificateChain);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
     }
 }
 
