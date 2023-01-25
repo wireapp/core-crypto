@@ -14,6 +14,44 @@ java {
     withSourcesJar()
 }
 
+val generatedDir = buildDir.resolve("generated").resolve("uniffi")
+val crateDir = projectDir.resolve("../../crypto-ffi/")
+val crateTargetDir = projectDir.resolve("../../target")
+val crateTargetBindingsDir = crateDir.resolve("bindings/kt")
+
+val copyBindings = tasks.register("copyBindings", Copy::class) {
+    group = "uniffi"
+    from(crateTargetBindingsDir)
+    include("**/CoreCrypto.kt")
+    into(generatedDir)
+}
+
+fun registerCopyJvmBinaryTask(target: String, jniTarget: String, include: String = "*.so"): TaskProvider<Copy> =
+    tasks.register("copy-${target}", Copy::class) {
+        group = "uniffi"
+        from(
+            crateTargetDir.resolve("${target}/release"),
+        )
+        include(include)
+        into(
+            buildDir.resolve("processedResources").resolve("jvm").resolve("main").resolve(jniTarget)
+        )
+    }
+
+val copyBinariesTasks = listOf(
+    registerCopyJvmBinaryTask("x86_64-unknown-linux-gnu", "linux-x86-64"),
+    registerCopyJvmBinaryTask("aarch64-apple-darwin", "darwin-aarch64", "*.dylib"),
+    registerCopyJvmBinaryTask("x86_64-apple-darwin", "darwin-x86-64", "*.dylib"),
+)
+
+tasks.withType<ProcessResources> {
+    dependsOn(copyBinariesTasks)
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    dependsOn(copyBindings)
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
 
@@ -23,6 +61,14 @@ tasks.withType<Test> {
         showExceptions = true
         showCauses = true
         showStackTraces = true
+    }
+}
+
+sourceSets {
+    main {
+        kotlin {
+            generatedDir
+        }
     }
 }
 
