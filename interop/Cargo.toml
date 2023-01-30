@@ -35,7 +35,7 @@ uuid = { version = "1.1", features = ["v4"] }
 tempfile = { version = "3.3", optional = true }
 # Terminal support
 xshell = "0.2"
-spinoff = "0.6"
+spinoff = "0.7"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 cryptobox = { git = "https://github.com/wireapp/cryptobox", optional = true }
