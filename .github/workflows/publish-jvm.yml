@@ -15,9 +15,60 @@ env:
   RUSTUP_MAX_RETRIES: 10
 
 jobs:
+  build-linux-artifacts:
+    if: github.repository == 'wireapp/core-crypto'
+    name: Build Linux Artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: "Setup rust"
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: "x86_64-unknown-linux-gnu"
+      - name: Setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Build Artifacts
+        run: |
+          cd crypto-ffi
+          cargo make jvm
+      - name: Upload x86_64-unknown-linux-gnu artifacts
+        uses: actions/upload-artifact@v3
+        with:
+            name: x86_64-unknown-linux-gnu
+            path: target/x86_64-unknown-linux-gnu/release/*.so
+
+  build-darwin-artifacts:
+    if: github.repository == 'wireapp/core-crypto'
+    name: Build Darwin Artifacts
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: "x86_64-apple-darwin,aarch64-apple-darwin"
+      - name: Setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Build Artifacts
+        run: |
+          cd crypto-ffi
+          cargo make jvm
+      - name: Upload x86_64-apple-darwin artifacts
+        uses: actions/upload-artifact@v3
+        with:
+            name: x86_64-apple-darwin
+            path: target/x86_64-apple-darwin/release/*.dylib
+      - name: Upload aarch64-apple-darwin artifacts
+        uses: actions/upload-artifact@v3
+        with:
+            name: aarch64-apple-darwin
+            path: target/aarch64-apple-darwin/release/*.dylib
+
   publish-jvm:
     if: github.repository == 'wireapp/core-crypto'
-    runs-on: macos-latest
+    name: Publish JVM Package
+    needs: [build-linux-artifacts, build-darwin-artifacts]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK 11
@@ -29,24 +80,21 @@ jobs:
         uses: gradle/gradle-build-action@v2
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@v1
-      - name: "Setup rust"
-        uses: dtolnay/rust-toolchain@stable
+      - name: Download x86_64 Linux Artifact
+        uses: actions/download-artifact@v3
         with:
-          targets: "x86_64-apple-darwin,aarch64-apple-darwin,x86_64-unknown-linux-gnu"
-      - name: Setup cargo-make
-        uses: davidB/rust-cargo-make@v1
-
-      - name: Build JVM package
-        env:
-          CC_x86_64_unknown_linux_gnu: x86_64-unknown-linux-gnu-gcc
-          CXX_x86_64_unknown_linux_gnu: x86_64-unknown-linux-gnu-g++
-          AR_x86_64_unknown_linux_gnu: x86_64-unknown-linux-gnu-ar
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: x86_64-unknown-linux-gnu-gcc
-        run: |
-          brew tap messense/macos-cross-toolchains
-          brew install x86_64-unknown-linux-gnu
-          cd crypto-ffi
-          cargo make copy-jvm-resources
+          name: x86_64-unknown-linux-gnu
+          path: target/x86_64-unknown-linux-gnu/release
+      - name: Download x86_64 Apple Darwin Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: x86_64-apple-darwin
+          path: target/x86_64-apple-darwin/release
+      - name: Download Aarch64 Apple Darwin Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: aarch64-apple-darwin
+          path: target/aarch64-apple-darwin/release
       - name: Publish package
         uses: gradle/gradle-build-action@v2
         with:
