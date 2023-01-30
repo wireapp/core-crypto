@@ -68,7 +68,7 @@ jobs:
     if: github.repository == 'wireapp/core-crypto'
     name: Publish JVM Package
     needs: [build-linux-artifacts, build-darwin-artifacts]
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK 11
