@@ -25,7 +25,6 @@ pub use rstest_reuse::{self, *};
 // TODO: EC signatures are not supported for certificates because 'rcgen' crate used for generating
 // certificates relies on 'ring' which does not support elliptic curves on WASM
 #[template]
-#[export]
 #[rstest(
     case,
     case::basic_cs1(TestCase::new(
