@@ -73,7 +73,7 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - uses: Swatinem/rust-cache@v2
@@ -89,3 +89,5 @@ jobs:
         run: |
           npm install
           npm run build
+      - name: Run E2E JS suite
+        run: npm run test:raw
