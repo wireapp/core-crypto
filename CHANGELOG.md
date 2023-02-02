@@ -7,6 +7,40 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.6.0-rc.6] - 2023-02-01
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Proteus error system not working (at all)
+- Force cargo to use git cli to avoid intermittent CI failures
+
+### Miscellaneous Tasks
+
+- Updated rstest_reuse to 0.5
+- Updated spinoff to 0.7
+- Added codecov settings
+- Update node to LTS 18 & enable JS e2e testing
+- Make npm build run wasm-opt in Os
+- Update JVM publish workflow to build on native platforms ([#229](https://github.com/wireapp/core-crypto/issues/229))
+
+</details>
+
+**IMPORTANT: The previous release (0.6.0-rc.5) is non-functional in general. The proteus error reporting does NOT work**
+
+There's a post mortem available here: <https://github.com/wireapp/core-crypto/pull/230#issue-1557053094>
+
+* Fixed support for Proteus error codes
+    * WASM:
+        * all errors are now instances of `CoreCryptoError` which extends the standard JavaScript `Error` but with additional properties:
+            * `rustStackTrace` contains the original Rust error string.
+            * `proteusErrorCode` contains the error code for Proteus calls. If it's 0, no error, otherwise it contains the code
+        * WASM/TS now has access to the `CoreCrypto.proteusLastErrorCode()` method which allows to retrieve the last-occured proteus error and thus brings it to parity with other FFIs
+    * On other platforms, the API is unchanged, but now works.
+
+
 ## [0.6.0-rc.5] - 2023-01-25
 
 <details>
@@ -23,6 +57,7 @@ Platform support legends:
 
 ### Miscellaneous Tasks
 
+- Cut release 0.6.0-rc.5
 - Moved codecov from tarpaulin to llvm-cov
 - Updated RustCrypto primitives & git dep in xtask
 
