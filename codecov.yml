@@ -1,0 +1,11 @@
+codecov:
+  notify:
+    wait_for_ci: false
+
+ignore:
+  - "interop"
+
+comment:
+  layout: diff, files, footer
+  behavior: default
+  require_changes: true
