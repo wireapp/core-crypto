@@ -105,15 +105,12 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      # - name: Install wasm-pack
-      #   run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - uses: browser-actions/setup-chrome@latest
         with:
           chrome-version: stable
       - uses: Swatinem/rust-cache@v2
       - name: Run tests (wasm)
         run: cargo test --release --target wasm32-unknown-unknown -p ${{ matrix.workspace }}
-        # run: cargo test --target wasm32-unknown-unknown
 
   proteus-wasm-test:
     runs-on: ubuntu-latest
@@ -122,17 +119,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      # - name: Install wasm-pack
-      #   run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - uses: Swatinem/rust-cache@v2
-      - name: Run tests (wasm)
+      - name: Run tests (wasm w/ wasm-pack)
         run: |
-          cargo test --release --features proteus-keystore -p core-crypto-keystore -- proteus
-          cargo test --release crypto --features proteus,cryptobox-migrate -- proteus
-      # - name: Run tests (wasm)
-      #   run: |
-      #     wasm-pack test --chrome --headless keystore --features proteus-keystore -- proteus
-      #     wasm-pack test --chrome --headless crypto --features proteus,cryptobox-migrate -- proteus
+          wasm-pack test --chrome --headless keystore --features proteus-keystore -- proteus
+          wasm-pack test --chrome --headless crypto --features proteus,cryptobox-migrate -- proteus
 
   e2e-interop-test:
     runs-on: ubuntu-latest
