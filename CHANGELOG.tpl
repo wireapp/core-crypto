@@ -7,11 +7,31 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.6.0-rc.6] - 2023-02-01
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.6.0-rc.6" unreleased=true}}
+</details>
+
+**IMPORTANT: The previous release (0.6.0-rc.5) is non-functional in general. The proteus error reporting does NOT work**
+
+There's a post mortem available here: <https://github.com/wireapp/core-crypto/pull/230#issue-1557053094>
+
+* Fixed support for Proteus error codes
+    * WASM:
+        * all errors are now instances of `CoreCryptoError` which extends the standard JavaScript `Error` but with additional properties:
+            * `rustStackTrace` contains the original Rust error string.
+            * `proteusErrorCode` contains the error code for Proteus calls. If it's 0, no error, otherwise it contains the code
+        * WASM/TS now has access to the `CoreCrypto.proteusLastErrorCode()` method which allows to retrieve the last-occured proteus error and thus brings it to parity with other FFIs
+    * On other platforms, the API is unchanged, but now works.
+
+
 ## [0.6.0-rc.5] - 2023-01-25
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.6.0-rc.5" unreleased=true}}
+{{git-cliff tag="v0.6.0-rc.5"}}
 </details>
 
 * **BREAKING**: Changed the signature of the `client_is_existing_group_user` callback to add the group id as the first argument
