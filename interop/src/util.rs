@@ -16,17 +16,24 @@
 
 use spinoff::Spinner;
 
-#[derive(Debug)]
 pub struct RunningProcess {
     spinner: Option<Spinner>,
     is_task: bool,
+}
+
+impl std::fmt::Debug for RunningProcess {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RunningProcess")
+            .field("is_task", &self.is_task)
+            .finish()
+    }
 }
 
 impl RunningProcess {
     pub fn new(msg: impl AsRef<str> + std::fmt::Display, is_task: bool) -> Self {
         let spinner = if std::env::var("CI").is_err() {
             Some(Spinner::new(
-                spinoff::Spinners::Aesthetic,
+                spinoff::spinners::Aesthetic,
                 msg.as_ref().to_owned(),
                 if is_task {
                     spinoff::Color::Green
