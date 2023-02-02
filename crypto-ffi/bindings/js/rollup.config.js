@@ -65,7 +65,7 @@ const rollup = {
         rust({
             cargoArgs,
             // wasmBindgenArgs: ["--weak-refs", "--reference-types"],
-            // wasmOptArgs: ["-Os"],
+            wasmOptArgs: ["-Os"],
         }),
         ts({
             tsconfig: paths.tsconfig,
