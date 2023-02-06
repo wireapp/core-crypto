@@ -126,7 +126,7 @@ let checkOrderResp = {
 };
 let order = enrollment.checkOrderResponse(jsonToByteArray(checkOrderResp));
 
-let domains = [new TextEncoder("utf-8").encode("wire.example.org")];
+let domains = ["wire.example.org"];
 let finalizeReq = enrollment.finalizeRequest(domains, order, account, previousNonce);
 
 let finalizeResp = {
