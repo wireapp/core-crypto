@@ -1415,8 +1415,8 @@ export class WireE2eIdentity {
     #e2ei: CoreCryptoFfiTypes.FfiWireE2EIdentity;
 
     /** @hidden */
-    public constructor(e2ei: CoreCryptoFfiTypes.FfiWireE2EIdentity) {
-        this.#e2ei = e2ei;
+    constructor(e2ei: unknown) {
+        this.#e2ei = e2ei as CoreCryptoFfiTypes.FfiWireE2EIdentity;
     }
 
     /**
@@ -1619,13 +1619,13 @@ export class WireE2eIdentity {
     /**
      * Final step before fetching the certificate.
      *
-     * @param domains you want to generate a certificate for e.g. `["wire.com"]`
-     * @param order you got from {@link checkOrderResponse}
-     * @param account you found after {@link newAccountResponse}
-     * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
+     * @param domains - domains you want to generate a certificate for e.g. `["wire.com"]`
+     * @param order - order you got from {@link checkOrderResponse}
+     * @param account - account you found after {@link newAccountResponse}
+     * @param previousNonce - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    finalizeRequest(domains: Uint8Array[], order: AcmeOrder, account: AcmeAccount, previousNonce: string): JsonRawData {
+    finalizeRequest(domains: string[], order: AcmeOrder, account: AcmeAccount, previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.finalize_request(domains, order, account, previousNonce);
         } catch(e) {

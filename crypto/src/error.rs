@@ -60,10 +60,10 @@ pub enum CryptoError {
     #[cfg(test)]
     #[error(transparent)]
     UuidError(#[from] uuid::Error),
-    /// Error when parsing `str`s that are not UTF-8
+    /// Error when parsing `str`s that are not valid UTF-8
     #[error(transparent)]
     Utf8Error(#[from] std::str::Utf8Error),
-    /// Error when parsing `String`s that are not UTF-8
+    /// Error when parsing `String`s that are not valid UTF-8
     #[error(transparent)]
     StringUtf8Error(#[from] std::string::FromUtf8Error),
     /// Error when trying to coerce ints into Strings

@@ -9,6 +9,9 @@ pub enum E2eIdentityError {
     /// Incoming support
     #[error("Not yet supported")]
     NotYetSupported,
+    /// Error when an end-to-end-identity domain is not well-formed utf-16, which means it's out of spec
+    #[error("The E2EI provided domain is invalid utf-16")]
+    E2eiInvalidDomain,
     /// Error generating keys
     #[error(transparent)]
     CryptoError(#[from] openmls_traits::types::CryptoError),

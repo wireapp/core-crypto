@@ -1,4 +1,5 @@
 const puppeteer = require("puppeteer");
+const { exec } = require("child_process");
 
 let browser;
 
@@ -13,6 +14,42 @@ async function initBrowser() {
   await page.goto("http://localhost:3000");
   return [context, page];
 }
+
+async function execAsync(command, options = {}) {
+  return new Promise((resolve, reject) => exec(command, options, (err, stdout, stderr) => {
+    if (err) {
+      err.stderr = stderr;
+      err.stdout = stdout;
+      return reject(err);
+    }
+
+    resolve([stdout, stderr]);
+  }));
+}
+
+test("tsc import of package", async () => {
+  const args = [
+    "--moduleResolution node",
+    "-t es2020",
+    "-m es2020",
+    "--lib es2020",
+    "--noEmit"
+  ];
+
+  try {
+    await execAsync(
+      `npx --package=typescript@latest -- tsc ${args.join(' ')} ./crypto-ffi/bindings/js/test/tsc-import-test.ts`,
+    );
+  } catch(cause) {
+    throw new Error(`Couldn't build @wireapp/core-crypto import.
+
+      tsc output:
+      ${cause.stdout}
+      ${cause.stderr}`, {
+      cause
+    });
+  }
+});
 
 test("init", async () => {
   const [ctx, page] = await initBrowser();
