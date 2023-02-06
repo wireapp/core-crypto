@@ -7,6 +7,23 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.6.0-rc.7] - 2023-02-06
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- TS/WASM build issues & test
+
+</details>
+
+* Fixed WASM build when imported from the outside
+    * Made sure we're not leaking internal/private interfaces anymore and causing issues
+    * Also added a test to our JS E2E suite to make sure importing the package with TS is successful and we do not encounter regressions like these anymore
+* **BREAKING** WASM: Omitted in last build; `CoreCrypto.deferredInit` now takes an object with the parameters much like `init()` for consistency reasons.
+
+
 ## [0.6.0-rc.6] - 2023-02-01
 
 <details>
@@ -19,6 +36,7 @@ Platform support legends:
 
 ### Miscellaneous Tasks
 
+- Release v0.6.0-rc.6
 - Updated rstest_reuse to 0.5
 - Updated spinoff to 0.7
 - Added codecov settings
