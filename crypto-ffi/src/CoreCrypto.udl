@@ -306,6 +306,7 @@ enum E2eIdentityError {
     "IdentityError",
     "UrlError",
     "JsonError",
+    "E2eiInvalidDomain",
 };
 
 dictionary AcmeDirectory {
