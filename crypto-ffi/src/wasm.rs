@@ -1989,7 +1989,7 @@ impl WireE2eIdentity {
     /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_request]
     pub fn finalize_request(
         &self,
-        domains: Vec<Uint8Array>,
+        domains: Vec<js_sys::JsString>,
         order: Uint8Array,
         account: Uint8Array,
         previous_nonce: String,
@@ -1997,7 +1997,10 @@ impl WireE2eIdentity {
         let domains = domains
             .into_iter()
             .try_fold(vec![], |mut acc, a| -> WasmCryptoResult<Vec<String>> {
-                acc.push(String::from_utf8(a.to_vec()).map_err(CryptoError::from)?);
+                if !a.is_valid_utf16() {
+                    return Err(E2eIdentityError::E2eiInvalidDomain.into());
+                }
+                acc.push(String::from(a));
                 Ok(acc)
             })?;
         let finalize =
