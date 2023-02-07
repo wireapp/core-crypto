@@ -315,6 +315,7 @@ impl WebdriverContext {
         bindgen
             .web(true)
             .map_err(|e| eyre::eyre!("{e}"))?
+            .split_linked_modules(false)
             .input_module(module_name, wasm_tests_ctx.module)
             .debug(false)
             .keep_debug(false)

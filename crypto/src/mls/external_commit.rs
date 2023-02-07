@@ -164,7 +164,7 @@ impl MlsCentral {
 }
 
 impl MlsConversation {
-    pub(crate) fn validate_external_commit(
+    pub(crate) async fn validate_external_commit(
         &self,
         commit: &StagedCommit,
         sender: Option<ClientId>,
@@ -181,12 +181,18 @@ impl MlsConversation {
             let sender = sender.ok_or(CryptoError::UnauthorizedExternalCommit)?;
             // first let's verify the sender belongs to an user already in the MLS group
             let existing_clients = self.members_in_next_epoch(backend);
-            if !callbacks.client_is_existing_group_user(self.id.clone(), sender.clone(), existing_clients.clone()) {
+            if !callbacks
+                .client_is_existing_group_user(self.id.clone(), sender.clone(), existing_clients.clone())
+                .await
+            {
                 return Err(CryptoError::UnauthorizedExternalCommit);
             }
             // then verify that the user this client belongs to has the right role (is allowed)
             // to perform such operation
-            if !callbacks.user_authorize(self.id.clone(), sender, existing_clients) {
+            if !callbacks
+                .user_authorize(self.id.clone(), sender, existing_clients)
+                .await
+            {
                 return Err(CryptoError::UnauthorizedExternalCommit);
             }
         }

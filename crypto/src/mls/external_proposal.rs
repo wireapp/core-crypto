@@ -14,7 +14,7 @@ use crate::{
 impl MlsConversation {
     /// Validates the proposal. If it is external and an `Add` proposal it will call the callback
     /// interface to validate the proposal, otherwise it will succeed.
-    pub(crate) fn validate_external_proposal(
+    pub(crate) async fn validate_external_proposal(
         &self,
         proposal: &QueuedProposal,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
@@ -26,8 +26,9 @@ impl MlsConversation {
                 let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
                 let existing_clients = self.members_in_next_epoch(backend);
                 let self_identity = add_proposal.key_package().credential().identity();
-                let is_self_user_in_group =
-                    callbacks.client_is_existing_group_user(self.id.clone(), self_identity.into(), existing_clients);
+                let is_self_user_in_group = callbacks
+                    .client_is_existing_group_user(self.id.clone(), self_identity.into(), existing_clients)
+                    .await;
                 if !is_self_user_in_group {
                     return Err(CryptoError::UnauthorizedExternalAddProposal);
                 }

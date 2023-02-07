@@ -34,7 +34,7 @@ xshell = "0.2"
 zip = "0.6"
 flate2 = "1.0"
 tar = "0.4"
-tracing = "0.1.37"
+tracing = "0.1"
 
 [dependencies.fantoccini]
 #version = "0.19"
