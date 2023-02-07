@@ -98,6 +98,7 @@ pub mod prelude {
 /// This trait is used to provide callback mechanisms for the MlsCentral struct, for example for
 /// operations like adding or removing memebers that can be authorized through a caller provided
 /// authorization method.
+#[async_trait::async_trait(?Send)]
 pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     /// Function responsible for authorizing an operation.
     /// Returns `true` if the operation is authorized.
@@ -105,7 +106,7 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     /// # Arguments
     /// * `conversation_id` - id of the group/conversation
     /// * `client_id` - id of the client to authorize
-    fn authorize(&self, conversation_id: prelude::ConversationId, client_id: prelude::ClientId) -> bool;
+    async fn authorize(&self, conversation_id: prelude::ConversationId, client_id: prelude::ClientId) -> bool;
     /// Function responsible for authorizing an operation for a given user.
     /// Use [external_client_id] & [existing_clients] to get all the 'client_id' belonging to the same user
     /// as [external_client_id]. Then, given those client ids, verify that at least one has the right role
@@ -116,7 +117,7 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     /// * `conversation_id` - id of the group/conversation
     /// * `external_client_id` - id a client external to the MLS group
     /// * `existing_clients` - all the clients in the MLS group
-    fn user_authorize(
+    async fn user_authorize(
         &self,
         conversation_id: prelude::ConversationId,
         external_client_id: prelude::ClientId,
@@ -128,7 +129,7 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     /// # Arguments
     /// * `client_id` - client ID of the client referenced within the sent proposal
     /// * `existing_clients` - all the clients in the MLS group
-    fn client_is_existing_group_user(
+    async fn client_is_existing_group_user(
         &self,
         conversation_id: prelude::ConversationId,
         client_id: prelude::ClientId,

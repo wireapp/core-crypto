@@ -490,14 +490,24 @@ test("roundtrip message", async () => {
   await ctx2.close();
 }, 20000);
 
-test("callbacks", async () => {
+test("ext commits|proposals & callbacks", async () => {
   const [ctx, page] = await initBrowser();
 
   const callbacksResults = await page.evaluate(async () => {
     const { CoreCrypto, ExternalProposalType } = await import("./corecrypto.js");
 
+    let theoreticalEpoch = 0;
+
+    const assertEpoch = async (conversationId, expected, client) => {
+      const got = await client.conversationEpoch(conversationId);
+      if (parseInt(expected, 10) !== parseInt(got, 10)) {
+        throw new Error(`Epoch mismatch, expected ${expected}; got ${got}`);
+      }
+    };
+
     const callbacksResults = {
       authorize: false,
+      userAuthorize: false,
       clientIsExistingGroupUser: false,
     };
 
@@ -513,29 +523,42 @@ test("callbacks", async () => {
       clientId: "test2",
     };
 
-    const clientExtConfig = {
-      databaseName: "test init ext",
+    const clientExtProposalConfig = {
+      databaseName: "test init ext proposal",
       key: "test",
-      clientId: "testExternal",
+      clientId: "testExternalProposal",
+    };
+
+    const clientExtCommitConfig = {
+      databaseName: "test init ext commit",
+      key: "test",
+      clientId: "testExternalCommit",
+    };
+
+    const callbacks = {
+      async authorize(conversationId, clientId) {
+        callbacksResults.authorize = true;
+        return true;
+      },
+      async userAuthorize(conversationId, externalClientId, existingClients) {
+        callbacksResults.userAuthorize = true;
+        return true;
+      },
+      async clientIsExistingGroupUser(conversationId, clientId, existingClients) {
+        callbacksResults.clientIsExistingGroupUser = true;
+        return true;
+      }
     };
 
     const cc = await CoreCrypto.init(client1Config);
 
-    cc.registerCallbacks({
-      authorize(conversationId, clientId) {
-        callbacksResults.authorize = true;
-        return true;
-      },
-      clientIsExistingGroupUser(conversationId, clientId, existingClients) {
-        callbacksResults.clientIsExistingGroupUser = true;
-        return true;
-      }
-    });
+    await cc.registerCallbacks(callbacks);
 
     const cc2 = await CoreCrypto.init(client2Config);
     const [cc2Kp] = await cc2.clientKeypackages(1);
 
-    const ccExternal = await CoreCrypto.init(clientExtConfig);
+    const ccExternalProposal = await CoreCrypto.init(clientExtProposalConfig);
+    const ccExternalCommit = await CoreCrypto.init(clientExtCommitConfig);
 
     const encoder = new TextEncoder();
 
@@ -549,23 +572,46 @@ test("callbacks", async () => {
     ]);
 
     await cc.commitAccepted(conversationId);
+    await assertEpoch(conversationId, ++theoreticalEpoch, cc);
 
     if (!callbacksResults.authorize) {
       throw new Error("authorize callback wasn't triggered");
     }
 
-    const extProposal = await ccExternal.newExternalProposal(ExternalProposalType.Add, {
+    await cc2.processWelcomeMessage(creationMessage.welcome);
+
+    const extProposal = await ccExternalProposal.newExternalProposal(ExternalProposalType.Add, {
       conversationId,
       // ? Be careful; If you change anything above the epoch might change because right now it's a guesswork
       // ? Normally, clients should obtain the epoch *somehow*, usually from the MLS DS, but we just guess that since we only added
       // ? one client, the epoch should only have moved from 0 (initial state) to 1 (added 1 client -> committed)
-      epoch: 1,
+      epoch: theoreticalEpoch,
     });
 
     // ! This should trigger the clientIsExistingGroupUser callback
-    const something = await cc.decryptMessage(conversationId, extProposal);
+    const somethingProposal = await cc.decryptMessage(conversationId, extProposal);
+
+    const extProposalCommit = await cc.commitPendingProposals(conversationId);
+    await cc.commitAccepted(conversationId);
+    await assertEpoch(conversationId, ++theoreticalEpoch, cc);
+
     if (!callbacksResults.clientIsExistingGroupUser) {
       throw new Error("clientIsExistingGroupUser callback wasn't triggered");
+    }
+
+    const pgs = extProposalCommit.publicGroupState;
+
+    const extCommit = await ccExternalCommit.joinByExternalCommit(pgs.payload);
+    // ! This should trigger the userAuthorize callback
+    const somethingCommit = cc.decryptMessage(conversationId, extCommit.commit);
+
+    await cc.commitAccepted(conversationId);
+    await assertEpoch(conversationId, ++theoreticalEpoch, cc);
+
+    await ccExternalCommit.mergePendingGroupFromExternalCommit(conversationId);
+
+    if (!callbacksResults.userAuthorize) {
+      throw new Error("userAuthorize callback wasn't triggered");
     }
 
     return callbacksResults;
@@ -573,6 +619,7 @@ test("callbacks", async () => {
 
   expect(callbacksResults.authorize).toBe(true);
   expect(callbacksResults.clientIsExistingGroupUser).toBe(true);
+  expect(callbacksResults.userAuthorize).toBe(true);
 
   await page.close();
   await ctx.close();

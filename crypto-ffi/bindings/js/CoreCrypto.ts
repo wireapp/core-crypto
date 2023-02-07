@@ -512,7 +512,7 @@ export interface CoreCryptoCallbacks {
      * @param clientId - id of the client performing an operation requiring authorization
      * @returns whether the user is authorized by the logic layer to perform the operation
      */
-    authorize: (conversationId: Uint8Array, clientId: Uint8Array) => boolean;
+    authorize: (conversationId: Uint8Array, clientId: Uint8Array) => Promise<boolean>;
 
     /**
      * A mix between {@link authorize} and {@link clientIsExistingGroupUser}. We currently use this callback to verify
@@ -525,7 +525,7 @@ export interface CoreCryptoCallbacks {
      * @param existingClients - all the clients currently within the MLS group
      * @returns true if the external client is authorized to write to the conversation
      */
-    userAuthorize: (conversationId: Uint8Array, externalClientId: Uint8Array, existingClients: Uint8Array[]) => boolean;
+    userAuthorize: (conversationId: Uint8Array, externalClientId: Uint8Array, existingClients: Uint8Array[]) => Promise<boolean>;
 
     /**
      * Callback to ensure that the given `clientId` belongs to one of the provided `existingClients`
@@ -535,7 +535,7 @@ export interface CoreCryptoCallbacks {
      * @param clientId - id of a client
      * @param existingClients - all the clients currently within the MLS group
      */
-    clientIsExistingGroupUser: (conversationId: Uint8Array, clientId: Uint8Array, existingClients: Uint8Array[]) => boolean;
+    clientIsExistingGroupUser: (conversationId: Uint8Array, clientId: Uint8Array, existingClients: Uint8Array[]) => Promise<boolean>;
 }
 
 /**
@@ -666,14 +666,15 @@ export class CoreCrypto {
      *
      * @param callbacks - Any interface following the {@link CoreCryptoCallbacks} interface
      */
-    registerCallbacks(callbacks: CoreCryptoCallbacks) {
+    async registerCallbacks(callbacks: CoreCryptoCallbacks, ctx: any = null): Promise<void> {
         try {
             const wasmCallbacks = new CoreCrypto.#module.CoreCryptoWasmCallbacks(
                 callbacks.authorize,
                 callbacks.userAuthorize,
-                callbacks.clientIsExistingGroupUser
+                callbacks.clientIsExistingGroupUser,
+                ctx,
             );
-            this.#cc.set_callbacks(wasmCallbacks);
+            await this.#cc.set_callbacks(wasmCallbacks);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -761,6 +762,10 @@ export class CoreCrypto {
      * @returns a {@link DecryptedMessage}. Note that {@link DecryptedMessage#message} is `undefined` when the encrypted payload contains a system message such a proposal or commit
      */
     async decryptMessage(conversationId: ConversationId, payload: Uint8Array): Promise<DecryptedMessage> {
+        if (!payload?.length) {
+            throw new Error("decryptMessage payload is empty or null");
+        }
+
         try {
             const ffiDecryptedMessage: CoreCryptoFfiTypes.DecryptedMessage = await CoreCryptoError.asyncMapErr(this.#cc.decrypt_message(
                 conversationId,
@@ -1403,13 +1408,17 @@ export class CoreCrypto {
     /**
      * Creates an enrollment instance with private key material you can use in order to fetch
      * a new x509 certificate from the acme server.
-     * Make sure to call [WireE2eIdentity::free] (not yet available) to dispose this instance and its associated
+     * Make sure to call {@link WireE2eIdentity.free} to dispose this instance and its associated
      * keying material.
      *
      * @param ciphersuite - For generating signing key material. Only {@link Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519} is supported currently
      */
-    async newAcmeEnrollment(): Promise<WireE2eIdentity> {
-        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.new_acme_enrollment(Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519));
+    async newAcmeEnrollment(ciphersuite: Ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519): Promise<WireE2eIdentity> {
+        if (ciphersuite !== Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519) {
+            throw new Error("This ACME ciphersuite isn't supported. Only `Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519` is as of now");
+        }
+
+        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.new_acme_enrollment(ciphersuite));
         return new WireE2eIdentity(e2ei);
     }
 
@@ -1421,7 +1430,7 @@ export class CoreCrypto {
     static version(): string {
         if (!this.#module) {
             throw new Error(
-                "Internal module hasn't been initialized. Please use `await CoreCrypto.init(params)`!"
+                "Internal module hasn't been initialized. Please use `await CoreCrypto.init(params)` or `await CoreCrypto.deferredInit(params)` !"
             );
         }
         return this.#module.version();
@@ -1439,6 +1448,10 @@ export class WireE2eIdentity {
     /** @hidden */
     constructor(e2ei: unknown) {
         this.#e2ei = e2ei as CoreCryptoFfiTypes.FfiWireE2EIdentity;
+    }
+
+    free() {
+        this.#e2ei.free();
     }
 
     /**

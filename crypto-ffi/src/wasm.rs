@@ -649,9 +649,10 @@ impl From<WirePolicy> for MlsWirePolicy {
 #[derive(Debug, Clone)]
 /// see [core_crypto::prelude::CoreCryptoCallbacks]
 pub struct CoreCryptoWasmCallbacks {
-    authorize: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
-    user_authorize: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
-    client_is_existing_group_user: std::sync::Arc<std::sync::Mutex<js_sys::Function>>,
+    authorize: std::sync::Arc<async_lock::RwLock<js_sys::Function>>,
+    user_authorize: std::sync::Arc<async_lock::RwLock<js_sys::Function>>,
+    client_is_existing_group_user: std::sync::Arc<async_lock::RwLock<js_sys::Function>>,
+    ctx: std::sync::Arc<async_lock::RwLock<JsValue>>,
 }
 
 #[wasm_bindgen]
@@ -661,96 +662,98 @@ impl CoreCryptoWasmCallbacks {
         authorize: js_sys::Function,
         user_authorize: js_sys::Function,
         client_is_existing_group_user: js_sys::Function,
+        ctx: JsValue,
     ) -> Self {
         Self {
             authorize: std::sync::Arc::new(authorize.into()),
             user_authorize: std::sync::Arc::new(user_authorize.into()),
             client_is_existing_group_user: std::sync::Arc::new(client_is_existing_group_user.into()),
+            ctx: std::sync::Arc::new(ctx.into()),
         }
     }
 }
 
-// SAFETY: All callback instances are wrapped into Arc<Mutex> so this is safe to mark
+// SAFETY: All callback instances are wrapped into Arc<RwLock> so this is safe to mark
 unsafe impl Send for CoreCryptoWasmCallbacks {}
 unsafe impl Sync for CoreCryptoWasmCallbacks {}
 
+#[async_trait::async_trait(?Send)]
 impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
-    fn authorize(&self, conversation_id: ConversationId, client_id: ClientId) -> bool {
-        if let Ok(authorize) = self.authorize.try_lock() {
-            let this = JsValue::null();
-            if let Ok(Some(result)) = authorize
-                .call2(
-                    &this,
-                    &js_sys::Uint8Array::from(conversation_id.as_slice()),
-                    &js_sys::Uint8Array::from(client_id.as_slice()),
-                )
-                .map(|jsval| jsval.as_bool())
-            {
-                result
-            } else {
-                false
-            }
-        } else {
-            false
-        }
+    async fn authorize(&self, conversation_id: ConversationId, client_id: ClientId) -> bool {
+        let authorize = self.authorize.read().await;
+        let this = self.ctx.read().await;
+
+        let Ok(cb_result) = authorize.call2(
+            &this,
+            &js_sys::Uint8Array::from(conversation_id.as_slice()),
+            &js_sys::Uint8Array::from(client_id.as_slice()),
+        ) else {
+            return false;
+        };
+
+        let promise = js_sys::Promise::unchecked_from_js(cb_result);
+        let fut = wasm_bindgen_futures::JsFuture::from(promise);
+        fut.await
+            .map(|jsval| jsval.as_bool().unwrap_or_default())
+            .unwrap_or_default()
     }
 
-    fn user_authorize(
+    async fn user_authorize(
         &self,
         conversation_id: ConversationId,
         external_client_id: ClientId,
         existing_clients: Vec<ClientId>,
     ) -> bool {
-        if let Ok(user_authorize) = self.user_authorize.try_lock() {
-            let this = JsValue::null();
-            if let Ok(Some(result)) = user_authorize
-                .call3(
-                    &this,
-                    &js_sys::Uint8Array::from(conversation_id.as_slice()),
-                    &js_sys::Uint8Array::from(external_client_id.as_slice()),
-                    &existing_clients
-                        .into_iter()
-                        .map(|client| js_sys::Uint8Array::from(client.as_slice()))
-                        .collect::<js_sys::Array>(),
-                )
-                .map(|jsval| jsval.as_bool())
-            {
-                result
-            } else {
-                false
-            }
-        } else {
-            false
-        }
+        let user_authorize = self.user_authorize.read().await;
+        let this = self.ctx.read().await;
+        let clients = existing_clients
+            .into_iter()
+            .map(|client| js_sys::Uint8Array::from(client.as_slice()))
+            .collect::<js_sys::Array>();
+
+        let Ok(cb_result) = user_authorize.call3(
+            &this,
+            &js_sys::Uint8Array::from(conversation_id.as_slice()),
+            &js_sys::Uint8Array::from(external_client_id.as_slice()),
+            &clients,
+        ) else {
+            return false;
+        };
+
+        let promise = js_sys::Promise::unchecked_from_js(cb_result);
+        let fut = wasm_bindgen_futures::JsFuture::from(promise);
+        fut.await
+            .map(|jsval| jsval.as_bool().unwrap_or_default())
+            .unwrap_or_default()
     }
 
-    fn client_is_existing_group_user(
+    async fn client_is_existing_group_user(
         &self,
         conversation_id: ConversationId,
         client_id: ClientId,
         existing_clients: Vec<ClientId>,
     ) -> bool {
-        if let Ok(client_is_existing_group_user) = self.client_is_existing_group_user.try_lock() {
-            let this = JsValue::null();
-            if let Ok(Some(result)) = client_is_existing_group_user
-                .call3(
-                    &this,
-                    &js_sys::Uint8Array::from(conversation_id.as_slice()),
-                    &js_sys::Uint8Array::from(client_id.as_slice()),
-                    &existing_clients
-                        .into_iter()
-                        .map(|client| js_sys::Uint8Array::from(client.as_slice()))
-                        .collect::<js_sys::Array>(),
-                )
-                .map(|jsval| jsval.as_bool())
-            {
-                result
-            } else {
-                false
-            }
-        } else {
-            false
-        }
+        let client_is_existing_group_user = self.client_is_existing_group_user.read().await;
+        let this = self.ctx.read().await;
+        let clients = existing_clients
+            .into_iter()
+            .map(|client| js_sys::Uint8Array::from(client.as_slice()))
+            .collect::<js_sys::Array>();
+
+        let Ok(cb_result) = client_is_existing_group_user.call3(
+            &this,
+            &js_sys::Uint8Array::from(conversation_id.as_slice()),
+            &js_sys::Uint8Array::from(client_id.as_slice()),
+            &clients,
+        ) else {
+            return false;
+        };
+
+        let promise = js_sys::Promise::unchecked_from_js(cb_result);
+        let fut = wasm_bindgen_futures::JsFuture::from(promise);
+        fut.await
+            .map(|jsval| jsval.as_bool().unwrap_or_default())
+            .unwrap_or_default()
     }
 }
 

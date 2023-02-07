@@ -21,6 +21,7 @@ core-crypto = { version = "^0.6.0-rc.7", path = "../crypto" }
 thiserror = "1.0"
 cfg-if = "1.0"
 futures-util = "0.3"
+async-trait = "0.1"
 
 # UniFFI - Android + iOS bindings - Runtime support
 uniffi = { version = "0.22", optional = true }

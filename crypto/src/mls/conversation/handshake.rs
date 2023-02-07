@@ -302,7 +302,7 @@ impl MlsCentral {
                 .ok_or(CryptoError::MlsNotInitialized)?
                 .id()
                 .clone();
-            if !callbacks.authorize(id.clone(), client_id) {
+            if !callbacks.authorize(id.clone(), client_id).await {
                 return Err(CryptoError::Unauthorized);
             }
         }
@@ -336,7 +336,7 @@ impl MlsCentral {
                 .ok_or(CryptoError::MlsNotInitialized)?
                 .id()
                 .clone();
-            if !callbacks.authorize(id.clone(), client_id) {
+            if !callbacks.authorize(id.clone(), client_id).await {
                 return Err(CryptoError::Unauthorized);
             }
         }

@@ -19,9 +19,9 @@ use std::collections::HashMap;
 
 use core_crypto::prelude::*;
 pub use core_crypto::prelude::{
-    tls_codec::Serialize, CiphersuiteName, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError,
-    E2eIdentityError, E2eIdentityResult, MemberId, MlsPublicGroupStateBundle, MlsPublicGroupStateEncryptionType,
-    MlsRatchetTreeType, MlsWirePolicy, PublicGroupStatePayload,
+    tls_codec::Serialize, CiphersuiteName, ClientId, ConversationId, CryptoError, E2eIdentityError, E2eIdentityResult,
+    MemberId, MlsPublicGroupStateBundle, MlsPublicGroupStateEncryptionType, MlsRatchetTreeType, MlsWirePolicy,
+    PublicGroupStatePayload,
 };
 
 cfg_if::cfg_if! {
@@ -237,6 +237,51 @@ impl From<CustomConfiguration> for MlsCustomConfiguration {
 }
 
 #[derive(Debug)]
+struct CoreCryptoCallbacksWrapper(Box<dyn CoreCryptoCallbacks>);
+
+#[async_trait::async_trait(?Send)]
+impl core_crypto::prelude::CoreCryptoCallbacks for CoreCryptoCallbacksWrapper {
+    async fn authorize(&self, conversation_id: ConversationId, client_id: ClientId) -> bool {
+        self.0.authorize(conversation_id, client_id)
+    }
+    async fn user_authorize(
+        &self,
+        conversation_id: ConversationId,
+        external_client_id: ClientId,
+        existing_clients: Vec<ClientId>,
+    ) -> bool {
+        self.0
+            .user_authorize(conversation_id, external_client_id, existing_clients)
+    }
+    async fn client_is_existing_group_user(
+        &self,
+        conversation_id: ConversationId,
+        client_id: ClientId,
+        existing_clients: Vec<ClientId>,
+    ) -> bool {
+        self.0
+            .client_is_existing_group_user(conversation_id, client_id, existing_clients)
+    }
+}
+
+/// This only exists to create a sync interface to our internal async callback interface
+pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
+    fn authorize(&self, conversation_id: ConversationId, client_id: ClientId) -> bool;
+    fn user_authorize(
+        &self,
+        conversation_id: ConversationId,
+        external_client_id: ClientId,
+        existing_clients: Vec<ClientId>,
+    ) -> bool;
+    fn client_is_existing_group_user(
+        &self,
+        conversation_id: ConversationId,
+        client_id: ClientId,
+        existing_clients: Vec<ClientId>,
+    ) -> bool;
+}
+
+#[derive(Debug)]
 pub struct CoreCrypto<'a> {
     central: std::sync::Arc<std::sync::Mutex<core_crypto::CoreCrypto>>,
     executor: std::sync::Arc<std::sync::Mutex<async_executor::Executor<'a>>>,
@@ -377,7 +422,7 @@ impl CoreCrypto<'_> {
         self.central
             .lock()
             .map_err(|_| CryptoError::LockPoisonError)?
-            .callbacks(callbacks);
+            .callbacks(Box::new(CoreCryptoCallbacksWrapper(callbacks)));
         Ok(())
     }
 

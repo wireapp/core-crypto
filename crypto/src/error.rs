@@ -102,8 +102,8 @@ pub enum CryptoError {
     /// Authorization error
     #[error("The current client id isn't authorized to perform this action")]
     Unauthorized,
-    /// Callbacks are not informed
-    #[error("The callback interface in the MlsCentral was not informed")]
+    /// Callbacks are not provided
+    #[error("The callbacks needed for CoreCrypto to operate were not set")]
     CallbacksNotSet,
     /// External Add Proposal Validation failed
     #[error("External add proposal validation failed: only users already in the group are allowed")]

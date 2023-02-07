@@ -102,7 +102,8 @@ impl MlsConversation {
                 }
             }
             ProcessedMessage::ProposalMessage(proposal) => {
-                self.validate_external_proposal(&proposal, callbacks, backend.crypto())?;
+                self.validate_external_proposal(&proposal, callbacks, backend.crypto())
+                    .await?;
                 self.group.store_pending_proposal(*proposal);
 
                 MlsConversationDecryptMessage {
@@ -116,7 +117,8 @@ impl MlsConversation {
             }
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
                 let valid_commit = staged_commit.clone();
-                self.validate_external_commit(&valid_commit, sender_client_id, callbacks, backend.crypto())?;
+                self.validate_external_commit(&valid_commit, sender_client_id, callbacks, backend.crypto())
+                    .await?;
 
                 let pending_commit = self.group.pending_commit().cloned();
                 #[allow(clippy::needless_collect)] // false positive

@@ -121,12 +121,13 @@ impl Default for ValidationCallbacks {
     }
 }
 
+#[async_trait::async_trait(?Send)]
 impl CoreCryptoCallbacks for ValidationCallbacks {
-    fn authorize(&self, _conversation_id: ConversationId, _client_id: ClientId) -> bool {
+    async fn authorize(&self, _conversation_id: ConversationId, _client_id: ClientId) -> bool {
         self.authorize
     }
 
-    fn user_authorize(
+    async fn user_authorize(
         &self,
         _conversation_id: ConversationId,
         _external_client_id: ClientId,
@@ -135,7 +136,7 @@ impl CoreCryptoCallbacks for ValidationCallbacks {
         self.user_authorize
     }
 
-    fn client_is_existing_group_user(
+    async fn client_is_existing_group_user(
         &self,
         _conversation_id: ConversationId,
         _client_id: ClientId,
