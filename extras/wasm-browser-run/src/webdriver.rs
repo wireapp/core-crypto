@@ -252,7 +252,7 @@ impl WebdriverKind {
         // }
 
         match tempfile_path.extension().unwrap().to_str().unwrap() {
-            "zip" => xshell::cmd!(sh, "unzip {tempfile_path} -d {wd_dir}")
+            "zip" => xshell::cmd!(sh, "unzip -o {tempfile_path} -d {wd_dir}")
                 .ignore_stdout()
                 .ignore_stderr()
                 .run()?,
