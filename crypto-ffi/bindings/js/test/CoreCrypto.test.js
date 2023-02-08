@@ -690,6 +690,22 @@ test("proteus", async () => {
     const alice = await CoreCrypto.deferredInit(client1Config);
     await alice.proteusInit();
 
+    const lrPkId = CoreCrypto.proteusLastResortPrekeyId();
+    const u16MAX = Math.pow(2, 16) - 1;
+    if (lrPkId !== u16MAX) {
+      throw new Error(`Last resort Prekey ID differs from expected ${u16MAX}, got ${lrPkId}`);
+    }
+
+    const aliceLrPk1 = await alice.proteusLastResortPrekey();
+    const aliceLrPk2 = await alice.proteusLastResortPrekey();
+    if (!aliceLrPk1.every((val, i) => val === aliceLrPk2[i])) {
+      throw new Error(`Last Resort prekey differs between runs, indicating that it has been regenerated!
+
+        run1: [${aliceLrPk1.join(", ")}]
+        run2: [${aliceLrPk2.join(", ")}]
+      `);
+    }
+
     const bob = await CoreCrypto.deferredInit(client2Config);
     await bob.proteusInit();
 
