@@ -836,6 +836,16 @@ public class CoreCryptoWrapper {
         try self.coreCrypto.proteusNewPrekeyAuto()
     }
 
+    /// - returns: A CBOR-serialized verison of the PreKeyBundle associated to the last resort prekey ID
+    public func proteusLastResortPrekey() throws -> [UInt8] {
+        try self.coreCrypto.proteusLastResortPrekey()
+    }
+
+    /// - returns: The ID of the Proteus last resort PreKey
+    public func proteusLastResortPrekeyId() throws -> UInt16 {
+        try self.coreCrypto.proteusLastResortPrekeyId()
+    }
+
     /// Proteus public key fingerprint
     /// It's basically the public key encoded as an hex string
     ///

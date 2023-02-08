@@ -547,6 +547,15 @@ export class CoreCrypto {
     /** @hidden */
     #cc: CoreCryptoFfiTypes.CoreCrypto;
 
+    /** @hidden */
+    static #assertModuleLoaded() {
+        if (!this.#module) {
+            throw new Error(
+                "Internal module hasn't been initialized. Please use `await CoreCrypto.init(params)` or `await CoreCrypto.deferredInit(params)` !"
+            );
+        }
+    }
+
     /**
      * This is your entrypoint to initialize {@link CoreCrypto}!
      *
@@ -1338,10 +1347,27 @@ export class CoreCrypto {
     /**
      * Creates a new prekey with an automatically generated ID..
      *
-     * @returns: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
+     * @returns A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
      */
     async proteusNewPrekeyAuto(): Promise<Uint8Array> {
         return await CoreCryptoError.asyncMapErr(this.#cc.proteus_new_prekey_auto());
+    }
+
+    /**
+     * Proteus last resort prekey stuff
+     *
+     * @returns A CBOR-serialize version of the PreKeyBundle associated with the last resort PreKey (holding the last resort prekey id)
+     */
+    async proteusLastResortPrekey(): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_last_resort_prekey());
+    }
+
+    /**
+     * @returns The last resort PreKey id
+     */
+    static proteusLastResortPrekeyId(): number {
+        this.#assertModuleLoaded();
+        return this.#module.CoreCrypto.proteus_last_resort_prekey_id();
     }
 
     /**
@@ -1428,12 +1454,8 @@ export class CoreCrypto {
      * @returns The `core-crypto-ffi` version as defined in its `Cargo.toml` file
      */
     static version(): string {
-        if (!this.#module) {
-            throw new Error(
-                "Internal module hasn't been initialized. Please use `await CoreCrypto.init(params)` or `await CoreCrypto.deferredInit(params)` !"
-            );
-        }
-        return this.#module.version();
+        this.#assertModuleLoaded();
+        return this.#module.CoreCrypto.version();
     }
 }
 

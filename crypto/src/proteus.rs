@@ -82,6 +82,10 @@ impl CoreCrypto {
         // ? Cannot inline the statement or the borrow checker gets really confused about the type of `keystore`
         let keystore = self.mls.mls_backend.borrow_keystore();
         let proteus_client = ProteusCentral::try_new(keystore).await?;
+
+        // ? Make sure the last resort prekey exists
+        let _ = proteus_client.last_resort_prekey(keystore).await?;
+
         self.proteus = Some(proteus_client);
         Ok(())
     }
@@ -199,6 +203,19 @@ impl CoreCrypto {
         let proteus = self.proteus.as_ref().ok_or(CryptoError::ProteusNotInitialized)?;
         let keystore = self.mls.mls_backend.borrow_keystore();
         proteus.new_prekey_auto(keystore).await
+    }
+
+    /// Returns the last resort prekey
+    pub async fn proteus_last_resort_prekey(&self) -> CryptoResult<Vec<u8>> {
+        let proteus = self.proteus.as_ref().ok_or(CryptoError::ProteusNotInitialized)?;
+        let keystore = self.mls.mls_backend.borrow_keystore();
+
+        proteus.last_resort_prekey(keystore).await
+    }
+
+    /// Returns the proteus last resort prekey id (u16::MAX = 65535)
+    pub fn proteus_last_resort_prekey_id() -> u16 {
+        ProteusCentral::last_resort_prekey_id()
     }
 
     /// Returns the proteus identity keypair
@@ -488,6 +505,39 @@ impl ProteusCentral {
     pub async fn new_prekey_auto(&self, keystore: &CryptoKeystore) -> CryptoResult<Vec<u8>> {
         let id = core_crypto_keystore::entities::ProteusPrekey::get_free_id(keystore).await?;
         self.new_prekey(id, keystore).await
+    }
+
+    /// Returns the Proteus last resort prekey ID (u16::MAX = 65535 = 0xFFFF)
+    pub fn last_resort_prekey_id() -> u16 {
+        proteus_wasm::keys::MAX_PREKEY_ID.value()
+    }
+
+    /// Returns the Proteus last resort prekey
+    /// If it cannot be found, one will be created.
+    pub async fn last_resort_prekey(&self, keystore: &CryptoKeystore) -> CryptoResult<Vec<u8>> {
+        let last_resort = if let Some(last_resort) = keystore
+            .find::<core_crypto_keystore::entities::ProteusPrekey>(Self::last_resort_prekey_id().to_le_bytes())
+            .await?
+        {
+            proteus_wasm::keys::PreKey::deserialise(&last_resort.prekey).map_err(ProteusError::from)?
+        } else {
+            let last_resort = proteus_wasm::keys::PreKey::last_resort();
+
+            use core_crypto_keystore::CryptoKeystoreProteus as _;
+            keystore
+                .proteus_store_prekey(
+                    Self::last_resort_prekey_id(),
+                    &last_resort.serialise().map_err(ProteusError::from)?,
+                )
+                .await?;
+
+            last_resort
+        };
+
+        let bundle = PreKeyBundle::new(self.proteus_identity.as_ref().public_key.clone(), &last_resort);
+        let bundle = bundle.serialise().map_err(ProteusError::from)?;
+
+        Ok(bundle)
     }
 
     /// Proteus identity keypair

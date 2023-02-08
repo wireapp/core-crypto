@@ -1015,6 +1015,25 @@ impl CoreCrypto<'_> {
         }}
     }
 
+    /// See [core_crypto::proteus::ProteusCentral::last_resort_prekey]
+    pub fn proteus_last_resort_prekey(&self) -> CryptoResult<Vec<u8>> {
+        proteus_impl! { self.proteus_last_error_code => {
+            future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_last_resort_prekey(),
+                ),
+            )
+        }}
+    }
+
+    /// See [core_crypto::proteus::ProteusCentral::last_resort_prekey_id]
+    pub fn proteus_last_resort_prekey_id(&self) -> CryptoResult<u16> {
+        proteus_impl!({ Ok(core_crypto::CoreCrypto::proteus_last_resort_prekey_id()) })
+    }
+
     /// See [core_crypto::proteus::ProteusCentral::fingerprint]
     pub fn proteus_fingerprint(&self) -> CryptoResult<String> {
         proteus_impl! { self.proteus_last_error_code => {

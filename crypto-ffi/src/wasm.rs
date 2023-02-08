@@ -766,6 +766,11 @@ pub struct CoreCrypto {
 
 #[wasm_bindgen]
 impl CoreCrypto {
+    /// Returns the current version of CoreCrypto
+    pub fn version() -> String {
+        crate::VERSION.into()
+    }
+
     /// see [core_crypto::MlsCentral::try_new]
     pub async fn _internal_new(
         path: String,
@@ -1694,56 +1699,101 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::proteus::ProteusCentral::encrypt]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub async fn proteus_encrypt(&self, session_id: String, plaintext: Box<[u8]>) -> WasmCryptoResult<Uint8Array> {
+    pub async fn proteus_encrypt(&self, session_id: String, plaintext: Box<[u8]>) -> Promise {
+        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
-        proteus_impl! { errcode_dest => {
-            let encrypted = self.inner.write().await.proteus_encrypt(&session_id, &plaintext).await.map_err(CoreCryptoError::from)?;
-            WasmCryptoResult::Ok(Uint8Array::from(encrypted.as_slice()))
-        } or throw WasmCryptoResult<_> }
+
+        future_to_promise(
+            async move {
+                proteus_impl! { errcode_dest => {
+                    let encrypted = this.write().await.proteus_encrypt(&session_id, &plaintext).await.map_err(CoreCryptoError::from)?;
+                    WasmCryptoResult::Ok(Uint8Array::from(encrypted.as_slice()).into())
+                } or throw WasmCryptoResult<_> }
+            }.err_into()
+        )
     }
 
     /// Returns: [`WasmCryptoResult<js_sys::Map<string, Uint8Array>>`]
     ///
     /// see [core_crypto::proteus::ProteusCentral::encrypt_batched]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub async fn proteus_encrypt_batched(
-        &self,
-        sessions: Box<[js_sys::JsString]>,
-        plaintext: Box<[u8]>,
-    ) -> WasmCryptoResult<js_sys::Map> {
+    pub fn proteus_encrypt_batched(&self, sessions: Box<[js_sys::JsString]>, plaintext: Box<[u8]>) -> Promise {
+        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
-        proteus_impl! { errcode_dest => {
-            let session_ids: Vec<String> = sessions.iter().map(String::from).collect();
-            let batch = self.inner.write().await.proteus_encrypt_batched(session_ids.as_slice(), &plaintext).await.map_err(CoreCryptoError::from)?;
-            let js_obj = js_sys::Map::new();
-            for (key, payload) in batch.into_iter() {
-                js_obj.set(&js_sys::JsString::from(key).into(), &Uint8Array::from(payload.as_slice()));
+
+        future_to_promise(
+            async move {
+                proteus_impl! { errcode_dest => {
+                    let session_ids: Vec<String> = sessions.iter().map(String::from).collect();
+                    let batch = this.write().await.proteus_encrypt_batched(session_ids.as_slice(), &plaintext).await.map_err(CoreCryptoError::from)?;
+                    let js_obj = js_sys::Map::new();
+                    for (key, payload) in batch.into_iter() {
+                        js_obj.set(&js_sys::JsString::from(key).into(), &Uint8Array::from(payload.as_slice()));
+                    }
+                    WasmCryptoResult::Ok(js_obj.into())
+                } or throw WasmCryptoResult<_> }
+            }.err_into()
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<Uint8Array>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::new_prekey]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub async fn proteus_new_prekey(&self, prekey_id: u16) -> Promise {
+        let this = self.inner.clone();
+        let errcode_dest = self.proteus_last_error_code.clone();
+
+        future_to_promise(
+            async move {
+                proteus_impl! { errcode_dest => {
+                    let prekey_raw = this.read().await.proteus_new_prekey(prekey_id).await.map_err(CoreCryptoError::from)?;
+                    WasmCryptoResult::Ok(Uint8Array::from(prekey_raw.as_slice()).into())
+                } or throw WasmCryptoResult<_> }
+            }.err_into()
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<Uint8Array>`]
+    ///
+    /// see [core_crypto::proteus::ProteusCentral::new_prekey]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub async fn proteus_new_prekey_auto(&self) -> Promise {
+        let this = self.inner.clone();
+        let errcode_dest = self.proteus_last_error_code.clone();
+        future_to_promise(
+            async move {
+                proteus_impl! { errcode_dest => {
+                    let prekey_raw = this.read().await.proteus_new_prekey_auto().await.map_err(CoreCryptoError::from)?;
+                    WasmCryptoResult::Ok(Uint8Array::from(prekey_raw.as_slice()).into())
+                } or throw WasmCryptoResult<_> }
             }
-            WasmCryptoResult::Ok(js_obj)
-        } or throw WasmCryptoResult<_> }
+            .err_into(),
+        )
     }
 
-    /// Returns: [`WasmCryptoResult<Uint8Array>`]
+    /// Returns [`WasmCryptoResult<Uint8Array>`]
     ///
-    /// see [core_crypto::proteus::ProteusCentral::new_prekey]
-    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub async fn proteus_new_prekey(&self, prekey_id: u16) -> WasmCryptoResult<Uint8Array> {
+    /// see [core_crypto::proteus::ProteusCentral::last_resort_prekey]
+    pub fn proteus_last_resort_prekey(&self) -> Promise {
+        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
-        proteus_impl! { errcode_dest => {
-            let prekey_raw = self.inner.read().await.proteus_new_prekey(prekey_id).await.map_err(CoreCryptoError::from)?;
-            WasmCryptoResult::Ok(Uint8Array::from(prekey_raw.as_slice()))
-        } or throw WasmCryptoResult<_> }
+
+        future_to_promise(async move {
+            proteus_impl! { errcode_dest => {
+                let last_resort_pkbundle = this.read().await.proteus_last_resort_prekey().await.map_err(CoreCryptoError::from)?;
+                WasmCryptoResult::Ok(Uint8Array::from(last_resort_pkbundle.as_slice()).into())
+            } or throw WasmCryptoResult<_> }
+        }.err_into())
     }
 
-    /// Returns: [`WasmCryptoResult<Uint8Array>`]
+    /// Returns: [`WasmCryptoResult<u16>`]
     ///
-    /// see [core_crypto::proteus::ProteusCentral::new_prekey]
+    /// see [core_crypto::proteus::ProteusCentral::last_resort_prekey_id]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub async fn proteus_new_prekey_auto(&self) -> WasmCryptoResult<Uint8Array> {
-        let errcode_dest = self.proteus_last_error_code.clone();
-        proteus_impl! { errcode_dest => {
-            let prekey_raw = self.inner.read().await.proteus_new_prekey_auto().await.map_err(CoreCryptoError::from)?;
-            WasmCryptoResult::Ok(Uint8Array::from(prekey_raw.as_slice()))
+    pub fn proteus_last_resort_prekey_id() -> WasmCryptoResult<u16> {
+        proteus_impl! {{
+            Ok(core_crypto::CoreCrypto::proteus_last_resort_prekey_id())
         } or throw WasmCryptoResult<_> }
     }
 
@@ -1888,12 +1938,6 @@ impl CoreCrypto {
 
         WasmCryptoResult::Ok(enrollment)
     }
-}
-
-#[wasm_bindgen]
-/// Returns the current version of CoreCrypto
-pub fn version() -> String {
-    crate::VERSION.into()
 }
 
 #[derive(Debug)]
