@@ -1,3 +1,4 @@
+use base64::Engine;
 use itertools::Itertools;
 use std::path::PathBuf;
 use x509_parser::extensions::{GeneralName, ParsedExtension};
@@ -78,10 +79,10 @@ impl TestDisplay {
         let acme_payload = serde_json::from_str::<rusty_acme::prelude::AcmeJws>(&body)
             .ok()
             .and_then(|jws| {
-                let protected = base64::decode_config(jws.protected, base64::URL_SAFE_NO_PAD).ok()?;
+                let protected = base64::prelude::BASE64_URL_SAFE_NO_PAD.decode(jws.protected).ok()?;
                 let protected = serde_json::from_slice::<serde_json::Value>(protected.as_slice()).ok()?;
 
-                let payload = base64::decode_config(jws.payload, base64::URL_SAFE_NO_PAD).ok()?;
+                let payload = base64::prelude::BASE64_URL_SAFE_NO_PAD.decode(jws.payload).ok()?;
                 let payload = serde_json::from_slice::<serde_json::Value>(payload.as_slice()).ok()?;
 
                 let decoded = serde_json::json!({

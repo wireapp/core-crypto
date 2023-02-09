@@ -1,6 +1,7 @@
 #![cfg(not(target_family = "wasm"))]
 
 use asserhttp::*;
+use base64::Engine;
 use jwt_simple::prelude::*;
 use rand::random;
 use rusty_acme::prelude::{wiremock::WiremockImage, *};
@@ -242,7 +243,7 @@ async fn e2e_identity() {
                 let client_dpop_token =
                     RustyJwtTools::generate_dpop_token(dpop, alice, backend_nonce, expiry, alg, &client_kp).unwrap();
                 d.token("Dpop token", &client_dpop_token);
-                let b64 = |v: &str| base64::encode_config(v, base64::URL_SAFE_NO_PAD);
+                let b64 = |v: &str| base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(v);
                 let req = wire_server_client
                     .post(&dpop_url)
                     .header("dpop", b64(&client_dpop_token))

@@ -19,7 +19,7 @@ url = "2.3"
 
 [dev-dependencies]
 rand = "0.8"
-base64 = "0.13"
+base64 = "0.21.0"
 url = "2.3"
 itertools = "0.10"
 uuid = "1.2"

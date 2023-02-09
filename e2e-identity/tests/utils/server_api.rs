@@ -1,4 +1,5 @@
 use crate::utils::rand_base64_str;
+use base64::Engine;
 use hyper::{Body, Method, Request, Response, StatusCode};
 use rusty_jwt_tools::prelude::{BackendNonce, ClientId, HashAlgorithm, Htm, Htu, Pem};
 use rusty_jwt_tools::RustyJwtTools;
@@ -23,7 +24,7 @@ pub async fn wire_api(req: Request<Body>) -> Result<Response<Body>, hyper::Error
                 req.headers()
                     .get(k)
                     .and_then(|d| d.to_str().ok())
-                    .and_then(|v| base64::decode_config(v, base64::URL_SAFE_NO_PAD).ok())
+                    .and_then(|v| base64::prelude::BASE64_URL_SAFE_NO_PAD.decode(v).ok())
                     .and_then(|v| String::from_utf8(v).ok())
                     .unwrap_or_else(|| panic!("No header '{k}'"))
             };
