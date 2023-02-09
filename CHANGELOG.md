@@ -7,6 +7,31 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+
+## [0.6.0-rc.8] - 2023-02-09
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Features
+
+- Added support for Proteus Last Resort PreKeys (boooo!)
+- [**breaking**] Async callbacks
+- Externally-generated clients
+
+### Miscellaneous Tasks
+
+- Updated webdriver version to chrome 110
+
+</details>
+
+* Added support for externally-generated MLS clients
+    * This allows you to generate a standalone Credential/KeyPair, submit it to your MLS Authentication Service, and then update this credential with a newly-attributed Client ID.
+* **[BREAKING CHANGE]** Changed callbacks to be async
+    * This allows consumers to perform async I/O within the callbacks
+    * **Note** this doesn't affect the Kotlin/Swift bindings as UniFFI does not support async yet.
+* Added APIs to support Proteus Last Resort Prekeys
+
 ## [0.6.0-rc.7] - 2023-02-06
 
 <details>
@@ -14,7 +39,13 @@ Platform support legends:
 
 ### Bug Fixes
 
+- Fixed E2E interop test for breaking api changes
+- New e2eidentityerror enum member wasn't exposed over ffi
 - TS/WASM build issues & test
+
+### Miscellaneous Tasks
+
+- Release v0.6.0-rc.7
 
 </details>
 
