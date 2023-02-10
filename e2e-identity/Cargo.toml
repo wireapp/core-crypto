@@ -11,8 +11,8 @@ publish = false
 serde = "1.0"
 serde_json = "1.0"
 thiserror = "1.0"
-rusty-acme = { version = "0.1", path = "../acme" }
-rusty-jwt-tools = { version = "0.1", path = "../jwt" }
+rusty-acme = { version = "0.2", path = "../acme" }
+rusty-jwt-tools = { version = "0.2", path = "../jwt" }
 jwt-simple = "0.11.3"
 derive_more = { version = "0.99", features = ["deref", "from", "into"] }
 url = "2.3"
@@ -28,7 +28,7 @@ hex = "0.4"
 x509-parser = "=0.14.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
-rusty-acme = { version = "0.1", path = "../acme", features = ["docker"] }
+rusty-acme = { version = "0.2", path = "../acme", features = ["docker"] }
 reqwest = { version = "0.11", features = ["json"], default_features = false }
 tokio = { version = "1.5.0", features = ["macros"], default_features = false }
 hyper = { version = "0.14", features = ["server"], default_features = false }
@@ -36,4 +36,4 @@ asserhttp = { version = "0.5", features = ["reqwest"] }
 testcontainers = "0.14"
 
 [target.'cfg(target_family = "wasm")'.dev-dependencies]
-rusty-acme = { version = "0.1", path = "../acme" }
+rusty-acme = { version = "0.2", path = "../acme" }
