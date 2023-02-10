@@ -177,7 +177,7 @@ impl RustyE2eIdentity {
         let new_authz = RustyAcme::new_authz_response(new_authz)?;
         let identifier = new_authz.identifier.to_json()?;
 
-        let wire_http_challenge = new_authz
+        let wire_dpop_challenge = new_authz
             .wire_dpop_challenge()
             .map(|c| serde_json::to_value(c).map(|chall| (chall, c.url.clone())))
             .transpose()?
@@ -190,7 +190,7 @@ impl RustyE2eIdentity {
 
         Ok(E2eiNewAcmeAuthz {
             identifier,
-            wire_http_challenge,
+            wire_dpop_challenge,
             wire_oidc_challenge,
         })
     }
@@ -248,21 +248,50 @@ impl RustyE2eIdentity {
     ///
     /// # Parameters
     /// * `access_token` - returned by wire-server from [this endpoint](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token)
-    /// * `handle_challenge` - you found after [Self::acme_new_authz_response]
+    /// * `dpop_challenge` - you found after [Self::acme_new_authz_response]
     /// * `account` - you got from [Self::acme_new_account_response]
     /// * `previous_nonce` - "replay-nonce" response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
-    pub fn acme_new_challenge_request(
+    pub fn acme_dpop_challenge_request(
         &self,
         access_token: String,
-        handle_challenge: &E2eiAcmeChall,
+        dpop_challenge: &E2eiAcmeChall,
         account: &E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
         let account = serde_json::from_value(account.clone().into())?;
-        let handle_chall = serde_json::from_value(handle_challenge.chall.clone())?;
+        let handle_chall = serde_json::from_value(dpop_challenge.chall.clone())?;
         let new_challenge_req = RustyAcme::dpop_chall_request(
             access_token,
             handle_chall,
+            &account,
+            self.sign_alg,
+            &self.sign_kp,
+            previous_nonce,
+        )?;
+        Ok(serde_json::to_value(new_challenge_req)?)
+    }
+
+    /// Creates a new challenge request.
+    ///
+    /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
+    ///
+    /// # Parameters
+    /// * `id_token` - returned by Identity Provider
+    /// * `oidc_challenge` - you found after [Self::acme_new_authz_response]
+    /// * `account` - you got from [Self::acme_new_account_response]
+    /// * `previous_nonce` - "replay-nonce" response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
+    pub fn acme_oidc_challenge_request(
+        &self,
+        id_token: String,
+        oidc_challenge: &E2eiAcmeChall,
+        account: &E2eiAcmeAccount,
+        previous_nonce: String,
+    ) -> E2eIdentityResult<Json> {
+        let account = serde_json::from_value(account.clone().into())?;
+        let oidc_chall = serde_json::from_value(oidc_challenge.chall.clone())?;
+        let new_challenge_req = RustyAcme::oidc_chall_request(
+            id_token,
+            oidc_chall,
             &account,
             self.sign_alg,
             &self.sign_kp,

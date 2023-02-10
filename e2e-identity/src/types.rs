@@ -18,7 +18,7 @@ pub struct E2eiNewAcmeOrder {
 pub struct E2eiNewAcmeAuthz {
     pub identifier: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub wire_http_challenge: Option<E2eiAcmeChall>,
+    pub wire_dpop_challenge: Option<E2eiAcmeChall>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wire_oidc_challenge: Option<E2eiAcmeChall>,
 }
