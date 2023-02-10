@@ -13,7 +13,7 @@ serde_json = "1.0"
 thiserror = "1.0"
 rusty-acme = { version = "0.1", path = "../acme" }
 rusty-jwt-tools = { version = "0.1", path = "../jwt" }
-jwt-simple = "0.11.2"
+jwt-simple = "0.11.3"
 derive_more = { version = "0.99", features = ["deref", "from", "into"] }
 url = "2.3"
 
@@ -25,11 +25,7 @@ itertools = "0.10"
 uuid = "1.2"
 wasm-bindgen-test = "0.3"
 hex = "0.4"
-
-[dev-dependencies.x509-parser]
-git = "https://github.com/wireapp/x509-parser"
-tag = "v1.0.1-pre.core-crypto-0.5.0"
-features = ["verify", "validate"]
+x509-parser = "=0.14.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 rusty-acme = { version = "0.1", path = "../acme", features = ["docker"] }
