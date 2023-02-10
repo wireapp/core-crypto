@@ -1120,18 +1120,23 @@ impl WireE2eIdentity {
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_order_request]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_order_request(
         &self,
-        handle: String,
+        display_name: String,
+        domain: String,
         client_id: String,
+        handle: String,
         expiry_days: u32,
         directory: AcmeDirectory,
         account: AcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<JsonRawData> {
         self.0.new_order_request(
-            handle,
+            display_name,
+            domain,
             client_id,
+            handle,
             expiry_days,
             directory.into(),
             account.into(),
@@ -1182,15 +1187,28 @@ impl WireE2eIdentity {
         )
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_challenge_request]
-    pub fn new_challenge_request(
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_dpop_challenge_request]
+    pub fn new_dpop_challenge_request(
         &self,
-        handle: AcmeChallenge,
+        access_token: String,
+        dpop_challenge: AcmeChallenge,
         account: AcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<JsonRawData> {
         self.0
-            .new_challenge_request(handle.into(), account.into(), previous_nonce)
+            .new_dpop_challenge_request(access_token, dpop_challenge.into(), account.into(), previous_nonce)
+    }
+
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_oidc_challenge_request]
+    pub fn new_oidc_challenge_request(
+        &self,
+        id_token: String,
+        oidc_challenge: AcmeChallenge,
+        account: AcmeAccount,
+        previous_nonce: String,
+    ) -> E2eIdentityResult<JsonRawData> {
+        self.0
+            .new_oidc_challenge_request(id_token, oidc_challenge.into(), account.into(), previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_challenge_response]
@@ -1216,13 +1234,11 @@ impl WireE2eIdentity {
     /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_request]
     pub fn finalize_request(
         &self,
-        domains: Vec<String>,
         order: AcmeOrder,
         account: AcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<JsonRawData> {
-        self.0
-            .finalize_request(domains, order.into(), account.into(), previous_nonce)
+        self.0.finalize_request(order.into(), account.into(), previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_response]
@@ -1316,7 +1332,7 @@ impl From<core_crypto::prelude::E2eiNewAcmeAuthz> for NewAcmeAuthz {
     fn from(new_authz: core_crypto::prelude::E2eiNewAcmeAuthz) -> Self {
         Self {
             identifier: new_authz.identifier,
-            wire_http_challenge: new_authz.wire_http_challenge.map(Into::into),
+            wire_http_challenge: new_authz.wire_dpop_challenge.map(Into::into),
             wire_oidc_challenge: new_authz.wire_oidc_challenge.map(Into::into),
         }
     }
@@ -1326,7 +1342,7 @@ impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
     fn from(new_authz: NewAcmeAuthz) -> Self {
         Self {
             identifier: new_authz.identifier,
-            wire_http_challenge: new_authz.wire_http_challenge.map(Into::into),
+            wire_dpop_challenge: new_authz.wire_http_challenge.map(Into::into),
             wire_oidc_challenge: new_authz.wire_oidc_challenge.map(Into::into),
         }
     }

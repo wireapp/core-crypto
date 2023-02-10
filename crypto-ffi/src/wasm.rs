@@ -19,6 +19,7 @@ use std::collections::HashMap;
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::future_to_promise;
 
 use core_crypto::prelude::*;
@@ -1973,8 +1974,10 @@ impl WireE2eIdentity {
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_order_request]
     pub fn new_order_request(
         &self,
-        handle: String,
+        display_name: String,
+        domain: String,
         client_id: String,
+        handle: String,
         expiry_days: u32,
         directory: JsValue,
         account: Uint8Array,
@@ -1982,8 +1985,10 @@ impl WireE2eIdentity {
     ) -> WasmCryptoResult<Uint8Array> {
         let directory = serde_wasm_bindgen::from_value::<AcmeDirectory>(directory)?;
         let new_order = self.0.new_order_request(
-            handle,
+            display_name,
+            domain,
             client_id,
+            handle,
             expiry_days,
             directory.into(),
             account.to_vec().into(),
@@ -2039,17 +2044,39 @@ impl WireE2eIdentity {
         WasmCryptoResult::Ok(dpop_token)
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_challenge_request]
-    pub fn new_challenge_request(
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_dpop_challenge_request]
+    pub fn new_dpop_challenge_request(
         &self,
-        handle_challenge: JsValue,
+        access_token: String,
+        dpop_challenge: JsValue,
         account: Uint8Array,
         previous_nonce: String,
     ) -> WasmCryptoResult<Uint8Array> {
-        let handle_chall = serde_wasm_bindgen::from_value::<AcmeChallenge>(handle_challenge)?;
-        let chall = self
-            .0
-            .new_challenge_request(handle_chall.into(), account.to_vec().into(), previous_nonce)?;
+        let dpop_challenge = serde_wasm_bindgen::from_value::<AcmeChallenge>(dpop_challenge)?;
+        let chall = self.0.new_dpop_challenge_request(
+            access_token,
+            dpop_challenge.into(),
+            account.to_vec().into(),
+            previous_nonce,
+        )?;
+        WasmCryptoResult::Ok(chall.as_slice().into())
+    }
+
+    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_oidc_challenge_request]
+    pub fn new_oidc_challenge_request(
+        &self,
+        id_token: String,
+        oidc_challenge: JsValue,
+        account: Uint8Array,
+        previous_nonce: String,
+    ) -> WasmCryptoResult<Uint8Array> {
+        let oidc_challenge = serde_wasm_bindgen::from_value::<AcmeChallenge>(oidc_challenge)?;
+        let chall = self.0.new_oidc_challenge_request(
+            id_token,
+            oidc_challenge.into(),
+            account.to_vec().into(),
+            previous_nonce,
+        )?;
         WasmCryptoResult::Ok(chall.as_slice().into())
     }
 
@@ -2081,23 +2108,13 @@ impl WireE2eIdentity {
     /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_request]
     pub fn finalize_request(
         &self,
-        domains: Vec<js_sys::JsString>,
         order: Uint8Array,
         account: Uint8Array,
         previous_nonce: String,
     ) -> WasmCryptoResult<Uint8Array> {
-        let domains = domains
-            .into_iter()
-            .try_fold(vec![], |mut acc, a| -> WasmCryptoResult<Vec<String>> {
-                if !a.is_valid_utf16() {
-                    return Err(E2eIdentityError::E2eiInvalidDomain.into());
-                }
-                acc.push(String::from(a));
-                Ok(acc)
-            })?;
-        let finalize =
-            self.0
-                .finalize_request(domains, order.to_vec().into(), account.to_vec().into(), previous_nonce)?;
+        let finalize = self
+            .0
+            .finalize_request(order.to_vec().into(), account.to_vec().into(), previous_nonce)?;
         WasmCryptoResult::Ok(finalize.as_slice().into())
     }
 
@@ -2254,7 +2271,7 @@ impl TryFrom<NewAcmeOrder> for core_crypto::prelude::E2eiNewAcmeOrder {
 /// See [core_crypto::e2e_identity::types::E2eiNewAcmeAuthz]
 pub struct NewAcmeAuthz {
     identifier: String,
-    wire_http_challenge: Option<AcmeChallenge>,
+    wire_dpop_challenge: Option<AcmeChallenge>,
     wire_oidc_challenge: Option<AcmeChallenge>,
 }
 
@@ -2263,12 +2280,12 @@ impl NewAcmeAuthz {
     #[wasm_bindgen(constructor)]
     pub fn new(
         identifier: String,
-        wire_http_challenge: Option<AcmeChallenge>,
+        wire_dpop_challenge: Option<AcmeChallenge>,
         wire_oidc_challenge: Option<AcmeChallenge>,
     ) -> Self {
         Self {
             identifier,
-            wire_http_challenge,
+            wire_dpop_challenge,
             wire_oidc_challenge,
         }
     }
@@ -2279,8 +2296,8 @@ impl NewAcmeAuthz {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn wire_http_challenge(&self) -> Option<AcmeChallenge> {
-        self.wire_http_challenge.clone()
+    pub fn wire_dpop_challenge(&self) -> Option<AcmeChallenge> {
+        self.wire_dpop_challenge.clone()
     }
 
     #[wasm_bindgen(getter)]
@@ -2293,7 +2310,7 @@ impl From<core_crypto::prelude::E2eiNewAcmeAuthz> for NewAcmeAuthz {
     fn from(authz: core_crypto::prelude::E2eiNewAcmeAuthz) -> Self {
         Self {
             identifier: authz.identifier,
-            wire_http_challenge: authz.wire_http_challenge.map(Into::into),
+            wire_dpop_challenge: authz.wire_dpop_challenge.map(Into::into),
             wire_oidc_challenge: authz.wire_oidc_challenge.map(Into::into),
         }
     }
@@ -2303,7 +2320,7 @@ impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
     fn from(authz: NewAcmeAuthz) -> Self {
         Self {
             identifier: authz.identifier,
-            wire_http_challenge: authz.wire_http_challenge.map(Into::into),
+            wire_dpop_challenge: authz.wire_dpop_challenge.map(Into::into),
             wire_oidc_challenge: authz.wire_oidc_challenge.map(Into::into),
         }
     }
