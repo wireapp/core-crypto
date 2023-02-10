@@ -101,14 +101,14 @@ impl TryFrom<E2eiNewAcmeOrder> for wire_e2e_identity::prelude::E2eiNewAcmeOrder 
 
 /// Result of an authorization creation
 /// see [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5)
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct E2eiNewAcmeAuthz {
     /// DNS entry associated with those challenge
     pub identifier: String,
     /// Challenge for the clientId
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub wire_http_challenge: Option<E2eiAcmeChallenge>,
+    pub wire_dpop_challenge: Option<E2eiAcmeChallenge>,
     /// Challenge for the handle + display name
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wire_oidc_challenge: Option<E2eiAcmeChallenge>,
@@ -120,7 +120,7 @@ impl TryFrom<wire_e2e_identity::prelude::E2eiNewAcmeAuthz> for E2eiNewAcmeAuthz 
     fn try_from(authz: wire_e2e_identity::prelude::E2eiNewAcmeAuthz) -> E2eIdentityResult<Self> {
         Ok(Self {
             identifier: authz.identifier,
-            wire_http_challenge: authz.wire_http_challenge.map(TryFrom::try_from).transpose()?,
+            wire_dpop_challenge: authz.wire_dpop_challenge.map(TryFrom::try_from).transpose()?,
             wire_oidc_challenge: authz.wire_oidc_challenge.map(TryFrom::try_from).transpose()?,
         })
     }
@@ -132,7 +132,7 @@ impl TryFrom<E2eiNewAcmeAuthz> for wire_e2e_identity::prelude::E2eiNewAcmeAuthz 
     fn try_from(authz: E2eiNewAcmeAuthz) -> E2eIdentityResult<Self> {
         Ok(Self {
             identifier: authz.identifier,
-            wire_http_challenge: authz.wire_http_challenge.map(TryFrom::try_from).transpose()?,
+            wire_dpop_challenge: authz.wire_dpop_challenge.map(TryFrom::try_from).transpose()?,
             wire_oidc_challenge: authz.wire_oidc_challenge.map(TryFrom::try_from).transpose()?,
         })
     }
@@ -140,7 +140,7 @@ impl TryFrom<E2eiNewAcmeAuthz> for wire_e2e_identity::prelude::E2eiNewAcmeAuthz 
 
 /// For creating a challenge
 /// see [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct E2eiAcmeChallenge {
     /// Opaque raw json value

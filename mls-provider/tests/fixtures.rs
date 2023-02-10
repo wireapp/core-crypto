@@ -34,7 +34,7 @@ pub fn store_name() -> String {
         if #[cfg(target_family = "wasm")] {
             format!("corecrypto.test.{}.edb", name)
         } else {
-            format!("./test.{}.edb", name)
+            format!("./test.{name}.edb")
         }
     }
 }

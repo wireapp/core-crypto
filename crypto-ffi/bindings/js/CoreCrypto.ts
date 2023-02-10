@@ -1524,17 +1524,19 @@ export class WireE2eIdentity {
     /**
      * Creates a new acme order for the handle (userId + display name) and the clientId.
      *
-     * @param handle domain of the authorization server e.g. `idp.example.org`
-     * @param clientId domain of the wire-server e.g. `wire.example.org`
+     * @param displayName human readable name displayed in the application e.g. `Smith, Alice M (QA)`
+     * @param domain DNS name of owning backend e.g. `example.com`
+     * @param clientId client identifier with user b64Url encoded & clientId hex encoded e.g. `impp:wireapp=NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ/6add501bacd1d90e@example.com`
+     * @param handle user handle e.g. `impp:wireapp=alice.smith.qa@example.com`
      * @param expiryDays generated x509 certificate expiry
      * @param directory you got from {@link directoryResponse}
      * @param account you got from {@link newAccountResponse}
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/new-account`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    newOrderRequest(handle: string, clientId: string, expiryDays: number, directory: AcmeDirectory, account: AcmeAccount, previousNonce: string): JsonRawData {
+    newOrderRequest(displayName: string, domain: string, clientId: string, handle: string, expiryDays: number, directory: AcmeDirectory, account: AcmeAccount, previousNonce: string): JsonRawData {
         try {
-            return this.#e2ei.new_order_request(handle, clientId, expiryDays, directory, account, previousNonce);
+            return this.#e2ei.new_order_request(displayName, domain, clientId, handle, expiryDays, directory, account, previousNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1614,16 +1616,34 @@ export class WireE2eIdentity {
     }
 
     /**
-     * Creates a new challenge request.
+     * Creates a new challenge request for Wire Dpop challenge.
      *
-     * @param handleChallenge you found after {@link newAuthzResponse}
+     * @param accessToken returned by wire-server from https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token
+     * @param dpopChallenge you found after {@link newAuthzResponse}
      * @param account you found after {@link newAccountResponse}
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
-    newChallengeRequest(handleChallenge: AcmeChallenge, account: AcmeAccount, previousNonce: string): JsonRawData {
+    newDpopChallengeRequest(accessToken: string, dpopChallenge: AcmeChallenge, account: AcmeAccount, previousNonce: string): JsonRawData {
         try {
-            return this.#e2ei.new_challenge_request(handleChallenge, account, previousNonce);
+            return this.#e2ei.new_dpop_challenge_request(accessToken, dpopChallenge, account, previousNonce);
+        } catch(e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
+    }
+
+    /**
+     * Creates a new challenge request for Wire Oidc challenge.
+     *
+     * @param idToken you get back from Identity Provider
+     * @param oidcChallenge you found after {@link newAuthzResponse}
+     * @param account you found after {@link newAccountResponse}
+     * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
+     */
+    newOidcChallengeRequest(idToken: string, oidcChallenge: AcmeChallenge, account: AcmeAccount, previousNonce: string): JsonRawData {
+        try {
+            return this.#e2ei.new_oidc_challenge_request(idToken, oidcChallenge, account, previousNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1676,15 +1696,14 @@ export class WireE2eIdentity {
     /**
      * Final step before fetching the certificate.
      *
-     * @param domains - domains you want to generate a certificate for e.g. `["wire.com"]`
      * @param order - order you got from {@link checkOrderResponse}
      * @param account - account you found after {@link newAccountResponse}
      * @param previousNonce - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    finalizeRequest(domains: string[], order: AcmeOrder, account: AcmeAccount, previousNonce: string): JsonRawData {
+    finalizeRequest(order: AcmeOrder, account: AcmeAccount, previousNonce: string): JsonRawData {
         try {
-            return this.#e2ei.finalize_request(domains, order, account, previousNonce);
+            return this.#e2ei.finalize_request(order, account, previousNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }

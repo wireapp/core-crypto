@@ -33,16 +33,16 @@ git = "https://github.com/wireapp/proteus"
 branch = "otak/2.0-error-codes"
 
 [patch.crates-io.openmls]
-git = "https://github.com/wireapp/openmls"
-branch = "feat/async"
-#tag = "v0.5.2-pre.core-crypto-0.6.0"
 package = "openmls"
+git = "https://github.com/wireapp/openmls"
+tag = "v0.5.3-pre.core-crypto-0.6.0"
+#branch = "feat/async"
 
 [patch.crates-io.openmls_traits]
-git = "https://github.com/wireapp/openmls"
-branch = "feat/async"
-#tag = "v0.5.2-pre.core-crypto-0.6.0"
 package = "openmls_traits"
+git = "https://github.com/wireapp/openmls"
+tag = "v0.5.3-pre.core-crypto-0.6.0"
+#branch = "feat/async"
 
 [patch.crates-io.hpke-rs]
 git = "https://github.com/wireapp/hpke-rs"
@@ -61,7 +61,7 @@ package = "hpke-rs-rust-crypto"
 
 [patch.crates-io.rcgen]
 git = "https://github.com/wireapp/rcgen"
-tag = "v1.1.0-pre.core-crypto-0.6.0"
+tag = "v1.2.0-pre.core-crypto-0.6.0"
 
 # aarch64-apple-ios-sim target support has not yet been released
 [patch.crates-io.openssl-src]
@@ -69,13 +69,18 @@ git = "https://github.com/alexcrichton/openssl-src-rs.git"
 branch = "release/111"
 package = "openssl-src"
 
+[patch.crates-io.wire-e2e-identity]
+git = "https://github.com/wireapp/rusty-jwt-tools"
+package = "wire-e2e-identity"
+tag = "v0.2.0"
+
 [patch.crates-io.jwt-simple]
-git = "https://github.com/beltram/rust-jwt-simple"
-branch = "wire"
+git = "https://github.com/wireapp/rust-jwt-simple"
+tag = "v0.11.3-pre.core-crypto-0.6.0"
 
 [patch.crates-io.biscuit]
 git = "https://github.com/beltram/biscuit"
-branch = "feat/wasm"
+tag = "v0.6.0-pre.core-crypto-0.6.0"
 
 # Needed for quick mode and (later) result comparison see (https://www.tweag.io/blog/2022-03-03-criterion-rs/)
 # TODO: remove once branch got merged in 0.4 release

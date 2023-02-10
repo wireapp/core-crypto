@@ -363,7 +363,7 @@ interface WireE2eIdentity {
     JsonRawData new_account_response(JsonRawData account);
 
     [Throws=E2eIdentityError]
-    JsonRawData new_order_request(string handle, string client_id, u32 expiry_days, AcmeDirectory directory, AcmeAccount account, string previous_nonce);
+    JsonRawData new_order_request(string display_name, string domain, string client_id, string handle, u32 expiry_days, AcmeDirectory directory, AcmeAccount account, string previous_nonce);
 
     [Throws=E2eIdentityError]
     NewAcmeOrder new_order_response(JsonRawData order);
@@ -378,7 +378,10 @@ interface WireE2eIdentity {
     string create_dpop_token(string access_token_url, string user_id, u64 client_id, string domain, AcmeChallenge client_id_challenge, string backend_nonce, u32 expiry_days);
 
     [Throws=E2eIdentityError]
-    JsonRawData new_challenge_request(AcmeChallenge handle, AcmeAccount account, string previous_nonce);
+    JsonRawData new_dpop_challenge_request(string access_token, AcmeChallenge dpop_challenge, AcmeAccount account, string previous_nonce);
+
+    [Throws=E2eIdentityError]
+    JsonRawData new_oidc_challenge_request(string id_token, AcmeChallenge oidc_challenge, AcmeAccount account, string previous_nonce);
 
     [Throws=E2eIdentityError]
     void new_challenge_response(JsonRawData challenge);
@@ -390,7 +393,7 @@ interface WireE2eIdentity {
     AcmeOrder check_order_response(JsonRawData order);
 
     [Throws=E2eIdentityError]
-    JsonRawData finalize_request(sequence<string> domains, AcmeOrder order, AcmeAccount account, string previous_nonce);
+    JsonRawData finalize_request(AcmeOrder order, AcmeAccount account, string previous_nonce);
 
     [Throws=E2eIdentityError]
     AcmeFinalize finalize_response(JsonRawData finalize);

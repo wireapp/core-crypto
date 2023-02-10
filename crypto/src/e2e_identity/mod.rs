@@ -87,16 +87,21 @@ impl WireE2eIdentity {
     /// See [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
     ///
     /// # Parameters
-    /// * `handle_host` - domain of the authorization server e.g. `idp.example.org`
-    /// * `client_id_host` - domain of the wire-server e.g. `wire.example.org`
+    /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
+    /// * `domain` - DNS name of owning backend e.g. `example.com`
+    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `impp:wireapp=NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ/6add501bacd1d90e@example.com`
+    /// * `handle` - user handle e.g. `impp:wireapp=alice.smith.qa@example.com`
     /// * `expiry` - generated x509 certificate expiry
     /// * `directory` - you got from [Self::acme_directory_response]
     /// * `account` - you got from [Self::acme_new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-account`
+    #[allow(clippy::too_many_arguments)]
     pub fn new_order_request(
         &self,
-        handle: String,
+        display_name: String,
+        domain: String,
         client_id: String,
+        handle: String,
         expiry_days: u32,
         directory: types::E2eiAcmeDirectory,
         account: types::E2eiAcmeAccount,
@@ -104,8 +109,10 @@ impl WireE2eIdentity {
     ) -> E2eIdentityResult<Json> {
         let expiry = core::time::Duration::from_secs(u64::from(expiry_days) * 3600 * 24);
         let order = self.0.acme_new_order_request(
-            handle,
+            display_name,
+            domain,
             client_id,
+            handle,
             expiry,
             &directory.try_into()?,
             &account.try_into()?,
@@ -209,18 +216,49 @@ impl WireE2eIdentity {
     /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
     ///
     /// # Parameters
-    /// * `handle_challenge` - you found after [Self::acme_new_authz_response]
+    /// * `access_token` - returned by wire-server from [this endpoint](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token)
+    /// * `dpop_challenge` - you found after [Self::acme_new_authz_response]
     /// * `account` - you got from [Self::acme_new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
-    pub fn new_challenge_request(
+    pub fn new_dpop_challenge_request(
         &self,
-        handle_chall: types::E2eiAcmeChallenge,
+        access_token: String,
+        dpop_challenge: types::E2eiAcmeChallenge,
         account: types::E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
-        let challenge =
-            self.0
-                .acme_new_challenge_request(&handle_chall.try_into()?, &account.try_into()?, previous_nonce)?;
+        let challenge = self.0.acme_dpop_challenge_request(
+            access_token,
+            &dpop_challenge.try_into()?,
+            &account.try_into()?,
+            previous_nonce,
+        )?;
+        let challenge = serde_json::to_vec(&challenge)?;
+        Ok(challenge)
+    }
+
+    /// Creates a new challenge request.
+    ///
+    /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
+    ///
+    /// # Parameters
+    /// * `id_token` - you get back from Identity Provider
+    /// * `oidc_challenge` - you found after [Self::acme_new_authz_response]
+    /// * `account` - you got from [Self::acme_new_account_response]
+    /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
+    pub fn new_oidc_challenge_request(
+        &self,
+        id_token: String,
+        oidc_challenge: types::E2eiAcmeChallenge,
+        account: types::E2eiAcmeAccount,
+        previous_nonce: String,
+    ) -> E2eIdentityResult<Json> {
+        let challenge = self.0.acme_oidc_challenge_request(
+            id_token,
+            &oidc_challenge.try_into()?,
+            &account.try_into()?,
+            previous_nonce,
+        )?;
         let challenge = serde_json::to_vec(&challenge)?;
         Ok(challenge)
     }
@@ -279,14 +317,13 @@ impl WireE2eIdentity {
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
     pub fn finalize_request(
         &self,
-        domains: Vec<String>,
         order: types::E2eiAcmeOrder,
         account: types::E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
-        let finalize =
-            self.0
-                .acme_finalize_request(domains, order.try_into()?, &account.try_into()?, previous_nonce)?;
+        let finalize = self
+            .0
+            .acme_finalize_request(order.try_into()?, &account.try_into()?, previous_nonce)?;
         let finalize = serde_json::to_vec(&finalize)?;
         Ok(finalize)
     }
@@ -386,10 +423,19 @@ pub mod tests {
                     let account_resp = serde_json::to_vec(&account_resp).unwrap();
                     let account = enrollment.new_account_response(account_resp).unwrap();
 
+                    let display_name = "Smith, Alice M (QA)".to_string();
+                    let domain = "example.com".to_string();
+                    let client_id =
+                        "impp:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com"
+                            .to_string();
+                    let handle = "impp:wireapp=alice.smith.qa@example.com".to_string();
+
                     let _order_req = enrollment
                         .new_order_request(
-                            "idp.example.org".to_string(),
-                            "wire.example.org".to_string(),
+                            display_name,
+                            domain,
+                            client_id,
+                            handle,
                             90,
                             directory,
                             account.clone(),
@@ -403,12 +449,13 @@ pub mod tests {
                         "notBefore": "2016-01-01T00:00:00Z",
                         "notAfter": "2037-01-08T00:00:00Z",
                         "identifiers": [
-                            { "type": "dns", "value": "www.example.org" },
-                            { "type": "dns", "value": "example.org" }
+                            {
+                              "type": "wireapp-id",
+                              "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NjJiYTRjMTIyODJjNDY5YmE5NGZmMjhhNjFkODA0Njk/d2ba2c1a57588ee4@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
+                            }
                         ],
                         "authorizations": [
                             "https://example.com/acme/authz/PAniVnsZcis",
-                            "https://example.com/acme/authz/r4HqLzrSrpI"
                         ],
                         "finalize": "https://example.com/acme/order/TOlocE8rfgo/finalize"
                     });
@@ -416,62 +463,41 @@ pub mod tests {
                     let new_order = enrollment.new_order_response(order_resp).unwrap();
                     let order_url = "https://example.com/acme/wire-acme/order/C7uOXEgg5KPMPtbdE3aVMzv7cJjwUVth";
 
-                    let authz1_url = new_order.authorizations.get(0).unwrap();
-                    let _authz1_req = enrollment
-                        .new_authz_request(authz1_url.to_string(), account.clone(), previous_nonce.to_string())
+                    let authz_url = new_order.authorizations.get(0).unwrap();
+                    let _authz_req = enrollment
+                        .new_authz_request(authz_url.to_string(), account.clone(), previous_nonce.to_string())
                         .unwrap();
 
-                    let authz1_resp = json!({
+                    let authz_resp = json!({
                         "status": "pending",
                         "expires": "2016-01-02T14:09:30Z",
                         "identifier": {
-                          "type": "dns",
-                          "value": "wire.example.org"
-                        },
-                        "challenges": [
-                          {
-                            "type": "wire-http-01",
-                            "url": "https://example.com/acme/chall/prV_B7yEyA4",
-                            "token": "DGyRejmCefe7v4NfDGDKfA"
-                          }
-                        ]
-                    });
-                    let authz1_resp = serde_json::to_vec(&authz1_resp).unwrap();
-                    let authz1 = enrollment.new_authz_response(authz1_resp).unwrap();
-
-                    let authz2_url = new_order.authorizations.get(1).unwrap();
-                    let _authz2_req = enrollment
-                        .new_authz_request(authz2_url.to_string(), account.clone(), previous_nonce.to_string())
-                        .unwrap();
-
-                    let authz2_resp = json!({
-                        "status": "pending",
-                        "expires": "2016-01-02T14:09:30Z",
-                        "identifier": {
-                          "type": "dns",
-                          "value": "idp.example.org"
+                          "type": "wireapp-id",
+                          "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NjJiYTRjMTIyODJjNDY5YmE5NGZmMjhhNjFkODA0Njk/d2ba2c1a57588ee4@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
                         },
                         "challenges": [
                           {
                             "type": "wire-oidc-01",
-                            "url": "https://example.com/acme/chall/prV_B7yEyA4",
-                            "token": "DGyRejmCefe7v4NfDGDKfA"
+                            "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/RNb3z6tvknq7vz2U5DoHsSOGiWQyVtAz",
+                            "status": "pending",
+                            "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY"
+                          },
+                          {
+                            "type": "wire-dpop-01",
+                            "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
+                            "status": "pending",
+                            "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY"
                           }
                         ]
                     });
-                    let authz2_resp = serde_json::to_vec(&authz2_resp).unwrap();
-                    let authz2 = enrollment.new_authz_response(authz2_resp).unwrap();
+                    let authz_resp = serde_json::to_vec(&authz_resp).unwrap();
+                    let authz = enrollment.new_authz_response(authz_resp).unwrap();
 
-                    let (client_id_chall, handle_chall) = {
-                        match (authz1.identifier.as_str(), authz2.identifier.as_str()) {
-                            (client_id, handle) if (client_id, handle) == ("wire.example.org", "idp.example.org") => {
-                                (authz1.wire_http_challenge.unwrap(), authz2.wire_oidc_challenge.unwrap())
-                            }
-                            (handle, client_id) if (client_id, handle) == ("wire.example.org", "idp.example.org") => {
-                                (authz1.wire_oidc_challenge.unwrap(), authz2.wire_http_challenge.unwrap())
-                            }
-                            _ => panic!(""),
-                        }
+                    let (dpop_chall, oidc_chall) = {
+                        (
+                            authz.wire_dpop_challenge.clone().unwrap(),
+                            authz.wire_oidc_challenge.unwrap(),
+                        )
                     };
 
                     let backend_nonce = "U09ZR0tnWE5QS1ozS2d3bkF2eWJyR3ZVUHppSTJsMnU";
@@ -487,66 +513,80 @@ pub mod tests {
                             user_id,
                             client_id,
                             domain.to_string(),
-                            client_id_chall,
+                            dpop_chall.clone(),
                             backend_nonce.to_string(),
                             90,
                         )
                         .unwrap();
 
-                    let _handle_chall_req = enrollment
-                        .new_challenge_request(handle_chall, account.clone(), previous_nonce.to_string())
+                    let access_token = "eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6InlldjZPWlVudWlwbmZrMHRWZFlLRnM5MWpSdjVoVmF6a2llTEhBTmN1UEUifX0.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY4MzczNzc1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjU5MzA3LyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjU5MzA3LyIsImp0aSI6Ijk4NGM1OTA0LWZhM2UtNDVhZi1iZGM1LTlhODMzNjkxOGUyYiIsIm5vbmNlIjoiYjNWSU9YTk9aVE4xVUV0b2FXSk9VM1owZFVWdWJFMDNZV1ZIUVdOb2NFMCIsImNoYWwiOiJTWTc0dEptQUlJaGR6UnRKdnB4Mzg5ZjZFS0hiWHV4USIsImNuZiI6eyJraWQiOiJocG9RV2xNUmtjUURKN2xNcDhaSHp4WVBNVDBJM0Vhc2VqUHZhWmlGUGpjIn0sInByb29mIjoiZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNkltUndiM0FyYW5kMElpd2lhbmRySWpwN0ltdDBlU0k2SWs5TFVDSXNJbU55ZGlJNklrVmtNalUxTVRraUxDSjRJam9pZVVGM1QxVmZTMXBpYUV0SFIxUjRaMGQ0WTJsa1VVZHFiMUpXWkdOdFlWQmpSblI0VG5Gd1gydzJTU0o5ZlEuZXlKcFlYUWlPakUyTnpVNU5qRTNOVFlzSW1WNGNDSTZNVFkzTmpBME9ERTFOaXdpYm1KbUlqb3hOamMxT1RZeE56VTJMQ0p6ZFdJaU9pSnBiWEJ3T25kcGNtVmhjSEE5VGtSRmVWcEhXWGRPYW1NeVRYcEdhMDVFUW1sT1ZHeHNXVzFXYlUxcVVYbGFWRWw2VGxSak5FNVhVUzgyTldNellXTXhZVEUyTXpGak1UTTJRR1Y0WVcxd2JHVXVZMjl0SWl3aWFuUnBJam9pTlRBM09HWmtaVEl0TlRCaU9DMDBabVZtTFdJeE5EQXRNekJrWVRrellqQmtZems1SWl3aWJtOXVZMlVpT2lKaU0xWkpUMWhPVDFwVVRqRlZSWFJ2WVZkS1QxVXpXakJrVlZaMVlrVXdNMWxYVmtoUlYwNXZZMFV3SWl3aWFIUnRJam9pVUU5VFZDSXNJbWgwZFNJNkltaDBkSEE2THk5c2IyTmhiR2h2YzNRNk5Ua3pNRGN2SWl3aVkyaGhiQ0k2SWxOWk56UjBTbTFCU1Vsb1pIcFNkRXAyY0hnek9EbG1Oa1ZMU0dKWWRYaFJJbjAuQk1MS1Y1OG43c1dITXkxMlUtTHlMc0ZJSkd0TVNKcXVoUkZvYnV6ZTlGNEpBN1NjdlFWSEdUTFF2ZVZfUXBfUTROZThyeU9GcEphUTc1VW5ORHR1RFEiLCJjbGllbnRfaWQiOiJpbXBwOndpcmVhcHA9TkRFeVpHWXdOamMyTXpGa05EQmlOVGxsWW1WbU1qUXlaVEl6TlRjNE5XUS82NWMzYWMxYTE2MzFjMTM2QGV4YW1wbGUuY29tIiwiYXBpX3ZlcnNpb24iOjMsInNjb3BlIjoid2lyZV9jbGllbnRfaWQifQ.Tf10dkKrNikGNgGhIdkrMHb0v6Jpde09MaIyBeuY6KORcxuglMGY7_V9Kd0LcVVPMDy1q4xbd39ZqosGz1NUBQ".to_string();
+                    let _dpop_chall_req = enrollment
+                        .new_dpop_challenge_request(access_token, dpop_chall, account.clone(), previous_nonce.to_string())
                         .unwrap();
-
-                    let chall_resp = json!({
-                        "type": "wire-oidc-01",
+                    let dpop_chall_resp = json!({
+                        "type": "wire-dpop-01",
                         "url": "https://example.com/acme/chall/prV_B7yEyA4",
                         "status": "valid",
                         "token": "LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0"
                     });
-                    let chall_resp = serde_json::to_vec(&chall_resp).unwrap();
-                    enrollment.new_challenge_response(chall_resp).unwrap();
+                    let dpop_chall_resp = serde_json::to_vec(&dpop_chall_resp).unwrap();
+                    enrollment.new_challenge_response(dpop_chall_resp).unwrap();
+
+                    let id_token = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ".to_string();
+                    let _oidc_chall_req = enrollment
+                        .new_oidc_challenge_request(id_token, oidc_chall, account.clone(), previous_nonce.to_string())
+                        .unwrap();
+                    let oidc_chall_resp = json!({
+                        "type": "wire-oidc-01",
+                        "url": "https://localhost:55794/acme/acme/challenge/tR33VAzGrR93UnBV5mTV9nVdTZrG2Ln0/QXgyA324mTntfVAIJKw2cF23i4UFJltk",
+                        "status": "valid",
+                        "token": "2FpTOmNQvNfWDktNWt1oIJnjLE3MkyFb"
+                    });
+                    let oidc_chall_resp = serde_json::to_vec(&oidc_chall_resp).unwrap();
+                    enrollment.new_challenge_response(oidc_chall_resp).unwrap();
 
                     let _get_order_req = enrollment
                         .check_order_request(order_url.to_string(), account.clone(), previous_nonce.to_string())
                         .unwrap();
 
                     let order_resp = json!({
-                        "status": "ready",
-                        "expires": "2037-01-05T14:09:07.99Z",
-                        "notBefore": "2016-01-01T00:00:00Z",
-                        "notAfter": "2037-01-08T00:00:00Z",
-                        "identifiers": [
-                            { "type": "dns", "value": "www.example.org" },
-                            { "type": "dns", "value": "example.org" }
-                        ],
-                        "authorizations": [
-                            "https://example.com/acme/authz/PAniVnsZcis",
-                            "https://example.com/acme/authz/r4HqLzrSrpI"
-                        ],
-                        "finalize": "https://example.com/acme/order/TOlocE8rfgo/finalize"
+                      "status": "ready",
+                      "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
+                      "identifiers": [
+                        {
+                          "type": "wireapp-id",
+                          "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NjJiYTRjMTIyODJjNDY5YmE5NGZmMjhhNjFkODA0Njk/d2ba2c1a57588ee4@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
+                        }
+                      ],
+                      "authorizations": [
+                        "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw"
+                      ],
+                      "expires": "2032-02-10T14:59:20Z",
+                      "notBefore": "2013-02-09T14:59:20.442908Z",
+                      "notAfter": "2032-02-09T15:59:20.442908Z"
                     });
                     let order_resp = serde_json::to_vec(&order_resp).unwrap();
                     let order = enrollment.check_order_response(order_resp).unwrap();
 
-                    let domains = vec!["idp.example.org".to_string(), "wire.example.org".to_string()];
                     let _finalize_req = enrollment
-                        .finalize_request(domains, order, account.clone(), previous_nonce.to_string())
+                        .finalize_request(order, account.clone(), previous_nonce.to_string())
                         .unwrap();
                     let finalize_resp = json!({
-                        "status": "valid",
-                        "expires": "2016-01-20T14:09:07.99Z",
-                        "notBefore": "2016-01-01T00:00:00Z",
-                        "notAfter": "2016-01-08T00:00:00Z",
-                        "identifiers": [
-                            { "type": "dns", "value": "www.example.org" },
-                            { "type": "dns", "value": "example.org" }
-                        ],
-                        "authorizations": [
-                            "https://example.com/acme/authz/PAniVnsZcis",
-                            "https://example.com/acme/authz/r4HqLzrSrpI"
-                        ],
-                        "finalize": "https://example.com/acme/order/TOlocE8rfgo/finalize",
-                        "certificate": "https://example.com/acme/cert/mAt3xBGaobw"
+                      "certificate": "https://localhost:55170/acme/acme/certificate/rLhCIYygqzWhUmP1i5tmtZxFUvJPFxSL",
+                      "status": "valid",
+                      "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
+                      "identifiers": [
+                        {
+                          "type": "wireapp-id",
+                          "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NjJiYTRjMTIyODJjNDY5YmE5NGZmMjhhNjFkODA0Njk/d2ba2c1a57588ee4@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
+                        }
+                      ],
+                      "authorizations": [
+                        "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw"
+                      ],
+                      "expires": "2032-02-10T14:59:20Z",
+                      "notBefore": "2013-02-09T14:59:20.442908Z",
+                      "notAfter": "2032-02-09T15:59:20.442908Z"
                     });
                     let finalize_resp = serde_json::to_vec(&finalize_resp).unwrap();
                     let finalize = enrollment.finalize_response(finalize_resp).unwrap();
@@ -556,29 +596,31 @@ pub mod tests {
                         .unwrap();
 
                     let certificate_resp = r#"-----BEGIN CERTIFICATE-----
-MIIB7DCCAZKgAwIBAgIRAIErw6bhWUQXxeS0xsdMvyEwCgYIKoZIzj0EAwIwLjEN
-MAsGA1UEChMEd2lyZTEdMBsGA1UEAxMUd2lyZSBJbnRlcm1lZGlhdGUgQ0EwHhcN
-MjMwMTA1MjAwMDQxWhcNMjMwMTA2MjAwMTQxWjAAMFkwEwYHKoZIzj0CAQYIKoZI
-zj0DAQcDQgAEq9rybsGxEBLpn6Tx5LHladF6jw3Vuc5Yr27NKRLwFWbCUXUmwApv
-arn35O3u+w1CnwTyCA2tt605GhvbL039AKOBvjCBuzAOBgNVHQ8BAf8EBAMCB4Aw
-HQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMB0GA1UdDgQWBBTlxc6/odBa
-eTAlHYZcoCeFyn0BCjAfBgNVHSMEGDAWgBRsNCwlQHq5dXTxxfhhKHYOFQtlXzAm
-BgNVHREBAf8EHDAagg5sb2dpbi53aXJlLmNvbYIId2lyZS5jb20wIgYMKwYBBAGC
-pGTGKEABBBIwEAIBBgQJd2lyZS1hY21lBAAwCgYIKoZIzj0EAwIDSAAwRQIgAwhX
-Jvnc7hOUOT41I35ZZi5rgJKF4FtMyImvCFY1UQ0CIQC2k+k7uqwgMRp10z3xzWHE
-3sMuOBJG/UAR+VtFvCmGSA==
+MIICaDCCAg6gAwIBAgIQH3CanUzXJpP+pbXNUVpp7TAKBggqhkjOPQQDAjAuMQ0w
+CwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3aXJlIEludGVybWVkaWF0ZSBDQTAeFw0y
+MzAyMDkxNDU5MjBaFw0yMzAyMDkxNTU5MjBaMDQxFDASBgNVBAoTC2V4YW1wbGUu
+Y29tMRwwGgYDVQQDExNTbWl0aCwgQWxpY2UgTSAoUUEpMCowBQYDK2VwAyEAVCw/
+lxGMV2Zx723yhVv94Fb+LCARV0h1F1/zmvRZGy6jggE1MIIBMTAOBgNVHQ8BAf8E
+BAMCB4AwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMB0GA1UdDgQWBBSr
+zp+ejXBydYcjmBr4cTp931ceUTAfBgNVHSMEGDAWgBS04sLODR52O3cPNlNdK3f6
+tinkIzCBoAYDVR0RBIGYMIGVghNzbWl0aCwgYWxpY2UgbSAocWEphidpbXBwOndp
+cmVhcHA9YWxpY2Uuc21pdGgucWFAZXhhbXBsZS5jb22GVWltcHA6d2lyZWFwcD1u
+amppeXRyam10aXlvZGpqbmR5NXltZTVuZ3ptbWpoaG5qZmtvZGEwbmprL2QyYmEy
+YzFhNTc1ODhlZTRAZXhhbXBsZS5jb20wHQYMKwYBBAGCpGTGKEABBA0wCwIBBgQE
+YWNtZQQAMAoGCCqGSM49BAMCA0gAMEUCIG6cfFB2En9YKVPuQhEZcoELtZbkFsTJ
+PeWa6zTkrI47AiEApQP8piMQWhofGLL6oTWoks3+6JfPRWZP9Z7JkhdiBmY=
 -----END CERTIFICATE-----
 -----BEGIN CERTIFICATE-----
-MIIBuTCCAV+gAwIBAgIRAOzPGCzghRSFfL08VAXS/DQwCgYIKoZIzj0EAwIwJjEN
-MAsGA1UEChMEd2lyZTEVMBMGA1UEAxMMd2lyZSBSb290IENBMB4XDTIzMDEwNTIw
-MDEzOFoXDTMzMDEwMjIwMDEzOFowLjENMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMU
-d2lyZSBJbnRlcm1lZGlhdGUgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAARc
-LwmNj175LF1Wd+CC7lVGVUzr/ys+mR7XbN0csRx3okfJKZFxx0PGs6JO+pTUG0C3
-27GSfNQU+2tz5fnrmahxo2YwZDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgw
-BgEB/wIBADAdBgNVHQ4EFgQUbDQsJUB6uXV08cX4YSh2DhULZV8wHwYDVR0jBBgw
-FoAUuL+rLbn8HEXbB6Pw5wzGhGjlE24wCgYIKoZIzj0EAwIDSAAwRQIgEltwd9QL
-LdKVfvqnrQ/H3a4uIPgJz0+YQI1Y0eYuMB4CIQCYMrIYAqC7nqjqVXrROShrISO+
-S26guHAMqXDlqqueOQ==
+MIIBuDCCAV6gAwIBAgIQP5i/9/vpRPXels/aSa5lZTAKBggqhkjOPQQDAjAmMQ0w
+CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjMwMjA5MTQ1
+OTE4WhcNMzMwMjA2MTQ1OTE4WjAuMQ0wCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3
+aXJlIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABFNd
+5wbJjtVSmXxftBSmHgTJS3F1LGMlb789KtcSTjjJVO//VNdg3XDYvhHyitHx/Bz+
+5yxkrPaRzeGeJkZfkuejZjBkMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG
+AQH/AgEAMB0GA1UdDgQWBBS04sLODR52O3cPNlNdK3f6tinkIzAfBgNVHSMEGDAW
+gBTqNi9/bemraZjLYA8TGat3ianEizAKBggqhkjOPQQDAgNIADBFAiEAuo8JLvys
+IvUCvPUJi1++80IgPeRxxRvn5zlHDh3qKZECIHONc1xx1ixlIyp9mOtdeTvG5Dql
+RheWYpDHRiLax1Id
 -----END CERTIFICATE-----"#;
                     enrollment.certificate_response(certificate_resp.to_string()).unwrap();
                     enrollment.free();

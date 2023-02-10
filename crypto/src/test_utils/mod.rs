@@ -61,7 +61,7 @@ pub async fn run_test_with_client_ids<const N: usize>(
                 let mut central = MlsCentral::try_new(configuration, (case.credential)(case.cfg.ciphersuite))
                     .await
                     .unwrap();
-                central.callbacks(Box::new(ValidationCallbacks::default()));
+                central.callbacks(Box::<ValidationCallbacks>::default());
                 central
             });
             let centrals: [MlsCentral; N] = futures_util::future::join_all(stream).await.try_into().unwrap();
