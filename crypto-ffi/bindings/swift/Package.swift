@@ -8,11 +8,7 @@ let package = Package(
     products: [
         .library(
             name: "CoreCrypto",
-            targets: ["CoreCrypto", "CoreCryptoSwift"]
-        ),
-        .library(
-            name: "LibCoreCrypto",
-            targets: ["LibCoreCrypto"]
+            targets: ["CoreCrypto", "CoreCryptoSwift", "LibCoreCrypto"]
         ),
     ],
     dependencies: [],
@@ -21,9 +17,10 @@ let package = Package(
             name: "CoreCrypto",
             dependencies: ["CoreCryptoSwift"]
         ),
-        .systemLibrary(
+        .binaryTarget(
             name: "LibCoreCrypto",
-            path: "./lib"
+            url: "https://github.com/wireapp/core-crypto/releases/download/#VERSION/LibCoreCrypto.xcframework.zip",
+            checksum: "#CHECKSUM"
         ),
         .target(
             name: "CoreCryptoSwift",

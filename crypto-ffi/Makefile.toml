@@ -147,11 +147,30 @@ condition = { platforms = ["mac"] }
 script = '''
     cd bindings/swift
 
-    lipo -create -output ./lib/libcore_crypto_ffi.a \
+    rm -rf ./out/*
+    mkdir -p ./out/ios/
+    mkdir -p ./out/macos/
+
+    lipo -create -output ./out/ios/libcore_crypto_ffi.a \
         ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a \
-        ../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a
+        ../../../target/aarch64-apple-ios-sim/release/libcore_crypto_ffi.a
+
+    lipo -create -output ./out/macos/libcore_crypto_ffi.a \
+        ../../../target/aarch64-apple-darwin/release/libcore_crypto_ffi.a \
+        ../../../target/x86_64-apple-darwin/release/libcore_crypto_ffi.a
+
+    xcodebuild -create-xcframework \
+       -library ../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a \
+       -headers ./lib/ \
+       -library ./out/ios/libcore_crypto_ffi.a \
+       -headers ./lib/ \
+       -library ./out/macos/libcore_crypto_ffi.a \
+       -headers ./lib/ \
+       -output ./out/LibCoreCrypto.xcframework
+
+    ditto -c -k --sequesterRsrc --keepParent ./out/LibCoreCrypto.xcframework ./out/LibCoreCrypto.xcframework.zip
 '''
-dependencies = ["ios"]
+dependencies = ["jvm-aarch64-darwin", "jvm-x86-darwin", "ios"]
 
 ################################### Android ###################################
 

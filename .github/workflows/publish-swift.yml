@@ -40,7 +40,11 @@ jobs:
           cd crypto-ffi
           ssh-keyscan -H github.com > /Users/runner/.ssh/known_hosts
           cargo make create-swift-package
-          cd ../../
+          cd bindings/swift
+          export CHECKSUM=$(swift package compute-checksum out./LibCoreCrypto.xcframework.zip)
+          sed -i '' "s/#VERSION/$GITHUB_REF_NAME/g" Package.swift
+          sed -i '' "s/#CHECKSUM/$CHECKSUM/g" Package.swift
+          cd ../../../../
           git clone git@github.com:wireapp/core-crypto-swift.git
           cd core-crypto-swift
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
