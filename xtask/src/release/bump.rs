@@ -226,7 +226,9 @@ fn bump_deps(
 }
 
 pub fn bump(bump_version: BumpLevel, dry_run: bool) -> Result<()> {
-    log::warn!("Dry run enabled, no actions will be performed on files");
+    if dry_run {
+        log::warn!("Dry run enabled, no actions will be performed on files");
+    }
 
     let cargo_config = cargo::util::Config::default().map_err(|e| eyre!(e.to_string()))?;
     let ws = cargo::core::Workspace::new(&Path::new("./Cargo.toml").canonicalize()?, &cargo_config)
