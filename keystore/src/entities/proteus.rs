@@ -83,7 +83,7 @@ impl ProteusPrekey {
 
     pub async fn get_free_id(conn: &crate::Connection) -> crate::CryptoKeystoreResult<u16> {
         let count = conn.count::<Self>().await?;
-        Ok((count % u16::MAX as usize) as u16)
+        Ok((count % (u16::MAX - 1) as usize) as u16)
     }
 }
 
