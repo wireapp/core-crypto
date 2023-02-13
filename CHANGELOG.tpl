@@ -7,12 +7,86 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.6.0] - 2023-02-13
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.6.0" unreleased=true }}
+</details>
+
+Platform support status:
+
+* x86_64-unknown-linux-gnu ✅
+* x86_64-apple-darwin ✅
+* armv7-linux-androideabi ✅
+* aarch64-linux-android ✅
+* i686-linux-android ✅
+* x86_64-linux-android ✅
+* aarch64-apple-ios ✅
+* aarch64-apple-ios-sim ✅
+* x86_64-apple-ios ✅
+* wasm32-unknown-unknown ✅
+
+### 0.6.0 Release changes
+
+* **[BREAKING CHANGE]** E2EI solution API overhauled from pre-release versions
+    * This was made to fix some incompatibilities between the DPoP RFC and our code; The API had to be changed as a consequence
+    * Please refer to the following point to see the changes
+* First stable version of Wire's end-to-end identity client library. It allows a MLS client to generate a x509 certificate proving possession of its userId, clientId and displayName for a given domain/backend. This certificate will later be used as a MLS credential in place of the only currently supported "basic" one which consists of a public key.
+    * To generate such a certificate, use the `new_acme_enrollment` method on a partially initialized CoreCrypto instance. This will generate a temporary key material for the enrollment session with the ACME server. Note that only Ed25519 signature scheme is supported at the moment.
+    * Only the "enrollment" flow is defined for the moment. Later on, "refresh" and "revocation" flows will be added.
+    * This library is heavily opinionated and only suited for **Wire** custom flow, with [our fork of the acme server](https://github.com/wireapp/smallstep-certificates). Any attempt to use it as a generic purpose acme client library will fail terribly.
+    * To make sure this works as expected, this library has been tested against the actual [acme-server](https://github.com/wireapp/smallstep-certificates) thanks to [testcontainers](https://www.testcontainers.org/). Only the OIDC provider has been mocked for the moment due to the fact that the target provider [Dex](https://github.com/dexidp/dex) does not yet support Ed25519 signatures.
+
+### 0.6.0 pre-release changes tl;dr, for information
+
+#### Changes
+
+* Added support for externally-generated MLS clients
+    * This allows you to generate a standalone Credential/KeyPair, submit it to your MLS Authentication Service, and then update this credential with a newly-attributed Client ID.
+* Added APIs to support Proteus Last Resort Prekeys
+* Added support for Proteus error codes
+    * WASM:
+        * all errors are now instances of `CoreCryptoError` which extends the standard JavaScript `Error` but with additional properties:
+            * `rustStackTrace` contains the original Rust error string.
+            * `proteusErrorCode` contains the error code for Proteus calls. If it's 0, no error, otherwise it contains the code
+        * WASM/TS now has access to the `CoreCrypto.proteusLastErrorCode()` method which allows to retrieve the last-occured proteus error and thus brings it to parity with other FFIs
+    * On other platforms, the FFI has gained a `proteus_last_error_code` method.
+* Fixed a bug where the keystore would not execute its IndexedDB upgrade handler on WASM, leading to older stores and/or new tables not being structurally consistent
+* Added missing Proteus APIs to bindings and FFI:
+    * `proteus_new_prekey_auto`: generates a new PreKeyBundle with an automatically incremented ID
+        * To do this, CoreCrypto finds the first "free" ID within the `0..u16::MAX - 1` range and creates a PreKey using this ID.
+* Added Proteus compatibility layer support
+* Added API to export secret key derived from the group and client ids from the members
+* Change `DecryptedMessage` signature
+    * The `decrypt` API now returns if the decrypted message changed the epoch through the `hasEpochChanged` field
+* Members can now rejoin group by external commits
+    * Validate received external commits
+    * Added `clear_pending_group_from_external_commit`
+    * External commit returns a bundle containing the PGS
+
+
+#### Breaking changes
+
+
+* **[BREAKING CHANGE]** Changed callbacks to be async
+    * This allows consumers to perform async I/O within the callbacks
+    * **Note** this doesn't affect the Kotlin/Swift bindings as UniFFI does not support async yet.
+* **BREAKING** Renamed callback `client_id_belongs_to_one_of` to `client_is_existing_group_user`
+* **BREAKING** WASM: Omitted in last build; `CoreCrypto.deferredInit` now takes an object with the parameters much like `init()` for consistency reasons.
+* **BREAKING** No one was probably using it, but the C-FFI has been removed
+
+
+There has been an extensive pre-release period (with many -pre and -rc releases), the original changelog for those has been collapsed below:
+
+<details>
+    <summary>0.6.0 pre-releases changelog</summary>
 
 ## [0.6.0-rc.8] - 2023-02-09
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.6.0-rc.8" unreleased=true}}
+{{git-cliff tag="v0.6.0-rc.8"}}
 </details>
 
 * Added support for externally-generated MLS clients
@@ -208,6 +282,7 @@ There's a post mortem available here: <https://github.com/wireapp/core-crypto/pu
     * Added `clear_pending_group_from_external_commit`
     * External commit returns a bundle containing the PGS
 
+</details>
 
 ## [0.5.2] - 2022-27-09
 
