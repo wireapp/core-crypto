@@ -2,6 +2,5 @@
 // Trust me, you don't want to mess with it!
 module LibCoreCrypto {
     header "core_cryptoFFI.h"
-    link "./libcore_crypto_ffi"
     export *
 }
