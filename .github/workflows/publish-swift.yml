@@ -49,7 +49,8 @@ jobs:
           cd core-crypto-swift
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          cp -r ../core-crypto/crypto-ffi/bindings/swift/* ./
+          cp -r ../core-crypto/crypto-ffi/bindings/swift/Sources/* ./Sources/
+          cp ../core-crypto/crypto-ffi/bindings/swift/Package.swift ./
           git add .
           git commit -m "chore: release of core-crypto $GITHUB_REF_NAME"
           git tag $SEMANTIC_VERSION
