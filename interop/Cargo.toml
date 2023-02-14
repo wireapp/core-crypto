@@ -51,11 +51,11 @@ webdriver-install = "0.3"
 fantoccini = "0.19"
 
 [dependencies.proteus-wasm]
-version = "2.0"
+version = "2.1"
 features = ["hazmat"]
 optional = true
 git = "https://github.com/wireapp/proteus"
-branch = "otak/2.0-ec-send-sync"
+branch = "2.x"
 
 
 

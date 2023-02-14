@@ -53,7 +53,7 @@ log = { version = "0.4", optional = true }
 optional = true
 package = "proteus-traits"
 git = "https://github.com/wireapp/proteus"
-branch = "otak/2.0-ec-send-sync"
+branch = "2.x"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = "1.5"
@@ -107,9 +107,9 @@ core-crypto-keystore = { path = ".", features = ["idb-regression-test", "log-que
 pretty_env_logger = "0.5"
 
 [dev-dependencies.proteus-wasm]
-version = "2.0"
+version = "2.1"
 git = "https://github.com/wireapp/proteus"
-branch = "otak/2.0-ec-send-sync"
+branch = "2.x"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
 version = "0.5"
