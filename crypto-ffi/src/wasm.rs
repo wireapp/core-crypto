@@ -674,6 +674,28 @@ impl CoreCryptoWasmCallbacks {
     }
 }
 
+impl CoreCryptoWasmCallbacks {
+    async fn drive_js_func_call(result: Result<JsValue, JsValue>) -> Result<bool, JsValue> {
+        let value = result?;
+        let promise: js_sys::Promise = match value.dyn_into() {
+            Ok(promise) => promise,
+            Err(e) => {
+                web_sys::console::warn_1(&js_sys::JsString::from(
+                    r#"
+[CoreCrypto] One or more callbacks are not returning a `Promise`
+
+They will thus be automatically coerced into returning `false`.
+Please make all callbacks `async` or manually return a `Promise` via `Promise.resolve(boolean)`"#,
+                ));
+                return Err(e);
+            }
+        };
+        let fut = wasm_bindgen_futures::JsFuture::from(promise);
+
+        fut.await.map(|jsval| jsval.as_bool().unwrap_or_default())
+    }
+}
+
 // SAFETY: All callback instances are wrapped into Arc<RwLock> so this is safe to mark
 unsafe impl Send for CoreCryptoWasmCallbacks {}
 unsafe impl Sync for CoreCryptoWasmCallbacks {}
@@ -684,19 +706,13 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
         let authorize = self.authorize.read().await;
         let this = self.ctx.read().await;
 
-        let Ok(cb_result) = authorize.call2(
+        Self::drive_js_func_call(authorize.call2(
             &this,
             &js_sys::Uint8Array::from(conversation_id.as_slice()),
             &js_sys::Uint8Array::from(client_id.as_slice()),
-        ) else {
-            return false;
-        };
-
-        let promise = js_sys::Promise::unchecked_from_js(cb_result);
-        let fut = wasm_bindgen_futures::JsFuture::from(promise);
-        fut.await
-            .map(|jsval| jsval.as_bool().unwrap_or_default())
-            .unwrap_or_default()
+        ))
+        .await
+        .unwrap_or_default()
     }
 
     async fn user_authorize(
@@ -712,20 +728,14 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
             .map(|client| js_sys::Uint8Array::from(client.as_slice()))
             .collect::<js_sys::Array>();
 
-        let Ok(cb_result) = user_authorize.call3(
+        Self::drive_js_func_call(user_authorize.call3(
             &this,
             &js_sys::Uint8Array::from(conversation_id.as_slice()),
             &js_sys::Uint8Array::from(external_client_id.as_slice()),
             &clients,
-        ) else {
-            return false;
-        };
-
-        let promise = js_sys::Promise::unchecked_from_js(cb_result);
-        let fut = wasm_bindgen_futures::JsFuture::from(promise);
-        fut.await
-            .map(|jsval| jsval.as_bool().unwrap_or_default())
-            .unwrap_or_default()
+        ))
+        .await
+        .unwrap_or_default()
     }
 
     async fn client_is_existing_group_user(
@@ -741,20 +751,14 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
             .map(|client| js_sys::Uint8Array::from(client.as_slice()))
             .collect::<js_sys::Array>();
 
-        let Ok(cb_result) = client_is_existing_group_user.call3(
+        Self::drive_js_func_call(client_is_existing_group_user.call3(
             &this,
             &js_sys::Uint8Array::from(conversation_id.as_slice()),
             &js_sys::Uint8Array::from(client_id.as_slice()),
             &clients,
-        ) else {
-            return false;
-        };
-
-        let promise = js_sys::Promise::unchecked_from_js(cb_result);
-        let fut = wasm_bindgen_futures::JsFuture::from(promise);
-        fut.await
-            .map(|jsval| jsval.as_bool().unwrap_or_default())
-            .unwrap_or_default()
+        ))
+        .await
+        .unwrap_or_default()
     }
 }
 

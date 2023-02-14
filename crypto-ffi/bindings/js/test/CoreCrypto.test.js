@@ -3,13 +3,15 @@ const { exec } = require("child_process");
 
 let browser;
 
-async function initBrowser() {
+async function initBrowser(args = { captureLogs: true }) {
   if (!browser) {
     browser = await puppeteer.launch();
   }
   const context = await browser.createIncognitoBrowserContext();
   const page = await context.newPage();
-  page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+  if (args.captureLogs) {
+    page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+  }
 
   await page.goto("http://localhost:3000");
   return [context, page];
@@ -489,6 +491,63 @@ test("roundtrip message", async () => {
   await ctx.close();
   await ctx2.close();
 }, 20000);
+
+test("callbacks default to false when not async", async () => {
+  const [ctx, page] = await initBrowser({ captureLogs: false });
+
+  const result = await page.evaluate(async () => {
+    const { CoreCrypto, ExternalProposalType } = await import("./corecrypto.js");
+
+    const client1Config = {
+      databaseName: "test cb",
+      key: "test",
+      clientId: "test",
+    };
+
+    const client2Config = {
+      databaseName: "test cb2",
+      key: "test",
+      clientId: "test2",
+    };
+
+    const callbacks = {
+      authorize(conversationId, clientId) {
+        return true;
+      },
+      userAuthorize(conversationId, externalClientId, existingClients) {
+        return true;
+      },
+      clientIsExistingGroupUser(conversationId, clientId, existingClients) {
+        return true;
+      }
+    };
+
+    const cc = await CoreCrypto.init(client1Config);
+
+    await cc.registerCallbacks(callbacks);
+
+    const cc2 = await CoreCrypto.init(client2Config);
+    const [cc2Kp] = await cc2.clientKeypackages(1);
+
+    const encoder = new TextEncoder();
+
+    const conversationId = encoder.encode("Test conversation");
+
+    await cc.createConversation(conversationId);
+
+    try {
+      const creationMessage = await cc.addClientsToConversation(conversationId, [
+        { id: encoder.encode(client2Config.clientId), kp: cc2Kp },
+      ]);
+    } catch(e) {
+      return false;
+    }
+
+    return true;
+  });
+
+  expect(result).toBe(false);
+});
 
 test("ext commits|proposals & callbacks", async () => {
   const [ctx, page] = await initBrowser();
