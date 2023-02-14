@@ -302,6 +302,10 @@ pub enum ProteusError {
     ProteusEncodeError(#[from] proteus_wasm::EncodeError),
     #[cfg(feature = "proteus")]
     #[error(transparent)]
+    /// Various internal Proteus errors
+    ProteusInternalError(#[from] proteus_wasm::error::ProteusError),
+    #[cfg(feature = "proteus")]
+    #[error(transparent)]
     /// Error when there's a critical error within a proteus Session
     ProteusSessionError(#[from] proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>),
 }
@@ -316,6 +320,7 @@ impl ProteusError {
                     ProteusError::ProteusDecodeError(e) => e.code() as u32,
                     ProteusError::ProteusEncodeError(e) => e.code() as u32,
                     ProteusError::ProteusSessionError(e) => e.code() as u32,
+                    ProteusError::ProteusInternalError(e) => e.code() as u32,
                 }
             } else {
                 0

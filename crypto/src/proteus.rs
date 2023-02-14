@@ -324,7 +324,7 @@ impl ProteusCentral {
             let pk = identity.pk_raw();
             // SAFETY: Byte lengths are ensured at the keystore level so this function is safe to call, despite being cursed
 
-            unsafe { IdentityKeyPair::from_raw_key_pair(*sk, *pk) }
+            unsafe { IdentityKeyPair::from_raw_key_pair(*sk, *pk).map_err(ProteusError::from)? }
         } else {
             Self::create_identity(keystore).await?
         };
@@ -339,7 +339,7 @@ impl ProteusCentral {
         let pk = hex::decode(pk_fingerprint)?;
 
         let ks_identity = ProteusIdentity {
-            sk: kp.secret_key.as_slice().into(),
+            sk: kp.secret_key.to_keypair_bytes().into(),
             pk,
         };
         keystore.save(ks_identity).await?;
@@ -669,7 +669,10 @@ impl ProteusCentral {
         let prekey_dir = root_dir.join("prekeys");
 
         let mut identity = if let Some(store_kp) = keystore.find::<ProteusIdentity>(&[]).await? {
-            Some(unsafe { IdentityKeyPair::from_raw_key_pair(*store_kp.sk_raw(), *store_kp.pk_raw()) })
+            Some(unsafe {
+                IdentityKeyPair::from_raw_key_pair(*store_kp.sk_raw(), *store_kp.pk_raw())
+                    .map_err(ProteusError::from)?
+            })
         } else {
             let identity_dir = root_dir.join("identities");
 
@@ -696,7 +699,7 @@ impl ProteusCentral {
                 let pk = kp.public_key.public_key.as_slice().into();
 
                 let ks_identity = ProteusIdentity {
-                    sk: kp.secret_key.as_slice().into(),
+                    sk: kp.secret_key.to_keypair_bytes().into(),
                     pk,
                 };
 
@@ -824,6 +827,7 @@ impl ProteusCentral {
         let mut proteus_identity = if let Some(store_kp) = keystore.find::<ProteusIdentity>(&[]).await? {
             Some(unsafe {
                 proteus_wasm::keys::IdentityKeyPair::from_raw_key_pair(*store_kp.sk_raw(), *store_kp.pk_raw())
+                    .map_err(ProteusError::from)?
             })
         } else {
             let transaction = db
@@ -850,7 +854,7 @@ impl ProteusCentral {
                 let pk = hex::decode(pk_fingerprint)?;
 
                 let ks_identity = ProteusIdentity {
-                    sk: kp.secret_key.as_slice().into(),
+                    sk: kp.secret_key.to_keypair_bytes().into(),
                     pk,
                 };
                 keystore.save(ks_identity).await?;

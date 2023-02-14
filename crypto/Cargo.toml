@@ -46,11 +46,11 @@ wire-e2e-identity = { version = "0.4", default-features = false }
 indexmap = "2"
 
 [dependencies.proteus-wasm]
-version = "2.0"
+version = "2.1"
 features = ["hazmat"]
 optional = true
 git = "https://github.com/wireapp/proteus"
-branch = "otak/2.0-ec-send-sync"
+branch = "2.x"
 
 [dependencies.proteus-traits]
 optional = true
