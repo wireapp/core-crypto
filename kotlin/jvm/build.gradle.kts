@@ -18,6 +18,7 @@ val generatedDir = buildDir.resolve("generated").resolve("uniffi")
 val crateDir = projectDir.resolve("../../crypto-ffi/")
 val crateTargetDir = projectDir.resolve("../../target")
 val crateTargetBindingsDir = crateDir.resolve("bindings/kt")
+val processedResourcesDir = buildDir.resolve("processedResources")
 
 val copyBindings = tasks.register("copyBindings", Copy::class) {
     group = "uniffi"
@@ -34,7 +35,7 @@ fun registerCopyJvmBinaryTask(target: String, jniTarget: String, include: String
         )
         include(include)
         into(
-            buildDir.resolve("processedResources").resolve("jvm").resolve("main").resolve(jniTarget)
+            processedResourcesDir.resolve("jvm").resolve("main").resolve(jniTarget)
         )
     }
 
@@ -64,10 +65,14 @@ tasks.withType<Test> {
     }
 }
 
+kotlin.sourceSets.getByName("main").apply {
+    kotlin.srcDir(generatedDir)
+}
+
 sourceSets {
     main {
-        kotlin {
-            generatedDir
+        resources {
+            srcDir(processedResourcesDir)
         }
     }
 }
