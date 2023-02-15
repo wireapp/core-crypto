@@ -594,9 +594,11 @@ test("ext commits|proposals & callbacks", async () => {
       clientId: "testExternalCommit",
     };
 
+
     const callbacks = {
       async authorize(conversationId, clientId) {
         callbacksResults.authorize = true;
+        await this.getClientIds(conversationId);
         return true;
       },
       async userAuthorize(conversationId, externalClientId, existingClients) {
@@ -611,7 +613,7 @@ test("ext commits|proposals & callbacks", async () => {
 
     const cc = await CoreCrypto.init(client1Config);
 
-    await cc.registerCallbacks(callbacks);
+    await cc.registerCallbacks(callbacks, cc);
 
     const cc2 = await CoreCrypto.init(client2Config);
     const [cc2Kp] = await cc2.clientKeypackages(1);
@@ -620,7 +622,6 @@ test("ext commits|proposals & callbacks", async () => {
     const ccExternalCommit = await CoreCrypto.init(clientExtCommitConfig);
 
     const encoder = new TextEncoder();
-
     const conversationId = encoder.encode("Test conversation");
 
     await cc.createConversation(conversationId);

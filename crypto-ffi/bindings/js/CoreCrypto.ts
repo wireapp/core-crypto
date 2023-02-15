@@ -79,15 +79,17 @@ export class CoreCryptoError extends Error {
             stack: e.stack || undefined,
         };
 
-        return this.build(e.message, opts);
+        return this.build(e.toString(), opts);
     }
 
     static async asyncMapErr<T>(p: Promise<T>): Promise<T> {
         const mappedErrorPromise = p.catch((e: Error|CoreCryptoError) => {
             if (e instanceof CoreCryptoError) {
                 throw e;
-            } else {
+            } else if (e instanceof Error) {
                 throw this.fromStdError(e);
+            } else {
+                throw this.fallback((e as any).toString());
             }
         });
 

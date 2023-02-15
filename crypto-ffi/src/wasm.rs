@@ -773,7 +773,7 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
 #[derive(Debug)]
 #[wasm_bindgen]
 pub struct CoreCrypto {
-    inner: std::sync::Arc<async_lock::RwLock<core_crypto::CoreCrypto>>,
+    inner: std::sync::Arc<std::cell::RefCell<core_crypto::CoreCrypto>>,
     proteus_last_error_code: std::sync::Arc<async_lock::RwLock<u32>>,
 }
 
@@ -808,7 +808,7 @@ impl CoreCrypto {
             .await
             .map_err(CoreCryptoError::from)?;
         Ok(CoreCrypto {
-            inner: async_lock::RwLock::new(central.into()).into(),
+            inner: std::cell::RefCell::new(central.into()).into(),
             proteus_last_error_code: async_lock::RwLock::new(0).into(),
         })
     }
@@ -837,7 +837,7 @@ impl CoreCrypto {
             .map_err(CoreCryptoError::from)?;
 
         Ok(CoreCrypto {
-            inner: async_lock::RwLock::new(central.into()).into(),
+            inner: std::cell::RefCell::new(central.into()).into(),
             proteus_last_error_code: async_lock::RwLock::new(0).into(),
         })
     }
@@ -850,7 +850,7 @@ impl CoreCrypto {
                 let ciphersuites = vec![MlsCiphersuite::default()];
                 // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
                 let certificate_bundle = None;
-                let mut central = this.write().await;
+                let mut central = this.borrow_mut();
                 central
                     .mls_init(client_id.into(), ciphersuites, certificate_bundle)
                     .await
@@ -873,7 +873,7 @@ impl CoreCrypto {
                 // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
                 let certificate_bundle = None;
 
-                let central = this.read().await;
+                let central = this.borrow();
                 let pk = central
                     .mls_generate_keypair(ciphersuites, certificate_bundle)
                     .await
@@ -894,7 +894,7 @@ impl CoreCrypto {
             async move {
                 let ciphersuites = vec![MlsCiphersuite::default()];
 
-                let mut central = this.write().await;
+                let mut central = this.borrow_mut();
                 central
                     .mls_init_with_client_id(client_id.into(), &signature_public_key, ciphersuites)
                     .await
@@ -910,7 +910,7 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::MlsCentral::close]
     pub fn close(self) -> Promise {
-        if let Ok(cc) = std::sync::Arc::try_unwrap(self.inner).map(async_lock::RwLock::into_inner) {
+        if let Ok(cc) = std::sync::Arc::try_unwrap(self.inner).map(std::cell::RefCell::into_inner) {
             future_to_promise(
                 async move {
                     cc.take().close().await.map_err(CoreCryptoError::from)?;
@@ -929,7 +929,7 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::MlsCentral::wipe]
     pub fn wipe(self) -> Promise {
-        if let Ok(cc) = std::sync::Arc::try_unwrap(self.inner).map(async_lock::RwLock::into_inner) {
+        if let Ok(cc) = std::sync::Arc::try_unwrap(self.inner).map(std::cell::RefCell::into_inner) {
             future_to_promise(
                 async move {
                     cc.take().wipe().await.map_err(CoreCryptoError::from)?;
@@ -951,7 +951,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                this.write().await.callbacks(Box::new(callbacks));
+                this.borrow_mut().callbacks(Box::new(callbacks));
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
@@ -966,7 +966,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                let cc = this.read().await;
+                let cc = this.borrow();
                 let pk = cc.client_public_key().map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
             }
@@ -983,8 +983,7 @@ impl CoreCrypto {
             async move {
                 use core_crypto::prelude::tls_codec::Serialize as _;
                 let kps = this
-                    .write()
-                    .await
+                    .borrow()
                     .client_keypackages(amount_requested as usize)
                     .await?
                     .into_iter()
@@ -1019,8 +1018,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let count = this
-                    .read()
-                    .await
+                    .borrow()
                     .client_valid_keypackages_count()
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1037,8 +1035,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                this.write()
-                    .await
+                this.borrow_mut()
                     .new_conversation(conversation_id.to_vec(), config.try_into()?)
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1056,8 +1053,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 WasmCryptoResult::Ok(
-                    this.write()
-                        .await
+                    this.borrow()
                         .conversation_epoch(&conversation_id.into())
                         .await
                         .map_err(CoreCryptoError::from)?
@@ -1075,13 +1071,11 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                WasmCryptoResult::Ok(
-                    if this.write().await.conversation_exists(&conversation_id.into()).await {
-                        JsValue::TRUE
-                    } else {
-                        JsValue::FALSE
-                    },
-                )
+                WasmCryptoResult::Ok(if this.borrow().conversation_exists(&conversation_id.into()) {
+                    JsValue::TRUE
+                } else {
+                    JsValue::FALSE
+                })
             }
             .err_into(),
         )
@@ -1099,8 +1093,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let conversation_id = this
-                    .write()
-                    .await
+                    .borrow_mut()
                     .process_raw_welcome_message(welcome_message.into(), custom_configuration.into())
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1125,7 +1118,7 @@ impl CoreCrypto {
                     .collect::<WasmCryptoResult<Vec<Invitee>>>()?;
 
                 let mut members = Invitee::group_to_conversation_member(invitees)?;
-                let mut central = this.write().await;
+                let mut central = this.borrow_mut();
                 let conversation_id = conversation_id.into();
                 let commit = central
                     .add_members_to_conversation(&conversation_id, &mut members)
@@ -1156,7 +1149,7 @@ impl CoreCrypto {
                     .collect::<Vec<ClientId>>();
 
                 let conversation_id = conversation_id.into();
-                let mut central = this.write().await;
+                let mut central = this.borrow_mut();
                 let commit = central
                     .remove_members_from_conversation(&conversation_id, &clients)
                     .await
@@ -1178,7 +1171,7 @@ impl CoreCrypto {
 
         future_to_promise(
             async move {
-                let mut central = this.write().await;
+                let mut central = this.borrow_mut();
                 let conversation_id = conversation_id.into();
                 let commit = central
                     .update_keying_material(&conversation_id)
@@ -1199,7 +1192,7 @@ impl CoreCrypto {
 
         future_to_promise(
             async move {
-                let mut central = this.write().await;
+                let mut central = this.borrow_mut();
                 let conversation_id = conversation_id.into();
                 let commit: Option<CommitBundle> = central
                     .commit_pending_proposals(&conversation_id)
@@ -1221,7 +1214,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let conversation_id = conversation_id.into();
-                let mut central = this.write().await;
+                let mut central = this.borrow_mut();
                 central
                     .wipe_conversation(&conversation_id)
                     .await
@@ -1240,8 +1233,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let raw_decrypted_message = this
-                    .write()
-                    .await
+                    .borrow_mut()
                     .decrypt_message(&conversation_id.to_vec(), payload)
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1262,8 +1254,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let ciphertext = this
-                    .write()
-                    .await
+                    .borrow_mut()
                     .encrypt_message(&conversation_id.to_vec(), message)
                     .await
                     .map(|ciphertext| Uint8Array::from(ciphertext.as_slice()))
@@ -1288,8 +1279,7 @@ impl CoreCrypto {
                     .map_err(CoreCryptoError::from)?;
 
                 let proposal: ProposalBundle = this
-                    .write()
-                    .await
+                    .borrow_mut()
                     .new_proposal(&conversation_id.to_vec(), MlsProposal::Add(kp))
                     .await
                     .map_err(CoreCryptoError::from)?
@@ -1309,8 +1299,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let proposal: ProposalBundle = this
-                    .write()
-                    .await
+                    .borrow_mut()
                     .new_proposal(&conversation_id.to_vec(), MlsProposal::Update)
                     .await?
                     .try_into()?;
@@ -1329,8 +1318,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let proposal: ProposalBundle = this
-                    .write()
-                    .await
+                    .borrow_mut()
                     .new_proposal(&conversation_id.to_vec(), MlsProposal::Remove(client_id.into()))
                     .await
                     .map_err(CoreCryptoError::from)?
@@ -1350,8 +1338,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let proposal_bytes = this
-                    .write()
-                    .await
+                    .borrow()
                     .new_external_add_proposal(conversation_id.to_vec(), u64::from(epoch).into())
                     .await
                     .map_err(CoreCryptoError::from)?
@@ -1385,8 +1372,7 @@ impl CoreCrypto {
                     .map_err(CoreCryptoError::from)?;
                 let kpr = KeyPackageRef::from(*kpr);
                 let proposal_bytes = this
-                    .write()
-                    .await
+                    .borrow()
                     .new_external_remove_proposal(conversation_id.to_vec(), u64::from(epoch).into(), kpr)
                     .await
                     .map_err(CoreCryptoError::from)?
@@ -1410,8 +1396,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let state = this
-                    .write()
-                    .await
+                    .borrow()
                     .export_public_group_state(&conversation_id.to_vec())
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1443,8 +1428,7 @@ impl CoreCrypto {
                     .map_err(CoreCryptoError::from)?;
 
                 let result: ConversationInitBundle = this
-                    .read()
-                    .await
+                    .borrow()
                     .join_by_external_commit(group_state, custom_configuration.into())
                     .await
                     .map_err(CoreCryptoError::from)?
@@ -1463,8 +1447,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                this.write()
-                    .await
+                this.borrow_mut()
                     .merge_pending_group_from_external_commit(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1481,8 +1464,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                this.write()
-                    .await
+                this.borrow_mut()
                     .clear_pending_group_from_external_commit(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1497,8 +1479,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                this.write()
-                    .await
+                this.borrow_mut()
                     .commit_accepted(&conversation_id.to_vec())
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1514,8 +1495,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                this.write()
-                    .await
+                this.borrow_mut()
                     .clear_pending_proposal(&conversation_id.to_vec(), proposal_ref.to_vec())
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1531,8 +1511,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                this.write()
-                    .await
+                this.borrow_mut()
                     .clear_pending_commit(&conversation_id.to_vec())
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1550,7 +1529,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                let bytes = this.read().await.random_bytes(len).map_err(CoreCryptoError::from)?;
+                let bytes = this.borrow().random_bytes(len).map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(bytes.as_slice()).into())
             }
             .err_into(),
@@ -1569,7 +1548,7 @@ impl CoreCrypto {
                     .map_err(CryptoError::from)
                     .map_err(CoreCryptoError::from)?;
 
-                this.write().await.provider_mut().reseed(Some(seed));
+                this.borrow_mut().provider_mut().reseed(Some(seed));
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -1587,7 +1566,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    this.write().await.proteus_init().await.map_err(CoreCryptoError::from)?;
+                    this.borrow_mut().proteus_init().await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_> }
             }
@@ -1606,7 +1585,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    this.write().await.proteus_session_from_prekey(&session_id, &prekey).await.map_err(CoreCryptoError::from)?;
+                    this.borrow_mut().proteus_session_from_prekey(&session_id, &prekey).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_> }
             }
@@ -1625,7 +1604,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    let (_, payload) = this.write().await.proteus_session_from_message(&session_id, &envelope).await.map_err(CoreCryptoError::from)?;
+                    let (_, payload) = this.borrow_mut().proteus_session_from_message(&session_id, &envelope).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(Uint8Array::from(payload.as_slice()).into())
                 } or throw WasmCryptoResult<_> }
             }
@@ -1646,7 +1625,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    this.write().await.proteus_session_save(&session_id).await.map_err(CoreCryptoError::from)?;
+                    this.borrow().proteus_session_save(&session_id).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_> }
             }
@@ -1665,7 +1644,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    this.write().await.proteus_session_delete(&session_id).await.map_err(CoreCryptoError::from)?;
+                    this.borrow_mut().proteus_session_delete(&session_id).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_> }
             }
@@ -1684,7 +1663,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    let exists = this.write().await.proteus_session_exists(&session_id).await.map_err(CoreCryptoError::from)?;
+                    let exists = this.borrow().proteus_session_exists(&session_id).map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::from_bool(exists))
                 } or throw WasmCryptoResult<_> }
             }
@@ -1703,7 +1682,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    let cleartext = this.write().await.proteus_decrypt(&session_id, &ciphertext).await.map_err(CoreCryptoError::from)?;
+                    let cleartext = this.borrow_mut().proteus_decrypt(&session_id, &ciphertext).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(Uint8Array::from(cleartext.as_slice()).into())
                 } or throw WasmCryptoResult<_> }
             }
@@ -1722,7 +1701,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    let encrypted = this.write().await.proteus_encrypt(&session_id, &plaintext).await.map_err(CoreCryptoError::from)?;
+                    let encrypted = this.borrow_mut().proteus_encrypt(&session_id, &plaintext).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(Uint8Array::from(encrypted.as_slice()).into())
                 } or throw WasmCryptoResult<_> }
             }.err_into()
@@ -1741,7 +1720,7 @@ impl CoreCrypto {
             async move {
                 proteus_impl! { errcode_dest => {
                     let session_ids: Vec<String> = sessions.iter().map(String::from).collect();
-                    let batch = this.write().await.proteus_encrypt_batched(session_ids.as_slice(), &plaintext).await.map_err(CoreCryptoError::from)?;
+                    let batch = this.borrow_mut().proteus_encrypt_batched(session_ids.as_slice(), &plaintext).await.map_err(CoreCryptoError::from)?;
                     let js_obj = js_sys::Map::new();
                     for (key, payload) in batch.into_iter() {
                         js_obj.set(&js_sys::JsString::from(key).into(), &Uint8Array::from(payload.as_slice()));
@@ -1763,10 +1742,11 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    let prekey_raw = this.read().await.proteus_new_prekey(prekey_id).await.map_err(CoreCryptoError::from)?;
+                    let prekey_raw = this.borrow().proteus_new_prekey(prekey_id).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(Uint8Array::from(prekey_raw.as_slice()).into())
                 } or throw WasmCryptoResult<_> }
-            }.err_into()
+            }
+            .err_into(),
         )
     }
 
@@ -1780,7 +1760,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    let (id, pkb) = this.read().await.proteus_new_prekey_auto().await.map_err(CoreCryptoError::from)?;
+                    let (id, pkb) = this.borrow().proteus_new_prekey_auto().await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(ProteusAutoPrekeyBundle { id, pkb }.into())
                 } or throw WasmCryptoResult<_> }
             }
@@ -1797,7 +1777,7 @@ impl CoreCrypto {
 
         future_to_promise(async move {
             proteus_impl! { errcode_dest => {
-                let last_resort_pkbundle = this.read().await.proteus_last_resort_prekey().await.map_err(CoreCryptoError::from)?;
+                let last_resort_pkbundle = this.borrow().proteus_last_resort_prekey().await.map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(last_resort_pkbundle.as_slice()).into())
             } or throw WasmCryptoResult<_> }
         }.err_into())
@@ -1821,7 +1801,7 @@ impl CoreCrypto {
         let errcode_dest = self.proteus_last_error_code.clone();
 
         proteus_impl! { errcode_dest => {
-            self.inner.read().await.proteus_fingerprint().map_err(CoreCryptoError::from).map(Into::into)
+            self.inner.borrow().proteus_fingerprint().map_err(CoreCryptoError::from).map(Into::into)
         } or throw WasmCryptoResult<_> }
     }
 
@@ -1833,13 +1813,8 @@ impl CoreCrypto {
         let errcode_dest = self.proteus_last_error_code.clone();
 
         proteus_impl! { errcode_dest => {
-            self.inner
-                .write()
-                .await
-                .proteus_fingerprint_local(&session_id)
-                .await
-                .map_err(CoreCryptoError::from)
-                .map(Into::into)
+            self.inner.borrow().proteus_fingerprint_local(&session_id)
+                .map_err(CoreCryptoError::from).map(Into::into)
         } or throw WasmCryptoResult<_> }
     }
 
@@ -1851,7 +1826,7 @@ impl CoreCrypto {
         let errcode_dest = self.proteus_last_error_code.clone();
 
         proteus_impl! { errcode_dest => {
-            self.inner.write().await.proteus_fingerprint_remote(&session_id).await
+            self.inner.borrow().proteus_fingerprint_remote(&session_id)
                 .map_err(CoreCryptoError::from).map(Into::into)
         } or throw WasmCryptoResult<_> }
     }
@@ -1877,7 +1852,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    this.read().await.proteus_cryptobox_migrate(&path).await.map_err(CoreCryptoError::from)?;
+                    this.borrow().proteus_cryptobox_migrate(&path).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_> }
             }
@@ -1892,8 +1867,8 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! {{
-                    let prev_value: u32 = (*(errcode.read().await)).clone();
                     let mut errcode_val = errcode.write().await;
+                    let prev_value: u32 = (*errcode_val).clone();
                     *errcode_val = 0;
 
                     WasmCryptoResult::Ok(prev_value.into())
@@ -1911,8 +1886,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let key = this
-                    .write()
-                    .await
+                    .borrow()
                     .export_secret_key(&conversation_id.to_vec(), key_length)
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1930,8 +1904,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let clients = this
-                    .write()
-                    .await
+                    .borrow()
                     .get_client_ids(&conversation_id.to_vec())
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1952,8 +1925,7 @@ impl CoreCrypto {
         let ciphersuite: CiphersuiteName = ciphersuite.into();
         let enrollment = self
             .inner
-            .read()
-            .await
+            .borrow()
             .new_acme_enrollment(ciphersuite.into())
             .map(WireE2eIdentity)
             .map_err(|_| CryptoError::ImplementationError)
