@@ -67,7 +67,6 @@ fn encrypt_message_bench(c: &mut Criterion) {
                         for (session_id, key) in &session_material {
                             block_on(async {
                                 central.session_from_prekey(session_id, key).await.unwrap();
-                                central.session_save(&keystore, session_id).await.unwrap();
                             });
                         }
                         let text = Alphanumeric.sample_string(&mut rand::thread_rng(), MSG_MAX);
@@ -81,7 +80,6 @@ fn encrypt_message_bench(c: &mut Criterion) {
                                     .await
                                     .unwrap(),
                             );
-                            black_box(central.session_save(&keystore, &session_id).await.unwrap());
                         }
                     },
                     BatchSize::SmallInput,
@@ -126,10 +124,9 @@ fn add_client_bench(c: &mut Criterion) {
                             .collect::<Vec<(String, Vec<u8>)>>();
                         (central, keystore, session_material)
                     },
-                    |(mut central, keystore, session_material)| async move {
+                    |(mut central, _keystore, session_material)| async move {
                         for (session_id, key) in session_material {
                             black_box(central.session_from_prekey(&session_id, &key).await.unwrap());
-                            black_box(central.session_save(&keystore, &session_id).await.unwrap());
                         }
                     },
                     BatchSize::SmallInput,
@@ -180,7 +177,6 @@ fn remove_client_bench(c: &mut Criterion) {
                         for (session_id, key) in &session_material {
                             block_on(async {
                                 central.session_from_prekey(session_id, key).await.unwrap();
-                                central.session_save(&keystore, session_id).await.unwrap();
                             });
                         }
                         (central, keystore, session_material)
@@ -232,7 +228,6 @@ fn update_client_bench(c: &mut Criterion) {
                         for (session_id, key) in &session_material {
                             block_on(async {
                                 central.session_from_prekey(session_id, key).await.unwrap();
-                                central.session_save(&keystore, session_id).await.unwrap();
                             });
                         }
                         let new_pkb = black_box(
@@ -250,7 +245,6 @@ fn update_client_bench(c: &mut Criterion) {
                             // replace existing session
                             black_box(central.session_delete(&keystore, &session_id).await.unwrap());
                             black_box(central.session_from_prekey(&session_id, &new_pkb).await.unwrap());
-                            black_box(central.session_save(&keystore, &session_id).await.unwrap());
                         }
                     },
                     BatchSize::SmallInput,
