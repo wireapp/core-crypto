@@ -35,7 +35,7 @@ fun registerCopyJvmBinaryTask(target: String, jniTarget: String, include: String
         )
         include(include)
         into(
-            processedResourcesDir.resolve("jvm").resolve("main").resolve(jniTarget)
+            processedResourcesDir.resolve(jniTarget)
         )
     }
 
