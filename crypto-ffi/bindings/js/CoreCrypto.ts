@@ -781,9 +781,12 @@ export class CoreCrypto {
                 payload
             ));
 
-            const commitDelay = ffiDecryptedMessage.commit_delay ?
-                ffiDecryptedMessage.commit_delay * 1000 :
-                undefined;
+            const ffiCommitDelay = ffiDecryptedMessage.commit_delay;
+
+            let commitDelay = undefined;
+            if (typeof ffiCommitDelay === "number" && ffiCommitDelay >= 0) {
+                commitDelay = ffiCommitDelay * 1000;
+            }
 
             const ret: DecryptedMessage = {
                 message: ffiDecryptedMessage.message,
