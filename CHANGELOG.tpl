@@ -7,19 +7,28 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+
+## [0.6.2] - 2023-02-16
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.6.2" unreleased=true }}
+</details>
+
+* Fixed a bug in the TypeScript bindings where the `DecryptedMessage` bundle could have `commitDelay` set to `undefined` when it should be 0
+    * This could happen in the case of external proposals where the system would determine that the proposals should be immediately committed
+
 ## [0.6.1] - 2023-02-16
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.6.1" unreleased=true }}
+{{git-cliff tag="v0.6.1" }}
 </details>
 
-### 0.6.1 Release changes
-
-* Fixed a bug where the last resort prekey could be overwritten.
+* Fixed a bug where the Proteus last resort prekey could be overwritten.
 * Fixed JVM publishing creating broken packages.
-* Change WASM callback to return false by default if no promise is returned.
-* Remove redundant save when persisting proteus sessions. 
+* WASM callbacks return false by default if no promise is returned.
+* Benchmarks: Remove redundant save when persisting proteus sessions.
 
 ## [0.6.0] - 2023-02-13
 

@@ -68,7 +68,7 @@ test("init", async () => {
     return CoreCrypto.version();
   });
 
-  expect(version).toMatch("0.6.1");
+  expect(version).toMatch(process.env.npm_package_version);
 
   await page.close();
   await ctx.close();
