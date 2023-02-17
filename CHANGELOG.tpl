@@ -7,12 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.6.3] - 2023-02-17
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.6.3" unreleased=true }}
+</details>
+
+* Improve compatbillity with older linux versions when running core-crypto-jvm by building on Ubuntu LTS (22.04).
 
 ## [0.6.2] - 2023-02-16
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.6.2" unreleased=true }}
+{{git-cliff tag="v0.6.2"}}
 </details>
 
 * Fixed a bug in the TypeScript bindings where the `DecryptedMessage` bundle could have `commitDelay` set to `undefined` when it should be 0
