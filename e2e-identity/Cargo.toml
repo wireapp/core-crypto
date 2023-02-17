@@ -27,13 +27,24 @@ wasm-bindgen-test = "0.3"
 hex = "0.4"
 x509-parser = "=0.14.0"
 
+openidconnect = "3.0.0-alpha.1"
+html_parser = "0.6"
+scraper = "0.14"
+anyhow = "1.0"
+tokio = { version = "1.5", features = ["macros"], default_features = false }
+lazy_static = "1.4"
+portpicker = "0.1"
+rcgen = { version = "=0.9.2", features = ["x509-parser", "pem"] }
+
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 rusty-acme = { version = "0.2", path = "../acme", features = ["docker"] }
 reqwest = { version = "0.11", features = ["json"], default_features = false }
-tokio = { version = "1.5.0", features = ["macros"], default_features = false }
+tokio = { version = "1.5", features = ["macros"], default_features = false }
 hyper = { version = "0.14", features = ["server"], default_features = false }
 asserhttp = { version = "0.6", features = ["reqwest"] }
 testcontainers = "0.14"
+oauth2 = "4.3"
+http = "0.2"
 
 [target.'cfg(target_family = "wasm")'.dev-dependencies]
 rusty-acme = { version = "0.2", path = "../acme" }

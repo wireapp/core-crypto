@@ -1,11 +1,11 @@
 use error::*;
-use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, Ed25519KeyPair};
+use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, Ed25519KeyPair, Jwk};
 use prelude::*;
 use rusty_acme::prelude::AcmeChallenge;
+use rusty_jwt_tools::jwk::TryIntoJwk;
 use rusty_jwt_tools::prelude::{ClientId, Dpop, Htm, Pem, RustyJwtTools};
 
 mod error;
-mod sample;
 mod types;
 
 pub mod prelude {
@@ -24,6 +24,8 @@ pub type Json = serde_json::Value;
 pub struct RustyE2eIdentity {
     sign_alg: JwsAlgorithm,
     sign_kp: Pem,
+    pub hash_alg: HashAlgorithm,
+    jwk: Jwk,
 }
 
 impl RustyE2eIdentity {
@@ -34,13 +36,26 @@ impl RustyE2eIdentity {
     /// * `sign_alg` - Signature algorithm (only Ed25519 for now)
     /// * `raw_sign_kp` - Signature keypair in PEM format
     pub fn try_new(sign_alg: JwsAlgorithm, raw_sign_kp: Vec<u8>) -> E2eIdentityResult<Self> {
-        let sign_kp = match sign_alg {
-            JwsAlgorithm::Ed25519 => Ed25519KeyPair::from_bytes(raw_sign_kp.as_slice())?.to_pem(),
-            JwsAlgorithm::P256 => ES256KeyPair::from_bytes(raw_sign_kp.as_slice())?.to_pem()?,
-            JwsAlgorithm::P384 => ES384KeyPair::from_bytes(raw_sign_kp.as_slice())?.to_pem()?,
-        }
-        .into();
-        Ok(Self { sign_alg, sign_kp })
+        let (sign_kp, jwk) = match sign_alg {
+            JwsAlgorithm::Ed25519 => {
+                let kp = Ed25519KeyPair::from_bytes(raw_sign_kp.as_slice())?;
+                (kp.to_pem(), kp.public_key().try_into_jwk()?)
+            }
+            JwsAlgorithm::P256 => {
+                let kp = ES256KeyPair::from_bytes(raw_sign_kp.as_slice())?;
+                (kp.to_pem()?, kp.public_key().try_into_jwk()?)
+            }
+            JwsAlgorithm::P384 => {
+                let kp = ES384KeyPair::from_bytes(raw_sign_kp.as_slice())?;
+                (kp.to_pem()?, kp.public_key().try_into_jwk()?)
+            }
+        };
+        Ok(Self {
+            sign_alg,
+            sign_kp: sign_kp.into(),
+            hash_alg: HashAlgorithm::from(sign_alg),
+            jwk,
+        })
     }
 
     /// Parses the response from `GET /acme/{provisioner-name}/directory`.
@@ -91,8 +106,8 @@ impl RustyE2eIdentity {
     /// # Parameters
     /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// * `domain` - DNS name of owning backend e.g. `example.com`
-    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `impp:wireapp=NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ/6add501bacd1d90e@example.com`
-    /// * `handle` - user handle e.g. `impp:wireapp=alice.smith.qa@example.com`
+    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ/6add501bacd1d90e@example.com`
+    /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
     /// * `expiry` - x509 generated certificate expiry
     /// * `directory` - you got from [Self::acme_directory_response]
     /// * `account` - you got from [Self::acme_new_account_response]
@@ -101,7 +116,6 @@ impl RustyE2eIdentity {
     pub fn acme_new_order_request(
         &self,
         display_name: String,
-        domain: String,
         client_id: String,
         handle: String,
         expiry: core::time::Duration,
@@ -110,10 +124,9 @@ impl RustyE2eIdentity {
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
         let account = serde_json::from_value(account.clone().into())?;
-        let client_id = ClientId::try_from(client_id.as_str())?;
+        let client_id = ClientId::try_from_qualified(client_id.as_str())?;
         let order_req = RustyAcme::new_order_request(
             display_name,
-            domain,
             client_id,
             handle,
             expiry,
@@ -217,24 +230,22 @@ impl RustyE2eIdentity {
     pub fn new_dpop_token(
         &self,
         access_token_url: &url::Url,
-        user_id: String,
-        client_id: u64,
-        domain: String,
-        client_id_challenge: &E2eiAcmeChall,
+        client_id: &str,
+        dpop_challenge: &E2eiAcmeChall,
         backend_nonce: String,
         expiry: core::time::Duration,
     ) -> E2eIdentityResult<String> {
-        let client_id_challenge = serde_json::from_value::<AcmeChallenge>(client_id_challenge.chall.clone())?;
+        let client_id_challenge = serde_json::from_value::<AcmeChallenge>(dpop_challenge.chall.clone())?;
         let dpop = Dpop {
             htu: access_token_url.as_str().try_into()?,
             htm: Htm::Post,
             challenge: client_id_challenge.token.into(),
             extra_claims: None,
         };
-        let client_id = ClientId::try_new(user_id, client_id, &domain)?;
+        let client_id = ClientId::try_from_qualified(client_id)?;
         Ok(RustyJwtTools::generate_dpop_token(
             dpop,
-            client_id,
+            &client_id,
             backend_nonce.into(),
             expiry,
             self.sign_alg,
@@ -294,7 +305,9 @@ impl RustyE2eIdentity {
             oidc_chall,
             &account,
             self.sign_alg,
+            self.hash_alg,
             &self.sign_kp,
+            &self.jwk,
             previous_nonce,
         )?;
         Ok(serde_json::to_value(new_challenge_req)?)

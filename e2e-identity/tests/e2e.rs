@@ -1,448 +1,312 @@
 #![cfg(not(target_family = "wasm"))]
 
-use asserhttp::*;
-use base64::Engine;
+use std::ops::Deref;
+
 use jwt_simple::prelude::*;
-use rand::random;
-use rusty_acme::prelude::{wiremock::WiremockImage, *};
+use testcontainers::clients::Cli;
+
+use rusty_acme::prelude::{stepca::CaCfg, *};
 use rusty_jwt_tools::prelude::*;
-use serde_json::Value;
-use testcontainers::{clients::Cli, Container};
-use utils::{display::Actor::*, display::*, fake_wire_server::*, helpers::*, keys::keys, oidc::id_token};
+use utils::{
+    cfg::{E2eTest, EnrollmentFlow},
+    rand_base64_str,
+};
+
+use crate::utils::TestError;
 
 #[path = "utils/mod.rs"]
 mod utils;
 
-pub const WIRE_HOST: &str = "example.com";
-pub const IDP_HOST: &str = "idp";
+fn docker() -> &'static Cli {
+    Box::leak(Box::new(Cli::docker()))
+}
 
-// TODO: make it pass on CI
-#[ignore]
+/// Tests the nominal case and prints the pretty output with the mermaid chart in this crate README.
+#[cfg(not(ci))]
 #[tokio::test]
-async fn e2e_identity() {
-    let FakeWireServer {
-        url: wire_server_url,
-        http_client: wire_server_client,
-    } = FakeWireServer::run().await;
+async fn demo_should_succeed() {
+    let test = E2eTest::new_demo().start(docker()).await;
 
-    TestDisplay::clear();
+    assert!(test.nominal_enrollment().await.is_ok());
+}
 
-    for (alg, client_kp, client_jwk, backend_kp, backend_pk, hash_alg, idp_kp, idp_jwk) in keys() {
-        // does not work for elliptic curves yet
-        if matches!(alg, JwsAlgorithm::Ed25519) {
-            let title = format!("{alg:?} - {hash_alg:?}");
-            let mut d = TestDisplay::new(title);
+/// Verify that it works for all MLS ciphersuites
+#[cfg(not(ci))]
+mod alg {
+    use super::*;
 
-            let docker = Cli::docker();
+    #[tokio::test]
+    async fn ed25519_should_succeed() {
+        let test = E2eTest::new().with_alg(JwsAlgorithm::Ed25519).start(docker()).await;
 
-            let (idp_url, _idp) = mock_idp(&docker, IDP_HOST, &idp_jwk);
+        assert!(test.nominal_enrollment().await.is_ok());
+    }
 
-            let issuer = idp_url.clone();
-            let audience = idp_url.clone();
+    #[tokio::test]
+    async fn p256_should_succeed() {
+        let test = E2eTest::new().with_alg(JwsAlgorithm::P256).start(docker()).await;
 
-            let ca_cfg = StepCaConfig {
-                sign_key: backend_pk.to_string(),
-                issuer: issuer.clone(),
-                audience: audience.clone(),
-                jwks_uri: format!("http://{IDP_HOST}/oauth2/jwks"),
-            };
-            let (acme_port, acme_client, _node) = StepCaImage::run(&docker, ca_cfg);
+        assert!(test.nominal_enrollment().await.is_ok());
+    }
 
-            // GET http://acme-server/directory
-            let (directory, directory_link) = {
-                let ca_url = format!("https://localhost:{acme_port}");
-                d.chapter("Initial setup with ACME server");
-                // see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
-                d.step("fetch acme directory for hyperlinks");
-                let directory_url = format!("{ca_url}/acme/{}/directory", StepCaImage::ACME_PROVISIONER);
-                let directory_link = format!("<{directory_url}>;rel=\"index\"");
-                let req = acme_client.get(&directory_url).build().unwrap();
-                d.req(WireClient, AcmeBe, Some(&req));
+    // TODO: Fails because of hardcoded SHA-256 hash algorithm in stepca
+    #[ignore]
+    #[tokio::test]
+    async fn p384_should_succeed() {
+        let test = E2eTest::new().with_alg(JwsAlgorithm::P384).start(docker()).await;
 
-                d.step("get the ACME directory with links for newNonce, newAccount & newOrder");
-                let mut resp = acme_client.execute(req).await.unwrap();
-                d.resp(AcmeBe, WireClient, Some(&resp));
-                resp.expect_status_ok().expect_content_type_json();
-                let resp = RustyAcme::acme_directory_response(resp.json::<Value>().await.unwrap());
-                assert!(resp.is_ok());
-                let directory = resp.unwrap();
-                d.body(&directory);
-                (directory, directory_link)
-            };
-
-            // GET http://acme-server/new-nonce
-            let previous_nonce = {
-                // see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.2
-                d.step("fetch a new nonce for the very first request");
-                let new_nonce_url = directory.new_nonce.as_str();
-                let req = acme_client.head(new_nonce_url).build().unwrap();
-                d.req(WireClient, AcmeBe, Some(&req));
-
-                d.step("get a nonce for creating an account");
-                let mut resp = acme_client.execute(req).await.unwrap();
-                d.resp(AcmeBe, WireClient, Some(&resp));
-                resp.expect_status_ok()
-                    .expect_header("cache-control", "no-store")
-                    .has_replay_nonce()
-                    .has_directory_link(&directory_link);
-                let previous_nonce = resp.replay_nonce();
-                d.body(&previous_nonce);
-                previous_nonce
-            };
-
-            // POST http://acme-server/new-account
-            let (account, previous_nonce) = {
-                // see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
-                d.step("create a new account");
-                let account_req = RustyAcme::new_account_request(&directory, alg, &client_kp, previous_nonce).unwrap();
-                let req = acme_client.acme_req(&directory.new_account, &account_req);
-                d.req(WireClient, AcmeBe, Some(&req));
-                d.body(&account_req);
-
-                d.step("account created");
-                let mut resp = acme_client.execute(req).await.unwrap();
-                d.resp(AcmeBe, WireClient, Some(&resp));
-                resp.expect_status_created()
-                    .has_replay_nonce()
-                    .has_location()
-                    .has_directory_link(&directory_link)
-                    .expect_content_type_json();
-                let previous_nonce = resp.replay_nonce();
-                let resp = RustyAcme::new_account_response(resp.json().await.unwrap());
-                assert!(resp.is_ok());
-                let account = resp.unwrap();
-                d.body(&account);
-                (account, previous_nonce)
-            };
-
-            // POST http://acme-server/new-order
-            let (order, order_url, display_name, domain, client_id, handle, qualified_handle, previous_nonce) = {
-                // see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
-                d.chapter("Request a certificate with relevant identifiers");
-                d.step("create a new order");
-                let display_name = "Smith, Alice M (QA)".to_string();
-                let domain = WIRE_HOST.to_string();
-                let handle = uuid::Uuid::new_v4();
-                let client_id = random::<u64>();
-                let qualified_client_id =
-                    ClientId::try_from_raw_parts(handle.as_bytes(), client_id, domain.as_bytes()).unwrap();
-                let qualified_handle = "impp:wireapp=alice.smith.qa@example.com".to_string();
-                let expiry = core::time::Duration::from_secs(3600); // 1h
-                let order_request = RustyAcme::new_order_request(
-                    display_name.clone(),
-                    domain.clone(),
-                    qualified_client_id,
-                    qualified_handle.clone(),
-                    expiry,
-                    &directory,
-                    &account,
-                    alg,
-                    &client_kp,
-                    previous_nonce,
-                )
-                .unwrap();
-                let req = acme_client.acme_req(&directory.new_order, &order_request);
-                d.req(WireClient, AcmeBe, Some(&req));
-                d.body(&order_request);
-
-                d.step("get new order with authorization URLS and finalize URL");
-                let mut resp = acme_client.execute(req).await.unwrap();
-                d.resp(AcmeBe, WireClient, Some(&resp));
-                let previous_nonce = resp.replay_nonce();
-                let order_url = resp.location_url();
-                resp.expect_status_created()
-                    .has_replay_nonce()
-                    .has_location()
-                    .has_directory_link(&directory_link)
-                    .expect_content_type_json();
-                let resp = resp.json().await.unwrap();
-                let resp = RustyAcme::new_order_response(resp);
-                assert!(resp.is_ok());
-                let new_order = resp.unwrap();
-                d.body(&new_order);
-                (
-                    new_order,
-                    order_url,
-                    display_name,
-                    domain,
-                    client_id,
-                    handle.to_string(),
-                    qualified_handle,
-                    previous_nonce,
-                )
-            };
-
-            // POST http://acme-server/authz
-            let (authz, previous_nonce) = {
-                d.chapter("Display-name and handle already authorized");
-                d.step("fetch challenge");
-                let authz_url = order.authorizations.get(0).unwrap();
-                let authz_req =
-                    RustyAcme::new_authz_request(authz_url, &account, alg, &client_kp, previous_nonce).unwrap();
-                let req = acme_client.acme_req(authz_url, &authz_req);
-                d.req(WireClient, AcmeBe, Some(&req));
-                d.body(&authz_req);
-
-                d.step("get back challenge");
-                let mut resp = acme_client.execute(req).await.unwrap();
-                d.resp(AcmeBe, WireClient, Some(&resp));
-                let previous_nonce = resp.replay_nonce();
-                resp.expect_status_ok()
-                    .has_replay_nonce()
-                    .has_location()
-                    .has_directory_link(&directory_link)
-                    .expect_content_type_json();
-                let resp = resp.json().await.unwrap();
-                let resp = RustyAcme::new_authz_response(resp);
-                assert!(resp.is_ok());
-                let authz = resp.unwrap();
-                d.body(&authz);
-                (authz, previous_nonce)
-            };
-
-            // extract challenges
-            let (dpop_chall, oidc_chall) = {
-                (
-                    authz.wire_dpop_challenge().cloned().unwrap(),
-                    authz.wire_oidc_challenge().cloned().unwrap(),
-                )
-            };
-
-            // HEAD http://wire-server/nonce
-            let backend_nonce = {
-                d.chapter("Client fetches JWT DPoP access token (with wire-server)");
-                d.step("fetch a nonce from wire-server");
-                let nonce_url = format!("{wire_server_url}/clients/token/nonce");
-                let req = wire_server_client.get(nonce_url).build().unwrap();
-                d.req(WireClient, WireBe, Some(&req));
-
-                d.step("get wire-server nonce");
-                let mut resp = wire_server_client.execute(req).await.unwrap();
-                d.resp(WireBe, WireClient, Some(&resp));
-                resp.expect_status_ok();
-                let backend_nonce: BackendNonce = resp.text().await.unwrap().into();
-                d.body(&backend_nonce);
-                backend_nonce
-            };
-
-            // POST http://wire-server/client-dpop-token
-            let (access_token, sub) = {
-                d.step("create the client Dpop token with both nonces");
-                let alice = ClientId::try_new(&handle, client_id, &domain).unwrap();
-                let dpop_url = format!("{wire_server_url}/clients/{client_id}/access-token");
-                let issuer = wire_server_url.clone();
-                let htu: Htu = issuer.as_str().try_into().unwrap();
-                let acme_nonce: AcmeNonce = dpop_chall.token.as_str().into();
-                let dpop = Dpop {
-                    challenge: acme_nonce.clone(),
-                    htm: Htm::Post,
-                    htu,
-                    extra_claims: None,
-                };
-                let expiry = Duration::from_days(1).into();
-                let client_dpop_token =
-                    RustyJwtTools::generate_dpop_token(dpop, alice, backend_nonce, expiry, alg, &client_kp).unwrap();
-                d.token("Dpop token", &client_dpop_token);
-                let b64 = |v: &str| base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(v);
-                let req = wire_server_client
-                    .post(&dpop_url)
-                    .header("dpop", b64(&client_dpop_token))
-                    // cheat to share test context
-                    .header("client-id", b64(&alice.to_subject()))
-                    .header("backend-kp", b64(backend_kp.as_str()))
-                    .header("hash-alg", b64(&hash_alg.to_string()))
-                    .header("wire-server-uri", b64(&issuer))
-                    .build()
-                    .unwrap();
-                d.req(WireClient, WireBe, Some(&req));
-
-                d.step("get a Dpop access token from wire-server");
-                let mut resp = wire_server_client.execute(req).await.unwrap();
-                d.resp(WireBe, WireClient, Some(&resp));
-                resp.expect_status_ok();
-                let resp = resp.json::<Value>().await.unwrap();
-                let access_token = resp
-                    .as_object()
-                    .and_then(|o| o.get("token"))
-                    .and_then(Value::as_str)
-                    .map(str::to_string)
-                    .unwrap();
-                d.token("Access token", &access_token);
-                (access_token, alice)
-            };
-
-            // client id (dpop) challenge
-            // POST http://acme-server/challenge
-            let previous_nonce = {
-                // see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
-                d.chapter("Client provides access token");
-                d.step("validate Dpop challenge (clientId)");
-                let dpop_chall_url = dpop_chall.url.clone();
-                let dpop_chall_req = RustyAcme::dpop_chall_request(
-                    access_token.clone(),
-                    dpop_chall,
-                    &account,
-                    alg,
-                    &client_kp,
-                    previous_nonce,
-                )
-                .unwrap();
-                let req = acme_client.acme_req(&dpop_chall_url, &dpop_chall_req);
-                d.req(WireClient, AcmeBe, Some(&req));
-                d.body(&dpop_chall_req);
-
-                d.step("client id challenge is valid");
-                let mut resp = acme_client.execute(req).await.unwrap();
-                d.resp(AcmeBe, WireClient, Some(&resp));
-                let previous_nonce = resp.replay_nonce();
-                resp.expect_status_ok()
-                    .has_replay_nonce()
-                    .has_location()
-                    .has_directory_link(&directory_link)
-                    .expect_content_type_json();
-                let resp = resp.json().await.unwrap();
-                let resp = RustyAcme::new_chall_response(resp).unwrap();
-                d.body(&resp);
-                previous_nonce
-            };
-
-            // handle (oidc) challenge
-            // POST http://acme-server/challenge
-            let previous_nonce = {
-                // see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
-                d.step("validate oidc challenge (userId + displayName)");
-
-                let oidc_chall_url = oidc_chall.url.clone();
-                let id_token = id_token(
-                    alg,
-                    idp_kp,
-                    issuer,
-                    sub.to_subject(),
-                    audience,
-                    client_jwk,
-                    oidc_chall.token.clone(),
-                    display_name.clone(),
-                    qualified_handle,
-                );
-                d.token("Id token", &id_token);
-                let oidc_chall_req =
-                    RustyAcme::oidc_chall_request(id_token, oidc_chall, &account, alg, &client_kp, previous_nonce)
-                        .unwrap();
-                let req = acme_client.acme_req(&oidc_chall_url, &oidc_chall_req);
-                d.req(WireClient, AcmeBe, Some(&req));
-                d.body(&oidc_chall_req);
-
-                d.step("handle challenge is valid");
-                let mut resp = acme_client.execute(req).await.unwrap();
-                d.resp(AcmeBe, WireClient, Some(&resp));
-                let previous_nonce = resp.replay_nonce();
-                resp.expect_status_ok()
-                    .has_replay_nonce()
-                    .has_location()
-                    .has_directory_link(&directory_link)
-                    .expect_content_type_json();
-                let resp = resp.json().await.unwrap();
-                let resp = RustyAcme::new_chall_response(resp).unwrap();
-                d.body(&resp);
-                previous_nonce
-            };
-
-            // POST http://acme-server/order (verify status)
-            let (order, previous_nonce) = {
-                d.chapter("Client presents a CSR and gets its certificate");
-                d.step("verify the status of the order");
-                let order_req_url = order_url.clone();
-                let get_order_req =
-                    RustyAcme::check_order_request(order_url, &account, alg, &client_kp, previous_nonce).unwrap();
-                let req = acme_client.acme_req(&order_req_url, &get_order_req);
-                d.req(WireClient, AcmeBe, Some(&req));
-                d.body(&get_order_req);
-
-                d.step("loop (with exponential backoff) until order is ready");
-                let mut resp = acme_client.execute(req).await.unwrap();
-                d.resp(AcmeBe, WireClient, Some(&resp));
-                let previous_nonce = resp.replay_nonce();
-                resp.expect_status_ok()
-                    .has_replay_nonce()
-                    .has_location()
-                    .has_directory_link(&directory_link)
-                    .expect_content_type_json();
-                let resp = resp.json().await.unwrap();
-                let order = RustyAcme::check_order_response(resp).unwrap();
-                d.body(&order);
-                (order, previous_nonce)
-            };
-
-            // POST http://acme-server/finalize
-            let (finalize, previous_nonce) = {
-                d.step("create a CSR and call finalize url");
-                let finalize_url = order.finalize.clone();
-                let finalize_req = RustyAcme::finalize_req(order, &account, alg, &client_kp, previous_nonce).unwrap();
-                let req = acme_client.acme_req(&finalize_url, &finalize_req);
-                d.req(WireClient, AcmeBe, Some(&req));
-                d.body(&finalize_req);
-
-                d.step("get back a url for fetching the certificate");
-                let mut resp = acme_client.execute(req).await.unwrap();
-                d.resp(AcmeBe, WireClient, Some(&resp));
-                let previous_nonce = resp.replay_nonce();
-                resp.expect_status_ok()
-                    .has_replay_nonce()
-                    .has_location()
-                    .has_directory_link(&directory_link)
-                    .expect_content_type_json();
-                let resp = resp.json().await.unwrap();
-                let finalize = RustyAcme::finalize_response(resp).unwrap();
-                d.body(&finalize);
-                (finalize, previous_nonce)
-            };
-
-            // GET http://acme-server/certificate
-            let _certificates = {
-                d.step("fetch the certificate");
-                let certificate_url = finalize.certificate.clone();
-                let certificate_req =
-                    RustyAcme::certificate_req(finalize, account, alg, &client_kp, previous_nonce).unwrap();
-                let req = acme_client.acme_req(&certificate_url, &certificate_req);
-                d.req(WireClient, AcmeBe, Some(&req));
-                d.body(&certificate_req);
-
-                d.step("get the certificate chain");
-                let mut resp = acme_client.execute(req).await.unwrap();
-                d.resp(AcmeBe, WireClient, Some(&resp));
-                resp.expect_status_ok()
-                    .has_replay_nonce()
-                    .expect_header_absent("location")
-                    .has_directory_link(&directory_link)
-                    .expect_header("content-type", "application/pem-certificate-chain");
-                let resp = resp.text().await.unwrap();
-                let certificates = RustyAcme::certificate_response(resp).unwrap();
-                d.body(&certificates);
-                for (i, cert) in certificates.iter().enumerate() {
-                    d.cert(&format!("Certificate #{i}"), cert);
-                }
-                certificates
-            };
-
-            d.display();
-        }
+        assert!(test.nominal_enrollment().await.is_ok());
     }
 }
 
-fn mock_idp<'a>(docker: &'a Cli, host: &str, jwk: &Jwk) -> (String, Container<'a, WiremockImage>) {
-    let jwks_mock = serde_json::json!({
-        "request": {
-            "method": "GET",
-            "urlPath": "/oauth2/jwks"
-        },
-        "response": {
-            "jsonBody": {
-                "keys": [jwk]
-            }
-        }
-    });
-    let stubs = vec![jwks_mock];
-    let node = WiremockImage::run(docker, host, stubs);
-    let url = format!("http://{IDP_HOST}/");
-    (url, node)
+/// Since the acme server is a fork, verify its invariants are respected
+#[cfg(not(ci))]
+mod acme_server {
+    use super::*;
+
+    /// Challenges returned by ACME server are mixed up
+    #[should_panic]
+    #[tokio::test]
+    async fn should_fail_when_no_replay_nonce_requested() {
+        let test = E2eTest::new().start(docker()).await;
+
+        let flow = EnrollmentFlow {
+            get_acme_nonce: Box::new(|test, _| {
+                Box::pin(async move {
+                    // this replay nonce has not been generated by the acme server
+                    let unknown_replay_nonce = rand_base64_str(42);
+                    Ok((test, unknown_replay_nonce))
+                })
+            }),
+            ..Default::default()
+        };
+        test.enrollment(flow).await.unwrap();
+    }
+
+    /// Replay nonce is reused by the client
+    #[should_panic]
+    #[tokio::test]
+    async fn should_fail_when_replay_nonce_reused() {
+        let test = E2eTest::new().start(docker()).await;
+
+        let flow = EnrollmentFlow {
+            new_order: Box::new(|mut test, (directory, account, previous_nonce)| {
+                Box::pin(async move {
+                    // same nonce is used for both 'new_order' & 'new_authz'
+                    let (order, order_url, _previous_nonce) =
+                        test.new_order(&directory, &account, previous_nonce.clone()).await?;
+                    let (_, previous_nonce) = test.new_authz(&account, order.clone(), previous_nonce).await?;
+                    Ok((test, (order, order_url, previous_nonce)))
+                })
+            }),
+            ..Default::default()
+        };
+        test.enrollment(flow).await.unwrap();
+    }
+
+    /// Challenges returned by ACME server are mixed up
+    #[tokio::test]
+    async fn should_fail_when_challenges_inverted() {
+        let test = E2eTest::new().start(docker()).await;
+
+        let flow = EnrollmentFlow {
+            extract_challenges: Box::new(|mut test, authz| {
+                Box::pin(async move {
+                    let (dpop_chall, oidc_chall) = test.extract_challenges(authz)?;
+                    // let's invert those challenges for the rest of the flow
+                    Ok((test, (oidc_chall, dpop_chall)))
+                })
+            }),
+            ..Default::default()
+        };
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ClientImplementationError(
+                "a challenge is not supposed to be pending at this point. It must either be 'valid' or 'processing'."
+            ))
+        ));
+    }
+}
+
+#[cfg(not(ci))]
+mod client_id_challenge {
+    use crate::utils::rand_client_id;
+
+    use super::*;
+
+    /// Demonstrates that the client possesses the clientId. Client makes an authenticated request
+    /// to wire-server, it delivers a nonce which the client seals in a signed DPoP JWT.
+    #[should_panic]
+    #[tokio::test]
+    async fn should_fail_when_client_dpop_token_has_wrong_backend_nonce() {
+        let test = E2eTest::new().start(docker()).await;
+
+        let flow = EnrollmentFlow {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce)| {
+                Box::pin(async move {
+                    // use a different nonce than the supplied one
+                    let wrong_nonce = rand_base64_str(32).into();
+                    assert_ne!(wrong_nonce, backend_nonce);
+
+                    let client_dpop_token = test.create_dpop_token(&dpop_chall, wrong_nonce).await?;
+                    Ok((test, client_dpop_token))
+                })
+            }),
+            ..Default::default()
+        };
+        test.enrollment(flow).await.unwrap();
+    }
+
+    /// Acme server should be configured with wire-server public key to verify the access tokens
+    /// issued by wire-server.
+    #[tokio::test]
+    async fn should_fail_when_access_token_not_signed_by_wire_server() {
+        let default = E2eTest::new();
+        let wrong_backend_kp = Ed25519KeyPair::generate();
+        let test = E2eTest {
+            ca_cfg: CaCfg {
+                sign_key: wrong_backend_kp.public_key().to_pem(),
+                ..default.ca_cfg
+            },
+            ..default
+        };
+        let test = test.start(docker()).await;
+        assert!(matches!(
+            test.nominal_enrollment().await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
+        ));
+    }
+
+    /// The access token has a 'chal' claim which should match the Acme challenge 'token'.
+    /// This is verified by the acme server
+    #[tokio::test]
+    async fn should_fail_when_access_token_challenge_claim_is_not_current_challenge_one() {
+        let test = E2eTest::new().start(docker()).await;
+
+        let flow = EnrollmentFlow {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce)| {
+                Box::pin(async move {
+                    // alter the 'token' of the valid challenge
+                    let wrong_dpop_chall = AcmeChallenge {
+                        token: rand_base64_str(32),
+                        ..dpop_chall
+                    };
+                    let client_dpop_token = test.create_dpop_token(&wrong_dpop_chall, backend_nonce).await?;
+                    Ok((test, client_dpop_token))
+                })
+            }),
+            ..Default::default()
+        };
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
+        ));
+    }
+
+    /// We first set a clientId for the enrollment process when we create the acme order. This same
+    /// clientId must be used and sealed in the accessToken which is verified by the acme server in
+    /// the oidc challenge. The challenge should be invalid if they differ
+    #[tokio::test]
+    async fn should_fail_when_access_token_client_id_mismatches() {
+        let test = E2eTest::new().start(docker()).await;
+
+        let flow = EnrollmentFlow {
+            new_order: Box::new(|mut test, (directory, account, previous_nonce)| {
+                Box::pin(async move {
+                    // just alter the clientId for the order creation...
+                    let sub = test.sub.clone();
+                    test.sub = rand_client_id();
+                    let (order, order_url, previous_nonce) =
+                        test.new_order(&directory, &account, previous_nonce).await?;
+                    // ...then resume to the regular one to create the client dpop token & access token
+                    test.sub = sub;
+                    Ok((test, (order, order_url, previous_nonce)))
+                })
+            }),
+            ..Default::default()
+        };
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
+        ));
+    }
+}
+
+#[cfg(not(ci))]
+mod oidc_error {
+    use super::*;
+
+    #[tokio::test]
+    async fn should_fail_when_oidc_provider_jwks_uri_unavailable() {
+        let mut test = E2eTest::new();
+        // invalid jwks uri
+        let mut jwks_uri: url::Url = test.ca_cfg.jwks_uri.parse().unwrap();
+        jwks_uri.set_port(Some(jwks_uri.port().unwrap() + 1)).unwrap();
+        test.ca_cfg.jwks_uri = jwks_uri.to_string();
+        let test = test.start(docker()).await;
+
+        // cannot validate the OIDC challenge
+        assert!(test.nominal_enrollment().await.is_err());
+    }
+}
+
+/// Further improvements
+#[cfg(not(ci))]
+mod optimize {
+    use super::*;
+
+    #[tokio::test]
+    async fn should_validate_challenges_in_parallel() {
+        let docker = Box::leak(Box::new(Cli::docker()));
+        let mut test = E2eTest::new().start(docker).await;
+        let directory = test.get_acme_directory().await.unwrap();
+        let previous_nonce = test.get_acme_nonce(&directory).await.unwrap();
+        let (account, previous_nonce) = test.new_account(&directory, previous_nonce).await.unwrap();
+        let (order, order_url, previous_nonce) = test.new_order(&directory, &account, previous_nonce).await.unwrap();
+        let (authz, previous_nonce) = test.new_authz(&account, order, previous_nonce).await.unwrap();
+        let (dpop_chall, oidc_chall) = test.extract_challenges(authz).unwrap();
+
+        let test = std::sync::Arc::new(tokio::sync::Mutex::new(test));
+        let t1 = test.clone();
+        let account = std::sync::Arc::new(account);
+        let acc1 = account.clone();
+
+        let previous_nonce = tokio::task::spawn(async move {
+            let mut test = t1.lock().await;
+            let backend_nonce = test.get_wire_server_nonce().await.unwrap();
+            let client_dpop_token = test.create_dpop_token(&dpop_chall, backend_nonce).await.unwrap();
+            let access_token = test.get_access_token(client_dpop_token).await.unwrap();
+            let previous_nonce = test
+                .verify_dpop_challenge(&acc1, dpop_chall, access_token, previous_nonce)
+                .await
+                .unwrap();
+            previous_nonce
+        })
+        .await
+        .unwrap();
+
+        let t2 = test.clone();
+        let acc2 = account.clone();
+
+        tokio::task::spawn(async move {
+            let mut test = t2.lock().await;
+            let previous_nonce = test.get_acme_nonce(&directory).await.unwrap();
+            let id_token = test.fetch_id_token().await.unwrap();
+            test.verify_oidc_challenge(&acc2, oidc_chall, id_token, previous_nonce)
+                .await
+                .unwrap();
+        })
+        .await
+        .unwrap();
+
+        let mut test = test.lock().await;
+        let (order, previous_nonce) = test
+            .verify_order_status(&account, order_url, previous_nonce)
+            .await
+            .unwrap();
+        let (finalize, previous_nonce) = test.finalize(&account, order, previous_nonce).await.unwrap();
+        test.get_x509_certificates(account.deref().clone(), finalize, previous_nonce)
+            .await
+            .unwrap();
+    }
 }

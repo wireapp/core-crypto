@@ -1,16 +1,18 @@
+use crate::utils::rand_base64_str;
 use base64::Engine;
 use itertools::Itertools;
-use std::path::PathBuf;
-use x509_parser::extensions::{GeneralName, ParsedExtension};
-use x509_parser::prelude::X509Certificate;
+use jwt_simple::prelude::*;
+use rusty_jwt_tools::prelude::*;
+use std::{path::PathBuf, process::Command};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct TestDisplay {
     pub title: String,
     pub events: Vec<Event>,
     pub markdown: Vec<String>,
     pub mermaid: Vec<String>,
     pub ctr: u32,
+    pub is_active: bool,
 }
 
 impl TestDisplay {
@@ -19,62 +21,112 @@ impl TestDisplay {
         std::fs::write(readme, "# Wire end to end identity example").unwrap();
     }
 
-    pub fn new(title: String) -> Self {
+    pub fn new(title: String, is_active: bool) -> Self {
         Self {
             title,
             events: vec![],
             markdown: vec![],
             mermaid: vec![],
             ctr: 0,
+            is_active,
         }
     }
 
-    pub fn step(&mut self, label: &str) {
+    pub fn set_active(&mut self) {
+        self.is_active = true;
+    }
+
+    pub fn display_step(&mut self, label: &str) {
         self.ctr += 1;
-        let event = Event::Step(self.ctr, label.to_string());
+        let event = Event::Step {
+            number: self.ctr,
+            title: label.to_string(),
+        };
         event.println();
         self.markdown.push(event.markdown());
         self.events.push(event);
     }
 
-    pub fn chapter(&mut self, comment: &str) {
-        let event = Event::Chapter(comment.to_string());
+    pub fn display_chapter(&mut self, comment: &str) {
+        let event = Event::Chapter {
+            comment: comment.to_string(),
+        };
         event.println();
         self.markdown.push(event.markdown());
         self.events.push(event);
     }
 
-    pub fn token(&mut self, label: &str, token: &str) {
-        let event = Event::Token(label.to_string(), token.to_string());
+    pub fn display_token(&mut self, label: &str, token: &str, alg: Option<JwsAlgorithm>, keypair: String) {
+        let event = Event::Token {
+            label: label.to_string(),
+            token: token.to_string(),
+            alg,
+            pk: keypair,
+        };
         event.println();
         self.markdown.push(event.markdown());
         self.events.push(event);
     }
 
-    pub fn cert(&mut self, label: &str, cert: &str) {
-        let event = Event::Certificate(label.to_string(), cert.to_string());
+    pub fn display_cert(&mut self, label: &str, cert: &str, csr: bool) {
+        let event = if !csr {
+            Event::Certificate {
+                label: label.to_string(),
+                cert: cert.to_string(),
+            }
+        } else {
+            Event::Csr {
+                label: label.to_string(),
+                cert: cert.to_string(),
+            }
+        };
         event.println();
         self.markdown.push(event.markdown());
         self.events.push(event);
     }
 
-    pub fn req(&mut self, from: Actor, to: Actor, req: Option<&reqwest::Request>) {
-        let event = Event::Request(from, to, req.map(Req::from));
+    pub fn display_req(
+        &mut self,
+        from: Actor,
+        to: Actor,
+        req: Option<&reqwest::Request>,
+        url_pattern: Option<&'static str>,
+    ) {
+        let event = Event::Request {
+            from,
+            to,
+            req: req.map(|r| Req::new(r, url_pattern)),
+        };
         event.println();
         self.mermaid.push(event.mermaid());
         self.markdown.push(event.markdown());
         self.events.push(event);
     }
 
-    pub fn resp(&mut self, from: Actor, to: Actor, resp: Option<&reqwest::Response>) {
-        let event = Event::Response(from, to, resp.map(Resp::from));
+    pub fn display_operation(&mut self, actor: Actor, msg: &str) {
+        let event = Event::Operation {
+            actor,
+            msg: msg.to_string(),
+        };
         event.println();
         self.mermaid.push(event.mermaid());
         self.markdown.push(event.markdown());
         self.events.push(event);
     }
 
-    pub fn body<T: serde::Serialize>(&mut self, body: &T) {
+    pub fn display_resp(&mut self, from: Actor, to: Actor, resp: Option<&reqwest::Response>) {
+        let event = Event::Response {
+            from,
+            to,
+            resp: resp.map(Resp::from),
+        };
+        event.println();
+        self.mermaid.push(event.mermaid());
+        self.markdown.push(event.markdown());
+        self.events.push(event);
+    }
+
+    pub fn display_body<T: serde::Serialize>(&mut self, body: &T) {
         let body = serde_json::to_string_pretty(body).unwrap();
         let acme_payload = serde_json::from_str::<rusty_acme::prelude::AcmeJws>(&body)
             .ok()
@@ -82,8 +134,11 @@ impl TestDisplay {
                 let protected = base64::prelude::BASE64_URL_SAFE_NO_PAD.decode(jws.protected).ok()?;
                 let protected = serde_json::from_slice::<serde_json::Value>(protected.as_slice()).ok()?;
 
-                let payload = base64::prelude::BASE64_URL_SAFE_NO_PAD.decode(jws.payload).ok()?;
-                let payload = serde_json::from_slice::<serde_json::Value>(payload.as_slice()).ok()?;
+                let payload = base64::prelude::BASE64_URL_SAFE_NO_PAD
+                    .decode(jws.payload)
+                    .ok()
+                    .and_then(|payload| serde_json::from_slice::<serde_json::Value>(payload.as_slice()).ok())
+                    .unwrap_or(serde_json::json!({}));
 
                 let decoded = serde_json::json!({
                     "protected": protected,
@@ -91,21 +146,45 @@ impl TestDisplay {
                 });
                 serde_json::to_string_pretty(&decoded).ok()
             });
-        let event = Event::Body(body, acme_payload);
+        let event = Event::Body {
+            raw: body,
+            pretty: acme_payload,
+        };
         event.println();
         self.markdown.push(event.markdown());
         self.events.push(event);
     }
 
-    pub fn display(self) {
-        let readme = Self::readme();
-        let mermaid = self.mermaid.join("\n");
-        let mermaid = format!("\n```mermaid\nsequenceDiagram\n    autonumber\n{mermaid}\n```\n");
-        let content = [self.title, mermaid, self.markdown.join("\n")].concat();
+    pub fn display_str(&mut self, value: &str, raw: bool) {
+        let event = Event::Str {
+            value: value.to_string(),
+            raw,
+        };
+        event.println();
+        self.markdown.push(event.markdown());
+        self.events.push(event);
+    }
 
-        let current = std::fs::read_to_string(&readme).unwrap();
-        let content = format!("{current}\n{content}");
-        std::fs::write(readme, content).unwrap();
+    pub fn display_note(&mut self, value: &str) {
+        let event = Event::Note {
+            value: value.to_string(),
+        };
+        event.println();
+        self.markdown.push(event.markdown());
+        self.events.push(event);
+    }
+
+    pub fn display(&mut self) {
+        if self.is_active {
+            let readme = Self::readme();
+            let mermaid = self.mermaid.join("\n");
+            let mermaid = format!("\n```mermaid\nsequenceDiagram\n    autonumber\n{mermaid}\n```\n");
+            let content = [self.title.to_string(), mermaid, self.markdown.join("\n")].concat();
+
+            let current = std::fs::read_to_string(&readme).unwrap();
+            let content = format!("{current}\n{content}");
+            std::fs::write(readme, content).unwrap();
+        }
     }
 
     fn readme() -> PathBuf {
@@ -113,168 +192,228 @@ impl TestDisplay {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Event {
-    Step(u32, String),
-    Chapter(String),
-    Token(String, String),
-    Certificate(String, String),
-    Request(Actor, Actor, Option<Req>),
-    Response(Actor, Actor, Option<Resp>),
-    Body(String, Option<String>),
+    Step {
+        number: u32,
+        title: String,
+    },
+    Chapter {
+        comment: String,
+    },
+    Token {
+        label: String,
+        token: String,
+        // TODO: temporary until Dex supports EdDSA and not just RSA
+        alg: Option<JwsAlgorithm>,
+        pk: String,
+    },
+    Certificate {
+        label: String,
+        cert: String,
+    },
+    Csr {
+        label: String,
+        cert: String,
+    },
+    Operation {
+        actor: Actor,
+        msg: String,
+    },
+    Request {
+        from: Actor,
+        to: Actor,
+        req: Option<Req>,
+    },
+    Response {
+        from: Actor,
+        to: Actor,
+        resp: Option<Resp>,
+    },
+    Body {
+        raw: String,
+        pretty: Option<String>,
+    },
+    Str {
+        value: String,
+        raw: bool,
+    },
+    Note {
+        value: String,
+    },
 }
 
 impl Event {
     pub fn println(&self) {
         match self {
-            Event::Step(i, title) => println!("{i}. {title}"),
-            Event::Chapter(comment) => println!("----- {comment} -----\n"),
-            Event::Token(label, token) => println!("{label}: https://jwt.io/#id_token={token}\n"),
-            Event::Certificate(label, _) => println!("{label}:\n{}\n", self.cert_pem()),
-            Event::Request(_from, _to, Some(req)) => println!("=> {req:?}\n"),
-            Event::Response(_from, _to, Some(resp)) => println!("<= {resp:?}"),
-            Event::Body(body, Some(acme_payload)) => println!("{body}\n{acme_payload}\n"),
-            Event::Body(body, None) => println!("{body}\n"),
+            Self::Step { number, title } => println!("{number}. {title}"),
+            Self::Chapter { comment } => println!("----- {comment} -----\n"),
+            Self::Token { label, token, .. } => println!("{label}: https://jwt.io/#id_token={token}\n"),
+            Self::Certificate { label, .. } => println!("{label}:\n{}\n", self.cert_pem()),
+            Self::Request { req: Some(req), .. } => println!("=> {req:?}\n"),
+            Self::Response { resp: Some(resp), .. } => println!("<= {resp:?}"),
+            Self::Body {
+                raw,
+                pretty: Some(acme_payload),
+            } => println!("{raw}\n{acme_payload}\n"),
+            Self::Body { raw, .. } => println!("{raw}\n"),
+            Self::Str { value: body, .. } => println!("\n{body}\n"),
             _ => {}
         }
     }
 
     pub fn markdown(&self) -> String {
         match self {
-            Event::Chapter(comment) => format!("### {comment}"),
-            Event::Step(i, title) => format!("#### {i}. {title}"),
-            Event::Token(label, token) => format!("[{label}](https://jwt.io/#id_token={token})"),
-            Event::Certificate(label, _) => format!(
-                "###### {label}\n```\n{}\n```\n```\n{}\n```\n",
-                self.cert_pem(),
-                self.cert_pretty()
-            ),
-            Event::Request(_from, _to, Some(req)) => format!("```http request\n{req:?}\n```"),
-            Event::Response(_from, _to, Some(resp)) => format!("```http request\n{resp:?}\n```"),
-            Event::Body(body, Some(acme_payload)) => {
-                format!("```json\n{body}\n...decoded...\n{acme_payload}\n```")
+            Self::Chapter { comment } => format!("### {comment}"),
+            Self::Step { number, title } => format!("#### {number}. {title}"),
+            Self::Token { label, token, alg, pk } => {
+                let link = format!("See it on [jwt.io](https://jwt.io/#id_token={token})");
+                let parts = token.split('.').collect::<Vec<&str>>();
+
+                let json_pretty = |token: &str| {
+                    let jwt = base64::prelude::BASE64_URL_SAFE_NO_PAD.decode(token).unwrap();
+                    let jwt = serde_json::from_slice::<serde_json::Value>(&jwt[..]).unwrap();
+                    serde_json::to_string_pretty(&jwt).unwrap()
+                };
+
+                const WIDTH: usize = 64;
+                // insert EOL characters for a prettier display
+                let pretty_token = token
+                    .chars()
+                    .chunks(WIDTH)
+                    .into_iter()
+                    .map(|mut c| c.join(""))
+                    .join("\n");
+
+                let header = format!("\n```json\n{}\n```", json_pretty(parts[0]));
+                let body = format!("\n```json\n{}\n```\n", json_pretty(parts[1]));
+
+                let signature_valid = match alg {
+                    Some(alg) => {
+                        let kp: Pem = pk.to_string().into();
+                        let key = AnyPublicKey::from((*alg, &kp));
+                        key.verify_token::<()>(token, None).map(|_| ())
+                    }
+                    None => {
+                        // temporary solution
+                        let pk = RS256PublicKey::from_pem(pk).unwrap();
+                        pk.verify_token::<()>(token, None).map(|_| ())
+                    }
+                }
+                .map(|_| "✅ Signature Verified")
+                .unwrap_or("❌ Invalid Signature");
+
+                format!(
+                    r#"
+<details>
+<summary><b>{label}</b></summary>
+
+{link}
+
+Raw:
+```text
+{pretty_token}
+```
+
+Decoded:
+{header}
+{body}
+
+{signature_valid} with key:
+```text
+{}
+```
+
+</details>
+
+"#,
+                    pk.trim()
+                )
             }
-            Event::Body(body, None) => format!("```json\n{body}\n```"),
-            _ => String::new(),
+            Self::Certificate { label, .. } => {
+                let (pretty, verify) = self.cert_pretty();
+                format!(
+                    "###### {label}\n{verify}\n```\n{}\n```\n```\n{pretty}\n```\n",
+                    self.cert_pem()
+                )
+            }
+            Self::Csr { label, cert } => {
+                let (pretty, verify) = self.cert_pretty();
+                format!("###### {label}\n{verify}\n```\n{cert}\n```\n```\n{pretty}\n```\n")
+            }
+            Self::Request { req: Some(req), .. } => format!("```http request\n{req:?}\n```"),
+            Self::Response { resp: Some(resp), .. } => format!("```http request\n{resp:?}\n```"),
+            Self::Body {
+                raw,
+                pretty: Some(acme_payload),
+            } => {
+                format!("```json\n{raw}\n```\n```json\n{acme_payload}\n```")
+            }
+            Self::Body { raw, .. } => format!("```json\n{raw}\n```"),
+            Self::Str { value, raw } => {
+                if *raw {
+                    value.to_string()
+                } else {
+                    format!("```text\n{value}\n```")
+                }
+            }
+            Self::Note { value } => format!("Note: {value}"),
+            _ => "".to_string(),
         }
     }
 
     pub fn mermaid(&self) -> String {
         match self {
-            Event::Request(from, to, req) => {
-                if let Some(req) = req {
-                    format!("    {from}->>+{to}: {req}",)
-                } else {
-                    format!("    {from}->>+{to}: 200",)
-                }
+            Self::Request { from, to, req, .. } => {
+                let lock = req.as_ref().filter(|r| r.2).map(|_| "🔒").unwrap_or_default();
+                let req = req.as_ref().map(|r| format!("{r}")).unwrap_or("200".to_string());
+                format!("    {from}->>+{to}: {lock} {req}",)
             }
-            Event::Response(from, to, resp) => {
-                if let Some(resp) = resp {
-                    format!("    {from}->>-{to}: {resp}")
-                } else {
-                    format!("    {from}->>-{to}: 200")
-                }
+            Self::Response { from, to, resp } => {
+                let resp = resp.as_ref().map(|r| format!("{r}")).unwrap_or("200".to_string());
+                format!("    {from}->>-{to}: {resp}")
             }
+            Self::Operation { actor, msg } => format!("    {actor}->>{actor}: {msg}"),
             _ => unreachable!(),
         }
     }
 
-    fn cert_pretty(&self) -> String {
-        match self {
-            Event::Certificate(_, _) => {
-                let cert = self.cert_pem();
-                let cert = x509_parser::prelude::parse_x509_pem(cert.as_bytes());
-                if let Ok((_, cert)) = cert {
-                    let cert = cert.parse_x509().unwrap();
-                    let version = cert.version;
-                    let serial = cert.tbs_certificate.raw_serial_as_string();
-                    let subject = cert.subject();
-                    let issuer = cert.issuer();
-                    let not_before = cert.validity().not_before;
-                    let not_after = cert.validity().not_after;
-                    let is_valid = cert.validity().is_valid();
-                    let extensions = Self::cert_extensions(&cert);
-                    format!(
-                        r#"
-version: {version}
-serial: {serial}
-subject: {subject}
-issuer: {issuer}
-validity:
-  not before: {not_before}
-  not after: {not_after}
-  is valid: {is_valid}
-extensions:
-{extensions}
-                "#
-                    )
-                } else {
-                    "Invalid certificate".to_string()
-                }
-            }
+    fn cert_pretty(&self) -> (String, String) {
+        let (extension, cert, mut pretty_args, mut verify_args) = match self {
+            Event::Certificate { .. } => (
+                "pem",
+                self.cert_pem(),
+                vec!["x509", "-text", "-noout", "-in"],
+                vec!["x509", "-verify", "-in"],
+            ),
+            Event::Csr { cert, .. } => (
+                "csr",
+                cert.to_string(),
+                vec!["req", "-text", "-noout", "-in"],
+                vec!["req", "-verify", "-in"],
+            ),
             _ => unreachable!(),
-        }
-    }
+        };
+        let path = std::env::temp_dir().join(format!("cert-{}.{extension}", rand_base64_str(12)));
+        std::fs::write(&path, cert).unwrap();
+        let path_str = path.to_str().unwrap();
 
-    fn cert_extensions(cert: &X509Certificate) -> String {
-        cert.extensions()
-            .iter()
-            .filter_map(|e| {
-                match e.parsed_extension() {
-                    ParsedExtension::SubjectAlternativeName(san) => Some(
-                        san.general_names
-                            .iter()
-                            .map(|n| match n {
-                                GeneralName::DNSName(dns) => format!("  SAN:DNSName: {dns}"),
-                                GeneralName::URI(uri) => format!("  SAN:URI: {uri}"),
-                                GeneralName::OtherName(oid, name) => format!(
-                                    "  SAN:OtherName: {oid} {}",
-                                    std::str::from_utf8(name).unwrap_or_default()
-                                ),
-                                GeneralName::RFC822Name(email) => format!("  SAN:RFC822Name: {email}"),
-                                GeneralName::X400Address(x400) => format!("  SAN:X400Address: {x400:?}"),
-                                GeneralName::DirectoryName(dn) => format!("  SAN:DirectoryName: {dn}"),
-                                GeneralName::EDIPartyName(edipn) => format!("  SAN:EDIPartyName: {edipn:?}"),
-                                GeneralName::IPAddress(ip) => format!("  SAN:IPAddress: {ip:?}"),
-                                GeneralName::RegisteredID(id) => format!("  SAN:RegisteredID: {id}"),
-                            })
-                            .join("\n"),
-                    ),
-                    ParsedExtension::KeyUsage(ku) => Some(format!("  KeyUsage:{ku}")),
-                    ParsedExtension::SubjectKeyIdentifier(ski) => Some(format!("  SubjectKeyIdentifier:{ski:x}")),
-                    ParsedExtension::BasicConstraints(bc) => Some(format!(
-                        "  BasicConstraints:Ca:{}\n  PathLenConstraint:{}",
-                        bc.ca,
-                        bc.path_len_constraint.unwrap_or_default()
-                    )),
-                    _ => None,
-                    /*ParsedExtension::UnsupportedExtension { .. } => {}
-                    ParsedExtension::IssuerAlternativeName(_) => {}
-                    ParsedExtension::ParseError { .. } => {}
-                    ParsedExtension::AuthorityKeyIdentifier(_) => {}
-                    ParsedExtension::NameConstraints(_) => {}
-                    ParsedExtension::CertificatePolicies(_) => {}
-                    ParsedExtension::PolicyMappings(_) => {}
-                    ParsedExtension::PolicyConstraints(_) => {}
-                    ParsedExtension::ExtendedKeyUsage(_) => {}
-                    ParsedExtension::CRLDistributionPoints(_) => {}
-                    ParsedExtension::InhibitAnyPolicy(_) => {}
-                    ParsedExtension::AuthorityInfoAccess(_) => {}
-                    ParsedExtension::NSCertType(_) => {}
-                    ParsedExtension::NsCertComment(_) => {}
-                    ParsedExtension::CRLNumber(_) => {}
-                    ParsedExtension::ReasonCode(_) => {}
-                    ParsedExtension::InvalidityDate(_) => {}
-                    ParsedExtension::SCT(_) => {}
-                    ParsedExtension::Unparsed => {}*/
-                }
-            })
-            .join("\n")
+        pretty_args.push(path_str);
+        verify_args.push(path_str);
+
+        let out = Command::new("openssl").args(pretty_args).output().unwrap();
+        let pretty_out = String::from_utf8(out.stdout).unwrap();
+
+        let out = Command::new("openssl").args(verify_args).output().unwrap();
+        let verify = if out.status.success() { "✅" } else { "❌" };
+        let verify = format!("openssl -verify {verify}");
+
+        (pretty_out, verify)
     }
 
     fn cert_pem(&self) -> String {
         match self {
-            Event::Certificate(_, cert) => {
+            Event::Certificate { cert, .. } => {
                 format!("-----BEGIN CERTIFICATE-----\n{cert}\n-----END CERTIFICATE-----")
             }
             _ => unreachable!(),
@@ -282,20 +421,14 @@ extensions:
     }
 }
 
-const EXCEPT_HEADERS: [&str; 7] = [
-    "date",
-    "content-length",
-    "dpop",
-    "client-id",
-    "backend-kp",
-    "hash-alg",
-    "wire-server-uri",
-];
+const EXCEPT_HEADERS: [&str; 2] = ["date", "content-length"];
 
-pub struct Req(String, String);
+#[derive(Clone)]
+pub struct Req(String, String, bool);
 
-impl From<&reqwest::Request> for Req {
-    fn from(req: &reqwest::Request) -> Self {
+impl Req {
+    pub fn new(req: &reqwest::Request, url_pattern: Option<&'static str>) -> Self {
+        let is_tls = matches!(req.url().scheme(), "https");
         let method = req.method().as_str();
         let url = req.url().as_str();
         let headers = req
@@ -305,10 +438,22 @@ impl From<&reqwest::Request> for Req {
             .filter(|(k, _)| !EXCEPT_HEADERS.contains(k))
             .map(|(k, v)| format!("{k}: {v}"))
             .join("\n");
-        let complete = format!("{method} {url}\n{headers}");
+        let url = format!("{method} {url}");
+
+        let url = if let Some(pattern) = url_pattern {
+            // calculate at which position to insert the url pattern
+            let path_len = req.url().path().len();
+            let position = url.len() - path_len;
+            let whitespaces = vec![" "; position].join("");
+            format!("{url}\n{whitespaces}{pattern}")
+        } else {
+            url
+        };
+
+        let complete = format!("{url}\n{headers}").trim().to_string();
         let path = req.url().path();
-        let simple = format!("{method} {path}");
-        Self(complete, simple)
+        let simple = format!("{method} {path}").trim().to_string();
+        Self(complete, simple, is_tls)
     }
 }
 
@@ -324,6 +469,7 @@ impl std::fmt::Display for Req {
     }
 }
 
+#[derive(Clone)]
 pub struct Resp(String, String);
 
 impl From<&reqwest::Response> for Resp {
@@ -354,19 +500,21 @@ impl std::fmt::Display for Resp {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Actor {
     WireClient,
-    WireBe,
-    AcmeBe,
+    WireServer,
+    AcmeServer,
+    OidcProvider,
 }
 
 impl std::fmt::Display for Actor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let name = match self {
             Actor::WireClient => "wire-client",
-            Actor::WireBe => "wire-server",
-            Actor::AcmeBe => "acme-server",
+            Actor::WireServer => "wire-server",
+            Actor::AcmeServer => "acme-server",
+            Actor::OidcProvider => "authorization-server",
         };
         write!(f, "{name}")
     }

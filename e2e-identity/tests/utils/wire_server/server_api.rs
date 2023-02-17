@@ -1,8 +1,11 @@
-use crate::utils::rand_base64_str;
+use crate::utils::{
+    ctx::ctx_get,
+    rand_base64_str,
+    wire_server::oidc::{handle_callback, handle_login},
+};
 use base64::Engine;
 use hyper::{Body, Method, Request, Response, StatusCode};
-use rusty_jwt_tools::prelude::{BackendNonce, ClientId, HashAlgorithm, Htm, Htu, Pem};
-use rusty_jwt_tools::RustyJwtTools;
+use rusty_jwt_tools::prelude::*;
 
 // simulates wire-server database
 static mut PREVIOUS_NONCE: &str = "";
@@ -10,6 +13,14 @@ static mut PREVIOUS_NONCE: &str = "";
 pub async fn wire_api(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
     let path = req.uri().path();
     let paths = path.split('/').filter(|p| !p.is_empty()).collect::<Vec<&str>>();
+    let header = |k: &str| {
+        req.headers()
+            .get(k)
+            .and_then(|d| d.to_str().ok())
+            .and_then(|v| base64::prelude::BASE64_URL_SAFE_NO_PAD.decode(v).ok())
+            .and_then(|v| String::from_utf8(v).ok())
+            .unwrap_or_else(|| panic!("No header '{k}'"))
+    };
     Ok(match (req.method(), paths.as_slice()) {
         (&Method::GET, ["clients", "token", "nonce"]) => {
             let nonce = rand_base64_str(32);
@@ -20,47 +31,32 @@ pub async fn wire_api(req: Request<Body>) -> Result<Response<Body>, hyper::Error
             Response::builder().status(StatusCode::OK).body(nonce.into()).unwrap()
         }
         (&Method::POST, ["clients", .., "access-token"]) => {
-            let header = |k: &str| {
-                req.headers()
-                    .get(k)
-                    .and_then(|d| d.to_str().ok())
-                    .and_then(|v| base64::prelude::BASE64_URL_SAFE_NO_PAD.decode(v).ok())
-                    .and_then(|v| String::from_utf8(v).ok())
-                    .unwrap_or_else(|| panic!("No header '{k}'"))
-            };
             let dpop = header("dpop");
-
-            // cheats to share test context
-            let client_id = header("client-id");
-            let client_id: ClientId = client_id.as_str().try_into().unwrap();
-            let backend_kp: Pem = header("backend-kp").into();
-            let hash_alg: HashAlgorithm = header("hash-alg").parse().unwrap();
-            let htu: Htu = header("wire-server-uri").as_str().try_into().unwrap();
-
             // fetch back the nonce we have generated at previous state
             let backend_nonce: BackendNonce = unsafe { PREVIOUS_NONCE.into() };
 
-            let body = generate_access_token(&dpop, client_id, backend_nonce, htu, backend_kp, hash_alg);
+            let body = generate_access_token(&dpop, backend_nonce);
             let body = serde_json::to_vec(&body).unwrap().into();
             Response::builder().status(StatusCode::OK).body(body).unwrap()
         }
+        (&Method::GET, ["login"]) => handle_login(req).await?,
+        (&Method::GET, ["callback"]) => handle_callback(req).await?,
         _ => not_found(),
     })
 }
 
-fn generate_access_token(
-    dpop: &str,
-    client_id: ClientId,
-    nonce: BackendNonce,
-    htu: Htu,
-    backend_kp: Pem,
-    hash_alg: HashAlgorithm,
-) -> serde_json::Value {
+fn generate_access_token(dpop: &str, nonce: BackendNonce) -> serde_json::Value {
+    let client_id = ctx_get("client-id").unwrap();
+    let client_id: ClientId = client_id.as_str().try_into().unwrap();
+    let backend_kp: Pem = ctx_get("backend-kp").unwrap().into();
+    let hash_alg: HashAlgorithm = ctx_get("hash-alg").unwrap().parse().unwrap();
+    let htu: Htu = ctx_get("wire-server-uri").unwrap().as_str().try_into().unwrap();
+
     let leeway = 2;
     let max_expiry = 2082008461;
     let access_token = RustyJwtTools::generate_access_token(
         dpop,
-        client_id,
+        &client_id,
         nonce,
         htu,
         Htm::Post,
@@ -80,6 +76,6 @@ fn generate_access_token(
 fn not_found() -> Response<Body> {
     Response::builder()
         .status(StatusCode::NOT_FOUND)
-        .body("???".into())
+        .body("".into())
         .unwrap()
 }

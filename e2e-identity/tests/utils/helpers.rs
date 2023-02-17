@@ -1,11 +1,13 @@
+use crate::utils::TestResult;
+
 pub trait ClientHelper {
-    fn acme_req<T: serde::Serialize>(&self, url: &url::Url, body: &T) -> reqwest::Request;
+    fn acme_req<T: serde::Serialize>(&self, url: &url::Url, body: &T) -> TestResult<reqwest::Request>;
 }
 
 impl ClientHelper for reqwest::Client {
-    fn acme_req<T: serde::Serialize>(&self, url: &url::Url, body: &T) -> reqwest::Request {
-        let body = serde_json::to_vec(body).unwrap();
-        self.post(url.as_str()).body(body).content_type_jose().build().unwrap()
+    fn acme_req<T: serde::Serialize>(&self, url: &url::Url, body: &T) -> TestResult<reqwest::Request> {
+        let body = serde_json::to_vec(body)?;
+        Ok(self.post(url.as_str()).body(body).content_type_jose().build()?)
     }
 }
 
@@ -47,10 +49,6 @@ asserhttp::asserhttp_customize!(AcmeAsserter);
 pub trait AcmeAsserter<T>: asserhttp::Asserhttp<T> {
     fn has_replay_nonce(&mut self) -> &mut T {
         self.expect_header("replay-nonce", |n: &str| assert!(!n.is_empty()))
-    }
-
-    fn has_directory_link(&mut self, link: &str) -> &mut T {
-        self.expect_header("link", link)
     }
 
     fn has_location(&mut self) -> &mut T {
