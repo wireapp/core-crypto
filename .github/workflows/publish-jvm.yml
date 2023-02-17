@@ -20,7 +20,7 @@ jobs:
   build-linux-artifacts:
     if: github.repository == 'wireapp/core-crypto'
     name: Build Linux Artifacts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - name: "Setup rust"
