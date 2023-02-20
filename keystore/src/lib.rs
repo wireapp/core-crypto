@@ -37,8 +37,4 @@ cfg_if::cfg_if! {
     }
 }
 
-#[cfg(feature = "memory-cache")]
-#[allow(dead_code)]
-const LRU_CACHE_CAP: usize = 100;
-
 pub use connection::Connection;

@@ -35,10 +35,6 @@ use async_lock::{Mutex, MutexGuard};
 use async_trait::async_trait;
 use std::sync::Arc;
 
-#[cfg(feature = "memory-cache")]
-// SAFETY: Make sure the provided value is > 0 or we're going to have issues
-const LRU_CACHE_CAP: std::num::NonZeroUsize = unsafe { std::num::NonZeroUsize::new_unchecked(100) };
-
 /// Limit on the length of a blob to be stored in the database.
 /// This limit applies to both SQLCipher-backed stores and WASM.
 /// This limit is conservative on purpose when targeting WASM, as the lower bound that exists is Safari with a limit of 1GB per origin.
@@ -77,10 +73,6 @@ pub trait DatabaseConnection: Sized {
 #[derive(Debug)]
 pub struct Connection {
     pub(crate) conn: Arc<Mutex<KeystoreDatabaseConnection>>,
-    #[cfg(feature = "memory-cache")]
-    pub(crate) memory_cache: Mutex<lru::LruCache<Vec<u8>, Vec<u8>>>,
-    #[cfg(feature = "memory-cache")]
-    pub(crate) cache_enabled: std::sync::atomic::AtomicBool,
 }
 
 // * SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
@@ -94,13 +86,7 @@ impl Connection {
                 .await?
                 .into(),
         );
-        Ok(Self {
-            conn,
-            #[cfg(feature = "memory-cache")]
-            memory_cache: lru::LruCache::new(LRU_CACHE_CAP).into(),
-            #[cfg(feature = "memory-cache")]
-            cache_enabled: true.into(),
-        })
+        Ok(Self { conn })
     }
 
     pub async fn open_in_memory_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
@@ -109,13 +95,7 @@ impl Connection {
                 .await?
                 .into(),
         );
-        Ok(Self {
-            conn,
-            #[cfg(feature = "memory-cache")]
-            memory_cache: lru::LruCache::new(LRU_CACHE_CAP).into(),
-            #[cfg(feature = "memory-cache")]
-            cache_enabled: true.into(),
-        })
+        Ok(Self { conn })
     }
 
     pub async fn borrow_conn(&self) -> CryptoKeystoreResult<MutexGuard<'_, KeystoreDatabaseConnection>> {
@@ -135,17 +115,6 @@ impl Connection {
         &self,
         id: impl AsRef<[u8]>,
     ) -> CryptoKeystoreResult<Option<E>> {
-        // TODO: implement support for the memory cache
-        // if self.is_cache_enabled() {
-        //     if let Some(cached) = self
-        //         .memory_cache
-        //         .lock()
-        //         .map_err(|_| CryptoKeystoreError::LockPoisonError)?
-        //         .get(id.as_ref())
-        //     {
-        //         return cached;
-        //     }
-        // }
         let mut conn = self.conn.lock().await;
         E::find_one(&mut conn, &id.as_ref().into()).await
     }
@@ -192,22 +161,5 @@ impl Connection {
         let conn: KeystoreDatabaseConnection = Arc::try_unwrap(self.conn).unwrap().into_inner();
         conn.close().await?;
         Ok(())
-    }
-
-    #[cfg(feature = "memory-cache")]
-    #[inline]
-    pub fn cache(&self, enabled: bool) {
-        self.cache_enabled.store(enabled, std::sync::atomic::Ordering::SeqCst);
-    }
-
-    #[cfg(feature = "memory-cache")]
-    #[inline]
-    pub fn is_cache_enabled(&self) -> bool {
-        self.cache_enabled.load(std::sync::atomic::Ordering::Relaxed)
-    }
-
-    #[inline]
-    pub fn is_cache_supported(&self) -> bool {
-        cfg!(feature = "memory-cache")
     }
 }
