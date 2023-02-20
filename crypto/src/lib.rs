@@ -48,6 +48,8 @@ pub mod e2e_identity;
 /// Proteus Abstraction
 pub mod proteus;
 
+mod group_store;
+
 /// Common imports that should be useful for most uses of the crate
 pub mod prelude {
     pub use openmls::group::{MlsGroup, MlsGroupConfig};

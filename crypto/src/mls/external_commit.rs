@@ -240,19 +240,19 @@ mod tests {
                     assert_eq!(group_id.as_slice(), &id);
 
                     // Alice acks the request and adds the new member
-                    assert_eq!(alice_central[&id].members().len(), 1);
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                     alice_central
                         .decrypt_message(&id, &external_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    assert_eq!(alice_central[&id].members().len(), 2);
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     // Let's say backend accepted our external commit.
                     // So Bob can merge the commit and update the local state
-                    assert!(bob_central.get_conversation(&id).is_err());
+                    assert!(bob_central.get_conversation(&id).await.is_err());
                     bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
-                    assert!(bob_central.get_conversation(&id).is_ok());
-                    assert_eq!(bob_central[&id].members().len(), 2);
+                    assert!(bob_central.get_conversation(&id).await.is_ok());
+                    assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
 
                     // Pending group removed from keystore
@@ -308,17 +308,17 @@ mod tests {
                     assert_eq!(conversation_id.as_slice(), &id);
 
                     // Alice decrypts the external commit and adds Bob
-                    assert_eq!(alice_central[&id].members().len(), 1);
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                     alice_central
                         .decrypt_message(&id, &external_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    assert_eq!(alice_central[&id].members().len(), 2);
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     // And Bob can merge its external commit
                     bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
-                    assert!(bob_central.get_conversation(&id).is_ok());
-                    assert_eq!(bob_central[&id].members().len(), 2);
+                    assert!(bob_central.get_conversation(&id).await.is_ok());
+                    assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
                 })
             },
@@ -452,12 +452,12 @@ mod tests {
                         .decrypt_message(&id, &bob_external_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    assert_eq!(alice_central[&id].members().len(), 2);
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     // Bob merges the commit, he's also in !
                     bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
-                    assert!(bob_central.get_conversation(&id).is_ok());
-                    assert_eq!(bob_central[&id].members().len(), 2);
+                    assert!(bob_central.get_conversation(&id).await.is_ok());
+                    assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
 
                     // Now charlie wants to join with the [PublicGroupState] from Bob's external commit
@@ -479,16 +479,16 @@ mod tests {
                         .decrypt_message(&id, charlie_external_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    assert_eq!(alice_central[&id].members().len(), 3);
-                    assert_eq!(bob_central[&id].members().len(), 3);
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
+                    assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
                     // Charlie merges the commit, he's also in !
                     charlie_central
                         .merge_pending_group_from_external_commit(&id)
                         .await
                         .unwrap();
-                    assert!(charlie_central.get_conversation(&id).is_ok());
-                    assert_eq!(charlie_central[&id].members().len(), 3);
+                    assert!(charlie_central.get_conversation(&id).await.is_ok());
+                    assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
                     assert!(charlie_central.talk_to(&id, &mut alice_central).await.is_ok());
                     assert!(charlie_central.talk_to(&id, &mut bob_central).await.is_ok());
                 })

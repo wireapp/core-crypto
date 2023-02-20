@@ -189,17 +189,24 @@ impl MlsCentral {
         conversation_id: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
-        let decrypt_message = Self::get_conversation_mut(&mut self.mls_groups, conversation_id)?
+        let decrypt_message = self
+            .get_conversation(conversation_id)
+            .await?
+            .write()
+            .await
             .decrypt_message(
                 message.as_ref(),
                 &self.mls_backend,
                 self.callbacks.as_ref().map(|boxed| boxed.as_ref()),
             )
             .await?;
+
         if !decrypt_message.is_active {
-            self.mls_groups
-                .remove(conversation_id)
-                .ok_or(CryptoError::ImplementationError)?;
+            // ? Do we wipe conversations or do we just prune the group from the cache - subsequent accesses will make it look like the group doesn't exist
+            self.wipe_conversation(conversation_id).await?;
+            // self.mls_groups
+            //     .remove(conversation_id)
+            //     .ok_or(CryptoError::ImplementationError)?;
         }
         Ok(decrypt_message)
     }
@@ -314,7 +321,7 @@ pub mod tests {
                             .add_members_to_conversation(&id, &mut [charlie.clone()])
                             .await
                             .unwrap();
-                        assert!(alice_central.pending_commit(&id).is_some());
+                        assert!(alice_central.pending_commit(&id).await.is_some());
 
                         let add_debbie_commit = bob_central
                             .add_members_to_conversation(&id, &mut [debbie.clone()])
@@ -326,10 +333,20 @@ pub mod tests {
                             .await
                             .unwrap();
                         // Now Debbie should be in members and not Charlie
-                        assert!(alice_central[&id].members().get(&debbie.id).is_some());
-                        assert!(alice_central[&id].members().get(&charlie.id).is_none());
+                        assert!(alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .get(&debbie.id)
+                            .is_some());
+                        assert!(alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .get(&charlie.id)
+                            .is_none());
                         // Previous commit to add Charlie has been discarded but its proposals will be renewed
-                        assert!(alice_central.pending_commit(&id).is_none());
+                        assert!(alice_central.pending_commit(&id).await.is_none());
                         assert!(decrypted.has_epoch_changed)
                     })
                 },
@@ -369,7 +386,7 @@ pub mod tests {
                             .add_members_to_conversation(&id, &mut [charlie.clone()])
                             .await
                             .unwrap();
-                        assert!(alice_central.pending_commit(&id).is_some());
+                        assert!(alice_central.pending_commit(&id).await.is_some());
 
                         // But first she receives Bob commit
                         let MlsConversationDecryptMessage { proposals, delay, .. } = alice_central
@@ -377,14 +394,19 @@ pub mod tests {
                             .await
                             .unwrap();
                         // So Charlie has not been added to the group
-                        assert!(alice_central[&id].members().get(&charlie.id).is_none());
+                        assert!(alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .get(&charlie.id)
+                            .is_none());
                         // Make sure we are suggesting a commit delay
                         assert!(delay.is_some());
 
                         // But its proposal to add Charlie has been renewed and is also in store
                         assert!(!proposals.is_empty());
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
-                        assert!(alice_central.pending_commit(&id).is_none());
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert!(alice_central.pending_commit(&id).await.is_none());
                         assert_eq!(
                             commit_epoch.as_u64() + 1,
                             proposals.first().unwrap().proposal.epoch().as_u64()
@@ -403,14 +425,24 @@ pub mod tests {
                             alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
                         // Charlie is now in the group
-                        assert!(alice_central[&id].members().get(&charlie.id).is_some());
+                        assert!(alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .get(&charlie.id)
+                            .is_some());
 
                         let decrypted = bob_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         // Bob also has Charlie in the group
-                        assert!(bob_central[&id].members().get(&charlie.id).is_some());
+                        assert!(bob_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .get(&charlie.id)
+                            .is_some());
                         assert!(decrypted.has_epoch_changed);
 
                         // Charlie can join with the Welcome from renewed Add proposal
@@ -470,7 +502,7 @@ pub mod tests {
                             .unwrap();
                         assert!(proposals.is_empty());
                         assert!(delay.is_none());
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         assert!(has_epoch_changed)
                     })
                 },
@@ -510,7 +542,7 @@ pub mod tests {
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // But first she receives Bob commit
                         let MlsConversationDecryptMessage { proposals, delay, .. } = alice_central
@@ -518,13 +550,18 @@ pub mod tests {
                             .await
                             .unwrap();
                         // So Charlie has not been added to the group
-                        assert!(alice_central[&id].members().get(&b"charlie".to_vec()).is_none());
+                        assert!(alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .get(&b"charlie".to_vec())
+                            .is_none());
                         // Make sure we are suggesting a commit delay
                         assert!(delay.is_some());
 
                         // But its proposal to add Charlie has been renewed and is also in store
                         assert!(!proposals.is_empty());
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         let renewed_proposal = proposals.first().unwrap();
                         assert_eq!(commit_epoch.as_u64() + 1, renewed_proposal.proposal.epoch().as_u64());
 
@@ -533,7 +570,7 @@ pub mod tests {
                             .decrypt_message(&id, renewed_proposal.proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(bob_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(bob_central.pending_proposals(&id).await.len(), 1);
                         let MlsCommitBundle { commit, .. } =
                             bob_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         let decrypted = alice_central
@@ -541,11 +578,21 @@ pub mod tests {
                             .await
                             .unwrap();
                         // Charlie is now in the group
-                        assert!(alice_central[&id].members().get(&b"charlie".to_vec()).is_some());
+                        assert!(alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .get(&b"charlie".to_vec())
+                            .is_some());
 
                         // Bob also has Charlie in the group
                         bob_central.commit_accepted(&id).await.unwrap();
-                        assert!(bob_central[&id].members().get(&b"charlie".to_vec()).is_some());
+                        assert!(bob_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .get(&b"charlie".to_vec())
+                            .is_some());
                         assert!(decrypted.has_epoch_changed);
                     })
                 },
@@ -576,15 +623,18 @@ pub mod tests {
                         // will create a commit and send it to Alice.
                         // Alice will not renew the external proposal
                         let ext_proposal = charlie_central
-                            .new_external_add_proposal(id.clone(), alice_central[&id].group.epoch())
+                            .new_external_add_proposal(
+                                id.clone(),
+                                alice_central.get_conversation_unchecked(&id).await.group.epoch(),
+                            )
                             .await
                             .unwrap();
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .decrypt_message(&id, ext_proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         let MlsCommitBundle { commit, .. } = bob_central.update_keying_material(&id).await.unwrap();
                         let alice_renewed_proposals = alice_central
@@ -593,7 +643,7 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         assert!(alice_renewed_proposals.is_empty());
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                     })
                 },
             )
@@ -656,7 +706,7 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let epoch = alice_central[&id].group.epoch();
+                        let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let ext_proposal = alice2_central
                             .new_external_add_proposal(id.clone(), epoch)
                             .await
@@ -701,7 +751,7 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let epoch = alice_central[&id].group.epoch();
+                        let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let message = alice2_central
                             .new_external_add_proposal(id.clone(), epoch)
                             .await
@@ -751,7 +801,7 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let epoch = alice_central[&id].group.epoch();
+                        let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let external_proposal = alice2_central
                             .new_external_add_proposal(id.clone(), epoch)
                             .await
@@ -812,11 +862,11 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        assert_eq!(bob_central[&id].members().len(), 2);
+                        assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         // if 'decrypt_message' is not durable the commit won't contain the add proposal
                         bob_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         bob_central.commit_accepted(&id).await.unwrap();
-                        assert_eq!(bob_central[&id].members().len(), 3);
+                        assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
                         assert!(!decrypted.has_epoch_changed)
                     })
                 },
@@ -1166,7 +1216,11 @@ pub mod tests {
                             .proposal
                             .to_bytes()
                             .unwrap();
-                        alice_central[&id].group.clear_pending_proposals();
+                        alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .clear_pending_proposals();
                         let old_commit = alice_central
                             .update_keying_material(&id)
                             .await
@@ -1252,7 +1306,11 @@ pub mod tests {
                             .proposal
                             .to_bytes()
                             .unwrap();
-                        bob_central[&id].group.clear_pending_proposals();
+                        bob_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .clear_pending_proposals();
                         let expired_commit = bob_central
                             .update_keying_material(&id)
                             .await

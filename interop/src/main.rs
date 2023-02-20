@@ -285,7 +285,8 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
             "[Proteus] Step 2: Session master -> {fingerprint}@{}",
             client_type_mapping[&fingerprint]
         ));
-        let session = master_client.proteus_session_from_prekey(&fingerprint, &prekey).await?;
+        let session_arc = master_client.proteus_session_from_prekey(&fingerprint, &prekey).await?;
+        let mut session = session_arc.write().await;
         messages.insert(fingerprint, session.encrypt(PROTEUS_INITIAL_MESSAGE)?);
         master_sessions.push(session.identifier().to_string());
     }

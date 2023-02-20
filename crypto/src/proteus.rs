@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{CoreCrypto, CryptoError, CryptoResult, ProteusError};
+use crate::{
+    group_store::{GroupStore, GroupStoreValue},
+    CoreCrypto, CryptoError, CryptoResult, ProteusError,
+};
 use core_crypto_keystore::{
     entities::{ProteusIdentity, ProteusSession},
     Connection as CryptoKeystore,
@@ -32,8 +35,8 @@ pub type SessionIdentifier = String;
 /// Proteus Session wrapper, that contains the identifier and the associated proteus Session
 #[derive(Debug)]
 pub struct ProteusConversationSession {
-    identifier: SessionIdentifier,
-    session: Session<Arc<IdentityKeyPair>>,
+    pub(crate) identifier: SessionIdentifier,
+    pub(crate) session: Session<Arc<IdentityKeyPair>>,
 }
 
 impl ProteusConversationSession {
@@ -97,10 +100,11 @@ impl CoreCrypto {
         &mut self,
         session_id: &str,
         prekey: &[u8],
-    ) -> CryptoResult<&mut ProteusConversationSession> {
+    ) -> CryptoResult<GroupStoreValue<ProteusConversationSession>> {
         let proteus = self.proteus.as_mut().ok_or(CryptoError::ProteusNotInitialized)?;
         let session = proteus.session_from_prekey(session_id, prekey).await?;
-        ProteusCentral::session_save_by_ref(self.mls.mls_backend.borrow_keystore_mut(), session).await?;
+        let keystore = self.mls.mls_backend.borrow_keystore_mut();
+        ProteusCentral::session_save_by_ref(keystore, session.clone()).await?;
 
         Ok(session)
     }
@@ -112,11 +116,11 @@ impl CoreCrypto {
         &mut self,
         session_id: &str,
         envelope: &[u8],
-    ) -> CryptoResult<(&mut ProteusConversationSession, Vec<u8>)> {
+    ) -> CryptoResult<(GroupStoreValue<ProteusConversationSession>, Vec<u8>)> {
         let proteus = self.proteus.as_mut().ok_or(CryptoError::ProteusNotInitialized)?;
         let keystore = self.mls.mls_backend.borrow_keystore_mut();
         let (session, message) = proteus.session_from_message(keystore, session_id, envelope).await?;
-        ProteusCentral::session_save_by_ref(keystore, session).await?;
+        ProteusCentral::session_save_by_ref(keystore, session.clone()).await?;
 
         Ok((session, message))
     }
@@ -124,9 +128,9 @@ impl CoreCrypto {
     /// Saves a proteus session in the keystore
     ///
     /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
-    pub async fn proteus_session_save(&self, session_id: &str) -> CryptoResult<()> {
-        let proteus = self.proteus.as_ref().ok_or(CryptoError::ProteusNotInitialized)?;
-        let keystore = self.mls.mls_backend.borrow_keystore();
+    pub async fn proteus_session_save(&mut self, session_id: &str) -> CryptoResult<()> {
+        let proteus = self.proteus.as_mut().ok_or(CryptoError::ProteusNotInitialized)?;
+        let keystore = self.mls.mls_backend.borrow_keystore_mut();
         proteus.session_save(keystore, session_id).await
     }
 
@@ -142,17 +146,22 @@ impl CoreCrypto {
     /// Proteus session accessor
     ///
     /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
-    pub fn proteus_session(&mut self, session_id: &str) -> CryptoResult<Option<&mut ProteusConversationSession>> {
+    pub async fn proteus_session(
+        &mut self,
+        session_id: &str,
+    ) -> CryptoResult<Option<GroupStoreValue<ProteusConversationSession>>> {
         let proteus = self.proteus.as_mut().ok_or(CryptoError::ProteusNotInitialized)?;
-        Ok(proteus.session_mut(session_id))
+        let keystore = self.mls.mls_backend.borrow_keystore_mut();
+        proteus.session(session_id, keystore).await
     }
 
     /// Proteus session exists
     ///
     /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
-    pub fn proteus_session_exists(&self, session_id: &str) -> CryptoResult<bool> {
-        let proteus = self.proteus.as_ref().ok_or(CryptoError::ProteusNotInitialized)?;
-        Ok(proteus.session_exists(session_id))
+    pub async fn proteus_session_exists(&mut self, session_id: &str) -> CryptoResult<bool> {
+        let proteus = self.proteus.as_mut().ok_or(CryptoError::ProteusNotInitialized)?;
+        let keystore = self.mls.mls_backend.borrow_keystore_mut();
+        Ok(proteus.session_exists(session_id, keystore).await)
     }
 
     /// Decrypts a proteus message envelope
@@ -237,9 +246,10 @@ impl CoreCrypto {
     /// Returns the proteus identity's public key fingerprint
     ///
     /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
-    pub fn proteus_fingerprint_local(&self, session_id: &str) -> CryptoResult<String> {
-        if let Some(proteus) = &self.proteus {
-            proteus.fingerprint_local(session_id)
+    pub async fn proteus_fingerprint_local(&mut self, session_id: &str) -> CryptoResult<String> {
+        if let Some(proteus) = &mut self.proteus {
+            let keystore = self.mls.mls_backend.borrow_keystore_mut();
+            proteus.fingerprint_local(session_id, keystore).await
         } else {
             Err(CryptoError::ProteusNotInitialized)
         }
@@ -248,9 +258,10 @@ impl CoreCrypto {
     /// Returns the proteus identity's public key fingerprint
     ///
     /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
-    pub fn proteus_fingerprint_remote(&self, session_id: &str) -> CryptoResult<String> {
-        if let Some(proteus) = &self.proteus {
-            proteus.fingerprint_remote(session_id)
+    pub async fn proteus_fingerprint_remote(&mut self, session_id: &str) -> CryptoResult<String> {
+        if let Some(proteus) = &mut self.proteus {
+            let keystore = self.mls.mls_backend.borrow_keystore_mut();
+            proteus.fingerprint_remote(session_id, keystore).await
         } else {
             Err(CryptoError::ProteusNotInitialized)
         }
@@ -271,7 +282,7 @@ impl CoreCrypto {
 #[derive(Debug)]
 pub struct ProteusCentral {
     proteus_identity: Arc<IdentityKeyPair>,
-    proteus_sessions: HashMap<SessionIdentifier, ProteusConversationSession>,
+    proteus_sessions: GroupStore<ProteusConversationSession>,
 }
 
 impl ProteusCentral {
@@ -322,8 +333,8 @@ impl ProteusCentral {
     async fn restore_sessions(
         keystore: &core_crypto_keystore::Connection,
         identity: &Arc<IdentityKeyPair>,
-    ) -> CryptoResult<HashMap<SessionIdentifier, ProteusConversationSession>> {
-        let mut proteus_sessions = HashMap::new();
+    ) -> CryptoResult<GroupStore<ProteusConversationSession>> {
+        let mut proteus_sessions = GroupStore::new_with_limit(crate::group_store::ITEM_LIMIT * 2);
         for session in keystore
             .find_all::<ProteusSession>(Default::default())
             .await?
@@ -339,7 +350,12 @@ impl ProteusCentral {
                 session: proteus_session,
             };
 
-            proteus_sessions.insert(identifier, proteus_conversation);
+            if proteus_sessions
+                .try_insert(identifier.into_bytes(), proteus_conversation)
+                .is_err()
+            {
+                break;
+            }
         }
 
         Ok(proteus_sessions)
@@ -350,7 +366,7 @@ impl ProteusCentral {
         &mut self,
         session_id: &str,
         key: &[u8],
-    ) -> CryptoResult<&mut ProteusConversationSession> {
+    ) -> CryptoResult<GroupStoreValue<ProteusConversationSession>> {
         let prekey = PreKeyBundle::deserialise(key).map_err(ProteusError::from)?;
         let proteus_session =
             Session::init_from_prekey(self.proteus_identity.clone(), prekey).map_err(ProteusError::from)?;
@@ -362,7 +378,7 @@ impl ProteusCentral {
 
         self.proteus_sessions.insert(session_id.into(), proteus_conversation);
 
-        Ok(self.proteus_sessions.get_mut(session_id).unwrap())
+        Ok(self.proteus_sessions.get(session_id.as_bytes()).unwrap().clone())
     }
 
     /// Creates a new proteus Session from a received message
@@ -371,7 +387,7 @@ impl ProteusCentral {
         keystore: &mut CryptoKeystore,
         session_id: &str,
         envelope: &[u8],
-    ) -> CryptoResult<(&mut ProteusConversationSession, Vec<u8>)> {
+    ) -> CryptoResult<(GroupStoreValue<ProteusConversationSession>, Vec<u8>)> {
         let message = Envelope::deserialise(envelope).map_err(ProteusError::from)?;
         let (session, payload) = Session::init_from_message(self.proteus_identity.clone(), keystore, &message)
             .await
@@ -384,21 +400,32 @@ impl ProteusCentral {
 
         self.proteus_sessions.insert(session_id.into(), proteus_conversation);
 
-        Ok((self.proteus_sessions.get_mut(session_id).unwrap(), payload))
+        Ok((
+            self.proteus_sessions.get(session_id.as_bytes()).unwrap().clone(),
+            payload,
+        ))
     }
 
     /// Persists a session in store
     ///
     /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
-    pub async fn session_save(&self, keystore: &CryptoKeystore, session_id: &str) -> CryptoResult<()> {
-        if let Some(session) = self.proteus_sessions.get(session_id) {
+    pub async fn session_save(&mut self, keystore: &mut CryptoKeystore, session_id: &str) -> CryptoResult<()> {
+        if let Some(session) = self
+            .proteus_sessions
+            .get_fetch(session_id.as_bytes(), keystore, Some(self.proteus_identity.clone()))
+            .await?
+        {
             Self::session_save_by_ref(keystore, session).await?;
         }
 
         Ok(())
     }
 
-    async fn session_save_by_ref(keystore: &CryptoKeystore, session: &ProteusConversationSession) -> CryptoResult<()> {
+    async fn session_save_by_ref(
+        keystore: &CryptoKeystore,
+        session: GroupStoreValue<ProteusConversationSession>,
+    ) -> CryptoResult<()> {
+        let session = session.read().await;
         let db_session = ProteusSession {
             id: session.identifier().to_string(),
             session: session.session.serialise().map_err(ProteusError::from)?,
@@ -410,24 +437,25 @@ impl ProteusCentral {
     /// Deletes a session in the store
     pub async fn session_delete(&mut self, keystore: &CryptoKeystore, session_id: &str) -> CryptoResult<()> {
         if keystore.remove::<ProteusSession, _>(session_id).await.is_ok() {
-            let _ = self.proteus_sessions.remove(session_id);
+            let _ = self.proteus_sessions.remove(session_id.as_bytes());
         }
         Ok(())
     }
 
-    /// Session mut accessor
-    pub fn session_mut(&mut self, session_id: &str) -> Option<&mut ProteusConversationSession> {
-        self.proteus_sessions.get_mut(session_id)
-    }
-
     /// Session accessor
-    pub fn session(&self, session_id: &str) -> Option<&ProteusConversationSession> {
-        self.proteus_sessions.get(session_id)
+    pub async fn session(
+        &mut self,
+        session_id: &str,
+        keystore: &mut CryptoKeystore,
+    ) -> CryptoResult<Option<GroupStoreValue<ProteusConversationSession>>> {
+        self.proteus_sessions
+            .get_fetch(session_id.as_bytes(), keystore, Some(self.proteus_identity.clone()))
+            .await
     }
 
     /// Session exists
-    pub fn session_exists(&self, session_id: &str) -> bool {
-        self.proteus_sessions.contains_key(session_id)
+    pub async fn session_exists(&mut self, session_id: &str, keystore: &mut CryptoKeystore) -> bool {
+        self.session(session_id, keystore).await.ok().flatten().is_some()
     }
 
     /// Decrypt a proteus message for an already existing session
@@ -438,8 +466,12 @@ impl ProteusCentral {
         session_id: &str,
         ciphertext: &[u8],
     ) -> CryptoResult<Vec<u8>> {
-        if let Some(session) = self.proteus_sessions.get_mut(session_id) {
-            let plaintext = session.decrypt(keystore, ciphertext).await?;
+        if let Some(session) = self
+            .proteus_sessions
+            .get_fetch(session_id.as_bytes(), keystore, Some(self.proteus_identity.clone()))
+            .await?
+        {
+            let plaintext = session.write().await.decrypt(keystore, ciphertext).await?;
             ProteusCentral::session_save_by_ref(keystore, session).await?;
 
             Ok(plaintext)
@@ -455,8 +487,8 @@ impl ProteusCentral {
         session_id: &str,
         plaintext: &[u8],
     ) -> CryptoResult<Vec<u8>> {
-        if let Some(session) = self.session_mut(session_id) {
-            let ciphertext = session.encrypt(plaintext)?;
+        if let Some(session) = self.session(session_id, keystore).await? {
+            let ciphertext = session.write().await.encrypt(plaintext)?;
             ProteusCentral::session_save_by_ref(keystore, session).await?;
 
             Ok(ciphertext)
@@ -475,8 +507,11 @@ impl ProteusCentral {
     ) -> CryptoResult<HashMap<String, Vec<u8>>> {
         let mut acc = HashMap::new();
         for session_id in sessions {
-            if let Some(session) = self.session_mut(session_id.as_ref()) {
-                acc.insert(session.identifier.clone(), session.encrypt(plaintext)?);
+            if let Some(session) = self.session(session_id.as_ref(), keystore).await? {
+                let mut session_w = session.write().await;
+                acc.insert(session_w.identifier.clone(), session_w.encrypt(plaintext)?);
+                drop(session_w);
+
                 ProteusCentral::session_save_by_ref(keystore, session).await?;
             }
         }
@@ -554,9 +589,9 @@ impl ProteusCentral {
     ///
     /// # Errors
     /// When the session is not found
-    pub fn fingerprint_local(&self, session_id: &str) -> CryptoResult<String> {
-        if let Some(session) = self.session(session_id) {
-            Ok(session.fingerprint_local())
+    pub async fn fingerprint_local(&mut self, session_id: &str, keystore: &mut CryptoKeystore) -> CryptoResult<String> {
+        if let Some(session) = self.session(session_id, keystore).await? {
+            Ok(session.read().await.fingerprint_local())
         } else {
             Err(CryptoError::ConversationNotFound(session_id.as_bytes().into()))
         }
@@ -566,9 +601,13 @@ impl ProteusCentral {
     ///
     /// # Errors
     /// When the session is not found
-    pub fn fingerprint_remote(&self, session_id: &str) -> CryptoResult<String> {
-        if let Some(session) = self.session(session_id) {
-            Ok(session.fingerprint_remote())
+    pub async fn fingerprint_remote(
+        &mut self,
+        session_id: &str,
+        keystore: &mut CryptoKeystore,
+    ) -> CryptoResult<String> {
+        if let Some(session) = self.session(session_id, keystore).await? {
+            Ok(session.read().await.fingerprint_remote())
         } else {
             Err(CryptoError::ConversationNotFound(session_id.as_bytes().into()))
         }
@@ -1087,7 +1126,12 @@ mod tests {
         assert_eq!(proteus_central.fingerprint(), alice_fingerprint);
 
         // Session integrity check
-        let alice_new_session = proteus_central.session_mut(&session_id).unwrap();
+        let alice_new_session_lock = proteus_central
+            .session(&session_id, &mut keystore)
+            .await
+            .unwrap()
+            .unwrap();
+        let alice_new_session = alice_new_session_lock.read().await;
         assert_eq!(
             alice_new_session.session.local_identity().fingerprint(),
             alice_session.fingerprint_local()
@@ -1096,6 +1140,9 @@ mod tests {
             alice_new_session.session.remote_identity().fingerprint(),
             alice_session.fingerprint_remote()
         );
+
+        drop(alice_new_session);
+        drop(alice_new_session_lock);
 
         // Prekey integrity check
         let keystore_pk = keystore.prekey(1).await.unwrap().unwrap();
@@ -1126,7 +1173,7 @@ mod tests {
             .unwrap();
         assert_eq!(&decrypted, &message[..]);
 
-        proteus_central.session_save(&keystore, &session_id).await.unwrap();
+        proteus_central.session_save(&mut keystore, &session_id).await.unwrap();
 
         keystore.wipe().await.unwrap();
     }
@@ -1264,15 +1311,23 @@ mod tests {
                 assert_eq!(proteus_central.fingerprint(), alice_fingerprint);
 
                 // Session integrity check
-                let session = proteus_central.session_mut(&session_id).unwrap();
+                let alice_new_session_lock = proteus_central
+                    .session(&session_id, &mut keystore)
+                    .await
+                    .unwrap()
+                    .unwrap();
+                let alice_new_session = alice_new_session_lock.read().await;
                 assert_eq!(
-                    session.session.local_identity().fingerprint(),
+                    alice_new_session.session.local_identity().fingerprint(),
                     alice_session_fingerprint_local
                 );
                 assert_eq!(
-                    session.session.remote_identity().fingerprint(),
+                    alice_new_session.session.remote_identity().fingerprint(),
                     alice_session_fingerprint_remote
                 );
+
+                drop(alice_new_session);
+                drop(alice_new_session_lock);
 
                 // Prekey integrity check
                 for i in prekey_iter_range {

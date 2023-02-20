@@ -131,22 +131,21 @@ impl MlsConversation {
 
     /// Internal API: create a group from an existing conversation. For example by external commit
     pub(crate) async fn from_mls_group(
-        mut group: MlsGroup,
+        group: MlsGroup,
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
         let id = ConversationId::from(group.group_id().as_slice());
 
-        let mut buf = vec![];
-        group.save(&mut buf)?;
-        use core_crypto_keystore::CryptoKeystoreMls as _;
-        backend.key_store().mls_group_persist(&id, &buf).await?;
-
-        Ok(Self {
+        let mut conversation = Self {
             id,
             group,
             configuration,
-        })
+        };
+
+        conversation.persist_group_when_changed(backend, true).await?;
+
+        Ok(conversation)
     }
 
     /// Internal API: restore the conversation from a persistence-saved serialized Group State.
@@ -199,18 +198,14 @@ impl MlsConversation {
 }
 
 impl MlsCentral {
-    pub(crate) fn get_conversation(&self, id: &ConversationId) -> CryptoResult<&MlsConversation> {
-        self.mls_groups
-            .get(id)
-            .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))
-    }
-
-    pub(crate) fn get_conversation_mut<'a>(
-        groups: &'a mut HashMap<ConversationId, MlsConversation>,
+    pub(crate) async fn get_conversation(
+        &mut self,
         id: &ConversationId,
-    ) -> CryptoResult<&'a mut MlsConversation> {
-        groups
-            .get_mut(id)
+    ) -> CryptoResult<crate::group_store::GroupStoreValue<MlsConversation>> {
+        let keystore = self.mls_backend.borrow_keystore_mut();
+        self.mls_groups
+            .get_fetch(id, keystore, None)
+            .await?
             .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))
     }
 
@@ -219,11 +214,11 @@ impl MlsCentral {
     /// # Errors
     /// KeyStore errors, such as IO
     pub async fn wipe_conversation(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
-        if !self.conversation_exists(conversation_id) {
+        if !self.conversation_exists(conversation_id).await {
             return Err(CryptoError::ConversationNotFound(conversation_id.clone()));
         }
         self.mls_backend.key_store().mls_group_delete(conversation_id).await?;
-        self.mls_groups.remove(conversation_id);
+        let _ = self.mls_groups.remove(conversation_id);
         Ok(())
     }
 }
@@ -254,9 +249,17 @@ pub mod tests {
                     .new_conversation(id.clone(), case.cfg.clone())
                     .await
                     .unwrap();
-                assert_eq!(alice_central[&id].id, id);
-                assert_eq!(alice_central[&id].group.group_id().as_slice(), id);
-                assert_eq!(alice_central[&id].members().len(), 1);
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
+                assert_eq!(
+                    alice_central
+                        .get_conversation_unchecked(&id)
+                        .await
+                        .group
+                        .group_id()
+                        .as_slice(),
+                    id
+                );
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                 let alice_can_send_message = alice_central.encrypt_message(&id, b"me").await;
                 assert!(alice_can_send_message.is_ok());
             })
@@ -284,19 +287,30 @@ pub mod tests {
                         .await
                         .unwrap();
                     // before merging, commit is not applied
-                    assert_eq!(alice_central[&id].members().len(), 1);
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                     alice_central.commit_accepted(&id).await.unwrap();
 
-                    assert_eq!(alice_central[&id].id, id);
-                    assert_eq!(alice_central[&id].group.group_id().as_slice(), id);
-                    assert_eq!(alice_central[&id].members().len(), 2);
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
+                    assert_eq!(
+                        alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .group_id()
+                            .as_slice(),
+                        id
+                    );
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     bob_central
                         .process_welcome_message(welcome, case.custom_cfg())
                         .await
                         .unwrap();
 
-                    assert_eq!(bob_central[&id].id(), alice_central[&id].id());
+                    assert_eq!(
+                        bob_central.get_conversation_unchecked(&id).await.id(),
+                        alice_central.get_conversation_unchecked(&id).await.id()
+                    );
                     assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
                 })
             },
@@ -342,12 +356,23 @@ pub mod tests {
                     .await
                     .unwrap();
                 // before merging, commit is not applied
-                assert_eq!(alice_central[&id].members().len(), 1);
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                 alice_central.commit_accepted(&id).await.unwrap();
 
-                assert_eq!(alice_central[&id].id, id);
-                assert_eq!(alice_central[&id].group.group_id().as_slice(), id);
-                assert_eq!(alice_central[&id].members().len(), 1 + number_of_friends);
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
+                assert_eq!(
+                    alice_central
+                        .get_conversation_unchecked(&id)
+                        .await
+                        .group
+                        .group_id()
+                        .as_slice(),
+                    id
+                );
+                assert_eq!(
+                    alice_central.get_conversation_unchecked(&id).await.members().len(),
+                    1 + number_of_friends
+                );
 
                 let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
                 // TODO: Do things in parallel, this is waaaaay too slow (takes around 5 minutes)
@@ -427,10 +452,10 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     central.new_conversation(id.clone(), case.cfg.clone()).await.unwrap();
-                    assert!(central[&id].group.is_active());
+                    assert!(central.get_conversation_unchecked(&id).await.group.is_active());
 
                     central.wipe_conversation(&id).await.unwrap();
-                    assert!(!central.conversation_exists(&id));
+                    assert!(!central.conversation_exists(&id).await);
                 })
             })
             .await;

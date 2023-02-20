@@ -52,7 +52,10 @@ impl MlsCentral {
         conversation: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<Vec<u8>> {
-        Self::get_conversation_mut(&mut self.mls_groups, conversation)?
+        self.get_conversation(conversation)
+            .await?
+            .write()
+            .await
             .encrypt_message(message, &self.mls_backend)
             .await
     }

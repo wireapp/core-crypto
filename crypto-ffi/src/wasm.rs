@@ -1048,9 +1048,10 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 WasmCryptoResult::Ok(
-                    this.read()
+                    this.write()
                         .await
                         .conversation_epoch(&conversation_id.into())
+                        .await
                         .map_err(CoreCryptoError::from)?
                         .into(),
                 )
@@ -1066,11 +1067,13 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                WasmCryptoResult::Ok(if this.read().await.conversation_exists(&conversation_id.into()) {
-                    JsValue::TRUE
-                } else {
-                    JsValue::FALSE
-                })
+                WasmCryptoResult::Ok(
+                    if this.write().await.conversation_exists(&conversation_id.into()).await {
+                        JsValue::TRUE
+                    } else {
+                        JsValue::FALSE
+                    },
+                )
             }
             .err_into(),
         )
@@ -1399,7 +1402,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let state = this
-                    .read()
+                    .write()
                     .await
                     .export_public_group_state(&conversation_id.to_vec())
                     .await
@@ -1673,7 +1676,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    let exists = this.write().await.proteus_session_exists(&session_id).map_err(CoreCryptoError::from)?;
+                    let exists = this.write().await.proteus_session_exists(&session_id).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::from_bool(exists))
                 } or throw WasmCryptoResult<_> }
             }
@@ -1822,8 +1825,13 @@ impl CoreCrypto {
         let errcode_dest = self.proteus_last_error_code.clone();
 
         proteus_impl! { errcode_dest => {
-            self.inner.read().await.proteus_fingerprint_local(&session_id)
-                .map_err(CoreCryptoError::from).map(Into::into)
+            self.inner
+                .write()
+                .await
+                .proteus_fingerprint_local(&session_id)
+                .await
+                .map_err(CoreCryptoError::from)
+                .map(Into::into)
         } or throw WasmCryptoResult<_> }
     }
 
@@ -1835,7 +1843,7 @@ impl CoreCrypto {
         let errcode_dest = self.proteus_last_error_code.clone();
 
         proteus_impl! { errcode_dest => {
-            self.inner.read().await.proteus_fingerprint_remote(&session_id)
+            self.inner.write().await.proteus_fingerprint_remote(&session_id).await
                 .map_err(CoreCryptoError::from).map(Into::into)
         } or throw WasmCryptoResult<_> }
     }
@@ -1895,9 +1903,10 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let key = this
-                    .read()
+                    .write()
                     .await
                     .export_secret_key(&conversation_id.to_vec(), key_length)
+                    .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(key.as_slice()).into())
             }
@@ -1913,9 +1922,10 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let clients = this
-                    .read()
+                    .write()
                     .await
                     .get_client_ids(&conversation_id.to_vec())
+                    .await
                     .map_err(CoreCryptoError::from)?;
                 let clients = js_sys::Array::from_iter(
                     clients

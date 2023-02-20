@@ -306,7 +306,10 @@ impl MlsCentral {
                 return Err(CryptoError::Unauthorized);
             }
         }
-        Self::get_conversation_mut(&mut self.mls_groups, id)?
+        self.get_conversation(id)
+            .await?
+            .write()
+            .await
             .add_members(members, &self.mls_backend)
             .await
     }
@@ -340,7 +343,10 @@ impl MlsCentral {
                 return Err(CryptoError::Unauthorized);
             }
         }
-        Self::get_conversation_mut(&mut self.mls_groups, id)?
+        self.get_conversation(id)
+            .await?
+            .write()
+            .await
             .remove_members(clients, &self.mls_backend)
             .await
     }
@@ -358,7 +364,10 @@ impl MlsCentral {
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     pub async fn update_keying_material(&mut self, id: &ConversationId) -> CryptoResult<MlsCommitBundle> {
-        Self::get_conversation_mut(&mut self.mls_groups, id)?
+        self.get_conversation(id)
+            .await?
+            .write()
+            .await
             .update_keying_material(&self.mls_backend)
             .await
     }
@@ -374,7 +383,10 @@ impl MlsCentral {
     /// # Errors
     /// Errors can be originating from the KeyStore and OpenMls
     pub async fn commit_pending_proposals(&mut self, id: &ConversationId) -> CryptoResult<Option<MlsCommitBundle>> {
-        Self::get_conversation_mut(&mut self.mls_groups, id)?
+        self.get_conversation(id)
+            .await?
+            .write()
+            .await
             .commit_pending_proposals(&self.mls_backend)
             .await
     }
@@ -413,19 +425,30 @@ pub mod tests {
                             .unwrap();
 
                         // before merging, commit is not applied
-                        assert_eq!(alice_central[&id].members().len(), 1);
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                         alice_central.commit_accepted(&id).await.unwrap();
 
-                        assert_eq!(alice_central[&id].id, id);
-                        assert_eq!(alice_central[&id].group.group_id().as_slice(), id);
-                        assert_eq!(alice_central[&id].members().len(), 2);
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
+                        assert_eq!(
+                            alice_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .group
+                                .group_id()
+                                .as_slice(),
+                            id
+                        );
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         bob_central
                             .process_welcome_message(welcome, case.custom_cfg())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central[&id].id(), bob_central[&id].id());
-                        assert_eq!(bob_central[&id].members().len(), 2);
+                        assert_eq!(
+                            alice_central.get_conversation_unchecked(&id).await.id(),
+                            bob_central.get_conversation_unchecked(&id).await.id()
+                        );
+                        assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
                     })
                 },
@@ -524,13 +547,13 @@ pub mod tests {
                             .unwrap();
                         let charlie_kp = charlie_central.get_one_key_package().await;
 
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
                             .await
                             .unwrap()
                             .proposal;
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         bob_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
@@ -538,7 +561,7 @@ pub mod tests {
                         let MlsCommitBundle { commit, welcome, .. } =
                             bob_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         bob_central.commit_accepted(&id).await.unwrap();
-                        assert_eq!(bob_central[&id].members().len(), 3);
+                        assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
                         // if 'new_proposal' wasn't durable this would fail because proposal would
                         // not be referenced in commit
@@ -546,7 +569,7 @@ pub mod tests {
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central[&id].members().len(), 3);
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
                         charlie_central
                             .try_join_from_welcome(
@@ -557,7 +580,7 @@ pub mod tests {
                             )
                             .await
                             .unwrap();
-                        assert_eq!(charlie_central[&id].members().len(), 3);
+                        assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
                     })
                 },
             )
@@ -594,9 +617,9 @@ pub mod tests {
                         assert!(welcome.is_none());
 
                         // before merging, commit is not applied
-                        assert_eq!(alice_central[&id].members().len(), 2);
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         alice_central.commit_accepted(&id).await.unwrap();
-                        assert_eq!(alice_central[&id].members().len(), 1);
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
 
                         bob_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
@@ -605,7 +628,7 @@ pub mod tests {
 
                         // But has been removed from the conversation
                         assert!(matches!(
-                           bob_central.get_conversation(&id).unwrap_err(),
+                           bob_central.get_conversation(&id).await.unwrap_err(),
                             CryptoError::ConversationNotFound(conv_id) if conv_id == id
                         ));
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_err());
@@ -737,20 +760,20 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Remove(b"charlie"[..].into()))
                             .await
                             .unwrap()
                             .proposal;
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         bob_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         let commit = bob_central.commit_pending_proposals(&id).await.unwrap().unwrap().commit;
                         bob_central.commit_accepted(&id).await.unwrap();
-                        assert_eq!(bob_central[&id].members().len(), 2);
+                        assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         // if 'new_proposal' wasn't durable this would fail because proposal would
                         // not be referenced in commit
@@ -758,7 +781,7 @@ pub mod tests {
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central[&id].members().len(), 2);
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     })
                 },
             )
@@ -787,11 +810,25 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let bob_keys = bob_central[&id].group.members();
-                        let alice_keys = alice_central[&id].group.members();
+                        let bob_keys: Vec<KeyPackage> = bob_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .into_iter()
+                            .cloned()
+                            .collect();
+                        let alice_keys: Vec<KeyPackage> = alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .into_iter()
+                            .cloned()
+                            .collect();
                         assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
-                        let alice_key = alice_central.key_package_of(&id, "alice");
+                        let alice_key = alice_central.key_package_of(&id, "alice").await;
 
                         // proposing the key update for alice
                         let MlsCommitBundle { commit, welcome, .. } =
@@ -799,9 +836,21 @@ pub mod tests {
                         assert!(welcome.is_none());
 
                         // before merging, commit is not applied
-                        assert!(alice_central[&id].group.members().contains(&&alice_key));
+                        assert!(alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .contains(&&alice_key));
                         alice_central.commit_accepted(&id).await.unwrap();
-                        let alice_new_keys = alice_central[&id].group.members();
+                        let alice_new_keys: Vec<KeyPackage> = alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .into_iter()
+                            .cloned()
+                            .collect();
                         assert!(!alice_new_keys.contains(&&alice_key));
 
                         // receiving the commit on bob's side (updating key from alice)
@@ -810,8 +859,15 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let bob_new_keys = bob_central[&id].group.members();
-                        assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
+                        let bob_new_keys: Vec<KeyPackage> = bob_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .into_iter()
+                            .cloned()
+                            .collect();
+                        assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(&a_key)));
 
                         // ensuring both can encrypt messages
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
@@ -839,13 +895,27 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let bob_keys = bob_central[&id].group.members();
-                        let alice_keys = alice_central[&id].group.members();
+                        let bob_keys: Vec<KeyPackage> = bob_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .into_iter()
+                            .cloned()
+                            .collect();
+                        let alice_keys: Vec<KeyPackage> = alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .into_iter()
+                            .cloned()
+                            .collect();
 
                         // checking that the members on both sides are the same
                         assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
-                        let alice_key = alice_central.key_package_of(&id, "alice");
+                        let alice_key = alice_central.key_package_of(&id, "alice").await;
 
                         // proposing adding charlie
                         let charlie_kp = charlie_central.get_one_key_package().await;
@@ -864,9 +934,19 @@ pub mod tests {
                         let MlsCommitBundle { commit, welcome, .. } =
                             alice_central.update_keying_material(&id).await.unwrap();
                         assert!(welcome.is_some());
-                        assert!(alice_central[&id].group.members().contains(&&alice_key));
+                        assert!(alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .contains(&&alice_key));
                         alice_central.commit_accepted(&id).await.unwrap();
-                        assert!(!alice_central[&id].group.members().contains(&&alice_key));
+                        assert!(!alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .contains(&&alice_key));
 
                         // create the group on charlie's side
                         charlie_central
@@ -874,12 +954,19 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        assert_eq!(alice_central[&id].members().len(), 3);
-                        assert_eq!(charlie_central[&id].members().len(), 3);
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
+                        assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
                         // bob still didn't receive the message with the updated key and charlie's addition
-                        assert_eq!(bob_central[&id].members().len(), 2);
+                        assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
-                        let alice_new_keys = alice_central[&id].group.members();
+                        let alice_new_keys: Vec<KeyPackage> = alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .into_iter()
+                            .cloned()
+                            .collect();
                         assert!(!alice_new_keys.contains(&&alice_key));
 
                         // receiving the key update and the charlie's addition to the group
@@ -887,9 +974,16 @@ pub mod tests {
                             .decrypt_message(&id, &commit.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(bob_central[&id].members().len(), 3);
+                        assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
-                        let bob_new_keys = bob_central[&id].group.members();
+                        let bob_new_keys: Vec<KeyPackage> = bob_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .into_iter()
+                            .cloned()
+                            .collect();
                         assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
 
                         // ensure all parties can encrypt messages
@@ -1016,10 +1110,24 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let bob_keys = bob_central[&id].group.members();
-                        let alice_keys = alice_central[&id].group.members();
+                        let bob_keys: Vec<KeyPackage> = bob_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .into_iter()
+                            .cloned()
+                            .collect();
+                        let alice_keys: Vec<_> = alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .into_iter()
+                            .cloned()
+                            .collect();
                         assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
-                        let alice_key = alice_central.key_package_of(&id, "alice");
+                        let alice_key = alice_central.key_package_of(&id, "alice").await;
 
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Update)
@@ -1033,18 +1141,38 @@ pub mod tests {
                         let commit = bob_central.commit_pending_proposals(&id).await.unwrap().unwrap().commit;
 
                         // before merging, commit is not applied
-                        assert!(bob_central[&id].group.members().contains(&&alice_key));
+                        assert!(bob_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .contains(&&alice_key));
                         bob_central.commit_accepted(&id).await.unwrap();
-                        assert!(!bob_central[&id].group.members().contains(&&alice_key));
+                        assert!(!bob_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .contains(&&alice_key));
 
-                        assert!(alice_central[&id].group.members().contains(&&alice_key));
+                        assert!(alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .contains(&&alice_key));
                         // if 'new_proposal' wasn't durable this would fail because proposal would
                         // not be referenced in commit
                         alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert!(!alice_central[&id].group.members().contains(&&alice_key));
+                        assert!(!alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .members()
+                            .contains(&&alice_key));
 
                         // ensuring both can encrypt messages
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
@@ -1075,12 +1203,12 @@ pub mod tests {
                             .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package().await))
                             .await
                             .unwrap();
-                        assert!(!alice_central.pending_proposals(&id).is_empty());
-                        assert_eq!(alice_central[&id].members().len(), 1);
+                        assert!(!alice_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                         let MlsCommitBundle { welcome, .. } =
                             alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
-                        assert_eq!(alice_central[&id].members().len(), 2);
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         bob_central
                             .process_welcome_message(welcome.unwrap(), case.custom_cfg())
@@ -1103,7 +1231,7 @@ pub mod tests {
                         .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
-                    assert!(alice_central.pending_proposals(&id).is_empty());
+                    assert!(alice_central.pending_proposals(&id).await.is_empty());
                     assert!(alice_central.commit_pending_proposals(&id).await.unwrap().is_none());
                 })
             })
@@ -1131,8 +1259,8 @@ pub mod tests {
                             .new_proposal(&id, MlsProposal::Add(charlie_central.get_one_key_package().await))
                             .await
                             .unwrap();
-                        assert!(!bob_central.pending_proposals(&id).is_empty());
-                        assert_eq!(bob_central[&id].members().len(), 2);
+                        assert!(!bob_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         alice_central
                             .decrypt_message(&id, proposal.proposal.to_bytes().unwrap())
                             .await
@@ -1141,13 +1269,13 @@ pub mod tests {
                         let MlsCommitBundle { commit, .. } =
                             alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
-                        assert_eq!(alice_central[&id].members().len(), 3);
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
                         bob_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(bob_central[&id].members().len(), 3);
+                        assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
                     })
                 },
@@ -1363,7 +1491,11 @@ pub mod tests {
                                 .unwrap()
                                 .proposal;
                             let proposal2 = proposal1.clone();
-                            alice_central[&id].group.clear_pending_proposals();
+                            alice_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .group
+                                .clear_pending_proposals();
 
                             let commit1 = alice_central.update_keying_material(&id).await.unwrap().commit;
                             let commit2 = commit1.clone();
@@ -1380,7 +1512,11 @@ pub mod tests {
                                     .unwrap_err(),
                                 CryptoError::GenerationOutOfBound
                             ));
-                            bob_central[&id].group.clear_pending_proposals();
+                            bob_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .group
+                                .clear_pending_proposals();
 
                             // replayed encrypted commit should fail
                             bob_central

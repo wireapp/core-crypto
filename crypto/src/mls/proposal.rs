@@ -61,11 +61,11 @@ impl MlsProposal {
     async fn create(
         self,
         backend: &MlsCryptoProvider,
-        conversation: &mut MlsConversation,
+        mut conversation: impl std::ops::DerefMut<Target = MlsConversation>,
     ) -> CryptoResult<MlsProposalBundle> {
         let proposal = match self {
-            MlsProposal::Add(key_package) => conversation.propose_add_member(backend, &key_package).await,
-            MlsProposal::Update => conversation.propose_self_update(backend).await,
+            MlsProposal::Add(key_package) => (*conversation).propose_add_member(backend, &key_package).await,
+            MlsProposal::Update => (*conversation).propose_self_update(backend).await,
             MlsProposal::Remove(client_id) => {
                 let href = conversation
                     .group
@@ -74,7 +74,7 @@ impl MlsProposal {
                     .find(|kp| kp.credential().identity() == client_id.as_slice())
                     .ok_or(CryptoError::ClientNotFound(client_id))
                     .and_then(|kp| Ok(kp.hash_ref(backend.crypto()).map_err(MlsError::from)?))?;
-                conversation.propose_remove_member(backend, &href).await
+                (*conversation).propose_remove_member(backend, &href).await
             }
         }?;
         Ok(proposal)
@@ -99,8 +99,8 @@ impl MlsCentral {
         conversation: &ConversationId,
         proposal: MlsProposal,
     ) -> CryptoResult<MlsProposalBundle> {
-        let conversation = Self::get_conversation_mut(&mut self.mls_groups, conversation)?;
-        proposal.create(&self.mls_backend, conversation).await
+        let conversation = self.get_conversation(conversation).await?;
+        proposal.create(&self.mls_backend, conversation.write().await).await
     }
 }
 
@@ -135,7 +135,7 @@ pub mod proposal_tests {
                         let MlsCommitBundle { welcome, .. } =
                             alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
-                        assert_eq!(alice_central[&id].members().len(), 2);
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         let new_id = bob_central
                             .process_welcome_message(welcome.unwrap(), case.custom_cfg())
                             .await
@@ -159,11 +159,25 @@ pub mod proposal_tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     central.new_conversation(id.clone(), case.cfg.clone()).await.unwrap();
-                    let before = &(*central[&id].group.members().first().unwrap()).clone();
+                    let before = &(*central
+                        .get_conversation_unchecked(&id)
+                        .await
+                        .group
+                        .members()
+                        .first()
+                        .unwrap())
+                    .clone();
                     central.new_proposal(&id, MlsProposal::Update).await.unwrap();
                     central.commit_pending_proposals(&id).await.unwrap();
                     central.commit_accepted(&id).await.unwrap();
-                    let after = &(*central[&id].group.members().first().unwrap()).clone();
+                    let after = &(*central
+                        .get_conversation_unchecked(&id)
+                        .await
+                        .group
+                        .members()
+                        .first()
+                        .unwrap())
+                    .clone();
                     assert_ne!(before, after)
                 })
             })
@@ -188,8 +202,8 @@ pub mod proposal_tests {
                         .invite(&id, &mut bob_central, case.custom_cfg())
                         .await
                         .unwrap();
-                    assert_eq!(alice_central[&id].members().len(), 2);
-                    assert_eq!(bob_central[&id].members().len(), 2);
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                    assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     let remove_proposal = alice_central
                         .new_proposal(&id, MlsProposal::Remove(b"bob"[..].into()))
@@ -202,14 +216,14 @@ pub mod proposal_tests {
                     let MlsCommitBundle { commit, .. } =
                         alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                     alice_central.commit_accepted(&id).await.unwrap();
-                    assert_eq!(alice_central[&id].members().len(), 1);
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
 
                     bob_central
                         .decrypt_message(&id, commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     assert!(matches!(
-                        bob_central.get_conversation(&id).unwrap_err(),
+                        bob_central.get_conversation(&id).await.unwrap_err(),
                         CryptoError::ConversationNotFound(conv_id) if conv_id == id
                     ));
                 })
