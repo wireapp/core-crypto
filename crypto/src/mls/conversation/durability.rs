@@ -33,6 +33,6 @@ impl MlsCentral {
             .map(|mut groups| groups.remove(id.as_slice()).unwrap())
             .unwrap();
         let group = MlsConversation::from_serialized_state(group).unwrap();
-        self.mls_groups.insert(id.clone(), group).unwrap();
+        self.mls_groups.insert(id.clone(), group);
     }
 }

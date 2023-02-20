@@ -149,9 +149,9 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central.new_proposal(&id, MlsProposal::Update).await.unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Bob hasn't Alice's proposal but creates a commit
                         let commit = bob_central.update_keying_material(&id).await.unwrap().commit;
@@ -163,12 +163,12 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Alice should renew the proposal because its her's
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
 
                         // It should also renew the proposal when in pending_commit
                         alice_central.commit_pending_proposals(&id).await.unwrap();
-                        assert!(alice_central.pending_commit(&id).is_some());
+                        assert!(alice_central.pending_commit(&id).await.is_some());
                         let commit = bob_central.update_keying_material(&id).await.unwrap().commit;
                         let proposals = alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
@@ -177,8 +177,8 @@ pub mod tests {
                             .proposals;
                         // Alice should renew the proposal because its her's
                         // It should also replace existing one
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -204,7 +204,7 @@ pub mod tests {
                             .unwrap();
 
                         alice_central.update_keying_material(&id).await.unwrap();
-                        assert!(alice_central.pending_commit(&id).is_some());
+                        assert!(alice_central.pending_commit(&id).await.is_some());
 
                         // but Bob creates a commit meanwhile
                         let commit = bob_central.update_keying_material(&id).await.unwrap().commit;
@@ -215,8 +215,8 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Alice should renew the proposal because its her's
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -241,13 +241,13 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Update)
                             .await
                             .unwrap()
                             .proposal;
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Bob has Alice's update proposal
                         bob_central
@@ -265,8 +265,8 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Alice proposal should not be renew as it was in valid commit
-                        assert!(alice_central.pending_proposals(&id).is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
 
                         // Same if proposal is also in pending commit
                         let proposal = alice_central
@@ -275,8 +275,8 @@ pub mod tests {
                             .unwrap()
                             .proposal;
                         alice_central.commit_pending_proposals(&id).await.unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
-                        assert!(alice_central.pending_commit(&id).is_some());
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert!(alice_central.pending_commit(&id).await.is_some());
                         bob_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
@@ -288,8 +288,8 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Alice should not be renew as it was in valid commit
-                        assert!(alice_central.pending_proposals(&id).is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -329,12 +329,12 @@ pub mod tests {
                             .await
                             .unwrap()
                             .proposal;
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Charlie does not have other proposals, it creates a commit
                         let commit = charlie_central.update_keying_material(&id).await.unwrap().commit;
@@ -344,8 +344,8 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Alice should not renew Bob's update proposal
-                        assert!(alice_central.pending_proposals(&id).is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -375,12 +375,12 @@ pub mod tests {
                             .unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package().await;
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         let commit = bob_central
                             .add_members_to_conversation(&id, &mut [charlie_central.rnd_member().await])
@@ -393,8 +393,8 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Alice proposal is not renewed since she also wanted to add Charlie
-                        assert!(alice_central.pending_proposals(&id).is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -420,16 +420,16 @@ pub mod tests {
                             .unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package().await;
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Here Alice also creates a commit
                         alice_central.commit_pending_proposals(&id).await.unwrap();
-                        assert!(alice_central.pending_commit(&id).is_some());
+                        assert!(alice_central.pending_commit(&id).await.is_some());
 
                         let commit = bob_central
                             .add_members_to_conversation(&id, &mut [charlie_central.rnd_member().await])
@@ -442,8 +442,8 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Alice proposal is not renewed since she also wanted to add Charlie
-                        assert!(alice_central.pending_proposals(&id).is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -489,7 +489,7 @@ pub mod tests {
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // But Charlie will commit meanwhile
                         let commit = charlie_central.update_keying_material(&id).await.unwrap().commit;
@@ -499,8 +499,8 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // which Alice should not renew since it's not hers
-                        assert!(alice_central.pending_proposals(&id).is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -527,12 +527,12 @@ pub mod tests {
 
                         // Alice proposes adding Charlie
                         let charlie_kp = charlie_central.get_one_key_package().await;
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // But meanwhile Bob will create a commit without Alice's proposal
                         let commit = bob_central.update_keying_material(&id).await.unwrap().commit;
@@ -543,12 +543,12 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // So Alice proposal should be renewed
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
 
                         // And same should happen when proposal is in pending commit
                         alice_central.commit_pending_proposals(&id).await.unwrap();
-                        assert!(alice_central.pending_commit(&id).is_some());
+                        assert!(alice_central.pending_commit(&id).await.is_some());
                         let commit = bob_central.update_keying_material(&id).await.unwrap().commit;
                         let proposals = alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
@@ -557,8 +557,8 @@ pub mod tests {
                             .proposals;
                         // So Alice proposal should also be renewed
                         // It should also replace existing one
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -588,7 +588,7 @@ pub mod tests {
                             .add_members_to_conversation(&id, &mut [charlie_central.rnd_member().await])
                             .await
                             .unwrap();
-                        assert!(alice_central.pending_commit(&id).is_some());
+                        assert!(alice_central.pending_commit(&id).await.is_some());
 
                         // But meanwhile Bob will create a commit
                         let commit = bob_central.update_keying_material(&id).await.unwrap().commit;
@@ -598,8 +598,8 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // So Alice proposal should be renewed
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -638,12 +638,12 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .new_proposal(&id, MlsProposal::Remove(b"charlie"[..].into()))
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         let commit = bob_central
                             .remove_members_from_conversation(&id, &["charlie".into()])
@@ -656,8 +656,8 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Remove proposal is not renewed since commit does same
-                        assert!(alice_central.pending_proposals(&id).is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -697,12 +697,12 @@ pub mod tests {
                             .await
                             .unwrap()
                             .proposal;
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         let commit = charlie_central.update_keying_material(&id).await.unwrap().commit;
                         let proposals = alice_central
@@ -711,8 +711,8 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Remove proposal is not renewed since by ref
-                        assert!(alice_central.pending_proposals(&id).is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -758,12 +758,12 @@ pub mod tests {
                             .unwrap();
 
                         // Alice wants to remove Charlie
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .new_proposal(&id, MlsProposal::Remove(b"charlie"[..].into()))
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
@@ -777,8 +777,8 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Remove is renewed since valid commit removes another
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -828,7 +828,7 @@ pub mod tests {
                             .remove_members_from_conversation(&id, &["charlie".into()])
                             .await
                             .unwrap();
-                        assert!(alice_central.pending_commit(&id).is_some());
+                        assert!(alice_central.pending_commit(&id).await.is_some());
 
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
@@ -842,8 +842,8 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Remove is renewed since valid commit removes another
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -894,8 +894,8 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central.commit_pending_proposals(&id).await.unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
-                        assert!(alice_central.pending_commit(&id).is_some());
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert!(alice_central.pending_commit(&id).await.is_some());
 
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
@@ -909,8 +909,8 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Remove is renewed since valid commit removes another
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).len());
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )

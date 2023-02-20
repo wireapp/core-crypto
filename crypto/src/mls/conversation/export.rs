@@ -53,8 +53,15 @@ impl MlsCentral {
     ///
     /// # Errors
     /// OpenMls secret generation error or conversation not found
-    pub fn export_secret_key(&self, conversation_id: &ConversationId, key_length: usize) -> CryptoResult<Vec<u8>> {
-        self.get_conversation(conversation_id)?
+    pub async fn export_secret_key(
+        &mut self,
+        conversation_id: &ConversationId,
+        key_length: usize,
+    ) -> CryptoResult<Vec<u8>> {
+        self.get_conversation(conversation_id)
+            .await?
+            .read()
+            .await
             .export_secret_key(&self.mls_backend, key_length)
     }
 
@@ -65,8 +72,13 @@ impl MlsCentral {
     ///
     /// # Errors
     /// if the conversation can't be found
-    pub fn get_client_ids(&self, conversation_id: &ConversationId) -> CryptoResult<Vec<ClientId>> {
-        Ok(self.get_conversation(conversation_id)?.get_client_ids())
+    pub async fn get_client_ids(&mut self, conversation_id: &ConversationId) -> CryptoResult<Vec<ClientId>> {
+        Ok(self
+            .get_conversation(conversation_id)
+            .await?
+            .read()
+            .await
+            .get_client_ids())
     }
 }
 
@@ -98,7 +110,7 @@ pub mod tests {
                         .unwrap();
 
                     let key_length = 128;
-                    let result = alice_central.export_secret_key(&id, key_length);
+                    let result = alice_central.export_secret_key(&id, key_length).await;
                     assert!(result.is_ok());
                     assert_eq!(result.unwrap().len(), key_length);
                 })
@@ -117,7 +129,7 @@ pub mod tests {
                         .await
                         .unwrap();
 
-                    let result = alice_central.export_secret_key(&id, usize::MAX);
+                    let result = alice_central.export_secret_key(&id, usize::MAX).await;
                     assert!(matches!(
                         result.unwrap_err(),
                         CryptoError::MlsError(MlsError::MlsExportSecretError(ExportSecretError::KeyLengthTooLong))
@@ -139,7 +151,7 @@ pub mod tests {
                         .unwrap();
 
                     let unknown_id = b"not_found".to_vec();
-                    let error = alice_central.get_client_ids(&unknown_id).unwrap_err();
+                    let error = alice_central.get_client_ids(&unknown_id).await.unwrap_err();
                     assert!(matches!(error, CryptoError::ConversationNotFound(c) if c == unknown_id));
                 })
             })
@@ -164,13 +176,13 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        assert_eq!(alice_central.get_client_ids(&id).unwrap().len(), 1);
+                        assert_eq!(alice_central.get_client_ids(&id).await.unwrap().len(), 1);
 
                         alice_central
                             .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.get_client_ids(&id).unwrap().len(), 2);
+                        assert_eq!(alice_central.get_client_ids(&id).await.unwrap().len(), 2);
                     })
                 },
             )
@@ -189,7 +201,7 @@ pub mod tests {
                         .unwrap();
 
                     let unknown_id = b"not_found".to_vec();
-                    let error = alice_central.get_client_ids(&unknown_id).unwrap_err();
+                    let error = alice_central.get_client_ids(&unknown_id).await.unwrap_err();
                     assert!(matches!(error, CryptoError::ConversationNotFound(c) if c == unknown_id));
                 })
             })

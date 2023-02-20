@@ -487,10 +487,14 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::MlsCentral::conversation_epoch]
     pub fn conversation_epoch(&self, conversation_id: ConversationId) -> CryptoResult<u64> {
-        self.central
-            .lock()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .conversation_epoch(&conversation_id)
+        future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .conversation_epoch(&conversation_id),
+            ),
+        )
     }
 
     /// See [core_crypto::MlsCentral::process_raw_welcome_message]
@@ -616,9 +620,14 @@ impl CoreCrypto<'_> {
     /// See [core_crypto::MlsCentral::conversation_exists]
     pub fn conversation_exists(&self, conversation_id: ConversationId) -> bool {
         let mut central = self.central.lock().map_err(|_| CryptoError::LockPoisonError).ok();
+        let mut executor = self.executor.lock().map_err(|_| CryptoError::LockPoisonError).ok();
 
-        if let Some(central) = central.take() {
-            central.conversation_exists(&conversation_id)
+        if let Some(mut central) = central.take() {
+            if let Some(executor) = executor.take() {
+                future::block_on(executor.run(central.conversation_exists(&conversation_id)))
+            } else {
+                false
+            }
         } else {
             false
         }
@@ -828,18 +837,26 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::MlsCentral::get_client_ids]
     pub fn get_client_ids(&self, conversation_id: ConversationId) -> CryptoResult<Vec<ClientId>> {
-        self.central
-            .lock()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .get_client_ids(&conversation_id)
+        future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .get_client_ids(&conversation_id),
+            ),
+        )
     }
 
     /// See [core_crypto::MlsCentral::export_secret_key]
     pub fn export_secret_key(&self, conversation_id: ConversationId, key_length: u32) -> CryptoResult<Vec<u8>> {
-        self.central
-            .lock()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .export_secret_key(&conversation_id, key_length as usize)
+        future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .export_secret_key(&conversation_id, key_length as usize),
+            ),
+        )
     }
 
     /// See [core_crypto::MlsCentral::new_acme_enrollment]
@@ -934,10 +951,14 @@ impl CoreCrypto<'_> {
     /// See [core_crypto::proteus::ProteusCentral::session_exists]
     pub fn proteus_session_exists(&self, session_id: &str) -> CryptoResult<bool> {
         proteus_impl! { self.proteus_last_error_code => {
-            self.central
-                .lock()
-                .map_err(|_| CryptoError::LockPoisonError)?
-                .proteus_session_exists(session_id)
+            future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_session_exists(session_id)
+                )
+            )
         }}
     }
 
@@ -1047,20 +1068,28 @@ impl CoreCrypto<'_> {
     /// See [core_crypto::proteus::ProteusCentral::fingerprint_local]
     pub fn proteus_fingerprint_local(&self, session_id: &str) -> CryptoResult<String> {
         proteus_impl! { self.proteus_last_error_code => {
-            self.central
-                .lock()
-                .map_err(|_| CryptoError::LockPoisonError)?
-                .proteus_fingerprint_local(session_id)
+            future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_fingerprint_local(session_id)
+                )
+            )
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::fingerprint_remote]
     pub fn proteus_fingerprint_remote(&self, session_id: &str) -> CryptoResult<String> {
         proteus_impl! { self.proteus_last_error_code => {
-            self.central
-                .lock()
-                .map_err(|_| CryptoError::LockPoisonError)?
-                .proteus_fingerprint_remote(session_id)
+            future::block_on(
+                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                    self.central
+                        .lock()
+                        .map_err(|_| CryptoError::LockPoisonError)?
+                        .proteus_fingerprint_remote(session_id)
+                )
+            )
         }}
     }
 

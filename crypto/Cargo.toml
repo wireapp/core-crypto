@@ -36,6 +36,8 @@ serde = "1.0"
 serde_json = "1.0"
 url = "2.3"
 async-trait = "0.1"
+async-lock = "2.6"
+schnellru = "0.2"
 
 wire-e2e-identity = "0.2.0"
 
@@ -51,6 +53,7 @@ optional = true
 version = "2.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
+sysinfo = { version = "0.28", default-features = false, features = ["apple-app-store"] }
 async-fs = { version = "1.6", optional = true }
 futures-lite = { version = "1.12", optional = true }
 
@@ -83,6 +86,11 @@ futures-util = { version = "0.3", features = ["std", "alloc"] }
 futures-lite = "1.12"
 proteus-traits = "2.0"
 async-trait = "0.1"
+
+[dev-dependencies.core-crypto-keystore]
+version = "^0.6.3"
+path = "../keystore"
+features = ["dummy-entity"]
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 cryptobox = { git = "https://github.com/wireapp/cryptobox", tag = "v1.0.3" }

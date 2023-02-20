@@ -76,7 +76,10 @@ impl MlsCentral {
     /// We can now safely "merge" it (effectively apply the commit to the group) and update it
     /// in the keystore. The previous can be discarded to respect Forward Secrecy.
     pub async fn commit_accepted(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
-        Self::get_conversation_mut(&mut self.mls_groups, conversation_id)?
+        self.get_conversation(conversation_id)
+            .await?
+            .write()
+            .await
             .commit_accepted(&self.mls_backend)
             .await
     }
@@ -100,7 +103,10 @@ impl MlsCentral {
         conversation_id: &ConversationId,
         proposal_ref: Vec<u8>,
     ) -> CryptoResult<()> {
-        Self::get_conversation_mut(&mut self.mls_groups, conversation_id)?
+        self.get_conversation(conversation_id)
+            .await?
+            .write()
+            .await
             .clear_pending_proposal(proposal_ref.try_into()?, &self.mls_backend)
             .await
     }
@@ -119,7 +125,10 @@ impl MlsCentral {
     /// # Errors
     /// When the conversation is not found or there is no pending commit
     pub async fn clear_pending_commit(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
-        Self::get_conversation_mut(&mut self.mls_groups, conversation_id)?
+        self.get_conversation(conversation_id)
+            .await?
+            .write()
+            .await
             .clear_pending_commit(&self.mls_backend)
             .await
     }
@@ -156,14 +165,14 @@ pub mod tests {
                             .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central[&id].members().len(), 2);
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         alice_central
                             .remove_members_from_conversation(&id, &["bob".into()])
                             .await
                             .unwrap();
-                        assert_eq!(alice_central[&id].members().len(), 2);
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         alice_central.commit_accepted(&id).await.unwrap();
-                        assert_eq!(alice_central[&id].members().len(), 1);
+                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                     })
                 },
             )
@@ -188,11 +197,11 @@ pub mod tests {
                             .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
                             .await
                             .unwrap();
-                        assert!(!alice_central.pending_proposals(&id).is_empty());
-                        assert!(alice_central.pending_commit(&id).is_some());
+                        assert!(!alice_central.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.pending_commit(&id).await.is_some());
                         alice_central.commit_accepted(&id).await.unwrap();
-                        assert!(alice_central.pending_commit(&id).is_none());
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_commit(&id).await.is_none());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                     })
                 },
             )
@@ -220,7 +229,7 @@ pub mod tests {
                             .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
 
                         let charlie_kp = charlie_central.get_one_key_package().await;
                         let add_ref = alice_central
@@ -241,11 +250,12 @@ pub mod tests {
                             .unwrap()
                             .proposal_ref;
 
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 3);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 3);
                         alice_central.clear_pending_proposal(&id, add_ref.into()).await.unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 2);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 2);
                         assert!(!alice_central
                             .pending_proposals(&id)
+                            .await
                             .into_iter()
                             .any(|p| matches!(p.proposal(), Proposal::Add(_))));
 
@@ -253,9 +263,10 @@ pub mod tests {
                             .clear_pending_proposal(&id, remove_ref.into())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         assert!(!alice_central
                             .pending_proposals(&id)
+                            .await
                             .into_iter()
                             .any(|p| matches!(p.proposal(), Proposal::Remove(_))));
 
@@ -263,9 +274,10 @@ pub mod tests {
                             .clear_pending_proposal(&id, update_ref.into())
                             .await
                             .unwrap();
-                        assert!(alice_central.pending_proposals(&id).is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         assert!(!alice_central
                             .pending_proposals(&id)
+                            .await
                             .into_iter()
                             .any(|p| matches!(p.proposal(), Proposal::Update(_))));
                     })
@@ -298,7 +310,7 @@ pub mod tests {
                         .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
-                    assert!(alice_central.pending_proposals(&id).is_empty());
+                    assert!(alice_central.pending_proposals(&id).await.is_empty());
                     let any_ref = MlsProposalRef::try_from(vec![0; 16]).unwrap();
                     let clear = alice_central.clear_pending_proposal(&id, any_ref.into()).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::PendingProposalNotFound(prop_ref) if prop_ref == any_ref))
@@ -321,12 +333,12 @@ pub mod tests {
                         .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
-                    assert!(alice_central.pending_commit(&id).is_none());
+                    assert!(alice_central.pending_commit(&id).await.is_none());
 
                     alice_central.update_keying_material(&id).await.unwrap();
-                    assert!(alice_central.pending_commit(&id).is_some());
+                    assert!(alice_central.pending_commit(&id).await.is_some());
                     alice_central.clear_pending_commit(&id).await.unwrap();
-                    assert!(alice_central.pending_commit(&id).is_none());
+                    assert!(alice_central.pending_commit(&id).await.is_none());
                 })
             })
             .await
@@ -355,7 +367,7 @@ pub mod tests {
                         .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
-                    assert!(alice_central.pending_commit(&id).is_none());
+                    assert!(alice_central.pending_commit(&id).await.is_none());
                     let clear = alice_central.clear_pending_commit(&id).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::PendingCommitNotFound))
                 })

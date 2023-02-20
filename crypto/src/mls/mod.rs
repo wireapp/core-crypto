@@ -1,5 +1,4 @@
 use crate::{CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError};
-use std::collections::HashMap;
 
 use openmls::{
     messages::Welcome,
@@ -156,7 +155,8 @@ pub(crate) mod config {
 pub struct MlsCentral {
     pub(crate) mls_client: Option<Client>,
     pub(crate) mls_backend: MlsCryptoProvider,
-    pub(crate) mls_groups: HashMap<ConversationId, MlsConversation>,
+    pub(crate) mls_groups: crate::group_store::GroupStore<MlsConversation>,
+    // pub(crate) mls_groups: HashMap<ConversationId, MlsConversation>,
     pub(crate) callbacks: Option<Box<dyn CoreCryptoCallbacks + 'static>>,
 }
 
@@ -308,23 +308,26 @@ impl MlsCentral {
     }
 
     /// Restore existing groups from the KeyStore.
-    async fn restore_groups(backend: &MlsCryptoProvider) -> CryptoResult<HashMap<ConversationId, MlsConversation>> {
+    async fn restore_groups(
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<crate::group_store::GroupStore<MlsConversation>> {
         use core_crypto_keystore::CryptoKeystoreMls as _;
         let groups = backend.key_store().mls_groups_restore().await?;
 
+        let mut group_store = crate::group_store::GroupStore::default();
+
         if groups.is_empty() {
-            return Ok(HashMap::new());
+            return Ok(group_store);
         }
 
-        let groups = groups.into_iter().try_fold(
-            HashMap::new(),
-            |mut acc, (group_id, state)| -> CryptoResult<HashMap<ConversationId, MlsConversation>> {
-                let conversation = MlsConversation::from_serialized_state(state)?;
-                acc.insert(group_id, conversation);
-                Ok(acc)
-            },
-        )?;
-        Ok(groups)
+        for (group_id, state) in groups.into_iter() {
+            let conversation = MlsConversation::from_serialized_state(state)?;
+            if group_store.try_insert(group_id, conversation).is_err() {
+                break;
+            }
+        }
+
+        Ok(group_store)
     }
 
     /// [MlsCentral] is supposed to be a singleton. Knowing that, it does some optimizations by
@@ -419,19 +422,27 @@ impl MlsCentral {
     }
 
     /// Checks if a given conversation id exists locally
-    pub fn conversation_exists(&self, id: &ConversationId) -> bool {
-        self.mls_groups.contains_key(id)
+    pub async fn conversation_exists(&mut self, id: &ConversationId) -> bool {
+        self.mls_groups
+            .get_fetch(id, self.mls_backend.borrow_keystore_mut(), None)
+            .await
+            .ok()
+            .flatten()
+            .is_some()
     }
 
     /// Returns the epoch of a given conversation
     ///
     /// # Errors
     /// If the conversation can't be found
-    pub fn conversation_epoch(&self, id: &ConversationId) -> CryptoResult<u64> {
+    pub async fn conversation_epoch(&mut self, id: &ConversationId) -> CryptoResult<u64> {
         Ok(self
             .mls_groups
-            .get(id)
+            .get_fetch(id, self.mls_backend.borrow_keystore_mut(), None)
+            .await?
             .ok_or_else(|| CryptoError::ConversationNotFound(id.to_owned()))?
+            .read()
+            .await
             .group
             .epoch()
             .as_u64())
@@ -499,9 +510,11 @@ impl MlsCentral {
     /// # Errors
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and serialization
-    pub async fn export_public_group_state(&self, conversation_id: &ConversationId) -> CryptoResult<Vec<u8>> {
-        let conversation = self.get_conversation(conversation_id)?;
+    pub async fn export_public_group_state(&mut self, conversation_id: &ConversationId) -> CryptoResult<Vec<u8>> {
+        let conversation = self.get_conversation(conversation_id).await?;
         let state = conversation
+            .read()
+            .await
             .group
             .export_public_group_state(&self.mls_backend)
             .await
@@ -567,7 +580,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     central.new_conversation(id.clone(), case.cfg.clone()).await.unwrap();
-                    let epoch = central.conversation_epoch(&id).unwrap();
+                    let epoch = central.conversation_epoch(&id).await.unwrap();
                     assert_eq!(epoch, 0);
                 })
             })
@@ -591,7 +604,7 @@ pub mod tests {
                             .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
-                        let epoch = alice_central.conversation_epoch(&id).unwrap();
+                        let epoch = alice_central.conversation_epoch(&id).await.unwrap();
                         assert_eq!(epoch, 1);
                     })
                 },
@@ -602,10 +615,10 @@ pub mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn conversation_not_found(case: TestCase) {
-            run_test_with_central(case.clone(), move |[central]| {
+            run_test_with_central(case.clone(), move |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    let err = central.conversation_epoch(&id).unwrap_err();
+                    let err = central.conversation_epoch(&id).await.unwrap_err();
                     assert!(matches!(err, CryptoError::ConversationNotFound(conv_id) if conv_id == id));
                 })
             })

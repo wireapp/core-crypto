@@ -16,7 +16,7 @@ fn export_pgs_bench(c: &mut Criterion) {
                         add_clients(&mut central, &id, ciphersuite, *i);
                         (central, id)
                     },
-                    |(central, id)| async move {
+                    |(mut central, id)| async move {
                         black_box(central.export_public_group_state(&id).await.unwrap());
                     },
                     BatchSize::SmallInput,

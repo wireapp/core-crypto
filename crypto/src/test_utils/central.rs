@@ -14,9 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::prelude::{
-    ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral, MlsConversation,
-    MlsConversationInitBundle, MlsCustomConfiguration, MlsError,
+use crate::{
+    mls::conversation::MlsConversation,
+    prelude::{
+        ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral, MlsConversationInitBundle,
+        MlsCustomConfiguration, MlsError,
+    },
 };
 use openmls::prelude::{
     KeyPackage, KeyPackageBundle, PublicGroupState, QueuedProposal, SignaturePublicKey, StagedCommit,
@@ -56,12 +59,21 @@ impl MlsCentral {
         }
     }
 
-    pub fn pending_proposals(&self, id: &ConversationId) -> Vec<QueuedProposal> {
-        self[id].group.pending_proposals().cloned().collect::<Vec<_>>()
+    pub async fn pending_proposals(&mut self, id: &ConversationId) -> Vec<QueuedProposal> {
+        self.get_conversation_unchecked(id)
+            .await
+            .group
+            .pending_proposals()
+            .cloned()
+            .collect::<Vec<_>>()
     }
 
-    pub fn pending_commit(&self, id: &ConversationId) -> Option<&StagedCommit> {
-        self[id].group.pending_commit()
+    pub async fn pending_commit(&mut self, id: &ConversationId) -> Option<StagedCommit> {
+        self.get_conversation_unchecked(id)
+            .await
+            .group
+            .pending_commit()
+            .cloned()
     }
 
     pub async fn talk_to(&mut self, id: &ConversationId, other: &mut MlsCentral) -> CryptoResult<()> {
@@ -93,15 +105,21 @@ impl MlsCentral {
         other: &mut MlsCentral,
         custom_cfg: MlsCustomConfiguration,
     ) -> CryptoResult<()> {
-        let size_before = self[id].members().len();
+        let size_before = self.get_conversation_unchecked(id).await.members().len();
         let welcome = self
             .add_members_to_conversation(id, &mut [other.rnd_member().await])
             .await?
             .welcome;
         other.process_welcome_message(welcome, custom_cfg).await?;
         self.commit_accepted(id).await?;
-        assert_eq!(self[id].members().len(), size_before + 1);
-        assert_eq!(other[id].members().len(), size_before + 1);
+        assert_eq!(
+            self.get_conversation_unchecked(id).await.members().len(),
+            size_before + 1
+        );
+        assert_eq!(
+            other.get_conversation_unchecked(id).await.members().len(),
+            size_before + 1
+        );
         self.talk_to(id, other).await?;
         Ok(())
     }
@@ -146,15 +164,18 @@ impl MlsCentral {
         Ok(())
     }
 
-    pub async fn verifiable_public_group_state(&self, id: &ConversationId) -> VerifiablePublicGroupState {
+    pub async fn verifiable_public_group_state(&mut self, id: &ConversationId) -> VerifiablePublicGroupState {
         use tls_codec::{Deserialize as _, Serialize as _};
         let public_group_state = self.public_group_state(id).await.tls_serialize_detached().unwrap();
         VerifiablePublicGroupState::tls_deserialize(&mut public_group_state.as_slice()).unwrap()
     }
 
-    pub async fn public_group_state(&self, id: &ConversationId) -> PublicGroupState {
+    pub async fn public_group_state(&mut self, id: &ConversationId) -> PublicGroupState {
         self.get_conversation(id)
+            .await
             .unwrap()
+            .write()
+            .await
             .group
             .export_public_group_state(&self.mls_backend)
             .await
@@ -162,8 +183,14 @@ impl MlsCentral {
     }
 
     /// Finds the [KeyPackage] of a [Client] within a [MlsGroup]
-    pub fn key_package_of(&self, conv_id: &ConversationId, client_id: &str) -> KeyPackage {
-        self[conv_id]
+    pub async fn key_package_of(&mut self, conv_id: &ConversationId, client_id: &str) -> KeyPackage {
+        self.mls_groups
+            .get_fetch(conv_id, self.mls_backend.borrow_keystore_mut(), None)
+            .await
+            .unwrap()
+            .unwrap()
+            .read()
+            .await
             .group
             .members()
             .into_iter()
@@ -180,18 +207,12 @@ impl MlsCentral {
             .credential()
             .signature_key()
     }
-}
 
-impl std::ops::Index<&ConversationId> for MlsCentral {
-    type Output = MlsConversation;
-
-    fn index(&self, index: &ConversationId) -> &Self::Output {
-        self.get_conversation(index).unwrap()
-    }
-}
-
-impl std::ops::IndexMut<&ConversationId> for MlsCentral {
-    fn index_mut(&mut self, index: &ConversationId) -> &mut Self::Output {
-        self.mls_groups.get_mut(index).unwrap()
+    pub async fn get_conversation_unchecked(
+        &mut self,
+        conv_id: &ConversationId,
+    ) -> async_lock::RwLockWriteGuard<'_, MlsConversation> {
+        let group_lock = self.mls_groups.get(conv_id).unwrap();
+        group_lock.write().await
     }
 }
