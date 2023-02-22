@@ -17,7 +17,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
-    mls::{conversation::renew::Renew, ClientId, ConversationId, MlsCentral, MlsConversation},
+    mls::{conversation::renew::Renew, Client, ClientId, ConversationId, MlsCentral, MlsConversation},
     prelude::MlsProposalBundle,
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };
@@ -52,6 +52,7 @@ impl MlsConversation {
         &mut self,
         message: impl AsRef<[u8]>,
         backend: &MlsCryptoProvider,
+        client: &Client,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
         let msg_in = openmls::framing::MlsMessageIn::try_from_bytes(message.as_ref()).map_err(MlsError::from)?;
@@ -116,6 +117,20 @@ impl MlsConversation {
                 }
             }
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
+                // Don't process self commits - safeguard against buggy MLS DS
+                if let Some(scid) = &sender_client_id {
+                    if scid == client.id() {
+                        return Ok(MlsConversationDecryptMessage {
+                            app_msg: None,
+                            proposals: vec![],
+                            is_active: true,
+                            delay: None,
+                            sender_client_id,
+                            has_epoch_changed: false,
+                        });
+                    }
+                }
+
                 let valid_commit = staged_commit.clone();
                 self.validate_external_commit(&valid_commit, sender_client_id, callbacks, backend.crypto())
                     .await?;
@@ -193,6 +208,7 @@ impl MlsCentral {
             .decrypt_message(
                 message.as_ref(),
                 &self.mls_backend,
+                self.mls_client.as_ref().unwrap(),
                 self.callbacks.as_ref().map(|boxed| boxed.as_ref()),
             )
             .await?;
