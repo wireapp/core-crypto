@@ -751,6 +751,7 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
         conversation_id: ConversationId,
         client_id: ClientId,
         existing_clients: Vec<ClientId>,
+        parent_conversation_clients: Option<Vec<ClientId>>,
     ) -> bool {
         let client_is_existing_group_user = self.client_is_existing_group_user.read().await;
         let this = self.ctx.read().await;
@@ -759,11 +760,21 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
             .map(|client| js_sys::Uint8Array::from(client.as_slice()))
             .collect::<js_sys::Array>();
 
-        Self::drive_js_func_call(client_is_existing_group_user.call3(
+        let parent_clients = parent_conversation_clients.map(|clients| {
+            clients
+                .into_iter()
+                .map(|client_id| js_sys::Uint8Array::from(client_id.as_slice()))
+                .collect::<js_sys::Array>()
+        });
+
+        Self::drive_js_func_call(client_is_existing_group_user.apply(
             &this,
-            &js_sys::Uint8Array::from(conversation_id.as_slice()),
-            &js_sys::Uint8Array::from(client_id.as_slice()),
-            &clients,
+            &js_sys::Array::of4(
+                &js_sys::Uint8Array::from(conversation_id.as_slice()).into(),
+                &js_sys::Uint8Array::from(client_id.as_slice()).into(),
+                &clients.into(),
+                &parent_clients.into(),
+            ),
         ))
         .await
         .unwrap_or_default()
@@ -1165,6 +1176,26 @@ impl CoreCrypto {
                 let commit: CommitBundle = commit.try_into()?;
 
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [core_crypto::MlsCentral::mark_conversation_as_child_of]
+    pub fn mark_conversation_as_child_of(&self, child_id: Box<[u8]>, parent_id: Box<[u8]>) -> Promise {
+        let this = self.inner.clone();
+
+        future_to_promise(
+            async move {
+                let mut central = this.write().await;
+                central
+                    .mark_conversation_as_child_of(&child_id.into(), &parent_id.into())
+                    .await
+                    .map_err(CoreCryptoError::from)?;
+
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )

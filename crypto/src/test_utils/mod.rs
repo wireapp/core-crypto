@@ -141,6 +141,7 @@ impl CoreCryptoCallbacks for ValidationCallbacks {
         _conversation_id: ConversationId,
         _client_id: ClientId,
         _existing_clients: Vec<ClientId>,
+        _parent_conversation_clients: Option<Vec<ClientId>>,
     ) -> bool {
         self.client_is_existing_group_user
     }

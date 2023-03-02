@@ -90,6 +90,7 @@ enum CryptoError {
     "IdentityAlreadyPresent",
     "NoProvisionalIdentityFound",
     "TooManyIdentitiesPresent",
+    "ParentGroupNotFound",
 };
 
 dictionary DecryptedMessage {
@@ -136,7 +137,7 @@ enum MlsWirePolicy {
 callback interface CoreCryptoCallbacks {
     boolean authorize([ByRef] ConversationId conversation_id, [ByRef] ClientId client_id);
     boolean user_authorize([ByRef] ConversationId conversation_id, [ByRef] ClientId external_client_id, [ByRef] sequence<ClientId> existing_clients);
-    boolean client_is_existing_group_user([ByRef] ConversationId conversation_id, [ByRef] ClientId client_id, [ByRef] sequence<ClientId> existing_clients);
+    boolean client_is_existing_group_user([ByRef] ConversationId conversation_id, [ByRef] ClientId client_id, [ByRef] sequence<ClientId> existing_clients, [ByRef] sequence<ClientId>? parent_conversation_clients);
 };
 
 interface CoreCrypto {
@@ -186,6 +187,9 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     CommitBundle remove_clients_from_conversation(ConversationId conversation_id, sequence<ClientId> clients);
+
+    [Throws=CryptoError]
+    void mark_conversation_as_child_of(ConversationId child_id, ConversationId parent_id);
 
     [Throws=CryptoError]
     CommitBundle update_keying_material(ConversationId conversation_id);

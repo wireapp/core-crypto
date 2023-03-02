@@ -20,6 +20,7 @@ use openmls_traits::{crypto::OpenMlsCrypto, OpenMlsCryptoProvider};
 use core_crypto_keystore::CryptoKeystoreMls;
 
 use crate::{
+    group_store::GroupStoreValue,
     mls::{ConversationId, MlsCentral},
     prelude::{
         ClientId, MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration, MlsPublicGroupStateBundle,
@@ -106,7 +107,7 @@ impl MlsCentral {
 
         self.mls_backend
             .key_store()
-            .mls_pending_groups_save(group.group_id().as_slice(), &group_serialized, &serialized_cfg)
+            .mls_pending_groups_save(group.group_id().as_slice(), &group_serialized, &serialized_cfg, None)
             .await?;
         Ok(MlsConversationInitBundle {
             conversation_id: group.group_id().to_vec(),
@@ -168,6 +169,7 @@ impl MlsConversation {
         &self,
         commit: &StagedCommit,
         sender: Option<ClientId>,
+        parent_conversation: Option<GroupStoreValue<MlsConversation>>,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
         backend: &impl OpenMlsCrypto,
     ) -> CryptoResult<()> {
@@ -181,8 +183,27 @@ impl MlsConversation {
             let sender = sender.ok_or(CryptoError::UnauthorizedExternalCommit)?;
             // first let's verify the sender belongs to an user already in the MLS group
             let existing_clients = self.members_in_next_epoch(backend);
+            let parent_clients = if let Some(parent_conv) = parent_conversation {
+                Some(
+                    parent_conv
+                        .read()
+                        .await
+                        .group
+                        .members()
+                        .iter()
+                        .map(|kp| kp.credential().identity().to_vec().into())
+                        .collect(),
+                )
+            } else {
+                None
+            };
             if !callbacks
-                .client_is_existing_group_user(self.id.clone(), sender.clone(), existing_clients.clone())
+                .client_is_existing_group_user(
+                    self.id.clone(),
+                    sender.clone(),
+                    existing_clients.clone(),
+                    parent_clients,
+                )
                 .await
             {
                 return Err(CryptoError::UnauthorizedExternalCommit);

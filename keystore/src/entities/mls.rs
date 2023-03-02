@@ -24,7 +24,37 @@ use zeroize::Zeroize;
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
 pub struct PersistedMlsGroup {
     pub id: Vec<u8>,
+    pub parent_id: Option<Vec<u8>>,
     pub state: Vec<u8>,
+}
+
+#[async_trait::async_trait(?Send)]
+pub trait PersistedMlsGroupExt: Entity {
+    fn parent_id(&self) -> Option<&[u8]>;
+    async fn parent_group(
+        &self,
+        conn: &mut <Self as super::EntityBase>::ConnectionType,
+    ) -> CryptoKeystoreResult<Option<Self>> {
+        let Some(parent_id) = self.parent_id() else {
+            return Ok(None);
+        };
+
+        <Self as super::EntityBase>::find_one(conn, &parent_id.into()).await
+    }
+
+    async fn child_groups(
+        &self,
+        conn: &mut <Self as super::EntityBase>::ConnectionType,
+    ) -> CryptoKeystoreResult<Vec<Self>> {
+        let entities = <Self as super::EntityBase>::find_all(conn, super::EntityFindParams::default()).await?;
+
+        let id = self.id_raw();
+
+        Ok(entities
+            .into_iter()
+            .filter(|entity| entity.parent_id().map(|parent_id| parent_id == id).unwrap_or_default())
+            .collect())
+    }
 }
 
 /// Entity representing a temporary persisted `MlsGroup`
@@ -34,6 +64,7 @@ pub struct PersistedMlsGroup {
 pub struct PersistedMlsPendingGroup {
     pub id: Vec<u8>,
     pub state: Vec<u8>,
+    pub parent_id: Option<Vec<u8>>,
     pub custom_configuration: Vec<u8>,
 }
 

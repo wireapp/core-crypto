@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::connection::DatabaseConnection;
 use crate::{
     connection::KeystoreDatabaseConnection,
     entities::{Entity, EntityBase, EntityFindParams, PersistedMlsPendingGroup, StringEntityId},
@@ -36,9 +37,21 @@ impl EntityBase for PersistedMlsPendingGroup {
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
         let state = &self.state;
+        let id_bytes = &self.id;
+        let parent_id = self.parent_id.as_ref();
+
         let transaction = conn.transaction()?;
 
         use rusqlite::OptionalExtension as _;
+
+        Self::ConnectionType::check_buffer_size(state.len())?;
+        Self::ConnectionType::check_buffer_size(id_bytes.len())?;
+        Self::ConnectionType::check_buffer_size(parent_id.map(Vec::len).unwrap_or_default())?;
+
+        let zcfg = rusqlite::blob::ZeroBlob(self.custom_configuration.len() as i32);
+        let zpid = rusqlite::blob::ZeroBlob(parent_id.map(Vec::len).unwrap_or_default() as i32);
+        let zb = rusqlite::blob::ZeroBlob(state.len() as i32);
+        let zid = rusqlite::blob::ZeroBlob(id_bytes.len() as i32);
 
         let rowid: i64 = if let Some(rowid) = transaction
             .query_row("SELECT rowid FROM mls_pending_groups WHERE id = ?", [&self.id], |r| {
@@ -50,19 +63,17 @@ impl EntityBase for PersistedMlsPendingGroup {
             let zb = rusqlite::blob::ZeroBlob(state.len() as i32);
             use rusqlite::ToSql as _;
             transaction.execute(
-                "UPDATE mls_pending_groups SET state = ? WHERE id = ?",
-                [&zb.to_sql()?, &self.id.to_sql()?],
+                "UPDATE mls_pending_groups SET state = ?, parent_id = ?, cfg = ? WHERE id = ?",
+                [&zb.to_sql()?, &zpid.to_sql()?, &zcfg.to_sql()?, &self.id.to_sql()?],
             )?;
             rowid
         } else {
             let id_bytes = &self.id;
-            let zcfg = rusqlite::blob::ZeroBlob(self.custom_configuration.len() as i32);
-            let zb = rusqlite::blob::ZeroBlob(state.len() as i32);
-            let zid = rusqlite::blob::ZeroBlob(id_bytes.len() as i32);
+
             use rusqlite::ToSql as _;
             transaction.execute(
-                "INSERT INTO mls_pending_groups (id, state, cfg) VALUES(?, ?, ?)",
-                [&zid.to_sql()?, &zb.to_sql()?, &zcfg.to_sql()?],
+                "INSERT INTO mls_pending_groups (id, state, cfg, parent_id) VALUES(?, ?, ?, ?)",
+                [&zid.to_sql()?, &zb.to_sql()?, &zcfg.to_sql()?, &zpid.to_sql()?],
             )?;
             let rowid = transaction.last_insert_rowid();
 
@@ -89,6 +100,18 @@ impl EntityBase for PersistedMlsPendingGroup {
         let mut blob =
             transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "cfg", rowid, false)?;
         blob.write_all(&self.custom_configuration)?;
+        blob.close()?;
+
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            "mls_pending_groups",
+            "parent_id",
+            rowid,
+            false,
+        )?;
+        if let Some(parent_id) = self.parent_id.as_ref() {
+            blob.write_all(parent_id)?;
+        }
         blob.close()?;
 
         transaction.commit()?;
@@ -130,9 +153,26 @@ impl EntityBase for PersistedMlsPendingGroup {
                 let mut custom_configuration = vec![];
                 blob.read_to_end(&mut custom_configuration)?;
                 blob.close()?;
+
+                let mut parent_id = None;
+                let mut blob = transaction.blob_open(
+                    rusqlite::DatabaseName::Main,
+                    "mls_pending_groups",
+                    "parent_id",
+                    rowid,
+                    true,
+                )?;
+                if !blob.is_empty() {
+                    let tmp = Vec::with_capacity(blob.len());
+                    blob.read_to_end(&mut state)?;
+                    parent_id.replace(tmp);
+                }
+                blob.close()?;
+
                 Ok(Some(Self {
                     id,
                     state,
+                    parent_id,
                     custom_configuration,
                 }))
             }
@@ -171,9 +211,25 @@ impl EntityBase for PersistedMlsPendingGroup {
             blob.read_to_end(&mut custom_configuration)?;
             blob.close()?;
 
+            let mut parent_id = None;
+            let mut blob = transaction.blob_open(
+                rusqlite::DatabaseName::Main,
+                "mls_pending_groups",
+                "parent_id",
+                rowid,
+                true,
+            )?;
+            if !blob.is_empty() {
+                let mut tmp = Vec::with_capacity(blob.len());
+                blob.read_to_end(&mut tmp)?;
+                parent_id.replace(tmp);
+            }
+            blob.close()?;
+
             acc.push(Self {
                 id,
                 state,
+                parent_id,
                 custom_configuration,
             });
             crate::CryptoKeystoreResult::Ok(acc)
@@ -223,9 +279,25 @@ impl EntityBase for PersistedMlsPendingGroup {
             blob.read_to_end(&mut custom_configuration)?;
             blob.close()?;
 
+            let mut parent_id = None;
+            let mut blob = transaction.blob_open(
+                rusqlite::DatabaseName::Main,
+                "mls_pending_groups",
+                "parent_id",
+                rowid,
+                true,
+            )?;
+            if !blob.is_empty() {
+                let mut tmp = Vec::with_capacity(blob.len());
+                blob.read_to_end(&mut tmp)?;
+                parent_id.replace(tmp);
+            }
+            blob.close()?;
+
             res.push(Self {
                 id,
                 state,
+                parent_id,
                 custom_configuration,
             });
         }

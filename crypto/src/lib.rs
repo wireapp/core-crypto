@@ -129,6 +129,7 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     /// This basically allows to defer the client ID parsing logic to the caller - because CoreCrypto is oblivious to such things
     ///
     /// # Arguments
+    /// * `conversation_id` - ID of the conversation
     /// * `client_id` - client ID of the client referenced within the sent proposal
     /// * `existing_clients` - all the clients in the MLS group
     async fn client_is_existing_group_user(
@@ -136,6 +137,7 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
         conversation_id: prelude::ConversationId,
         client_id: prelude::ClientId,
         existing_clients: Vec<prelude::ClientId>,
+        parent_conversation_clients: Option<Vec<prelude::ClientId>>,
     ) -> bool;
 }
 

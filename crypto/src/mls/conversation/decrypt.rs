@@ -17,6 +17,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
+    group_store::GroupStoreValue,
     mls::{conversation::renew::Renew, ClientId, ConversationId, MlsCentral, MlsConversation},
     prelude::MlsProposalBundle,
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
@@ -51,6 +52,7 @@ impl MlsConversation {
     pub async fn decrypt_message(
         &mut self,
         message: impl AsRef<[u8]>,
+        parent_conversation: Option<GroupStoreValue<MlsConversation>>,
         backend: &MlsCryptoProvider,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
@@ -102,7 +104,7 @@ impl MlsConversation {
                 }
             }
             ProcessedMessage::ProposalMessage(proposal) => {
-                self.validate_external_proposal(&proposal, callbacks, backend.crypto())
+                self.validate_external_proposal(&proposal, parent_conversation, callbacks, backend.crypto())
                     .await?;
                 self.group.store_pending_proposal(*proposal);
 
@@ -117,8 +119,14 @@ impl MlsConversation {
             }
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
                 let valid_commit = staged_commit.clone();
-                self.validate_external_commit(&valid_commit, sender_client_id, callbacks, backend.crypto())
-                    .await?;
+                self.validate_external_commit(
+                    &valid_commit,
+                    sender_client_id,
+                    parent_conversation,
+                    callbacks,
+                    backend.crypto(),
+                )
+                .await?;
 
                 let pending_commit = self.group.pending_commit().cloned();
                 #[allow(clippy::needless_collect)] // false positive
@@ -189,6 +197,7 @@ impl MlsCentral {
         conversation_id: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
+        let parent_conversation = self.get_parent_conversation(conversation_id).await?;
         let decrypt_message = self
             .get_conversation(conversation_id)
             .await?
@@ -196,6 +205,7 @@ impl MlsCentral {
             .await
             .decrypt_message(
                 message.as_ref(),
+                parent_conversation,
                 &self.mls_backend,
                 self.callbacks.as_ref().map(|boxed| boxed.as_ref()),
             )

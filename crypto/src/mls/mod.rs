@@ -320,8 +320,8 @@ impl MlsCentral {
             return Ok(group_store);
         }
 
-        for (group_id, state) in groups.into_iter() {
-            let conversation = MlsConversation::from_serialized_state(state)?;
+        for (group_id, (parent_id, state)) in groups.into_iter() {
+            let conversation = MlsConversation::from_serialized_state(state, parent_id)?;
             if group_store.try_insert(group_id, conversation).is_err() {
                 break;
             }

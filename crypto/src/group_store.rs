@@ -43,7 +43,7 @@ impl GroupStoreEntity for crate::mls::conversation::MlsConversation {
             return Ok(None);
         };
 
-        let conversation = Self::from_serialized_state(store_value.state.clone())?;
+        let conversation = Self::from_serialized_state(store_value.state.clone(), store_value.parent_id.clone())?;
         // If the conversation is not active, pretend it doesn't exist
         Ok(if conversation.group.is_active() {
             Some(conversation)

@@ -16,7 +16,10 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, PersistedMlsGroup, PersistedMlsPendingGroup, StringEntityId},
+    entities::{
+        Entity, EntityBase, EntityFindParams, PersistedMlsGroup, PersistedMlsGroupExt, PersistedMlsPendingGroup,
+        StringEntityId,
+    },
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -85,6 +88,20 @@ impl Entity for PersistedMlsGroup {
 
         Ok(())
     }
+}
+
+#[async_trait::async_trait(?Send)]
+impl PersistedMlsGroupExt for PersistedMlsGroup {
+    fn parent_id(&self) -> Option<&[u8]> {
+        self.parent_id.as_ref().map(Vec::as_slice)
+    }
+
+    // async fn child_groups(&self, conn: &mut <Self as EntityBase>::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
+    //     let id = self.id_raw();
+    //     let storage = conn.storage();
+    //     let entities = storage.get_indexed("mls_groups", "parent_id", id).await?;
+    //     Ok(entities)
+    // }
 }
 
 #[async_trait::async_trait(?Send)]

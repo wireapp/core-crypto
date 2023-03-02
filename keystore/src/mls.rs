@@ -74,6 +74,12 @@ pub trait CryptoKeystoreMls: Sized {
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
     async fn mls_get_keypackage<V: FromKeyStoreValue>(&self) -> CryptoKeystoreResult<V>;
+    /// Checks if the given MLS group id exists in the keystore
+    /// Note: in case of any error, this will return false
+    ///
+    /// # Arguments
+    /// * `group_id` - group/conversation id
+    async fn mls_group_exists(&self, group_id: &[u8]) -> bool;
     /// Persists a `MlsGroup`
     ///
     /// # Arguments
@@ -83,14 +89,21 @@ pub trait CryptoKeystoreMls: Sized {
     /// # Errors
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
-    async fn mls_group_persist(&self, group_id: &[u8], state: &[u8]) -> CryptoKeystoreResult<()>;
+    async fn mls_group_persist(
+        &self,
+        group_id: &[u8],
+        state: &[u8],
+        parent_group_id: Option<&[u8]>,
+    ) -> CryptoKeystoreResult<()>;
     /// Loads `MlsGroups` from the database. It will be returned as a `HashMap` where the key is
     /// the group/conversation id and the value the group state
     ///
     /// # Errors
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
-    async fn mls_groups_restore(&self) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, Vec<u8>>>;
+    async fn mls_groups_restore(
+        &self,
+    ) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, (Option<Vec<u8>>, Vec<u8>)>>;
     /// Deletes `MlsGroups` from the database.
     /// # Errors
     /// Any common error that can happen during a database connection. IoError being a common error
@@ -112,6 +125,7 @@ pub trait CryptoKeystoreMls: Sized {
         group_id: &[u8],
         mls_group: &[u8],
         custom_configuration: &[u8],
+        parent_group_id: Option<&[u8]>,
     ) -> CryptoKeystoreResult<()>;
     /// Loads a temporary `MlsGroup` and its configuration from the database
     ///
@@ -337,14 +351,24 @@ impl CryptoKeystoreMls for crate::connection::Connection {
         V::from_key_store_value(&buf).map_err(|e| CryptoKeystoreError::KeyStoreValueTransformError(Box::new(e)))
     }
 
-    async fn mls_group_persist(&self, group_id: &[u8], state: &[u8]) -> CryptoKeystoreResult<()> {
+    async fn mls_group_persist(
+        &self,
+        group_id: &[u8],
+        state: &[u8],
+        parent_group_id: Option<&[u8]>,
+    ) -> CryptoKeystoreResult<()> {
         self.save(PersistedMlsGroup {
             id: group_id.into(),
             state: state.into(),
+            parent_id: parent_group_id.map(Into::into),
         })
         .await?;
 
         Ok(())
+    }
+
+    async fn mls_group_exists(&self, group_id: &[u8]) -> bool {
+        matches!(self.find::<PersistedMlsGroup>(group_id).await, Ok(Some(_)))
     }
 
     async fn mls_group_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()> {
@@ -354,11 +378,13 @@ impl CryptoKeystoreMls for crate::connection::Connection {
     }
 
     // TODO: Review zero on drop behavior
-    async fn mls_groups_restore(&self) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, Vec<u8>>> {
+    async fn mls_groups_restore(
+        &self,
+    ) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, (Option<Vec<u8>>, Vec<u8>)>> {
         let groups = self.find_all::<PersistedMlsGroup>(EntityFindParams::default()).await?;
         Ok(groups
             .into_iter()
-            .map(|group: PersistedMlsGroup| (group.id.clone(), group.state.clone()))
+            .map(|group: PersistedMlsGroup| (group.id.clone(), (group.parent_id.clone(), group.state.clone())))
             .collect())
     }
 
@@ -367,11 +393,13 @@ impl CryptoKeystoreMls for crate::connection::Connection {
         group_id: &[u8],
         mls_group: &[u8],
         custom_configuration: &[u8],
+        parent_group_id: Option<&[u8]>,
     ) -> CryptoKeystoreResult<()> {
         self.save(PersistedMlsPendingGroup {
             id: group_id.into(),
             state: mls_group.into(),
             custom_configuration: custom_configuration.into(),
+            parent_id: parent_group_id.map(Into::into),
         })
         .await?;
         Ok(())
