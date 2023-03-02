@@ -238,6 +238,14 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ProteusAutoPrekeyBundle {
+    pub id: u16,
+    #[wasm_bindgen(getter_with_clone)]
+    pub pkb: Vec<u8>,
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CommitBundle {
     commit: Vec<u8>,
     welcome: Option<Vec<u8>>,
@@ -1762,7 +1770,7 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: [`WasmCryptoResult<Uint8Array>`]
+    /// Returns: [`WasmCryptoResult<ProteusAutoPrekeyBundle>`]
     ///
     /// see [core_crypto::proteus::ProteusCentral::new_prekey]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
@@ -1772,8 +1780,8 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    let prekey_raw = this.read().await.proteus_new_prekey_auto().await.map_err(CoreCryptoError::from)?;
-                    WasmCryptoResult::Ok(Uint8Array::from(prekey_raw.as_slice()).into())
+                    let (id, pkb) = this.read().await.proteus_new_prekey_auto().await.map_err(CoreCryptoError::from)?;
+                    WasmCryptoResult::Ok(ProteusAutoPrekeyBundle { id, pkb }.into())
                 } or throw WasmCryptoResult<_> }
             }
             .err_into(),

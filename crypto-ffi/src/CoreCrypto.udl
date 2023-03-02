@@ -19,6 +19,11 @@ dictionary CommitBundle {
     PublicGroupStateBundle public_group_state;
 };
 
+dictionary ProteusAutoPrekeyBundle {
+    u16 id;
+    sequence<u8> pkb;
+};
+
 dictionary PublicGroupStateBundle {
     MlsPublicGroupStateEncryptionType encryption_type;
     MlsRatchetTreeType ratchet_tree_type;
@@ -276,7 +281,7 @@ interface CoreCrypto {
     sequence<u8> proteus_new_prekey(u16 prekey_id);
 
     [Throws=CryptoError]
-    sequence<u8> proteus_new_prekey_auto();
+    ProteusAutoPrekeyBundle proteus_new_prekey_auto();
 
     [Throws=CryptoError]
     sequence<u8> proteus_last_resort_prekey();

@@ -14,6 +14,10 @@ Platform support legends:
 {{git-cliff tag="v0.7.0" unreleased=true}}
 </details>
 
+* **[BREAKING]** proteus_new_prekey_auto() now returns a tuple of (prekey_id, CBOR-serialized PreKeyBundle) for backend requirements
+    * On bindings, this translates to a new struct ProteusAutoPrekeyBundle which contains two fields:
+        * `id`: the proteus prekey id (`u16`)
+        * `pkb`: the CBOR-serialized proteus PreKeyBundle
 * **[BREAKING]** `wipe_conversation` is now automatically called when a commit removing the local client is recieved.
 * **[BREAKING]** Huge internal change on how we cache MLS groups and Proteus sessions in memory
     * This affects some APIs that became async on the TS bindings

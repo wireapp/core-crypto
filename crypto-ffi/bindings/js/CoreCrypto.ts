@@ -195,6 +195,24 @@ export type ClientId = Uint8Array;
 export type ProposalRef = Uint8Array;
 
 /**
+ * Data shape for proteusNewPrekeyAuto() call returns.
+ */
+export interface ProteusAutoPrekeyBundle {
+    /**
+     * Proteus PreKey id
+     *
+     * @readonly
+     */
+    id: number;
+    /**
+     * CBOR-serialized Proteus PreKeyBundle
+     *
+     * @readonly
+     */
+    pkb: Uint8Array;
+}
+
+/**
  * Data shape for the returned MLS commit & welcome message tuple upon adding clients to a conversation
  */
 export interface MemberAddedMessages {
@@ -1350,9 +1368,9 @@ export class CoreCrypto {
     /**
      * Creates a new prekey with an automatically generated ID..
      *
-     * @returns A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
+     * @returns A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey accompanied by its ID
      */
-    async proteusNewPrekeyAuto(): Promise<Uint8Array> {
+    async proteusNewPrekeyAuto(): Promise<ProteusAutoPrekeyBundle> {
         return await CoreCryptoError.asyncMapErr(this.#cc.proteus_new_prekey_auto());
     }
 
