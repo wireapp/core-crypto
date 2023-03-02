@@ -265,9 +265,14 @@ impl core_crypto::prelude::CoreCryptoCallbacks for CoreCryptoCallbacksWrapper {
         conversation_id: ConversationId,
         client_id: ClientId,
         existing_clients: Vec<ClientId>,
+        parent_conversation_clients: Option<Vec<ClientId>>,
     ) -> bool {
-        self.0
-            .client_is_existing_group_user(conversation_id, client_id, existing_clients)
+        self.0.client_is_existing_group_user(
+            conversation_id,
+            client_id,
+            existing_clients,
+            parent_conversation_clients,
+        )
     }
 }
 
@@ -285,6 +290,7 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
         conversation_id: ConversationId,
         client_id: ClientId,
         existing_clients: Vec<ClientId>,
+        parent_conversation_clients: Option<Vec<ClientId>>,
     ) -> bool;
 }
 
@@ -554,6 +560,22 @@ impl CoreCrypto<'_> {
             ),
         )?
         .try_into()
+    }
+
+    /// See [core_crypto::MlsCentral::mark_conversation_as_child_of]
+    pub fn mark_conversation_as_child_of(
+        &self,
+        child_id: ConversationId,
+        parent_id: ConversationId,
+    ) -> CryptoResult<()> {
+        future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .mark_conversation_as_child_of(&child_id, &parent_id),
+            ),
+        )
     }
 
     /// See [core_crypto::MlsCentral::update_keying_material]

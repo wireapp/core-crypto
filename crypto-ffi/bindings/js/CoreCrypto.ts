@@ -553,7 +553,7 @@ export interface CoreCryptoCallbacks {
      * @param clientId - id of a client
      * @param existingClients - all the clients currently within the MLS group
      */
-    clientIsExistingGroupUser: (conversationId: Uint8Array, clientId: Uint8Array, existingClients: Uint8Array[]) => Promise<boolean>;
+    clientIsExistingGroupUser: (conversationId: Uint8Array, clientId: Uint8Array, existingClients: Uint8Array[], parent_conversation_clients?: Uint8Array[]) => Promise<boolean>;
 }
 
 /**
@@ -725,6 +725,17 @@ export class CoreCrypto {
      */
     async conversationExists(conversationId: ConversationId): Promise<boolean> {
         return await CoreCryptoError.asyncMapErr(this.#cc.conversation_exists(conversationId));
+    }
+
+    /**
+    * Marks a conversation as child of another one
+    * This will mostly affect the behavior of the callbacks (the parentConversationClients parameter will be filled)
+    *
+    * @param childId - conversation identifier of the child conversation
+    * @param parentId - conversation identifier of the parent conversation
+    */
+    async markConversationAsChildOf(childId: ConversationId, parentId: ConversationId): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.mark_conversation_as_child_of(childId, parentId));
     }
 
     /**

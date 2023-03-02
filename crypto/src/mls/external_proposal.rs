@@ -6,6 +6,7 @@ use openmls::{
 };
 
 use crate::{
+    group_store::GroupStoreValue,
     mls::{ClientId, ConversationId, MlsCentral},
     prelude::MlsConversation,
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
@@ -17,6 +18,7 @@ impl MlsConversation {
     pub(crate) async fn validate_external_proposal(
         &self,
         proposal: &QueuedProposal,
+        parent_conversation: Option<GroupStoreValue<MlsConversation>>,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
         backend: &impl OpenMlsCrypto,
     ) -> CryptoResult<()> {
@@ -26,8 +28,27 @@ impl MlsConversation {
                 let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
                 let existing_clients = self.members_in_next_epoch(backend);
                 let self_identity = add_proposal.key_package().credential().identity();
+                let parent_clients = if let Some(parent_conv) = parent_conversation {
+                    Some(
+                        parent_conv
+                            .read()
+                            .await
+                            .group
+                            .members()
+                            .iter()
+                            .map(|kp| kp.credential().identity().to_vec().into())
+                            .collect(),
+                    )
+                } else {
+                    None
+                };
                 let is_self_user_in_group = callbacks
-                    .client_is_existing_group_user(self.id.clone(), self_identity.into(), existing_clients)
+                    .client_is_existing_group_user(
+                        self.id.clone(),
+                        self_identity.into(),
+                        existing_clients,
+                        parent_clients,
+                    )
                     .await;
                 if !is_self_user_in_group {
                     return Err(CryptoError::UnauthorizedExternalAddProposal);

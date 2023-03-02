@@ -143,6 +143,9 @@ pub enum CryptoError {
     /// Decrypted message uses an invalid KeyPackage (probably expired)
     #[error("Decrypted message uses an invalid KeyPackage")]
     InvalidKeyPackage,
+    /// Parent group cannot be found
+    #[error("The specified parent group has not been found in the keystore")]
+    ParentGroupNotFound,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

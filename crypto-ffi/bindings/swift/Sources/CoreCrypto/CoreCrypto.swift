@@ -558,6 +558,15 @@ public class CoreCryptoWrapper {
         return try self.coreCrypto.removeClientsFromConversation(conversationId: conversationId, clients: clients).convertTo()
     }
 
+    /// Marks a conversation as child of another one
+    /// This will mostly affect the behavior of the callbacks (the parentConversationClients parameter will be filled)
+    ///
+    /// - parameter childId: conversation identifier of the child conversation
+    /// - parameter parentId: conversation identifier of the parent conversation
+    public func markConversationAsChildOf(childId: ConversationId, parentId: ConversationId) throws {
+        try self.coreCrypto.markConversationAsChildOf(childId: childId, parentId: parentId)
+    }
+
     /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited.
     ///
     /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.

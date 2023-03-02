@@ -64,6 +64,7 @@ pub type ConversationId = Vec<u8>;
 #[allow(dead_code)]
 pub struct MlsConversation {
     pub(crate) id: ConversationId,
+    pub(crate) parent_id: Option<ConversationId>,
     pub(crate) group: MlsGroup,
     configuration: MlsConversationConfiguration,
 }
@@ -99,6 +100,7 @@ impl MlsConversation {
         let mut conversation = Self {
             id,
             group,
+            parent_id: None,
             configuration,
         };
 
@@ -141,6 +143,7 @@ impl MlsConversation {
             id,
             group,
             configuration,
+            parent_id: None,
         };
 
         conversation.persist_group_when_changed(backend, true).await?;
@@ -149,7 +152,7 @@ impl MlsConversation {
     }
 
     /// Internal API: restore the conversation from a persistence-saved serialized Group State.
-    pub(crate) fn from_serialized_state(buf: Vec<u8>) -> CryptoResult<Self> {
+    pub(crate) fn from_serialized_state(buf: Vec<u8>, parent_id: Option<ConversationId>) -> CryptoResult<Self> {
         let group = MlsGroup::load(&mut &buf[..])?;
         let id = ConversationId::from(group.group_id().as_slice());
         let configuration = MlsConversationConfiguration {
@@ -160,6 +163,7 @@ impl MlsConversation {
         Ok(Self {
             id,
             group,
+            parent_id,
             configuration,
         })
     }
@@ -190,9 +194,28 @@ impl MlsConversation {
             self.group.save(&mut buf)?;
 
             use core_crypto_keystore::CryptoKeystoreMls as _;
-            Ok(backend.key_store().mls_group_persist(&self.id, &buf).await?)
+            Ok(backend
+                .key_store()
+                .mls_group_persist(&self.id, &buf, self.parent_id.as_deref())
+                .await?)
         } else {
             Ok(())
+        }
+    }
+
+    /// Marks this conversation as child of another.
+    /// Prequisite: Being a member of this group and for it to be stored in the keystore
+    pub async fn mark_as_child_of(
+        &mut self,
+        parent_id: &ConversationId,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<()> {
+        if backend.key_store().mls_group_exists(parent_id).await {
+            self.parent_id = Some(parent_id.clone());
+            self.persist_group_when_changed(backend, true).await?;
+            Ok(())
+        } else {
+            Err(CryptoError::ParentGroupNotFound)
         }
     }
 }
@@ -207,6 +230,40 @@ impl MlsCentral {
             .get_fetch(id, keystore, None)
             .await?
             .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))
+    }
+
+    pub(crate) async fn get_parent_conversation(
+        &mut self,
+        id: &ConversationId,
+    ) -> CryptoResult<Option<crate::group_store::GroupStoreValue<MlsConversation>>> {
+        let conversation = self.get_conversation(id).await?;
+        let conversation_lock = conversation.read().await;
+        if let Some(parent_id) = conversation_lock.parent_id.as_ref() {
+            Ok(Some(
+                self.get_conversation(parent_id)
+                    .await
+                    .map_err(|_| CryptoError::ParentGroupNotFound)?,
+            ))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Mark a conversation as child of another one
+    /// This will affect the behavior of callbacks in particular
+    pub async fn mark_conversation_as_child_of(
+        &mut self,
+        child_id: &ConversationId,
+        parent_id: &ConversationId,
+    ) -> CryptoResult<()> {
+        let conversation = self.get_conversation(child_id).await?;
+        conversation
+            .write()
+            .await
+            .mark_as_child_of(parent_id, &self.mls_backend)
+            .await?;
+
+        Ok(())
     }
 
     /// Destroys a group locally

@@ -143,6 +143,7 @@ pub mod tests {
     cfg_if::cfg_if! {
         if #[cfg(feature = "mls-keystore")] {
             test_for_entity!(test_persisted_mls_group, PersistedMlsGroup);
+            test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
             test_for_entity!(test_mls_identity, MlsIdentity);
             test_for_entity!(test_mls_keypackage, MlsKeypackage);
         }
@@ -230,6 +231,36 @@ pub mod utils {
                     Self {
                         id: id.into(),
                         state,
+                        parent_id: None,
+                    }
+                }
+
+                fn random_update(&mut self) {
+                    let mut rng = rand::thread_rng();
+                    self.state = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
+                    rng.fill(&mut self.state[..]);
+                }
+            }
+
+            impl EntityTestExt for core_crypto_keystore::entities::PersistedMlsPendingGroup {
+                fn random() -> Self {
+                    use rand::Rng as _;
+                    let mut rng = rand::thread_rng();
+
+                    let uuid = uuid::Uuid::new_v4();
+                    let id: [u8; 16] = uuid.into_bytes();
+
+                    let mut state = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
+                    rng.fill(&mut state[..]);
+
+                    let mut custom_configuration = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
+                    rng.fill(&mut custom_configuration[..]);
+
+                    Self {
+                        id: id.into(),
+                        state,
+                        custom_configuration,
+                        parent_id: None,
                     }
                 }
 

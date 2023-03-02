@@ -16,8 +16,8 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, PersistedMlsGroup, StringEntityId},
-    CryptoKeystoreError, MissingKeyErrorKind,
+    entities::{Entity, EntityBase, EntityFindParams, PersistedMlsGroup, PersistedMlsGroupExt, StringEntityId},
+    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 impl Entity for PersistedMlsGroup {
@@ -57,7 +57,19 @@ impl EntityBase for PersistedMlsGroup {
             blob.read_to_end(&mut state)?;
             blob.close()?;
 
-            acc.push(Self { id, state });
+            let mut parent_id = None;
+            if let Ok(mut blob) =
+                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "parent_id", rowid, true)
+            {
+                if !blob.is_empty() {
+                    let mut tmp = Vec::with_capacity(blob.len());
+                    blob.read_to_end(&mut tmp)?;
+                    parent_id.replace(tmp);
+                }
+                blob.close()?;
+            }
+
+            acc.push(Self { id, parent_id, state });
             crate::CryptoKeystoreResult::Ok(acc)
         })?;
 
@@ -70,14 +82,17 @@ impl EntityBase for PersistedMlsGroup {
 
         let group_id = &self.id;
         let state = &self.state;
+        let parent_id = self.parent_id.as_ref();
         let transaction = conn.transaction()?;
 
         let id_bytes = &self.id;
 
         Self::ConnectionType::check_buffer_size(state.len())?;
         Self::ConnectionType::check_buffer_size(id_bytes.len())?;
+        Self::ConnectionType::check_buffer_size(parent_id.map(Vec::len).unwrap_or_default())?;
 
-        let zb = rusqlite::blob::ZeroBlob(state.len() as i32);
+        let zbs = rusqlite::blob::ZeroBlob(state.len() as i32);
+        let zbpid = rusqlite::blob::ZeroBlob(parent_id.map(Vec::len).unwrap_or_default() as i32);
         let zid = rusqlite::blob::ZeroBlob(id_bytes.len() as i32);
 
         let rowid: i64 = if let Some(rowid) = transaction
@@ -87,15 +102,15 @@ impl EntityBase for PersistedMlsGroup {
             .optional()?
         {
             transaction.execute(
-                "UPDATE mls_groups SET state = ? WHERE rowid = ?",
-                [zb.to_sql()?, rowid.to_sql()?],
+                "UPDATE mls_groups SET state = ?, parent_id = ? WHERE rowid = ?",
+                [zbs.to_sql()?, zbpid.to_sql()?, rowid.to_sql()?],
             )?;
 
             rowid
         } else {
             transaction.execute(
-                "INSERT INTO mls_groups (id, state) VALUES(?, ?)",
-                [&zid.to_sql()?, &zb.to_sql()?],
+                "INSERT INTO mls_groups (id, state, parent_id) VALUES(?, ?, ?)",
+                [&zid.to_sql()?, &zbs.to_sql()?, &zbpid.to_sql()?],
             )?;
             let rowid = transaction.last_insert_rowid();
 
@@ -110,6 +125,12 @@ impl EntityBase for PersistedMlsGroup {
         let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, false)?;
         use std::io::Write as _;
         blob.write_all(state)?;
+        blob.close()?;
+
+        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "parent_id", rowid, false)?;
+        if let Some(parent_id) = parent_id {
+            blob.write_all(parent_id)?;
+        }
         blob.close()?;
 
         transaction.commit()?;
@@ -142,7 +163,19 @@ impl EntityBase for PersistedMlsGroup {
             blob.read_to_end(&mut state)?;
             blob.close()?;
 
-            Ok(Some(Self { id, state }))
+            let mut parent_id = None;
+            if let Ok(mut blob) =
+                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "parent_id", rowid, true)
+            {
+                if !blob.is_empty() {
+                    let mut tmp = Vec::with_capacity(blob.len());
+                    blob.read_to_end(&mut tmp)?;
+                    parent_id.replace(tmp);
+                }
+                blob.close()?;
+            }
+
+            Ok(Some(Self { id, parent_id, state }))
         } else {
             Ok(None)
         }
@@ -181,7 +214,19 @@ impl EntityBase for PersistedMlsGroup {
             blob.read_to_end(&mut state)?;
             blob.close()?;
 
-            res.push(Self { id, state });
+            let mut parent_id = None;
+            if let Ok(mut blob) =
+                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "parent_id", rowid, true)
+            {
+                if !blob.is_empty() {
+                    let mut tmp = Vec::with_capacity(blob.len());
+                    blob.read_to_end(&mut tmp)?;
+                    parent_id.replace(tmp);
+                }
+                blob.close()?;
+            }
+
+            res.push(Self { id, parent_id, state });
         }
 
         transaction.commit()?;
@@ -208,5 +253,52 @@ impl EntityBase for PersistedMlsGroup {
             transaction.rollback()?;
             Err(Self::to_missing_key_err_kind().into())
         }
+    }
+}
+
+#[async_trait::async_trait(?Send)]
+impl PersistedMlsGroupExt for PersistedMlsGroup {
+    fn parent_id(&self) -> Option<&[u8]> {
+        self.parent_id.as_deref()
+    }
+
+    async fn child_groups(&self, conn: &mut <Self as EntityBase>::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
+        let id = self.id_raw();
+        let transaction = conn.transaction()?;
+        let mut query = transaction.prepare_cached("SELECT rowid FROM mls_groups WHERE parent_id = ?")?;
+        let mut rows = query.query_map([id], |r| r.get(0))?;
+
+        let entities = rows.try_fold(Vec::new(), |mut acc, rowid_result| {
+            use std::io::Read as _;
+            let rowid = rowid_result?;
+
+            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "id", rowid, true)?;
+            let mut id = vec![];
+            blob.read_to_end(&mut id)?;
+            blob.close()?;
+
+            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, true)?;
+            let mut state = vec![];
+            blob.read_to_end(&mut state)?;
+            blob.close()?;
+
+            let mut parent_id = None;
+            // Ignore errors because null blobs cause errors on open
+            if let Ok(mut blob) =
+                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "parent_id", rowid, true)
+            {
+                if !blob.is_empty() {
+                    let mut tmp = Vec::with_capacity(blob.len());
+                    blob.read_to_end(&mut tmp)?;
+                    parent_id.replace(tmp);
+                }
+                blob.close()?;
+            }
+
+            acc.push(Self { id, parent_id, state });
+            crate::CryptoKeystoreResult::Ok(acc)
+        })?;
+
+        Ok(entities)
     }
 }

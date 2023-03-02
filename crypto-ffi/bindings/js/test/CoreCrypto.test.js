@@ -517,7 +517,7 @@ test("callbacks default to false when not async", async () => {
       userAuthorize(conversationId, externalClientId, existingClients) {
         return true;
       },
-      clientIsExistingGroupUser(conversationId, clientId, existingClients) {
+      clientIsExistingGroupUser(conversationId, clientId, existingClients, parentConversationIds) {
         return true;
       }
     };
