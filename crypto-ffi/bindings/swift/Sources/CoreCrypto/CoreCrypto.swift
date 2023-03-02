@@ -70,6 +70,12 @@ extension CoreCryptoSwift.MlsPublicGroupStateEncryptionType {
     }
 }
 
+extension CoreCryptoSwift.ProteusAutoPrekeyBundle {
+    func convertTo() -> ProteusAutoPrekeyBundle {
+        return ProteusAutoPrekeyBundle(id: self.id, pkb: self.pkb)
+    }
+}
+
 extension CoreCryptoSwift.MlsRatchetTreeType {
     func convertTo() -> RatchetTreeType {
         switch self {
@@ -118,6 +124,23 @@ private extension CiphersuiteName {
         case .mls256Dhkemp384Aes256gcmSha384P384:
             return CoreCryptoSwift.CiphersuiteName.mls256Dhkemp384Aes256gcmSha384P384
         }
+    }
+}
+
+public struct ProteusAutoPrekeyBundle: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.ProteusAutoPrekeyBundle
+    func convert() -> Inner {
+        return CoreCryptoSwift.ProteusAutoPrekeyBundle(id: self.id, pkb: self.preKeyBundle)
+    }
+
+    /// Proteus PreKey ID
+    public var id: UInt16
+    /// CBOR-serialized Proteus PreKeyBundle
+    public var preKeyBundle: [UInt8]
+
+    public init(id: UInt16, pkb: [UInt8]) {
+        self.id = id
+        self.preKeyBundle = pkb
     }
 }
 
@@ -832,8 +855,8 @@ public class CoreCryptoWrapper {
     /// Creates a new prekey with an automatically incremented ID.
     ///
     /// - returns: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
-    public func proteusNewPrekeyAuto() throws -> [UInt8] {
-        try self.coreCrypto.proteusNewPrekeyAuto()
+    public func proteusNewPrekeyAuto() throws -> ProteusAutoPrekeyBundle {
+        try self.coreCrypto.proteusNewPrekeyAuto().convertTo()
     }
 
     /// - returns: A CBOR-serialized verison of the PreKeyBundle associated to the last resort prekey ID

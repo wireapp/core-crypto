@@ -208,7 +208,7 @@ impl CoreCrypto {
     /// Creates a new Proteus prekey with an automatically incremented ID and returns the CBOR-serialized version of the prekey bundle
     ///
     /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
-    pub async fn proteus_new_prekey_auto(&self) -> CryptoResult<Vec<u8>> {
+    pub async fn proteus_new_prekey_auto(&self) -> CryptoResult<(u16, Vec<u8>)> {
         let proteus = self.proteus.as_ref().ok_or(CryptoError::ProteusNotInitialized)?;
         let keystore = self.mls.mls_backend.borrow_keystore();
         proteus.new_prekey_auto(keystore).await
@@ -537,9 +537,9 @@ impl ProteusCentral {
     /// Generates a new Proteus Prekey, with an automatically auto-incremented ID.
     ///
     /// See [ProteusCentral::new_prekey]
-    pub async fn new_prekey_auto(&self, keystore: &CryptoKeystore) -> CryptoResult<Vec<u8>> {
+    pub async fn new_prekey_auto(&self, keystore: &CryptoKeystore) -> CryptoResult<(u16, Vec<u8>)> {
         let id = core_crypto_keystore::entities::ProteusPrekey::get_free_id(keystore).await?;
-        self.new_prekey(id, keystore).await
+        Ok((id, self.new_prekey(id, keystore).await?))
     }
 
     /// Returns the Proteus last resort prekey ID (u16::MAX = 65535 = 0xFFFF)

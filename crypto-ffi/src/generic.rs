@@ -31,6 +31,13 @@ cfg_if::cfg_if! {
     }
 }
 
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct ProteusAutoPrekeyBundle {
+    pub id: u16,
+    pub pkb: Vec<u8>,
+}
+
 #[derive(Debug)]
 /// see [core_crypto::prelude::MlsConversationCreationMessage]
 pub struct MemberAddedMessages {
@@ -1023,16 +1030,17 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::proteus::ProteusCentral::new_prekey_auto]
-    pub fn proteus_new_prekey_auto(&self) -> CryptoResult<Vec<u8>> {
+    pub fn proteus_new_prekey_auto(&self) -> CryptoResult<ProteusAutoPrekeyBundle> {
         proteus_impl! { self.proteus_last_error_code => {
-            future::block_on(
+            let (id, pkb) = future::block_on(
                 self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                     self.central
                         .lock()
                         .map_err(|_| CryptoError::LockPoisonError)?
                         .proteus_new_prekey_auto(),
                 ),
-            )
+            )?;
+            CryptoResult::Ok(ProteusAutoPrekeyBundle { id, pkb })
         }}
     }
 
