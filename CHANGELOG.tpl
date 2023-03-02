@@ -7,11 +7,36 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.7.0] - 2023-03-??
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.7.0" unreleased=true}}
+</details>
+
+* **[BREAKING]** `wipe_conversation` is now automatically called when a commit removing the local client is recieved.
+* **[BREAKING]** Huge internal change on how we cache MLS groups and Proteus sessions in memory
+    * This affects some APIs that became async on the TS bindings
+    * Our previous `HashMap`-based cache could grow indefinitely in the case of massive accounts with many, many groups/conversations, each containing a ton of clients. This replaces this memory store by a LRU cache having the following properties:
+        * Limited by number of entries AND occupied memory
+            * Defaults for memory: All the available system memory on other platforms / 100MB on WASM
+            * Defaults for number of entries:
+                * 100 MLS groups
+                * 200 Proteus sessions
+        * Flow for retrieving a value
+            1. Check the LRU store if the value exists, if yes, it's promoted as MRU (Most Recently Used) and returned
+            2. If not found, it might have been evicted, so we search the keystore
+            3. If found in the keystore, the value is placed as MRU and returned
+                * Special case: we evict the store as much as needed to fit the new MRU value in this case. This is designed to infaillible.
+            5. If not found, we return a `None` value
+    * This approach potentially allows to have an unlimited number of groups/sessions as long as a single item does not exceed the maximum memory limit.
+    * As a consequence of the internal mutability requirements of the new map and the automatic keystore fetches, many if not all APIs are now `async`. This does not concern the Mobile FFI.
+
 ## [0.6.3] - 2023-02-17
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.6.3" unreleased=true }}
+{{git-cliff tag="v0.6.3"}}
 </details>
 
 * Improve compatbillity with older linux versions when running core-crypto-jvm by building on Ubuntu LTS (22.04).
