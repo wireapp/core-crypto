@@ -13,12 +13,14 @@ sequenceDiagram
     acme-server->>-wire-client: 201
     wire-client->>+acme-server: POST /acme/acme/authz/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs
     acme-server->>-wire-client: 200
-    wire-client->>+wire-server: GET //clients/token/nonce
+    wire-client->>+wire-server: GET /clients/token/nonce
     wire-server->>-wire-client: 200
-    wire-client->>+wire-server: POST //clients/7332893846330786102/access-token
+    wire-client->>+wire-server: POST /clients/7332893846330786102/access-token
     wire-server->>-wire-client: 200
     wire-client->>+acme-server: POST /acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/n7mcr316DajruQd3pDqLEbHlIsAhjih1
     acme-server->>-wire-client: 200
+    wire-client->>+idp: Authenticate end user (Open ID Connect implicit flow)
+    idp->>-wire-client: Open ID token
     wire-client->>+acme-server: POST /acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/kpQYi9U70QylwrSo6AqdhM9ASeHtzjMv
     acme-server->>-wire-client: 200
     wire-client->>+acme-server: POST /acme/acme/order/inuqE3xYTl1NOrwgrWo1TvNDnONlN94a
@@ -134,7 +136,7 @@ content-type: application/jose+json
     "identifiers": [
       {
         "type": "wireapp-id",
-        "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
+        "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"im:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"im:wireapp=alice.smith.qa@example.com\"}"
       }
     ],
     "notBefore": "2023-02-09T16:55:56.032306Z",
@@ -158,7 +160,7 @@ replay-nonce: MzR1czBxS2FyeXZhYlpTcXMwOTU5R3V0bXBFTmdhRzA
   "identifiers": [
     {
       "type": "wireapp-id",
-      "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
+      "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"im:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"im:wireapp=alice.smith.qa@example.com\"}"
     }
   ],
   "authorizations": [
@@ -211,7 +213,7 @@ replay-nonce: YWJTVFZjNFY5QU1IUmtIQXM5czFwbVJTYzV6RFZVc1Y
   ],
   "identifier": {
     "type": "wireapp-id",
-    "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
+    "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"im:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"im:wireapp=alice.smith.qa@example.com\"}"
   }
 }
 ```
@@ -285,6 +287,16 @@ replay-nonce: em1LdldUZ2NQUmxXSEhrOEJTUTdSUzZGVDN5NTRPems
   "token": "SY74tJmAIIhdzRtJvpx389f6EKHbXuxQ"
 }
 ```
+#### 17. Authenticate end user using Open ID Connect implicit flow
+
+TBC
+
+#### 18. Open ID token
+
+TBC
+
+Note: The ACME provisioner is configured with rules for transforming values received in the token into a Wire handle and display name.
+
 #### 17. validate oidc challenge (userId + displayName)
 [Id token](https://jwt.io/#id_token=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ)
 ```http request
@@ -358,7 +370,7 @@ replay-nonce: ZkxwZmhSdW1QWmhMVVd5clM0TGhQTVl1SmZ6UmYwN3o
   "identifiers": [
     {
       "type": "wireapp-id",
-      "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
+      "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"im:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"im:wireapp=alice.smith.qa@example.com\"}"
     }
   ],
   "authorizations": [
@@ -411,7 +423,7 @@ replay-nonce: c3VnczNDaEJ1dHI1eGNmNWc5MU5Zd21rZmdsR2plbzQ
   "identifiers": [
     {
       "type": "wireapp-id",
-      "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
+      "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"im:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com\",\"handle\":\"im:wireapp=alice.smith.qa@example.com\"}"
     }
   ],
   "authorizations": [
@@ -480,8 +492,8 @@ extensions:
   KeyUsage:Digital Signature
   SubjectKeyIdentifier:f8:1c:d6:5a:ab:a6:86:e1:7f:6e:eb:f7:2d:20:08:ff:59:d1:76:d5
   SAN:DNSName: smith, alice m (qa)
-  SAN:URI: impp:wireapp=alice.smith.qa@example.com
-  SAN:URI: impp:wireapp=ndeyzgywnjc2mzfkndbintllymvmmjqyztizntc4nwq/65c3ac1a1631c136@example.com
+  SAN:URI: im:wireapp=alice.smith.qa@example.com
+  SAN:URI: im:wireapp=ndeyzgywnjc2mzfkndbintllymvmmjqyztizntc4nwq/65c3ac1a1631c136@example.com
                 
 ```
 
