@@ -297,7 +297,7 @@ TBC
 
 Note: The ACME provisioner is configured with rules for transforming values received in the token into a Wire handle and display name.
 
-#### 17. validate oidc challenge (userId + displayName)
+#### 19. validate oidc challenge (userId + displayName)
 [Id token](https://jwt.io/#id_token=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ)
 ```http request
 POST https://localhost:55195/acme/acme/challenge/e5XBALr0WpTciw6m7r1ihI7lXRapUmvs/kpQYi9U70QylwrSo6AqdhM9ASeHtzjMv
@@ -323,7 +323,7 @@ content-type: application/jose+json
   }
 }
 ```
-#### 18. handle challenge is valid
+#### 20. handle challenge is valid
 ```http request
 200
 cache-control: no-store
@@ -342,7 +342,7 @@ replay-nonce: bkl4QTEwQWpjY0htY2hSc0V1ME9XclN2ZEVSenNrU2o
 }
 ```
 ### Client presents a CSR and gets its certificate
-#### 19. verify the status of the order
+#### 21. verify the status of the order
 ```http request
 POST https://localhost:55195/acme/acme/order/inuqE3xYTl1NOrwgrWo1TvNDnONlN94a
 content-type: application/jose+json
@@ -354,7 +354,7 @@ content-type: application/jose+json
   "signature": "Rf_A1CJxnL-UOYPn75hFaolVS3M_K6uY5pVVFMgtFGngrSTRqwUIxqP17ohZV7Sg20er_8Cmf4_-YfniJk8CAw"
 }
 ```
-#### 20. loop (with exponential backoff) until order is ready
+#### 22. loop (with exponential backoff) until order is ready
 ```http request
 200
 cache-control: no-store
@@ -381,7 +381,7 @@ replay-nonce: ZkxwZmhSdW1QWmhMVVd5clM0TGhQTVl1SmZ6UmYwN3o
   "notAfter": "2023-02-09T17:55:56.032306Z"
 }
 ```
-#### 21. create a CSR and call finalize url
+#### 23. create a CSR and call finalize url
 ```http request
 POST https://localhost:55195/acme/acme/order/inuqE3xYTl1NOrwgrWo1TvNDnONlN94a/finalize
 content-type: application/jose+json
@@ -406,7 +406,7 @@ content-type: application/jose+json
   }
 }
 ```
-#### 22. get back a url for fetching the certificate
+#### 24. get back a url for fetching the certificate
 ```http request
 200
 cache-control: no-store
@@ -434,7 +434,7 @@ replay-nonce: c3VnczNDaEJ1dHI1eGNmNWc5MU5Zd21rZmdsR2plbzQ
   "notAfter": "2023-02-09T17:55:56.032306Z"
 }
 ```
-#### 23. fetch the certificate
+#### 25. fetch the certificate
 ```http request
 POST https://localhost:55195/acme/acme/certificate/D9YM1rT8KKqhKMH9C2WbJhHwStYPHPl9
 content-type: application/jose+json
@@ -446,7 +446,7 @@ content-type: application/jose+json
   "signature": "Nw6QTLBbFomijmftM5_0lymbg9lhmFYqZiDOyWtjuB7QXFL403N8Op8QrJWGPWxMiVlym1D0TaC-Wc6hkosZDw"
 }
 ```
-#### 24. get the certificate chain
+#### 26. get the certificate chain
 ```http request
 200
 cache-control: no-store
