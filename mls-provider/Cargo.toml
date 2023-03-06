@@ -24,7 +24,7 @@ hmac = "0.12"
 ed25519-dalek = "1.0"
 ecdsa = { version = "0.15", features = ["der"] }
 p256 = "0.12"
-p384 = "0.12"
+p384 = "0.13"
 # TODO: Uncomment this once p521 crate is ready
 # p521 = { version = "0.12", git = "https://github.com/RustCrypto/elliptic-curves", package = "p521" }
 hkdf = "0.12"
