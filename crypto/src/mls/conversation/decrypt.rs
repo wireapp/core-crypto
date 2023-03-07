@@ -112,7 +112,7 @@ impl MlsConversation {
                     app_msg: None,
                     proposals: vec![],
                     is_active: true,
-                    delay: self.compute_next_commit_delay(),
+                    delay: self.compute_next_commit_delay(backend),
                     sender_client_id: None,
                     has_epoch_changed: false,
                 }
@@ -150,7 +150,7 @@ impl MlsConversation {
                     app_msg: None,
                     proposals,
                     is_active: self.group.is_active(),
-                    delay: self.compute_next_commit_delay(),
+                    delay: self.compute_next_commit_delay(backend),
                     sender_client_id: None,
                     has_epoch_changed: true,
                 }
