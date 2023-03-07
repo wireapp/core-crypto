@@ -15,7 +15,7 @@ xshell = "0.2"
 handlebars = "4.3"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 semver = "1.0"
-toml_edit = "0.17"
-cargo = "0.67"
+toml_edit = "0.19"
+cargo = "0.68"
 
 
