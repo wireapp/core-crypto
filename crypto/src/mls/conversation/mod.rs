@@ -53,6 +53,7 @@ pub mod handshake;
 pub mod merge;
 pub(crate) mod public_group_state;
 mod renew;
+mod subgroup;
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 pub type ConversationId = Vec<u8>;

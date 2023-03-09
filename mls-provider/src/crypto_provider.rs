@@ -43,6 +43,72 @@ impl RustCrypto {
             rng: rand_chacha::ChaCha20Rng::from_seed(seed.0).into(),
         }
     }
+
+    pub const fn secret_key_len_for_alg(alg: openmls_traits::types::SignatureScheme) -> Result<usize, CryptoError> {
+        match alg {
+            SignatureScheme::ECDSA_SECP256R1_SHA256 => Ok(32),
+            SignatureScheme::ECDSA_SECP384R1_SHA384 => Ok(48),
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
+                // TODO: Uncomment this once p521 crate is ready
+                //Ok(64)
+                Err(CryptoError::UnsupportedSignatureScheme)
+            }
+            SignatureScheme::ED25519 => Ok(32),
+            SignatureScheme::ED448 => Err(CryptoError::UnsupportedSignatureScheme),
+        }
+    }
+
+    pub fn keypair_from_raw_sk(
+        &self,
+        alg: openmls_traits::types::SignatureScheme,
+        sk_bytes: &[u8],
+    ) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
+        match alg {
+            SignatureScheme::ECDSA_SECP256R1_SHA256 => {
+                let sk = p256::ecdsa::SigningKey::from_slice(sk_bytes).map_err(|_| CryptoError::InvalidLength)?;
+                let pk = sk.verifying_key().to_encoded_point(false).as_bytes().into();
+                Ok((sk.to_bytes().as_slice().into(), pk))
+            }
+            SignatureScheme::ECDSA_SECP384R1_SHA384 => {
+                let sk = p384::ecdsa::SigningKey::from_slice(sk_bytes).map_err(|_| CryptoError::InvalidLength)?;
+                let pk = sk.verifying_key().to_encoded_point(false).as_bytes().into();
+                Ok((sk.to_bytes().as_slice().into(), pk))
+            }
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
+                // TODO: Uncomment this once p521 crate is ready
+                // let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
+                // let k = p521::ecdsa::SigningKey::random(&mut *rng);
+                // let pk = k.verifying_key().to_encoded_point(false).as_bytes().into();
+                // Ok((k.to_bytes().as_slice().into(), pk))
+                Err(CryptoError::UnsupportedSignatureScheme)
+            }
+            SignatureScheme::ED25519 => {
+                let sk = ed25519_dalek::SecretKey::from_bytes(sk_bytes).map_err(|_| CryptoError::InvalidLength)?;
+                let pk: ed25519_dalek::PublicKey = (&sk).into();
+                let mut kp_bytes = [0u8; ed25519_dalek::KEYPAIR_LENGTH];
+
+                let sk_bytes = sk.to_bytes();
+                if sk_bytes.len() != ed25519_dalek::SECRET_KEY_LENGTH {
+                    return Err(CryptoError::InvalidLength);
+                }
+                kp_bytes[..ed25519_dalek::SECRET_KEY_LENGTH].copy_from_slice(&sk_bytes);
+
+                let pk_bytes = pk.to_bytes();
+                if pk_bytes.len() != ed25519_dalek::KEYPAIR_LENGTH - ed25519_dalek::SECRET_KEY_LENGTH {
+                    return Err(CryptoError::InvalidLength);
+                }
+                kp_bytes[ed25519_dalek::SECRET_KEY_LENGTH..ed25519_dalek::KEYPAIR_LENGTH].copy_from_slice(&pk_bytes);
+
+                let k = ed25519_dalek::Keypair::from_bytes(kp_bytes.as_slice())
+                    .map_err(|_| CryptoError::InvalidLength)?
+                    .to_bytes();
+                let pk = k[ed25519_dalek::SECRET_KEY_LENGTH..].to_vec();
+                let sk_pk = k.into();
+                Ok((sk_pk, pk))
+            }
+            SignatureScheme::ED448 => Err(CryptoError::UnsupportedSignatureScheme),
+        }
+    }
 }
 
 #[cfg(feature = "raw-rand-access")]
