@@ -671,6 +671,16 @@ export class CoreCrypto {
     }
 
     /**
+     * If this returns > 1 you **cannot** call {@link CoreCrypto.wipe} or {@link CoreCrypto.close} as they will produce an error because of the
+     * outstanding references that were detected.
+     *
+     * @returns the count of strong refs for this CoreCrypto instance
+     */
+    strongRefCount(): number {
+        return this.#cc.strong_ref_count();
+    }
+
+    /**
      * Wipes the {@link CoreCrypto} backing storage (i.e. {@link https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API | IndexedDB} database)
      *
      * **CAUTION**: This {@link CoreCrypto} instance won't be useable after a call to this method, but there's no way to express this requirement in TypeScript so you'll get errors instead!
