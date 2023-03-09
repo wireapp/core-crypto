@@ -917,10 +917,26 @@ impl CoreCrypto {
         )
     }
 
+    /// Returns the Arc strong ref count
+    pub fn strong_ref_count(&self) -> usize {
+        std::sync::Arc::strong_count(&self.inner)
+    }
+
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::MlsCentral::close]
     pub fn close(self) -> Promise {
+        let refcount = self.strong_ref_count();
+        if refcount > 1 {
+            return js_sys::Promise::reject(
+                &js_sys::JsString::from(
+                    format!("There are other outstanding references to this CoreCrypto instance [refs = {refcount}]")
+                        .as_str(),
+                )
+                .into(),
+            );
+        }
+
         if let Ok(cc) = std::sync::Arc::try_unwrap(self.inner).map(async_lock::RwLock::into_inner) {
             future_to_promise(
                 async move {
@@ -931,7 +947,11 @@ impl CoreCrypto {
             )
         } else {
             js_sys::Promise::reject(
-                &js_sys::JsString::from("There are other outstanding references to this CoreCrypto instance").into(),
+                &js_sys::JsString::from(
+                    format!("There are other outstanding references to this CoreCrypto instance [refs = {refcount}]")
+                        .as_str(),
+                )
+                .into(),
             )
         }
     }
@@ -940,6 +960,17 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::MlsCentral::wipe]
     pub fn wipe(self) -> Promise {
+        let refcount = self.strong_ref_count();
+        if refcount > 1 {
+            return js_sys::Promise::reject(
+                &js_sys::JsString::from(
+                    format!("There are other outstanding references to this CoreCrypto instance [refs = {refcount}]")
+                        .as_str(),
+                )
+                .into(),
+            );
+        }
+
         if let Ok(cc) = std::sync::Arc::try_unwrap(self.inner).map(async_lock::RwLock::into_inner) {
             future_to_promise(
                 async move {
@@ -950,7 +981,11 @@ impl CoreCrypto {
             )
         } else {
             js_sys::Promise::reject(
-                &js_sys::JsString::from("There are other outstanding references to this CoreCrypto instance").into(),
+                &js_sys::JsString::from(
+                    format!("There are other outstanding references to this CoreCrypto instance [refs = {refcount}]")
+                        .as_str(),
+                )
+                .into(),
             )
         }
     }
