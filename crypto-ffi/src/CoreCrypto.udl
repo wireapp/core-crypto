@@ -331,6 +331,7 @@ enum E2eIdentityError {
     "UrlError",
     "JsonError",
     "E2eiInvalidDomain",
+    "Utf8Error",
 };
 
 dictionary AcmeDirectory {
@@ -346,7 +347,7 @@ dictionary NewAcmeOrder {
 
 dictionary NewAcmeAuthz {
     string identifier;
-    AcmeChallenge? wire_http_challenge;
+    AcmeChallenge? wire_dpop_challenge;
     AcmeChallenge? wire_oidc_challenge;
 };
 
@@ -372,7 +373,7 @@ interface WireE2eIdentity {
     JsonRawData new_account_response(JsonRawData account);
 
     [Throws=E2eIdentityError]
-    JsonRawData new_order_request(string display_name, string domain, string client_id, string handle, u32 expiry_days, AcmeDirectory directory, AcmeAccount account, string previous_nonce);
+    JsonRawData new_order_request(string display_name, ClientId client_id, string handle, u32 expiry_days, AcmeDirectory directory, AcmeAccount account, string previous_nonce);
 
     [Throws=E2eIdentityError]
     NewAcmeOrder new_order_response(JsonRawData order);
@@ -384,7 +385,7 @@ interface WireE2eIdentity {
     NewAcmeAuthz new_authz_response(JsonRawData authz);
 
     [Throws=E2eIdentityError]
-    string create_dpop_token(string access_token_url, string user_id, u64 client_id, string domain, AcmeChallenge client_id_challenge, string backend_nonce, u32 expiry_days);
+    string create_dpop_token(string access_token_url, ClientId client_id, AcmeChallenge dpop_challenge, string backend_nonce, u32 expiry_days);
 
     [Throws=E2eIdentityError]
     JsonRawData new_dpop_challenge_request(string access_token, AcmeChallenge dpop_challenge, AcmeAccount account, string previous_nonce);

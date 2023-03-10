@@ -1183,8 +1183,7 @@ impl WireE2eIdentity {
     pub fn new_order_request(
         &self,
         display_name: String,
-        domain: String,
-        client_id: String,
+        client_id: ClientId,
         handle: String,
         expiry_days: u32,
         directory: AcmeDirectory,
@@ -1192,10 +1191,9 @@ impl WireE2eIdentity {
         previous_nonce: String,
     ) -> E2eIdentityResult<JsonRawData> {
         self.0.new_order_request(
-            display_name,
-            domain,
+            &display_name,
             client_id,
-            handle,
+            &handle,
             expiry_days,
             directory.into(),
             account.into(),
@@ -1228,19 +1226,15 @@ impl WireE2eIdentity {
     pub fn create_dpop_token(
         &self,
         access_token_url: String,
-        user_id: String,
-        client_id: u64,
-        domain: String,
-        client_id_challenge: AcmeChallenge,
+        client_id: ClientId,
+        dpop_challenge: AcmeChallenge,
         backend_nonce: String,
         expiry_days: u32,
     ) -> E2eIdentityResult<String> {
         self.0.create_dpop_token(
             access_token_url,
-            user_id,
             client_id,
-            domain,
-            client_id_challenge.into(),
+            dpop_challenge.into(),
             backend_nonce,
             expiry_days,
         )
@@ -1383,7 +1377,7 @@ impl From<NewAcmeOrder> for core_crypto::prelude::E2eiNewAcmeOrder {
 /// See [core_crypto::e2e_identity::types::E2eiNewAcmeAuthz]
 pub struct NewAcmeAuthz {
     pub identifier: String,
-    pub wire_http_challenge: Option<AcmeChallenge>,
+    pub wire_dpop_challenge: Option<AcmeChallenge>,
     pub wire_oidc_challenge: Option<AcmeChallenge>,
 }
 
@@ -1391,7 +1385,7 @@ impl From<core_crypto::prelude::E2eiNewAcmeAuthz> for NewAcmeAuthz {
     fn from(new_authz: core_crypto::prelude::E2eiNewAcmeAuthz) -> Self {
         Self {
             identifier: new_authz.identifier,
-            wire_http_challenge: new_authz.wire_dpop_challenge.map(Into::into),
+            wire_dpop_challenge: new_authz.wire_dpop_challenge.map(Into::into),
             wire_oidc_challenge: new_authz.wire_oidc_challenge.map(Into::into),
         }
     }
@@ -1401,7 +1395,7 @@ impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
     fn from(new_authz: NewAcmeAuthz) -> Self {
         Self {
             identifier: new_authz.identifier,
-            wire_dpop_challenge: new_authz.wire_http_challenge.map(Into::into),
+            wire_dpop_challenge: new_authz.wire_dpop_challenge.map(Into::into),
             wire_oidc_challenge: new_authz.wire_oidc_challenge.map(Into::into),
         }
     }

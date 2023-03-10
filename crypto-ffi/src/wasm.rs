@@ -2063,8 +2063,7 @@ impl WireE2eIdentity {
     pub fn new_order_request(
         &self,
         display_name: String,
-        domain: String,
-        client_id: String,
+        client_id: FfiClientId,
         handle: String,
         expiry_days: u32,
         directory: JsValue,
@@ -2073,10 +2072,9 @@ impl WireE2eIdentity {
     ) -> WasmCryptoResult<Uint8Array> {
         let directory = serde_wasm_bindgen::from_value::<AcmeDirectory>(directory)?;
         let new_order = self.0.new_order_request(
-            display_name,
-            domain,
-            client_id,
-            handle,
+            &display_name,
+            client_id.into(),
+            &handle,
             expiry_days,
             directory.into(),
             account.to_vec().into(),
@@ -2112,20 +2110,16 @@ impl WireE2eIdentity {
     pub fn create_dpop_token(
         &self,
         access_token_url: String,
-        user_id: String,
-        client_id: u64,
-        domain: String,
-        client_id_challenge: JsValue,
+        client_id: FfiClientId,
+        dpop_challenge: JsValue,
         backend_nonce: String,
         expiry_days: u32,
     ) -> WasmCryptoResult<String> {
-        let client_id_challenge = serde_wasm_bindgen::from_value::<AcmeChallenge>(client_id_challenge)?;
+        let dpop_challenge = serde_wasm_bindgen::from_value::<AcmeChallenge>(dpop_challenge)?;
         let dpop_token = self.0.create_dpop_token(
             access_token_url,
-            user_id,
-            client_id,
-            domain,
-            client_id_challenge.into(),
+            client_id.into(),
+            dpop_challenge.into(),
             backend_nonce,
             expiry_days,
         )?;

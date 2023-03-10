@@ -72,7 +72,7 @@ package = "openssl-src"
 [patch.crates-io.wire-e2e-identity]
 git = "https://github.com/wireapp/rusty-jwt-tools"
 package = "wire-e2e-identity"
-tag = "v0.2.0"
+tag = "v0.3.0"
 
 [patch.crates-io.jwt-simple]
 git = "https://github.com/wireapp/rust-jwt-simple"

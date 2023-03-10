@@ -1567,18 +1567,17 @@ export class WireE2eIdentity {
      * Creates a new acme order for the handle (userId + display name) and the clientId.
      *
      * @param displayName human readable name displayed in the application e.g. `Smith, Alice M (QA)`
-     * @param domain DNS name of owning backend e.g. `example.com`
-     * @param clientId client identifier with user b64Url encoded & clientId hex encoded e.g. `impp:wireapp=NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ/6add501bacd1d90e@example.com`
-     * @param handle user handle e.g. `impp:wireapp=alice.smith.qa@example.com`
+     * @param clientId client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+     * @param handle user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays generated x509 certificate expiry
      * @param directory you got from {@link directoryResponse}
      * @param account you got from {@link newAccountResponse}
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/new-account`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    newOrderRequest(displayName: string, domain: string, clientId: string, handle: string, expiryDays: number, directory: AcmeDirectory, account: AcmeAccount, previousNonce: string): JsonRawData {
+    newOrderRequest(displayName: string, clientId: ClientId, handle: string, expiryDays: number, directory: AcmeDirectory, account: AcmeAccount, previousNonce: string): JsonRawData {
         try {
-            return this.#e2ei.new_order_request(displayName, domain, clientId, handle, expiryDays, directory, account, previousNonce);
+            return this.#e2ei.new_order_request(displayName, clientId, handle, expiryDays, directory, account, previousNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1618,10 +1617,6 @@ export class WireE2eIdentity {
     /**
      * Parses the response from `POST /acme/{provisioner-name}/authz/{authz-id}`
      *
-     * You then have to map the challenge from this authorization object. The `client_id_challenge`
-     * will be the one with the `client_id_host` (you supplied to {@link newOrderRequest}) identifier,
-     * the other will be your `handle_challenge`.
-     *
      * @param authz HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
      */
@@ -1642,16 +1637,14 @@ export class WireE2eIdentity {
      * {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token} on wire-server.
      *
      * @param accessTokenUrl backend endpoint where this token will be sent. Should be this one {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token}
-     * @param userId an UUIDv4 uniquely identifying the user
-     * @param clientId client identifier
-     * @param domain owning backend domain e.g. `wire.com`
-     * @param clientIdChallenge you found after {@link newAuthzResponse}
+     * @param clientId client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+     * @param dpopChallenge you found after {@link newAuthzResponse}
      * @param backendNonce you get by calling `GET /clients/token/nonce` on wire-server as defined here {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce}
      * @param expiryDays token expiry in days
      */
-    createDpopToken(accessTokenUrl: string, userId: string, clientId: bigint, domain: string, clientIdChallenge: AcmeChallenge, backendNonce: string, expiryDays: number): string {
+    createDpopToken(accessTokenUrl: string, clientId: ClientId, dpopChallenge: AcmeChallenge, backendNonce: string, expiryDays: number): string {
         try {
-            return this.#e2ei.create_dpop_token(accessTokenUrl, userId, clientId, domain, clientIdChallenge, backendNonce, expiryDays);
+            return this.#e2ei.create_dpop_token(accessTokenUrl, clientId, dpopChallenge, backendNonce, expiryDays);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1856,7 +1849,7 @@ export interface NewAcmeAuthz {
      *
      * @readonly
      */
-    wireHttpChallenge: AcmeChallenge | null;
+    wireDpopChallenge: AcmeChallenge | null;
     /**
      * Challenge for the userId and displayName
      *
