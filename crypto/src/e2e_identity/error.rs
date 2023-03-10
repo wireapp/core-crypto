@@ -24,4 +24,7 @@ pub enum E2eIdentityError {
     /// Json error
     #[error(transparent)]
     JsonError(#[from] serde_json::Error),
+    /// Utf8 error
+    #[error(transparent)]
+    Utf8Error(#[from] ::core::str::Utf8Error),
 }

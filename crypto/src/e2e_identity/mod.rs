@@ -1,7 +1,10 @@
-use crate::{prelude::MlsCentral, prelude::MlsCiphersuite};
+use wire_e2e_identity::prelude::RustyE2eIdentity;
+
 use error::*;
 use mls_crypto_provider::MlsCryptoProvider;
-use wire_e2e_identity::prelude::RustyE2eIdentity;
+
+use crate::prelude::ClientId;
+use crate::{prelude::MlsCentral, prelude::MlsCiphersuite};
 
 mod crypto;
 pub mod error;
@@ -88,29 +91,28 @@ impl WireE2eIdentity {
     ///
     /// # Parameters
     /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
-    /// * `domain` - DNS name of owning backend e.g. `example.com`
-    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `impp:wireapp=NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ/6add501bacd1d90e@example.com`
-    /// * `handle` - user handle e.g. `impp:wireapp=alice.smith.qa@example.com`
-    /// * `expiry` - generated x509 certificate expiry
+    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+    /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
+    /// * `expiry_days` - generated x509 certificate expiry in days
     /// * `directory` - you got from [Self::acme_directory_response]
     /// * `account` - you got from [Self::acme_new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-account`
     #[allow(clippy::too_many_arguments)]
     pub fn new_order_request(
         &self,
-        display_name: String,
-        domain: String,
-        client_id: String,
-        handle: String,
+        display_name: &str,
+        client_id: ClientId,
+        handle: &str,
         expiry_days: u32,
         directory: types::E2eiAcmeDirectory,
         account: types::E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
+        let client_id: Vec<u8> = client_id.into();
+        let client_id = std::str::from_utf8(client_id.as_slice())?;
         let expiry = core::time::Duration::from_secs(u64::from(expiry_days) * 3600 * 24);
         let order = self.0.acme_new_order_request(
             display_name,
-            domain,
             client_id,
             handle,
             expiry,
@@ -157,10 +159,6 @@ impl WireE2eIdentity {
 
     /// Parses the response from `POST /acme/{provisioner-name}/authz/{authz-id}`
     ///
-    /// You then have to map the challenge from this authorization object. The `client_id_challenge`
-    /// will be the one with the `client_id_host` (you supplied to [Self::acme_new_order_request]) identifier,
-    /// the other will be your `handle_challenge`.
-    ///
     /// See [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5).
     ///
     /// # Parameters
@@ -180,10 +178,8 @@ impl WireE2eIdentity {
     ///
     /// # Parameters
     /// * `access_token_url` - backend endpoint where this token will be sent. Should be [this one](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token)
-    /// * `user_id` - an UUIDv4 uniquely identifying the user
-    /// * `client` - client identifier
-    /// * `domain` - owning backend domain e.g. `wire.com`
-    /// * `client_id_challenge` - you found after [Self::acme_new_authz_response]
+    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+    /// * `dpop_challenge` - you found after [Self::acme_new_authz_response]
     /// * `backend_nonce` - you get by calling `GET /clients/token/nonce` on wire-server.
     /// See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
     /// * `backend_nonce` - you get by calling `GET /clients/token/nonce` on wire-server.
@@ -192,20 +188,18 @@ impl WireE2eIdentity {
     pub fn create_dpop_token(
         &self,
         access_token_url: String,
-        user_id: String,
-        client_id: u64,
-        domain: String,
-        client_id_challenge: types::E2eiAcmeChallenge,
+        client_id: ClientId,
+        dpop_challenge: types::E2eiAcmeChallenge,
         backend_nonce: String,
         expiry_days: u32,
     ) -> E2eIdentityResult<String> {
+        let client_id: Vec<u8> = client_id.into();
+        let client_id = std::str::from_utf8(client_id.as_slice())?;
         let expiry = core::time::Duration::from_secs(u64::from(expiry_days) * 3600 * 24);
         Ok(self.0.new_dpop_token(
             &access_token_url.parse()?,
-            user_id,
             client_id,
-            domain,
-            &client_id_challenge.try_into()?,
+            &dpop_challenge.try_into()?,
             backend_nonce,
             expiry,
         )?)
@@ -379,10 +373,12 @@ impl WireE2eIdentity {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::test_utils::*;
+    use crate::prelude::ClientId;
     use openmls::prelude::SignatureScheme;
     use serde_json::json;
     use wasm_bindgen_test::*;
+
+    use crate::test_utils::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -424,18 +420,16 @@ pub mod tests {
                     let account = enrollment.new_account_response(account_resp).unwrap();
 
                     let display_name = "Smith, Alice M (QA)".to_string();
-                    let domain = "example.com".to_string();
-                    let client_id =
-                        "impp:wireapp=NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ/65c3ac1a1631c136@example.com"
-                            .to_string();
-                    let handle = "impp:wireapp=alice.smith.qa@example.com".to_string();
+                    let domain = "example.com";
+                    let client_id: ClientId =
+                        format!("NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ:65c3ac1a1631c136@{domain}").as_str().into();
+                    let handle = format!("alice.smith.qa@{domain}");
 
                     let _order_req = enrollment
                         .new_order_request(
-                            display_name,
-                            domain,
-                            client_id,
-                            handle,
+                            &display_name,
+                            client_id.clone(),
+                            &handle,
                             90,
                             directory,
                             account.clone(),
@@ -501,18 +495,12 @@ pub mod tests {
                     };
 
                     let backend_nonce = "U09ZR0tnWE5QS1ozS2d3bkF2eWJyR3ZVUHppSTJsMnU";
-
-                    let user_id = uuid::Uuid::new_v4().to_string();
-                    let client_id = 42;
-                    let domain = "example.org";
-                    let dpop_url = format!("https://example.org/clients/{client_id}/access-token");
+                    let dpop_url = format!("https://example.org/clients/42/access-token");
 
                     let _dpop_token = enrollment
                         .create_dpop_token(
                             dpop_url,
-                            user_id,
                             client_id,
-                            domain.to_string(),
                             dpop_chall.clone(),
                             backend_nonce.to_string(),
                             90,
