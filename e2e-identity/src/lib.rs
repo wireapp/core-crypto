@@ -115,16 +115,16 @@ impl RustyE2eIdentity {
     #[allow(clippy::too_many_arguments)]
     pub fn acme_new_order_request(
         &self,
-        display_name: String,
-        client_id: String,
-        handle: String,
+        display_name: &str,
+        client_id: &str,
+        handle: &str,
         expiry: core::time::Duration,
         directory: &AcmeDirectory,
         account: &E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
         let account = serde_json::from_value(account.clone().into())?;
-        let client_id = ClientId::try_from_qualified(client_id.as_str())?;
+        let client_id = ClientId::try_from_qualified(client_id)?;
         let order_req = RustyAcme::new_order_request(
             display_name,
             client_id,

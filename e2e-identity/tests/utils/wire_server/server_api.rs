@@ -47,7 +47,7 @@ pub async fn wire_api(req: Request<Body>) -> Result<Response<Body>, hyper::Error
 
 fn generate_access_token(dpop: &str, nonce: BackendNonce) -> serde_json::Value {
     let client_id = ctx_get("client-id").unwrap();
-    let client_id: ClientId = client_id.as_str().try_into().unwrap();
+    let client_id = ClientId::try_from_uri(&client_id).unwrap();
     let backend_kp: Pem = ctx_get("backend-kp").unwrap().into();
     let hash_alg: HashAlgorithm = ctx_get("hash-alg").unwrap().parse().unwrap();
     let htu: Htu = ctx_get("wire-server-uri").unwrap().as_str().try_into().unwrap();

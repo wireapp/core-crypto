@@ -20,7 +20,7 @@ fn e2e_api() {
         let user_id = base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(user_id.to_string());
         let client_id = random::<u64>();
         let domain = "example.org";
-        let qualified_client_id = format!("{user_id}/{client_id:x}@{domain}");
+        let qualified_client_id = format!("{user_id}:{client_id:x}@{domain}");
 
         let display_name = "Smith, Alice M (QA)".to_string();
         let qualified_handle = format!("alice.smith.qa@{domain}");
@@ -73,9 +73,9 @@ fn e2e_api() {
             let expiry = core::time::Duration::from_secs(3600); // 1h
             let _order_request = enrollment
                 .acme_new_order_request(
-                    display_name,
-                    qualified_client_id.clone(),
-                    qualified_handle,
+                    &display_name,
+                    &qualified_client_id,
+                    &qualified_handle,
                     expiry,
                     &directory,
                     &account,

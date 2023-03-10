@@ -136,9 +136,9 @@ impl<'a> E2eTest<'a> {
         self.display_step("create a new order");
         let expiry = core::time::Duration::from_secs(3600); // 1h
         let order_request = RustyAcme::new_order_request(
-            self.display_name.clone(),
+            &self.display_name,
             self.sub.clone(),
-            self.handle.clone(),
+            &self.handle,
             expiry,
             directory,
             account,
@@ -267,7 +267,7 @@ impl<'a> E2eTest<'a> {
         let b64 = |v: &str| base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(v);
 
         // cheat to share test context
-        ctx_store("client-id", self.sub.to_subject());
+        ctx_store("client-id", self.sub.to_uri());
         ctx_store("backend-kp", self.backend_kp.to_string());
         ctx_store("hash-alg", self.hash_alg.to_string());
         ctx_store("wire-server-uri", self.wire_server_uri());

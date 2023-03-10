@@ -108,7 +108,7 @@ impl<'a> E2eTest<'a> {
                 email: email.to_string(),
                 password: password.to_string(),
                 domain: domain.to_string(),
-                sub: sub.to_subject(),
+                sub: sub.to_uri(),
             },
             dex_cfg: DexCfg {
                 host: dex_host,
