@@ -3,8 +3,7 @@
 use super::error::{E2eIdentityError, E2eIdentityResult};
 
 /// See [RFC 8555 Section 7.1.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1)
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct E2eiAcmeDirectory {
     /// For fetching a new nonce used in [crate::prelude::WireE2eIdentity::new_account_request]
@@ -25,38 +24,15 @@ impl From<wire_e2e_identity::prelude::AcmeDirectory> for E2eiAcmeDirectory {
     }
 }
 
-impl TryFrom<E2eiAcmeDirectory> for wire_e2e_identity::prelude::AcmeDirectory {
+impl TryFrom<&E2eiAcmeDirectory> for wire_e2e_identity::prelude::AcmeDirectory {
     type Error = E2eIdentityError;
 
-    fn try_from(directory: E2eiAcmeDirectory) -> E2eIdentityResult<Self> {
+    fn try_from(directory: &E2eiAcmeDirectory) -> E2eIdentityResult<Self> {
         Ok(Self {
             new_nonce: directory.new_nonce.parse()?,
             new_account: directory.new_account.parse()?,
             new_order: directory.new_order.parse()?,
         })
-    }
-}
-
-/// Account creation response
-/// see [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3)
-#[derive(Debug, serde::Serialize, serde::Deserialize, derive_more::From, derive_more::Into, derive_more::Deref)]
-#[cfg_attr(test, derive(Clone))]
-#[serde(transparent, rename_all = "camelCase")]
-pub struct E2eiAcmeAccount(super::Json);
-
-impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeAccount> for E2eiAcmeAccount {
-    type Error = E2eIdentityError;
-
-    fn try_from(from: wire_e2e_identity::prelude::E2eiAcmeAccount) -> E2eIdentityResult<Self> {
-        Ok(serde_json::to_vec(&from)?.into())
-    }
-}
-
-impl TryFrom<E2eiAcmeAccount> for wire_e2e_identity::prelude::E2eiAcmeAccount {
-    type Error = E2eIdentityError;
-
-    fn try_from(from: E2eiAcmeAccount) -> E2eIdentityResult<Self> {
-        Ok(serde_json::from_slice(&from.0[..])?)
     }
 }
 
@@ -126,14 +102,14 @@ impl TryFrom<wire_e2e_identity::prelude::E2eiNewAcmeAuthz> for E2eiNewAcmeAuthz 
     }
 }
 
-impl TryFrom<E2eiNewAcmeAuthz> for wire_e2e_identity::prelude::E2eiNewAcmeAuthz {
+impl TryFrom<&E2eiNewAcmeAuthz> for wire_e2e_identity::prelude::E2eiNewAcmeAuthz {
     type Error = E2eIdentityError;
 
-    fn try_from(authz: E2eiNewAcmeAuthz) -> E2eIdentityResult<Self> {
+    fn try_from(authz: &E2eiNewAcmeAuthz) -> E2eIdentityResult<Self> {
         Ok(Self {
-            identifier: authz.identifier,
-            wire_dpop_challenge: authz.wire_dpop_challenge.map(TryFrom::try_from).transpose()?,
-            wire_oidc_challenge: authz.wire_oidc_challenge.map(TryFrom::try_from).transpose()?,
+            identifier: authz.identifier.clone(),
+            wire_dpop_challenge: authz.wire_dpop_challenge.as_ref().map(TryFrom::try_from).transpose()?,
+            wire_oidc_challenge: authz.wire_oidc_challenge.as_ref().map(TryFrom::try_from).transpose()?,
         })
     }
 }
@@ -160,66 +136,13 @@ impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeChall> for E2eiAcmeChallenge {
     }
 }
 
-impl TryFrom<E2eiAcmeChallenge> for wire_e2e_identity::prelude::E2eiAcmeChall {
+impl TryFrom<&E2eiAcmeChallenge> for wire_e2e_identity::prelude::E2eiAcmeChall {
     type Error = E2eIdentityError;
 
-    fn try_from(chall: E2eiAcmeChallenge) -> E2eIdentityResult<Self> {
+    fn try_from(chall: &E2eiAcmeChallenge) -> E2eIdentityResult<Self> {
         Ok(Self {
             chall: serde_json::from_slice(&chall.delegate[..])?,
             url: chall.url.parse()?,
-        })
-    }
-}
-
-/// Result from checking the order status in [crate::prelude::WireE2eIdentity::check_order_response] and then pass this to [crate::prelude::WireE2eIdentity::finalize_request]
-#[derive(Debug, serde::Serialize, serde::Deserialize, derive_more::From, derive_more::Into, derive_more::Deref)]
-#[serde(transparent, rename_all = "camelCase")]
-pub struct E2eiAcmeOrder(super::Json);
-
-impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeOrder> for E2eiAcmeOrder {
-    type Error = E2eIdentityError;
-
-    fn try_from(from: wire_e2e_identity::prelude::E2eiAcmeOrder) -> E2eIdentityResult<Self> {
-        Ok(serde_json::to_vec(&from)?.into())
-    }
-}
-
-impl TryFrom<E2eiAcmeOrder> for wire_e2e_identity::prelude::E2eiAcmeOrder {
-    type Error = E2eIdentityError;
-
-    fn try_from(from: E2eiAcmeOrder) -> E2eIdentityResult<Self> {
-        Ok(serde_json::from_slice(&from.0[..])?)
-    }
-}
-
-/// Result from finalize in [crate::prelude::WireE2eIdentity::finalize_response] and then pass this to [crate::prelude::WireE2eIdentity::certificate_request]
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct E2eiAcmeFinalize {
-    /// Opaque raw json value
-    pub delegate: super::Json,
-    /// URL to call to fetch a x509 certificate with [crate::prelude::WireE2eIdentity::certificate_request]
-    pub certificate_url: String,
-}
-
-impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeFinalize> for E2eiAcmeFinalize {
-    type Error = E2eIdentityError;
-
-    fn try_from(finalize: wire_e2e_identity::prelude::E2eiAcmeFinalize) -> E2eIdentityResult<Self> {
-        Ok(Self {
-            certificate_url: finalize.certificate_url.to_string(),
-            delegate: serde_json::to_vec(&finalize.finalize)?,
-        })
-    }
-}
-
-impl TryFrom<E2eiAcmeFinalize> for wire_e2e_identity::prelude::E2eiAcmeFinalize {
-    type Error = E2eIdentityError;
-
-    fn try_from(finalize: E2eiAcmeFinalize) -> E2eIdentityResult<Self> {
-        Ok(Self {
-            certificate_url: finalize.certificate_url.parse()?,
-            finalize: serde_json::from_slice(&finalize.delegate[..])?,
         })
     }
 }

@@ -14,10 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient};
 use color_eyre::eyre::Result;
+
 use core_crypto::prelude::tls_codec::Serialize;
 use core_crypto::prelude::*;
+
+use crate::clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient};
 
 #[derive(Debug)]
 pub struct CoreCryptoNativeClient {
@@ -37,9 +39,10 @@ impl CoreCryptoNativeClient {
             "test".into(),
             Some(client_id.as_hyphenated().to_string().as_bytes().into()),
             ciphersuites,
+            None,
         )?;
 
-        let cc = CoreCrypto::from(MlsCentral::try_new_in_memory(configuration, None).await?);
+        let cc = CoreCrypto::from(MlsCentral::try_new_in_memory(configuration).await?);
 
         Ok(Self {
             cc,
@@ -164,17 +167,27 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoNativeClient {
 #[async_trait::async_trait(?Send)]
 impl crate::clients::EmulatedE2eIdentityClient for CoreCryptoNativeClient {
     async fn new_acme_enrollment(&mut self, ciphersuite: MlsCiphersuite) -> Result<()> {
-        let enrollment = self.cc.new_acme_enrollment(ciphersuite)?;
+        let display_name = "Smith, Alice M (QA)".to_string();
+        let domain = "example.com";
+        let client_id: ClientId = format!("NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ:65c3ac1a1631c136@{domain}")
+            .as_bytes()
+            .into();
+        let handle = format!("alice.smith.qa@{domain}");
+        let expiry = 90;
+
+        let mut enrollment = self
+            .cc
+            .new_acme_enrollment(client_id, display_name, handle, expiry, ciphersuite)?;
         let directory = serde_json::json!({
             "newNonce": "https://example.com/acme/new-nonce",
             "newAccount": "https://example.com/acme/new-account",
             "newOrder": "https://example.com/acme/new-order"
         });
         let directory = serde_json::to_vec(&directory)?;
-        let directory = enrollment.directory_response(directory)?;
+        enrollment.directory_response(directory)?;
         let previous_nonce = "dmVQallIV29ZZkcwVkNLQTRKbG9HcVdyTWU5WEszdTE";
 
-        enrollment.new_account_request(directory, previous_nonce.to_string())?;
+        enrollment.new_account_request(previous_nonce.to_string())?;
 
         let account = serde_json::json!({
             "status": "valid",

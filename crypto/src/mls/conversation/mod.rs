@@ -396,9 +396,10 @@ pub mod tests {
                         name.clone(),
                         Some(name.as_str().into()),
                         vec![case.ciphersuite()],
+                        None,
                     )
                     .unwrap();
-                    let central = MlsCentral::try_new(config, case.credential()).await.unwrap();
+                    let central = MlsCentral::try_new(config).await.unwrap();
                     bob_and_friends.push(central);
                 }
 

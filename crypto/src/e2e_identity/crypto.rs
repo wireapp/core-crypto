@@ -5,10 +5,7 @@ use openmls_traits::{crypto::OpenMlsCrypto, types::Ciphersuite, OpenMlsCryptoPro
 use wire_e2e_identity::prelude::JwsAlgorithm;
 
 impl super::WireE2eIdentity {
-    pub(super) fn new_sign_keypair(
-        ciphersuite: MlsCiphersuite,
-        backend: &MlsCryptoProvider,
-    ) -> E2eIdentityResult<Vec<u8>> {
+    pub(super) fn new_sign_key(ciphersuite: MlsCiphersuite, backend: &MlsCryptoProvider) -> E2eIdentityResult<Vec<u8>> {
         let crypto = backend.crypto();
         let cs = openmls_traits::types::Ciphersuite::from(ciphersuite);
         let (sk, _pk) = crypto.signature_key_gen(cs.signature_algorithm())?;

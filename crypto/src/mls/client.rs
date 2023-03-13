@@ -40,7 +40,7 @@ const KEYPACKAGE_DEFAULT_LIFETIME: std::time::Duration = std::time::Duration::fr
 /// mobile, etc. Users can have multiple clients.
 /// More information [here](https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Deref)]
-pub struct ClientId(Vec<u8>);
+pub struct ClientId(pub(crate) Vec<u8>);
 
 impl From<&[u8]> for ClientId {
     fn from(value: &[u8]) -> Self {
@@ -595,7 +595,6 @@ impl Client {
 
 #[cfg(test)]
 pub mod tests {
-    use super::identity_key;
     use openmls::prelude::{KeyPackageBundle, KeyPackageRef};
     use wasm_bindgen_test::*;
 
@@ -603,6 +602,7 @@ pub mod tests {
 
     use crate::test_utils::*;
 
+    use super::identity_key;
     use super::Client;
 
     wasm_bindgen_test_configure!(run_in_browser);

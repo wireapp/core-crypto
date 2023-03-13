@@ -1476,19 +1476,31 @@ export class CoreCrypto {
     /**
      * Creates an enrollment instance with private key material you can use in order to fetch
      * a new x509 certificate from the acme server.
-     * Make sure to call {@link WireE2eIdentity.free} to dispose this instance and its associated
-     * keying material.
      *
+     * @param clientId client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+     * @param displayName human readable name displayed in the application e.g. `Smith, Alice M (QA)`
+     * @param handle user handle e.g. `alice.smith.qa@example.com`
+     * @param expiryDays generated x509 certificate expiry
      * @param ciphersuite - For generating signing key material. Only {@link Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519} is supported currently
      * @returns The new {@link WireE2eIdentity} object
      */
-    async newAcmeEnrollment(ciphersuite: Ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519): Promise<WireE2eIdentity> {
+    async newAcmeEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519): Promise<WireE2eIdentity> {
         if (ciphersuite !== Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519) {
             throw new Error("This ACME ciphersuite isn't supported. Only `Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519` is as of now");
         }
 
-        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.new_acme_enrollment(ciphersuite));
+        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.new_acme_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
         return new WireE2eIdentity(e2ei);
+    }
+
+    /**
+     * Parses the ACME server response from the endpoint fetching x509 certificates and uses it to initialize the MLS client with a certificate
+     *
+     * @param e2ei - the enrollment instance used to fetch the certificates
+     * @param certificateChain - the raw response from ACME server
+     */
+    async e2eiMlsInit(e2ei: WireE2eIdentity, certificateChain: string): Promise<void> {
+        return await this.#cc.e2ei_mls_init(e2ei.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain);
     }
 
     /**
@@ -1503,8 +1515,6 @@ export class CoreCrypto {
 }
 
 type JsonRawData = Uint8Array;
-type AcmeAccount = Uint8Array;
-type AcmeOrder = Uint8Array;
 
 export class WireE2eIdentity {
     /** @hidden */
@@ -1520,6 +1530,13 @@ export class WireE2eIdentity {
     }
 
     /**
+     * Should only be used internally
+     */
+    inner(): unknown {
+        return this.#e2ei as CoreCryptoFfiTypes.FfiWireE2EIdentity;
+    }
+
+    /**
      * Parses the response from `GET /acme/{provisioner-name}/directory`.
      * Use this {@link AcmeDirectory} in the next step to fetch the first nonce from the acme server. Use
      * {@link AcmeDirectory.newNonce}.
@@ -1527,7 +1544,7 @@ export class WireE2eIdentity {
      * @param directory HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
      */
-    directoryResponse(directory: JsonRawData): AcmeDirectory {
+    directoryResponse(directory: JsonRawData): Promise<AcmeDirectory> {
         try {
             return this.#e2ei.directory_response(directory);
         } catch(e) {
@@ -1539,13 +1556,12 @@ export class WireE2eIdentity {
      * For creating a new acme account. This returns a signed JWS-alike request body to send to
      * `POST /acme/{provisioner-name}/new-account`.
      *
-     * @param directory you got from {@link directoryResponse}
      * @param previousNonce you got from calling `HEAD {@link AcmeDirectory.newNonce}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
      */
-    newAccountRequest(directory: AcmeDirectory, previousNonce: string): JsonRawData {
+    newAccountRequest(previousNonce: string): Promise<JsonRawData> {
         try {
-            return this.#e2ei.new_account_request(directory, previousNonce);
+            return this.#e2ei.new_account_request(previousNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1556,7 +1572,7 @@ export class WireE2eIdentity {
      * @param account HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
      */
-    newAccountResponse(account: JsonRawData): AcmeAccount {
+    newAccountResponse(account: JsonRawData): Promise<void> {
         try {
             return this.#e2ei.new_account_response(account);
         } catch(e) {
@@ -1567,18 +1583,12 @@ export class WireE2eIdentity {
     /**
      * Creates a new acme order for the handle (userId + display name) and the clientId.
      *
-     * @param displayName human readable name displayed in the application e.g. `Smith, Alice M (QA)`
-     * @param clientId client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
-     * @param handle user handle e.g. `alice.smith.qa@example.com`
-     * @param expiryDays generated x509 certificate expiry
-     * @param directory you got from {@link directoryResponse}
-     * @param account you got from {@link newAccountResponse}
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/new-account`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    newOrderRequest(displayName: string, clientId: string, handle: string, expiryDays: number, directory: AcmeDirectory, account: AcmeAccount, previousNonce: string): JsonRawData {
+    newOrderRequest(previousNonce: string): Promise<JsonRawData> {
         try {
-            return this.#e2ei.new_order_request(displayName, clientId, handle, expiryDays, directory, account, previousNonce);
+            return this.#e2ei.new_order_request(previousNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1590,7 +1600,7 @@ export class WireE2eIdentity {
      * @param order HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    newOrderResponse(order: JsonRawData): NewAcmeOrder {
+    newOrderResponse(order: JsonRawData): Promise<NewAcmeOrder> {
         try {
             return this.#e2ei.new_order_response(order);
         } catch(e) {
@@ -1602,14 +1612,13 @@ export class WireE2eIdentity {
      * Creates a new authorization request.
      *
      * @param url one of the URL in new order's authorizations (use {@link NewAcmeOrder.authorizations} from {@link newOrderResponse})
-     * @param account you got from {@link newAccountResponse}
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/new-order` (or from the
      * previous to this method if you are creating the second authorization)
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
      */
-    newAuthzRequest(url: string, account: AcmeAccount, previousNonce: string): JsonRawData {
+    newAuthzRequest(url: string, previousNonce: string): Promise<JsonRawData> {
         try {
-            return this.#e2ei.new_authz_request(url, account, previousNonce);
+            return this.#e2ei.new_authz_request(url, previousNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1621,7 +1630,7 @@ export class WireE2eIdentity {
      * @param authz HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
      */
-    newAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
+    newAuthzResponse(authz: JsonRawData): Promise<NewAcmeAuthz> {
         try {
             return this.#e2ei.new_authz_response(authz);
         } catch(e) {
@@ -1638,14 +1647,11 @@ export class WireE2eIdentity {
      * {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token} on wire-server.
      *
      * @param accessTokenUrl backend endpoint where this token will be sent. Should be this one {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token}
-     * @param clientId client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
-     * @param dpopChallenge you found after {@link newAuthzResponse}
      * @param backendNonce you get by calling `GET /clients/token/nonce` on wire-server as defined here {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce}
-     * @param expiryDays token expiry in days
      */
-    createDpopToken(accessTokenUrl: string, clientId: string, dpopChallenge: AcmeChallenge, backendNonce: string, expiryDays: number): string {
+    createDpopToken(accessTokenUrl: string, backendNonce: string): Promise<string> {
         try {
-            return this.#e2ei.create_dpop_token(accessTokenUrl, clientId, dpopChallenge, backendNonce, expiryDays);
+            return this.#e2ei.create_dpop_token(accessTokenUrl, backendNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1655,14 +1661,12 @@ export class WireE2eIdentity {
      * Creates a new challenge request for Wire Dpop challenge.
      *
      * @param accessToken returned by wire-server from https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token
-     * @param dpopChallenge you found after {@link newAuthzResponse}
-     * @param account you found after {@link newAccountResponse}
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
-    newDpopChallengeRequest(accessToken: string, dpopChallenge: AcmeChallenge, account: AcmeAccount, previousNonce: string): JsonRawData {
+    newDpopChallengeRequest(accessToken: string, previousNonce: string): Promise<JsonRawData> {
         try {
-            return this.#e2ei.new_dpop_challenge_request(accessToken, dpopChallenge, account, previousNonce);
+            return this.#e2ei.new_dpop_challenge_request(accessToken, previousNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1672,14 +1676,12 @@ export class WireE2eIdentity {
      * Creates a new challenge request for Wire Oidc challenge.
      *
      * @param idToken you get back from Identity Provider
-     * @param oidcChallenge you found after {@link newAuthzResponse}
-     * @param account you found after {@link newAccountResponse}
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
-    newOidcChallengeRequest(idToken: string, oidcChallenge: AcmeChallenge, account: AcmeAccount, previousNonce: string): JsonRawData {
+    newOidcChallengeRequest(idToken: string, previousNonce: string): Promise<JsonRawData> {
         try {
-            return this.#e2ei.new_oidc_challenge_request(idToken, oidcChallenge, account, previousNonce);
+            return this.#e2ei.new_oidc_challenge_request(idToken, previousNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1691,7 +1693,7 @@ export class WireE2eIdentity {
      * @param challenge HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
-    newChallengeResponse(challenge: JsonRawData): void {
+    newChallengeResponse(challenge: JsonRawData): Promise<void> {
         try {
             return this.#e2ei.new_challenge_response(challenge);
         } catch(e) {
@@ -1707,9 +1709,9 @@ export class WireE2eIdentity {
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/challenge/{challenge-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    checkOrderRequest(orderUrl: string, account: AcmeAccount, previousNonce: string): JsonRawData {
+    checkOrderRequest(orderUrl: string, previousNonce: string): Promise<JsonRawData> {
         try {
-            return this.#e2ei.check_order_request(orderUrl, account, previousNonce);
+            return this.#e2ei.check_order_request(orderUrl, previousNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1721,7 +1723,7 @@ export class WireE2eIdentity {
      * @param order HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    checkOrderResponse(order: JsonRawData): AcmeOrder {
+    checkOrderResponse(order: JsonRawData): Promise<void> {
         try {
             return this.#e2ei.check_order_response(order);
         } catch(e) {
@@ -1733,13 +1735,12 @@ export class WireE2eIdentity {
      * Final step before fetching the certificate.
      *
      * @param order - order you got from {@link checkOrderResponse}
-     * @param account - account you found after {@link newAccountResponse}
      * @param previousNonce - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    finalizeRequest(order: AcmeOrder, account: AcmeAccount, previousNonce: string): JsonRawData {
+    finalizeRequest(previousNonce: string): Promise<JsonRawData> {
         try {
-            return this.#e2ei.finalize_request(order, account, previousNonce);
+            return this.#e2ei.finalize_request(previousNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1751,7 +1752,7 @@ export class WireE2eIdentity {
      * @param finalize HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    finalizeResponse(finalize: JsonRawData): AcmeFinalize {
+    finalizeResponse(finalize: JsonRawData): Promise<void> {
         try {
             return this.#e2ei.finalize_response(finalize);
         } catch(e) {
@@ -1762,28 +1763,12 @@ export class WireE2eIdentity {
     /**
      * Creates a request for finally fetching the x509 certificate.
      *
-     * @param finalize you got from {@link finalizeResponse}
-     * @param account you got from {@link newAccountResponse}
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}/finalize`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2
      */
-    certificateRequest(finalize: AcmeFinalize, account: AcmeAccount, previousNonce: string): JsonRawData {
+    certificateRequest(previousNonce: string): Promise<JsonRawData> {
         try {
-            return this.#e2ei.certificate_request(finalize, account, previousNonce);
-        } catch(e) {
-            throw CoreCryptoError.fromStdError(e as Error);
-        }
-    }
-
-    /**
-     * Parses the response from `POST /acme/{provisioner-name}/certificate/{certificate-id}`.
-     *
-     * @param certificateChain HTTP string response body
-     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2
-     */
-    certificateResponse(certificateChain: string): Uint8Array[] {
-        try {
-            return this.#e2ei.certificate_response(certificateChain);
+            return this.#e2ei.certificate_request(previousNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1876,22 +1861,4 @@ export interface AcmeChallenge {
      * @readonly
      */
     url: string;
-}
-/**
- * Result from finalize.
- * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
- */
-export interface AcmeFinalize {
-    /**
-     * Contains raw JSON data of this finalize. This is parsed by the underlying Rust library hence should not be accessed
-     *
-     * @readonly
-     */
-    delegate: Uint8Array;
-    /**
-     * URL of to use for the last request to fetch the x509 certificate
-     *
-     * @readonly
-     */
-    certificateUrl: string;
 }

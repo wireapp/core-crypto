@@ -118,6 +118,7 @@ impl Client {
             .map_err(CryptoError::from)
     }
 
+    // TODO: remove [id] arg.
     pub(crate) fn generate_x509_credential_bundle(
         id: &ClientId,
         certificate: Vec<Vec<u8>>,
@@ -135,6 +136,7 @@ impl Client {
 pub mod tests {
     use openmls::prelude::{CredentialError, WelcomeError};
     use openmls_traits::types::SignatureScheme;
+    use wasm_bindgen_test::*;
 
     use crate::{
         error::CryptoError,
@@ -143,8 +145,6 @@ pub mod tests {
     };
 
     use super::*;
-
-    use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -314,20 +314,40 @@ pub mod tests {
         cfg: MlsConversationConfiguration,
     ) -> CryptoResult<()> {
         let id = conversation_id();
-
+        let ciphersuites = vec![cfg.ciphersuite];
         let alice_path = tmp_db_file();
-        let alice_cfg = MlsCentralConfiguration::try_new(
-            alice_path.0,
-            "alice".into(),
-            Some("alice".into()),
-            vec![cfg.ciphersuite],
-        )?;
-        let mut alice_central = MlsCentral::try_new(alice_cfg, alice_cred(cfg.ciphersuite)).await?;
+
+        let mut alice_cfg =
+            MlsCentralConfiguration::try_new(alice_path.0, "alice".into(), None, ciphersuites.clone(), None)?;
+
+        let mut alice_central = if let Some(alice_cred) = alice_cred(cfg.ciphersuite) {
+            // x509 credential
+            let mut central = MlsCentral::try_new(alice_cfg).await?;
+            central
+                .mls_init("alice".into(), ciphersuites.clone(), Some(alice_cred))
+                .await?;
+            central
+        } else {
+            // basic credential
+            alice_cfg.client_id = Some("alice".into());
+            MlsCentral::try_new(alice_cfg).await?
+        };
 
         let bob_path = tmp_db_file();
-        let bob_cfg =
-            MlsCentralConfiguration::try_new(bob_path.0, "bob".into(), Some("bob".into()), vec![cfg.ciphersuite])?;
-        let mut bob_central = MlsCentral::try_new(bob_cfg, bob_cred(cfg.ciphersuite)).await?;
+        let mut bob_cfg = MlsCentralConfiguration::try_new(bob_path.0, "bob".into(), None, ciphersuites.clone(), None)?;
+
+        let mut bob_central = if let Some(bob_cred) = bob_cred(cfg.ciphersuite) {
+            // x509 credential
+            let mut central = MlsCentral::try_new(bob_cfg).await?;
+            central
+                .mls_init("bob".into(), ciphersuites.clone(), Some(bob_cred))
+                .await?;
+            central
+        } else {
+            // basic credential
+            bob_cfg.client_id = Some("bob".into());
+            MlsCentral::try_new(bob_cfg).await?
+        };
 
         alice_central.new_conversation(id.clone(), cfg.clone()).await?;
         alice_central.invite(&id, &mut bob_central, cfg.custom).await?;

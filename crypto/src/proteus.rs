@@ -951,9 +951,15 @@ mod tests {
     async fn cc_can_init(case: TestCase) {
         let (path, db_file) = tmp_db_file();
         let client_id = "alice".into();
-        let cfg = MlsCentralConfiguration::try_new(path, "test".to_string(), Some(client_id), vec![case.ciphersuite()])
-            .unwrap();
-        let mut cc: CoreCrypto = MlsCentral::try_new(cfg, case.credential()).await.unwrap().into();
+        let cfg = MlsCentralConfiguration::try_new(
+            path,
+            "test".to_string(),
+            Some(client_id),
+            vec![case.ciphersuite()],
+            None,
+        )
+        .unwrap();
+        let mut cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
         assert!(cc.proteus_init().await.is_ok());
         assert!(cc.proteus_new_prekey(1).await.is_ok());
         drop(db_file);
@@ -964,8 +970,9 @@ mod tests {
     async fn cc_can_2_phase_init(case: TestCase) {
         let (path, db_file) = tmp_db_file();
         // we are deferring MLS initialization here, not passing a MLS 'client_id' yet
-        let cfg = MlsCentralConfiguration::try_new(path, "test".to_string(), None, vec![case.ciphersuite()]).unwrap();
-        let mut cc: CoreCrypto = MlsCentral::try_new(cfg, case.credential()).await.unwrap().into();
+        let cfg =
+            MlsCentralConfiguration::try_new(path, "test".to_string(), None, vec![case.ciphersuite()], None).unwrap();
+        let mut cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
         assert!(cc.proteus_init().await.is_ok());
         // proteus is initialized, prekeys can be generated
         assert!(cc.proteus_new_prekey(1).await.is_ok());

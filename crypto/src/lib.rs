@@ -27,14 +27,14 @@
 use rstest_reuse;
 
 #[cfg(test)]
-#[macro_use]
-pub mod test_utils;
-// both imports above have to be defined at the beginning of the crate for rstest to work
+pub use core_crypto_attributes::durable;
 
 pub use self::error::*;
 
 #[cfg(test)]
-pub use core_crypto_attributes::durable;
+#[macro_use]
+pub mod test_utils;
+// both imports above have to be defined at the beginning of the crate for rstest to work
 
 mod error;
 
@@ -67,10 +67,7 @@ pub mod prelude {
     pub use crate::{
         e2e_identity::{
             error::{E2eIdentityError, E2eIdentityResult},
-            types::{
-                E2eiAcmeAccount, E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiAcmeFinalize, E2eiAcmeOrder,
-                E2eiNewAcmeAuthz, E2eiNewAcmeOrder,
-            },
+            types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
             WireE2eIdentity,
         },
         error::*,

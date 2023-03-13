@@ -14,8 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use futures_lite::future;
 use std::collections::HashMap;
+
+use futures_lite::future;
+use futures_util::TryFutureExt;
 
 use core_crypto::prelude::*;
 pub use core_crypto::prelude::{
@@ -312,16 +314,15 @@ impl CoreCrypto<'_> {
     ) -> CryptoResult<Self> {
         let executor = async_executor::Executor::new();
         let ciphersuites = vec![MlsCiphersuite::default()];
-        let mut configuration =
-            MlsCentralConfiguration::try_new(path.into(), key.into(), Some(client_id.clone()), ciphersuites)?;
+        let configuration = MlsCentralConfiguration::try_new(
+            path.into(),
+            key.into(),
+            Some(client_id.clone()),
+            ciphersuites,
+            entropy_seed,
+        )?;
 
-        if let Some(seed) = entropy_seed {
-            let owned_seed = EntropySeed::try_from_slice(&seed[..EntropySeed::EXPECTED_LEN])?;
-            configuration.set_entropy(owned_seed);
-        }
-        // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
-        let certificate_bundle = None;
-        let central = future::block_on(executor.run(MlsCentral::try_new(configuration, certificate_bundle)))?;
+        let central = future::block_on(executor.run(MlsCentral::try_new(configuration)))?;
         let central = std::sync::Arc::new(core_crypto::CoreCrypto::from(central).into());
         Ok(Self {
             central,
@@ -331,20 +332,14 @@ impl CoreCrypto<'_> {
     }
 
     /// Similar to [CoreCrypto::new] but defers MLS initialization. It can be initialized later
-    /// with [CoreCrypto::init_mls].
-    /// This should stay as long as proteus is supported. Then it should be removed.
+    /// with [CoreCrypto::mls_init].
     pub fn deferred_init<'s>(path: &'s str, key: &'s str, entropy_seed: Option<Vec<u8>>) -> CryptoResult<Self> {
         let executor = async_executor::Executor::new();
         let ciphersuites = vec![MlsCiphersuite::default()];
-        let mut configuration = MlsCentralConfiguration::try_new(path.into(), key.into(), None, ciphersuites)?;
+        let configuration =
+            MlsCentralConfiguration::try_new(path.into(), key.into(), None, ciphersuites, entropy_seed)?;
 
-        if let Some(seed) = entropy_seed {
-            let owned_seed = EntropySeed::try_from_slice(&seed[..EntropySeed::EXPECTED_LEN])?;
-            configuration.set_entropy(owned_seed);
-        }
-        // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
-        let certificate_bundle = None;
-        let central = future::block_on(executor.run(MlsCentral::try_new(configuration, certificate_bundle)))?;
+        let central = future::block_on(executor.run(MlsCentral::try_new(configuration)))?;
         let central = std::sync::Arc::new(core_crypto::CoreCrypto::from(central).into());
         Ok(Self {
             central,
@@ -353,16 +348,14 @@ impl CoreCrypto<'_> {
         })
     }
 
-    /// See [core_crypto::CoreCrypto::mls_init]
+    /// See [core_crypto::MlsCentral::mls_init]
     pub fn mls_init(&self, client_id: &ClientId) -> CryptoResult<()> {
         let ciphersuites = vec![MlsCiphersuite::default()];
-        // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
-        let certificate_bundle = None;
         future::block_on(self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
             self.central.lock().map_err(|_| CryptoError::LockPoisonError)?.mls_init(
                 client_id.clone(),
                 ciphersuites,
-                certificate_bundle,
+                None,
             ),
         ))
     }
@@ -889,14 +882,46 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::new_acme_enrollment]
-    pub fn new_acme_enrollment(&self, ciphersuite: CiphersuiteName) -> CryptoResult<std::sync::Arc<WireE2eIdentity>> {
+    pub fn new_acme_enrollment(
+        &self,
+        client_id: String,
+        display_name: String,
+        handle: String,
+        expiry_days: u32,
+        ciphersuite: CiphersuiteName,
+    ) -> CryptoResult<std::sync::Arc<WireE2eIdentity>> {
         self.central
             .lock()
             .map_err(|_| CryptoError::LockPoisonError)?
-            .new_acme_enrollment(ciphersuite.into())
+            .new_acme_enrollment(
+                client_id.into_bytes().into(),
+                display_name,
+                handle,
+                expiry_days,
+                ciphersuite.into(),
+            )
+            .map(std::sync::Mutex::new)
+            .map(std::sync::Arc::new)
             .map(WireE2eIdentity)
             .map(std::sync::Arc::new)
             .map_err(|_| CryptoError::ImplementationError)
+    }
+
+    /// See [core_crypto::MlsCentral::new_acme_enrollment]
+    pub fn e2ei_mls_init(&self, e2ei: std::sync::Arc<WireE2eIdentity>, certificate_chain: String) -> CryptoResult<()> {
+        let e2ei = std::sync::Arc::try_unwrap(e2ei).map_err(|_| CryptoError::LockPoisonError)?;
+        let e2ei = std::sync::Arc::try_unwrap(e2ei.0).map_err(|_| CryptoError::LockPoisonError)?;
+        let e2ei = e2ei.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
+
+        let mut cc = self.central.lock().map_err(|_| CryptoError::LockPoisonError)?;
+
+        let executor = self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?;
+        future::block_on(
+            executor.run(
+                cc.e2ei_mls_init(e2ei, certificate_chain)
+                    .map_err(|_| CryptoError::ImplementationError),
+            ),
+        )
     }
 }
 
@@ -1156,171 +1181,148 @@ impl CoreCrypto<'_> {
 
 #[derive(Debug)]
 /// See [core_crypto::e2e_identity::WireE2eIdentity]
-pub struct WireE2eIdentity(core_crypto::prelude::WireE2eIdentity);
+pub struct WireE2eIdentity(std::sync::Arc<std::sync::Mutex<core_crypto::prelude::WireE2eIdentity>>);
 
 impl WireE2eIdentity {
     /// See [core_crypto::e2e_identity::WireE2eIdentity::directory_response]
-    pub fn directory_response(&self, directory: JsonRawData) -> E2eIdentityResult<AcmeDirectory> {
-        self.0.directory_response(directory).map(AcmeDirectory::from)
+    pub fn directory_response(&self, directory: Vec<u8>) -> E2eIdentityResult<AcmeDirectory> {
+        self.0
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .directory_response(directory)
+            .map(AcmeDirectory::from)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_account_request]
-    pub fn new_account_request(
-        &self,
-        directory: AcmeDirectory,
-        previous_nonce: String,
-    ) -> E2eIdentityResult<JsonRawData> {
-        self.0.new_account_request(directory.into(), previous_nonce)
+    pub fn new_account_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
+        self.0
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .new_account_request(previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_account_response]
-    pub fn new_account_response(&self, account: JsonRawData) -> E2eIdentityResult<JsonRawData> {
-        Ok(self.0.new_account_response(account)?.into())
+    pub fn new_account_response(&self, account: Vec<u8>) -> E2eIdentityResult<()> {
+        self.0
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .new_account_response(account)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_order_request]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_order_request(
-        &self,
-        display_name: String,
-        client_id: String,
-        handle: String,
-        expiry_days: u32,
-        directory: AcmeDirectory,
-        account: AcmeAccount,
-        previous_nonce: String,
-    ) -> E2eIdentityResult<JsonRawData> {
-        let client_id = client_id.into_bytes();
-        self.0.new_order_request(
-            &display_name,
-            client_id.into(),
-            &handle,
-            expiry_days,
-            directory.into(),
-            account.into(),
-            previous_nonce,
-        )
+    pub fn new_order_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
+        self.0
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .new_order_request(previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_order_response]
-    pub fn new_order_response(&self, order: JsonRawData) -> E2eIdentityResult<NewAcmeOrder> {
-        Ok(self.0.new_order_response(order)?.into())
+    pub fn new_order_response(&self, order: Vec<u8>) -> E2eIdentityResult<NewAcmeOrder> {
+        Ok(self
+            .0
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .new_order_response(order)?
+            .into())
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_authz_request]
-    pub fn new_authz_request(
-        &self,
-        url: String,
-        account: AcmeAccount,
-        previous_nonce: String,
-    ) -> E2eIdentityResult<JsonRawData> {
-        self.0.new_authz_request(url, account.into(), previous_nonce)
+    pub fn new_authz_request(&self, url: String, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
+        self.0
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .new_authz_request(url, previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_authz_response]
-    pub fn new_authz_response(&self, authz: JsonRawData) -> E2eIdentityResult<NewAcmeAuthz> {
-        Ok(self.0.new_authz_response(authz)?.into())
+    pub fn new_authz_response(&self, authz: Vec<u8>) -> E2eIdentityResult<NewAcmeAuthz> {
+        Ok(self
+            .0
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .new_authz_response(authz)?
+            .into())
     }
 
     #[allow(clippy::too_many_arguments)]
     /// See [core_crypto::e2e_identity::WireE2eIdentity::create_dpop_token]
-    pub fn create_dpop_token(
-        &self,
-        access_token_url: String,
-        client_id: String,
-        dpop_challenge: AcmeChallenge,
-        backend_nonce: String,
-        expiry_days: u32,
-    ) -> E2eIdentityResult<String> {
-        let client_id = client_id.into_bytes();
-        self.0.create_dpop_token(
-            access_token_url,
-            client_id.into(),
-            dpop_challenge.into(),
-            backend_nonce,
-            expiry_days,
-        )
+    pub fn create_dpop_token(&self, access_token_url: String, backend_nonce: String) -> E2eIdentityResult<String> {
+        self.0
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .create_dpop_token(access_token_url, backend_nonce)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_dpop_challenge_request]
     pub fn new_dpop_challenge_request(
         &self,
         access_token: String,
-        dpop_challenge: AcmeChallenge,
-        account: AcmeAccount,
         previous_nonce: String,
-    ) -> E2eIdentityResult<JsonRawData> {
+    ) -> E2eIdentityResult<Vec<u8>> {
         self.0
-            .new_dpop_challenge_request(access_token, dpop_challenge.into(), account.into(), previous_nonce)
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .new_dpop_challenge_request(access_token, previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_oidc_challenge_request]
-    pub fn new_oidc_challenge_request(
-        &self,
-        id_token: String,
-        oidc_challenge: AcmeChallenge,
-        account: AcmeAccount,
-        previous_nonce: String,
-    ) -> E2eIdentityResult<JsonRawData> {
+    pub fn new_oidc_challenge_request(&self, id_token: String, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
         self.0
-            .new_oidc_challenge_request(id_token, oidc_challenge.into(), account.into(), previous_nonce)
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .new_oidc_challenge_request(id_token, previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_challenge_response]
-    pub fn new_challenge_response(&self, challenge: JsonRawData) -> E2eIdentityResult<()> {
-        self.0.new_challenge_response(challenge)
+    pub fn new_challenge_response(&self, challenge: Vec<u8>) -> E2eIdentityResult<()> {
+        self.0
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .new_challenge_response(challenge)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::check_order_request]
-    pub fn check_order_request(
-        &self,
-        order_url: String,
-        account: AcmeAccount,
-        previous_nonce: String,
-    ) -> E2eIdentityResult<JsonRawData> {
-        self.0.check_order_request(order_url, account.into(), previous_nonce)
+    pub fn check_order_request(&self, order_url: String, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
+        self.0
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .check_order_request(order_url, previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::check_order_response]
-    pub fn check_order_response(&self, order: JsonRawData) -> E2eIdentityResult<JsonRawData> {
-        Ok(self.0.check_order_response(order)?.into())
+    pub fn check_order_response(&self, order: Vec<u8>) -> E2eIdentityResult<()> {
+        self.0
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .check_order_response(order)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_request]
-    pub fn finalize_request(
-        &self,
-        order: AcmeOrder,
-        account: AcmeAccount,
-        previous_nonce: String,
-    ) -> E2eIdentityResult<JsonRawData> {
-        self.0.finalize_request(order.into(), account.into(), previous_nonce)
+    pub fn finalize_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
+        self.0
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .finalize_request(previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_response]
-    pub fn finalize_response(&self, finalize: JsonRawData) -> E2eIdentityResult<AcmeFinalize> {
-        Ok(self.0.finalize_response(finalize)?.into())
+    pub fn finalize_response(&self, finalize: Vec<u8>) -> E2eIdentityResult<()> {
+        self.0
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .finalize_response(finalize)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::certificate_request]
-    pub fn certificate_request(
-        &self,
-        finalize: AcmeFinalize,
-        account: AcmeAccount,
-        previous_nonce: String,
-    ) -> E2eIdentityResult<JsonRawData> {
+    pub fn certificate_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
         self.0
-            .certificate_request(finalize.into(), account.into(), previous_nonce)
-    }
-
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::certificate_response]
-    pub fn certificate_response(&self, certificate_chain: String) -> E2eIdentityResult<Vec<String>> {
-        self.0.certificate_response(certificate_chain)
+            .lock()
+            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .certificate_request(previous_nonce)
     }
 }
-
-pub type JsonRawData = Vec<u8>;
-pub type AcmeAccount = JsonRawData;
-pub type AcmeOrder = JsonRawData;
 
 #[derive(Debug)]
 /// See [core_crypto::e2e_identity::types::E2eiAcmeDirectory]
@@ -1353,7 +1355,7 @@ impl From<AcmeDirectory> for core_crypto::prelude::E2eiAcmeDirectory {
 #[derive(Debug)]
 /// See [core_crypto::e2e_identity::types::E2eiNewAcmeOrder]
 pub struct NewAcmeOrder {
-    pub delegate: JsonRawData,
+    pub delegate: Vec<u8>,
     pub authorizations: Vec<String>,
 }
 
@@ -1406,7 +1408,7 @@ impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
 #[derive(Debug)]
 /// See [core_crypto::e2e_identity::types::E2eiAcmeChallenge]
 pub struct AcmeChallenge {
-    pub delegate: JsonRawData,
+    pub delegate: Vec<u8>,
     pub url: String,
 }
 
@@ -1424,31 +1426,6 @@ impl From<AcmeChallenge> for core_crypto::prelude::E2eiAcmeChallenge {
         Self {
             delegate: chall.delegate,
             url: chall.url,
-        }
-    }
-}
-
-#[derive(Debug)]
-/// See [core_crypto::e2e_identity::types::E2eiAcmeFinalize]
-pub struct AcmeFinalize {
-    pub delegate: JsonRawData,
-    pub certificate_url: String,
-}
-
-impl From<core_crypto::prelude::E2eiAcmeFinalize> for AcmeFinalize {
-    fn from(finalize: core_crypto::prelude::E2eiAcmeFinalize) -> Self {
-        Self {
-            certificate_url: finalize.certificate_url,
-            delegate: finalize.delegate,
-        }
-    }
-}
-
-impl From<AcmeFinalize> for core_crypto::prelude::E2eiAcmeFinalize {
-    fn from(finalize: AcmeFinalize) -> Self {
-        Self {
-            certificate_url: finalize.certificate_url,
-            delegate: finalize.delegate,
         }
     }
 }
