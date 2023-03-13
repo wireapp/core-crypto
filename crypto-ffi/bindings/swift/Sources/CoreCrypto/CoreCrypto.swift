@@ -766,7 +766,6 @@ public class CoreCryptoWrapper {
     /// returned from all operation creating a proposal
     public func clearPendingProposal(conversationId: ConversationId, proposalRef: [UInt8]) throws {
         try self.coreCrypto.clearPendingProposal(conversationId: conversationId, proposalRef: proposalRef)
-
     }
 
     /// Allows to remove a pending commit. Use this when backend rejects the commit
@@ -782,7 +781,7 @@ public class CoreCryptoWrapper {
         try self.coreCrypto.clearPendingCommit(conversationId: conversationId)
     }
 
-    /// Initiailizes the proteus client
+    /// Initializes the proteus client
     public func proteusInit() throws {
         try self.coreCrypto.proteusInit()
     }
@@ -920,14 +919,26 @@ public class CoreCryptoWrapper {
     /// Creates an enrollment instance with private key material you can use in order to fetch
     /// a new x509 certificate from the acme server.
     ///
+    /// - parameter clientId: client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+    /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
+    /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
+    /// - parameter expiryDays: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material. Only ``CoreCryptoSwift.CiphersuiteName.mls128Dhkemx25519Aes128gcmSha256Ed25519`` is supported currently
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func newAcmeEnrollment(ciphersuite: CoreCryptoSwift.CiphersuiteName = CoreCryptoSwift.CiphersuiteName.mls128Dhkemx25519Aes128gcmSha256Ed25519) throws -> CoreCryptoSwift.WireE2eIdentity {
+    public func newAcmeEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: CoreCryptoSwift.CiphersuiteName = CoreCryptoSwift.CiphersuiteName.mls128Dhkemx25519Aes128gcmSha256Ed25519) throws -> CoreCryptoSwift.WireE2eIdentity {
         if ciphersuite != CoreCryptoSwift.CiphersuiteName.mls128Dhkemx25519Aes128gcmSha256Ed25519 {
             throw CoreCryptoSwift.E2eIdentityError.NotYetSupported(message: "This ACME ciphersuite isn't supported. Only `Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519` is as of now")
         }
 
-        return try self.coreCrypto.newAcmeEnrollment(ciphersuite: ciphersuite)
+        return try self.coreCrypto.newAcmeEnrollment(clientId: clientId, displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
+    }
+
+    /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it to initialize the MLS client with a certificate
+    ///
+    /// - parameter e2ei: the enrollment instance used to fetch the certificates
+    /// - parameter certificateChain: the raw response from ACME server
+    public func e2eiMlsInit(e2ei: CoreCryptoSwift.WireE2eIdentity, certificateChain: String) throws {
+        return try self.coreCrypto.e2eiMlsInit(e2ei: e2ei, certificateChain: certificateChain)
     }
 
     /// - returns: The CoreCrypto version

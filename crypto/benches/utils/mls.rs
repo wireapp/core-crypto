@@ -142,18 +142,20 @@ pub fn setup_mls(
 
 pub fn new_central(
     ciphersuite: MlsCiphersuite,
-    credential: &Option<CertificateBundle>,
+    // TODO: always None for the moment. Need to update the benches with some realistic certificates
+    _credential: &Option<CertificateBundle>,
     in_memory: bool,
 ) -> (MlsCentral, tempfile::TempDir) {
     let (path, tmp_file) = tmp_db_file();
     let client_id = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
     let secret = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
     let ciphersuites = vec![ciphersuite];
-    let cfg = MlsCentralConfiguration::try_new(path, secret, Some(client_id.as_bytes().into()), ciphersuites).unwrap();
+    let cfg =
+        MlsCentralConfiguration::try_new(path, secret, Some(client_id.as_bytes().into()), ciphersuites, None).unwrap();
     let central = if in_memory {
-        block_on(async { MlsCentral::try_new_in_memory(cfg, credential.clone()).await.unwrap() })
+        block_on(async { MlsCentral::try_new_in_memory(cfg).await.unwrap() })
     } else {
-        block_on(async { MlsCentral::try_new(cfg, credential.clone()).await.unwrap() })
+        block_on(async { MlsCentral::try_new(cfg).await.unwrap() })
     };
     (central, tmp_file)
 }

@@ -57,15 +57,32 @@ pub async fn run_test_with_client_ids<const N: usize>(
                 let client_id = client_id[i].into();
                 let ciphersuites = vec![case.cfg.ciphersuite];
                 let configuration =
-                    MlsCentralConfiguration::try_new(p, "test".into(), Some(client_id), ciphersuites).unwrap();
-                let mut central = MlsCentral::try_new(configuration, (case.credential)(case.cfg.ciphersuite))
-                    .await
-                    .unwrap();
+                    MlsCentralConfiguration::try_new(p, "test".into(), Some(client_id), ciphersuites, None).unwrap();
+                let mut central = MlsCentral::try_new(configuration).await.unwrap();
                 central.callbacks(Box::<ValidationCallbacks>::default());
                 central
             });
             let centrals: [MlsCentral; N] = futures_util::future::join_all(stream).await.try_into().unwrap();
             test(centrals).await;
+        })
+    })
+    .await
+}
+
+pub async fn run_test_wo_clients(
+    case: TestCase,
+    test: impl FnOnce(MlsCentral) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+) {
+    run_tests(move |paths: [String; 1]| {
+        Box::pin(async move {
+            let p = paths.get(0).unwrap();
+
+            let ciphersuites = vec![case.cfg.ciphersuite];
+            let configuration =
+                MlsCentralConfiguration::try_new(p.to_string(), "test".into(), None, ciphersuites, None).unwrap();
+            let mut central = MlsCentral::try_new(configuration).await.unwrap();
+            central.callbacks(Box::<ValidationCallbacks>::default());
+            test(central).await
         })
     })
     .await

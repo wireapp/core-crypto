@@ -1,11 +1,16 @@
 //! End to end identity errors
 
+use crate::CryptoError;
+
 /// Wrapper over a [Result] of an end to end identity error
 pub type E2eIdentityResult<T> = Result<T, E2eIdentityError>;
 
 /// End to end identity errors
 #[derive(Debug, thiserror::Error)]
 pub enum E2eIdentityError {
+    /// Client misused this library
+    #[error("Incorrect usage of this API")]
+    ImplementationError,
     /// Incoming support
     #[error("Not yet supported")]
     NotYetSupported,
@@ -27,4 +32,10 @@ pub enum E2eIdentityError {
     /// Utf8 error
     #[error(transparent)]
     Utf8Error(#[from] ::core::str::Utf8Error),
+    /// MLS error
+    #[error(transparent)]
+    MlsError(#[from] CryptoError),
+    /// !!!! Something went very wrong and one of our locks has been poisoned by an in-thread panic !!!!
+    #[error("One of the locks has been poisoned")]
+    LockPoisonError,
 }
