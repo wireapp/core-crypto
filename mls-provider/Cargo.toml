@@ -37,9 +37,11 @@ hpke-rs-rust-crypto = "0.2"
 zeroize = "1.5"
 thiserror = "1.0"
 
-[dependencies.core-crypto-keystore]
-version = "^0.6.3"
-path = "../keystore"
+[target.'cfg(not(target_os = "ios"))'.dependencies]
+core-crypto-keystore = { version = "^0.6.3", path = "../keystore" }
+
+[target.'cfg(target_os = "ios")'.dependencies]
+core-crypto-keystore = { version = "^0.6.3", path = "../keystore", features = ["ios-wal-compat"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
