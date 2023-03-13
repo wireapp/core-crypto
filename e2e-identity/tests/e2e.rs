@@ -12,7 +12,7 @@ use utils::{
     rand_base64_str,
 };
 
-use crate::utils::TestError;
+use crate::utils::{rand_client_id, TestError};
 
 #[path = "utils/mod.rs"]
 mod utils;
@@ -126,12 +126,64 @@ mod acme_server {
             ))
         ));
     }
+
+    /// Since this call a custom method on our acme server fork, verify we satisfy the invariant:
+    /// request payloads must be signed by the same client key which created the acme account.
+    ///
+    /// This verifies the DPoP challenge verification method on the acme server
+    #[should_panic]
+    #[tokio::test]
+    async fn should_fail_when_dpop_challenge_signed_by_a_different_key() {
+        let test = E2eTest::new().start(docker()).await;
+
+        let flow = EnrollmentFlow {
+            verify_dpop_challenge: Box::new(|mut test, (account, dpop_chall, access_token, previous_nonce)| {
+                Box::pin(async move {
+                    let old_kp = test.client_kp;
+                    // use another key just for signing this request
+                    test.client_kp = Ed25519KeyPair::generate().to_pem().into();
+                    let previous_nonce = test
+                        .verify_dpop_challenge(&account, dpop_chall, access_token, previous_nonce)
+                        .await?;
+                    test.client_kp = old_kp;
+                    Ok((test, previous_nonce))
+                })
+            }),
+            ..Default::default()
+        };
+        test.enrollment(flow).await.unwrap();
+    }
+
+    /// Since this call a custom method on our acme server fork, verify we satisfy the invariant:
+    /// request payloads must be signed by the same client key which created the acme account.
+    ///
+    /// This verifies the DPoP challenge verification method on the acme server
+    #[should_panic]
+    #[tokio::test]
+    async fn should_fail_when_oidc_challenge_signed_by_a_different_key() {
+        let test = E2eTest::new().start(docker()).await;
+
+        let flow = EnrollmentFlow {
+            verify_oidc_challenge: Box::new(|mut test, (account, oidc_chall, access_token, previous_nonce)| {
+                Box::pin(async move {
+                    let old_kp = test.client_kp;
+                    // use another key just for signing this request
+                    test.client_kp = Ed25519KeyPair::generate().to_pem().into();
+                    let previous_nonce = test
+                        .verify_oidc_challenge(&account, oidc_chall, access_token, previous_nonce)
+                        .await?;
+                    test.client_kp = old_kp;
+                    Ok((test, previous_nonce))
+                })
+            }),
+            ..Default::default()
+        };
+        test.enrollment(flow).await.unwrap();
+    }
 }
 
 #[cfg(not(ci))]
-mod client_id_challenge {
-    use crate::utils::rand_client_id;
-
+mod dpop_challenge {
     use super::*;
 
     /// Demonstrates that the client possesses the clientId. Client makes an authenticated request
@@ -142,13 +194,13 @@ mod client_id_challenge {
         let test = E2eTest::new().start(docker()).await;
 
         let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce)| {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, expiry)| {
                 Box::pin(async move {
                     // use a different nonce than the supplied one
                     let wrong_nonce = rand_base64_str(32).into();
                     assert_ne!(wrong_nonce, backend_nonce);
 
-                    let client_dpop_token = test.create_dpop_token(&dpop_chall, wrong_nonce).await?;
+                    let client_dpop_token = test.create_dpop_token(&dpop_chall, wrong_nonce, expiry).await?;
                     Ok((test, client_dpop_token))
                 })
             }),
@@ -184,14 +236,14 @@ mod client_id_challenge {
         let test = E2eTest::new().start(docker()).await;
 
         let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce)| {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, expiry)| {
                 Box::pin(async move {
                     // alter the 'token' of the valid challenge
                     let wrong_dpop_chall = AcmeChallenge {
                         token: rand_base64_str(32),
                         ..dpop_chall
                     };
-                    let client_dpop_token = test.create_dpop_token(&wrong_dpop_chall, backend_nonce).await?;
+                    let client_dpop_token = test.create_dpop_token(&wrong_dpop_chall, backend_nonce, expiry).await?;
                     Ok((test, client_dpop_token))
                 })
             }),
@@ -230,12 +282,41 @@ mod client_id_challenge {
             TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
         ));
     }
+
+    /// Client DPoP token is nested within access token. The former should not be expired when
+    /// acme server verifies the DPoP challenge
+    // TODO: not testable in practice because leeway of 360s is hardcoded in acme server
+    #[ignore]
+    #[should_panic]
+    #[tokio::test]
+    async fn should_fail_when_expired_client_dpop_token() {
+        let test = E2eTest::new().start(docker()).await;
+
+        let flow = EnrollmentFlow {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, _expiry)| {
+                Box::pin(async move {
+                    let leeway = 360;
+                    let expiry = core::time::Duration::from_secs(0);
+                    let client_dpop_token = test.create_dpop_token(&dpop_chall, backend_nonce, expiry).await?;
+                    tokio::time::sleep(core::time::Duration::from_secs(leeway + 1)).await;
+                    Ok((test, client_dpop_token))
+                })
+            }),
+            ..Default::default()
+        };
+        test.enrollment(flow).await.unwrap();
+    }
 }
 
 #[cfg(not(ci))]
-mod oidc_error {
+mod oidc_challenge {
+    use rusty_acme::prelude::wiremock::WiremockImage;
+    use rusty_jwt_tools::jwk::TryIntoJwk;
+
     use super::*;
 
+    /// Authorization Server (Dex in our case) exposes an endpoint for clients to fetch its public keys.
+    /// It is used to validate the signature of the id token we supply to this challenge.
     #[tokio::test]
     async fn should_fail_when_oidc_provider_jwks_uri_unavailable() {
         let mut test = E2eTest::new();
@@ -246,7 +327,59 @@ mod oidc_error {
         let test = test.start(docker()).await;
 
         // cannot validate the OIDC challenge
-        assert!(test.nominal_enrollment().await.is_err());
+        assert!(matches!(
+            test.nominal_enrollment().await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ClientImplementationError(
+                "a challenge is not supposed to be pending at this point. It must either be 'valid' or 'processing'."
+            ))
+        ));
+    }
+
+    /// Authorization Server (Dex in our case) exposes an endpoint for clients to fetch its public keys.
+    /// It is used to validate the signature of the id token we supply to this challenge.
+    /// Here, the AS will return a valid JWKS URI but it does not contain the public key
+    /// verifying the id token.
+    #[tokio::test]
+    async fn should_fail_when_malicious_jwks_uri() {
+        let docker = docker();
+
+        let jwk = Ed25519KeyPair::generate().public_key().try_into_jwk().unwrap();
+        let jwks_mock = serde_json::json!({
+            "request": {
+                "method": "GET",
+                "urlPath": "/oauth2/jwks"
+            },
+            "response": {
+                "jsonBody": {
+                    "keys": [jwk]
+                }
+            }
+        });
+        // this starts a server serving the abose stub with a malicious JWK
+        let attacker_host = "attacker-dex";
+        let _attacker_dex = WiremockImage::run(docker, attacker_host, vec![jwks_mock]);
+
+        let mut test = E2eTest::new();
+        // invalid jwks uri
+        test.ca_cfg.jwks_uri = format!("http://{attacker_host}/oauth2/jwks");
+        let test = test.start(docker).await;
+
+        // cannot validate the OIDC challenge
+        assert!(matches!(
+            test.nominal_enrollment().await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ClientImplementationError(
+                "a challenge is not supposed to be pending at this point. It must either be 'valid' or 'processing'."
+            ))
+        ));
+    }
+
+    // TODO: probably works
+    /// An attacker performs a MITM attack and tries to impersonate the Authorization Server. To do so, since
+    /// he does not know the true AS private signing key so he'll generate a new
+    #[ignore]
+    #[tokio::test]
+    async fn should_fail_when_oidc_provider_jwks_uri_lacks_signing_key() {
+        todo!()
     }
 }
 
@@ -274,7 +407,11 @@ mod optimize {
         let previous_nonce = tokio::task::spawn(async move {
             let mut test = t1.lock().await;
             let backend_nonce = test.get_wire_server_nonce().await.unwrap();
-            let client_dpop_token = test.create_dpop_token(&dpop_chall, backend_nonce).await.unwrap();
+            let expiry = core::time::Duration::from_secs(3600);
+            let client_dpop_token = test
+                .create_dpop_token(&dpop_chall, backend_nonce, expiry)
+                .await
+                .unwrap();
             let access_token = test.get_access_token(client_dpop_token).await.unwrap();
             let previous_nonce = test
                 .verify_dpop_challenge(&acc1, dpop_chall, access_token, previous_nonce)

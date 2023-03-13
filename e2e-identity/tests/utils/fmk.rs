@@ -27,7 +27,8 @@ impl E2eTest<'static> {
         let (t, (authz, previous_nonce)) = (f.new_authz)(t, (account.clone(), order, previous_nonce)).await?;
         let (t, (dpop_chall, oidc_chall)) = (f.extract_challenges)(t, authz.clone()).await?;
         let (t, backend_nonce) = (f.get_wire_server_nonce)(t, ()).await?;
-        let (t, client_dpop_token) = (f.create_dpop_token)(t, (dpop_chall.clone(), backend_nonce)).await?;
+        let expiry = core::time::Duration::from_secs(3600);
+        let (t, client_dpop_token) = (f.create_dpop_token)(t, (dpop_chall.clone(), backend_nonce, expiry)).await?;
         let (t, access_token) = (f.get_access_token)(t, client_dpop_token).await?;
         let (t, previous_nonce) =
             (f.verify_dpop_challenge)(t, (account.clone(), dpop_chall, access_token, previous_nonce)).await?;
@@ -235,6 +236,7 @@ impl<'a> E2eTest<'a> {
         &mut self,
         dpop_chall: &AcmeChallenge,
         backend_nonce: BackendNonce,
+        expiry: core::time::Duration,
     ) -> TestResult<String> {
         self.display_step("create client DPoP token");
         let htu: Htu = self.wire_server_uri().as_str().try_into()?;
@@ -245,7 +247,6 @@ impl<'a> E2eTest<'a> {
             htu,
             extra_claims: None,
         };
-        let expiry = Duration::from_days(1).into();
         let client_dpop_token =
             RustyJwtTools::generate_dpop_token(dpop, &self.sub, backend_nonce, expiry, self.alg, &self.client_kp)?;
         let alg = self.alg;

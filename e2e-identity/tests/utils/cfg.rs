@@ -323,7 +323,7 @@ pub struct EnrollmentFlow {
     pub new_authz: Flow<(AcmeAccount, AcmeOrder, String), (AcmeAuthz, String)>,
     pub extract_challenges: Flow<AcmeAuthz, (AcmeChallenge, AcmeChallenge)>,
     pub get_wire_server_nonce: Flow<(), BackendNonce>,
-    pub create_dpop_token: Flow<(AcmeChallenge, BackendNonce), String>,
+    pub create_dpop_token: Flow<(AcmeChallenge, BackendNonce, core::time::Duration), String>,
     pub get_access_token: Flow<String, String>,
     pub verify_dpop_challenge: Flow<(AcmeAccount, AcmeChallenge, String, String), String>,
     pub fetch_id_token: Flow<(), String>,
@@ -379,9 +379,9 @@ impl Default for EnrollmentFlow {
                     Ok((test, backend_nonce))
                 })
             }),
-            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce)| {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, expiry)| {
                 Box::pin(async move {
-                    let client_dpop_token = test.create_dpop_token(&dpop_chall, backend_nonce).await?;
+                    let client_dpop_token = test.create_dpop_token(&dpop_chall, backend_nonce, expiry).await?;
                     Ok((test, client_dpop_token))
                 })
             }),
