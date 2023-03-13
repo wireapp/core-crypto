@@ -1,5 +1,5 @@
 [env]
-ANDROID_NDK_PREFER_VERSION = "21"
+ANDROID_NDK_PREFER_VERSION = "25.2"
 
 [tasks.clean]
 command = "cargo"
@@ -201,6 +201,8 @@ for rust_target in ${keys}
     cp ${from} ${to}
 end
 
+release ${handle}
+
 println -c bright_blue "cp ./bindings/kt/com/wire/crypto/CoreCrypto.kt -> ../sample-projects/android/CoreCryptoTestApp/app/src/main/java/com/wire/core/CoreCrypto.kt"
 from = canonicalize "./bindings/kt/com/wire/crypto/CoreCrypto.kt"
 to = canonicalize "../sample-projects/android/CoreCryptoTestApp/app/src/main/java/com/wire/crypto/CoreCrypto.kt"
@@ -226,6 +228,7 @@ for rust_target in ${keys}
     mkdir dirname ${to}
     cp ${from} ${to}
 end
+release ${handle}
 
 println -c bright_blue "cp ./bindings/kt/com/wire/crypto/CoreCrypto.kt -> ../kotlin/android/src/main/java/com/wire/crypto/CoreCrypto.kt"
 from = canonicalize "./bindings/kt/com/wire/crypto/CoreCrypto.kt"
@@ -289,6 +292,8 @@ for rust_target in ${keys}
     cp ${from} ${to}
 end
 
+release ${handle}
+
 println -c bright_blue "cp ./bindings/kt/com/wire/crypto/CoreCrypto.kt -> ../kotlin/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt"
 from = canonicalize "./bindings/kt/com/wire/crypto/CoreCrypto.kt"
 to = canonicalize "../kotlin/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt"
@@ -339,10 +344,19 @@ fn update_android_env
         trigger_error "Unsupported host platform"
     end
 
-    android_ndk_path = set "${1}/toolchains/llvm/prebuilt/${platform_dir}/bin"
+    base_ndk_path = set "${1}/toolchains/llvm/prebuilt/${platform_dir}"
+    android_ndk_path = set "${base_ndk_path}/bin"
     new_path = set "${PATH}:${android_ndk_path}"
     print -c bright_blue "Updating PATH to include ${android_ndk_path}\n"
     set_env PATH "${new_path}"
+
+    set_env ANDROID_NDK_HOME "${base_ndk_path}"
+    set_env NDK_HOME "${base_ndk_path}"
+
+    set_env CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_ANDROID_NDK "${base_ndk_path}"
+    set_env CARGO_TARGET_AARCH64_LINUX_ANDROID_ANDROID_NDK "${base_ndk_path}"
+    set_env CARGO_TARGET_X86_64_LINUX_ANDROID_ANDROID_NDK "${base_ndk_path}"
+    set_env CARGO_TARGET_I686_LINUX_ANDROID_ANDROID_NDK "${base_ndk_path}"
 end
 
 fn autodetect_android_env
@@ -362,21 +376,31 @@ fn autodetect_android_env
             trigger_error "Unsupported host platform"
         end
 
+        preferred_hwnd = split ${ANDROID_NDK_PREFER_VERSION} .
+        prefer_minor_version = array_pop ${preferred_hwnd}
+        prefer_major_version = array_pop ${preferred_hwnd}
+        print -c bright_blue "NDK Preferred version is ${prefer_major_version}.${prefer_minor_version}.xxxx\n"
+        release ${preferred_hwnd}
+
         ndk_versions_hwnd = glob_array "${platform_dir}/Android/Sdk/ndk/*"
         for path in ${ndk_versions_hwnd}
             ndk_latest_version_path = set ${path}
 
             split_path_hwnd = split ${path} "/"
             ndk_version = array_pop ${split_path_hwnd}
+            release ${split_path_hwnd}
             ndk_version_components_hwnd = split ${ndk_version} "."
             ndk_build_version = array_pop ${ndk_version_components_hwnd}
             ndk_minor_version = array_pop ${ndk_version_components_hwnd}
             ndk_major_version = array_pop ${ndk_version_components_hwnd}
+            release ${ndk_version_components_hwnd}
 
-            if eq ${ANDROID_NDK_PREFER_VERSION} ${ndk_major_version}
+            major_version_matches = eq ${prefer_major_version} ${ndk_major_version}
+            minor_version_matches = eq ${prefer_minor_version} ${ndk_minor_version}
+
+            if ${major_version_matches} and ${minor_version_matches}
                 print -c bright_blue "Found preferred NDK version [${ANDROID_NDK_PREFER_VERSION}] => ${ndk_major_version}.${ndk_minor_version}.${ndk_build_version}. Exiting autodetect!\n"
                 goto :autodetect_end
-            }
             end
         end
 

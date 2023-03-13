@@ -39,11 +39,11 @@ jobs:
         uses: davidB/rust-cargo-make@v1
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
-      - name: Install NDK 21
-        run: echo "y" | sdkmanager --install "ndk;21.4.7075529"
+      - name: Install NDK 25
+        run: echo "y" | sdkmanager --install "ndk;25.2.9519653"
       - name: Build Android package
         env:
-          ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/21.4.7075529
+          ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/25.2.9519653
         run: |
           cd crypto-ffi
           cargo make copy-android-resources
