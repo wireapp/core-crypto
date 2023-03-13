@@ -1,17 +1,25 @@
+[registries.crates-io]
+protocol = "sparse"
+
 [env]
 # Android build flags
-CC_armv7-linux-androideabi = "armv7a-linux-androideabi30-clang"
-CXX_armv7-linux-androideabi = "armv7a-linux-androideabi30-clang++"
+# ? RANLIB flags are now needed because this https://github.com/alexcrichton/openssl-src-rs/pull/180 breaks everything
+CC_armv7-linux-androideabi = "armv7a-linux-androideabi24-clang"
+CXX_armv7-linux-androideabi = "armv7a-linux-androideabi24-clang++"
 AR_armv7-linux-androideabi = "llvm-ar"
-CC_aarch64-linux-android = "aarch64-linux-android30-clang"
-CXX_aarch64-linux-android = "aarch64-linux-android30-clang++"
+RANLIB_armv7-linux-androideabi = "llvm-ranlib"
+CC_aarch64-linux-android = "aarch64-linux-android24-clang"
+CXX_aarch64-linux-android = "aarch64-linux-android24-clang++"
 AR_aarch64-linux-android = "llvm-ar"
-CC_x86_64-linux-android = "x86_64-linux-android30-clang"
-CXX_x86_64-linux-android = "x86_64-linux-android30-clang++"
+RANLIB_aarch64-linux-android = "llvm-ranlib"
+CC_x86_64-linux-android = "x86_64-linux-android24-clang"
+CXX_x86_64-linux-android = "x86_64-linux-android24-clang++"
 AR_x86_64-linux-android = "llvm-ar"
-CC_i686-linux-android = "i686-linux-android30-clang"
-CXX_i686-linux-android = "i686-linux-android30-clang++"
+RANLIB_x86_64-linux-android = "llvm-ranlib"
+CC_i686-linux-android = "i686-linux-android24-clang"
+CXX_i686-linux-android = "i686-linux-android24-clang++"
 AR_i686-linux-android = "llvm-ar"
+RANLIB_i686-linux-android = "llvm-ranlib"
 # ? Ring treats warnings as errors during local development by detecting
 # ? the presence of a `.git` folder
 # ? With us having a git dependency to ring, this triggers this local development behavior, preventing
@@ -40,32 +48,29 @@ runner = [
 # Android linkage
 [target.armv7-linux-androideabi]
 ar = "llvm-ar"
-linker = "armv7a-linux-androideabi30-clang"
-# ? Doesn't work with NDK r21. But will be needed for Rust 1.66 and NDK 25.
-# rustflags = [
-#     "-C", "link-args=-Lsupport/android"
-# ]
+linker = "armv7a-linux-androideabi24-clang"
+rustflags = [
+    "-C", "link-args=-Lsupport/android",
+    "-C", "target_feature=+neon"
+]
 
 [target.aarch64-linux-android]
 ar = "llvm-ar"
-linker = "aarch64-linux-android30-clang"
-# ? Doesn't work with NDK r21. But will be needed for Rust 1.66 and NDK 25.
-# rustflags = [
-#     "-C", "link-args=-Lsupport/android"
-# ]
+linker = "aarch64-linux-android24-clang"
+rustflags = [
+    "-C", "link-args=-Lsupport/android"
+]
 
 [target.x86_64-linux-android]
 ar = "llvm-ar"
-linker = "x86_64-linux-android30-clang"
-# ? Doesn't work with NDK r21. But will be needed for Rust 1.66 and NDK 25.
-# rustflags = [
-#     "-C", "link-args=-Lsupport/android"
-# ]
+linker = "x86_64-linux-android24-clang"
+rustflags = [
+    "-C", "link-args=-Lsupport/android"
+]
 
 [target.i686-linux-android]
 ar = "llvm-ar"
-linker = "i686-linux-android30-clang"
-# ? Doesn't work with NDK r21. But will be needed for Rust 1.66 and NDK 25.
-# rustflags = [
-#     "-C", "link-args=-Lsupport/android"
-# ]
+linker = "i686-linux-android24-clang"
+rustflags = [
+    "-C", "link-args=-Lsupport/android"
+]
