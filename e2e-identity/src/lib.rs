@@ -4,6 +4,7 @@ use prelude::*;
 use rusty_acme::prelude::AcmeChallenge;
 use rusty_jwt_tools::jwk::TryIntoJwk;
 use rusty_jwt_tools::prelude::{ClientId, Dpop, Htm, Pem, RustyJwtTools};
+use zeroize::Zeroize;
 
 mod error;
 mod types;
@@ -34,22 +35,24 @@ impl RustyE2eIdentity {
     ///
     /// # Parameters
     /// * `sign_alg` - Signature algorithm (only Ed25519 for now)
-    /// * `raw_sign_kp` - Signature keypair in PEM format
-    pub fn try_new(sign_alg: JwsAlgorithm, raw_sign_kp: Vec<u8>) -> E2eIdentityResult<Self> {
+    /// * `raw_sign_key` - Raw signature key as bytes
+    pub fn try_new(sign_alg: JwsAlgorithm, mut raw_sign_key: Vec<u8>) -> E2eIdentityResult<Self> {
         let (sign_kp, jwk) = match sign_alg {
             JwsAlgorithm::Ed25519 => {
-                let kp = Ed25519KeyPair::from_bytes(raw_sign_kp.as_slice())?;
+                let kp = Ed25519KeyPair::from_bytes(&raw_sign_key[..])?;
                 (kp.to_pem(), kp.public_key().try_into_jwk()?)
             }
             JwsAlgorithm::P256 => {
-                let kp = ES256KeyPair::from_bytes(raw_sign_kp.as_slice())?;
+                let kp = ES256KeyPair::from_bytes(&raw_sign_key[..])?;
                 (kp.to_pem()?, kp.public_key().try_into_jwk()?)
             }
             JwsAlgorithm::P384 => {
-                let kp = ES384KeyPair::from_bytes(raw_sign_kp.as_slice())?;
+                let kp = ES384KeyPair::from_bytes(&raw_sign_key[..])?;
                 (kp.to_pem()?, kp.public_key().try_into_jwk()?)
             }
         };
+        // drop the private immediately since it already has been copied
+        raw_sign_key.zeroize();
         Ok(Self {
             sign_alg,
             sign_kp: sign_kp.into(),
