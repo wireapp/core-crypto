@@ -2063,13 +2063,14 @@ impl WireE2eIdentity {
     pub fn new_order_request(
         &self,
         display_name: String,
-        client_id: FfiClientId,
+        client_id: String,
         handle: String,
         expiry_days: u32,
         directory: JsValue,
         account: Uint8Array,
         previous_nonce: String,
     ) -> WasmCryptoResult<Uint8Array> {
+        let client_id = client_id.into_bytes();
         let directory = serde_wasm_bindgen::from_value::<AcmeDirectory>(directory)?;
         let new_order = self.0.new_order_request(
             &display_name,
@@ -2110,11 +2111,12 @@ impl WireE2eIdentity {
     pub fn create_dpop_token(
         &self,
         access_token_url: String,
-        client_id: FfiClientId,
+        client_id: String,
         dpop_challenge: JsValue,
         backend_nonce: String,
         expiry_days: u32,
     ) -> WasmCryptoResult<String> {
+        let client_id = client_id.into_bytes();
         let dpop_challenge = serde_wasm_bindgen::from_value::<AcmeChallenge>(dpop_challenge)?;
         let dpop_token = self.0.create_dpop_token(
             access_token_url,

@@ -917,6 +917,19 @@ public class CoreCryptoWrapper {
         try self.coreCrypto.proteusCryptoboxMigrate(path: path)
     }
 
+    /// Creates an enrollment instance with private key material you can use in order to fetch
+    /// a new x509 certificate from the acme server.
+    ///
+    /// - parameter ciphersuite: For generating signing key material. Only ``CoreCryptoSwift.CiphersuiteName.mls128Dhkemx25519Aes128gcmSha256Ed25519`` is supported currently
+    /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
+    public func newAcmeEnrollment(ciphersuite: CoreCryptoSwift.CiphersuiteName = CoreCryptoSwift.CiphersuiteName.mls128Dhkemx25519Aes128gcmSha256Ed25519) throws -> CoreCryptoSwift.WireE2eIdentity {
+        if ciphersuite != CoreCryptoSwift.CiphersuiteName.mls128Dhkemx25519Aes128gcmSha256Ed25519 {
+            throw CoreCryptoSwift.E2eIdentityError.NotYetSupported(message: "This ACME ciphersuite isn't supported. Only `Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519` is as of now")
+        }
+
+        return try self.coreCrypto.newAcmeEnrollment(ciphersuite: ciphersuite)
+    }
+
     /// - returns: The CoreCrypto version
     public static func version() -> String {
         return CoreCryptoSwift.version()
