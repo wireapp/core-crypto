@@ -1480,6 +1480,7 @@ export class CoreCrypto {
      * keying material.
      *
      * @param ciphersuite - For generating signing key material. Only {@link Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519} is supported currently
+     * @returns The new {@link WireE2eIdentity} object
      */
     async newAcmeEnrollment(ciphersuite: Ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519): Promise<WireE2eIdentity> {
         if (ciphersuite !== Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519) {
@@ -1575,7 +1576,7 @@ export class WireE2eIdentity {
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/new-account`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    newOrderRequest(displayName: string, clientId: ClientId, handle: string, expiryDays: number, directory: AcmeDirectory, account: AcmeAccount, previousNonce: string): JsonRawData {
+    newOrderRequest(displayName: string, clientId: string, handle: string, expiryDays: number, directory: AcmeDirectory, account: AcmeAccount, previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.new_order_request(displayName, clientId, handle, expiryDays, directory, account, previousNonce);
         } catch(e) {
@@ -1642,7 +1643,7 @@ export class WireE2eIdentity {
      * @param backendNonce you get by calling `GET /clients/token/nonce` on wire-server as defined here {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce}
      * @param expiryDays token expiry in days
      */
-    createDpopToken(accessTokenUrl: string, clientId: ClientId, dpopChallenge: AcmeChallenge, backendNonce: string, expiryDays: number): string {
+    createDpopToken(accessTokenUrl: string, clientId: string, dpopChallenge: AcmeChallenge, backendNonce: string, expiryDays: number): string {
         try {
             return this.#e2ei.create_dpop_token(accessTokenUrl, clientId, dpopChallenge, backendNonce, expiryDays);
         } catch(e) {

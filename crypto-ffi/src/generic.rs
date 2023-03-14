@@ -1183,16 +1183,17 @@ impl WireE2eIdentity {
     pub fn new_order_request(
         &self,
         display_name: String,
-        client_id: ClientId,
+        client_id: String,
         handle: String,
         expiry_days: u32,
         directory: AcmeDirectory,
         account: AcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<JsonRawData> {
+        let client_id = client_id.into_bytes();
         self.0.new_order_request(
             &display_name,
-            client_id,
+            client_id.into(),
             &handle,
             expiry_days,
             directory.into(),
@@ -1226,14 +1227,15 @@ impl WireE2eIdentity {
     pub fn create_dpop_token(
         &self,
         access_token_url: String,
-        client_id: ClientId,
+        client_id: String,
         dpop_challenge: AcmeChallenge,
         backend_nonce: String,
         expiry_days: u32,
     ) -> E2eIdentityResult<String> {
+        let client_id = client_id.into_bytes();
         self.0.create_dpop_token(
             access_token_url,
-            client_id,
+            client_id.into(),
             dpop_challenge.into(),
             backend_nonce,
             expiry_days,
