@@ -7,6 +7,15 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.7.0-rc.2] - 2023-03-15
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+</details>
+
+* Fix on documentation that prevented release on many platforms
+
 ## [0.7.0-rc.1] - 2023-03-15
 
 <details>
@@ -14,6 +23,8 @@ Platform support legends:
 
 ### Bug Fixes
 
+- [**breaking**] Make FFI parameters compliant with rfc8555
+- Added missing version() function to Swift bindings
 - Enable ios-wal-compat for iOS builds by default
 - Exclude self from self-remove-commit delay
 - Fix rustsec advisories on xtask deps
@@ -29,6 +40,7 @@ Platform support legends:
 ### Miscellaneous Tasks
 
 - Release 0.7.0-rc.1
+- Use crates.io sparse protocol on CI via env
 - Android upgrade to NDK 25 + openssl android build fix
 - Updated serde-wasm-bindgen to 0.5.0
 - Updated crypto deps (p256/384 & ecdsa)

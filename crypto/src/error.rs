@@ -93,7 +93,7 @@ pub enum CryptoError {
     /// Error when trying to decode an hex-encoded string. Usually that means that the length of the hex string is odd - should be always even
     #[error(transparent)]
     HexDecodeError(#[from] hex::FromHexError),
-    /// Error when trying to coerce a Vec<u8> into a [u8 ; N]
+    /// Error when trying to coerce a `Vec<u8>` into a `[u8; N]`
     #[error("Byte array supplied did not have the expected size {0}")]
     InvalidByteArrayError(usize),
     /// Standard I/O Error
