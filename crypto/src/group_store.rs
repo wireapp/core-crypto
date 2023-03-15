@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 #[async_trait::async_trait(?Send)]
-pub trait GroupStoreEntity: std::fmt::Debug {
+pub(crate) trait GroupStoreEntity: std::fmt::Debug {
     type RawStoreValue: core_crypto_keystore::entities::Entity;
     type IdentityType;
 
@@ -83,14 +83,14 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
     }
 }
 
-pub type GroupStoreValue<V> = std::sync::Arc<async_lock::RwLock<V>>;
+pub(crate) type GroupStoreValue<V> = std::sync::Arc<async_lock::RwLock<V>>;
 
 pub(crate) type LruMap<V> = schnellru::LruMap<Vec<u8>, GroupStoreValue<V>, HybridMemoryLimiter>;
 
 /// LRU-cache based group/session store
 /// Uses a hybrid memory limiter based on both amount of elements and total memory usage
 /// As with all LRU caches, eviction is based on oldest elements
-pub struct GroupStore<V: GroupStoreEntity>(LruMap<V>);
+pub(crate) struct GroupStore<V: GroupStoreEntity>(LruMap<V>);
 
 impl<V: GroupStoreEntity> std::fmt::Debug for GroupStore<V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -134,25 +134,25 @@ impl<V: GroupStoreEntity> std::ops::DerefMut for GroupStore<V> {
 
 impl<V: GroupStoreEntity> GroupStore<V> {
     #[allow(dead_code)]
-    pub fn new_with_limit(len: u32) -> Self {
+    pub(crate) fn new_with_limit(len: u32) -> Self {
         let limiter = HybridMemoryLimiter::new(Some(len), None);
         let store = schnellru::LruMap::new(limiter);
         Self(store)
     }
 
     #[allow(dead_code)]
-    pub fn new(count: Option<u32>, memory: Option<usize>) -> Self {
+    pub(crate) fn new(count: Option<u32>, memory: Option<usize>) -> Self {
         let limiter = HybridMemoryLimiter::new(count, memory);
         let store = schnellru::LruMap::new(limiter);
         Self(store)
     }
 
     #[allow(dead_code)]
-    pub fn contains_key(&self, k: &[u8]) -> bool {
+    pub(crate) fn contains_key(&self, k: &[u8]) -> bool {
         self.0.peek(k).is_some()
     }
 
-    pub async fn get_fetch(
+    pub(crate) async fn get_fetch(
         &mut self,
         k: &[u8],
         keystore: &mut core_crypto_keystore::Connection,
@@ -213,12 +213,12 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         self.0.insert(k, prepped_entity);
     }
 
-    pub fn insert(&mut self, k: Vec<u8>, entity: V) {
+    pub(crate) fn insert(&mut self, k: Vec<u8>, entity: V) {
         let value_to_insert = std::sync::Arc::new(async_lock::RwLock::new(entity));
         self.insert_prepped(k, value_to_insert)
     }
 
-    pub fn try_insert(&mut self, k: Vec<u8>, entity: V) -> Result<(), V> {
+    pub(crate) fn try_insert(&mut self, k: Vec<u8>, entity: V) -> Result<(), V> {
         let value_to_insert = std::sync::Arc::new(async_lock::RwLock::new(entity));
         if self.lru_will_be_full(&value_to_insert) {
             // This is safe because we just built the value
@@ -233,25 +233,25 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         }
     }
 
-    pub fn remove(&mut self, k: &[u8]) -> Option<GroupStoreValue<V>> {
+    pub(crate) fn remove(&mut self, k: &[u8]) -> Option<GroupStoreValue<V>> {
         self.0.remove(k)
     }
 
-    pub fn get(&mut self, k: &[u8]) -> Option<&mut GroupStoreValue<V>> {
+    pub(crate) fn get(&mut self, k: &[u8]) -> Option<&mut GroupStoreValue<V>> {
         self.0.get(k)
     }
 }
 
-pub struct HybridMemoryLimiter {
+pub(crate) struct HybridMemoryLimiter {
     mem: schnellru::ByMemoryUsage,
     len: schnellru::ByLength,
 }
 
-pub const MEMORY_LIMIT: usize = 100_000_000;
-pub const ITEM_LIMIT: u32 = 100;
+pub(crate) const MEMORY_LIMIT: usize = 100_000_000;
+pub(crate) const ITEM_LIMIT: u32 = 100;
 
 impl HybridMemoryLimiter {
-    pub fn new(count: Option<u32>, memory: Option<usize>) -> Self {
+    pub(crate) fn new(count: Option<u32>, memory: Option<usize>) -> Self {
         let maybe_memory_limit = memory.or_else(|| {
             cfg_if::cfg_if! {
                 if #[cfg(target_family = "wasm")] {

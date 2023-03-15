@@ -7,11 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.7.0-rc.2] - 2023-03-15
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.7.0-rc.2" unreleased=true}}
+</details>
+
+* Fix on documentation that prevented release on many platforms
+
 ## [0.7.0-rc.1] - 2023-03-15
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.7.0-rc.1" unreleased=true}}
+{{git-cliff tag="v0.7.0-rc.1"}}
 </details>
 
 * **[BREAKING]** proteus_new_prekey_auto() now returns a tuple of (prekey_id, CBOR-serialized PreKeyBundle) for backend requirements
