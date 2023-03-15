@@ -1069,6 +1069,74 @@ mod tests {
         drop(db_file);
     }
 
+    #[async_std::test]
+    #[wasm_bindgen_test]
+    async fn auto_prekeys_are_sequential() {
+        use core_crypto_keystore::entities::ProteusPrekey;
+        const GAP_AMOUNT: u16 = 5;
+        const ID_TEST_RANGE: std::ops::RangeInclusive<u16> = 1..=30;
+        let (path, db_file) = tmp_db_file();
+
+        let keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
+            .await
+            .unwrap();
+        let alice = ProteusCentral::try_new(&keystore).await.unwrap();
+
+        for i in ID_TEST_RANGE {
+            let (pk_id, pkb) = alice.new_prekey_auto(&keystore).await.unwrap();
+            assert_eq!(i, pk_id);
+            let prekey = proteus_wasm::keys::PreKeyBundle::deserialise(&pkb).unwrap();
+            assert_eq!(prekey.prekey_id.value(), pk_id);
+        }
+
+        use rand::Rng as _;
+        let mut rng = rand::thread_rng();
+        let mut gap_ids: Vec<u16> = (0..GAP_AMOUNT).map(|_| rng.gen_range(ID_TEST_RANGE)).collect();
+        gap_ids.sort();
+        gap_ids.dedup();
+        while gap_ids.len() < GAP_AMOUNT as usize {
+            gap_ids.push(rng.gen_range(ID_TEST_RANGE));
+            gap_ids.sort();
+            gap_ids.dedup();
+        }
+        for gap_id in gap_ids.iter() {
+            keystore.remove::<ProteusPrekey, _>(gap_id.to_le_bytes()).await.unwrap();
+        }
+
+        gap_ids.sort();
+
+        for gap_id in gap_ids.iter() {
+            let (pk_id, pkb) = alice.new_prekey_auto(&keystore).await.unwrap();
+            assert_eq!(pk_id, *gap_id);
+            let prekey = proteus_wasm::keys::PreKeyBundle::deserialise(&pkb).unwrap();
+            assert_eq!(prekey.prekey_id.value(), *gap_id);
+        }
+
+        let mut gap_ids: Vec<u16> = (0..GAP_AMOUNT).map(|_| rng.gen_range(ID_TEST_RANGE)).collect();
+        gap_ids.sort();
+        gap_ids.dedup();
+        while gap_ids.len() < GAP_AMOUNT as usize {
+            gap_ids.push(rng.gen_range(ID_TEST_RANGE));
+            gap_ids.sort();
+            gap_ids.dedup();
+        }
+        for gap_id in gap_ids.iter() {
+            keystore.remove::<ProteusPrekey, _>(gap_id.to_le_bytes()).await.unwrap();
+        }
+
+        let potential_range = *ID_TEST_RANGE.end()..=(*ID_TEST_RANGE.end() * 2);
+        let potential_range_check = potential_range.clone();
+        for _ in potential_range {
+            let (pk_id, pkb) = alice.new_prekey_auto(&keystore).await.unwrap();
+            assert!(gap_ids.contains(&pk_id) || potential_range_check.contains(&pk_id));
+            let prekey = proteus_wasm::keys::PreKeyBundle::deserialise(&pkb).unwrap();
+            assert_eq!(prekey.prekey_id.value(), pk_id);
+        }
+
+        keystore.wipe().await.unwrap();
+        drop(db_file);
+    }
+
     #[cfg(all(feature = "cryptobox-migrate", not(target_family = "wasm")))]
     #[async_std::test]
     async fn can_import_cryptobox() {
