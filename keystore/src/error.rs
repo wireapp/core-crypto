@@ -96,6 +96,9 @@ pub enum CryptoKeystoreError {
     #[cfg(feature = "proteus-keystore")]
     #[error(transparent)]
     ParseIntError(#[from] std::num::ParseIntError),
+    #[cfg(feature = "proteus-keystore")]
+    #[error("Could not find a free prekey id")]
+    NoFreePrekeyId,
     #[error("{0}")]
     MlsKeyStoreError(String),
     #[error(transparent)]
