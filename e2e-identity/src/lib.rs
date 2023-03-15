@@ -424,7 +424,7 @@ impl RustyE2eIdentity {
     ///
     /// # Parameters
     /// * `response` - http string response body
-    pub fn acme_x509_certificate_response(&self, response: String) -> E2eIdentityResult<Vec<String>> {
+    pub fn acme_x509_certificate_response(&self, response: String) -> E2eIdentityResult<Vec<Vec<u8>>> {
         Ok(RustyAcme::certificate_response(response)?)
     }
 }

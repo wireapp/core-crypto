@@ -528,10 +528,7 @@ impl<'a> E2eTest<'a> {
         let csr = serde_json::from_slice::<Value>(&csr[..]).unwrap();
         let csr = csr.get("csr").unwrap().as_str().unwrap();
         let csr = base64::prelude::BASE64_URL_SAFE_NO_PAD.decode(csr).unwrap();
-        let csr = rcgen::CertificateSigningRequest::from_der(&csr[..]).unwrap();
-        let csr = rcgen::Certificate::from_params(csr.params).unwrap();
-        let csr = csr.serialize_request_pem().unwrap();
-        self.display_cert("CSR: ", &csr, true);
+        self.display_cert("CSR: ", &csr[..], true);
 
         self.display_step("get back a url for fetching the certificate");
         let mut resp = self.client.execute(req).await?;
@@ -553,7 +550,7 @@ impl<'a> E2eTest<'a> {
         account: AcmeAccount,
         finalize: AcmeFinalize,
         previous_nonce: String,
-    ) -> TestResult<Vec<String>> {
+    ) -> TestResult<Vec<Vec<u8>>> {
         self.display_step("fetch the certificate");
         let certificate_url = finalize.certificate.clone();
         let certificate_req = RustyAcme::certificate_req(finalize, account, self.alg, &self.client_kp, previous_nonce)?;
@@ -574,8 +571,8 @@ impl<'a> E2eTest<'a> {
             .expect_header_absent("location")
             .expect_header("content-type", "application/pem-certificate-chain");
         let resp = resp.text().await?;
+        self.display_body(&resp);
         let certificates = RustyAcme::certificate_response(resp)?;
-        self.display_body(&certificates);
         for (i, cert) in certificates.iter().enumerate() {
             self.display_cert(&format!("Certificate #{}", i + 1), cert, false);
         }

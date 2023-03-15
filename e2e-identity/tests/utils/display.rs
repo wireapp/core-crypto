@@ -1,9 +1,12 @@
-use crate::utils::rand_base64_str;
+use std::{path::PathBuf, process::Command};
+
 use base64::Engine;
 use itertools::Itertools;
 use jwt_simple::prelude::*;
+
 use rusty_jwt_tools::prelude::*;
-use std::{path::PathBuf, process::Command};
+
+use crate::utils::rand_base64_str;
 
 #[derive(Debug, Clone, Default)]
 pub struct TestDisplay {
@@ -68,16 +71,26 @@ impl TestDisplay {
         self.events.push(event);
     }
 
-    pub fn display_cert(&mut self, label: &str, cert: &str, csr: bool) {
+    pub fn display_cert(&mut self, label: &str, cert: &[u8], csr: bool) {
         let event = if !csr {
+            let cert = pem::Pem {
+                tag: "CERTIFICATE".to_string(),
+                contents: cert.to_vec(),
+            };
+            let cert = pem::encode(&cert);
             Event::Certificate {
                 label: label.to_string(),
-                cert: cert.to_string(),
+                cert,
             }
         } else {
+            let cert = pem::Pem {
+                tag: "CERTIFICATE REQUEST".to_string(),
+                contents: cert.to_vec(),
+            };
+            let cert = pem::encode(&cert);
             Event::Csr {
                 label: label.to_string(),
-                cert: cert.to_string(),
+                cert,
             }
         };
         event.println();
@@ -249,7 +262,8 @@ impl Event {
             Self::Step { number, title } => println!("{number}. {title}"),
             Self::Chapter { comment } => println!("----- {comment} -----\n"),
             Self::Token { label, token, .. } => println!("{label}: https://jwt.io/#id_token={token}\n"),
-            Self::Certificate { label, .. } => println!("{label}:\n{}\n", self.cert_pem()),
+            Self::Certificate { label, cert } => println!("{label}:\n{cert}\n"),
+            Self::Csr { label, cert } => println!("{label}:\n{cert}\n"),
             Self::Request { req: Some(req), .. } => println!("=> {req:?}\n"),
             Self::Response { resp: Some(resp), .. } => println!("<= {resp:?}"),
             Self::Body {
@@ -330,12 +344,9 @@ Decoded:
                     pk.trim()
                 )
             }
-            Self::Certificate { label, .. } => {
+            Self::Certificate { label, cert } => {
                 let (pretty, verify) = self.cert_pretty();
-                format!(
-                    "###### {label}\n{verify}\n```\n{}\n```\n```\n{pretty}\n```\n",
-                    self.cert_pem()
-                )
+                format!("###### {label}\n{verify}\n```\n{cert}\n```\n```\n{pretty}\n```\n",)
             }
             Self::Csr { label, cert } => {
                 let (pretty, verify) = self.cert_pretty();
@@ -380,9 +391,9 @@ Decoded:
 
     fn cert_pretty(&self) -> (String, String) {
         let (extension, cert, mut pretty_args, mut verify_args) = match self {
-            Event::Certificate { .. } => (
+            Event::Certificate { cert, .. } => (
                 "pem",
-                self.cert_pem(),
+                cert.to_string(),
                 vec!["x509", "-text", "-noout", "-in"],
                 vec!["x509", "-verify", "-in"],
             ),
@@ -409,15 +420,6 @@ Decoded:
         let verify = format!("openssl -verify {verify}");
 
         (pretty_out, verify)
-    }
-
-    fn cert_pem(&self) -> String {
-        match self {
-            Event::Certificate { cert, .. } => {
-                format!("-----BEGIN CERTIFICATE-----\n{cert}\n-----END CERTIFICATE-----")
-            }
-            _ => unreachable!(),
-        }
     }
 }
 
