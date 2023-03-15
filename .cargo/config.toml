@@ -1,5 +1,6 @@
-[registries.crates-io]
-protocol = "sparse"
+# FIXME: This breaks rust-analyzer
+# [registries.crates-io]
+# protocol = "sparse"
 
 [env]
 # Android build flags

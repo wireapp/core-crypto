@@ -7,17 +7,19 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
-## [0.7.0] - 2023-03-??
+## [0.7.0-rc.1] - 2023-03-15
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.7.0" unreleased=true}}
+{{git-cliff tag="v0.7.0-rc.1" unreleased=true}}
 </details>
 
 * **[BREAKING]** proteus_new_prekey_auto() now returns a tuple of (prekey_id, CBOR-serialized PreKeyBundle) for backend requirements
     * On bindings, this translates to a new struct ProteusAutoPrekeyBundle which contains two fields:
         * `id`: the proteus prekey id (`u16`)
         * `pkb`: the CBOR-serialized proteus PreKeyBundle
+* **[BREAKING]** Added an API to mark subconversations as child of another one (`mark_conversation_as_child_of`)
+    * This is breaking because this now allows us to provide the parent conversation's client list in the `client_is_existing_group_user` callback, which adds a new parameter to it
 * **[BREAKING]** `wipe_conversation` is now automatically called when a commit removing the local client is recieved.
 * **[BREAKING]** Huge internal change on how we cache MLS groups and Proteus sessions in memory
     * This affects some APIs that became async on the TS bindings
@@ -35,6 +37,11 @@ Platform support legends:
             5. If not found, we return a `None` value
     * This approach potentially allows to have an unlimited number of groups/sessions as long as a single item does not exceed the maximum memory limit.
     * As a consequence of the internal mutability requirements of the new map and the automatic keystore fetches, many if not all APIs are now `async`. This does not concern the Mobile FFI.
+* **[BREAKING]** Because of Rust 1.68's release, CoreCrypto is now incompatible with Android NDK versions under 25.2 (the LTS version) and Android API level 24.
+* **[BREAKING]** E2EI: The API is now compliant with RFC8555
+    * Another change will come soon to be able to initialize a MLS client using the X509 certificate issued by the E2EI process
+* Enabled the iOS WAL compatibility layer to prevent spurious background kills
+* Added a WASM api to check the Arc strongref counter
 
 ## [0.6.3] - 2023-02-17
 
