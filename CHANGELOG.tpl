@@ -7,11 +7,21 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.7.0-rc.3] - 2023-03-16
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.7.0-rc.3" unreleased=true}}
+</details>
+
+* Fixed a bug where `proteus_new_prekey_auto` returning the same prekey ID in particular cases
+    * In case of "gaps" in the prekey id sequence, the previous algorithm (using the number of prekeys stored) would return the same ID over and over. As a consequence, the same prekey id would be overwritten over and over.
+
 ## [0.7.0-rc.2] - 2023-03-15
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.7.0-rc.2" unreleased=true}}
+{{git-cliff tag="v0.7.0-rc.2"}}
 </details>
 
 * Fix on documentation that prevented release on many platforms
