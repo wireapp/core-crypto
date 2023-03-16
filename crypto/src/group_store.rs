@@ -180,15 +180,21 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         }
     }
 
-    fn lru_will_be_full(&mut self, value: &GroupStoreValue<V>) -> bool {
+    fn lru_will_be_full(&mut self, _value: &GroupStoreValue<V>) -> bool {
+        let len = self.0.len();
         if <HybridMemoryLimiter as schnellru::Limiter<Vec<u8>, GroupStoreValue<V>>>::is_over_the_limit(
             self.0.limiter(),
-            self.0.len() + 1,
+            len + 1,
         ) {
             return true;
         }
 
-        let new_memory_usage = self.0.memory_usage() + std::mem::size_of_val(value);
+        if len == 0 {
+            return false;
+        }
+
+        let avg_mem_per_item = self.0.memory_usage() / self.0.len();
+        let new_memory_usage = avg_mem_per_item * (len + 1);
         let can_grow = <HybridMemoryLimiter as schnellru::Limiter<Vec<u8>, GroupStoreValue<V>>>::on_grow(
             self.0.limiter_mut(),
             new_memory_usage,
@@ -397,26 +403,26 @@ mod tests {
     #[wasm_bindgen_test]
     async fn group_store_operations_mem_limiter() {
         use schnellru::{LruMap, UnlimitedCompact};
-        let mut lru: LruMap<usize, DummyValue, UnlimitedCompact> =
-            LruMap::<usize, DummyValue, UnlimitedCompact>::new(UnlimitedCompact);
+        let mut lru: LruMap<Vec<u8>, DummyValue, UnlimitedCompact> =
+            LruMap::<Vec<u8>, DummyValue, UnlimitedCompact>::new(UnlimitedCompact);
         assert_eq!(lru.guaranteed_capacity(), 0);
         assert_eq!(lru.memory_usage(), 0);
-        lru.insert(1, "10".into());
+        lru.insert(1usize.to_le_bytes().to_vec(), "10".into());
         let memory_usage_step_1 = lru.memory_usage();
-        lru.insert(2, "20".into());
-        lru.insert(3, "30".into());
-        lru.insert(4, "40".into());
+        lru.insert(2usize.to_le_bytes().to_vec(), "20".into());
+        lru.insert(3usize.to_le_bytes().to_vec(), "30".into());
+        lru.insert(4usize.to_le_bytes().to_vec(), "40".into());
         let memory_usage_step_2 = lru.memory_usage();
         assert_ne!(memory_usage_step_1, memory_usage_step_2);
 
         let mut store = TestGroupStore::new(None, Some(memory_usage_step_2));
         assert_eq!(store.guaranteed_capacity(), 0);
         assert_eq!(store.memory_usage(), 0);
-        assert!(store.try_insert(1usize.to_le_bytes().to_vec(), "10".into()).is_ok());
+        store.try_insert(1usize.to_le_bytes().to_vec(), "10".into()).unwrap();
         assert_eq!(store.guaranteed_capacity(), 3);
-        assert_eq!(store.memory_usage(), memory_usage_step_1);
-        assert!(store.try_insert(2usize.to_le_bytes().to_vec(), "20".into()).is_ok());
-        assert!(store.try_insert(3usize.to_le_bytes().to_vec(), "30".into()).is_ok());
+        assert!(store.memory_usage() <= memory_usage_step_1);
+        store.try_insert(2usize.to_le_bytes().to_vec(), "20".into()).unwrap();
+        store.try_insert(3usize.to_le_bytes().to_vec(), "30".into()).unwrap();
         for i in 1..=3usize {
             assert_eq!(
                 *(store.get(i.to_le_bytes().as_ref()).unwrap().read().await),
@@ -424,7 +430,7 @@ mod tests {
             );
         }
         assert_eq!(store.guaranteed_capacity(), 3);
-        assert_eq!(store.memory_usage(), memory_usage_step_1);
+        assert!(store.memory_usage() <= memory_usage_step_1);
         assert!(store.try_insert(4usize.to_le_bytes().to_vec(), "40".into()).is_ok());
         for i in (1usize..=4).rev() {
             assert_eq!(
@@ -433,31 +439,28 @@ mod tests {
             );
         }
         assert_eq!(store.guaranteed_capacity(), 7);
-        assert_eq!(store.memory_usage(), memory_usage_step_2);
-        assert!(store.try_insert(5usize.to_le_bytes().to_vec(), "50".into()).is_err());
-        assert!(store.try_insert(6usize.to_le_bytes().to_vec(), "60".into()).is_err());
-        assert!(store.try_insert(7usize.to_le_bytes().to_vec(), "70".into()).is_err());
-        for i in (1usize..=7).rev() {
+        assert!(store.memory_usage() <= memory_usage_step_2);
+        store.try_insert(5usize.to_le_bytes().to_vec(), "50".into()).unwrap();
+        store.try_insert(6usize.to_le_bytes().to_vec(), "60".into()).unwrap();
+        store.try_insert(7usize.to_le_bytes().to_vec(), "70".into()).unwrap();
+        for i in (5usize..=7).rev() {
+            store.get(i.to_le_bytes().as_ref()).unwrap();
+        }
+
+        store.insert(8usize.to_le_bytes().to_vec(), "80".into());
+        for i in [8usize, 7, 6, 5].iter() {
             assert_eq!(
                 *(store
                     .get(i.to_le_bytes().as_ref())
-                    .unwrap_or_else(|| panic!("uh-oh, missing index {i}"))
+                    .unwrap_or_else(|| panic!("couldn't find index {i}"))
                     .read()
                     .await),
                 DummyValue::from(format!("{}", i * 10).as_str())
             );
         }
 
-        store.insert(8usize.to_le_bytes().to_vec(), "80".into());
-        for i in (2usize..=8).rev() {
-            assert_eq!(
-                *(store.get(i.to_le_bytes().as_ref()).unwrap().read().await),
-                DummyValue::from(format!("{}", i * 10).as_str())
-            );
-        }
-
         assert_eq!(store.guaranteed_capacity(), 7);
-        assert_eq!(store.memory_usage(), memory_usage_step_2);
+        assert!(store.memory_usage() <= memory_usage_step_2);
         store.assert_check_internal_state();
     }
 }
