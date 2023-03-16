@@ -375,7 +375,7 @@ mod tests {
         }
 
         for i in 1..=6 {
-            assert!(store.contains_key(&i.to_string().as_bytes()));
+            assert!(store.contains_key(i.to_string().as_bytes()));
         }
     }
 
@@ -419,16 +419,16 @@ mod tests {
         assert!(store.try_insert(3usize.to_le_bytes().to_vec(), "30".into()).is_ok());
         for i in 1..=3usize {
             assert_eq!(
-                *(store.get(&i.to_le_bytes().to_vec()).unwrap().read().await),
+                *(store.get(i.to_le_bytes().as_ref()).unwrap().read().await),
                 DummyValue::from(format!("{}", i * 10).as_str())
             );
         }
         assert_eq!(store.guaranteed_capacity(), 3);
         assert_eq!(store.memory_usage(), memory_usage_step_1);
         assert!(store.try_insert(4usize.to_le_bytes().to_vec(), "40".into()).is_ok());
-        for i in 4..=1usize {
+        for i in (1usize..=4).rev() {
             assert_eq!(
-                *(store.get(&i.to_le_bytes().to_vec()).unwrap().read().await),
+                *(store.get(i.to_le_bytes().as_ref()).unwrap().read().await),
                 DummyValue::from(format!("{}", i * 10).as_str())
             );
         }
@@ -437,13 +437,11 @@ mod tests {
         assert!(store.try_insert(5usize.to_le_bytes().to_vec(), "50".into()).is_err());
         assert!(store.try_insert(6usize.to_le_bytes().to_vec(), "60".into()).is_err());
         assert!(store.try_insert(7usize.to_le_bytes().to_vec(), "70".into()).is_err());
-        for i in 7..=1usize {
-            // assert!(store.get(&i.to_le_bytes().to_vec()).is_none());
-
+        for i in (1usize..=7).rev() {
             assert_eq!(
                 *(store
-                    .get(&i.to_le_bytes().to_vec())
-                    .expect(&format!("uh-oh, missing index {i}"))
+                    .get(i.to_le_bytes().as_ref())
+                    .unwrap_or_else(|| panic!("uh-oh, missing index {i}"))
                     .read()
                     .await),
                 DummyValue::from(format!("{}", i * 10).as_str())
@@ -451,9 +449,9 @@ mod tests {
         }
 
         store.insert(8usize.to_le_bytes().to_vec(), "80".into());
-        for i in 8..=2usize {
+        for i in (2usize..=8).rev() {
             assert_eq!(
-                *(store.get(&i.to_le_bytes().to_vec()).unwrap().read().await),
+                *(store.get(i.to_le_bytes().as_ref()).unwrap().read().await),
                 DummyValue::from(format!("{}", i * 10).as_str())
             );
         }

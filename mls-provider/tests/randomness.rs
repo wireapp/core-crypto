@@ -13,7 +13,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
-#![allow(non_snake_case, dead_code, unused_macros, unused_imports)]
+#![allow(non_snake_case, dead_code, unused_macros, unused_imports, clippy::await_holding_lock)]
 
 pub use rstest::*;
 pub use rstest_reuse::{self, *};

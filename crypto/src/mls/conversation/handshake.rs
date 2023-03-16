@@ -851,7 +851,7 @@ pub mod tests {
                             .into_iter()
                             .cloned()
                             .collect();
-                        assert!(!alice_new_keys.contains(&&alice_key));
+                        assert!(!alice_new_keys.contains(&alice_key));
 
                         // receiving the commit on bob's side (updating key from alice)
                         bob_central
@@ -867,7 +867,7 @@ pub mod tests {
                             .into_iter()
                             .cloned()
                             .collect();
-                        assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(&a_key)));
+                        assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
 
                         // ensuring both can encrypt messages
                         assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
@@ -967,7 +967,7 @@ pub mod tests {
                             .into_iter()
                             .cloned()
                             .collect();
-                        assert!(!alice_new_keys.contains(&&alice_key));
+                        assert!(!alice_new_keys.contains(&alice_key));
 
                         // receiving the key update and the charlie's addition to the group
                         bob_central
