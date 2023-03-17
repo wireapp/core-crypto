@@ -86,6 +86,9 @@ dependencies {
     testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.8.2")
     testImplementation("ch.qos.logback:logback-classic:1.2.3")
     testImplementation("ch.qos.logback:logback-core:1.2.3")
+    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
 }
 
 publishing {
