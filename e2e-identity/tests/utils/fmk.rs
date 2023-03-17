@@ -1,17 +1,20 @@
+use asserhttp::*;
+use base64::Engine;
+use jwt_simple::prelude::*;
+use serde_json::Value;
+use url::Url;
+
+use rusty_acme::prelude::{stepca::StepCaImage, *};
+use rusty_jwt_tools::jwk::TryIntoJwk;
+use rusty_jwt_tools::{jwk::TryFromJwk, prelude::*};
+
 use crate::utils::{
     cfg::{E2eTest, EnrollmentFlow},
     ctx::*,
     display::Actor,
     helpers::{AcmeAsserter, ClientHelper, RespHelper},
-    TestError, TestResult,
+    rand_base64_str, TestError, TestResult,
 };
-use asserhttp::*;
-use base64::Engine;
-use jwt_simple::prelude::*;
-use rusty_acme::prelude::{stepca::StepCaImage, *};
-use rusty_jwt_tools::{jwk::TryFromJwk, prelude::*};
-use serde_json::Value;
-use url::Url;
 
 impl E2eTest<'static> {
     pub async fn nominal_enrollment(self) -> TestResult<()> {
@@ -582,18 +585,14 @@ impl<'a> E2eTest<'a> {
 }
 
 impl E2eTest<'_> {
-    async fn fetch_dex_public_key(&self) -> String {
+    pub async fn fetch_dex_public_key(&self) -> String {
         let jwks_uri = self.oidc_cfg.as_ref().unwrap().jwks_uri.clone();
         let jwks_req = self.client.get(jwks_uri);
         let jwks = jwks_req.send().await.unwrap().json::<Value>().await.unwrap();
         let jwk = jwks.get("keys").unwrap().as_array().unwrap().get(0).unwrap();
         let jwk = serde_json::from_value::<Jwk>(jwk.clone()).unwrap();
         match &jwk.algorithm {
-            AlgorithmParameters::RSA(p) => {
-                let n = base64::prelude::BASE64_URL_SAFE_NO_PAD.decode(p.n.as_bytes()).unwrap();
-                let e = base64::prelude::BASE64_URL_SAFE_NO_PAD.decode(p.e.as_bytes()).unwrap();
-                RS256PublicKey::from_components(&n, &e).unwrap().to_pem().unwrap()
-            }
+            AlgorithmParameters::RSA(_) => RS256PublicKey::try_from_jwk(&jwk).unwrap().to_pem().unwrap(),
             AlgorithmParameters::EllipticCurve(p) if p.curve == EllipticCurve::P256 => {
                 ES256PublicKey::try_from_jwk(&jwk).unwrap().to_pem().unwrap()
             }
@@ -611,5 +610,32 @@ impl E2eTest<'_> {
             .and_then(reqwest::Body::as_bytes)
             .map(std::str::from_utf8)
             .transpose()?)
+    }
+
+    pub fn new_jwks_uri_mock(&self) -> (Value, RS256KeyPair, String) {
+        let kid = rand_base64_str(40);
+        let new_kp = RS256KeyPair::generate(2048).unwrap();
+        let jwk = new_kp.public_key().try_into_jwk().unwrap();
+        let jwk = Jwk {
+            common: CommonParameters {
+                public_key_use: Some(PublicKeyUse::Signature),
+                key_id: Some(kid.clone()),
+                algorithm: Some("RS256".to_string()),
+                ..Default::default()
+            },
+            algorithm: jwk.algorithm,
+        };
+        let stub = serde_json::json!({
+            "request": {
+                "method": "GET",
+                "urlPath": "/oauth2/jwks"
+            },
+            "response": {
+                "jsonBody": {
+                    "keys": [jwk]
+                }
+            }
+        });
+        (stub, new_kp, kid)
     }
 }

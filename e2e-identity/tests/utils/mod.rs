@@ -14,6 +14,8 @@ pub mod keys;
 #[cfg(not(target_family = "wasm"))]
 pub mod wire_server;
 
+pub mod id_token;
+
 pub mod ctx;
 
 pub(crate) fn rand_str(size: usize) -> String {

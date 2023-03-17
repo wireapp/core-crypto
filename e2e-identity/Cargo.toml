@@ -19,6 +19,7 @@ url = "2.3"
 zeroize = "1.5"
 
 [dev-dependencies]
+rusty-jwt-tools = { version = "0.3.1", path = "../jwt", features = ["test-utils"] }
 rand = "0.8"
 base64 = "0.21.0"
 url = "2.3"

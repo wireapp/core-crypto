@@ -3,16 +3,16 @@
 use std::ops::Deref;
 
 use jwt_simple::prelude::*;
+use serde_json::{json, Value};
 use testcontainers::clients::Cli;
 
-use rusty_acme::prelude::{stepca::CaCfg, *};
+use rusty_acme::prelude::{stepca::CaCfg, wiremock::WiremockImage, *};
 use rusty_jwt_tools::prelude::*;
 use utils::{
     cfg::{E2eTest, EnrollmentFlow},
-    rand_base64_str,
+    id_token::resign_id_token,
+    rand_base64_str, rand_client_id, TestError,
 };
-
-use crate::utils::{rand_client_id, TestError};
 
 #[path = "utils/mod.rs"]
 mod utils;
@@ -310,9 +310,6 @@ mod dpop_challenge {
 
 #[cfg(not(ci))]
 mod oidc_challenge {
-    use rusty_acme::prelude::wiremock::WiremockImage;
-    use rusty_jwt_tools::jwk::TryIntoJwk;
-
     use super::*;
 
     /// Authorization Server (Dex in our case) exposes an endpoint for clients to fetch its public keys.
@@ -337,29 +334,18 @@ mod oidc_challenge {
 
     /// Authorization Server (Dex in our case) exposes an endpoint for clients to fetch its public keys.
     /// It is used to validate the signature of the id token we supply to this challenge.
-    /// Here, the AS will return a valid JWKS URI but it does not contain the public key
-    /// verifying the id token.
+    /// Here, the AS will return a valid JWKS URI but it contains an invalid public key
+    /// for verifying the id token.
     #[tokio::test]
     async fn should_fail_when_malicious_jwks_uri() {
         let docker = docker();
 
-        let jwk = Ed25519KeyPair::generate().public_key().try_into_jwk().unwrap();
-        let jwks_mock = serde_json::json!({
-            "request": {
-                "method": "GET",
-                "urlPath": "/oauth2/jwks"
-            },
-            "response": {
-                "jsonBody": {
-                    "keys": [jwk]
-                }
-            }
-        });
+        let mut test = E2eTest::new();
+        let (jwks_stub, ..) = test.new_jwks_uri_mock();
         // this starts a server serving the abose stub with a malicious JWK
         let attacker_host = "attacker-dex";
-        let _attacker_dex = WiremockImage::run(docker, attacker_host, vec![jwks_mock]);
+        let _attacker_dex = WiremockImage::run(docker, attacker_host, vec![jwks_stub]);
 
-        let mut test = E2eTest::new();
         // invalid jwks uri
         test.ca_cfg.jwks_uri = format!("http://{attacker_host}/oauth2/jwks");
         let test = test.start(docker).await;
@@ -373,13 +359,88 @@ mod oidc_challenge {
         ));
     }
 
-    // TODO: probably works
-    /// An attacker performs a MITM attack and tries to impersonate the Authorization Server. To do so, since
-    /// he does not know the true AS private signing key so he'll generate a new
-    #[ignore]
+    /// An id token with an invalid name is supplied to ACME server. It should verify that the handle
+    /// is the same as the one used in the order.
     #[tokio::test]
-    async fn should_fail_when_oidc_provider_jwks_uri_lacks_signing_key() {
-        todo!()
+    async fn should_fail_when_invalid_handle() {
+        let docker = docker();
+        let mut test = E2eTest::new();
+
+        // setup fake jwks_uri to be able to resign the id token
+        let (jwks_stub, new_kp, kid) = test.new_jwks_uri_mock();
+        let attacker_host = "attacker-dex";
+        let _attacker_dex = WiremockImage::run(docker, attacker_host, vec![jwks_stub]);
+        test.ca_cfg.jwks_uri = format!("https://{attacker_host}/oauth2/jwks");
+
+        let test = test.start(docker).await;
+
+        let flow = EnrollmentFlow {
+            fetch_id_token: Box::new(|mut test, _| {
+                Box::pin(async move {
+                    let dex_pk = test.fetch_dex_public_key().await;
+                    let dex_pk = RS256PublicKey::from_pem(&dex_pk).unwrap();
+                    let id_token = test.fetch_id_token().await?;
+
+                    let change_handle = |mut claims: JWTClaims<Value>| {
+                        let wrong_handle = format!("{}john.doe.qa@wire.com", ClientId::URI_PREFIX);
+                        *claims.custom.get_mut("name").unwrap() = json!(wrong_handle);
+                        claims
+                    };
+                    let modified_id_token = resign_id_token(&id_token, dex_pk, kid, new_kp, change_handle);
+                    Ok((test, modified_id_token))
+                })
+            }),
+            ..Default::default()
+        };
+
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ClientImplementationError(
+                "a challenge is not supposed to be pending at this point. It must either be 'valid' or 'processing'."
+            ))
+        ));
+    }
+
+    /// An id token with an invalid name is supplied to ACME server. It should verify that the display name
+    /// is the same as the one used in the order.
+    #[tokio::test]
+    async fn should_fail_when_invalid_display_name() {
+        let docker = docker();
+        let mut test = E2eTest::new();
+
+        // setup fake jwks_uri to be able to resign the id token
+        let (jwks_stub, new_kp, kid) = test.new_jwks_uri_mock();
+        let attacker_host = "attacker-dex";
+        let _attacker_dex = WiremockImage::run(docker, attacker_host, vec![jwks_stub]);
+        test.ca_cfg.jwks_uri = format!("https://{attacker_host}/oauth2/jwks");
+
+        let test = test.start(docker).await;
+
+        let flow = EnrollmentFlow {
+            fetch_id_token: Box::new(|mut test, _| {
+                Box::pin(async move {
+                    let dex_pk = test.fetch_dex_public_key().await;
+                    let dex_pk = RS256PublicKey::from_pem(&dex_pk).unwrap();
+                    let id_token = test.fetch_id_token().await?;
+
+                    let change_handle = |mut claims: JWTClaims<Value>| {
+                        let wrong_handle = "Doe, John (QA)";
+                        *claims.custom.get_mut("preferred_username").unwrap() = json!(wrong_handle);
+                        claims
+                    };
+                    let modified_id_token = resign_id_token(&id_token, dex_pk, kid, new_kp, change_handle);
+                    Ok((test, modified_id_token))
+                })
+            }),
+            ..Default::default()
+        };
+
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ClientImplementationError(
+                "a challenge is not supposed to be pending at this point. It must either be 'valid' or 'processing'."
+            ))
+        ));
     }
 }
 
@@ -413,11 +474,9 @@ mod optimize {
                 .await
                 .unwrap();
             let access_token = test.get_access_token(client_dpop_token).await.unwrap();
-            let previous_nonce = test
-                .verify_dpop_challenge(&acc1, dpop_chall, access_token, previous_nonce)
+            test.verify_dpop_challenge(&acc1, dpop_chall, access_token, previous_nonce)
                 .await
-                .unwrap();
-            previous_nonce
+                .unwrap()
         })
         .await
         .unwrap();
