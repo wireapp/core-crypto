@@ -31,7 +31,7 @@ pub fn durable(_args: TokenStream, item: TokenStream) -> TokenStream {
     let doc_attributes = ast
         .attrs
         .iter()
-        .filter(|attr| attr.path.is_ident("doc"))
+        .filter(|attr| attr.path().is_ident("doc"))
         .cloned()
         .collect::<Vec<syn::Attribute>>();
 
