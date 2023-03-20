@@ -7,7 +7,6 @@ use openidconnect::{
     ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
 };
 use scraper::Html;
-use std::collections::{hash_map::RandomState, HashMap};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
 pub struct Oidc {
@@ -16,19 +15,12 @@ pub struct Oidc {
     keyauth: String,
 }
 
-pub async fn handle_login(mut req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
-    let domain = ctx_get("domain").unwrap();
-    let req_path = req.uri().path().trim_start_matches('/');
-    *req.uri_mut() = format!("http://{domain}/{req_path}").parse().unwrap();
-    ctx_store_http_request("login", &req);
-
+pub async fn handle_login(_req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
     let WireServerCfg {
         issuer_uri,
         client_id,
         client_secret,
         redirect_uri,
-        email,
-        password,
     } = WireServerCfg::cxt_get();
 
     let issuer_url = IssuerUrl::new(issuer_uri.clone()).unwrap();
@@ -60,53 +52,21 @@ pub async fn handle_login(mut req: Request<Body>) -> Result<Response<Body>, hype
         .set_pkce_challenge(pkce_challenge)
         .url();
 
-    let http_client = ctx_get_http_client();
-    let authorize_req = http_client.get(auth_url.as_str()).build().unwrap();
-    ctx_store_reqwest_request("authorize", &authorize_req);
-    let resp = http_client.execute(authorize_req).await.unwrap();
-    let html = ctx_store_reqwest_response("authorize", resp).await.unwrap();
-    let html = std::str::from_utf8(&html[..]).unwrap();
-
-    let action = scrap_login(html.to_string());
-    let dex_uri = format!("http://{}:{}", auth_url.host().unwrap(), auth_url.port().unwrap());
-    let form_uri = url::Url::parse(&format!("{dex_uri}{action}")).unwrap();
-    let form_body = HashMap::<&str, String, RandomState>::from_iter(vec![("login", email), ("password", password)]);
-    let login_form_req = http_client.post(form_uri).form(&form_body).build().unwrap();
-    ctx_store_reqwest_request("login-form", &login_form_req);
-    let resp = http_client.execute(login_form_req).await.unwrap();
-    let hmac = resp
-        .url()
-        .query_pairs()
-        .find_map(|(k, v)| match k.as_ref() {
-            "hmac" => Some(v.to_string()),
-            _ => None,
-        })
-        .unwrap();
-    let html = ctx_store_reqwest_response("login-form-resp", resp).await.unwrap();
-    let html = std::str::from_utf8(&html[..]).unwrap();
-
-    let code = scrap_grant(html.to_string());
-    let form_uri = url::Url::parse(&format!("{dex_uri}/dex/approval?req={code}&hmac={hmac}")).unwrap();
-    let form_body =
-        HashMap::<&str, &str, RandomState>::from_iter(vec![("req", code.as_str()), ("approval", "approve")]);
-    let consent_req = http_client.post(form_uri).form(&form_body).build().unwrap();
-    ctx_store_reqwest_request("consent-form", &consent_req);
-    let resp = http_client.execute(consent_req).await.unwrap();
-    let id_token = resp.text().await.unwrap();
     Ok(Response::builder()
-        .status(StatusCode::OK)
-        .body(id_token.into())
+        .status(StatusCode::PERMANENT_REDIRECT)
+        .header("location", auth_url.as_str())
+        .body(Body::empty())
         .unwrap())
 }
 
-fn scrap_login(html: String) -> String {
+pub fn scrap_login(html: String) -> String {
     let html = Html::parse_document(&html);
     let selector = scraper::Selector::parse("form").unwrap();
     let form = html.select(&selector).find(|_| true).unwrap();
     form.value().attr("action").unwrap().to_string()
 }
 
-fn scrap_grant(html: String) -> String {
+pub fn scrap_grant(html: String) -> String {
     let html = Html::parse_document(&html);
     let selector = scraper::Selector::parse("form").unwrap();
     let form = html.select(&selector).find(|_| true).unwrap();
@@ -120,7 +80,6 @@ fn scrap_grant(html: String) -> String {
 
 pub async fn handle_callback(mut req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
     let req_uri = req.uri().clone();
-
     let domain = ctx_get("domain").unwrap();
     let req_path = req.uri().path().trim_start_matches('/');
     *req.uri_mut() = format!("http://{domain}/{req_path}").parse().unwrap();

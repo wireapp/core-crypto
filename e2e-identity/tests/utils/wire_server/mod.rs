@@ -16,8 +16,6 @@ pub struct WireServerCfg {
     pub client_id: String,
     pub client_secret: String,
     pub redirect_uri: String,
-    pub email: String,
-    pub password: String,
 }
 
 impl WireServerCfg {
@@ -26,8 +24,6 @@ impl WireServerCfg {
         ctx_store("client-id", self.client_id.clone());
         ctx_store("client-secret", self.client_secret.clone());
         ctx_store("redirect-uri", self.redirect_uri.clone());
-        ctx_store("email", self.email.clone());
-        ctx_store("password", self.password.clone());
     }
 
     pub fn cxt_get() -> Self {
@@ -35,15 +31,11 @@ impl WireServerCfg {
         let client_id = ctx_get("client-id").unwrap();
         let client_secret = ctx_get("client-secret").unwrap();
         let redirect_uri = ctx_get("redirect-uri").unwrap();
-        let email = ctx_get("email").unwrap();
-        let password = ctx_get("password").unwrap();
         Self {
             issuer_uri,
             client_id,
             client_secret,
             redirect_uri,
-            email,
-            password,
         }
     }
 }

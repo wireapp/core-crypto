@@ -131,8 +131,6 @@ impl<'a> E2eTest<'a> {
                 client_id: audience.to_string(),
                 client_secret,
                 redirect_uri: "".to_string(),
-                email,
-                password: password.to_string(),
             },
             alg,
             hash_alg,
@@ -261,12 +259,11 @@ impl<'a> E2eTest<'a> {
     }
 
     pub async fn fetch_oidc_cfg(&self) -> OidcCfg {
-        let dex_server = self.dex_server.as_ref().unwrap();
-        let dex_uri = dex_server.uri.as_str();
-        let uri = format!("{dex_uri}/dex/.well-known/openid-configuration");
+        let authz_server_uri = self.authorization_server_uri();
+        let uri = format!("{authz_server_uri}/dex/.well-known/openid-configuration");
         let resp = self.client.get(&uri).send().await.unwrap();
         let mut cfg = resp.json::<OidcCfg>().await.unwrap();
-        cfg.set_issuer_uri(dex_uri);
+        cfg.set_issuer_uri(&authz_server_uri);
         cfg
     }
 
@@ -285,6 +282,10 @@ impl<'a> E2eTest<'a> {
 
     pub fn redirect_uri(&self) -> String {
         format!("{}/callback", self.wire_server_uri())
+    }
+
+    pub fn authorization_server_uri(&self) -> String {
+        self.dex_server.as_ref().unwrap().uri.clone()
     }
 }
 
