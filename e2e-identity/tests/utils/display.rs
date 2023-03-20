@@ -73,20 +73,14 @@ impl TestDisplay {
 
     pub fn display_cert(&mut self, label: &str, cert: &[u8], csr: bool) {
         let event = if !csr {
-            let cert = pem::Pem {
-                tag: "CERTIFICATE".to_string(),
-                contents: cert.to_vec(),
-            };
+            let cert = pem::Pem::new("CERTIFICATE", cert);
             let cert = pem::encode(&cert);
             Event::Certificate {
                 label: label.to_string(),
                 cert,
             }
         } else {
-            let cert = pem::Pem {
-                tag: "CERTIFICATE REQUEST".to_string(),
-                contents: cert.to_vec(),
-            };
+            let cert = pem::Pem::new("CERTIFICATE REQUEST", cert);
             let cert = pem::encode(&cert);
             Event::Csr {
                 label: label.to_string(),

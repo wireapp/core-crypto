@@ -1,13 +1,12 @@
-use crate::utils::wire_server::WireServerCfg;
-use crate::utils::{
-    ctx::ctx_store_http_client,
-    display::TestDisplay,
-    rand_base64_str, rand_str,
-    wire_server::{oidc::OidcCfg, WireServer},
-    TestResult,
+use std::{
+    collections::{hash_map::RandomState, HashMap},
+    net::SocketAddr,
 };
+
 use jwt_simple::prelude::*;
 use rand::random;
+use testcontainers::clients::Cli;
+
 use rusty_acme::prelude::{
     dex::{DexCfg, DexImage, DexServer},
     ldap::{LdapCfg, LdapImage, LdapServer},
@@ -15,13 +14,14 @@ use rusty_acme::prelude::{
     AcmeAccount, AcmeAuthz, AcmeChallenge, AcmeDirectory, AcmeFinalize, AcmeOrder,
 };
 use rusty_jwt_tools::{jwk::TryIntoJwk, prelude::*};
-use std::future::Future;
-use std::pin::Pin;
-use std::{
-    collections::{hash_map::RandomState, HashMap},
-    net::SocketAddr,
+
+use crate::utils::{
+    ctx::ctx_store_http_client,
+    display::TestDisplay,
+    rand_base64_str, rand_str,
+    wire_server::{oidc::OidcCfg, WireServer, WireServerCfg},
+    TestResult,
 };
-use testcontainers::clients::Cli;
 
 pub struct E2eTest<'a> {
     pub display_name: String,
@@ -46,6 +46,13 @@ pub struct E2eTest<'a> {
     pub acme_server: Option<AcmeServer<'a>>,
     pub oidc_cfg: Option<OidcCfg>,
     pub client: reqwest::Client,
+    pub oidc_provider: OidcProvider,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum OidcProvider {
+    Dex,
+    Google,
 }
 
 unsafe impl<'a> Send for E2eTest<'a> {}
@@ -77,7 +84,7 @@ impl<'a> E2eTest<'a> {
         let wire_user_id = uuid::Uuid::new_v4();
         let wire_client_id = random::<u64>();
         let sub = ClientId::try_new(wire_user_id.to_string(), wire_client_id, &domain).unwrap();
-        let handle = format!("{}alice.smith.qa@{domain}", ClientId::URI_PREFIX);
+        let handle = "alice.smith".to_string();
         let password = "foo";
         let email = format!("alicesmith@{domain}");
         let audience = "wireapp";
@@ -105,7 +112,7 @@ impl<'a> E2eTest<'a> {
                 host: ldap_host.to_string(),
                 display_name: display_name.to_string(),
                 handle,
-                email: email.to_string(),
+                email,
                 password: password.to_string(),
                 domain: domain.to_string(),
                 sub: sub.to_uri(),
@@ -145,6 +152,7 @@ impl<'a> E2eTest<'a> {
             oidc_cfg: None,
             is_demo,
             client: reqwest::Client::new(),
+            oidc_provider: OidcProvider::Dex,
         }
     }
 
@@ -208,30 +216,37 @@ impl<'a> E2eTest<'a> {
         }
 
         // wire-server
-        let wire_server_port = portpicker::pick_unused_port().unwrap();
+        let (wire_server_host, wire_server_port) = match self.oidc_provider {
+            OidcProvider::Dex => (self.domain.clone(), portpicker::pick_unused_port().unwrap()),
+            // need to use a fixed port for Google in order to have a constant redirect_uri
+            OidcProvider::Google => ("localhost".to_string(), 9090),
+        };
         let wire_server = WireServer::run_on_port(wire_server_port).await;
-        // LDAP (required by Dex)
-        let ldap_server = LdapImage::run(docker, self.ldap_cfg.clone());
 
-        // Dex (OIDC provider)
-        let redirect_uri = format!("http://{}:{}/callback", self.domain, wire_server.port);
-        let dex_server = DexImage::run(docker, self.dex_cfg.clone(), redirect_uri.clone());
-
+        let redirect_uri = format!("http://{}:{}/callback", wire_server_host, wire_server.port);
         // Acme server
         let acme_server = StepCaImage::run(docker, self.ca_cfg.clone());
-
         // configure http client custom dns resolution for this test
         // this helps having domain names in request URIs instead of 'localhost:{port}'
-        let dns_mappings = HashMap::<String, SocketAddr, RandomState>::from_iter(vec![
-            (self.dex_cfg.host.clone(), dex_server.socket),
-            (self.ldap_cfg.host.clone(), ldap_server.socket),
+        let mut dns_mappings = HashMap::<String, SocketAddr, RandomState>::from_iter(vec![
             (self.ca_cfg.host.clone(), acme_server.socket),
             (self.domain.clone(), wire_server.socket),
         ]);
+
+        if self.oidc_provider == OidcProvider::Dex {
+            // LDAP (required by Dex)
+            let ldap_server = LdapImage::run(docker, self.ldap_cfg.clone());
+            self.ldap_server = Some(ldap_server);
+
+            // Dex (OIDC provider)
+            let dex_server = DexImage::run(docker, self.dex_cfg.clone(), redirect_uri.clone());
+            dns_mappings.insert(self.dex_cfg.host.clone(), dex_server.socket);
+            self.dex_server = Some(dex_server);
+        }
+
         ctx_store_http_client(&dns_mappings);
 
         // configure the http client for our tests
-
         let mut client_builder = default_http_client()
             // to get mTLS connection accepted by acme server
             .add_root_certificate(acme_server.ca_cert.clone());
@@ -243,24 +258,29 @@ impl<'a> E2eTest<'a> {
 
         self.client = client_builder.build().unwrap();
 
-        self.dex_server = Some(dex_server);
         let oidc_cfg = self.fetch_oidc_cfg().await;
         self.dex_cfg.issuer = oidc_cfg.issuer.clone();
         self.ca_cfg.issuer = oidc_cfg.issuer.clone();
-        self.wire_server_cfg.issuer_uri = oidc_cfg.issuer_uri.as_ref().unwrap().to_string();
+        let issuer_uri = oidc_cfg.issuer_uri.as_ref().unwrap().trim_end_matches('/').to_string();
+        self.wire_server_cfg.issuer_uri = issuer_uri;
         self.wire_server_cfg.redirect_uri = redirect_uri;
         self.oidc_cfg = Some(oidc_cfg);
 
         self.acme_server = Some(acme_server);
-        self.ldap_server = Some(ldap_server);
         self.wire_server = Some(wire_server);
 
         self
     }
 
     pub async fn fetch_oidc_cfg(&self) -> OidcCfg {
-        let authz_server_uri = self.authorization_server_uri();
-        let uri = format!("{authz_server_uri}/dex/.well-known/openid-configuration");
+        let authz_server_uri = match self.oidc_provider {
+            OidcProvider::Dex => self.authorization_server_uri(),
+            OidcProvider::Google => "https://accounts.google.com".to_string(),
+        };
+        let uri = match self.oidc_provider {
+            OidcProvider::Dex => format!("{authz_server_uri}/dex/.well-known/openid-configuration"),
+            OidcProvider::Google => "https://accounts.google.com/.well-known/openid-configuration".to_string(),
+        };
         let resp = self.client.get(&uri).send().await.unwrap();
         let mut cfg = resp.json::<OidcCfg>().await.unwrap();
         cfg.set_issuer_uri(&authz_server_uri);
@@ -313,7 +333,7 @@ pub fn default_http_client() -> reqwest::ClientBuilder {
 }
 
 pub type E2eT = E2eTest<'static>;
-pub type FlowResp<T> = Pin<Box<dyn Future<Output = TestResult<(E2eT, T)>>>>;
+pub type FlowResp<T> = std::pin::Pin<Box<dyn std::future::Future<Output = TestResult<(E2eT, T)>>>>;
 pub type Flow<P, R> = Box<dyn FnOnce(E2eT, P) -> FlowResp<R>>;
 
 pub struct EnrollmentFlow {

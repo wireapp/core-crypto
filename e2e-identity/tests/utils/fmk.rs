@@ -1,24 +1,36 @@
-use std::collections::hash_map::RandomState;
-use std::collections::HashMap;
+use std::collections::{hash_map::RandomState, HashMap};
 
 use asserhttp::*;
 use base64::Engine;
 use jwt_simple::prelude::*;
+use oauth2::{ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};
+use openidconnect::{
+    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
+    IssuerUrl, Nonce,
+};
 use serde_json::Value;
 use url::Url;
 
 use rusty_acme::prelude::{stepca::StepCaImage, *};
-use rusty_jwt_tools::jwk::TryIntoJwk;
-use rusty_jwt_tools::{jwk::TryFromJwk, prelude::*};
+use rusty_jwt_tools::{
+    jwk::{TryFromJwk, TryIntoJwk},
+    prelude::*,
+};
 
-use crate::utils::wire_server::oidc::{scrap_grant, scrap_login};
 use crate::utils::{
+    cfg::OidcProvider,
     cfg::{E2eTest, EnrollmentFlow},
     ctx::*,
     display::Actor,
     helpers::{AcmeAsserter, ClientHelper, RespHelper},
-    rand_base64_str, TestError, TestResult,
+    rand_base64_str,
+    wire_server::oidc::{scrap_grant, scrap_login},
+    TestError, TestResult,
 };
+
+// unsafe static mutable channels for the Google OIDC login since it requires tester interaction in browser
+pub(crate) static mut GOOGLE_SND: Option<std::sync::Mutex<std::sync::mpsc::Sender<String>>> = None;
+static mut GOOGLE_RECV: Option<std::sync::Mutex<std::sync::mpsc::Receiver<String>>> = None;
 
 impl E2eTest<'static> {
     pub async fn nominal_enrollment(self) -> TestResult<()> {
@@ -406,6 +418,13 @@ impl<'a> E2eTest<'a> {
     }
 
     pub async fn fetch_id_token(&mut self) -> TestResult<String> {
+        match self.oidc_provider {
+            OidcProvider::Dex => self.fetch_id_token_from_dex().await,
+            OidcProvider::Google => self.fetch_id_token_from_google().await,
+        }
+    }
+
+    pub async fn fetch_id_token_from_dex(&mut self) -> TestResult<String> {
         // hack to pass args to wire-server
         ctx_store("domain", &self.domain);
         self.wire_server_cfg.cxt_store();
@@ -434,7 +453,6 @@ impl<'a> E2eTest<'a> {
         let html = resp.text().await.unwrap();
         self.display_resp(Actor::OidcProvider, Actor::WireClient, None);
         self.display_str(&html, false);
-
         let action = scrap_login(html.to_string());
 
         // client signs in
@@ -500,6 +518,56 @@ impl<'a> E2eTest<'a> {
         self.display_resp(Actor::WireServer, Actor::WireClient, None);
         self.display_str(&id_token, false);
 
+        Ok(id_token)
+    }
+
+    pub async fn fetch_id_token_from_google(&mut self) -> TestResult<String> {
+        unsafe {
+            let (tx, rx) = std::sync::mpsc::channel();
+            GOOGLE_SND = Some(std::sync::Mutex::new(tx));
+            GOOGLE_RECV = Some(std::sync::Mutex::new(rx));
+        }
+
+        // hack to pass args to wire-server
+        ctx_store("domain", &self.domain);
+        self.wire_server_cfg.cxt_store();
+
+        let issuer_url = self.wire_server_cfg.issuer_uri.trim_end_matches('/').to_string();
+        let issuer_url = IssuerUrl::new(issuer_url).unwrap();
+        let provider_metadata = CoreProviderMetadata::discover_async(issuer_url, move |r| {
+            custom_oauth_client("discovery", ctx_get_http_client(), r)
+        })
+        .await
+        .unwrap();
+
+        let client_id = openidconnect::ClientId::new(self.wire_server_cfg.client_id.clone());
+        let client_secret = ClientSecret::new(self.wire_server_cfg.client_secret.clone());
+        let redirect_url = RedirectUrl::new(self.wire_server_cfg.redirect_uri.clone()).unwrap();
+        let client = CoreClient::from_provider_metadata(provider_metadata, client_id, Some(client_secret))
+            .set_redirect_uri(redirect_url);
+
+        let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
+        ctx_store("pkce-verifier", pkce_verifier.secret());
+        ctx_store("pkce-challenge", pkce_challenge.as_str());
+
+        let (authz_url, ..) = client
+            .authorize_url(
+                CoreAuthenticationFlow::AuthorizationCode,
+                CsrfToken::new_random,
+                Nonce::new_random,
+            )
+            // see https://developers.google.com/identity/protocols/oauth2/scopes
+            .add_scope(Scope::new("email".to_string()))
+            .add_scope(Scope::new("profile".to_string()))
+            .add_scope(Scope::new("openid".to_string()))
+            .set_pkce_challenge(pkce_challenge)
+            .url();
+        webbrowser::open(authz_url.as_str()).unwrap();
+
+        let id_token = unsafe {
+            let rx = GOOGLE_RECV.as_ref().unwrap().lock().unwrap();
+            rx.recv().unwrap()
+        };
         Ok(id_token)
     }
 

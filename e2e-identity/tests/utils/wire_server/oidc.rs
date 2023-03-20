@@ -1,12 +1,11 @@
-use crate::utils::ctx::*;
-use crate::utils::wire_server::WireServerCfg;
 use hyper::{Body, Request, Response, StatusCode};
 use openidconnect::{
-    core::CoreProviderMetadata,
-    core::{CoreAuthenticationFlow, CoreClient},
+    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
     ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
 };
 use scraper::Html;
+
+use crate::utils::{ctx::*, fmk::GOOGLE_SND, wire_server::WireServerCfg};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
 pub struct Oidc {
@@ -38,7 +37,6 @@ pub async fn handle_login(_req: Request<Body>) -> Result<Response<Body>, hyper::
     .set_redirect_uri(RedirectUrl::new(redirect_uri.clone()).unwrap());
 
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
-
     ctx_store("pkce-verifier", pkce_verifier.secret());
     ctx_store("pkce-challenge", pkce_challenge.as_str());
 
@@ -120,6 +118,21 @@ pub async fn handle_callback(mut req: Request<Body>) -> Result<Response<Body>, h
         .await
         .unwrap();
     let id_token = id_token.id_token().unwrap().to_string();
+    unsafe {
+        // for google oidc test
+        if let Some(tx) = GOOGLE_SND.as_ref() {
+            let tx = tx.lock().unwrap().clone();
+            tx.send(id_token.clone()).unwrap();
+            let id_token_url = format!("https://jwt.io/#id_token={id_token}");
+            let resp = Response::builder()
+                .status(StatusCode::TEMPORARY_REDIRECT)
+                .header("location", id_token_url)
+                .body(hyper::Body::empty())
+                .unwrap();
+            return Ok(resp);
+        }
+    }
+
     ctx_store("id-token", &id_token);
     let resp = Response::builder()
         .status(StatusCode::OK)

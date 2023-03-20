@@ -30,6 +30,7 @@ itertools = "0.10"
 uuid = "1.2"
 wasm-bindgen-test = "0.3"
 hex = "0.4"
+webbrowser = "0.8"
 
 openidconnect = "3.0.0-alpha.1"
 html_parser = "0.6"
@@ -38,7 +39,7 @@ anyhow = "1.0"
 tokio = { version = "1.5", features = ["macros"], default_features = false }
 lazy_static = "1.4"
 portpicker = "0.1"
-pem = "1.1"
+pem = "2.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 rusty-acme = { version = "0.3.4", path = "../acme", features = ["docker"] }
