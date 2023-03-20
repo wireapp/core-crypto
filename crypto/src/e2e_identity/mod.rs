@@ -159,8 +159,7 @@ impl WireE2eIdentity {
     ///
     /// # Parameters
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-account`
-    #[allow(clippy::too_many_arguments)]
-    pub fn new_order_request(&mut self, previous_nonce: String) -> E2eIdentityResult<Json> {
+    pub fn new_order_request(&self, previous_nonce: String) -> E2eIdentityResult<Json> {
         let directory = self.directory.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
         let account = self.account.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
         let order = self.acme_new_order_request(
