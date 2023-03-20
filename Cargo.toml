@@ -16,6 +16,10 @@ exclude = [
 ]
 resolver = "2"
 
+[patch.crates-io.schnellru]
+git = "https://github.com/otak/schnellru"
+branch = "feat/try-insert"
+
 [patch.crates-io.rexie]
 git = "https://github.com/otak/rexie"
 branch = "feat/api-expansion"

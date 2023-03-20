@@ -180,42 +180,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         }
     }
 
-    fn lru_will_be_full(&mut self, _value: &GroupStoreValue<V>) -> bool {
-        let len = self.0.len();
-        if <HybridMemoryLimiter as schnellru::Limiter<Vec<u8>, GroupStoreValue<V>>>::is_over_the_limit(
-            self.0.limiter(),
-            len + 1,
-        ) {
-            return true;
-        }
-
-        if len == 0 {
-            return false;
-        }
-
-        let avg_mem_per_item = self.0.memory_usage() / self.0.len();
-        let new_memory_usage = avg_mem_per_item * (len + 1);
-        let can_grow = <HybridMemoryLimiter as schnellru::Limiter<Vec<u8>, GroupStoreValue<V>>>::on_grow(
-            self.0.limiter_mut(),
-            new_memory_usage,
-        );
-        if !can_grow {
-            return true;
-        }
-
-        false
-    }
-
-    fn compact(&mut self, value: &GroupStoreValue<V>) {
-        while self.lru_will_be_full(value) {
-            if self.0.pop_oldest().is_none() {
-                break;
-            }
-        }
-    }
-
     fn insert_prepped(&mut self, k: Vec<u8>, prepped_entity: GroupStoreValue<V>) {
-        self.compact(&prepped_entity);
         self.0.insert(k, prepped_entity);
     }
 
@@ -226,12 +191,8 @@ impl<V: GroupStoreEntity> GroupStore<V> {
 
     pub(crate) fn try_insert(&mut self, k: Vec<u8>, entity: V) -> Result<(), V> {
         let value_to_insert = std::sync::Arc::new(async_lock::RwLock::new(entity));
-        if self.lru_will_be_full(&value_to_insert) {
-            // This is safe because we just built the value
-            return Err(std::sync::Arc::try_unwrap(value_to_insert).unwrap().into_inner());
-        }
 
-        if self.0.insert(k, value_to_insert.clone()) {
+        if self.0.try_insert(k, value_to_insert.clone()) {
             Ok(())
         } else {
             // This is safe because we just built the value
