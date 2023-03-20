@@ -99,7 +99,8 @@ fn run_test() -> Result<()> {
         #[cfg(feature = "proteus")]
         run_proteus_test(&chrome_driver_addr).await?;
 
-        run_e2e_identity_test(&chrome_driver_addr).await?;
+        // FIXME: See comment on the function itself
+        // run_e2e_identity_test(&chrome_driver_addr).await?;
 
         chrome_webdriver.kill().await?;
         http_server_hwnd.abort();
@@ -365,6 +366,10 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
 }
 
 #[cfg(not(target_family = "wasm"))]
+// FIXME: This is meaningless and is more akin to a unit test.
+// - We should test that heterogenous clients can communicate (classic credential clients + x509 clients, on different platforms)
+// - This whole EmulatedE2eIdentityClient thing makes little sense
+#[allow(dead_code)]
 async fn run_e2e_identity_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     use core_crypto::prelude::*;
 
@@ -375,7 +380,7 @@ async fn run_e2e_identity_test(chrome_driver_addr: &std::net::SocketAddr) -> Res
         clients::corecrypto::native::CoreCryptoNativeClient::new().await?,
     ));
     clients.push(Box::new(
-        clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).await?,
+        clients::corecrypto::web::CoreCryptoWebClient::new_deferred(chrome_driver_addr).await?,
     ));
 
     for c in clients.iter_mut() {

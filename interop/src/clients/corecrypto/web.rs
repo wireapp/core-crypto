@@ -57,6 +57,36 @@ callback();"#,
             prekey_last_id: 0,
         })
     }
+
+    #[allow(dead_code)]
+    pub async fn new_deferred(driver_addr: &SocketAddr) -> Result<Self> {
+        let client_id = uuid::Uuid::new_v4();
+        let client_id_str = client_id.as_hyphenated().to_string();
+        let client_config = serde_json::json!({
+            "databaseName": format!("db-{client_id_str}"),
+            "key": "test"
+        });
+        let browser = crate::build::web::webdriver::setup_browser(driver_addr, "core-crypto").await?;
+
+        let _ = browser
+            .execute_async(
+                r#"
+const [clientConfig, callback] = arguments;
+const { CoreCrypto } = await import("./corecrypto.js");
+window.CoreCrypto = CoreCrypto;
+window.cc = await window.CoreCrypto.deferredInit(clientConfig);
+callback();"#,
+                vec![client_config],
+            )
+            .await?;
+
+        Ok(Self {
+            browser,
+            client_id: client_id.into_bytes().into(),
+            #[cfg(feature = "proteus")]
+            prekey_last_id: 0,
+        })
+    }
 }
 
 #[async_trait::async_trait(?Send)]

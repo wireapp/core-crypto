@@ -671,13 +671,13 @@ export class CoreCrypto {
     }
 
     /**
-     * If this returns > 1 you **cannot** call {@link CoreCrypto.wipe} or {@link CoreCrypto.close} as they will produce an error because of the
+     * If this returns `true` you **cannot** call {@link CoreCrypto.wipe} or {@link CoreCrypto.close} as they will produce an error because of the
      * outstanding references that were detected.
      *
      * @returns the count of strong refs for this CoreCrypto instance
      */
-    strongRefCount(): number {
-        return this.#cc.strong_ref_count();
+    isLocked(): boolean {
+        return this.#cc.has_outstanding_refs();
     }
 
     /**
@@ -1544,7 +1544,7 @@ export class WireE2eIdentity {
      * @param directory HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
      */
-    directoryResponse(directory: JsonRawData): Promise<AcmeDirectory> {
+    directoryResponse(directory: JsonRawData): AcmeDirectory {
         try {
             return this.#e2ei.directory_response(directory);
         } catch(e) {
@@ -1559,7 +1559,7 @@ export class WireE2eIdentity {
      * @param previousNonce you got from calling `HEAD {@link AcmeDirectory.newNonce}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
      */
-    newAccountRequest(previousNonce: string): Promise<JsonRawData> {
+    newAccountRequest(previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.new_account_request(previousNonce);
         } catch(e) {
@@ -1572,7 +1572,7 @@ export class WireE2eIdentity {
      * @param account HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
      */
-    newAccountResponse(account: JsonRawData): Promise<void> {
+    newAccountResponse(account: JsonRawData): void {
         try {
             return this.#e2ei.new_account_response(account);
         } catch(e) {
@@ -1586,7 +1586,7 @@ export class WireE2eIdentity {
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/new-account`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    newOrderRequest(previousNonce: string): Promise<JsonRawData> {
+    newOrderRequest(previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.new_order_request(previousNonce);
         } catch(e) {
@@ -1600,7 +1600,7 @@ export class WireE2eIdentity {
      * @param order HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    newOrderResponse(order: JsonRawData): Promise<NewAcmeOrder> {
+    newOrderResponse(order: JsonRawData): NewAcmeOrder {
         try {
             return this.#e2ei.new_order_response(order);
         } catch(e) {
@@ -1616,7 +1616,7 @@ export class WireE2eIdentity {
      * previous to this method if you are creating the second authorization)
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
      */
-    newAuthzRequest(url: string, previousNonce: string): Promise<JsonRawData> {
+    newAuthzRequest(url: string, previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.new_authz_request(url, previousNonce);
         } catch(e) {
@@ -1630,7 +1630,7 @@ export class WireE2eIdentity {
      * @param authz HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
      */
-    newAuthzResponse(authz: JsonRawData): Promise<NewAcmeAuthz> {
+    newAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
         try {
             return this.#e2ei.new_authz_response(authz);
         } catch(e) {
@@ -1649,7 +1649,7 @@ export class WireE2eIdentity {
      * @param accessTokenUrl backend endpoint where this token will be sent. Should be this one {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token}
      * @param backendNonce you get by calling `GET /clients/token/nonce` on wire-server as defined here {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce}
      */
-    createDpopToken(accessTokenUrl: string, backendNonce: string): Promise<string> {
+    createDpopToken(accessTokenUrl: string, backendNonce: string): Uint8Array {
         try {
             return this.#e2ei.create_dpop_token(accessTokenUrl, backendNonce);
         } catch(e) {
@@ -1664,7 +1664,7 @@ export class WireE2eIdentity {
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
-    newDpopChallengeRequest(accessToken: string, previousNonce: string): Promise<JsonRawData> {
+    newDpopChallengeRequest(accessToken: string, previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.new_dpop_challenge_request(accessToken, previousNonce);
         } catch(e) {
@@ -1679,7 +1679,7 @@ export class WireE2eIdentity {
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
-    newOidcChallengeRequest(idToken: string, previousNonce: string): Promise<JsonRawData> {
+    newOidcChallengeRequest(idToken: string, previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.new_oidc_challenge_request(idToken, previousNonce);
         } catch(e) {
@@ -1693,7 +1693,7 @@ export class WireE2eIdentity {
      * @param challenge HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
-    newChallengeResponse(challenge: JsonRawData): Promise<void> {
+    newChallengeResponse(challenge: JsonRawData): void {
         try {
             return this.#e2ei.new_challenge_response(challenge);
         } catch(e) {
@@ -1709,7 +1709,7 @@ export class WireE2eIdentity {
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/challenge/{challenge-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    checkOrderRequest(orderUrl: string, previousNonce: string): Promise<JsonRawData> {
+    checkOrderRequest(orderUrl: string, previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.check_order_request(orderUrl, previousNonce);
         } catch(e) {
@@ -1723,7 +1723,7 @@ export class WireE2eIdentity {
      * @param order HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    checkOrderResponse(order: JsonRawData): Promise<void> {
+    checkOrderResponse(order: JsonRawData): void {
         try {
             return this.#e2ei.check_order_response(order);
         } catch(e) {
@@ -1738,7 +1738,7 @@ export class WireE2eIdentity {
      * @param previousNonce - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    finalizeRequest(previousNonce: string): Promise<JsonRawData> {
+    finalizeRequest(previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.finalize_request(previousNonce);
         } catch(e) {
@@ -1752,7 +1752,7 @@ export class WireE2eIdentity {
      * @param finalize HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    finalizeResponse(finalize: JsonRawData): Promise<void> {
+    finalizeResponse(finalize: JsonRawData): void {
         try {
             return this.#e2ei.finalize_response(finalize);
         } catch(e) {
@@ -1766,7 +1766,7 @@ export class WireE2eIdentity {
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}/finalize`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2
      */
-    certificateRequest(previousNonce: string): Promise<JsonRawData> {
+    certificateRequest(previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.certificate_request(previousNonce);
         } catch(e) {
@@ -1835,13 +1835,13 @@ export interface NewAcmeAuthz {
      *
      * @readonly
      */
-    wireDpopChallenge: AcmeChallenge | null;
+    wireDpopChallenge?: AcmeChallenge;
     /**
      * Challenge for the userId and displayName
      *
      * @readonly
      */
-    wireOidcChallenge: AcmeChallenge | null;
+    wireOidcChallenge?: AcmeChallenge;
 }
 
 /**
