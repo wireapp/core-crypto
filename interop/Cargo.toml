@@ -19,7 +19,7 @@ proteus = [
 color-eyre = "0.6"
 log = "0.4"
 femme = "2.2"
-dirs = "4.0"
+dirs = "5.0"
 core-crypto = { path = "../crypto" }
 
 # Utils
