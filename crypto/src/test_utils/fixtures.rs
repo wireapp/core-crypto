@@ -22,8 +22,6 @@ use crate::mls::MlsCiphersuite;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
-// TODO: EC signatures are not supported for certificates because 'rcgen' crate used for generating
-// certificates relies on 'ring' which does not support elliptic curves on WASM
 #[template]
 #[rstest(
     case,

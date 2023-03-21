@@ -406,21 +406,12 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    // #[async_std::test]
     pub async fn e2e_identity_should_work(case: TestCase) {
-        /*let case = TestCase::new(
-            crate::mls::credential::CertificateBundle::rand_basic(),
-            openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
-        );*/
-        #[cfg(not(target_family = "wasm"))]
         let supported_alg = [
             SignatureScheme::ED25519,
             SignatureScheme::ECDSA_SECP256R1_SHA256,
             SignatureScheme::ECDSA_SECP384R1_SHA384,
         ];
-        // EC signature are not supported because not supported by ring on WASM
-        #[cfg(target_family = "wasm")]
-        let supported_alg = [SignatureScheme::ED25519];
 
         if supported_alg.contains(&case.signature_scheme()) {
             run_test_wo_clients(case.clone(), move |mut cc| {
