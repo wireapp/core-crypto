@@ -546,7 +546,6 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
-    use openmls_traits::types::SignatureScheme;
     use wasm_bindgen_test::*;
 
     use crate::{
@@ -795,25 +794,22 @@ pub mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn can_fetch_client_public_key(case: TestCase) {
-        // TODO we only support ed25519 signatures for certificates currently
-        if case.ciphersuite().0.signature_algorithm() == SignatureScheme::ED25519 {
-            run_tests(move |[tmp_dir_argument]| {
-                Box::pin(async move {
-                    let configuration = MlsCentralConfiguration::try_new(
-                        tmp_dir_argument,
-                        "test".to_string(),
-                        Some("potato".into()),
-                        vec![case.ciphersuite()],
-                        None,
-                    )
-                    .unwrap();
+        run_tests(move |[tmp_dir_argument]| {
+            Box::pin(async move {
+                let configuration = MlsCentralConfiguration::try_new(
+                    tmp_dir_argument,
+                    "test".to_string(),
+                    Some("potato".into()),
+                    vec![case.ciphersuite()],
+                    None,
+                )
+                .unwrap();
 
-                    let result = MlsCentral::try_new(configuration.clone()).await;
-                    assert!(result.is_ok());
-                })
+                let result = MlsCentral::try_new(configuration.clone()).await;
+                assert!(result.is_ok());
             })
-            .await
-        }
+        })
+        .await
     }
 
     #[apply(all_cred_cipher)]
