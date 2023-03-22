@@ -23,7 +23,7 @@ val processedResourcesDir = buildDir.resolve("processedResources")
 val copyBindings = tasks.register("copyBindings", Copy::class) {
     group = "uniffi"
     from(crateTargetBindingsDir)
-    include("**/CoreCrypto.kt")
+    include("**/*")
     into(generatedDir)
 }
 
@@ -66,7 +66,11 @@ tasks.withType<Test> {
 }
 
 kotlin.sourceSets.getByName("main").apply {
-    kotlin.srcDir(generatedDir)
+    kotlin.srcDir(generatedDir.resolve("main"))
+}
+
+kotlin.sourceSets.getByName("test").apply {
+    kotlin.srcDir(generatedDir.resolve("test"))
 }
 
 sourceSets {

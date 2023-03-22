@@ -64,7 +64,7 @@ args = [
     "-moduleName", "CoreCrypto",
     "-pluginsClasspath",
     "../target/_kotlin_docs_tmp/dokka-base-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/dokka-analysis-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/dokka-analysis-intellij-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/dokka-analysis-compiler-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/kotlinx-coroutines-core-1.6.4.jar;../target/_kotlin_docs_tmp/kotlinx-html-jvm-0.8.1.jar;../target/_kotlin_docs_tmp/freemarker-2.3.31.jar",
-    "-sourceSet", "-src ./bindings/kt",
+    "-sourceSet", "-src ./bindings/kt/main",
     "-outputDir", "../target/doc/core_crypto_ffi/bindings/kotlin",
 ]
 
