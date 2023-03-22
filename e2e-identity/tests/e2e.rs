@@ -26,7 +26,6 @@ fn docker() -> &'static Cli {
 #[tokio::test]
 async fn demo_should_succeed() {
     let test = E2eTest::new_demo().start(docker()).await;
-
     assert!(test.nominal_enrollment().await.is_ok());
 }
 
@@ -38,14 +37,12 @@ mod alg {
     #[tokio::test]
     async fn ed25519_should_succeed() {
         let test = E2eTest::new().with_alg(JwsAlgorithm::Ed25519).start(docker()).await;
-
         assert!(test.nominal_enrollment().await.is_ok());
     }
 
     #[tokio::test]
     async fn p256_should_succeed() {
         let test = E2eTest::new().with_alg(JwsAlgorithm::P256).start(docker()).await;
-
         assert!(test.nominal_enrollment().await.is_ok());
     }
 
@@ -54,7 +51,6 @@ mod alg {
     #[tokio::test]
     async fn p384_should_succeed() {
         let test = E2eTest::new().with_alg(JwsAlgorithm::P384).start(docker()).await;
-
         assert!(test.nominal_enrollment().await.is_ok());
     }
 }
