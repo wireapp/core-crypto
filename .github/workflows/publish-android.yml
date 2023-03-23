@@ -47,7 +47,7 @@ jobs:
           ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/25.2.9519653
         run: |
           cd crypto-ffi
-          cargo make copy-android-resources
+          cargo make android
       - name: Publish package
         uses: gradle/gradle-build-action@v2
         with:
