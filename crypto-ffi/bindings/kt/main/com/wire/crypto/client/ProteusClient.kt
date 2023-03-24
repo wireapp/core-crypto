@@ -35,27 +35,29 @@ interface ProteusClient {
 
     fun getLocalFingerprint(): ByteArray
 
-    suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKey>
+    fun getRemoteFingerprint(sessionId: SessionId): ByteArray
 
-    suspend fun newLastPreKey(): PreKey
+    fun newPreKeys(from: Int, count: Int): ArrayList<PreKey>
 
-    suspend fun doesSessionExist(sessionId: SessionId): Boolean
+    fun newLastPreKey(): PreKey
 
-    suspend fun createSession(preKeyCrypto: PreKey, sessionId: SessionId)
+    fun doesSessionExist(sessionId: SessionId): Boolean
 
-    suspend fun decrypt(message: ByteArray, sessionId: SessionId): ByteArray
+    fun createSession(preKeyCrypto: PreKey, sessionId: SessionId)
 
-    suspend fun encrypt(message: ByteArray, sessionId: SessionId): ByteArray
+    fun deleteSession(sessionId: SessionId)
 
-    suspend fun encryptBatched(message: ByteArray, sessionIds: List<SessionId>): Map<SessionId, ByteArray>
+    fun decrypt(message: ByteArray, sessionId: SessionId): ByteArray
 
-    suspend fun encryptWithPreKey(
+    fun encrypt(message: ByteArray, sessionId: SessionId): ByteArray
+
+    fun encryptBatched(message: ByteArray, sessionIds: List<SessionId>): Map<SessionId, ByteArray>
+
+    fun encryptWithPreKey(
         message: ByteArray,
         preKey: PreKey,
         sessionId: SessionId
     ): ByteArray
-
-    suspend fun deleteSession(sessionId: SessionId)
 }
 
 @Suppress("TooManyFunctions")
@@ -100,7 +102,11 @@ class ProteusClientImpl constructor(
         return wrapException { coreCrypto.proteusFingerprint().toByteArray() }
     }
 
-    override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
+    override fun getRemoteFingerprint(sessionId: SessionId): ByteArray {
+        return wrapException { coreCrypto.proteusFingerprintRemote(sessionId).toByteArray() }
+    }
+
+    override fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
         return wrapException {
             from.until(from + count).map {
                 toPreKey(it.toUShort(), toByteArray(coreCrypto.proteusNewPrekey(it.toUShort())))
@@ -108,21 +114,27 @@ class ProteusClientImpl constructor(
         }
     }
 
-    override suspend fun newLastPreKey(): PreKey {
+    override fun newLastPreKey(): PreKey {
         return wrapException { toPreKey(coreCrypto.proteusLastResortPrekeyId(), toByteArray(coreCrypto.proteusLastResortPrekey())) }
     }
 
-    override suspend fun doesSessionExist(sessionId: SessionId): Boolean {
+    override fun doesSessionExist(sessionId: SessionId): Boolean {
         return wrapException {
             coreCrypto.proteusSessionExists(sessionId)
         }
     }
 
-    override suspend fun createSession(preKeyCrypto: PreKey, sessionId: SessionId) {
+    override fun createSession(preKeyCrypto: PreKey, sessionId: SessionId) {
         wrapException { coreCrypto.proteusSessionFromPrekey(sessionId, toUByteList(preKeyCrypto.data)) }
     }
 
-    override suspend fun decrypt(message: ByteArray, sessionId: SessionId): ByteArray {
+    override fun deleteSession(sessionId: SessionId) {
+        wrapException {
+            coreCrypto.proteusSessionDelete(sessionId)
+        }
+    }
+
+    override fun decrypt(message: ByteArray, sessionId: SessionId): ByteArray {
         val sessionExists = doesSessionExist(sessionId)
 
         return wrapException {
@@ -138,7 +150,7 @@ class ProteusClientImpl constructor(
         }
     }
 
-    override suspend fun encrypt(message: ByteArray, sessionId: SessionId): ByteArray {
+    override fun encrypt(message: ByteArray, sessionId: SessionId): ByteArray {
         return wrapException {
             val encryptedMessage = toByteArray(coreCrypto.proteusEncrypt(sessionId, toUByteList(message)))
             coreCrypto.proteusSessionSave(sessionId)
@@ -146,7 +158,7 @@ class ProteusClientImpl constructor(
         }
     }
 
-    override suspend fun encryptBatched(message: ByteArray, sessionIds: List<SessionId>): Map<SessionId, ByteArray> {
+    override fun encryptBatched(message: ByteArray, sessionIds: List<SessionId>): Map<SessionId, ByteArray> {
         return wrapException {
             coreCrypto.proteusEncryptBatched(sessionIds.map { it }, toUByteList((message))).mapNotNull { entry ->
                     entry.key to toByteArray(entry.value)
@@ -154,7 +166,7 @@ class ProteusClientImpl constructor(
             }.toMap()
         }
 
-    override suspend fun encryptWithPreKey(
+    override fun encryptWithPreKey(
         message: ByteArray,
         preKey: PreKey,
         sessionId: SessionId
@@ -164,12 +176,6 @@ class ProteusClientImpl constructor(
             val encryptedMessage = toByteArray(coreCrypto.proteusEncrypt(sessionId, toUByteList(message)))
             coreCrypto.proteusSessionSave(sessionId)
             encryptedMessage
-        }
-    }
-
-    override suspend fun deleteSession(sessionId: SessionId) {
-        wrapException {
-            coreCrypto.proteusSessionDelete(sessionId)
         }
     }
 
@@ -185,13 +191,13 @@ class ProteusClientImpl constructor(
     }
 
     @OptIn(ExperimentalUnsignedTypes::class)
-    private companion object {
-        fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
-        fun toByteArray(value: List<UByte>) = value.toUByteArray().asByteArray()
-        fun toPreKey(id: UShort, data: ByteArray): PreKey =
+    companion object {
+        private fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
+        private fun toByteArray(value: List<UByte>) = value.toUByteArray().asByteArray()
+        private fun toPreKey(id: UShort, data: ByteArray): PreKey =
             PreKey(id, data)
 
-        fun needsMigration(rootDir: File): Boolean {
+        public fun needsMigration(rootDir: File): Boolean {
             return cryptoBoxFilesExists(rootDir)
         }
 
@@ -200,6 +206,6 @@ class ProteusClientImpl constructor(
                 rootDir.resolve(it).exists()
             }
 
-        val CRYPTO_BOX_FILES = listOf("identities", "prekeys", "sessions", "version")
+        private val CRYPTO_BOX_FILES = listOf("identities", "prekeys", "sessions", "version")
     }
 }

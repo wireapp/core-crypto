@@ -41,20 +41,9 @@ typealias ApplicationMessage = ByteArray
 typealias PlainMessage = ByteArray
 typealias MLSKeyPackage = ByteArray
 
-enum class PublicGroupStateEncryptionType {
-    PLAINTEXT,
-    JWE_ENCRYPTED
-}
-
-enum class RatchetTreeType {
-    FULL,
-    DELTA,
-    BY_REF
-}
-
 open class PublicGroupStateBundle(
-    var encryptionType: PublicGroupStateEncryptionType,
-    var ratchetTreeType: RatchetTreeType,
+    var encryptionType: MlsPublicGroupStateEncryptionType,
+    var ratchetTreeType: MlsRatchetTreeType,
     var payload: ByteArray
 )
 
@@ -289,21 +278,10 @@ class MLSClientImpl constructor(
         )
 
         fun toPublicGroupStateBundle(value: com.wire.crypto.PublicGroupStateBundle) = PublicGroupStateBundle(
-            toEncryptionType(value.encryptionType),
-            toRatchetTreeType(value.ratchetTreeType),
+            value.encryptionType,
+            value.ratchetTreeType,
             toByteArray(value.payload)
         )
-
-        fun toEncryptionType(value: MlsPublicGroupStateEncryptionType) = when (value) {
-            MlsPublicGroupStateEncryptionType.PLAINTEXT -> PublicGroupStateEncryptionType.PLAINTEXT
-            MlsPublicGroupStateEncryptionType.JWE_ENCRYPTED -> PublicGroupStateEncryptionType.JWE_ENCRYPTED
-        }
-
-        fun toRatchetTreeType(value: MlsRatchetTreeType) = when (value) {
-            MlsRatchetTreeType.FULL -> RatchetTreeType.FULL
-            MlsRatchetTreeType.DELTA -> RatchetTreeType.DELTA
-            MlsRatchetTreeType.BY_REF -> RatchetTreeType.BY_REF
-        }
 
         fun toDecryptedMessageBundle(value: DecryptedMessage) = DecryptedMessageBundle(
             value.message?.let { toByteArray(it) },
