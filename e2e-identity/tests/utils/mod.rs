@@ -5,18 +5,17 @@ use rusty_jwt_tools::prelude::ClientId;
 #[cfg(not(target_family = "wasm"))]
 pub mod cfg;
 #[cfg(not(target_family = "wasm"))]
+pub mod ctx;
+#[cfg(not(target_family = "wasm"))]
 pub mod display;
 #[cfg(not(target_family = "wasm"))]
 pub mod fmk;
 #[cfg(not(target_family = "wasm"))]
 pub mod helpers;
+pub mod id_token;
 pub mod keys;
 #[cfg(not(target_family = "wasm"))]
 pub mod wire_server;
-
-pub mod id_token;
-
-pub mod ctx;
 
 pub(crate) fn rand_str(size: usize) -> String {
     use rand::distributions::{Alphanumeric, DistString};
@@ -45,6 +44,7 @@ pub enum TestError {
     Acme(#[from] rusty_acme::prelude::RustyAcmeError),
     #[error(transparent)]
     Jwt(#[from] rusty_jwt_tools::prelude::RustyJwtError),
+    #[cfg(not(target_family = "wasm"))]
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
     #[error(transparent)]
