@@ -31,7 +31,7 @@ fn main() {
                 UDL_FILE.into(),
                 None,
                 vec!["kotlin"],
-                Some("./bindings/kt/".into()),
+                Some("./bindings/kt/main".into()),
                 None,
                 false,
             )
