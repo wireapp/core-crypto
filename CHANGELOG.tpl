@@ -7,11 +7,39 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.7.0-rc.4] - 2023-03-28
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.7.0-rc.4" unreleased=true}}
+</details>
+
+* Updated UniFFI to 0.23
+    * Might or might not contain breaking changes depending on your use case, please refer to [UniFFI's documentation](https://github.com/mozilla/uniffi-rs/blob/main/CHANGELOG.md)
+* Fixed a small bug in the new GroupStore internals that was a bit too eager in limiting memory usage
+* **[BREAKING]**: Renamed the WASM `strongRefCount(): number` API to `isLocked(): boolean`.
+    * This essentially hides the implementation details across the FFI and should minimize brittleness
+* Removed our dependency on [ring](https://github.com/briansmith/ring), an external crypto library. It was mostly used for validating x509 certificates and crafting Certificate Signing Request
+    * By removing `ring`, we now support the following MLS Ciphersuites using NIST elliptic curves / ECDSA on WASM:
+        * `MLS_128_DHKEMP256_AES128GCM_SHA256_P256` (`0x0002`)
+        * `MLS_256_DHKEMP384_AES256GCM_SHA384_P384` (`0x0007`)
+* **[BREAKING]**: Overhauled parts of the E2EI implementation
+      * Moved from a stateless API to a stateful one. As a consequence, methods have less parameters, less structs need to be exposed. All of this is wrapped under Rust's safe sync primitives in order to be able to perform the ACME enrollment in parallel.
+      * The new API allows creating a MLS group from the enrollment process.
+        * ~~`certificateResponse()`~~ has been removed
+        * `e2eiMlsInit()` has been introduced and permits ending the enrollment flow and use the x509 certificate to initialize a MLS client.
+      * `ClientId` is now a string as per [RFC8555](https://www.rfc-editor.org/rfc/rfc8555). It does not anymore require to be prefixed (by `impp:wireapp=`) and is exactly the same as the one used for MLS
+      * X509 SAN URIs are now prefixed by `im:wireapp=` instead of `impp:wireapp=`
+      * This release has been tested against a real OIDC provider ([Dex](https://dexidp.io/)), federating identity from a LDAP server. The OAuth2 flow used for testing is [Authorization Code with PKCE](https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow-with-proof-key-for-code-exchange-pkce)
+      * Private key materials are now properly zeroized
+
+
+
 ## [0.7.0-rc.3] - 2023-03-16
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.7.0-rc.3" unreleased=true}}
+{{git-cliff tag="v0.7.0-rc.3"}}
 </details>
 
 * Fixed a bug where `proteus_new_prekey_auto` returning the same prekey ID in particular cases
