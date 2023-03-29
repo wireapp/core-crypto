@@ -71,11 +71,6 @@ git = "https://github.com/alexcrichton/openssl-src-rs.git"
 branch = "release/111"
 package = "openssl-src"
 
-[patch.crates-io.wire-e2e-identity]
-git = "https://github.com/wireapp/rusty-jwt-tools"
-package = "wire-e2e-identity"
-tag = "v0.3.2"
-
 [patch.crates-io.jwt-simple]
 git = "https://github.com/wireapp/rust-jwt-simple"
 tag = "v0.11.4-pre.core-crypto-0.7.0"
