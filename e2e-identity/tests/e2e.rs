@@ -4,10 +4,11 @@ use jwt_simple::prelude::*;
 use serde_json::{json, Value};
 use testcontainers::clients::Cli;
 
-use rusty_acme::prelude::{stepca::CaCfg, wiremock::WiremockImage, *};
+use rusty_acme::prelude::*;
 use rusty_jwt_tools::prelude::*;
 use utils::{
     cfg::{E2eTest, EnrollmentFlow, OidcProvider},
+    docker::{stepca::CaCfg, wiremock::WiremockImage},
     id_token::resign_id_token,
     rand_base64_str, rand_client_id,
     wire_server::WireServerCfg,
@@ -30,7 +31,7 @@ async fn demo_should_succeed() {
 }
 
 /// Tests the nominal case and prints the pretty output with the mermaid chart in this crate README.
-// #[ignore] // needs manual actions. Uncomment to try it.
+#[ignore] // needs manual actions. Uncomment to try it.
 #[cfg(not(ci))]
 #[tokio::test]
 async fn google_demo_should_succeed() {
@@ -96,6 +97,7 @@ mod alg {
 #[cfg(not(ci))]
 mod acme_server {
     use super::*;
+    use rusty_acme::prelude::RustyAcmeError;
 
     /// Challenges returned by ACME server are mixed up
     #[should_panic]
@@ -218,6 +220,7 @@ mod acme_server {
 #[cfg(not(ci))]
 mod dpop_challenge {
     use super::*;
+    use rusty_acme::prelude::{AcmeChallError, AcmeChallenge};
 
     /// Demonstrates that the client possesses the clientId. Client makes an authenticated request
     /// to wire-server, it delivers a nonce which the client seals in a signed DPoP JWT.

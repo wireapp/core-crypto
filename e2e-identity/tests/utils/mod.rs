@@ -9,6 +9,8 @@ pub mod ctx;
 #[cfg(not(target_family = "wasm"))]
 pub mod display;
 #[cfg(not(target_family = "wasm"))]
+pub mod docker;
+#[cfg(not(target_family = "wasm"))]
 pub mod fmk;
 #[cfg(not(target_family = "wasm"))]
 pub mod helpers;

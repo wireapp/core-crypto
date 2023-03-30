@@ -42,7 +42,7 @@ portpicker = "0.1"
 pem = "2.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
-rusty-acme = { version = "0.3.4", path = "../acme", features = ["docker"] }
+rusty-acme = { version = "0.3.4", path = "../acme" }
 reqwest = { version = "0.11", features = ["json"], default_features = false }
 tokio = { version = "1.5", features = ["macros"], default_features = false }
 hyper = { version = "0.14", features = ["server"], default_features = false }

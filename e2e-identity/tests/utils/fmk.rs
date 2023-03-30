@@ -8,24 +8,23 @@ use openidconnect::{
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
     IssuerUrl, Nonce,
 };
+use rusty_acme::prelude::*;
 use serde_json::Value;
 use url::Url;
 
-use rusty_acme::prelude::{stepca::StepCaImage, *};
-use rusty_jwt_tools::{
-    jwk::{TryFromJwk, TryIntoJwk},
-    prelude::*,
-};
-
 use crate::utils::{
-    cfg::OidcProvider,
-    cfg::{E2eTest, EnrollmentFlow},
+    cfg::{E2eTest, EnrollmentFlow, OidcProvider},
     ctx::*,
     display::Actor,
+    docker::stepca::StepCaImage,
     helpers::{AcmeAsserter, ClientHelper, RespHelper},
     rand_base64_str,
     wire_server::oidc::{scrap_grant, scrap_login},
     TestError, TestResult,
+};
+use rusty_jwt_tools::{
+    jwk::{TryFromJwk, TryIntoJwk},
+    prelude::*,
 };
 
 // unsafe static mutable channels for the Google OIDC login since it requires tester interaction in browser

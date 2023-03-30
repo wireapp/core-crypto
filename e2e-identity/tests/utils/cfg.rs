@@ -7,21 +7,21 @@ use jwt_simple::prelude::*;
 use rand::random;
 use testcontainers::clients::Cli;
 
-use rusty_acme::prelude::{
-    dex::{DexCfg, DexImage, DexServer},
-    ldap::{LdapCfg, LdapImage, LdapServer},
-    stepca::{AcmeServer, CaCfg, StepCaImage},
-    AcmeAccount, AcmeAuthz, AcmeChallenge, AcmeDirectory, AcmeFinalize, AcmeOrder,
-};
-use rusty_jwt_tools::{jwk::TryIntoJwk, prelude::*};
-
 use crate::utils::{
     ctx::ctx_store_http_client,
     display::TestDisplay,
+    docker::{
+        dex::{DexCfg, DexImage, DexServer},
+        ldap::{LdapCfg, LdapImage, LdapServer},
+        stepca::{AcmeServer, CaCfg, StepCaImage},
+    },
     rand_base64_str, rand_str,
     wire_server::{oidc::OidcCfg, WireServer, WireServerCfg},
     TestResult,
 };
+
+use rusty_acme::prelude::{AcmeAccount, AcmeAuthz, AcmeChallenge, AcmeDirectory, AcmeFinalize, AcmeOrder};
+use rusty_jwt_tools::{jwk::TryIntoJwk, prelude::*};
 
 pub struct E2eTest<'a> {
     pub display_name: String,
