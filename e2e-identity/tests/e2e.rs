@@ -478,6 +478,29 @@ mod oidc_challenge {
             ))
         ));
     }
+
+    /// An audience field is configured on CA server. The OIDC challenge should fail when the 'aud'
+    /// claim in the id token mismatches the expected audience configured in the CA server.
+    #[tokio::test]
+    async fn should_fail_when_invalid_audience() {
+        let docker = docker();
+        let default = E2eTest::new();
+        let test = E2eTest {
+            ca_cfg: CaCfg {
+                audience: "unknown".to_string(),
+                ..default.ca_cfg
+            },
+            ..default
+        };
+
+        let test = test.start(docker).await;
+        assert!(matches!(
+            test.nominal_enrollment().await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ClientImplementationError(
+                "a challenge is not supposed to be pending at this point. It must either be 'valid' or 'processing'."
+            ))
+        ));
+    }
 }
 
 /// Further improvements
