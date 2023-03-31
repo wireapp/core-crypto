@@ -111,7 +111,7 @@ impl<'a> E2eTest<'a> {
             ldap_cfg: LdapCfg {
                 host: ldap_host.to_string(),
                 display_name: display_name.to_string(),
-                handle,
+                handle: format!("{}{handle}", ClientId::URI_PREFIX),
                 email,
                 password: password.to_string(),
                 domain: domain.to_string(),
