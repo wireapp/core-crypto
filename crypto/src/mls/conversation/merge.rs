@@ -167,7 +167,7 @@ pub mod tests {
                             .unwrap();
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         alice_central
-                            .remove_members_from_conversation(&id, &["bob".into()])
+                            .remove_members_from_conversation(&id, &[bob_central.read_client_id()])
                             .await
                             .unwrap();
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
@@ -239,7 +239,7 @@ pub mod tests {
                             .proposal_ref;
 
                         let remove_ref = alice_central
-                            .new_proposal(&id, MlsProposal::Remove(b"bob"[..].into()))
+                            .new_proposal(&id, MlsProposal::Remove(bob_central.read_client_id()))
                             .await
                             .unwrap()
                             .proposal_ref;

@@ -93,7 +93,10 @@ impl MlsConversation {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{mls::conversation::handshake::MlsConversationCreationMessage, test_utils::*};
+    use crate::{
+        mls::{conversation::handshake::MlsConversationCreationMessage, proposal::MlsProposal},
+        test_utils::*,
+    };
     use tls_codec::Serialize as _;
     use wasm_bindgen_test::*;
 
@@ -228,7 +231,7 @@ pub mod tests {
                     );
 
                     let proposal_bundle = alice_central
-                        .new_proposal(&id, crate::mls::proposal::MlsProposal::Remove("alice".into()))
+                        .new_proposal(&id, MlsProposal::Remove(alice_central.read_client_id()))
                         .await
                         .unwrap();
 

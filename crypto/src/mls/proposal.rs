@@ -141,7 +141,7 @@ pub mod proposal_tests {
                             .await
                             .unwrap();
                         assert_eq!(id, new_id);
-                        assert!(bob_central.talk_to(&id, &mut alice_central).await.is_ok());
+                        assert!(bob_central.try_talk_to(&id, &mut alice_central).await.is_ok());
                     })
                 },
             )
@@ -206,7 +206,7 @@ pub mod proposal_tests {
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     let remove_proposal = alice_central
-                        .new_proposal(&id, MlsProposal::Remove(b"bob"[..].into()))
+                        .new_proposal(&id, MlsProposal::Remove(bob_central.read_client_id()))
                         .await
                         .unwrap();
                     bob_central

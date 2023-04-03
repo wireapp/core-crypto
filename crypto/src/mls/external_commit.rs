@@ -168,7 +168,7 @@ impl MlsConversation {
     pub(crate) async fn validate_external_commit(
         &self,
         commit: &StagedCommit,
-        sender: Option<ClientId>,
+        sender: ClientId,
         parent_conversation: Option<GroupStoreValue<MlsConversation>>,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
         backend: &impl OpenMlsCrypto,
@@ -180,7 +180,6 @@ impl MlsConversation {
 
         if is_external_init {
             let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
-            let sender = sender.ok_or(CryptoError::UnauthorizedExternalCommit)?;
             // first let's verify the sender belongs to an user already in the MLS group
             let existing_clients = self.members_in_next_epoch(backend);
             let parent_clients = if let Some(parent_conv) = parent_conversation {
@@ -262,11 +261,14 @@ mod tests {
 
                     // Alice acks the request and adds the new member
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-                    alice_central
+                    let decrypted = alice_central
                         .decrypt_message(&id, &external_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+
+                    // verify Bob's (sender) identity
+                    bob_central.verify_sender_identity(&decrypted);
 
                     // Let's say backend accepted our external commit.
                     // So Bob can merge the commit and update the local state
@@ -274,7 +276,7 @@ mod tests {
                     bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
                     assert!(bob_central.get_conversation(&id).await.is_ok());
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                    assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                    assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
 
                     // Pending group removed from keystore
                     let error = alice_central.mls_backend.key_store().mls_pending_groups_load(&id).await;
@@ -285,7 +287,7 @@ mod tests {
 
                     // Ensure it's durable i.e. MLS group has been persisted
                     bob_central.drop_and_restore(&group_id).await;
-                    assert!(bob_central.talk_to(&id, &mut alice_central).await.is_ok());
+                    assert!(bob_central.try_talk_to(&id, &mut alice_central).await.is_ok());
                 })
             },
         )
@@ -340,7 +342,7 @@ mod tests {
                     bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
                     assert!(bob_central.get_conversation(&id).await.is_ok());
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                    assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                    assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
                 })
             },
         )
@@ -479,7 +481,7 @@ mod tests {
                     bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
                     assert!(bob_central.get_conversation(&id).await.is_ok());
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                    assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                    assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
 
                     // Now charlie wants to join with the [PublicGroupState] from Bob's external commit
                     let bob_pgs = public_group_state.get_pgs();
@@ -510,8 +512,8 @@ mod tests {
                         .unwrap();
                     assert!(charlie_central.get_conversation(&id).await.is_ok());
                     assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
-                    assert!(charlie_central.talk_to(&id, &mut alice_central).await.is_ok());
-                    assert!(charlie_central.talk_to(&id, &mut bob_central).await.is_ok());
+                    assert!(charlie_central.try_talk_to(&id, &mut alice_central).await.is_ok());
+                    assert!(charlie_central.try_talk_to(&id, &mut bob_central).await.is_ok());
                 })
             },
         )

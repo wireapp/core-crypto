@@ -19,7 +19,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use crate::{
     group_store::GroupStoreValue,
     mls::{conversation::renew::Renew, ClientId, ConversationId, MlsCentral, MlsConversation},
-    prelude::MlsProposalBundle,
+    prelude::{MlsProposalBundle, WireIdentity},
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };
 
@@ -43,6 +43,10 @@ pub struct MlsConversationDecryptMessage {
     pub sender_client_id: Option<ClientId>,
     /// Is the epoch changed after decrypting this message
     pub has_epoch_changed: bool,
+    /// Identity claims present in the sender credential
+    /// Only present when the credential is a x509 certificate
+    /// Present for all messages
+    pub identity: Option<WireIdentity>,
 }
 
 /// Abstraction over a MLS group capable of decrypting a MLS message
@@ -65,7 +69,11 @@ impl MlsConversation {
             Sender::Member(kpr) => Some(*kpr),
             _ => None,
         };
-        let sender_client_id = parsed_message.credential().map(|c| c.identity().into());
+
+        let credential = parsed_message.credential().ok_or(CryptoError::ImplementationError)?;
+        let identity = Self::extract_identity(credential)?;
+
+        let sender_client_id = credential.identity().into();
 
         let message = self
             .group
@@ -99,8 +107,9 @@ impl MlsConversation {
                     proposals: vec![],
                     is_active: true,
                     delay: None,
-                    sender_client_id,
+                    sender_client_id: Some(sender_client_id),
                     has_epoch_changed: false,
+                    identity,
                 }
             }
             ProcessedMessage::ProposalMessage(proposal) => {
@@ -115,6 +124,7 @@ impl MlsConversation {
                     delay: self.compute_next_commit_delay(backend),
                     sender_client_id: None,
                     has_epoch_changed: false,
+                    identity,
                 }
             }
             ProcessedMessage::StagedCommitMessage(staged_commit) => {
@@ -153,6 +163,7 @@ impl MlsConversation {
                     delay: self.compute_next_commit_delay(backend),
                     sender_client_id: None,
                     has_epoch_changed: true,
+                    identity,
                 }
             }
         };
@@ -230,9 +241,13 @@ pub mod tests {
         prelude::{handshake::MlsCommitBundle, MlsWirePolicy},
         test_utils::*,
     };
-    use openmls::{framing::errors::MlsMessageError, prelude::KeyPackageRef};
+    use openmls::{
+        framing::errors::MlsMessageError,
+        prelude::{KeyPackageRef, MlsCertificate, MlsCredentialType},
+    };
     use std::time::Duration;
     use wasm_bindgen_test::*;
+    use wire_e2e_identity::prelude::WireIdentityReader as _;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -288,7 +303,7 @@ pub mod tests {
                             .unwrap();
 
                         let MlsCommitBundle { commit, .. } = bob_central
-                            .remove_members_from_conversation(&id, &["alice".into()])
+                            .remove_members_from_conversation(&id, &[alice_central.read_client_id()])
                             .await
                             .unwrap();
                         let MlsConversationDecryptMessage { is_active, .. } = alice_central
@@ -305,6 +320,47 @@ pub mod tests {
 
     pub mod commit {
         use super::*;
+        use crate::prelude::MemberId;
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn decrypting_a_commit_should_succeed(case: TestCase) {
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central
+                            .invite(&id, &mut bob_central, case.custom_cfg())
+                            .await
+                            .unwrap();
+
+                        let epoch_before = alice_central.conversation_epoch(&id).await.unwrap();
+
+                        let MlsCommitBundle { commit, .. } = alice_central.update_keying_material(&id).await.unwrap();
+                        alice_central.commit_accepted(&id).await.unwrap();
+
+                        let decrypted = bob_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        let epoch_after = bob_central.conversation_epoch(&id).await.unwrap();
+                        assert_eq!(epoch_after, epoch_before + 1);
+                        assert!(decrypted.has_epoch_changed);
+                        assert!(decrypted.delay.is_none());
+                        assert!(decrypted.app_msg.is_none());
+
+                        alice_central.verify_sender_identity(&decrypted);
+                    })
+                },
+            )
+            .await
+        }
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -460,7 +516,7 @@ pub mod tests {
                             .process_welcome_message(welcome.unwrap(), case.custom_cfg())
                             .await
                             .unwrap();
-                        assert!(charlie_central.talk_to(&id, &mut alice_central).await.is_ok());
+                        assert!(charlie_central.try_talk_to(&id, &mut alice_central).await.is_ok());
                     })
                 },
             )
@@ -592,7 +648,7 @@ pub mod tests {
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get(&b"charlie".to_vec())
+                            .get::<MemberId>(&charlie_central.read_client_id().into())
                             .is_some());
 
                         // Bob also has Charlie in the group
@@ -601,7 +657,7 @@ pub mod tests {
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get(&b"charlie".to_vec())
+                            .get::<MemberId>(&charlie_central.read_client_id().into())
                             .is_some());
                         assert!(decrypted.has_epoch_changed);
                     })
@@ -877,7 +933,9 @@ pub mod tests {
                         bob_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         bob_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
-                        assert!(!decrypted.has_epoch_changed)
+                        assert!(!decrypted.has_epoch_changed);
+
+                        alice_central.verify_sender_identity(&decrypted);
                     })
                 },
             )
@@ -949,6 +1007,32 @@ pub mod tests {
                         let dec_msg = decrypted.app_msg.unwrap();
                         assert_eq!(&dec_msg[..], &msg[..]);
                         assert!(!decrypted.has_epoch_changed);
+
+                        let sender_credential = alice_central.mls_client.as_ref().unwrap().credentials().credential();
+                        if let MlsCredentialType::X509(MlsCertificate {
+                            identity: dup_client_id,
+                            cert_chain,
+                        }) = &sender_credential.credential
+                        {
+                            let leaf = cert_chain.get(0).map(|c| c.clone().into_vec()).unwrap();
+                            let identity = leaf.extract_identity().unwrap();
+                            let decr_identity = decrypted.identity.unwrap();
+                            assert_eq!(decr_identity.client_id, identity.client_id);
+                            assert_eq!(decr_identity.client_id.as_bytes(), dup_client_id.as_slice());
+                            assert_eq!(decr_identity.handle, identity.handle);
+                            assert_eq!(decr_identity.display_name, identity.display_name);
+                            assert_eq!(decr_identity.domain, identity.domain);
+                        }
+
+                        let msg = b"Hello alice";
+                        let encrypted = bob_central.encrypt_message(&id, msg).await.unwrap();
+                        assert_ne!(&msg[..], &encrypted[..]);
+                        let decrypted = alice_central.decrypt_message(&id, encrypted).await.unwrap();
+                        let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
+                        assert_eq!(dec_msg, &msg[..]);
+                        assert!(!decrypted.has_epoch_changed);
+
+                        bob_central.verify_sender_identity(&decrypted);
                     })
                 },
             )
@@ -1180,13 +1264,14 @@ pub mod tests {
                         let msg = b"Hello bob";
                         let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
                         assert_ne!(&msg[..], &encrypted[..]);
+
                         let sender_client_id = bob_central
                             .decrypt_message(&id, encrypted)
                             .await
                             .unwrap()
                             .sender_client_id
                             .unwrap();
-                        assert_eq!(sender_client_id, b"alice"[..].into());
+                        assert_eq!(sender_client_id, alice_central.read_client_id());
                     })
                 },
             )

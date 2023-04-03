@@ -39,12 +39,17 @@ branch = "otak/2.0-error-codes"
 [patch.crates-io.openmls]
 package = "openmls"
 git = "https://github.com/wireapp/openmls"
-tag = "v0.5.5-pre.core-crypto-0.7.0"
+tag = "v0.5.6-pre.core-crypto-0.7.0"
 
 [patch.crates-io.openmls_traits]
 package = "openmls_traits"
 git = "https://github.com/wireapp/openmls"
-tag = "v0.5.5-pre.core-crypto-0.7.0"
+tag = "v0.5.6-pre.core-crypto-0.7.0"
+
+[patch.crates-io.wire-e2e-identity]
+git = "https://github.com/wireapp/rusty-jwt-tools"
+package = "wire-e2e-identity"
+branch = "main"
 
 [patch.crates-io.hpke-rs]
 git = "https://github.com/wireapp/hpke-rs"
@@ -60,10 +65,6 @@ package = "hpke-rs-crypto"
 git = "https://github.com/wireapp/hpke-rs"
 branch = "feat/0.2"
 package = "hpke-rs-rust-crypto"
-
-[patch.crates-io.rcgen]
-git = "https://github.com/wireapp/rcgen"
-tag = "v1.2.0-pre.core-crypto-0.6.0"
 
 # aarch64-apple-ios-sim target support has not yet been released
 [patch.crates-io.openssl-src]

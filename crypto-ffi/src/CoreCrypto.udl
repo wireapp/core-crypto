@@ -91,6 +91,7 @@ enum CryptoError {
     "NoProvisionalIdentityFound",
     "TooManyIdentitiesPresent",
     "ParentGroupNotFound",
+    "InvalidIdentity",
 };
 
 dictionary DecryptedMessage {
@@ -100,6 +101,14 @@ dictionary DecryptedMessage {
     u64? commit_delay;
     ClientId? sender_client_id;
     boolean has_epoch_changed;
+    WireIdentity? identity;
+};
+
+dictionary WireIdentity {
+    string client_id;
+    string handle;
+    string display_name;
+    string domain;
 };
 
 dictionary Invitee {

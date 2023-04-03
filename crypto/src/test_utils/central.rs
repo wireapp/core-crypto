@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::prelude::{ClientId, MlsConversationDecryptMessage};
 use crate::{
     mls::conversation::MlsConversation,
     prelude::{
@@ -21,10 +22,12 @@ use crate::{
         MlsCustomConfiguration, MlsError,
     },
 };
+use openmls::credentials::MlsCredentialType;
 use openmls::prelude::{
     KeyPackage, KeyPackageBundle, PublicGroupState, QueuedProposal, SignaturePublicKey, StagedCommit,
     VerifiablePublicGroupState, Welcome,
 };
+use wire_e2e_identity::prelude::WireIdentityReader;
 
 impl MlsCentral {
     pub async fn get_one_key_package(&self) -> KeyPackage {
@@ -76,7 +79,7 @@ impl MlsCentral {
             .cloned()
     }
 
-    pub async fn talk_to(&mut self, id: &ConversationId, other: &mut MlsCentral) -> CryptoResult<()> {
+    pub async fn try_talk_to(&mut self, id: &ConversationId, other: &mut MlsCentral) -> CryptoResult<()> {
         // self --> other
         let msg = b"Hello other";
         let encrypted = self.encrypt_message(id, msg).await?;
@@ -120,7 +123,7 @@ impl MlsCentral {
             other.get_conversation_unchecked(id).await.members().len(),
             size_before + 1
         );
-        self.talk_to(id, other).await?;
+        self.try_talk_to(id, other).await?;
         Ok(())
     }
 
@@ -145,7 +148,7 @@ impl MlsCentral {
         for other in others {
             let commit = commit.to_bytes().map_err(MlsError::from)?;
             other.decrypt_message(id, commit).await?;
-            self.talk_to(id, other).await?;
+            self.try_talk_to(id, other).await?;
         }
         Ok(())
     }
@@ -159,7 +162,7 @@ impl MlsCentral {
     ) -> CryptoResult<()> {
         self.process_welcome_message(welcome, custom_cfg).await?;
         for other in others {
-            self.talk_to(id, other).await?;
+            self.try_talk_to(id, other).await?;
         }
         Ok(())
     }
@@ -183,7 +186,7 @@ impl MlsCentral {
     }
 
     /// Finds the [KeyPackage] of a [Client] within a [MlsGroup]
-    pub async fn key_package_of(&mut self, conv_id: &ConversationId, client_id: &str) -> KeyPackage {
+    pub async fn key_package_of(&mut self, conv_id: &ConversationId, client_id: ClientId) -> KeyPackage {
         self.mls_groups
             .get_fetch(conv_id, self.mls_backend.borrow_keystore_mut(), None)
             .await
@@ -194,7 +197,7 @@ impl MlsCentral {
             .group
             .members()
             .into_iter()
-            .find(|k| k.credential().identity() == client_id.as_bytes())
+            .find(|k| k.credential().identity() == client_id.0.as_slice())
             .unwrap()
             .clone()
     }
@@ -214,5 +217,36 @@ impl MlsCentral {
     ) -> async_lock::RwLockWriteGuard<'_, MlsConversation> {
         let group_lock = self.mls_groups.get(conv_id).unwrap();
         group_lock.write().await
+    }
+
+    pub fn read_client_id(&self) -> ClientId {
+        let client = self.mls_client.as_ref().unwrap();
+        let cred = client.credentials().credential();
+        match &cred.credential {
+            MlsCredentialType::Basic(_) => cred.identity().into(),
+            MlsCredentialType::X509(cert) => {
+                let leaf = cert.cert_chain.get(0).unwrap();
+                let identity = leaf.as_slice().extract_identity().unwrap();
+                identity.client_id.as_bytes().into()
+            }
+        }
+    }
+
+    pub fn verify_sender_identity(&self, decrypted: &MlsConversationDecryptMessage) {
+        let sender_credential = self.mls_client.as_ref().unwrap().credentials().credential();
+        if let MlsCredentialType::X509(openmls::prelude::MlsCertificate {
+            identity: dup_client_id,
+            cert_chain,
+        }) = &sender_credential.credential
+        {
+            let leaf = cert_chain.get(0).map(|c| c.clone().into_vec()).unwrap();
+            let identity = leaf.extract_identity().unwrap();
+            let decr_identity = decrypted.identity.as_ref().unwrap();
+            assert_eq!(decr_identity.client_id, identity.client_id);
+            assert_eq!(decr_identity.client_id.as_bytes(), dup_client_id.as_slice());
+            assert_eq!(decr_identity.handle, identity.handle);
+            assert_eq!(decr_identity.display_name, identity.display_name);
+            assert_eq!(decr_identity.domain, identity.domain);
+        }
     }
 }
