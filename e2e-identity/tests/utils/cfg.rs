@@ -80,11 +80,11 @@ impl<'a> E2eTest<'a> {
             Self::HOSTS.map(|h| format!("{h}.{}", rand_str(6).to_lowercase()))
         };
 
-        let display_name = "Smith, Alice M (QA)";
+        let display_name = "Alice Smith";
         let wire_user_id = uuid::Uuid::new_v4();
         let wire_client_id = random::<u64>();
         let sub = ClientId::try_new(wire_user_id.to_string(), wire_client_id, &domain).unwrap();
-        let handle = "alice.smith".to_string();
+        let handle = "alice_wire".to_string();
         let password = "foo";
         let email = format!("alicesmith@{domain}");
         let audience = "wireapp";

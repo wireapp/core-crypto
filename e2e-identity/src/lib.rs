@@ -6,16 +6,21 @@ use rusty_jwt_tools::jwk::TryIntoJwk;
 use rusty_jwt_tools::prelude::{ClientId, Dpop, Htm, Pem, RustyJwtTools};
 use zeroize::Zeroize;
 
+#[cfg(feature = "identity-builder")]
+mod builder;
 mod error;
 mod types;
 
 pub mod prelude {
+    #[cfg(feature = "identity-builder")]
+    pub use super::builder::*;
     pub use super::error::{E2eIdentityError, E2eIdentityResult};
     pub use super::types::{
         E2eiAcmeAccount, E2eiAcmeChall, E2eiAcmeFinalize, E2eiAcmeOrder, E2eiNewAcmeAuthz, E2eiNewAcmeOrder,
     };
+
     pub use super::RustyE2eIdentity;
-    pub use rusty_acme::prelude::{AcmeDirectory, RustyAcme, RustyAcmeError};
+    pub use rusty_acme::prelude::{AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader};
     pub use rusty_jwt_tools::prelude::{HashAlgorithm, JwsAlgorithm, RustyJwtError};
 }
 
@@ -29,6 +34,7 @@ pub struct RustyE2eIdentity {
     jwk: Jwk,
 }
 
+// enrollment/refresh flow
 impl RustyE2eIdentity {
     /// Builds an instance holding private key material. This instance has to be used in the whole
     /// enrollment process then dropped to clear secret key material.

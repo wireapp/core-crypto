@@ -4,6 +4,9 @@ pub type E2eIdentityResult<T> = Result<T, E2eIdentityError>;
 /// All e2e identity related errors
 #[derive(Debug, thiserror::Error)]
 pub enum E2eIdentityError {
+    /// Invalid/incomplete certificate
+    #[error("Given x509 certificate is invalid and does not follow Wire's format")]
+    InvalidCertificate,
     /// Json error
     #[error(transparent)]
     JsonError(#[from] serde_json::Error),
