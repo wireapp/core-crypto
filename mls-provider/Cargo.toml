@@ -51,5 +51,5 @@ rstest = "0.17"
 rstest_reuse = "0.5"
 async-std = { version = "1.12", features = ["attributes"] }
 cfg-if = "1.0"
-hex-literal = "0.3"
+hex-literal = "0.4"
 mls-crypto-provider = { path = ".", features = ["raw-rand-access"] }
