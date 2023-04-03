@@ -43,7 +43,7 @@ zeroize = "1.5"
 [dependencies.wire-e2e-identity]
 git = "https://github.com/wireapp/rusty-jwt-tools"
 package = "wire-e2e-identity"
-version = "0.3.2"
+version = "0.3.5"
 
 [dependencies.proteus-wasm]
 version = "2.0"
