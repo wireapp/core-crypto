@@ -1,4 +1,7 @@
 use openmls::prelude::{CredentialBundle, SignaturePrivateKey};
+#[cfg(test)]
+use wire_e2e_identity::prelude::WireIdentityBuilder;
+use wire_e2e_identity::prelude::WireIdentityReader;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -9,7 +12,7 @@ use crate::{
 
 /// For test fixtures (test with basic or x509 credential)
 #[cfg(test)]
-pub type CredentialSupplier = fn(MlsCiphersuite) -> Option<CertificateBundle>;
+pub type CredentialSupplier = fn(ClientId, MlsCiphersuite) -> Option<CertificateBundle>;
 
 /// Represents a x509 certificate chain supplied by the client
 /// It can fetch it after an end-to-end identity process where it can get back a certificate
@@ -23,84 +26,44 @@ pub struct CertificateBundle {
     pub private_key: SignaturePrivateKey,
 }
 
+impl CertificateBundle {
+    /// Reads the client_id from the leaf certificate
+    pub fn get_client_id(&self) -> CryptoResult<ClientId> {
+        let leaf = self.certificate_chain.get(0).ok_or(CryptoError::InvalidIdentity)?;
+        let identity = leaf.extract_identity().map_err(|_| CryptoError::InvalidIdentity)?;
+        Ok(identity.client_id.as_bytes().into())
+    }
+}
+
 #[cfg(test)]
 impl CertificateBundle {
     /// Basic credentials are generated once clients are created
     /// It will effectively return `None`
     pub fn rand_basic() -> CredentialSupplier {
-        |_: MlsCiphersuite| None
+        |_: ClientId, _: MlsCiphersuite| None
     }
 
     /// Generates a supplier that is later turned into a [openmls::prelude::CredentialBundle]
-    pub fn rand_certificate_bundle() -> CredentialSupplier {
-        |cs: MlsCiphersuite| {
-            // generate the leaf certificate
-            let (leaf_kp, leaf_sk) = Self::key_pair(cs);
-            let leaf_params = Self::certificate_params(leaf_kp, false);
-            Some(Self::new_certificate_bundle_from_leaf(cs, leaf_params, leaf_sk))
+    pub fn rand(cs: MlsCiphersuite, client_id: ClientId) -> CertificateBundle {
+        // here in our tests client_id is generally just "alice" or "bob"
+        // so we will use it to augment handle & display_name
+        // and not a real client_id, instead we'll generate a random one
+        let client_id = String::from_utf8(client_id.into()).unwrap();
+        let handle = format!("{}_wire", client_id);
+        let display_name = format!("{} Smith", client_id);
+        let (certificate_chain, sign_key) = WireIdentityBuilder {
+            handle,
+            display_name,
+            ..Default::default()
         }
-    }
-
-    fn new_certificate_bundle_from_leaf(
-        cs: MlsCiphersuite,
-        leaf_params: rcgen::CertificateParams,
-        leaf_sk: SignaturePrivateKey,
-    ) -> CertificateBundle {
-        // generate an issuer who is also a root ca
-        let (issuer_kp, _) = Self::key_pair(cs);
-        let issuer_params = Self::certificate_params(issuer_kp, true);
-        let issuer = rcgen::Certificate::from_params(issuer_params).unwrap();
-
-        let not_after = leaf_params.not_after;
-        let not_before = leaf_params.not_before;
-
-        // generate a csr from leaf certificate
-        let leaf = rcgen::Certificate::from_params(leaf_params).unwrap();
-        let csr_der = leaf.serialize_request_der().unwrap();
-
-        let mut csr = rcgen::CertificateSigningRequest::from_der(&csr_der).unwrap();
-
-        csr.params.not_after = not_after;
-        csr.params.not_before = not_before;
-
-        // generate leaf certificate from the csr
-        let leaf_der = csr.serialize_der_with_signer(&issuer).unwrap();
-
+        .build_x509_der();
         Self {
-            certificate_chain: vec![leaf_der, issuer.serialize_der().unwrap()],
-            private_key: leaf_sk,
+            certificate_chain,
+            private_key: SignaturePrivateKey {
+                value: sign_key,
+                signature_scheme: cs.signature_algorithm(),
+            },
         }
-    }
-
-    /// A keypair compatible with rcgen
-    /// We then extract from it the public/private key we require for an MLS [openmls::prelude::CredentialBundle]
-    fn key_pair(cs: MlsCiphersuite) -> (rcgen::KeyPair, SignaturePrivateKey) {
-        /// used to parse a pkcs8 documents with [OneAsymmetricKey](https://datatracker.ietf.org/doc/html/rfc5958#section-2)
-        const KEY_LEN: usize = 32;
-        const PRIV_KEY_IDX: usize = 16;
-        const PUB_KEY_IDX: usize = 53;
-        let kp = rcgen::KeyPair::generate(&rcgen::PKCS_ED25519).unwrap();
-        let kp_der = kp.serialize_der();
-
-        let sk = &kp_der[PRIV_KEY_IDX..PRIV_KEY_IDX + KEY_LEN];
-        let pk = &kp_der[PUB_KEY_IDX..PUB_KEY_IDX + KEY_LEN];
-        let sign_key = [sk, pk].concat();
-        let private_key = SignaturePrivateKey {
-            value: sign_key,
-            signature_scheme: cs.signature_algorithm(),
-        };
-        (kp, private_key)
-    }
-
-    /// Generates a x509 certificate
-    fn certificate_params(key_pair: rcgen::KeyPair, is_ca: bool) -> rcgen::CertificateParams {
-        let mut params = rcgen::CertificateParams::new(vec!["wire.com".to_string()]);
-        params.alg = &rcgen::PKCS_ED25519;
-        params.key_pair = Some(key_pair);
-        if is_ca {
-            params.is_ca = rcgen::IsCa::Ca(rcgen::BasicConstraints::Unconstrained)
-        }
-        params
     }
 }
 
@@ -116,13 +79,9 @@ impl Client {
             .map_err(CryptoError::from)
     }
 
-    // TODO: remove [id] arg.
-    pub(crate) fn generate_x509_credential_bundle(
-        id: &ClientId,
-        certificate: Vec<Vec<u8>>,
-        private_key: SignaturePrivateKey,
-    ) -> CryptoResult<CredentialBundle> {
-        CredentialBundle::new_x509(id.to_vec(), certificate, private_key)
+    pub(crate) fn generate_x509_credential_bundle(cert: CertificateBundle) -> CryptoResult<CredentialBundle> {
+        let client_id = cert.get_client_id()?;
+        CredentialBundle::new_x509(client_id.into(), cert.certificate_chain, cert.private_key)
             .map_err(MlsError::from)
             .map_err(CryptoError::from)
     }
@@ -148,17 +107,17 @@ pub mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn basic_clients_can_send_messages(case: TestCase) {
-        let alice_cred = CertificateBundle::rand_basic();
-        let bob_cred = CertificateBundle::rand_basic();
-        assert!(alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.is_ok());
+        let alice_identity = either::Left("alice".into());
+        let bob_identity = either::Left("bob".into());
+        assert!(try_talk(alice_identity, bob_identity, case.cfg).await.is_ok());
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn certificate_clients_can_send_messages(case: TestCase) {
-        let alice_cred = CertificateBundle::rand_certificate_bundle();
-        let bob_cred = CertificateBundle::rand_certificate_bundle();
-        assert!(alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.is_ok());
+        let alice_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "alice".into()));
+        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        assert!(try_talk(alice_identity, bob_identity, case.cfg).await.is_ok());
     }
 
     #[apply(all_cred_cipher)]
@@ -166,49 +125,59 @@ pub mod tests {
     async fn heterogeneous_clients_can_send_messages(case: TestCase) {
         // check that both credentials can initiate/join a group
         {
-            let alice_cred = CertificateBundle::rand_basic();
-            let bob_cred = CertificateBundle::rand_certificate_bundle();
-            assert!(alice_and_bob_talk(alice_cred, bob_cred, case.cfg.clone()).await.is_ok());
+            let alice_identity = either::Left("alice".into());
+            let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+            assert!(try_talk(alice_identity, bob_identity, case.cfg.clone()).await.is_ok());
             // drop alice & bob key stores
         }
         {
-            let alice_cred = CertificateBundle::rand_certificate_bundle();
-            let bob_cred = CertificateBundle::rand_basic();
-            assert!(alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.is_ok());
+            let alice_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "alice".into()));
+            let bob_identity = either::Left("bob".into());
+            assert!(try_talk(alice_identity, bob_identity, case.cfg).await.is_ok());
         }
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_is_empty(case: TestCase) {
-        let alice_cred = |cs: MlsCiphersuite| {
-            let bundle = CertificateBundle::rand_certificate_bundle()(cs).unwrap();
-            Some(CertificateBundle {
-                certificate_chain: vec![],
-                private_key: bundle.private_key,
-            })
-        };
-        let bob_cred = CertificateBundle::rand_certificate_bundle();
+        let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
+        certs.certificate_chain = vec![];
+        let alice_identity = either::Right(certs);
+
+        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.unwrap_err(),
-            CryptoError::MlsError(MlsError::MlsCredentialError(
-                CredentialError::IncompleteCertificateChain
-            ))
+            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
+            CryptoError::InvalidIdentity
         ));
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_has_a_single_self_signed(case: TestCase) {
-        let alice_cred = |cs: MlsCiphersuite| {
-            let mut bundle = CertificateBundle::rand_certificate_bundle()(cs).unwrap();
-            let root_ca = bundle.certificate_chain.last().unwrap().to_owned();
-            bundle.certificate_chain = vec![root_ca];
-            Some(bundle)
-        };
-        let bob_cred = CertificateBundle::rand_certificate_bundle();
+        let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
+        let root_ca = certs.certificate_chain.last().unwrap().to_owned();
+        certs.certificate_chain = vec![root_ca];
+        let alice_identity = either::Right(certs);
+
+        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.unwrap_err(),
+            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
+            CryptoError::InvalidIdentity
+        ));
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    async fn should_fail_when_certificate_is_orphan(case: TestCase) {
+        // remove root_ca from the chain
+        let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
+        let leaf = certs.certificate_chain.first().unwrap().to_owned();
+        certs.certificate_chain = vec![leaf];
+        let alice_identity = either::Right(certs);
+
+        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        assert!(matches!(
+            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsCredentialError(
                 CredentialError::IncompleteCertificateChain
             ))
@@ -219,38 +188,31 @@ pub mod tests {
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_is_unordered(case: TestCase) {
         // chain must be [leaf, leaf-issuer, ..., root-ca]
-        let alice_cred = |cs: MlsCiphersuite| {
-            let mut bundle = CertificateBundle::rand_certificate_bundle()(cs).unwrap();
-            bundle.certificate_chain.reverse();
-            Some(bundle)
-        };
-        let bob_cred = CertificateBundle::rand_certificate_bundle();
+        let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
+        certs.certificate_chain.reverse();
+        let alice_identity = either::Right(certs);
+
+        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.unwrap_err(),
-            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
+            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
+            CryptoError::InvalidIdentity
         ));
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_invalid_intermediates(case: TestCase) {
-        let alice_cred = |cs: MlsCiphersuite| {
-            let (malicious_kp, _) = CertificateBundle::key_pair(cs);
-            let malicious_params = CertificateBundle::certificate_params(malicious_kp, true);
-            let malicious_intermediate = rcgen::Certificate::from_params(malicious_params).unwrap();
+        let eve_ca = WireIdentityBuilder::default().new_ca_certificate();
+        let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
+        // remove the valid intermediate
+        certs.certificate_chain.pop().unwrap();
+        // and replace it with the malicious one
+        certs.certificate_chain.push(eve_ca.serialize_der().unwrap());
+        let alice_identity = either::Right(certs);
 
-            let mut bundle = CertificateBundle::rand_certificate_bundle()(cs).unwrap();
-            // remove the valid intermediate
-            bundle.certificate_chain.pop().unwrap();
-            // and replace it with the malicious one
-            bundle
-                .certificate_chain
-                .push(malicious_intermediate.serialize_der().unwrap());
-            Some(bundle)
-        };
-        let bob_cred = CertificateBundle::rand_certificate_bundle();
+        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.unwrap_err(),
+            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
         ));
     }
@@ -258,17 +220,20 @@ pub mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_signature_key_doesnt_match_certificate_public_key(case: TestCase) {
-        let alice_cred = |cs: MlsCiphersuite| {
-            let bundle = CertificateBundle::rand_certificate_bundle()(cs).unwrap();
-            let other_bundle = CertificateBundle::rand_certificate_bundle()(cs).unwrap();
-            Some(CertificateBundle {
-                certificate_chain: bundle.certificate_chain,
-                private_key: other_bundle.private_key,
-            })
+        let certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
+        let (_, sign_key) = WireIdentityBuilder::default().new_key_pair();
+        let eve_key = SignaturePrivateKey {
+            value: sign_key,
+            signature_scheme: case.ciphersuite().signature_algorithm(),
         };
-        let bob_cred = CertificateBundle::rand_certificate_bundle();
+        let alice_identity = either::Right(CertificateBundle {
+            certificate_chain: certs.certificate_chain,
+            private_key: eve_key,
+        });
+
+        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.unwrap_err(),
+            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
         ));
     }
@@ -276,18 +241,25 @@ pub mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_expired(case: TestCase) {
-        let alice_cred = |cs: MlsCiphersuite| {
-            let (leaf_kp, leaf_sk) = CertificateBundle::key_pair(cs);
-            let mut params = rcgen::CertificateParams::new(vec!["wire.com".to_string()]);
-            params.alg = &rcgen::PKCS_ED25519;
-            params.key_pair = Some(leaf_kp);
-            params.not_after = rcgen::date_time_ymd(1970, 1, 1);
-            Some(CertificateBundle::new_certificate_bundle_from_leaf(cs, params, leaf_sk))
-        };
+        let yesterday =
+            wire_e2e_identity::prelude::OffsetDateTime::now_utc() - core::time::Duration::from_secs(3600 * 24);
+        let (certificate_chain, sign_key) = WireIdentityBuilder {
+            not_after: yesterday,
+            ..Default::default()
+        }
+        .build_x509_der();
 
-        let bob_cred = CertificateBundle::rand_certificate_bundle();
+        let alice_identity = either::Right(CertificateBundle {
+            certificate_chain,
+            private_key: SignaturePrivateKey {
+                value: sign_key,
+                signature_scheme: case.ciphersuite().signature_algorithm(),
+            },
+        });
+
+        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.unwrap_err(),
+            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
         ));
     }
@@ -295,65 +267,52 @@ pub mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_not_valid_yet(case: TestCase) {
-        let alice_cred = |cs: MlsCiphersuite| {
-            let (leaf_kp, leaf_sk) = CertificateBundle::key_pair(cs);
-            let mut params = rcgen::CertificateParams::new(vec!["wire.com".to_string()]);
-            params.alg = &rcgen::PKCS_ED25519;
-            params.key_pair = Some(leaf_kp);
-            params.not_before = rcgen::date_time_ymd(3000, 1, 1);
-            Some(CertificateBundle::new_certificate_bundle_from_leaf(cs, params, leaf_sk))
-        };
+        let tomorrow =
+            wire_e2e_identity::prelude::OffsetDateTime::now_utc() + core::time::Duration::from_secs(3600 * 24);
+        let (certificate_chain, sign_key) = WireIdentityBuilder {
+            not_before: tomorrow,
+            ..Default::default()
+        }
+        .build_x509_der();
 
-        let bob_cred = CertificateBundle::rand_certificate_bundle();
+        let alice_identity = either::Right(CertificateBundle {
+            certificate_chain,
+            private_key: SignaturePrivateKey {
+                value: sign_key,
+                signature_scheme: case.ciphersuite().signature_algorithm(),
+            },
+        });
+
+        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            alice_and_bob_talk(alice_cred, bob_cred, case.cfg).await.unwrap_err(),
+            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
         ));
     }
 
-    async fn alice_and_bob_talk(
-        alice_cred: CredentialSupplier,
-        bob_cred: CredentialSupplier,
+    async fn try_talk(
+        alice_identity: either::Either<ClientId, CertificateBundle>,
+        bob_identity: either::Either<ClientId, CertificateBundle>,
         cfg: MlsConversationConfiguration,
     ) -> CryptoResult<()> {
         let id = conversation_id();
         let ciphersuites = vec![cfg.ciphersuite];
         let alice_path = tmp_db_file();
 
-        let mut alice_cfg =
+        let alice_cfg =
             MlsCentralConfiguration::try_new(alice_path.0, "alice".into(), None, ciphersuites.clone(), None)?;
 
-        let mut alice_central = if let Some(alice_cred) = alice_cred(cfg.ciphersuite) {
-            // x509 credential
-            let mut central = MlsCentral::try_new(alice_cfg).await?;
-            central
-                .mls_init("alice".into(), ciphersuites.clone(), Some(alice_cred))
-                .await?;
-            central
-        } else {
-            // basic credential
-            alice_cfg.client_id = Some("alice".into());
-            MlsCentral::try_new(alice_cfg).await?
-        };
+        let mut alice_central = MlsCentral::try_new(alice_cfg).await?;
+        alice_central.mls_init(alice_identity, ciphersuites.clone()).await?;
 
         let bob_path = tmp_db_file();
-        let mut bob_cfg = MlsCentralConfiguration::try_new(bob_path.0, "bob".into(), None, ciphersuites.clone(), None)?;
+        let bob_cfg = MlsCentralConfiguration::try_new(bob_path.0, "bob".into(), None, ciphersuites.clone(), None)?;
 
-        let mut bob_central = if let Some(bob_cred) = bob_cred(cfg.ciphersuite) {
-            // x509 credential
-            let mut central = MlsCentral::try_new(bob_cfg).await?;
-            central
-                .mls_init("bob".into(), ciphersuites.clone(), Some(bob_cred))
-                .await?;
-            central
-        } else {
-            // basic credential
-            bob_cfg.client_id = Some("bob".into());
-            MlsCentral::try_new(bob_cfg).await?
-        };
+        let mut bob_central = MlsCentral::try_new(bob_cfg).await?;
+        bob_central.mls_init(bob_identity, ciphersuites.clone()).await?;
 
         alice_central.new_conversation(id.clone(), cfg.clone()).await?;
         alice_central.invite(&id, &mut bob_central, cfg.custom).await?;
-        alice_central.talk_to(&id, &mut bob_central).await
+        alice_central.try_talk_to(&id, &mut bob_central).await
     }
 }

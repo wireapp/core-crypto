@@ -417,6 +417,34 @@ export interface DecryptedMessage {
      * true when the decrypted message resulted in an epoch change i.e. it was a commit
      */
     hasEpochChanged: boolean;
+    /**
+     * Identity claims present in the sender credential
+     * Only present when the credential is a x509 certificate
+     * Present for all messages
+     */
+    identity?: WireIdentity;
+}
+
+/**
+ * Represents the identity claims identifying a client. Those claims are verifiable by any member in the group
+ */
+export interface WireIdentity {
+    /**
+     * Represents the identity claims identifying a client. Those claims are verifiable by any member in the group
+     */
+    clientId: string;
+    /**
+     * user handle e.g. `john_wire`
+     */
+    handle: string;
+    /**
+     * Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
+     */
+    displayName: string;
+    /**
+     * DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
+     */
+    domain: string;
 }
 
 /**

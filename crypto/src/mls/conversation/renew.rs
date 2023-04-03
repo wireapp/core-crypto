@@ -640,13 +640,13 @@ pub mod tests {
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
-                            .new_proposal(&id, MlsProposal::Remove(b"charlie"[..].into()))
+                            .new_proposal(&id, MlsProposal::Remove(charlie_central.read_client_id()))
                             .await
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         let commit = bob_central
-                            .remove_members_from_conversation(&id, &["charlie".into()])
+                            .remove_members_from_conversation(&id, &[charlie_central.read_client_id()])
                             .await
                             .unwrap()
                             .commit;
@@ -693,7 +693,7 @@ pub mod tests {
                             .unwrap();
 
                         let proposal = bob_central
-                            .new_proposal(&id, MlsProposal::Remove(b"charlie"[..].into()))
+                            .new_proposal(&id, MlsProposal::Remove(charlie_central.read_client_id()))
                             .await
                             .unwrap()
                             .proposal;
@@ -760,14 +760,14 @@ pub mod tests {
                         // Alice wants to remove Charlie
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
-                            .new_proposal(&id, MlsProposal::Remove(b"charlie"[..].into()))
+                            .new_proposal(&id, MlsProposal::Remove(charlie_central.read_client_id()))
                             .await
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
-                            .remove_members_from_conversation(&id, &["debbie".into()])
+                            .remove_members_from_conversation(&id, &[debbie_central.read_client_id()])
                             .await
                             .unwrap()
                             .commit;
@@ -825,14 +825,14 @@ pub mod tests {
 
                         // Alice wants to remove Charlie
                         alice_central
-                            .remove_members_from_conversation(&id, &["charlie".into()])
+                            .remove_members_from_conversation(&id, &[charlie_central.read_client_id()])
                             .await
                             .unwrap();
                         assert!(alice_central.pending_commit(&id).await.is_some());
 
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
-                            .remove_members_from_conversation(&id, &["debbie".into()])
+                            .remove_members_from_conversation(&id, &[debbie_central.read_client_id()])
                             .await
                             .unwrap()
                             .commit;
@@ -890,7 +890,7 @@ pub mod tests {
 
                         // Alice wants to remove Charlie
                         alice_central
-                            .new_proposal(&id, MlsProposal::Remove(b"charlie"[..].into()))
+                            .new_proposal(&id, MlsProposal::Remove(charlie_central.read_client_id()))
                             .await
                             .unwrap();
                         alice_central.commit_pending_proposals(&id).await.unwrap();
@@ -899,7 +899,7 @@ pub mod tests {
 
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
-                            .remove_members_from_conversation(&id, &["debbie".into()])
+                            .remove_members_from_conversation(&id, &[debbie_central.read_client_id()])
                             .await
                             .unwrap()
                             .commit;

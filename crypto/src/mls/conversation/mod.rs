@@ -368,7 +368,7 @@ pub mod tests {
                         bob_central.get_conversation_unchecked(&id).await.id(),
                         alice_central.get_conversation_unchecked(&id).await.id()
                     );
-                    assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                    assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
                 })
             },
         )
@@ -438,7 +438,7 @@ pub mod tests {
                     c.process_welcome_message(welcome.clone(), case.custom_cfg())
                         .await
                         .unwrap();
-                    assert!(c.talk_to(&id, &mut alice_central).await.is_ok());
+                    assert!(c.try_talk_to(&id, &mut alice_central).await.is_ok());
                     bob_and_friends_groups.push(c);
                 }
 

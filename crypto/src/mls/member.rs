@@ -107,11 +107,10 @@ impl Eq for ConversationMember {}
 impl ConversationMember {
     /// Generates a random new Member
     pub async fn random_generate(
+        case: &crate::test_utils::TestCase,
         backend: &mls_crypto_provider::MlsCryptoProvider,
-        ciphersuite: crate::prelude::MlsCiphersuite,
-        credential: crate::mls::credential::CredentialSupplier,
     ) -> CryptoResult<(Self, openmls::prelude::KeyPackageBundle)> {
-        let client = Client::random_generate(backend, false, ciphersuite, credential(ciphersuite)).await?;
+        let client = Client::random_generate(case, backend, false).await?;
         let id = client.id();
         let key_package = client.gen_keypackage(backend).await?;
 
@@ -125,15 +124,33 @@ impl ConversationMember {
     }
 
     /// Generates a random new Member
-    pub fn random_generate_clientless() -> CryptoResult<Self> {
-        let user_uuid = uuid::Uuid::new_v4();
-        let client_id = rand::random::<usize>();
-        let client_id = format!("{}:{client_id:x}@members.wire.com", user_uuid.hyphenated());
-        Ok(Self {
-            id: client_id.as_bytes().into(),
+    pub fn random_generate_clientless(
+        case: &crate::test_utils::TestCase,
+        backend: &mls_crypto_provider::MlsCryptoProvider,
+    ) -> CryptoResult<(Self, openmls::prelude::CredentialBundle)> {
+        let (credential, client_id) = match case.credential_type {
+            openmls::prelude::CredentialType::Basic => {
+                let user_uuid = uuid::Uuid::new_v4();
+                let client_id = rand::random::<usize>();
+                let client_id = format!("{}:{client_id:x}@members.wire.com", user_uuid.hyphenated());
+                let client_id = client_id.as_bytes().into();
+                let credential =
+                    Client::generate_basic_credential_bundle(&client_id, case.ciphersuite(), backend).unwrap();
+                (credential, client_id)
+            }
+            openmls::prelude::CredentialType::X509 => {
+                let cert = crate::prelude::CertificateBundle::rand(case.ciphersuite(), "alice".into());
+                let client_id = cert.get_client_id().unwrap();
+                (Client::generate_x509_credential_bundle(cert).unwrap(), client_id)
+            }
+        };
+
+        let member = Self {
+            id: client_id.into(),
             clients: HashMap::new(),
             local_client: None,
-        })
+        };
+        Ok((member, credential))
     }
 
     /// Returns a reference for the internal local client
@@ -154,11 +171,7 @@ pub mod tests {
 
     use mls_crypto_provider::MlsCryptoProvider;
 
-    use crate::{
-        mls::{credential::CertificateBundle, ClientId},
-        prelude::INITIAL_KEYING_MATERIAL_COUNT,
-        test_utils::*,
-    };
+    use crate::{mls::ClientId, prelude::INITIAL_KEYING_MATERIAL_COUNT, test_utils::*};
 
     use super::ConversationMember;
 
@@ -168,20 +181,14 @@ pub mod tests {
     #[wasm_bindgen_test]
     pub async fn can_generate_member(case: TestCase) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        assert!(
-            ConversationMember::random_generate(&backend, case.ciphersuite(), case.credential)
-                .await
-                .is_ok()
-        );
+        assert!(ConversationMember::random_generate(&case, &backend).await.is_ok());
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn member_can_run_out_of_keypackage_hashes(case: TestCase) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        let (mut member, _) = ConversationMember::random_generate(&backend, case.ciphersuite(), case.credential)
-            .await
-            .unwrap();
+        let (mut member, _) = ConversationMember::random_generate(&case, &backend).await.unwrap();
         let client_id = member.local_client.as_ref().map(|c| c.id().clone()).unwrap();
         let ret = (0..INITIAL_KEYING_MATERIAL_COUNT * 2).all(|_| {
             let ckp = member.keypackages_for_all_clients();
@@ -192,17 +199,19 @@ pub mod tests {
     }
 
     pub mod add_keypackage {
-        use crate::mls::Client;
-        use crate::prelude::MlsCiphersuite;
-
         use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn add_valid_keypackage_should_add_it_to_client(case: TestCase) {
-            let mut member = ConversationMember::random_generate_clientless().unwrap();
+            let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+            let (mut member, credential) = ConversationMember::random_generate_clientless(&case, &backend).unwrap();
             let cid = ClientId::from(member.id.as_slice());
-            let kp = new_keypackage(&cid, case.credential(), case.ciphersuite()).await;
+
+            let (kp, _) = KeyPackageBundle::new(&[case.ciphersuite().0], &credential, &backend, vec![])
+                .unwrap()
+                .into_parts();
+
             let mut kp_raw = vec![];
             use tls_codec::Serialize as _;
             kp.tls_serialize(&mut kp_raw).unwrap();
@@ -211,32 +220,15 @@ pub mod tests {
             assert!(member.clients.get(&cid).is_some());
         }
 
-        #[test]
+        #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub fn add_invalid_keypackage_should_fail() {
-            let mut member = ConversationMember::random_generate_clientless().unwrap();
+        pub async fn add_invalid_keypackage_should_fail(case: TestCase) {
+            let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+            let (mut member, _) = ConversationMember::random_generate_clientless(&case, &backend).unwrap();
             let previous_clients = member.clients.clone();
             assert!(member.add_keypackage(b"invalid-keypackage".to_vec()).is_err());
             // ensure clients are not altered in the process
             assert_eq!(member.clients, previous_clients);
-        }
-
-        async fn new_keypackage(
-            identity: &[u8],
-            credential: Option<CertificateBundle>,
-            ciphersuite: MlsCiphersuite,
-        ) -> KeyPackage {
-            let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-            let credential = if let Some(cert) = credential {
-                Client::generate_x509_credential_bundle(&identity.into(), cert.certificate_chain, cert.private_key)
-            } else {
-                Client::generate_basic_credential_bundle(&identity.into(), ciphersuite, &backend)
-            }
-            .unwrap();
-            let (kp, _) = KeyPackageBundle::new(&[ciphersuite.0], &credential, &backend, vec![])
-                .unwrap()
-                .into_parts();
-            kp
         }
     }
 }

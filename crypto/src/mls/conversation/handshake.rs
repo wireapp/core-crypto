@@ -449,7 +449,7 @@ pub mod tests {
                             bob_central.get_conversation_unchecked(&id).await.id()
                         );
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                        assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
                     })
                 },
             )
@@ -481,7 +481,7 @@ pub mod tests {
                             .process_welcome_message(welcome, case.custom_cfg())
                             .await
                             .unwrap();
-                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                        assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
                     })
                 },
             )
@@ -611,7 +611,7 @@ pub mod tests {
                             .unwrap();
 
                         let MlsCommitBundle { commit, welcome, .. } = alice_central
-                            .remove_members_from_conversation(&id, &["bob".into()])
+                            .remove_members_from_conversation(&id, &[bob_central.read_client_id()])
                             .await
                             .unwrap();
                         assert!(welcome.is_none());
@@ -631,7 +631,7 @@ pub mod tests {
                            bob_central.get_conversation(&id).await.unwrap_err(),
                             CryptoError::ConversationNotFound(conv_id) if conv_id == id
                         ));
-                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_err());
+                        assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_err());
                     })
                 },
             )
@@ -667,7 +667,7 @@ pub mod tests {
                             .unwrap();
 
                         let welcome = alice_central
-                            .remove_members_from_conversation(&id, &["bob".into()])
+                            .remove_members_from_conversation(&id, &[bob_central.read_client_id()])
                             .await
                             .unwrap()
                             .welcome;
@@ -678,7 +678,7 @@ pub mod tests {
                             .await
                             .is_ok());
                         // because Bob has been removed from the group
-                        assert!(guest_central.talk_to(&id, &mut bob_central).await.is_err());
+                        assert!(guest_central.try_talk_to(&id, &mut bob_central).await.is_err());
                     })
                 },
             )
@@ -705,7 +705,7 @@ pub mod tests {
                             .unwrap();
 
                         let public_group_state = alice_central
-                            .remove_members_from_conversation(&id, &["bob".into()])
+                            .remove_members_from_conversation(&id, &[bob_central.read_client_id()])
                             .await
                             .unwrap()
                             .public_group_state;
@@ -721,7 +721,7 @@ pub mod tests {
                             .await
                             .is_ok());
                         // because Bob has been removed from the group
-                        assert!(guest_central.talk_to(&id, &mut bob_central).await.is_err());
+                        assert!(guest_central.try_talk_to(&id, &mut bob_central).await.is_err());
                     })
                 },
             )
@@ -762,7 +762,7 @@ pub mod tests {
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         let proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Remove(b"charlie"[..].into()))
+                            .new_proposal(&id, MlsProposal::Remove(charlie_central.read_client_id()))
                             .await
                             .unwrap()
                             .proposal;
@@ -828,7 +828,7 @@ pub mod tests {
                             .collect();
                         assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
-                        let alice_key = alice_central.key_package_of(&id, "alice").await;
+                        let alice_key = alice_central.key_package_of(&id, alice_central.read_client_id()).await;
 
                         // proposing the key update for alice
                         let MlsCommitBundle { commit, welcome, .. } =
@@ -870,7 +870,7 @@ pub mod tests {
                         assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
 
                         // ensuring both can encrypt messages
-                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                        assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
                     })
                 },
             )
@@ -915,7 +915,7 @@ pub mod tests {
                         // checking that the members on both sides are the same
                         assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
-                        let alice_key = alice_central.key_package_of(&id, "alice").await;
+                        let alice_key = alice_central.key_package_of(&id, alice_central.read_client_id()).await;
 
                         // proposing adding charlie
                         let charlie_kp = charlie_central.get_one_key_package().await;
@@ -987,9 +987,9 @@ pub mod tests {
                         assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
 
                         // ensure all parties can encrypt messages
-                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
-                        assert!(bob_central.talk_to(&id, &mut charlie_central).await.is_ok());
-                        assert!(charlie_central.talk_to(&id, &mut alice_central).await.is_ok());
+                        assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
+                        assert!(bob_central.try_talk_to(&id, &mut charlie_central).await.is_ok());
+                        assert!(charlie_central.try_talk_to(&id, &mut alice_central).await.is_ok());
                     })
                 },
             )
@@ -1127,7 +1127,7 @@ pub mod tests {
                             .cloned()
                             .collect();
                         assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
-                        let alice_key = alice_central.key_package_of(&id, "alice").await;
+                        let alice_key = alice_central.key_package_of(&id, alice_central.read_client_id()).await;
 
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Update)
@@ -1175,7 +1175,7 @@ pub mod tests {
                             .contains(&&alice_key));
 
                         // ensuring both can encrypt messages
-                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                        assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
                     })
                 },
             )
@@ -1214,7 +1214,7 @@ pub mod tests {
                             .process_welcome_message(welcome.unwrap(), case.custom_cfg())
                             .await
                             .unwrap();
-                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                        assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
                     })
                 },
             )
@@ -1276,7 +1276,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
-                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                        assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
                     })
                 },
             )
@@ -1308,7 +1308,7 @@ pub mod tests {
                             .process_welcome_message(welcome.unwrap(), case.custom_cfg())
                             .await
                             .unwrap();
-                        assert!(alice_central.talk_to(&id, &mut bob_central).await.is_ok());
+                        assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
                     })
                 },
             )

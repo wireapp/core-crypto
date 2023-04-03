@@ -206,13 +206,15 @@ mod tests {
                             .unwrap();
 
                         // Owner receives external proposal message from server
-                        owner_central
+                        let decrypted = owner_central
                             .decrypt_message(&id, external_add.to_bytes().unwrap())
                             .await
                             .unwrap();
-
                         // just owner for now
                         assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 1);
+
+                        // verify Guest's (sender) identity
+                        guest_central.verify_sender_identity(&decrypted);
 
                         // simulate commit message reception from server
                         let MlsCommitBundle { welcome, .. } =
@@ -227,7 +229,7 @@ mod tests {
                             .unwrap();
                         assert_eq!(guest_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         // guest can send messages in the group
-                        assert!(guest_central.talk_to(&id, &mut owner_central).await.is_ok());
+                        assert!(guest_central.try_talk_to(&id, &mut owner_central).await.is_ok());
                     })
                 },
             )
@@ -264,7 +266,7 @@ mod tests {
 
                             // now, as e.g. a Delivery Service, let's create an external remove proposal
                             // and kick guest out of the conversation
-                            let guest_kp = guest_central.key_package_of(&id, "guest").await;
+                            let guest_kp = guest_central.key_package_of(&id, guest_central.read_client_id()).await;
                             let guest_kp_ref = guest_kp.hash_ref(guest_central.mls_backend.crypto()).unwrap();
                             let ext_remove_proposal = ds
                                 .new_external_remove_proposal(
@@ -296,7 +298,7 @@ mod tests {
                                 .await
                                 .unwrap();
                             assert!(guest_central.get_conversation(&id).await.is_err());
-                            assert!(guest_central.talk_to(&id, &mut owner_central).await.is_err());
+                            assert!(guest_central.try_talk_to(&id, &mut owner_central).await.is_err());
                         }
                     })
                 },
@@ -326,7 +328,7 @@ mod tests {
                         assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         // now, attacker will try to remove guest from the group, and should fail
-                        let guest_kp = guest_central.key_package_of(&id, "guest").await;
+                        let guest_kp = guest_central.key_package_of(&id, guest_central.read_client_id()).await;
                         let guest_kp_ref = guest_kp.hash_ref(guest_central.mls_backend.crypto()).unwrap();
                         let ext_remove_proposal = attacker
                             .new_external_remove_proposal(
@@ -389,7 +391,7 @@ mod tests {
 
                         // now, as e.g. a Delivery Service, let's create an external remove proposal
                         // and kick guest out of the conversation
-                        let guest_kp = guest_central.key_package_of(&id, "guest").await;
+                        let guest_kp = guest_central.key_package_of(&id, guest_central.read_client_id()).await;
                         let guest_kp_ref = guest_kp.hash_ref(guest_central.mls_backend.crypto()).unwrap();
                         let ext_remove_proposal = ds
                             .new_external_remove_proposal(
@@ -466,12 +468,12 @@ mod tests {
                                 .await
                                 .unwrap();
                             assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
-                            assert!(charlie_central.talk_to(&id, &mut alice_central).await.is_ok());
-                            assert!(charlie_central.talk_to(&id, &mut bob_central).await.is_ok());
+                            assert!(charlie_central.try_talk_to(&id, &mut alice_central).await.is_ok());
+                            assert!(charlie_central.try_talk_to(&id, &mut bob_central).await.is_ok());
 
                             // now, as e.g. a Delivery Service, let's create an external remove proposal
                             // and kick Bob out of the conversation
-                            let bob_kp = bob_central.key_package_of(&id, "bob").await;
+                            let bob_kp = bob_central.key_package_of(&id, bob_central.read_client_id()).await;
                             let bob_kp_ref = bob_kp.hash_ref(bob_central.mls_backend.crypto()).unwrap();
                             let ext_remove_proposal = ds
                                 .new_external_remove_proposal(
@@ -516,8 +518,8 @@ mod tests {
                                 .decrypt_message(&id, commit.to_bytes().unwrap())
                                 .await
                                 .unwrap();
-                            assert!(alice_central.talk_to(&id, &mut charlie_central).await.is_ok());
-                            assert!(alice_central.talk_to(&id, &mut bob_central).await.is_err());
+                            assert!(alice_central.try_talk_to(&id, &mut charlie_central).await.is_ok());
+                            assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_err());
                         })
                     },
                 )
@@ -571,12 +573,12 @@ mod tests {
                                 .unwrap();
 
                             assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
-                            assert!(charlie_central.talk_to(&id, &mut alice_central).await.is_ok());
-                            assert!(charlie_central.talk_to(&id, &mut bob_central).await.is_ok());
+                            assert!(charlie_central.try_talk_to(&id, &mut alice_central).await.is_ok());
+                            assert!(charlie_central.try_talk_to(&id, &mut bob_central).await.is_ok());
 
                             // now, as e.g. a Delivery Service, let's create an external remove proposal
                             // and kick Bob out of the conversation
-                            let bob_kp = bob_central.key_package_of(&id, "bob").await;
+                            let bob_kp = bob_central.key_package_of(&id, bob_central.read_client_id()).await;
                             let bob_kp_ref = bob_kp.hash_ref(bob_central.mls_backend.crypto()).unwrap();
                             let ext_remove_proposal = ds
                                 .new_external_remove_proposal(
@@ -621,8 +623,8 @@ mod tests {
                                 .decrypt_message(&id, commit.to_bytes().unwrap())
                                 .await
                                 .unwrap();
-                            assert!(alice_central.talk_to(&id, &mut charlie_central).await.is_ok());
-                            assert!(alice_central.talk_to(&id, &mut bob_central).await.is_err());
+                            assert!(alice_central.try_talk_to(&id, &mut charlie_central).await.is_ok());
+                            assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_err());
                         })
                     },
                 )

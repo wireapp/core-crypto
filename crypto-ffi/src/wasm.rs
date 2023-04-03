@@ -409,6 +409,7 @@ pub struct DecryptedMessage {
     commit_delay: Option<u32>,
     sender_client_id: Option<Vec<u8>>,
     has_epoch_changed: bool,
+    identity: Option<WireIdentity>,
 }
 
 impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
@@ -434,6 +435,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             commit_delay,
             sender_client_id: from.sender_client_id.map(ClientId::into),
             has_epoch_changed: from.has_epoch_changed,
+            identity: from.identity.map(Into::into),
         })
     }
 }
@@ -480,6 +482,66 @@ impl DecryptedMessage {
     #[wasm_bindgen(getter)]
     pub fn has_epoch_changed(&self) -> bool {
         self.has_epoch_changed
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn identity(&self) -> Option<WireIdentity> {
+        self.identity.clone()
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+/// see [core_crypto::prelude::WireIdentity]
+pub struct WireIdentity {
+    client_id: String,
+    handle: String,
+    display_name: String,
+    domain: String,
+}
+
+#[wasm_bindgen]
+impl WireIdentity {
+    #[wasm_bindgen(constructor)]
+    pub fn new(client_id: String, handle: String, display_name: String, domain: String) -> Self {
+        Self {
+            client_id,
+            handle,
+            display_name,
+            domain,
+        }
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn client_id(&self) -> String {
+        self.client_id.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn handle(&self) -> String {
+        self.handle.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn display_name(&self) -> String {
+        self.display_name.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn domain(&self) -> String {
+        self.domain.clone()
+    }
+}
+
+impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
+    fn from(i: core_crypto::prelude::WireIdentity) -> Self {
+        Self {
+            client_id: i.client_id,
+            handle: i.handle,
+            display_name: i.display_name,
+            domain: i.domain,
+        }
     }
 }
 
@@ -843,11 +905,9 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let ciphersuites = vec![MlsCiphersuite::default()];
-                // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
-                let certificate_bundle = None;
                 let mut central = this.write().await;
                 central
-                    .mls_init(client_id.into(), ciphersuites, certificate_bundle)
+                    .mls_init(either::Left(client_id.clone().into()), ciphersuites)
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
@@ -865,12 +925,9 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let ciphersuites = vec![MlsCiphersuite::default()];
-                // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
-                let certificate_bundle = None;
-
                 let central = this.read().await;
                 let pk = central
-                    .mls_generate_keypair(ciphersuites, certificate_bundle)
+                    .mls_generate_keypair(ciphersuites)
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())

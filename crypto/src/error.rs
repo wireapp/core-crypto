@@ -143,6 +143,9 @@ pub enum CryptoError {
     /// Decrypted message uses an invalid KeyPackage (probably expired)
     #[error("Decrypted message uses an invalid KeyPackage")]
     InvalidKeyPackage,
+    /// Client presented an invalid identity
+    #[error("Client presented an invalid identity")]
+    InvalidIdentity,
     /// Parent group cannot be found
     #[error("The specified parent group has not been found in the keystore")]
     ParentGroupNotFound,

@@ -175,7 +175,6 @@ impl MlsCentral {
     ///
     /// # Arguments
     /// * `configuration` - the configuration for the `MlsCentral`
-    /// * `certificate_bundle` - an optional `CertificateBundle`. It will be used to generate the `CredentialBundle`. If `None`is passed, credentials of type a Basic will be created, otherwise a x509.
     ///
     /// # Errors
     /// Failures in the initialization of the KeyStore can cause errors, such as IO, the same kind
@@ -196,7 +195,14 @@ impl MlsCentral {
         .await?;
         let mls_client = if let Some(client_id) = configuration.client_id {
             // Init client identity (load or create)
-            Some(Client::init(client_id, None, configuration.ciphersuites.as_slice(), &mls_backend).await?)
+            Some(
+                Client::init(
+                    either::Left(client_id),
+                    configuration.ciphersuites.as_slice(),
+                    &mls_backend,
+                )
+                .await?,
+            )
         } else {
             None
         };
@@ -222,7 +228,14 @@ impl MlsCentral {
         })
         .await?;
         let mls_client = if let Some(client_id) = configuration.client_id {
-            Some(Client::init(client_id, None, configuration.ciphersuites.as_slice(), &mls_backend).await?)
+            Some(
+                Client::init(
+                    either::Left(client_id),
+                    configuration.ciphersuites.as_slice(),
+                    &mls_backend,
+                )
+                .await?,
+            )
         } else {
             None
         };
@@ -241,15 +254,14 @@ impl MlsCentral {
     /// This should stay as long as proteus is supported. Then it should be removed.
     pub async fn mls_init(
         &mut self,
-        client_id: ClientId,
+        identity: either::Either<ClientId, CertificateBundle>,
         ciphersuites: Vec<MlsCiphersuite>,
-        certificate_bundle: Option<CertificateBundle>,
     ) -> CryptoResult<()> {
         if self.mls_client.is_some() {
             // prevents wrong usage of the method instead of silently hiding the mistake
             return Err(CryptoError::ImplementationError);
         }
-        let mls_client = Client::init(client_id, certificate_bundle, &ciphersuites, &self.mls_backend).await?;
+        let mls_client = Client::init(identity, &ciphersuites, &self.mls_backend).await?;
         self.mls_client = Some(mls_client);
         Ok(())
     }
@@ -258,17 +270,13 @@ impl MlsCentral {
     /// This method is designed to be used in conjunction with [MlsCentral::mls_init_with_client_id] and represents the first step in this process
     ///
     /// This returns the TLS-serialized identity key (i.e. the signature keypair's public key)
-    pub async fn mls_generate_keypair(
-        &self,
-        ciphersuites: Vec<MlsCiphersuite>,
-        certificate_bundle: Option<CertificateBundle>,
-    ) -> CryptoResult<Vec<u8>> {
+    pub async fn mls_generate_keypair(&self, ciphersuites: Vec<MlsCiphersuite>) -> CryptoResult<Vec<u8>> {
         if self.mls_client.is_some() {
             // prevents wrong usage of the method instead of silently hiding the mistake
             return Err(CryptoError::ImplementationError);
         }
 
-        Client::generate_raw_keypair(certificate_bundle, &ciphersuites, &self.mls_backend).await
+        Client::generate_raw_keypair(&ciphersuites, &self.mls_backend).await
     }
 
     /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
@@ -546,8 +554,10 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
+    use openmls::credentials::CredentialType;
     use wasm_bindgen_test::*;
 
+    use crate::prelude::CertificateBundle;
     use crate::{
         mls::{CryptoError, MlsCentral, MlsCentralConfiguration},
         test_utils::*,
@@ -767,7 +777,7 @@ pub mod tests {
 
                     // Create another central which will be desynchronized at some point
                     let mut alice_central_mirror = MlsCentral::try_new(alice_cfg).await.unwrap();
-                    assert!(alice_central_mirror.talk_to(&id, &mut bob_central).await.is_ok());
+                    assert!(alice_central_mirror.try_talk_to(&id, &mut bob_central).await.is_ok());
 
                     // alice original instance will update its key without synchronizing with its mirror
                     let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
@@ -784,7 +794,7 @@ pub mod tests {
                     // after restoring from disk, mirror instance got the right key material for
                     // the current epoch hence can talk to Bob
                     alice_central_mirror.restore_from_disk().await.unwrap();
-                    assert!(alice_central_mirror.talk_to(&id, &mut bob_central).await.is_ok());
+                    assert!(alice_central_mirror.try_talk_to(&id, &mut bob_central).await.is_ok());
                 })
             })
             .await
@@ -830,10 +840,11 @@ pub mod tests {
                 assert!(central.mls_client.is_none());
                 // phase 2: init mls_client
                 let client_id = "alice".into();
-                central
-                    .mls_init(client_id, vec![case.ciphersuite()], case.credential())
-                    .await
-                    .unwrap();
+                let identity = match case.credential_type {
+                    CredentialType::Basic => either::Left(client_id),
+                    CredentialType::X509 => either::Right(CertificateBundle::rand(case.ciphersuite(), client_id)),
+                };
+                central.mls_init(identity, vec![case.ciphersuite()]).await.unwrap();
                 assert!(central.mls_client.is_some());
                 // expect mls_client to work
                 assert_eq!(central.client_keypackages(2).await.unwrap().len(), 2);

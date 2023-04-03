@@ -54,11 +54,20 @@ pub async fn run_test_with_client_ids<const N: usize>(
     run_tests(move |paths: [String; N]| {
         Box::pin(async move {
             let stream = paths.into_iter().enumerate().map(|(i, p)| async move {
-                let client_id = client_id[i].into();
-                let ciphersuites = vec![case.cfg.ciphersuite];
+                let client_id: ClientId = client_id[i].into();
+
                 let configuration =
-                    MlsCentralConfiguration::try_new(p, "test".into(), Some(client_id), ciphersuites, None).unwrap();
+                    MlsCentralConfiguration::try_new(p, "test".into(), None, vec![case.cfg.ciphersuite], None).unwrap();
                 let mut central = MlsCentral::try_new(configuration).await.unwrap();
+
+                let cred_type = case.credential_type;
+                let identity = match cred_type {
+                    openmls::prelude::CredentialType::Basic => either::Left(client_id),
+                    openmls::prelude::CredentialType::X509 => {
+                        either::Right(crate::prelude::CertificateBundle::rand(case.cfg.ciphersuite, client_id))
+                    }
+                };
+                central.mls_init(identity, vec![case.cfg.ciphersuite]).await.unwrap();
                 central.callbacks(Box::<ValidationCallbacks>::default());
                 central
             });

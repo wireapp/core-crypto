@@ -150,6 +150,7 @@ pub struct DecryptedMessage {
     pub commit_delay: Option<u64>,
     pub sender_client_id: Option<ClientId>,
     pub has_epoch_changed: bool,
+    pub identity: Option<WireIdentity>,
 }
 
 impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
@@ -169,7 +170,28 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             commit_delay: from.delay,
             sender_client_id: from.sender_client_id,
             has_epoch_changed: from.has_epoch_changed,
+            identity: from.identity.map(Into::into),
         })
+    }
+}
+
+#[derive(Debug)]
+/// See [core_crypto::prelude::WireIdentity]
+pub struct WireIdentity {
+    pub client_id: String,
+    pub handle: String,
+    pub display_name: String,
+    pub domain: String,
+}
+
+impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
+    fn from(i: core_crypto::prelude::WireIdentity) -> Self {
+        Self {
+            client_id: i.client_id,
+            handle: i.handle,
+            display_name: i.display_name,
+            domain: i.domain,
+        }
     }
 }
 
@@ -351,26 +373,25 @@ impl CoreCrypto<'_> {
     /// See [core_crypto::MlsCentral::mls_init]
     pub fn mls_init(&self, client_id: &ClientId) -> CryptoResult<()> {
         let ciphersuites = vec![MlsCiphersuite::default()];
-        future::block_on(self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-            self.central.lock().map_err(|_| CryptoError::LockPoisonError)?.mls_init(
-                client_id.clone(),
-                ciphersuites,
-                None,
-            ),
-        ))
-    }
-
-    /// See [core_crypto::mls::MlsCentral::mls_generate_keypair]
-    pub fn mls_generate_keypair(&self) -> CryptoResult<Vec<u8>> {
-        let ciphersuites = vec![MlsCiphersuite::default()];
-        // TODO: not exposing certificate bundle ATM. Pending e2e identity solution to be defined
-        let certificate_bundle = None;
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .mls_generate_keypair(ciphersuites, certificate_bundle),
+                    .mls_init(either::Left(client_id.clone()), ciphersuites),
+            ),
+        )
+    }
+
+    /// See [core_crypto::mls::MlsCentral::mls_generate_keypair]
+    pub fn mls_generate_keypair(&self) -> CryptoResult<Vec<u8>> {
+        let ciphersuites = vec![MlsCiphersuite::default()];
+        future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .mls_generate_keypair(ciphersuites),
             ),
         )
     }

@@ -45,7 +45,13 @@ extension CoreCryptoSwift.DecryptedMessage {
     func convertTo() -> DecryptedMessage {
         return DecryptedMessage(message: self.message, proposals: self.proposals.map({ (bundle) -> ProposalBundle in
             return bundle.convertTo()
-        }), isActive: self.isActive, commitDelay: self.commitDelay, senderClientId: self.senderClientId, hasEpochChanged: self.hasEpochChanged)
+        }), isActive: self.isActive, commitDelay: self.commitDelay, senderClientId: self.senderClientId, hasEpochChanged: self.hasEpochChanged, identity: self.identity?.convertTo())
+    }
+}
+
+extension CoreCryptoSwift.WireIdentity {
+    func convertTo() -> WireIdentity {
+        return WireIdentity(clientId: self.clientId, handle: self.handle, displayName: self.displayName, domain: self.domain)
     }
 }
 
@@ -263,20 +269,50 @@ public struct DecryptedMessage: ConvertToInner {
     public var senderClientId: ClientId?
     /// It is set to true if the decrypted messages resulted in a epoch change (AKA it was a commit)
     public var hasEpochChanged: Bool
+    /// Identity claims present in the sender credential
+    /// Only present when the credential is a x509 certificate
+    /// Present for all messages
+    public var identity: WireIdentity?
 
-    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?, hasEpochChanged: Bool) {
+    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?, hasEpochChanged: Bool, identity: WireIdentity?) {
         self.message = message
         self.proposals = proposals
         self.isActive = isActive
         self.commitDelay = commitDelay
         self.senderClientId = senderClientId
         self.hasEpochChanged = hasEpochChanged
+        self.identity = identity
     }
 
     func convert() -> Inner {
         return CoreCryptoSwift.DecryptedMessage(message: self.message, proposals: self.proposals.map({ (bundle) -> CoreCryptoSwift.ProposalBundle in
             bundle.convert()
-        }), isActive: self.isActive, commitDelay: self.commitDelay, senderClientId: self.senderClientId, hasEpochChanged: self.hasEpochChanged)
+        }), isActive: self.isActive, commitDelay: self.commitDelay, senderClientId: self.senderClientId, hasEpochChanged: self.hasEpochChanged, identity: self.identity?.convert())
+    }
+}
+
+/// Represents the identity claims identifying a client. Those claims are verifiable by any member in the group
+public struct WireIdentity: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.WireIdentity
+
+    /// Represents the identity claims identifying a client. Those claims are verifiable by any member in the group
+    public var clientId: String
+    /// user handle e.g. `john_wire`
+    public var handle: String
+    /// Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
+    public var displayName: String
+    /// DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
+    public var domain: String
+
+    public init(clientId: String, handle: String, displayName: String, domain: String) {
+        self.clientId = clientId
+        self.handle = handle
+        self.displayName = displayName
+        self.domain = domain
+    }
+
+    func convert() -> Inner {
+        return CoreCryptoSwift.WireIdentity(clientId: self.clientId, handle: self.handle, displayName: self.displayName, domain: self.domain)
     }
 }
 

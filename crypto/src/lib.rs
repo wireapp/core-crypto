@@ -67,6 +67,7 @@ pub mod prelude {
     pub use crate::{
         e2e_identity::{
             error::{E2eIdentityError, E2eIdentityResult},
+            identity::WireIdentity,
             types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
             WireE2eIdentity,
         },
