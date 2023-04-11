@@ -23,7 +23,7 @@ harness = false
 default = ["mls-keystore", "proteus-keystore"]
 mls-keystore = ["dep:openmls_traits"]
 proteus-keystore = ["dep:proteus-traits"]
-ios-wal-compat = ["dep:security-framework"]
+ios-wal-compat = ["dep:security-framework", "dep:security-framework-sys", "dep:core-foundation"]
 idb-regression-test = []
 dummy-entity = ["dep:serde"]
 
@@ -39,6 +39,8 @@ sha2 = "0.10"
 
 # iOS specific things
 security-framework = { version = "2.8", optional = true }
+security-framework-sys = { version = "2.8", optional = true }
+core-foundation = { version = "0.9", optional = true }
 
 openmls_traits = { version = "0.1", optional = true, features = ["single-threaded"] }
 serde = { version = "1.0", features = ["derive"], optional = true }
