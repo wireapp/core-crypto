@@ -11,7 +11,7 @@ use utils::{
     docker::{stepca::CaCfg, wiremock::WiremockImage},
     id_token::resign_id_token,
     rand_base64_str, rand_client_id,
-    wire_server::WireServerCfg,
+    wire_server::OauthCfg,
     TestError,
 };
 
@@ -49,10 +49,10 @@ async fn google_demo_should_succeed() {
         sub: new_sub,
         display_name: "Beltram Maldant".to_string(),
         handle: "beltram_wire".to_string(),
-        wire_server_cfg: WireServerCfg {
+        oauth_cfg: OauthCfg {
             client_secret,
             client_id: audience.clone(),
-            ..default.wire_server_cfg
+            ..default.oauth_cfg
         },
         ca_cfg: CaCfg {
             issuer,

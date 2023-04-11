@@ -5,7 +5,7 @@ use openidconnect::{
 };
 use scraper::Html;
 
-use crate::utils::{ctx::*, fmk::GOOGLE_SND, wire_server::WireServerCfg};
+use crate::utils::{ctx::*, fmk::GOOGLE_SND, wire_server::OauthCfg};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
 pub struct Oidc {
@@ -15,12 +15,12 @@ pub struct Oidc {
 }
 
 pub async fn handle_login(_req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
-    let WireServerCfg {
+    let OauthCfg {
         issuer_uri,
         client_id,
         client_secret,
         redirect_uri,
-    } = WireServerCfg::cxt_get();
+    } = OauthCfg::cxt_get();
 
     let issuer_url = IssuerUrl::new(issuer_uri.clone()).unwrap();
     let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), move |r| {
@@ -76,7 +76,24 @@ pub fn scrap_grant(html: String) -> String {
         .to_string()
 }
 
-pub async fn handle_callback(mut req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+pub async fn handle_callback(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+    let req_uri = req.uri().clone();
+    let req_uri: url::Url = format!("http://localhost{}", req_uri).parse().unwrap();
+    let authorization_code = req_uri
+        .query_pairs()
+        .find_map(|(k, v)| match k.as_ref() {
+            "code" => Some(v.to_string()),
+            _ => None,
+        })
+        .unwrap();
+    let resp = Response::builder()
+        .status(StatusCode::OK)
+        .body(authorization_code.into())
+        .unwrap();
+    Ok(resp)
+}
+
+pub async fn handle_callback_google(mut req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
     let req_uri = req.uri().clone();
     let domain = ctx_get("domain").unwrap();
     let req_path = req.uri().path().trim_start_matches('/');

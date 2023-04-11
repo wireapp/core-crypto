@@ -6,7 +6,7 @@ use jwt_simple::prelude::*;
 use oauth2::{ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};
 use openidconnect::{
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
-    IssuerUrl, Nonce,
+    IssuerUrl, Nonce, TokenResponse,
 };
 use rusty_acme::prelude::*;
 use serde_json::Value;
@@ -424,31 +424,42 @@ impl<'a> E2eTest<'a> {
     }
 
     pub async fn fetch_id_token_from_dex(&mut self) -> TestResult<String> {
-        // hack to pass args to wire-server
-        ctx_store("domain", &self.domain);
-        self.wire_server_cfg.cxt_store();
-
         self.display_chapter("Authenticate end user using OIDC Authorization Code with PKCE flow");
+        let issuer_url = IssuerUrl::new(self.oauth_cfg.issuer_uri.clone()).unwrap();
+        let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), move |r| {
+            custom_oauth_client("discovery", ctx_get_http_client(), r)
+        })
+        .await
+        .unwrap();
+        let client_id = openidconnect::ClientId::new(self.oauth_cfg.client_id.clone());
+        let client_secret = ClientSecret::new(self.oauth_cfg.client_secret.clone());
+        let redirect_url = RedirectUrl::new(self.oauth_cfg.redirect_uri.clone()).unwrap();
+        let client = CoreClient::from_provider_metadata(provider_metadata, client_id, Some(client_secret))
+            .set_redirect_uri(redirect_url);
 
-        // call login endpoint on wire-server
-        // it will initialize PKCE and redirect to login form
-        self.display_step("Client clicks login button");
-        let login_url = format!("{}/login", self.wire_server_uri());
-        let login_req = self.client.get(&login_url).build().unwrap();
-        self.display_req(Actor::WireClient, Actor::WireServer, Some(&login_req), None);
-        let resp = self.client.execute(login_req).await.unwrap();
-
-        self.display_step("Resource server generates Verifier & Challenge Codes");
-        self.display_operation(Actor::WireServer, "verifier & challenge codes");
-        let code_verifier = ctx_get("pkce-verifier").unwrap();
-        let code_challenge = ctx_get("pkce-challenge").unwrap();
+        self.display_step("OAuth2: generate Verifier & Challenge Codes");
+        self.display_operation(Actor::WireClient, "verifier & challenge codes");
+        let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
+        let (code_verifier, code_challenge) = (pkce_verifier.secret(), pkce_challenge.as_str());
         let cv_cc_msg = format!("code_verifier={code_verifier}&code_challenge={code_challenge}");
         self.display_str(&cv_cc_msg, false);
 
-        self.display_step("Resource server calls authorize url");
-        self.display_req(Actor::WireServer, Actor::OidcProvider, None, None);
+        let (authz_url, ..) = client
+            .authorize_url(
+                CoreAuthenticationFlow::AuthorizationCode,
+                CsrfToken::new_random,
+                Nonce::new_random,
+            )
+            .add_scope(Scope::new("profile".to_string()))
+            .set_pkce_challenge(pkce_challenge)
+            .url();
+
+        self.display_step("Call /authorize");
+        let authz_req = self.client.get(authz_url.as_str()).build().unwrap();
+        self.display_req(Actor::WireClient, Actor::OidcProvider, Some(&authz_req), None);
 
         self.display_step("Authorization server redirects to login prompt");
+        let resp = self.client.execute(authz_req).await.unwrap();
         let html = resp.text().await.unwrap();
         self.display_resp(Actor::OidcProvider, Actor::WireClient, None);
         self.display_str(&html, false);
@@ -490,15 +501,20 @@ impl<'a> E2eTest<'a> {
         let consent_req = self.client.post(form_uri).form(&form_body).build().unwrap();
         self.display_req(Actor::WireClient, Actor::OidcProvider, Some(&consent_req), None);
         self.display_str(Self::req_body_str(&consent_req)?.unwrap(), false);
+
+        self.display_step("Authorization server redirects to callback url with authorization code");
         let resp = self.client.execute(consent_req).await.unwrap();
+        let authz_code = resp.text().await.unwrap();
 
-        self.display_step("Authorization server calls callback url with authorization code");
-        let callback_req = ctx_get_request("callback");
-        self.display_req(Actor::OidcProvider, Actor::WireServer, Some(&callback_req), None);
-
-        self.display_step("Resource server call /oauth/token to get Id token");
+        self.display_step("Call /oauth/token to get Id token");
+        let id_token = client
+            .exchange_code(openidconnect::AuthorizationCode::new(authz_code))
+            .set_pkce_verifier(pkce_verifier)
+            .request_async(move |r| custom_oauth_client("exchange-code", ctx_get_http_client(), r))
+            .await
+            .unwrap();
         let exchange_code_req = ctx_get_request("exchange-code");
-        self.display_req(Actor::WireServer, Actor::OidcProvider, Some(&exchange_code_req), None);
+        self.display_req(Actor::WireClient, Actor::OidcProvider, Some(&exchange_code_req), None);
         self.display_str(Self::req_body_str(&exchange_code_req)?.unwrap(), false);
 
         self.display_step("Authorization server validates Verifier & Challenge Codes");
@@ -507,14 +523,12 @@ impl<'a> E2eTest<'a> {
 
         self.display_step("Authorization server returns Access & Id token");
         let exchange_code_resp = ctx_get_resp("exchange-code", false);
-        self.display_resp(Actor::OidcProvider, Actor::WireServer, None);
+        self.display_resp(Actor::OidcProvider, Actor::WireClient, None);
         let exchange_code_resp = serde_json::from_str::<Value>(&exchange_code_resp).unwrap();
         let exchange_code_resp = serde_json::to_string_pretty(&exchange_code_resp).unwrap();
         self.display_str(&exchange_code_resp, false);
 
-        self.display_step("Resource server returns Id token to client");
-        let id_token = resp.text().await.unwrap();
-        self.display_resp(Actor::WireServer, Actor::WireClient, None);
+        let id_token = id_token.id_token().unwrap().to_string();
         self.display_str(&id_token, false);
 
         Ok(id_token)
@@ -529,9 +543,9 @@ impl<'a> E2eTest<'a> {
 
         // hack to pass args to wire-server
         ctx_store("domain", &self.domain);
-        self.wire_server_cfg.cxt_store();
+        self.oauth_cfg.cxt_store();
 
-        let issuer_url = self.wire_server_cfg.issuer_uri.trim_end_matches('/').to_string();
+        let issuer_url = self.oauth_cfg.issuer_uri.trim_end_matches('/').to_string();
         let issuer_url = IssuerUrl::new(issuer_url).unwrap();
         let provider_metadata = CoreProviderMetadata::discover_async(issuer_url, move |r| {
             custom_oauth_client("discovery", ctx_get_http_client(), r)
@@ -539,9 +553,10 @@ impl<'a> E2eTest<'a> {
         .await
         .unwrap();
 
-        let client_id = openidconnect::ClientId::new(self.wire_server_cfg.client_id.clone());
-        let client_secret = ClientSecret::new(self.wire_server_cfg.client_secret.clone());
-        let redirect_url = RedirectUrl::new(self.wire_server_cfg.redirect_uri.clone()).unwrap();
+        let client_id = openidconnect::ClientId::new(self.oauth_cfg.client_id.clone());
+        let client_secret = ClientSecret::new(self.oauth_cfg.client_secret.clone());
+        println!(">>>> {}", self.oauth_cfg.redirect_uri);
+        let redirect_url = RedirectUrl::new(self.oauth_cfg.redirect_uri.clone()).unwrap();
         let client = CoreClient::from_provider_metadata(provider_metadata, client_id, Some(client_secret))
             .set_redirect_uri(redirect_url);
 

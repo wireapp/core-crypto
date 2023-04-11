@@ -1,3 +1,4 @@
+use crate::utils::wire_server::oidc::handle_callback_google;
 use crate::utils::{
     ctx::ctx_get,
     rand_base64_str,
@@ -41,6 +42,7 @@ pub async fn wire_api(req: Request<Body>) -> Result<Response<Body>, hyper::Error
         }
         (&Method::GET, ["login"]) => handle_login(req).await?,
         (&Method::GET, ["callback"]) => handle_callback(req).await?,
+        (&Method::GET, ["callback-google"]) => handle_callback_google(req).await?,
         _ => not_found(),
     })
 }

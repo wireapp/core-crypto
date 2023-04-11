@@ -16,7 +16,7 @@ use crate::utils::{
         stepca::{AcmeServer, CaCfg, StepCaImage},
     },
     rand_base64_str, rand_str,
-    wire_server::{oidc::OidcCfg, WireServer, WireServerCfg},
+    wire_server::{oidc::OidcCfg, OauthCfg, WireServer},
     TestResult,
 };
 
@@ -32,7 +32,7 @@ pub struct E2eTest<'a> {
     pub ldap_cfg: LdapCfg,
     pub dex_cfg: DexCfg,
     pub ca_cfg: CaCfg,
-    pub wire_server_cfg: WireServerCfg,
+    pub oauth_cfg: OauthCfg,
     pub backend_kp: Pem,
     pub alg: JwsAlgorithm,
     pub hash_alg: HashAlgorithm,
@@ -133,7 +133,7 @@ impl<'a> E2eTest<'a> {
                 jwks_uri,
                 host: ca_host,
             },
-            wire_server_cfg: WireServerCfg {
+            oauth_cfg: OauthCfg {
                 issuer_uri: "".to_string(),
                 client_id: audience.to_string(),
                 client_secret,
@@ -216,14 +216,14 @@ impl<'a> E2eTest<'a> {
         }
 
         // wire-server
-        let (wire_server_host, wire_server_port) = match self.oidc_provider {
-            OidcProvider::Dex => (self.domain.clone(), portpicker::pick_unused_port().unwrap()),
+        let (wire_server_host, wire_server_port, redirect) = match self.oidc_provider {
+            OidcProvider::Dex => (self.domain.clone(), portpicker::pick_unused_port().unwrap(), "callback"),
             // need to use a fixed port for Google in order to have a constant redirect_uri
-            OidcProvider::Google => ("localhost".to_string(), 9090),
+            OidcProvider::Google => ("localhost".to_string(), 9090, "callback-google"),
         };
         let wire_server = WireServer::run_on_port(wire_server_port).await;
 
-        let redirect_uri = format!("http://{}:{}/callback", wire_server_host, wire_server.port);
+        let redirect_uri = format!("http://{wire_server_host}:{wire_server_port}/{redirect}");
         // Acme server
         let acme_server = StepCaImage::run(docker, self.ca_cfg.clone());
         // configure http client custom dns resolution for this test
@@ -262,8 +262,8 @@ impl<'a> E2eTest<'a> {
         self.dex_cfg.issuer = oidc_cfg.issuer.clone();
         self.ca_cfg.issuer = oidc_cfg.issuer.clone();
         let issuer_uri = oidc_cfg.issuer_uri.as_ref().unwrap().trim_end_matches('/').to_string();
-        self.wire_server_cfg.issuer_uri = issuer_uri;
-        self.wire_server_cfg.redirect_uri = redirect_uri;
+        self.oauth_cfg.issuer_uri = issuer_uri;
+        self.oauth_cfg.redirect_uri = redirect_uri;
         self.oidc_cfg = Some(oidc_cfg);
 
         self.acme_server = Some(acme_server);

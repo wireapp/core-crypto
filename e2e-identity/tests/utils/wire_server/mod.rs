@@ -11,14 +11,14 @@ use std::{
 use tokio::task::LocalSet;
 
 #[derive(Debug, Clone)]
-pub struct WireServerCfg {
+pub struct OauthCfg {
     pub issuer_uri: String,
     pub client_id: String,
     pub client_secret: String,
     pub redirect_uri: String,
 }
 
-impl WireServerCfg {
+impl OauthCfg {
     pub fn cxt_store(&self) {
         ctx_store("issuer-uri", self.issuer_uri.clone());
         ctx_store("client-id", self.client_id.clone());
