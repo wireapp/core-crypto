@@ -983,7 +983,7 @@ mod tests {
             CredentialType::Basic => either::Left(client_id),
             CredentialType::X509 => either::Right(CertificateBundle::rand(case.ciphersuite(), client_id)),
         };
-        cc.mls_init(identity, vec![case.ciphersuite()]).await.unwrap();
+        cc.mls_init(identity, vec![case.ciphersuite()], false).await.unwrap();
         // expect MLS to work
         assert_eq!(cc.client_keypackages(2).await.unwrap().len(), 2);
         drop(db_file);

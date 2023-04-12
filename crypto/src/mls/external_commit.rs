@@ -402,10 +402,8 @@ mod tests {
                         .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central
-                        .invite(&id, &mut bob_central, case.custom_cfg())
-                        .await
-                        .unwrap();
+                    let custom_cfg = case.custom_cfg();
+                    alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
                     let public_group_state = alice_central.verifiable_public_group_state(&id).await;
                     // Alice can rejoin by external commit
                     let alice_join = alice_central

@@ -47,9 +47,10 @@ git = "https://github.com/wireapp/openmls"
 tag = "v0.5.6-pre.core-crypto-0.7.0"
 
 [patch.crates-io.wire-e2e-identity]
-git = "https://github.com/wireapp/rusty-jwt-tools"
-package = "wire-e2e-identity"
-tag = "v0.3.6"
+#git = "https://github.com/wireapp/rusty-jwt-tools"
+#package = "wire-e2e-identity"
+#tag = "v0.3.6"
+path = "../rusty-jwt-tools/e2e-identity"
 
 [patch.crates-io.hpke-rs]
 git = "https://github.com/wireapp/hpke-rs"

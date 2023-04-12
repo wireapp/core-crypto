@@ -293,16 +293,19 @@ pub mod tests {
             MlsCentralConfiguration::try_new(alice_path.0, "alice".into(), None, ciphersuites.clone(), None)?;
 
         let mut alice_central = MlsCentral::try_new(alice_cfg).await?;
-        alice_central.mls_init(alice_identity, ciphersuites.clone()).await?;
+        alice_central
+            .mls_init(alice_identity, ciphersuites.clone(), false)
+            .await?;
 
         let bob_path = tmp_db_file();
         let bob_cfg = MlsCentralConfiguration::try_new(bob_path.0, "bob".into(), None, ciphersuites.clone(), None)?;
 
         let mut bob_central = MlsCentral::try_new(bob_cfg).await?;
-        bob_central.mls_init(bob_identity, ciphersuites.clone()).await?;
+        bob_central.mls_init(bob_identity, ciphersuites.clone(), false).await?;
 
         alice_central.new_conversation(id.clone(), cfg.clone()).await?;
-        alice_central.invite(&id, &mut bob_central, cfg.custom).await?;
+        let custom_cfg = cfg.custom;
+        alice_central.invite(&id, [&mut bob_central], custom_cfg).await?;
         alice_central.try_talk_to(&id, &mut bob_central).await
     }
 }

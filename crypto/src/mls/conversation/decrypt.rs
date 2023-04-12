@@ -223,7 +223,7 @@ impl MlsCentral {
             .await?;
 
         if !decrypt_message.is_active {
-            // ? Do we wipe conversations or do we just prune the group from the cache - subsequent accesses will make it look like the group doesn't exist
+            // TODO: Do we wipe conversations or do we just prune the group from the cache - subsequent accesses will make it look like the group doesn't exist
             self.wipe_conversation(conversation_id).await?;
             // self.mls_groups
             //     .remove(conversation_id)
@@ -267,10 +267,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let MlsCommitBundle { commit, .. } = bob_central.update_keying_material(&id).await.unwrap();
                         let MlsConversationDecryptMessage { is_active, .. } = alice_central
@@ -297,10 +295,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let MlsCommitBundle { commit, .. } = bob_central
                             .remove_members_from_conversation(&id, &[alice_central.read_client_id()])
@@ -335,10 +331,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let epoch_before = alice_central.conversation_epoch(&id).await.unwrap();
 
@@ -375,14 +369,12 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         // Alice creates a commit which will be superseded by Bob's one
-                        let charlie = charlie_central.rnd_member().await;
-                        let debbie = debbie_central.rnd_member().await;
+                        let charlie = charlie_central.rand_member().await;
+                        let debbie = debbie_central.rand_member().await;
                         alice_central
                             .add_members_to_conversation(&id, &mut [charlie.clone()])
                             .await
@@ -433,15 +425,13 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         // Alice will create a commit to add Charlie
                         // Bob will create a commit which will be accepted first by DS so Alice will decrypt it
                         // Then Alice will renew the proposal in her pending commit
-                        let charlie = charlie_central.rnd_member().await;
+                        let charlie = charlie_central.rand_member().await;
 
                         let bob_commit = bob_central.update_keying_material(&id).await.unwrap().commit;
                         bob_central.commit_accepted(&id).await.unwrap();
@@ -536,10 +526,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         // Bob will create a proposal to add Charlie
                         // Alice will decrypt this proposal
@@ -590,10 +578,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         // Alice will create a proposal to add Charlie
                         // Bob will create a commit which Alice will decrypt
@@ -679,10 +665,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         // DS will create an external proposal to add Charlie
                         // But meanwhile Bob, before receiving the external proposal,
@@ -729,10 +713,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
 
@@ -767,10 +749,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let ext_proposal = alice2_central
@@ -812,10 +792,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let message = alice2_central
@@ -862,10 +840,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let external_proposal = alice2_central
@@ -911,10 +887,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package().await;
                         let proposal = alice_central
@@ -955,10 +929,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Update)
@@ -995,10 +967,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let msg = b"Hello bob";
                         let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
@@ -1053,10 +1023,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let msg = b"Hello bob";
                         let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
@@ -1084,10 +1052,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         // encrypt a message in epoch 1
                         let msg = b"Hello bob";
@@ -1124,10 +1090,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         // encrypt a message in epoch 1
                         let msg = b"Hello bob";
@@ -1164,10 +1128,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         // only Alice which change epoch without notifying Bob
                         let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
@@ -1210,10 +1172,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let out_of_order_tolerance = case.custom_cfg().out_of_order_tolerance;
                         let nb_messages = out_of_order_tolerance * 2;
@@ -1256,10 +1216,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let msg = b"Hello bob";
                         let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
@@ -1296,10 +1254,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         // Alice generates a bunch of soon to be outdated messages
                         let msg = b"Hello bob";
@@ -1385,10 +1341,8 @@ pub mod tests {
                         bob_client.keypackage_lifetime(Duration::from_secs(2));
 
                         // Now Bob will have shorter KeyPackages. Let's add Bob to the group before those expire
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         // Now Bob will generate AND SIGN some messages with a signature key
                         // in his soon to expire KeyPackage

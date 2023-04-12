@@ -198,10 +198,8 @@ pub mod proposal_tests {
                         .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central
-                        .invite(&id, &mut bob_central, case.custom_cfg())
-                        .await
-                        .unwrap();
+                    let custom_cfg = case.custom_cfg();
+                    alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 

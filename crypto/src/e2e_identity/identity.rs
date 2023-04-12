@@ -6,7 +6,7 @@ use openmls::{
 
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct WireIdentity {
     /// Unique client identifier e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@whitehouse.gov`
     pub client_id: String,

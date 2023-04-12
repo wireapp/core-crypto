@@ -60,14 +60,16 @@ pub async fn run_test_with_client_ids<const N: usize>(
                     MlsCentralConfiguration::try_new(p, "test".into(), None, vec![case.cfg.ciphersuite], None).unwrap();
                 let mut central = MlsCentral::try_new(configuration).await.unwrap();
 
-                let cred_type = case.credential_type;
-                let identity = match cred_type {
+                let identity = match case.credential_type {
                     openmls::prelude::CredentialType::Basic => either::Left(client_id),
                     openmls::prelude::CredentialType::X509 => {
                         either::Right(crate::prelude::CertificateBundle::rand(case.cfg.ciphersuite, client_id))
                     }
                 };
-                central.mls_init(identity, vec![case.cfg.ciphersuite]).await.unwrap();
+                central
+                    .mls_init(identity, vec![case.cfg.ciphersuite], false)
+                    .await
+                    .unwrap();
                 central.callbacks(Box::<ValidationCallbacks>::default());
                 central
             });
@@ -78,20 +80,21 @@ pub async fn run_test_with_client_ids<const N: usize>(
     .await
 }
 
-pub async fn run_test_wo_clients(
+pub async fn run_test_wo_clients<const N: usize>(
     case: TestCase,
-    test: impl FnOnce(MlsCentral) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+    test: impl FnOnce([MlsCentral; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
-    run_tests(move |paths: [String; 1]| {
+    run_tests(move |paths: [String; N]| {
         Box::pin(async move {
-            let p = paths.get(0).unwrap();
-
-            let ciphersuites = vec![case.cfg.ciphersuite];
-            let configuration =
-                MlsCentralConfiguration::try_new(p.to_string(), "test".into(), None, ciphersuites, None).unwrap();
-            let mut central = MlsCentral::try_new(configuration).await.unwrap();
-            central.callbacks(Box::<ValidationCallbacks>::default());
-            test(central).await
+            let stream = paths.into_iter().map(|p| async move {
+                let configuration =
+                    MlsCentralConfiguration::try_new(p, "test".into(), None, vec![case.cfg.ciphersuite], None).unwrap();
+                let mut central = MlsCentral::try_new(configuration).await.unwrap();
+                central.callbacks(Box::<ValidationCallbacks>::default());
+                central
+            });
+            let centrals: [MlsCentral; N] = futures_util::future::join_all(stream).await.try_into().unwrap();
+            test(centrals).await;
         })
     })
     .await

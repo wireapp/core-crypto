@@ -41,6 +41,7 @@ schnellru = "0.2"
 zeroize = "1.5"
 wire-e2e-identity = "0.3"
 either = "1.8"
+futures-util = { version = "0.3", features = ["std", "alloc"] }
 
 [dependencies.proteus-wasm]
 version = "2.0"
@@ -84,7 +85,6 @@ js-sys = "0.3"
 rstest = "0.17"
 rstest_reuse = "0.5"
 async-std = { version = "1.12", features = ["attributes"] }
-futures-util = { version = "0.3", features = ["std", "alloc"] }
 futures-lite = "1.12"
 proteus-traits = "2.0"
 async-trait = "0.1"

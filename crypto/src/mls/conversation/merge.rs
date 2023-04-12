@@ -161,10 +161,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         alice_central
                             .remove_members_from_conversation(&id, &[bob_central.read_client_id()])
@@ -194,7 +192,7 @@ pub mod tests {
                             .unwrap();
                         alice_central.new_proposal(&id, MlsProposal::Update).await.unwrap();
                         alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
+                            .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
                             .await
                             .unwrap();
                         assert!(!alice_central.pending_proposals(&id).await.is_empty());
@@ -225,10 +223,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
 
                         let charlie_kp = charlie_central.get_one_key_package().await;

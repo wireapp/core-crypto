@@ -249,6 +249,17 @@ impl MlsCentral {
         }
     }
 
+    pub(crate) async fn get_all_conversations(
+        &mut self,
+    ) -> CryptoResult<Vec<crate::group_store::GroupStoreValue<MlsConversation>>> {
+        let keystore = self.mls_backend.borrow_keystore_mut();
+        /*self.mls_groups
+        .get_fetch(id, keystore, None)
+        .await?
+        .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))*/
+        todo!()
+    }
+
     /// Mark a conversation as child of another one
     /// This will affect the behavior of callbacks in particular
     pub async fn mark_conversation_as_child_of(
@@ -340,7 +351,7 @@ pub mod tests {
                         .unwrap();
 
                     let MlsConversationCreationMessage { welcome, .. } = alice_central
-                        .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
+                        .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
                         .await
                         .unwrap();
                     // before merging, commit is not applied
@@ -405,9 +416,10 @@ pub mod tests {
 
                 let number_of_friends = bob_and_friends.len();
 
-                let mut bob_and_friends_members: Vec<ConversationMember> =
-                    futures_util::future::join_all(bob_and_friends.iter().map(|c| async move { c.rnd_member().await }))
-                        .await;
+                let mut bob_and_friends_members: Vec<ConversationMember> = futures_util::future::join_all(
+                    bob_and_friends.iter().map(|c| async move { c.rand_member().await }),
+                )
+                .await;
 
                 let MlsConversationCreationMessage { welcome, .. } = alice_central
                     .add_members_to_conversation(&id, &mut bob_and_friends_members)
@@ -460,7 +472,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     // has to be before the original key_package count because it creates one
-                    let bob = bob_central.rnd_member().await;
+                    let bob = bob_central.rand_member().await;
                     // Keep track of the whatever amount was initially generated
                     let original_kpb_count = bob_central
                         .mls_backend

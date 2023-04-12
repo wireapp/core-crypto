@@ -187,7 +187,7 @@ pub mod tests {
                     let MlsConversationCreationMessage {
                         welcome: bob_welcome, ..
                     } = alice_central
-                        .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
+                        .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
                         .await
                         .unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
@@ -204,7 +204,7 @@ pub mod tests {
                         commit,
                         ..
                     } = alice_central
-                        .add_members_to_conversation(&id, &mut [charlie_central.rnd_member().await])
+                        .add_members_to_conversation(&id, &mut [charlie_central.rand_member().await])
                         .await
                         .unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);

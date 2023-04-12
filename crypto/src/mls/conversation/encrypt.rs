@@ -82,10 +82,8 @@ pub mod tests {
                         .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central
-                        .invite(&id, &mut bob_central, case.custom_cfg())
-                        .await
-                        .unwrap();
+                    let custom_cfg = case.custom_cfg();
+                    alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                     let msg = b"Hello bob";
                     let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
@@ -117,10 +115,8 @@ pub mod tests {
                         .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central
-                        .invite(&id, &mut bob_central, case.custom_cfg())
-                        .await
-                        .unwrap();
+                    let custom_cfg = case.custom_cfg();
+                    alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                     let msg = b"Hello bob";
                     let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();

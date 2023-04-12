@@ -258,8 +258,9 @@ mod tests {
                             cfg.set_raw_external_senders(vec![remove_key]);
                             owner_central.new_conversation(id.clone(), cfg).await.unwrap();
 
+                            let custom_cfg = case.custom_cfg();
                             owner_central
-                                .invite(&id, &mut guest_central, case.custom_cfg())
+                                .invite(&id, [&mut guest_central], custom_cfg)
                                 .await
                                 .unwrap();
                             assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
@@ -321,8 +322,9 @@ mod tests {
                         cfg.set_raw_external_senders(vec![remove_key]);
                         owner_central.new_conversation(id.clone(), cfg).await.unwrap();
 
+                        let custom_cfg = case.custom_cfg();
                         owner_central
-                            .invite(&id, &mut guest_central, case.custom_cfg())
+                            .invite(&id, [&mut guest_central], custom_cfg)
                             .await
                             .unwrap();
                         assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
@@ -383,8 +385,9 @@ mod tests {
                         cfg.set_raw_external_senders(vec![short_remove_key.as_slice().to_vec()]);
                         owner_central.new_conversation(id.clone(), cfg).await.unwrap();
 
+                        let custom_cfg = case.custom_cfg();
                         owner_central
-                            .invite(&id, &mut guest_central, case.custom_cfg())
+                            .invite(&id, [&mut guest_central], custom_cfg)
                             .await
                             .unwrap();
                         assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
@@ -444,15 +447,13 @@ mod tests {
                             cfg.set_raw_external_senders(vec![remove_key]);
                             alice_central.new_conversation(id.clone(), cfg).await.unwrap();
 
-                            alice_central
-                                .invite(&id, &mut bob_central, case.custom_cfg())
-                                .await
-                                .unwrap();
+                            let custom_cfg = case.custom_cfg();
+                            alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
                             assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                             // Charlie joins through a Welcome and should get external_senders from Welcome
                             // message and not from configuration
-                            let charlie = charlie_central.rnd_member().await;
+                            let charlie = charlie_central.rand_member().await;
                             let MlsConversationCreationMessage { welcome, commit, .. } = alice_central
                                 .add_members_to_conversation(&id, &mut [charlie])
                                 .await
@@ -544,10 +545,8 @@ mod tests {
                             cfg.set_raw_external_senders(vec![remove_key]);
                             alice_central.new_conversation(id.clone(), cfg).await.unwrap();
 
-                            alice_central
-                                .invite(&id, &mut bob_central, case.custom_cfg())
-                                .await
-                                .unwrap();
+                            let custom_cfg = case.custom_cfg();
+                            alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
                             assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                             // Charlie joins through an external commit and should get external_senders

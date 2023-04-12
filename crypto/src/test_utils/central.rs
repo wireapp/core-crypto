@@ -38,27 +38,16 @@ impl MlsCentral {
         self.client_keypackages(1).await.unwrap().first().unwrap().clone()
     }
 
-    pub async fn rnd_member(&self) -> ConversationMember {
-        let id = self.mls_client.as_ref().unwrap().id();
-        self.mls_client
-            .as_ref()
-            .unwrap()
-            .gen_keypackage(&self.mls_backend)
-            .await
-            .unwrap();
-        let clients = std::collections::HashMap::from([(
-            id.clone(),
-            self.mls_client
-                .as_ref()
-                .unwrap()
-                .keypackages(&self.mls_backend)
-                .await
-                .unwrap(),
-        )]);
+    pub async fn rand_member(&self) -> ConversationMember {
+        let mls_client = self.mls_client.as_ref().unwrap();
+        let id = mls_client.id();
+        mls_client.gen_keypackage(&self.mls_backend).await.unwrap();
+        let clients =
+            std::collections::HashMap::from([(id.clone(), mls_client.keypackages(&self.mls_backend).await.unwrap())]);
         ConversationMember {
             id: id.to_vec(),
             clients,
-            local_client: Some(self.mls_client.as_ref().unwrap().clone()),
+            local_client: Some(mls_client.clone()),
         }
     }
 
@@ -102,28 +91,33 @@ impl MlsCentral {
     }
 
     /// Streamlines the ceremony of adding a client and process its welcome message
-    pub async fn invite(
+    pub async fn invite<const N: usize>(
         &mut self,
         id: &ConversationId,
-        other: &mut MlsCentral,
+        others: [&mut MlsCentral; N],
         custom_cfg: MlsCustomConfiguration,
     ) -> CryptoResult<()> {
         let size_before = self.get_conversation_unchecked(id).await.members().len();
-        let welcome = self
-            .add_members_to_conversation(id, &mut [other.rnd_member().await])
-            .await?
-            .welcome;
-        other.process_welcome_message(welcome, custom_cfg).await?;
+        let mut new_members = vec![];
+        for other in &others {
+            new_members.push(other.rand_member().await);
+        }
+        let welcome = self.add_members_to_conversation(id, &mut new_members).await?.welcome;
         self.commit_accepted(id).await?;
-        assert_eq!(
-            self.get_conversation_unchecked(id).await.members().len(),
-            size_before + 1
-        );
-        assert_eq!(
-            other.get_conversation_unchecked(id).await.members().len(),
-            size_before + 1
-        );
-        self.try_talk_to(id, other).await?;
+        for other in others {
+            other
+                .process_welcome_message(welcome.clone(), custom_cfg.clone())
+                .await?;
+            assert_eq!(
+                self.get_conversation_unchecked(id).await.members().len(),
+                size_before + N
+            );
+            assert_eq!(
+                other.get_conversation_unchecked(id).await.members().len(),
+                size_before + N
+            );
+            self.try_talk_to(id, other).await?;
+        }
         Ok(())
     }
 

@@ -373,14 +373,13 @@ impl CoreCrypto<'_> {
     /// See [core_crypto::MlsCentral::mls_init]
     pub fn mls_init(&self, client_id: &ClientId) -> CryptoResult<()> {
         let ciphersuites = vec![MlsCiphersuite::default()];
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .mls_init(either::Left(client_id.clone()), ciphersuites),
+        future::block_on(self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+            self.central.lock().map_err(|_| CryptoError::LockPoisonError)?.mls_init(
+                either::Left(client_id.clone()),
+                ciphersuites,
+                false,
             ),
-        )
+        ))
     }
 
     /// See [core_crypto::mls::MlsCentral::mls_generate_keypair]

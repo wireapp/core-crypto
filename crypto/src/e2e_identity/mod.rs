@@ -9,6 +9,7 @@ use crate::prelude::{CertificateBundle, ClientId, MlsCentral, MlsCiphersuite};
 mod crypto;
 pub mod error;
 pub(crate) mod identity;
+mod renew;
 pub mod types;
 
 type Json = Vec<u8>;
@@ -16,10 +17,10 @@ type Json = Vec<u8>;
 impl MlsCentral {
     /// Creates an enrollment instance with private key material you can use in order to fetch
     /// a new x509 certificate from the acme server.
-    /// Make sure to call [WireE2eIdentity::free] (not yet available) to dispose this instance and its associated
+    /// Make sure to call [WireE2eIdentity::e2ei_mls_init] (not yet available) to dispose this instance and its associated
     /// keying material.
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
     /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
@@ -45,7 +46,7 @@ impl MlsCentral {
     /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it
     /// to initialize the MLS client with a certificate
     pub async fn e2ei_mls_init(&mut self, e2ei: WireE2eIdentity, certificate_chain: String) -> E2eIdentityResult<()> {
-        e2ei.certificate_response(self, certificate_chain).await
+        e2ei.certificate_response(self, certificate_chain, false).await
     }
 }
 
@@ -78,7 +79,7 @@ impl WireE2eIdentity {
     /// Builds an instance holding private key material. This instance has to be used in the whole
     /// enrollment process then dropped to clear secret key material.
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
     /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
@@ -117,7 +118,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.1.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1)
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `directory` - http response body
     pub fn directory_response(&mut self, directory: Json) -> E2eIdentityResult<types::E2eiAcmeDirectory> {
         let directory = serde_json::from_slice(&directory[..])?;
@@ -131,7 +132,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3).
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `directory` - you got from [Self::acme_directory_response]
     /// * `previous_nonce` - you got from calling `HEAD {directory.new_nonce}`
     pub fn new_account_request(&self, previous_nonce: String) -> E2eIdentityResult<Json> {
@@ -145,7 +146,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3).
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `account` - http response body
     pub fn new_account_response(&mut self, account: Json) -> E2eIdentityResult<()> {
         let account = serde_json::from_slice(&account[..])?;
@@ -158,7 +159,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-account`
     pub fn new_order_request(&self, previous_nonce: String) -> E2eIdentityResult<Json> {
         let directory = self.directory.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
@@ -180,7 +181,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `new_order` - http response body
     pub fn new_order_response(&self, order: Json) -> E2eIdentityResult<types::E2eiNewAcmeOrder> {
         let order = serde_json::from_slice(&order[..])?;
@@ -191,7 +192,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5).
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `url` - one of the URL in new order's authorizations (from [Self::acme_new_order_response])
     /// * `account` - you got from [Self::acme_new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-order`
@@ -207,7 +208,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5).
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `new_authz` - http response body
     pub fn new_authz_response(&mut self, authz: Json) -> E2eIdentityResult<types::E2eiNewAcmeAuthz> {
         let authz = serde_json::from_slice(&authz[..])?;
@@ -224,7 +225,7 @@ impl WireE2eIdentity {
     /// [`POST /clients/{id}/access-token`](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token)
     /// on wire-server.
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `access_token_url` - backend endpoint where this token will be sent. Should be [this one](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token)
     /// * `expiry_secs` - of the client Dpop JWT. This should be equal to the grace period set in Team Management
     /// * `backend_nonce` - you get by calling `GET /clients/token/nonce` on wire-server.
@@ -256,7 +257,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `access_token` - returned by wire-server from [this endpoint](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token)
     /// * `dpop_challenge` - you found after [Self::acme_new_authz_response]
     /// * `account` - you got from [Self::acme_new_account_response]
@@ -277,7 +278,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `id_token` - you get back from Identity Provider
     /// * `oidc_challenge` - you found after [Self::acme_new_authz_response]
     /// * `account` - you got from [Self::acme_new_account_response]
@@ -298,7 +299,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `challenge` - http response body
     pub fn new_challenge_response(&self, challenge: Json) -> E2eIdentityResult<()> {
         let challenge = serde_json::from_slice(&challenge[..])?;
@@ -309,7 +310,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `order_url` - `location` header from http response you got from [Self::acme_new_order_response]
     /// * `account` - you got from [Self::acme_new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/challenge/{challenge-id}`
@@ -324,7 +325,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `order` - http response body
     pub fn check_order_response(&mut self, order: Json) -> E2eIdentityResult<()> {
         let order = serde_json::from_slice(&order[..])?;
@@ -337,7 +338,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `domains` - you want to generate a certificate for e.g. `["wire.com"]`
     /// * `order` - you got from [Self::acme_check_order_response]
     /// * `account` - you got from [Self::acme_new_account_response]
@@ -354,7 +355,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `finalize` - http response body
     pub fn finalize_response(&mut self, finalize: Json) -> E2eIdentityResult<()> {
         let finalize = serde_json::from_slice(&finalize[..])?;
@@ -367,7 +368,7 @@ impl WireE2eIdentity {
     ///
     /// See [RFC 8555 Section 7.4.2](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2).
     ///
-    /// # Parameters
+    /// # Arguments
     /// * `finalize` - you got from [Self::finalize_response]
     /// * `account` - you got from [Self::acme_new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}/finalize`
@@ -383,51 +384,56 @@ impl WireE2eIdentity {
         self,
         mls_central: &mut MlsCentral,
         certificate_chain: String,
+        update: bool,
     ) -> E2eIdentityResult<()> {
         let certificate_chain = self.acme_x509_certificate_response(certificate_chain)?;
-        let private_key = SignaturePrivateKey {
-            value: self.sign_sk,
-            signature_scheme: self.ciphersuite.signature_algorithm(),
-        };
         let cb = CertificateBundle {
             certificate_chain,
-            private_key,
+            private_key: SignaturePrivateKey {
+                value: self.sign_sk,
+                signature_scheme: self.ciphersuite.signature_algorithm(),
+            },
         };
-        mls_central.mls_init(either::Right(cb), vec![self.ciphersuite]).await?;
+        mls_central
+            .mls_init(either::Right(cb), vec![self.ciphersuite], update)
+            .await?;
         Ok(())
     }
 }
 
 #[cfg(test)]
+pub mod utils {
+    pub const SUPPORTED_ALG: [openmls::prelude::SignatureScheme; 3] = [
+        openmls::prelude::SignatureScheme::ED25519,
+        openmls::prelude::SignatureScheme::ECDSA_SECP256R1_SHA256,
+        openmls::prelude::SignatureScheme::ECDSA_SECP384R1_SHA384,
+    ];
+}
+
+#[cfg(test)]
 pub mod tests {
-    use openmls::prelude::SignatureScheme;
+    use crate::prelude::WireIdentity;
     use serde_json::json;
     use wasm_bindgen_test::*;
+    use wire_e2e_identity::prelude::*;
 
-    use crate::prelude::ClientId;
+    use super::*;
     use crate::test_utils::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn e2e_identity_should_work(case: TestCase) {
-        let supported_alg = [
-            SignatureScheme::ED25519,
-            SignatureScheme::ECDSA_SECP256R1_SHA256,
-            SignatureScheme::ECDSA_SECP384R1_SHA384,
-        ];
-
-        if supported_alg.contains(&case.signature_scheme()) {
-            run_test_wo_clients(case.clone(), move |mut cc| {
+    pub async fn e2e_identity_enrollment_should_work(case: TestCase) {
+        let is_x509 = matches!(case.credential_type, openmls::prelude::CredentialType::X509);
+        if is_x509 && utils::SUPPORTED_ALG.contains(&case.signature_scheme()) {
+            run_test_wo_clients(case.clone(), move |[mut cc]| {
                 Box::pin(async move {
-                    let display_name = "Alice Smith".to_string();
-                    let domain = "wire.com";
-                    let client_id: ClientId =
-                        format!("NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg:6c1866f567616f31@{domain}").as_str().into();
-                    let handle = "alice_wire".to_string();
                     let expiry = 90;
-
+                    let domain = "wire.com";
+                    let client_id = format!("NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg:6c1866f567616f31@{domain}").as_str().into();
+                    let display_name = "Alice Smith".to_string();
+                    let handle = "alice_wire".to_string();
                     let mut enrollment = cc.new_acme_enrollment(client_id, display_name, handle, expiry, case.ciphersuite()).unwrap();
                     let directory = json!({
                         "newNonce": "https://example.com/acme/new-nonce",
@@ -609,6 +615,133 @@ OhUy7ncjd/nzoN5Qs0p6D+ujdSLDqLlNIAIgfkwAAgsQMDF3ClqVM/p9cmS95B0g
 CAdIObqPoNL5MJo=
 -----END CERTIFICATE-----"#;
                     cc.e2ei_mls_init(enrollment, certificate_resp.to_string()).await.unwrap();
+                })
+            })
+            .await
+        }
+    }
+
+    // #[apply(all_cred_cipher)]
+    // #[wasm_bindgen_test]
+    #[async_std::test]
+    pub async fn enrollment_should_init_correct_identity(/*case: TestCase*/) {
+        let case = TestCase::new(
+            openmls::prelude::CredentialType::X509,
+            openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+        );
+        let is_x509 = matches!(case.credential_type, openmls::prelude::CredentialType::X509);
+        if is_x509 && utils::SUPPORTED_ALG.contains(&case.signature_scheme()) {
+            run_test_wo_clients(case.clone(), move |[mut alice_central, mut bob_central]| {
+                Box::pin(async move {
+                    // we should be initializing the MLS clients in this test
+                    assert!(alice_central.mls_client.is_none());
+                    assert!(bob_central.mls_client.is_none());
+
+                    // Alice creates a new client with E2E identity
+                    let mut alice_identity = WireIdentityBuilder {
+                        display_name: "Alice Smith".to_string(),
+                        handle: "alice_wire".to_string(),
+                        ..Default::default()
+                    };
+                    let WireIdentityBuilder {
+                        client_id: alice_client_id,
+                        display_name: alice_display_name,
+                        handle: alice_handle,
+                        domain: alice_domain,
+                        ..
+                    } = alice_identity.clone();
+                    let alice_enrollment = alice_central
+                        .new_acme_enrollment(
+                            alice_client_id.as_str().into(),
+                            alice_display_name.clone(),
+                            alice_handle.clone(),
+                            90,
+                            case.ciphersuite(),
+                        )
+                        .unwrap();
+                    // since creating an enrollment creates a new keypair, we have to get it back in order to sign our fake certificate
+                    let alice_kp = alice_enrollment.get_key_pair();
+                    alice_identity.options = Some(WireIdentityBuilderOptions::X509(WireIdentityBuilderX509 {
+                        cert_kp: Some(alice_kp),
+                        ..Default::default()
+                    }));
+                    // and Alice initializes her MLS client with the generated certificate
+                    let (alice_certificates, ..) = alice_identity.build_x509_pem();
+                    alice_central
+                        .e2ei_mls_init(alice_enrollment, alice_certificates)
+                        .await
+                        .unwrap();
+
+                    // now Bob does the same
+                    let mut bob_identity = WireIdentityBuilder {
+                        display_name: "Bob Doe".to_string(),
+                        handle: "bob_wire".to_string(),
+                        ..Default::default()
+                    };
+                    let WireIdentityBuilder {
+                        client_id: bob_client_id,
+                        display_name: bob_display_name,
+                        handle: bob_handle,
+                        domain: bob_domain,
+                        ..
+                    } = bob_identity.clone();
+                    let bob_enrollment = bob_central
+                        .new_acme_enrollment(
+                            bob_client_id.as_str().into(),
+                            bob_display_name.clone(),
+                            bob_handle.clone(),
+                            90,
+                            case.ciphersuite(),
+                        )
+                        .unwrap();
+                    let bob_kp = bob_enrollment.get_key_pair();
+                    bob_identity.options = Some(WireIdentityBuilderOptions::X509(WireIdentityBuilderX509 {
+                        cert_kp: Some(bob_kp),
+                        ..Default::default()
+                    }));
+                    let (bob_certificates, ..) = bob_identity.build_x509_pem();
+                    bob_central
+                        .e2ei_mls_init(bob_enrollment, bob_certificates)
+                        .await
+                        .unwrap();
+
+                    // Alice creates a conversation and invites Bob
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(id.clone(), case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central
+                        .invite(&id, [&mut bob_central], case.custom_cfg())
+                        .await
+                        .unwrap();
+
+                    // Let's verify the identity is well propagated
+                    let msg = b"Hello Bob";
+                    let msg = alice_central.encrypt_message(&id, msg).await.unwrap();
+                    let identity = bob_central.decrypt_message(&id, msg).await.unwrap().identity.unwrap();
+                    assert_eq!(
+                        identity,
+                        WireIdentity {
+                            client_id: alice_client_id.clone(),
+                            handle: alice_handle,
+                            display_name: alice_display_name,
+                            domain: alice_domain,
+                        }
+                    );
+
+                    let msg = b"Hello Alice";
+                    let msg = bob_central.encrypt_message(&id, msg).await.unwrap();
+                    let identity = alice_central.decrypt_message(&id, msg).await.unwrap().identity.unwrap();
+                    assert_eq!(
+                        identity,
+                        WireIdentity {
+                            client_id: bob_client_id.clone(),
+                            handle: bob_handle,
+                            display_name: bob_display_name,
+                            domain: bob_domain,
+                        }
+                    );
                 })
             })
             .await

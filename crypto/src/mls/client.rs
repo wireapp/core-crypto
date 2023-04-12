@@ -124,8 +124,7 @@ impl Client {
     /// Otherwise, it is being created.
     ///
     /// # Arguments
-    /// * `id` - id of the client
-    /// * `certificate_bundle` - an optional x509 certificate
+    /// * `identity` - either a ClientId or a x509 certificate
     /// * `ciphersuites` - all ciphersuites this client is supposed to support
     /// * `backend` - the KeyStore and crypto provider to read identities from
     ///
@@ -337,6 +336,46 @@ impl Client {
             ciphersuite,
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
         })
+    }
+
+    /// Updates the MLS client and the CredentialBundle
+    ///
+    /// # Arguments
+    /// * `id` - id of the client
+    /// * `ciphersuites` - all ciphersuites this client is supposed to support
+    /// * `backend` - the KeyStore and crypto provider to read identities from
+    pub async fn update(
+        identity: either::Either<ClientId, CertificateBundle>,
+        ciphersuites: &[MlsCiphersuite],
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<Self> {
+        use core_crypto_keystore::CryptoKeystoreMls as _;
+
+        // TODO: support multi-ciphersuite
+        let ciphersuite = *ciphersuites.get(0).ok_or(CryptoError::ImplementationError)?;
+
+        let (id, credentials) = match identity {
+            either::Either::Left(id) => {
+                let cred = Self::generate_basic_credential_bundle(&id, ciphersuite, backend)?;
+                (id, cred)
+            }
+            either::Either::Right(cert) => (cert.get_client_id()?, Self::generate_x509_credential_bundle(cert)?),
+        };
+        let identity = MlsIdentity {
+            id: id.to_string(),
+            signature: identity_key(&credentials)?,
+            credential: credentials.to_key_store_value().map_err(MlsError::from)?,
+        };
+        backend.key_store().save(identity).await?;
+
+        let client = Self {
+            id,
+            credentials,
+            ciphersuite,
+            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
+        };
+
+        Ok(client)
     }
 
     #[allow(dead_code)]

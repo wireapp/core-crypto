@@ -251,17 +251,25 @@ impl MlsCentral {
 
     /// Initializes the MLS client if [CoreCrypto] has previously been initialized with
     /// [CoreCrypto::deferred_init] instead of [CoreCrypto::new].
-    /// This should stay as long as proteus is supported. Then it should be removed.
+    ///
+    /// # Arguments
+    /// * `update` - whether we explicitly want to override the current MLS client
     pub async fn mls_init(
         &mut self,
         identity: either::Either<ClientId, CertificateBundle>,
         ciphersuites: Vec<MlsCiphersuite>,
+        update: bool,
     ) -> CryptoResult<()> {
-        if self.mls_client.is_some() {
+        let is_invalid = update ^ self.mls_client.is_some();
+        if is_invalid {
             // prevents wrong usage of the method instead of silently hiding the mistake
             return Err(CryptoError::ImplementationError);
         }
-        let mls_client = Client::init(identity, &ciphersuites, &self.mls_backend).await?;
+        let mls_client = if update {
+            Client::update(identity, &ciphersuites, &self.mls_backend).await?
+        } else {
+            Client::init(identity, &ciphersuites, &self.mls_backend).await?
+        };
         self.mls_client = Some(mls_client);
         Ok(())
     }
@@ -595,10 +603,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
                         let epoch = alice_central.conversation_epoch(&id).await.unwrap();
                         assert_eq!(epoch, 1);
                     })
@@ -770,10 +776,8 @@ pub mod tests {
                         .new_conversation(id.clone(), case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central
-                        .invite(&id, &mut bob_central, case.custom_cfg())
-                        .await
-                        .unwrap();
+                    let custom_cfg = case.custom_cfg();
+                    alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                     // Create another central which will be desynchronized at some point
                     let mut alice_central_mirror = MlsCentral::try_new(alice_cfg).await.unwrap();
@@ -844,7 +848,10 @@ pub mod tests {
                     CredentialType::Basic => either::Left(client_id),
                     CredentialType::X509 => either::Right(CertificateBundle::rand(case.ciphersuite(), client_id)),
                 };
-                central.mls_init(identity, vec![case.ciphersuite()]).await.unwrap();
+                central
+                    .mls_init(identity, vec![case.ciphersuite()], false)
+                    .await
+                    .unwrap();
                 assert!(central.mls_client.is_some());
                 // expect mls_client to work
                 assert_eq!(central.client_keypackages(2).await.unwrap().len(), 2);

@@ -178,10 +178,8 @@ pub mod tests {
 
                         assert_eq!(alice_central.get_client_ids(&id).await.unwrap().len(), 1);
 
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
                         assert_eq!(alice_central.get_client_ids(&id).await.unwrap().len(), 2);
                     })
                 },

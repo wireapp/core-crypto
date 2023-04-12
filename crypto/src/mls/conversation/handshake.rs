@@ -420,7 +420,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         let MlsConversationCreationMessage { welcome, .. } = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
+                            .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
                             .await
                             .unwrap();
 
@@ -471,7 +471,7 @@ pub mod tests {
                             .unwrap();
 
                         let welcome = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
+                            .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
                             .await
                             .unwrap()
                             .welcome;
@@ -503,7 +503,7 @@ pub mod tests {
                             .unwrap();
 
                         let public_group_state = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
+                            .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
                             .await
                             .unwrap()
                             .public_group_state;
@@ -541,10 +541,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
                         let charlie_kp = charlie_central.get_one_key_package().await;
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
@@ -605,10 +603,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let MlsCommitBundle { commit, welcome, .. } = alice_central
                             .remove_members_from_conversation(&id, &[bob_central.read_client_id()])
@@ -652,10 +648,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Add(guest_central.get_one_key_package().await))
@@ -699,10 +693,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let public_group_state = alice_central
                             .remove_members_from_conversation(&id, &[bob_central.read_client_id()])
@@ -745,10 +737,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(
@@ -805,10 +795,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let bob_keys: Vec<KeyPackage> = bob_central
                             .get_conversation_unchecked(&id)
@@ -890,10 +878,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let bob_keys: Vec<KeyPackage> = bob_central
                             .get_conversation_unchecked(&id)
@@ -1009,10 +995,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Add(guest_central.get_one_key_package().await))
@@ -1061,10 +1045,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let public_group_state = alice_central
                             .update_keying_material(&id)
@@ -1105,10 +1087,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let bob_keys: Vec<KeyPackage> = bob_central
                             .get_conversation_unchecked(&id)
@@ -1251,10 +1231,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
                         let proposal = bob_central
                             .new_proposal(&id, MlsProposal::Add(charlie_central.get_one_key_package().await))
                             .await
@@ -1369,10 +1347,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
 
@@ -1402,10 +1378,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let commit1 = alice_central.update_keying_material(&id).await.unwrap().commit;
                         alice_central.commit_accepted(&id).await.unwrap();
@@ -1447,10 +1421,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let _alice_commit = alice_central.update_keying_material(&id).await.unwrap().commit;
                         let bob_commit = bob_central.update_keying_material(&id).await.unwrap().commit;
@@ -1480,10 +1452,8 @@ pub mod tests {
                                 .new_conversation(id.clone(), case.cfg.clone())
                                 .await
                                 .unwrap();
-                            alice_central
-                                .invite(&id, &mut bob_central, case.custom_cfg())
-                                .await
-                                .unwrap();
+                            let custom_cfg = case.custom_cfg();
+                            alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                             let proposal1 = alice_central
                                 .new_proposal(&id, MlsProposal::Update)
@@ -1550,10 +1520,8 @@ pub mod tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        let custom_cfg = case.custom_cfg();
+                        alice_central.invite(&id, [&mut bob_central], custom_cfg).await.unwrap();
 
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Update)
