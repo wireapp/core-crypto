@@ -58,7 +58,7 @@ impl WebdriverContextInner {
             return Err(WasmBrowserRunError::WebDriverTimeoutError);
         }
 
-        let serde_json::Value::Object(caps) = serde_json::json!({
+        let mut raw_json = serde_json::json!({
             "webSocketUrl": true,
             "timeouts": {
                 "script": timeout.as_secs() * 1000,
@@ -80,7 +80,22 @@ impl WebdriverContextInner {
             "moz:firefoxOptions": {
                 "args": ["-headless"]
             }
-        }) else {
+        });
+
+        // Useful for CI override of installed binaries
+        if let Ok(chrome_path) = std::env::var("CHROME_PATH") {
+            raw_json["goog:chromeOptions"]["binary"] = chrome_path.into();
+        }
+
+        if let Ok(edge_path) = std::env::var("EDGE_PATH") {
+            raw_json["ms:edgeOptions"]["binary"] = edge_path.into();
+        }
+
+        if let Ok(firefox_path) = std::env::var("FIREFOX_PATH") {
+            raw_json["moz:firefoxOptions"]["binary"] = firefox_path.into();
+        }
+
+        let serde_json::Value::Object(caps) = raw_json else {
             unreachable!("`serde_json::json!()` did not produce an object when provided an object. Something is broken.")
         };
 
