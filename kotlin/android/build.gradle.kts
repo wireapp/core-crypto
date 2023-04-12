@@ -112,7 +112,7 @@ afterEvaluate {
             create<MavenPublication>("maven") {
                 groupId = "com.wire"
                 artifactId = "core-crypto-android"
-                version = "0.7.0-rc.4"
+                version = "0.7.0"
                 from(components["release"])
                 pom {
                     name.set("core-crypto-android")
