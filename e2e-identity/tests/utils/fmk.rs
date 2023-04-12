@@ -555,7 +555,6 @@ impl<'a> E2eTest<'a> {
 
         let client_id = openidconnect::ClientId::new(self.oauth_cfg.client_id.clone());
         let client_secret = ClientSecret::new(self.oauth_cfg.client_secret.clone());
-        println!(">>>> {}", self.oauth_cfg.redirect_uri);
         let redirect_url = RedirectUrl::new(self.oauth_cfg.redirect_uri.clone()).unwrap();
         let client = CoreClient::from_provider_metadata(provider_metadata, client_id, Some(client_secret))
             .set_redirect_uri(redirect_url);

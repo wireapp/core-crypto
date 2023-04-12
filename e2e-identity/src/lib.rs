@@ -227,13 +227,10 @@ impl RustyE2eIdentity {
     ///
     /// # Parameters
     /// * `access_token_url` - backend endpoint where this token will be sent. Should be [this one](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token)
-    /// * `user_id` - an UUIDv4 uniquely identifying the user
-    /// * `client` - client identifier
-    /// * `domain` - owning backend domain e.g. `wire.com`
-    /// * `client_id_challenge` - you found after [Self::acme_new_authz_response]
+    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+    /// * `dpop_challenge` - you found after [Self::acme_new_authz_response]
     /// * `backend_nonce` - you get by calling `GET /clients/token/nonce` on wire-server.
     /// See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
-    /// * `backend_nonce` - you get by calling `GET /clients/token/nonce` on wire-server.
     /// * `expiry` - token expiry
     #[allow(clippy::too_many_arguments)]
     pub fn new_dpop_token(
