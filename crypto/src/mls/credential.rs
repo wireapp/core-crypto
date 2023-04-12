@@ -10,10 +10,6 @@ use crate::{
     CryptoError, CryptoResult, MlsError,
 };
 
-/// For test fixtures (test with basic or x509 credential)
-#[cfg(test)]
-pub type CredentialSupplier = fn(ClientId, MlsCiphersuite) -> Option<CertificateBundle>;
-
 /// Represents a x509 certificate chain supplied by the client
 /// It can fetch it after an end-to-end identity process where it can get back a certificate
 /// from the Authentication Service
@@ -37,12 +33,6 @@ impl CertificateBundle {
 
 #[cfg(test)]
 impl CertificateBundle {
-    /// Basic credentials are generated once clients are created
-    /// It will effectively return `None`
-    pub fn rand_basic() -> CredentialSupplier {
-        |_: ClientId, _: MlsCiphersuite| None
-    }
-
     /// Generates a supplier that is later turned into a [openmls::prelude::CredentialBundle]
     pub fn rand(cs: MlsCiphersuite, client_id: ClientId) -> CertificateBundle {
         // here in our tests client_id is generally just "alice" or "bob"
