@@ -38,7 +38,7 @@ pub enum WebdriverKind {
 }
 
 impl WebdriverKind {
-    const CHROMIUM_MAJOR_VERSION: &str = "110";
+    const CHROMIUM_MAJOR_VERSION: &str = "112";
     const CHROME_RELEASE_URL: &str = const_format::concatcp!(
         "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_",
         WebdriverKind::CHROMIUM_MAJOR_VERSION

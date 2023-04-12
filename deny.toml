@@ -19,8 +19,7 @@ targets = [
 ]
 
 [advisories]
-# TODO: use more conservative values when we come close to production
-vulnerability = "warn"
+vulnerability = "deny"
 ignore = [
     # ? ansi_term works well as is, despite being unmaintained
     "RUSTSEC-2021-0139",
@@ -41,7 +40,7 @@ allow-osi-fsf-free = "both"
 copyleft = "allow"
 unused-allowed-license = "warn"
 confidence-threshold = 0.93
-allow = ["Apache-2.0", "MIT", "MPL-2.0", "GPL-3.0", "BSD-2-Clause", "OpenSSL"]
+allow = ["Apache-2.0", "MIT", "MPL-2.0", "GPL-3.0", "OpenSSL"]
 exceptions = [{ allow = ["Unicode-DFS-2016"], name = "unicode-ident" }]
 
 [[licenses.clarify]]
@@ -64,13 +63,19 @@ expression = "ISC"
 license-files = [{ path = "LICENSE", hash = 0x001c7e6c }]
 
 [sources]
+allow-git = [
+    # TODO: Remove when the dependency update matches
+    "https://github.com/OtaK/refinery",
+    # Needed for rusqlite
+    "https://github.com/alexcrichton/openssl-src-rs",
+    # Used in a devdep within wiree2eidentity
+    "https://github.com/briansmith/ring",
+]
 private = [
     # for criterion (test only)
     "https://github.com/bheisler",
     # TODO: remove when no longer required
     "https://github.com/otak",
-    # TODO: remove when a stable ring version is published
-    "https://github.com/briansmith",
 ]
 
 [sources.allow-org]
