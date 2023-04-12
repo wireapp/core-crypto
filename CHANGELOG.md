@@ -7,6 +7,32 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.7.0] - 2023-04-12
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Fixed iOS keychain handling with proper attributes
+
+### Features
+
+- Verify x509 credential identity and return identity (client_id, handle, display_name, domain) once message is decrypted
+
+### Miscellaneous Tasks
+
+- Update deps & cargo-deny configuration
+- Get rid of internal 'CredentialSupplier' test util
+
+</details>
+
+* Please see the previous RC releases for the full changelog
+* Fixed a bug in the iOS WAL compatibility layer that didn't specific correct keychain attributes on the stored SQLCipher salt
+* Updated internal dependencies
+* Implemented E2EI credential identity verification
+    * We are now returning extra data on decrypted messages; you'll be able to get the sender's full identity in them.
+
 ## [0.7.0-rc.4] - 2023-03-28
 
 <details>
@@ -26,6 +52,7 @@ Platform support legends:
 
 ### Miscellaneous Tasks
 
+- Release v0.7.0-rc.4
 - Update interop runner `dirs` dep
 - Appease clippy
 
