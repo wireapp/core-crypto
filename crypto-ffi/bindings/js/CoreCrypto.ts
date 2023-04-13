@@ -1675,11 +1675,12 @@ export class WireE2eIdentity {
      * {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token} on wire-server.
      *
      * @param accessTokenUrl backend endpoint where this token will be sent. Should be this one {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token}
+     * @param expirySecs of the client Dpop JWT. This should be equal to the grace period set in Team Management
      * @param backendNonce you get by calling `GET /clients/token/nonce` on wire-server as defined here {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce}
      */
-    createDpopToken(accessTokenUrl: string, backendNonce: string): Uint8Array {
+    createDpopToken(accessTokenUrl: string, expirySecs: number, backendNonce: string): Uint8Array {
         try {
-            return this.#e2ei.create_dpop_token(accessTokenUrl, backendNonce);
+            return this.#e2ei.create_dpop_token(accessTokenUrl, expirySecs, backendNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }

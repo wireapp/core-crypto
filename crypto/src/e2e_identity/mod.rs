@@ -226,11 +226,18 @@ impl WireE2eIdentity {
     ///
     /// # Parameters
     /// * `access_token_url` - backend endpoint where this token will be sent. Should be [this one](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token)
+    /// * `expiry_secs` - of the client Dpop JWT. This should be equal to the grace period set in Team Management
     /// * `backend_nonce` - you get by calling `GET /clients/token/nonce` on wire-server.
     /// See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
     /// * `expiry` - token expiry
     #[allow(clippy::too_many_arguments)]
-    pub fn create_dpop_token(&self, access_token_url: String, backend_nonce: String) -> E2eIdentityResult<String> {
+    pub fn create_dpop_token(
+        &self,
+        access_token_url: String,
+        expiry_secs: u32,
+        backend_nonce: String,
+    ) -> E2eIdentityResult<String> {
+        let expiry = core::time::Duration::from_secs(expiry_secs as u64);
         let authz = self.authz.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
         let dpop_challenge = authz
             .wire_dpop_challenge
@@ -241,7 +248,7 @@ impl WireE2eIdentity {
             &self.client_id,
             dpop_challenge,
             backend_nonce,
-            self.expiry,
+            expiry,
         )?)
     }
 
@@ -497,7 +504,7 @@ pub mod tests {
                     let backend_nonce = "U09ZR0tnWE5QS1ozS2d3bkF2eWJyR3ZVUHppSTJsMnU";
                     let dpop_url = "https://example.org/clients/42/access-token".to_string();
 
-                    let _dpop_token = enrollment.create_dpop_token(dpop_url, backend_nonce.to_string()).unwrap();
+                    let _dpop_token = enrollment.create_dpop_token(dpop_url, 3600, backend_nonce.to_string()).unwrap();
 
                     let access_token = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjI0NGEzMDE1N2ZhMDMxMmQ2NDU5MWFjODg0NDQ5MDZjZDk4NjZlNTQifQ.eyJpc3MiOiJodHRwOi8vZGV4OjE2MjM4L2RleCIsInN1YiI6IkNsQnBiVHAzYVhKbFlYQndQVTVxYUd4TmVrbDRUMWRHYWs5RVVtbE9SRUYzV1dwck1GcEhSbWhhUkVFeVRucEZlRTVVUlhsT1ZHY3ZObU14T0RZMlpqVTJOell4Tm1Zek1VQjNhWEpsTG1OdmJSSUViR1JoY0EiLCJhdWQiOiJ3aXJlYXBwIiwiZXhwIjoxNjgwNzczMjE4LCJpYXQiOjE2ODA2ODY4MTgsIm5vbmNlIjoiT0t4cVNmel9USm5YbGw1TlpRcUdmdyIsImF0X2hhc2giOiI5VnlmTFdKSm55VEJYVm1LaDRCVV93IiwiY19oYXNoIjoibS1xZXdLN3RQdFNPUzZXN3lXMHpqdyIsIm5hbWUiOiJpbTp3aXJlYXBwPWFsaWNlX3dpcmUiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJBbGljZSBTbWl0aCJ9.AemU4vGBsz_7j-_FxCZ1cdMPejwgIgDS7BehajJyeqkAncQVK_FXn5K8ZhFqqpPbaBB7ZVF8mABq8pw_PPnYtM36O8kPfxv5y6lxghlV5vv0aiz49eGl3YCgPvOLKVH7Gop4J4KytyFylsFwzHbDuy0-zzv_Tm9KtHjedrLrf1j9bVTtHosjopzGN3eAnVb3ayXritzJuIoeq3bGkmXrykWcMWJlVNfQl5cwPoGM4OBM_9E8bZ0MTQHi4sG1Dip_zhEfvtRYtM_N0RBRyPyJgWbTb90axl9EKCzcwChUFNdrN_DDMTyyOw8UVRBhupvtS1fzGDMUn4pinJqPlKxIjA".to_string();
                     let _dpop_chall_req = enrollment

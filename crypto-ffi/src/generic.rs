@@ -901,7 +901,11 @@ impl CoreCrypto<'_> {
             ),
         )
     }
+}
 
+// End-to-end identity methods
+#[allow(dead_code, unused_variables)]
+impl CoreCrypto<'_> {
     /// See [core_crypto::mls::MlsCentral::new_acme_enrollment]
     pub fn new_acme_enrollment(
         &self,
@@ -1269,11 +1273,16 @@ impl WireE2eIdentity {
 
     #[allow(clippy::too_many_arguments)]
     /// See [core_crypto::e2e_identity::WireE2eIdentity::create_dpop_token]
-    pub fn create_dpop_token(&self, access_token_url: String, backend_nonce: String) -> E2eIdentityResult<String> {
+    pub fn create_dpop_token(
+        &self,
+        access_token_url: String,
+        expiry_secs: u32,
+        backend_nonce: String,
+    ) -> E2eIdentityResult<String> {
         self.0
             .lock()
             .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .create_dpop_token(access_token_url, backend_nonce)
+            .create_dpop_token(access_token_url, expiry_secs, backend_nonce)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_dpop_challenge_request]
