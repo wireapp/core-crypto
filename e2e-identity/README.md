@@ -20,6 +20,12 @@ sequenceDiagram
     wire-server->>-wire-client: 200
     wire-client->>+acme-server: 🔒 POST /acme/wire/challenge/SY4eBkEomijgWyWxe879HNwu04zleuBc/TH9RXqaNUencfENLKsRRwppXEtEyL4Tz
     acme-server->>-wire-client: 200
+    wire-client->>+wire-client: OAUTH authorization request 
+    wire-client->>+IdP: OAUTH authorization request (auth code endpoint)
+    wire-client->>-IdP: OAUTH authorization code
+    wire-client->>-wire-client: OAUTH authorization code
+    wire-client->>+IdP: OAUTH authorization code + verifier (token endpoint)
+    wire-client->>-IdP: OAUTH access token
     wire-client->>+acme-server: 🔒 POST /acme/wire/challenge/SY4eBkEomijgWyWxe879HNwu04zleuBc/0mQZ4ACj5rwcoYMYxCiiXBAfw08Y5pYN
     acme-server->>-wire-client: 200
     wire-client->>+acme-server: 🔒 POST /acme/wire/order/DNoWFJkV6oM9iM2VvYjTF0SGW5KISomH
