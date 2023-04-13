@@ -2,8 +2,7 @@
 //! * display_name or handle changed
 //! * the previous certificate is expired.
 
-use crate::group_store::GroupStoreValue;
-use crate::prelude::{E2eIdentityResult, MlsCentral, MlsCommitBundle, MlsConversation, WireE2eIdentity};
+use crate::prelude::{E2eIdentityResult, MlsCentral, MlsCommitBundle, WireE2eIdentity};
 use crate::{CryptoError, CryptoResult};
 use openmls::prelude::{GroupId, KeyPackage};
 use std::collections::HashMap;
@@ -58,7 +57,7 @@ impl MlsCentral {
 
         use futures_util::{StreamExt as _, TryStreamExt as _};
         futures_util::stream::iter(conversations)
-            .map(|c| Ok::<GroupStoreValue<MlsConversation>, CryptoError>(c))
+            .map(|c| Ok::<_, CryptoError>(c))
             .try_fold(HashMap::new(), |mut acc, c| async move {
                 let mut c = c.write().await;
                 let id = GroupId::from_slice(c.id().as_slice());
