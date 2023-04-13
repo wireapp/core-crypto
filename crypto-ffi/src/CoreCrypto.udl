@@ -386,7 +386,7 @@ interface WireE2eIdentity {
     NewAcmeAuthz new_authz_response(sequence<u8> authz);
 
     [Throws=E2eIdentityError]
-    string create_dpop_token(string access_token_url, string backend_nonce);
+    string create_dpop_token(string access_token_url, u32 expiry_secs, string backend_nonce);
 
     [Throws=E2eIdentityError]
     sequence<u8> new_dpop_challenge_request(string access_token, string previous_nonce);

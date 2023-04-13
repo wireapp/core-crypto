@@ -2061,7 +2061,11 @@ impl CoreCrypto {
             .err_into(),
         )
     }
+}
 
+// End-to-end identity methods
+#[wasm_bindgen]
+impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<WireE2eIdentity>`]
     ///
     /// see [core_crypto::mls::MlsCentral::new_acme_enrollment]
@@ -2159,8 +2163,13 @@ impl WireE2eIdentity {
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::create_dpop_token]
-    pub fn create_dpop_token(&self, access_token_url: String, backend_nonce: String) -> WasmCryptoResult<Uint8Array> {
-        let dpop_token = self.0.create_dpop_token(access_token_url, backend_nonce)?;
+    pub fn create_dpop_token(
+        &self,
+        access_token_url: String,
+        expiry_secs: u32,
+        backend_nonce: String,
+    ) -> WasmCryptoResult<Uint8Array> {
+        let dpop_token = self.0.create_dpop_token(access_token_url, expiry_secs, backend_nonce)?;
         WasmCryptoResult::Ok(Uint8Array::from(dpop_token.as_bytes()).into())
     }
 
