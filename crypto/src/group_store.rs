@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::prelude::MlsConversation;
+use core_crypto_keystore::entities::{EntityFindParams, PersistedMlsGroup};
+
 #[async_trait::async_trait(?Send)]
 pub(crate) trait GroupStoreEntity: std::fmt::Debug {
     type RawStoreValue: core_crypto_keystore::entities::Entity;
@@ -30,7 +33,7 @@ pub(crate) trait GroupStoreEntity: std::fmt::Debug {
 
 #[async_trait::async_trait(?Send)]
 impl GroupStoreEntity for crate::mls::conversation::MlsConversation {
-    type RawStoreValue = core_crypto_keystore::entities::PersistedMlsGroup;
+    type RawStoreValue = PersistedMlsGroup;
     type IdentityType = ();
 
     async fn fetch_from_id(
@@ -178,6 +181,34 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         } else {
             Ok(None)
         }
+    }
+
+    pub(crate) async fn get_all(
+        &mut self,
+        keystore: &mut core_crypto_keystore::Connection,
+    ) -> crate::CryptoResult<Vec<either::Either<GroupStoreValue<V>, MlsConversation>>> {
+        let mut keystore_connection = keystore
+            .borrow_conn()
+            .await
+            .map_err(|_| crate::CryptoError::LockPoisonError)?;
+
+        use core_crypto_keystore::entities::EntityBase as _;
+
+        PersistedMlsGroup::find_all(&mut keystore_connection, EntityFindParams::default())
+            .await?
+            .into_iter()
+            .try_fold(vec![], |mut acc, v| -> crate::CryptoResult<_> {
+                let conversation = MlsConversation::from_serialized_state(v.state.clone(), v.parent_id.clone())?;
+                if conversation.group.is_active() {
+                    let id = conversation.id();
+                    let conv = self
+                        .get(id.as_slice())
+                        .map(|c_cache| either::Left(c_cache.clone()))
+                        .unwrap_or_else(|| either::Right(conversation));
+                    acc.push(conv);
+                }
+                Ok(acc)
+            })
     }
 
     fn insert_prepped(&mut self, k: Vec<u8>, prepped_entity: GroupStoreValue<V>) {

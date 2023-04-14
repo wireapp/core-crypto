@@ -4,6 +4,7 @@
 
 use crate::prelude::{E2eIdentityResult, MlsCentral, MlsCommitBundle, WireE2eIdentity};
 use crate::{CryptoError, CryptoResult};
+use either::Either;
 use openmls::prelude::{GroupId, KeyPackage};
 use std::collections::HashMap;
 
@@ -45,27 +46,41 @@ impl MlsCentral {
     ) -> E2eIdentityResult<MlsRenewBundle> {
         e2ei.certificate_response(self, certificate_chain, true).await?;
         let commits = self.update_all_conversations().await?;
-        let kpbs = self.client_keypackages(amount_requested).await?;
-        let key_packages = kpbs.into_iter().map(|kpb| kpb.into_parts().0).collect::<Vec<_>>();
+        let key_packages = self.generate_x509_key_packages(amount_requested).await?;
         Ok(MlsRenewBundle { commits, key_packages })
     }
 
     async fn update_all_conversations(&mut self) -> CryptoResult<HashMap<GroupId, MlsCommitBundle>> {
         let conversations = self.get_all_conversations().await?;
-
         let backend = &self.mls_backend;
 
         use futures_util::{StreamExt as _, TryStreamExt as _};
         futures_util::stream::iter(conversations)
             .map(|c| Ok::<_, CryptoError>(c))
-            .try_fold(HashMap::new(), |mut acc, c| async move {
-                let mut c = c.write().await;
-                let id = GroupId::from_slice(c.id().as_slice());
-                let commit_bundle = c.update_keying_material(backend).await?;
-                acc.insert(id, commit_bundle);
-                Ok(acc)
+            .try_fold(HashMap::new(), |mut acc, conv| async move {
+                match conv {
+                    Either::Left(conv) => {
+                        let mut conv = conv.write().await;
+                        let id = GroupId::from_slice(conv.id().as_slice());
+                        let commit_bundle = conv.update_keying_material(backend).await?;
+                        acc.insert(id, commit_bundle);
+                        Ok(acc)
+                    }
+                    Either::Right(mut conv) => {
+                        let id = GroupId::from_slice(conv.id().as_slice());
+                        let commit_bundle = conv.update_keying_material(backend).await?;
+                        acc.insert(id, commit_bundle);
+                        Ok(acc)
+                    }
+                }
             })
             .await
+    }
+
+    async fn generate_x509_key_packages(&mut self, amount_requested: usize) -> CryptoResult<Vec<KeyPackage>> {
+        let kpbs = self.client_keypackages(amount_requested).await?;
+        let kps = kpbs.into_iter().map(|kpb| kpb.into_parts().0).collect::<Vec<_>>();
+        Ok(kps)
     }
 }
 

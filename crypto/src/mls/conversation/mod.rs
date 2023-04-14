@@ -37,6 +37,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use config::MlsConversationConfiguration;
 
+use crate::group_store::GroupStoreValue;
 use crate::{
     mls::{client::Client, member::MemberId, ClientId, MlsCentral},
     CryptoError, CryptoResult, MlsError,
@@ -224,7 +225,7 @@ impl MlsCentral {
     pub(crate) async fn get_conversation(
         &mut self,
         id: &ConversationId,
-    ) -> CryptoResult<crate::group_store::GroupStoreValue<MlsConversation>> {
+    ) -> CryptoResult<GroupStoreValue<MlsConversation>> {
         let keystore = self.mls_backend.borrow_keystore_mut();
         self.mls_groups
             .get_fetch(id, keystore, None)
@@ -235,7 +236,7 @@ impl MlsCentral {
     pub(crate) async fn get_parent_conversation(
         &mut self,
         id: &ConversationId,
-    ) -> CryptoResult<Option<crate::group_store::GroupStoreValue<MlsConversation>>> {
+    ) -> CryptoResult<Option<GroupStoreValue<MlsConversation>>> {
         let conversation = self.get_conversation(id).await?;
         let conversation_lock = conversation.read().await;
         if let Some(parent_id) = conversation_lock.parent_id.as_ref() {
@@ -251,13 +252,9 @@ impl MlsCentral {
 
     pub(crate) async fn get_all_conversations(
         &mut self,
-    ) -> CryptoResult<Vec<crate::group_store::GroupStoreValue<MlsConversation>>> {
+    ) -> CryptoResult<Vec<either::Either<GroupStoreValue<MlsConversation>, MlsConversation>>> {
         let keystore = self.mls_backend.borrow_keystore_mut();
-        /*self.mls_groups
-        .get_fetch(id, keystore, None)
-        .await?
-        .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))*/
-        todo!()
+        self.mls_groups.get_all(keystore).await
     }
 
     /// Mark a conversation as child of another one

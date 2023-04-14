@@ -349,8 +349,6 @@ impl Client {
         ciphersuites: &[MlsCiphersuite],
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
-        use core_crypto_keystore::CryptoKeystoreMls as _;
-
         // TODO: support multi-ciphersuite
         let ciphersuite = *ciphersuites.get(0).ok_or(CryptoError::ImplementationError)?;
 
