@@ -7,11 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.8.0] - 2023-04-19
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.8.0" unreleased=true}}
+</details>
+
+* **[BREAKING]**(e2e identity): added an expiry in seconds in `create_dpop_token`)
+
 ## [0.7.0] - 2023-04-12
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.7.0" unreleased=true}}
+{{git-cliff tag="v0.7.0"}}
 </details>
 
 * Please see the previous RC releases for the full changelog
