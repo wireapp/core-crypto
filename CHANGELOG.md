@@ -7,6 +7,15 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.8.0] - 2023-04-19
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+</details>
+
+* **[BREAKING]**(e2e identity): added an expiry in seconds in `create_dpop_token`)
+
 ## [0.7.0] - 2023-04-12
 
 <details>
@@ -22,8 +31,70 @@ Platform support legends:
 
 ### Miscellaneous Tasks
 
+- Release v0.7.0
 - Update deps & cargo-deny configuration
 - Get rid of internal 'CredentialSupplier' test util
+
+
+### Bug Fixes
+
+- [**breaking**] Tweak WASM API
+- Use schnellru fork for GroupStore faillible inserts
+- Fixed GroupStore memory limiter behavior
+
+### Features
+
+- Remove any transitive crate using ring. As a consequence supports EcDSA on WASM
+- Copy/modify kotlin wrapper from Kalium ([#284](https://github.com/wireapp/core-crypto/issues/284))
+- [**breaking**] Support creating a MLS client from an e2e identity certificate
+
+### Miscellaneous Tasks
+
+- Release v0.7.0-rc.4
+- Update interop runner `dirs` dep
+- Appease clippy
+
+
+### Bug Fixes
+
+- Proteus auto prekey ids not incrementing
+
+### Miscellaneous Tasks
+
+- Release v0.7.0-rc.3
+
+
+### Miscellaneous Tasks
+
+- Release v0.7.0-rc.2
+
+
+### Bug Fixes
+
+- [**breaking**] Make FFI parameters compliant with rfc8555
+- Added missing version() function to Swift bindings
+- Enable ios-wal-compat for iOS builds by default
+- Exclude self from self-remove-commit delay
+- Fix rustsec advisories on xtask deps
+
+### Features
+
+- [**breaking**] Latest e2e identity iteration. ClientId (from MLS) is used instead of requiring just parts of it
+- Added API to check the `Arc` strongref counter
+- [**breaking**] Add ability to mark subconversations
+- [**breaking**] Change proteus auto prekey return type to include prekey id
+- [**breaking**] Added LRU cache-based underlying group store to replace the HashMaps
+
+### Miscellaneous Tasks
+
+- Release 0.7.0-rc.1
+- Use crates.io sparse protocol on CI via env
+- Android upgrade to NDK 25 + openssl android build fix
+- Updated serde-wasm-bindgen to 0.5.0
+- Updated crypto deps (p256/384 & ecdsa)
+- Updated changelog for LRU store changes
+- [**breaking**] Drop LRU from keystore
+- Bump webdriver version to 110
 
 </details>
 
@@ -114,33 +185,6 @@ Platform support legends:
 
 <details>
     <summary>git-conventional changelog</summary>
-
-### Bug Fixes
-
-- [**breaking**] Make FFI parameters compliant with rfc8555
-- Added missing version() function to Swift bindings
-- Enable ios-wal-compat for iOS builds by default
-- Exclude self from self-remove-commit delay
-- Fix rustsec advisories on xtask deps
-
-### Features
-
-- [**breaking**] Latest e2e identity iteration. ClientId (from MLS) is used instead of requiring just parts of it
-- Added API to check the `Arc` strongref counter
-- [**breaking**] Add ability to mark subconversations
-- [**breaking**] Change proteus auto prekey return type to include prekey id
-- [**breaking**] Added LRU cache-based underlying group store to replace the HashMaps
-
-### Miscellaneous Tasks
-
-- Release 0.7.0-rc.1
-- Use crates.io sparse protocol on CI via env
-- Android upgrade to NDK 25 + openssl android build fix
-- Updated serde-wasm-bindgen to 0.5.0
-- Updated crypto deps (p256/384 & ecdsa)
-- Updated changelog for LRU store changes
-- [**breaking**] Drop LRU from keystore
-- Bump webdriver version to 110
 
 </details>
 
@@ -561,146 +605,6 @@ Platform support legends:
 
 - Add reminder for x509 certificate tests
 
-
-### Miscellaneous Tasks
-
-- Release v0.3.1
-
-
-### Bug Fixes
-
-- Clippy fix impl eq
-- Libgcc swizzling for android was removed
-- Cleaned up FFI names for clearer intent
-- Caught up WASM api with the internal API changes
-- Doctests were failing because included markdown snippets were parsed and compiled
-- Defer validation that a callback has to be set for validating external add proposal after incoming proposal identified as such
-- Updated RustCrypto dependencies to match hpke-rs requirements
-- Group was not persisted after decrypting an application message
-- UniFFI wrong type defs
-- Aes_gcm compilation issue
-- WASM persistence & CoreCrypto Async edition
-- 'client_keypackages' does not require mutable access on 'mls_client'
-- Add_member/remove_member IoError
-- Incorrect number of keypackages returned
-- Added support for MLS Group persistence [CL-5]
-
-### Documentation
-
-- Added bindings docs where appropriate + generated gh-pages
-- Fix Client struct documentation
-- Improving docs of Core-Crypto - [CL-50] ([#60](https://github.com/wireapp/core-crypto/issues/60))
-
-### Features
-
-- Review external add proposal validation and remove 'InvalidProposalType' error
-- Remove required KeyPackage when creating an external add proposal
-- Remove commits auto-merge behaviour
-- Expose GroupInfo after commit operation
-- Use draft-16 implementation of external sender. Expose a correct type through ffi for remove key
-- Add API to wipe specific group from core crypto [CL-55] ([#81](https://github.com/wireapp/core-crypto/issues/81))
-- Adding validation to external proposal [CL-51] ([#71](https://github.com/wireapp/core-crypto/issues/71))
-- Decrypting a commit now also return a delay when there are pending proposals
-- Decrypting a commit now also return a delay when there are pending proposals
-- 'commit_delay' now uses openmls provided leaf index instead of computing it ourselves. It is also now infallible.
-- Ensure consistent state
-- [**breaking**] Add commit delay when a message with prending proposals is processed [CL-52] ([#67](https://github.com/wireapp/core-crypto/issues/67))
-- Added KeyPackage Pruning
-- Added support for external entropy seed
-- Join by external commit support - CL-47 ([#57](https://github.com/wireapp/core-crypto/issues/57))
-- Added Entity testing to keystore
-- External remove proposal support
-- Supports and validates x509 certificates as credential
-- Expose function to self update the key package to FFI and Wasm #CL-17 ([#48](https://github.com/wireapp/core-crypto/issues/48))
-- Added support for wasm32-unknown-unknown target
-- Support external add proposal
-- Added method to leave a conversation
-- Enforce (simple) invariants on MlsCentralConfiguration
-- Expose add/update/remove proposal
-
-### Miscellaneous Tasks
-
-- Bump WASM bundle version to 0.3.0
-- Added Changelog generator
-- Fix nits on CHANGELOG-HUMAN.md
-- Add changelog generator configuration + human changelog
-- Disable crate publishing + UniFFI catchup
-- Rename 'group_info' into 'public_group_state' to remain consistent with draft-12
-- Remove 'SelfKeypackageNotFound' error which is not used
-- Fix some clippy lints
-- Remove 'group()' test helper and inlined it
-- Fix cli compilation and update it a bit
-- Removed CryptoError variant `CentralConfigurationError`
-- Avoid cloning credential
-- Use shorthand for not using generics in conversation
-- Factorize group accessors in conversation.rs
-- Fix some clippy warnings
-- Remove .idea in sample anroid app
-- Remove unnecessary path prefixes imports
-- Remove useless mutable borrow in Client methods
-- Add Intellij files to gitignore
-- Bump jvm and android version
-- Add jvm linux support
-
-### Performance
-
-- Avoid cloning conversation extra members when creating the former
-
-### Refactor
-
-- Moved run_with_* test utils in a test_utils mod
-- Use shorthand for generics in Central
-- Factorize keystore update when group state change from a conversation pov
-
-### Testing
-
-- Add tests for 'commit_pending_proposals'
-- Verify that commit operation are returning a valid welcome if any
-- Use Index trait to access conversation from Central instead of duplicate accessor
-- Use central instead of conversation
-- Fix minor clippy lints in tests
-- Apply clippy suggestions on test sources
-- Reorganize tests in conversation.rs
-- Nest conversation tests in dedicated modules
-- Verify adding a keypackage to a ConversationMember
-
-
-### Bug Fixes
-
-- Set correct path to toolchain depending on platform & copy bindings
-- Fix broken tests
-- Tests fix
-- Fixed iOS WAL behavior for SQLite-backed stores
-- Fix Keystore trait having update method removed
-- Clippy + fmt pass on core-crypto
-- Fmt + clippy pass
-- Migrations were incorrectly defined
-
-### Features
-
-- Add android project
-- Add tasks for building and copying jvm resources
-- Add jvm project
-- WIP hand-written ts bindings
-- Generate Swift & Kotlin bindings 🎉
-- Updated deps
-- Added salt in keychain management instead of flat AES-encrypted file
-- Added WIP DS mockup based on QUIC
-- Added ability to create conversations (!!!)
-- Added api support for in-memory keystore
-- Added in-memory faculties for keystore
-- Added benches for the MLS key management
-- Added benches & fixed performance issues
-- Added integration tests + fixes
-- Implemented LRU cache for keystore
-- Added support for Proteus PreKeys
-- Progress + fix store compilation to WASM
-
-### Miscellaneous Tasks
-
-- Configure wire maven repository
-- Clean up gradle files
-
 </details>
 
 Platform support status:
@@ -893,6 +797,28 @@ There's a post mortem available here: <https://github.com/wireapp/core-crypto/pu
 
 <details>
     <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Aarch64-apple-ios-sim target not compiling  ([#213](https://github.com/wireapp/core-crypto/issues/213))
+- Cryptobox import now throws errors on missing/incorrect store
+
+### Features
+
+- Expose end to end identity web API
+- Add end to end identity bindings
+
+### Miscellaneous Tasks
+
+- 0.6.0-rc.4 release
+- Updated base64, lru and spinoff deps
+- Added WebDriver-based WASM test runner
+- Xtask improvements
+- Fix 1.66 clippy warnings
+- Update base64 to 0.20
+- Fixed wrong documentation link in TS bindings docs
+- Update UniFFI to 0.22
+- Kotlin FFI docs + makefile fixes for other platforms
 
 </details>
 
@@ -1092,47 +1018,6 @@ There's a post mortem available here: <https://github.com/wireapp/core-crypto/pu
 <details>
     <summary>git-conventional changelog</summary>
 
-### Bug Fixes
-
-- 'join_by_external_commit' returns a non TLS serialized conversation id
-
-### Features
-
-- [**breaking**] Expose a 'PublicGroupStateBundle' struct used in 'CommitBundle' variants
-- [**breaking**] Remove all the final_* methods returning a TLS encoded CommitBundle
-- Returning if decrypted message changed the epoch - CL-92 ([#152](https://github.com/wireapp/core-crypto/issues/152))
-- Exporting secret key derived from the group and client ids from the members - CL-97 - CL-98 ([#142](https://github.com/wireapp/core-crypto/issues/142))
-- Added API to generate Proteus prekeys
-- Fixed Cryptobox import for WASM
-- Added support for migrating Cryptobox data
-- Added FFI for CoreCrypto-Proteus
-- Added support for Proteus
-- Validate received external commits making sure the sender's user already belongs to the MLS group and has the right role
-- [**breaking**] Rename callback~~`client_id_belongs_to_one_of`~~ into `client_is_existing_group_user`
-- [**breaking**] External commit returns a bundle containing the PGS
-- [**breaking**] Add `clear_pending_group_from_external_commit` to cleanly abort an external commit. Also renamed `group_state` argument into `public_group_state` wherever found which can be considered a breaking change in some languages
-- [**breaking**] Rename `MlsConversationInitMessage#group` into `MlsConversationInitMessage#conversation_id` because it was misleading about the actual returned value
-
-### Miscellaneous Tasks
-
-- Apply suggestions from code review
-- Updated bundled FFI files
-- Added Proteus testing infra
-- Added missing docs
-- Nits, fmt & cargo-deny tweak
-- Add m1 support for the jvm bindings ([#139](https://github.com/wireapp/core-crypto/issues/139))
-- Remove unneeded `map_err(CryptoError::from)`
-- Remove useless code
-
-### Testing
-
-- Fix external commit tests allowing member to rejoin a group by external commit
-- Add a default impl for 'TestCase', very useful when one has to debug on IntelliJ
-- Parameterize ciphers
-- Ensure external senders can be inferred when joining by external commit or welcome
-- Fix rcgen failing on WASM due to some unsupported elliptic curve methods invoked at compile time
-- Ensure external commit are retriable
-
 </details>
 
 * Add Apple M1 support for the JVM bindings
@@ -1318,6 +1203,11 @@ Note: all the platforms marked with (⚠️) above will get a round of polish fo
 
 - Add reminder for x509 certificate tests
 
+
+### Miscellaneous Tasks
+
+- Release v0.3.1
+
 </details>
 
 Platform support status:
@@ -1364,6 +1254,141 @@ In the end, the `final_` prefix will removed and the not prefixed methods will b
 ### Miscellaneous Tasks
 
 - Release v0.3.1
+
+
+### Bug Fixes
+
+- Clippy fix impl eq
+- Libgcc swizzling for android was removed
+- Cleaned up FFI names for clearer intent
+- Caught up WASM api with the internal API changes
+- Doctests were failing because included markdown snippets were parsed and compiled
+- Defer validation that a callback has to be set for validating external add proposal after incoming proposal identified as such
+- Updated RustCrypto dependencies to match hpke-rs requirements
+- Group was not persisted after decrypting an application message
+- UniFFI wrong type defs
+- Aes_gcm compilation issue
+- WASM persistence & CoreCrypto Async edition
+- 'client_keypackages' does not require mutable access on 'mls_client'
+- Add_member/remove_member IoError
+- Incorrect number of keypackages returned
+- Added support for MLS Group persistence [CL-5]
+
+### Documentation
+
+- Added bindings docs where appropriate + generated gh-pages
+- Fix Client struct documentation
+- Improving docs of Core-Crypto - [CL-50] ([#60](https://github.com/wireapp/core-crypto/issues/60))
+
+### Features
+
+- Review external add proposal validation and remove 'InvalidProposalType' error
+- Remove required KeyPackage when creating an external add proposal
+- Remove commits auto-merge behaviour
+- Expose GroupInfo after commit operation
+- Use draft-16 implementation of external sender. Expose a correct type through ffi for remove key
+- Add API to wipe specific group from core crypto [CL-55] ([#81](https://github.com/wireapp/core-crypto/issues/81))
+- Adding validation to external proposal [CL-51] ([#71](https://github.com/wireapp/core-crypto/issues/71))
+- Decrypting a commit now also return a delay when there are pending proposals
+- Decrypting a commit now also return a delay when there are pending proposals
+- 'commit_delay' now uses openmls provided leaf index instead of computing it ourselves. It is also now infallible.
+- Ensure consistent state
+- [**breaking**] Add commit delay when a message with prending proposals is processed [CL-52] ([#67](https://github.com/wireapp/core-crypto/issues/67))
+- Added KeyPackage Pruning
+- Added support for external entropy seed
+- Join by external commit support - CL-47 ([#57](https://github.com/wireapp/core-crypto/issues/57))
+- Added Entity testing to keystore
+- External remove proposal support
+- Supports and validates x509 certificates as credential
+- Expose function to self update the key package to FFI and Wasm #CL-17 ([#48](https://github.com/wireapp/core-crypto/issues/48))
+- Added support for wasm32-unknown-unknown target
+- Support external add proposal
+- Added method to leave a conversation
+- Enforce (simple) invariants on MlsCentralConfiguration
+- Expose add/update/remove proposal
+
+### Miscellaneous Tasks
+
+- Bump WASM bundle version to 0.3.0
+- Added Changelog generator
+- Fix nits on CHANGELOG-HUMAN.md
+- Add changelog generator configuration + human changelog
+- Disable crate publishing + UniFFI catchup
+- Rename 'group_info' into 'public_group_state' to remain consistent with draft-12
+- Remove 'SelfKeypackageNotFound' error which is not used
+- Fix some clippy lints
+- Remove 'group()' test helper and inlined it
+- Fix cli compilation and update it a bit
+- Removed CryptoError variant `CentralConfigurationError`
+- Avoid cloning credential
+- Use shorthand for not using generics in conversation
+- Factorize group accessors in conversation.rs
+- Fix some clippy warnings
+- Remove .idea in sample anroid app
+- Remove unnecessary path prefixes imports
+- Remove useless mutable borrow in Client methods
+- Add Intellij files to gitignore
+- Bump jvm and android version
+- Add jvm linux support
+
+### Performance
+
+- Avoid cloning conversation extra members when creating the former
+
+### Refactor
+
+- Moved run_with_* test utils in a test_utils mod
+- Use shorthand for generics in Central
+- Factorize keystore update when group state change from a conversation pov
+
+### Testing
+
+- Add tests for 'commit_pending_proposals'
+- Verify that commit operation are returning a valid welcome if any
+- Use Index trait to access conversation from Central instead of duplicate accessor
+- Use central instead of conversation
+- Fix minor clippy lints in tests
+- Apply clippy suggestions on test sources
+- Reorganize tests in conversation.rs
+- Nest conversation tests in dedicated modules
+- Verify adding a keypackage to a ConversationMember
+
+
+### Bug Fixes
+
+- Set correct path to toolchain depending on platform & copy bindings
+- Fix broken tests
+- Tests fix
+- Fixed iOS WAL behavior for SQLite-backed stores
+- Fix Keystore trait having update method removed
+- Clippy + fmt pass on core-crypto
+- Fmt + clippy pass
+- Migrations were incorrectly defined
+
+### Features
+
+- Add android project
+- Add tasks for building and copying jvm resources
+- Add jvm project
+- WIP hand-written ts bindings
+- Generate Swift & Kotlin bindings 🎉
+- Updated deps
+- Added salt in keychain management instead of flat AES-encrypted file
+- Added WIP DS mockup based on QUIC
+- Added ability to create conversations (!!!)
+- Added api support for in-memory keystore
+- Added in-memory faculties for keystore
+- Added benches for the MLS key management
+- Added benches & fixed performance issues
+- Added integration tests + fixes
+- Implemented LRU cache for keystore
+- Added support for Proteus PreKeys
+- Progress + fix store compilation to WASM
+
+### Miscellaneous Tasks
+
+- Configure wire maven repository
+- Clean up gradle files
 
 </details>
 
