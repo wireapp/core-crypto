@@ -4,7 +4,7 @@ use wire_e2e_identity::prelude::RustyE2eIdentity;
 use error::*;
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::prelude::{CertificateBundle, ClientId, MlsCentral, MlsCiphersuite};
+use crate::prelude::{id::ClientId, CertificateBundle, MlsCentral, MlsCiphersuite};
 
 mod crypto;
 pub mod error;

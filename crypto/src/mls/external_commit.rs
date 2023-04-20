@@ -23,7 +23,7 @@ use crate::{
     group_store::GroupStoreValue,
     mls::{ConversationId, MlsCentral},
     prelude::{
-        ClientId, MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration, MlsPublicGroupStateBundle,
+        id::ClientId, MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration, MlsPublicGroupStateBundle,
     },
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };

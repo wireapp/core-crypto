@@ -5,7 +5,7 @@ use openmls::{
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize, Serialize};
 
-use client::{Client, ClientId};
+use client::{id::ClientId, Client};
 use config::MlsCentralConfiguration;
 use conversation::{ConversationId, MlsConversation};
 use credential::CertificateBundle;
