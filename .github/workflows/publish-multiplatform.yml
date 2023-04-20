@@ -116,7 +116,7 @@ jobs:
             name: x86_64-apple-ios
             path: target/x86_64-apple-ios/release/*.a
 
-  publish-jvm:
+  publish-multiplatform:
     if: github.repository == 'wireapp/core-crypto'
     name: Publish JVM Package
     needs: [build-linux-artifacts, build-darwin-artifacts]
@@ -194,7 +194,7 @@ jobs:
       - name: Publish package
         uses: gradle/gradle-build-action@v2
         with:
-          build-root-directory: kotlin-multiplatform
-          arguments: "jvm:publishMavenPublicationToGithubRepository"
+          build-root-directory: crypto-ffi/bindings/kotlin-multiplatform
+          arguments: "lib:publishKotlinMultiplatformPublicationToGitHubRepository"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
