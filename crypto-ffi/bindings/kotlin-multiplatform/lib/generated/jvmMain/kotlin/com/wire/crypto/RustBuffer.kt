@@ -37,13 +37,13 @@ actual val RustBuffer.dataSize: Int
 
 actual fun RustBuffer.free() =
     rustCall { status ->
-        UniFFILib.ffi_CoreCrypto_552_rustbuffer_free(this, status)
+        UniFFILib.ffi_CoreCrypto_3d4a_rustbuffer_free(this, status)
     }
 
 actual fun allocRustBuffer(buffer: Buffer): RustBuffer =
     rustCall { status ->
         val size = buffer.size
-        UniFFILib.ffi_CoreCrypto_552_rustbuffer_alloc(size.toInt(), status).also { rustBuffer: RustBuffer ->
+        UniFFILib.ffi_CoreCrypto_3d4a_rustbuffer_alloc(size.toInt(), status).also { rustBuffer: RustBuffer ->
             val data = rustBuffer.data
                 ?: throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=${size})")
             rustBuffer.writeField("len", size.toInt())

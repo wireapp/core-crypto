@@ -27,7 +27,7 @@ interface WireE2eIdentityInterface {
     fun `newAuthzResponse`(`authz`: List<UByte>): NewAcmeAuthz
     
     @Throws(E2eIdentityException::class)
-    fun `createDpopToken`(`accessTokenUrl`: String, `backendNonce`: String): String
+    fun `createDpopToken`(`accessTokenUrl`: String, `expirySecs`: UInt, `backendNonce`: String): String
     
     @Throws(E2eIdentityException::class)
     fun `newDpopChallengeRequest`(`accessToken`: String, `previousNonce`: String): List<UByte>
@@ -61,7 +61,7 @@ class WireE2eIdentity(
 
     override protected fun freeRustArcPtr() {
         rustCall() { status ->
-            UniFFILib.ffi_CoreCrypto_552_WireE2eIdentity_object_free(this.pointer, status)
+            UniFFILib.ffi_CoreCrypto_3d4a_WireE2eIdentity_object_free(this.pointer, status)
         }
     }
 
@@ -69,7 +69,7 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `directoryResponse`(`directory`: List<UByte>): AcmeDirectory =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_directory_response(it, FfiConverterSequenceUByte.lower(`directory`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_directory_response(it, FfiConverterSequenceUByte.lower(`directory`),  _status)
 }
         }.let {
             FfiConverterTypeAcmeDirectory.lift(it)
@@ -78,7 +78,7 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `newAccountRequest`(`previousNonce`: String): List<UByte> =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_new_account_request(it, FfiConverterString.lower(`previousNonce`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_new_account_request(it, FfiConverterString.lower(`previousNonce`),  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -87,7 +87,7 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `newAccountResponse`(`account`: List<UByte>) =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_new_account_response(it, FfiConverterSequenceUByte.lower(`account`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_new_account_response(it, FfiConverterSequenceUByte.lower(`account`),  _status)
 }
         }
     
@@ -95,7 +95,7 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `newOrderRequest`(`previousNonce`: String): List<UByte> =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_new_order_request(it, FfiConverterString.lower(`previousNonce`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_new_order_request(it, FfiConverterString.lower(`previousNonce`),  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -104,7 +104,7 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `newOrderResponse`(`order`: List<UByte>): NewAcmeOrder =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_new_order_response(it, FfiConverterSequenceUByte.lower(`order`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_new_order_response(it, FfiConverterSequenceUByte.lower(`order`),  _status)
 }
         }.let {
             FfiConverterTypeNewAcmeOrder.lift(it)
@@ -113,7 +113,7 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `newAuthzRequest`(`url`: String, `previousNonce`: String): List<UByte> =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_new_authz_request(it, FfiConverterString.lower(`url`), FfiConverterString.lower(`previousNonce`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_new_authz_request(it, FfiConverterString.lower(`url`), FfiConverterString.lower(`previousNonce`),  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -122,16 +122,16 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `newAuthzResponse`(`authz`: List<UByte>): NewAcmeAuthz =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_new_authz_response(it, FfiConverterSequenceUByte.lower(`authz`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_new_authz_response(it, FfiConverterSequenceUByte.lower(`authz`),  _status)
 }
         }.let {
             FfiConverterTypeNewAcmeAuthz.lift(it)
         }
     
-    @Throws(E2eIdentityException::class)override fun `createDpopToken`(`accessTokenUrl`: String, `backendNonce`: String): String =
+    @Throws(E2eIdentityException::class)override fun `createDpopToken`(`accessTokenUrl`: String, `expirySecs`: UInt, `backendNonce`: String): String =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_create_dpop_token(it, FfiConverterString.lower(`accessTokenUrl`), FfiConverterString.lower(`backendNonce`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_create_dpop_token(it, FfiConverterString.lower(`accessTokenUrl`), FfiConverterUInt.lower(`expirySecs`), FfiConverterString.lower(`backendNonce`),  _status)
 }
         }.let {
             FfiConverterString.lift(it)
@@ -140,7 +140,7 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `newDpopChallengeRequest`(`accessToken`: String, `previousNonce`: String): List<UByte> =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_new_dpop_challenge_request(it, FfiConverterString.lower(`accessToken`), FfiConverterString.lower(`previousNonce`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_new_dpop_challenge_request(it, FfiConverterString.lower(`accessToken`), FfiConverterString.lower(`previousNonce`),  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -149,7 +149,7 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `newOidcChallengeRequest`(`idToken`: String, `previousNonce`: String): List<UByte> =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_new_oidc_challenge_request(it, FfiConverterString.lower(`idToken`), FfiConverterString.lower(`previousNonce`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_new_oidc_challenge_request(it, FfiConverterString.lower(`idToken`), FfiConverterString.lower(`previousNonce`),  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -158,7 +158,7 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `newChallengeResponse`(`challenge`: List<UByte>) =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_new_challenge_response(it, FfiConverterSequenceUByte.lower(`challenge`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_new_challenge_response(it, FfiConverterSequenceUByte.lower(`challenge`),  _status)
 }
         }
     
@@ -166,7 +166,7 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `checkOrderRequest`(`orderUrl`: String, `previousNonce`: String): List<UByte> =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_check_order_request(it, FfiConverterString.lower(`orderUrl`), FfiConverterString.lower(`previousNonce`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_check_order_request(it, FfiConverterString.lower(`orderUrl`), FfiConverterString.lower(`previousNonce`),  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -175,7 +175,7 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `checkOrderResponse`(`order`: List<UByte>) =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_check_order_response(it, FfiConverterSequenceUByte.lower(`order`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_check_order_response(it, FfiConverterSequenceUByte.lower(`order`),  _status)
 }
         }
     
@@ -183,7 +183,7 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `finalizeRequest`(`previousNonce`: String): List<UByte> =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_finalize_request(it, FfiConverterString.lower(`previousNonce`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_finalize_request(it, FfiConverterString.lower(`previousNonce`),  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -192,7 +192,7 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `finalizeResponse`(`finalize`: List<UByte>) =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_finalize_response(it, FfiConverterSequenceUByte.lower(`finalize`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_finalize_response(it, FfiConverterSequenceUByte.lower(`finalize`),  _status)
 }
         }
     
@@ -200,7 +200,7 @@ class WireE2eIdentity(
     @Throws(E2eIdentityException::class)override fun `certificateRequest`(`previousNonce`: String): List<UByte> =
         callWithPointer {
     rustCallWithError(E2eIdentityException) { _status ->
-    UniFFILib.CoreCrypto_552_WireE2eIdentity_certificate_request(it, FfiConverterString.lower(`previousNonce`),  _status)
+    UniFFILib.CoreCrypto_3d4a_WireE2eIdentity_certificate_request(it, FfiConverterString.lower(`previousNonce`),  _status)
 }
         }.let {
             FfiConverterSequenceUByte.lift(it)

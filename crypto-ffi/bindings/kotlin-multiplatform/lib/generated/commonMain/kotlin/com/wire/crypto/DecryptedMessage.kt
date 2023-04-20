@@ -9,7 +9,8 @@ data class DecryptedMessage (
     var `isActive`: Boolean, 
     var `commitDelay`: ULong?, 
     var `senderClientId`: ClientId?, 
-    var `hasEpochChanged`: Boolean
+    var `hasEpochChanged`: Boolean, 
+    var `identity`: WireIdentity?
 ) {
     
 }
@@ -23,6 +24,7 @@ object FfiConverterTypeDecryptedMessage: FfiConverterRustBuffer<DecryptedMessage
             FfiConverterOptionalULong.read(buf),
             FfiConverterOptionalTypeClientId.read(buf),
             FfiConverterBoolean.read(buf),
+            FfiConverterOptionalTypeWireIdentity.read(buf),
         )
     }
 
@@ -32,7 +34,8 @@ object FfiConverterTypeDecryptedMessage: FfiConverterRustBuffer<DecryptedMessage
             FfiConverterBoolean.allocationSize(value.`isActive`) +
             FfiConverterOptionalULong.allocationSize(value.`commitDelay`) +
             FfiConverterOptionalTypeClientId.allocationSize(value.`senderClientId`) +
-            FfiConverterBoolean.allocationSize(value.`hasEpochChanged`)
+            FfiConverterBoolean.allocationSize(value.`hasEpochChanged`) +
+            FfiConverterOptionalTypeWireIdentity.allocationSize(value.`identity`)
     )
 
     override fun write(value: DecryptedMessage, buf: Buffer) {
@@ -42,5 +45,6 @@ object FfiConverterTypeDecryptedMessage: FfiConverterRustBuffer<DecryptedMessage
             FfiConverterOptionalULong.write(value.`commitDelay`, buf)
             FfiConverterOptionalTypeClientId.write(value.`senderClientId`, buf)
             FfiConverterBoolean.write(value.`hasEpochChanged`, buf)
+            FfiConverterOptionalTypeWireIdentity.write(value.`identity`, buf)
     }
 }

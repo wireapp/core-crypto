@@ -43,6 +43,7 @@ sealed class CryptoException(message: String): Exception(message) {
         class NoProvisionalIdentityFound(message: String) : CryptoException(message)
         class TooManyIdentitiesPresent(message: String) : CryptoException(message)
         class ParentGroupNotFound(message: String) : CryptoException(message)
+        class InvalidIdentity(message: String) : CryptoException(message)
         
 
     companion object ErrorHandler : CallStatusErrorHandler<CryptoException> {
@@ -92,6 +93,7 @@ object FfiConverterTypeCryptoError : FfiConverterRustBuffer<CryptoException> {
             36 -> CryptoException.NoProvisionalIdentityFound(FfiConverterString.read(buf))
             37 -> CryptoException.TooManyIdentitiesPresent(FfiConverterString.read(buf))
             38 -> CryptoException.ParentGroupNotFound(FfiConverterString.read(buf))
+            39 -> CryptoException.InvalidIdentity(FfiConverterString.read(buf))
             else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
         }
         
@@ -253,6 +255,10 @@ object FfiConverterTypeCryptoError : FfiConverterRustBuffer<CryptoException> {
             }
             is CryptoException.ParentGroupNotFound -> {
                 buf.writeInt(38)
+                Unit
+            }
+            is CryptoException.InvalidIdentity -> {
+                buf.writeInt(39)
                 Unit
             }
         }

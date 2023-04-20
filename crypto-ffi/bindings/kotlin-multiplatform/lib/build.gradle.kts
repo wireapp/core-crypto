@@ -13,7 +13,7 @@ repositories {
 }
 
 group = "com.wire"
-version = "0.6.0-rc.3-multiplatform"
+version = "0.8.0-multiplatform"
 
 val generatedDir = projectDir.resolve("generated")
 val crateDir = projectDir.resolve("../../../")
