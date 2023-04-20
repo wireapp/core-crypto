@@ -44,7 +44,7 @@ fn main() {
                 KotlinBindingGenerator {},
                 UDL_FILE,
                  None::<&Utf8Path>,
-                Some("./bindings/kotlin-native"),
+                Some("./bindings/kotlin-multiplatform/lib/generated"),
            ).unwrap();
 
             uniffi_bindgen::generate_bindings(

@@ -1,0 +1,9 @@
+staticLibraries = libcore_crypto_ffi.a
+libraryPaths.ios_arm64 = ../../../../target/aarch64-apple-ios/release
+libraryPaths.ios_x64 = ../../../../target/x86_64-apple-ios/release
+libraryPaths.ios_simulator_arm64 = ../../../../target/aarch64-apple-ios-sim/release
+libraryPaths.macos_x64 = ../../../../target/x86_64-apple-darwin/release
+libraryPaths.macos_arm64 = ../../../../target/aarch64-apple-darwin/release
+libraryPaths.linux_x64 = ../../../../target/x86_64-unknown-linux-gnu/release
+compilerOpts.ios_arm64 = -framework Security
+compilerOpts.ios_simulator_arm64 = -framework Security
