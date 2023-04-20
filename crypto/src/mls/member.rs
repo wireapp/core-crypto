@@ -20,7 +20,7 @@ use openmls::prelude::KeyPackage;
 use tls_codec::Deserialize;
 
 use crate::{
-    mls::client::{Client, ClientId},
+    mls::client::{id::ClientId, Client},
     CryptoResult, MlsError,
 };
 

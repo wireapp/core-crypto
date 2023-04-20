@@ -73,6 +73,7 @@ pub mod prelude {
         },
         error::*,
         mls::{
+            client::id::ClientId,
             client::*,
             config::MlsCentralConfiguration,
             conversation::{
