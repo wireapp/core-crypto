@@ -15,6 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 pub(crate) mod id;
+pub(crate) mod identifier;
 
 use openmls::{
     credentials::CredentialBundle,
@@ -25,7 +26,6 @@ use openmls_traits::{
     key_store::{FromKeyStoreValue, OpenMlsKeyStore, ToKeyStoreValue},
     OpenMlsCryptoProvider,
 };
-use std::borrow::Cow;
 
 use core_crypto_keystore::{
     entities::{EntityFindParams, MlsIdentity, MlsKeypackage, StringEntityId},
@@ -33,7 +33,7 @@ use core_crypto_keystore::{
 };
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::{mls::CertificateBundle, mls::MlsCiphersuite, prelude::ClientId, CryptoError, CryptoResult, MlsError};
+use crate::prelude::{identifier::ClientIdentifier, ClientId, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
 
 pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 
@@ -66,35 +66,30 @@ impl Client {
     /// Otherwise, it is being created.
     ///
     /// # Arguments
-    /// * `id` - id of the client
-    /// * `certificate_bundle` - an optional x509 certificate
+    /// * `identifier` - client identifier ; either a [ClientId] or a x509 certificate chain
     /// * `ciphersuites` - all ciphersuites this client is supposed to support
     /// * `backend` - the KeyStore and crypto provider to read identities from
     ///
     /// # Errors
     /// KeyStore and OpenMls errors can happen
     pub async fn init(
-        identity: either::Either<ClientId, CertificateBundle>,
+        identifier: ClientIdentifier,
         ciphersuites: &[MlsCiphersuite],
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
         use core_crypto_keystore::CryptoKeystoreMls as _;
 
-        let id = match identity.as_ref() {
-            either::Either::Left(id) => Cow::Borrowed(id),
-            either::Either::Right(c) => Cow::Owned(c.get_client_id()?),
-        };
-        let id_str: String = id.to_string();
-        let client = if let Some(signature) = backend.key_store().mls_load_identity_signature(&id_str).await? {
+        let id = identifier.get_id()?;
+        let client = if let Some(signature) = backend.key_store().mls_load_identity_signature(&id.to_string()).await? {
             match Self::load(id.as_ref(), &signature, ciphersuites, backend).await {
                 Ok(client) => client,
                 Err(CryptoError::ClientSignatureNotFound) => {
-                    Self::generate(identity, backend, ciphersuites, true).await?
+                    Self::generate(identifier, backend, ciphersuites, true).await?
                 }
                 Err(e) => return Err(e),
             }
         } else {
-            Self::generate(identity, backend, ciphersuites, true).await?
+            Self::generate(identifier, backend, ciphersuites, true).await?
         };
 
         Ok(client)
@@ -210,7 +205,7 @@ impl Client {
 
     /// Generates a brand new client from scratch
     pub(crate) async fn generate(
-        identity: either::Either<ClientId, CertificateBundle>,
+        identifier: ClientIdentifier,
         backend: &MlsCryptoProvider,
         ciphersuites: &[MlsCiphersuite],
         provision: bool,
@@ -218,12 +213,12 @@ impl Client {
         // TODO: support many ciphersuites
         let ciphersuite = *ciphersuites.first().ok_or(CryptoError::ImplementationError)?;
 
-        let (id, credentials) = match identity {
-            either::Either::Left(id) => {
+        let (id, credentials) = match identifier {
+            ClientIdentifier::Basic(id) => {
                 let cred = Self::generate_basic_credential_bundle(&id, ciphersuite, backend)?;
                 (id, cred)
             }
-            either::Either::Right(cert) => (cert.get_client_id()?, Self::generate_x509_credential_bundle(cert)?),
+            ClientIdentifier::X509(cert) => (cert.get_client_id()?, Self::generate_x509_credential_bundle(cert)?),
         };
 
         let identity = MlsIdentity {
@@ -308,11 +303,6 @@ impl Client {
     /// Returns the client's [`CredentialBundle`] ([openmls::credentials::Credential] + private signature key)
     pub fn credentials(&self) -> &CredentialBundle {
         &self.credentials
-    }
-
-    /// Returns the Ciphersuite from the client
-    pub fn ciphersuite(&self) -> &MlsCiphersuite {
-        &self.ciphersuite
     }
 
     /// Allows to set the current default keypackage lifetime extension duration.
@@ -515,9 +505,9 @@ impl Client {
             .as_bytes()
             .into();
         let identity = match case.credential_type {
-            openmls::credentials::CredentialType::Basic => either::Left(client_id),
+            openmls::credentials::CredentialType::Basic => ClientIdentifier::Basic(client_id),
             openmls::credentials::CredentialType::X509 => {
-                either::Right(CertificateBundle::rand(case.ciphersuite(), client_id))
+                ClientIdentifier::X509(crate::prelude::CertificateBundle::rand(case.ciphersuite(), client_id))
             }
         };
         Self::generate(identity, backend, &[case.ciphersuite()], provision).await

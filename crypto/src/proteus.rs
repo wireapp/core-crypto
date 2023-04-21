@@ -940,6 +940,7 @@ mod tests {
     };
     use openmls::prelude::CredentialType;
 
+    use crate::prelude::ClientIdentifier;
     use proteus_traits::PreKeyStore;
     use wasm_bindgen_test::*;
 
@@ -979,11 +980,11 @@ mod tests {
         assert!(cc.proteus_new_prekey(1).await.is_ok());
         // 👇 and so a unique 'client_id' can be fetched from wire-server
         let client_id = "alice".into();
-        let identity = match case.credential_type {
-            CredentialType::Basic => either::Left(client_id),
-            CredentialType::X509 => either::Right(CertificateBundle::rand(case.ciphersuite(), client_id)),
+        let identifier = match case.credential_type {
+            CredentialType::Basic => ClientIdentifier::Basic(client_id),
+            CredentialType::X509 => ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), client_id)),
         };
-        cc.mls_init(identity, vec![case.ciphersuite()]).await.unwrap();
+        cc.mls_init(identifier, vec![case.ciphersuite()]).await.unwrap();
         // expect MLS to work
         assert_eq!(cc.client_keypackages(2).await.unwrap().len(), 2);
         drop(db_file);

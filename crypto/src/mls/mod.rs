@@ -5,14 +5,14 @@ use openmls::{
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize, Serialize};
 
-use client::{id::ClientId, Client};
-use config::MlsCentralConfiguration;
-use conversation::{ConversationId, MlsConversation};
-use credential::CertificateBundle;
 use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
 
-use crate::prelude::config::{MlsConversationConfiguration, MlsCustomConfiguration};
-use crate::{CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError};
+use crate::prelude::{
+    config::{MlsConversationConfiguration, MlsCustomConfiguration},
+    identifier::ClientIdentifier,
+    Client, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentralConfiguration,
+    MlsConversation, MlsError,
+};
 
 pub(crate) mod client;
 pub(crate) mod conversation;
@@ -193,11 +193,11 @@ impl MlsCentral {
             entropy_seed: configuration.external_entropy,
         })
         .await?;
-        let mls_client = if let Some(client_id) = configuration.client_id {
+        let mls_client = if let Some(id) = configuration.client_id {
             // Init client identity (load or create)
             Some(
                 Client::init(
-                    either::Left(client_id),
+                    ClientIdentifier::Basic(id),
                     configuration.ciphersuites.as_slice(),
                     &mls_backend,
                 )
@@ -227,10 +227,10 @@ impl MlsCentral {
             entropy_seed: configuration.external_entropy,
         })
         .await?;
-        let mls_client = if let Some(client_id) = configuration.client_id {
+        let mls_client = if let Some(id) = configuration.client_id {
             Some(
                 Client::init(
-                    either::Left(client_id),
+                    ClientIdentifier::Basic(id),
                     configuration.ciphersuites.as_slice(),
                     &mls_backend,
                 )
@@ -254,14 +254,14 @@ impl MlsCentral {
     /// This should stay as long as proteus is supported. Then it should be removed.
     pub async fn mls_init(
         &mut self,
-        identity: either::Either<ClientId, CertificateBundle>,
+        identifier: ClientIdentifier,
         ciphersuites: Vec<MlsCiphersuite>,
     ) -> CryptoResult<()> {
         if self.mls_client.is_some() {
             // prevents wrong usage of the method instead of silently hiding the mistake
             return Err(CryptoError::ImplementationError);
         }
-        let mls_client = Client::init(identity, &ciphersuites, &self.mls_backend).await?;
+        let mls_client = Client::init(identifier, &ciphersuites, &self.mls_backend).await?;
         self.mls_client = Some(mls_client);
         Ok(())
     }
@@ -557,7 +557,7 @@ pub mod tests {
     use openmls::credentials::CredentialType;
     use wasm_bindgen_test::*;
 
-    use crate::prelude::CertificateBundle;
+    use crate::prelude::{CertificateBundle, ClientIdentifier};
     use crate::{
         mls::{CryptoError, MlsCentral, MlsCentralConfiguration},
         test_utils::*,
@@ -840,11 +840,13 @@ pub mod tests {
                 assert!(central.mls_client.is_none());
                 // phase 2: init mls_client
                 let client_id = "alice".into();
-                let identity = match case.credential_type {
-                    CredentialType::Basic => either::Left(client_id),
-                    CredentialType::X509 => either::Right(CertificateBundle::rand(case.ciphersuite(), client_id)),
+                let identifier = match case.credential_type {
+                    CredentialType::Basic => ClientIdentifier::Basic(client_id),
+                    CredentialType::X509 => {
+                        ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), client_id))
+                    }
                 };
-                central.mls_init(identity, vec![case.ciphersuite()]).await.unwrap();
+                central.mls_init(identifier, vec![case.ciphersuite()]).await.unwrap();
                 assert!(central.mls_client.is_some());
                 // expect mls_client to work
                 assert_eq!(central.client_keypackages(2).await.unwrap().len(), 2);
