@@ -109,18 +109,19 @@ impl ConversationMember {
     pub async fn random_generate(
         case: &crate::test_utils::TestCase,
         backend: &mls_crypto_provider::MlsCryptoProvider,
-    ) -> CryptoResult<(Self, openmls::prelude::KeyPackageBundle)> {
+    ) -> CryptoResult<Self> {
+        let (cs, ct) = (case.ciphersuite(), case.credential_type);
         let client = Client::random_generate(case, backend, false).await?;
         let id = client.id();
-        let key_package = client.gen_keypackage(backend).await?;
+        client.generate_keypackage(backend, cs, ct).await?;
 
         let member = Self {
             id: id.to_vec(),
-            clients: HashMap::from([(id.clone(), client.keypackages(backend).await?)]),
+            clients: HashMap::from([(id.clone(), client.find_keypackages(backend).await?)]),
             local_client: Some(client),
         };
 
-        Ok((member, key_package))
+        Ok(member)
     }
 
     /// Generates a random new Member
@@ -129,19 +130,18 @@ impl ConversationMember {
         backend: &mls_crypto_provider::MlsCryptoProvider,
     ) -> CryptoResult<(Self, openmls::prelude::CredentialBundle)> {
         let (credential, client_id) = match case.credential_type {
-            openmls::prelude::CredentialType::Basic => {
+            crate::prelude::MlsCredentialType::Basic => {
                 let user_uuid = uuid::Uuid::new_v4();
                 let client_id = rand::random::<usize>();
                 let client_id = format!("{}:{client_id:x}@members.wire.com", user_uuid.hyphenated());
                 let client_id = client_id.as_bytes().into();
-                let credential =
-                    Client::generate_basic_credential_bundle(&client_id, case.ciphersuite(), backend).unwrap();
+                let credential = Client::new_basic_credential_bundle(&client_id, case.ciphersuite(), backend).unwrap();
                 (credential, client_id)
             }
-            openmls::prelude::CredentialType::X509 => {
+            crate::prelude::MlsCredentialType::X509 => {
                 let cert = crate::prelude::CertificateBundle::rand(case.ciphersuite(), "alice".into());
                 let client_id = cert.get_client_id().unwrap();
-                (Client::generate_x509_credential_bundle(cert).unwrap(), client_id)
+                (Client::new_x509_credential_bundle(cert).unwrap(), client_id)
             }
         };
 
@@ -189,7 +189,7 @@ pub mod tests {
     #[wasm_bindgen_test]
     pub async fn member_can_run_out_of_keypackage_hashes(case: TestCase) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        let (mut member, _) = ConversationMember::random_generate(&case, &backend).await.unwrap();
+        let mut member = ConversationMember::random_generate(&case, &backend).await.unwrap();
         let client_id = member.local_client.as_ref().map(|c| c.id().clone()).unwrap();
         let ret = (0..INITIAL_KEYING_MATERIAL_COUNT * 2).all(|_| {
             let ckp = member.keypackages_for_all_clients();

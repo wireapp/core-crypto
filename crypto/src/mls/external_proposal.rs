@@ -7,9 +7,8 @@ use openmls::{
 
 use crate::{
     group_store::GroupStoreValue,
-    mls::{ClientId, ConversationId, MlsCentral},
-    prelude::MlsConversation,
-    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
+    mls::{credential::typ::MlsCredentialType, ClientId, ConversationId, MlsCentral},
+    prelude::{CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCiphersuite, MlsConversation, MlsError},
 };
 
 impl MlsConversation {
@@ -95,37 +94,36 @@ impl MlsCentral {
     /// # Arguments
     /// * `conversation_id` - the group/conversation id
     /// * `epoch` - the current epoch of the group. See [openmls::group::GroupEpoch][GroupEpoch]
+    /// * `ciphersuite` - of the new [openmls::prelude::KeyPackage] to create
+    /// * `credential_type` - of the new [openmls::prelude::KeyPackage] to create
     ///
     /// # Return type
     /// Returns a message with the proposal to be add a new client
     ///
     /// # Errors
-    /// Errors resulting from the creation of the proposal within OpenMls
+    /// Errors resulting from the creation of the proposal within OpenMls.
+    /// Fails when [credential_type] is [MlsCredentialType::X509] and no Credential has been created
+    /// for it beforehand with [MlsCentral::e2ei_mls_init] or variants.
     pub async fn new_external_add_proposal(
         &self,
         conversation_id: ConversationId,
         epoch: GroupEpoch,
+        ciphersuite: MlsCiphersuite,
+        credential_type: MlsCredentialType,
     ) -> CryptoResult<MlsMessageOut> {
+        let mls_client = self.mls_client.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+
         let group_id = GroupId::from_slice(&conversation_id[..]);
-        let (key_package, ..) = self
-            .mls_client
-            .as_ref()
-            .ok_or(CryptoError::MlsNotInitialized)?
-            .gen_keypackage(&self.mls_backend)
-            .await?
-            .into_parts();
-        ExternalProposal::new_add(
-            key_package,
-            group_id,
-            epoch,
-            self.mls_client
-                .as_ref()
-                .ok_or(CryptoError::MlsNotInitialized)?
-                .credentials(),
-            &self.mls_backend,
-        )
-        .map_err(MlsError::from)
-        .map_err(CryptoError::from)
+
+        let cb = mls_client.find_credential_bundle(ciphersuite, credential_type)?;
+
+        let kp = mls_client
+            .generate_keypackage_from_credential_bundle(&self.mls_backend, cb, ciphersuite)
+            .await?;
+
+        let ext_proposal =
+            ExternalProposal::new_add(kp, group_id, epoch, cb, &self.mls_backend).map_err(MlsError::from)?;
+        Ok(ext_proposal)
     }
 
     /// Crafts a new external Remove proposal. Enables a client outside a group to request removal
@@ -141,27 +139,26 @@ impl MlsCentral {
     ///
     /// # Errors
     /// Errors resulting from the creation of the proposal within OpenMls
+    // TODO: we might not need this after all so let's not complicate things
     pub async fn new_external_remove_proposal(
         &self,
         conversation_id: ConversationId,
         epoch: GroupEpoch,
         key_package_ref: KeyPackageRef,
+        ciphersuite: MlsCiphersuite,
+        credential_type: MlsCredentialType,
     ) -> CryptoResult<MlsMessageOut> {
+        let mls_client = self.mls_client.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+
+        let cb = mls_client.find_credential_bundle(ciphersuite, credential_type)?;
+        // TODO: maybe we should delete this CredentialBundle when this External Remove Proposal is merged.
+
+        let sender_index = 0;
         let group_id = GroupId::from_slice(&conversation_id[..]);
-        ExternalProposal::new_remove(
-            key_package_ref,
-            group_id,
-            epoch,
-            self.mls_client
-                .as_ref()
-                .ok_or(CryptoError::MlsNotInitialized)?
-                .credentials(),
-            // TODO: should inferred from group's extensions
-            0,
-            &self.mls_backend,
-        )
-        .map_err(MlsError::from)
-        .map_err(CryptoError::from)
+        let ext_proposal =
+            ExternalProposal::new_remove(key_package_ref, group_id, epoch, cb, sender_index, &self.mls_backend)
+                .map_err(MlsError::from)?;
+        Ok(ext_proposal)
     }
 }
 
@@ -201,7 +198,7 @@ mod tests {
 
                         // Craft an external proposal from guest
                         let external_add = guest_central
-                            .new_external_add_proposal(id.clone(), epoch)
+                            .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
                             .await
                             .unwrap();
 
@@ -214,7 +211,7 @@ mod tests {
                         assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 1);
 
                         // verify Guest's (sender) identity
-                        guest_central.verify_sender_identity(&decrypted);
+                        guest_central.verify_sender_identity(&case, &decrypted);
 
                         // simulate commit message reception from server
                         let MlsCommitBundle { welcome, .. } =
@@ -253,7 +250,7 @@ mod tests {
                         if case.ciphersuite().0.signature_algorithm() == SignatureScheme::ED25519 {
                             let id = conversation_id();
 
-                            let remove_key = ds.client_signature_key().as_slice().to_vec();
+                            let remove_key = ds.client_signature_key(&case).as_slice().to_vec();
                             let mut cfg = case.cfg.clone();
                             cfg.set_raw_external_senders(vec![remove_key]);
                             owner_central.new_conversation(id.clone(), cfg).await.unwrap();
@@ -273,6 +270,8 @@ mod tests {
                                     id.clone(),
                                     owner_central.get_conversation_unchecked(&id).await.group.epoch(),
                                     guest_kp_ref,
+                                    case.ciphersuite(),
+                                    case.credential_type,
                                 )
                                 .await
                                 .unwrap();
@@ -316,7 +315,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         // Delivery service key is used in the group..
-                        let remove_key = ds.client_signature_key().as_slice().to_vec();
+                        let remove_key = ds.client_signature_key(&case).as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
                         cfg.set_raw_external_senders(vec![remove_key]);
                         owner_central.new_conversation(id.clone(), cfg).await.unwrap();
@@ -335,6 +334,8 @@ mod tests {
                                 id.clone(),
                                 owner_central.get_conversation_unchecked(&id).await.group.epoch(),
                                 guest_kp_ref,
+                                case.ciphersuite(),
+                                case.credential_type,
                             )
                             .await
                             .unwrap();
@@ -374,7 +375,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
 
-                        let remove_key = ds.client_signature_key();
+                        let remove_key = ds.client_signature_key(&case);
                         let short_remove_key =
                             SignaturePublicKey::new(remove_key.as_slice()[1..].to_vec(), remove_key.signature_scheme())
                                 .unwrap();
@@ -398,6 +399,8 @@ mod tests {
                                 id.clone(),
                                 owner_central.get_conversation_unchecked(&id).await.group.epoch(),
                                 guest_kp_ref,
+                                case.ciphersuite(),
+                                case.credential_type,
                             )
                             .await
                             .unwrap();
@@ -439,7 +442,7 @@ mod tests {
                         Box::pin(async move {
                             let id = conversation_id();
 
-                            let remove_key = ds.client_signature_key().as_slice().to_vec();
+                            let remove_key = ds.client_signature_key(&case).as_slice().to_vec();
                             let mut cfg = case.cfg.clone();
                             cfg.set_raw_external_senders(vec![remove_key]);
                             alice_central.new_conversation(id.clone(), cfg).await.unwrap();
@@ -452,7 +455,7 @@ mod tests {
 
                             // Charlie joins through a Welcome and should get external_senders from Welcome
                             // message and not from configuration
-                            let charlie = charlie_central.rnd_member().await;
+                            let charlie = charlie_central.rand_member().await;
                             let MlsConversationCreationMessage { welcome, commit, .. } = alice_central
                                 .add_members_to_conversation(&id, &mut [charlie])
                                 .await
@@ -480,6 +483,8 @@ mod tests {
                                     id.clone(),
                                     alice_central.get_conversation_unchecked(&id).await.group.epoch(),
                                     bob_kp_ref,
+                                    case.ciphersuite(),
+                                    case.credential_type,
                                 )
                                 .await
                                 .unwrap();
@@ -539,7 +544,7 @@ mod tests {
                         Box::pin(async move {
                             let id = conversation_id();
 
-                            let remove_key = ds.client_signature_key().as_slice().to_vec();
+                            let remove_key = ds.client_signature_key(&case).as_slice().to_vec();
                             let mut cfg = case.cfg.clone();
                             cfg.set_raw_external_senders(vec![remove_key]);
                             alice_central.new_conversation(id.clone(), cfg).await.unwrap();
@@ -554,7 +559,7 @@ mod tests {
                             // from PGS and not from configuration
                             let public_group_state = alice_central.verifiable_public_group_state(&id).await;
                             let MlsConversationInitBundle { commit, .. } = charlie_central
-                                .join_by_external_commit(public_group_state, case.custom_cfg())
+                                .join_by_external_commit(public_group_state, case.custom_cfg(), case.credential_type)
                                 .await
                                 .unwrap();
                             // Purposely have a configuration without `external_senders`
@@ -585,6 +590,8 @@ mod tests {
                                     id.clone(),
                                     alice_central.get_conversation_unchecked(&id).await.group.epoch(),
                                     bob_kp_ref,
+                                    case.ciphersuite(),
+                                    case.credential_type,
                                 )
                                 .await
                                 .unwrap();

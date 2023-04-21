@@ -218,16 +218,10 @@ pub fn rand_member(ciphersuite: MlsCiphersuite) -> ConversationMember {
     ConversationMember::new(client_id, kp)
 }
 
-pub fn invite(from: &mut MlsCentral, other: &mut MlsCentral, id: &ConversationId) {
+pub fn invite(from: &mut MlsCentral, other: &mut MlsCentral, id: &ConversationId, ciphersuite: MlsCiphersuite) {
     block_on(async {
-        let other_kp = other
-            .client_keypackages(1)
-            .await
-            .unwrap()
-            .first()
-            .unwrap()
-            .key_package()
-            .clone();
+        let other_kps = other.get_or_create_client_keypackages(ciphersuite, 1).await.unwrap();
+        let other_kp = other_kps.first().unwrap().clone();
         let other_member = ConversationMember::new(other.client_id().unwrap(), other_kp);
         let welcome = from
             .add_members_to_conversation(id, &mut [other_member])

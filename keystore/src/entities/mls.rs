@@ -74,6 +74,8 @@ pub struct PersistedMlsPendingGroup {
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
 pub struct MlsIdentity {
     pub id: String,
+    pub ciphersuite: u16,
+    pub credential_type: u8,
     pub signature: Vec<u8>,
     pub credential: Vec<u8>,
 }

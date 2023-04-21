@@ -86,13 +86,14 @@ impl MlsConversation {
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
-        let kp_hash = author_client.keypackage_raw_hash(backend).await?;
+        let (cs, ct) = (configuration.ciphersuite, configuration.credential_type);
+        let kp_hash = author_client.oldest_keypackage_hash(backend, cs, ct).await?;
 
         let group = MlsGroup::new(
             backend,
             &configuration.as_openmls_default_configuration()?,
             openmls::group::GroupId::from_slice(&id),
-            &kp_hash,
+            kp_hash.value(),
         )
         .await
         .map_err(MlsError::from)?;
@@ -340,7 +341,7 @@ pub mod tests {
                         .unwrap();
 
                     let MlsConversationCreationMessage { welcome, .. } = alice_central
-                        .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
+                        .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
                         .await
                         .unwrap();
                     // before merging, commit is not applied
@@ -405,9 +406,10 @@ pub mod tests {
 
                 let number_of_friends = bob_and_friends.len();
 
-                let mut bob_and_friends_members: Vec<ConversationMember> =
-                    futures_util::future::join_all(bob_and_friends.iter().map(|c| async move { c.rnd_member().await }))
-                        .await;
+                let mut bob_and_friends_members: Vec<ConversationMember> = futures_util::future::join_all(
+                    bob_and_friends.iter().map(|c| async move { c.rand_member().await }),
+                )
+                .await;
 
                 let MlsConversationCreationMessage { welcome, .. } = alice_central
                     .add_members_to_conversation(&id, &mut bob_and_friends_members)
@@ -460,7 +462,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     // has to be before the original key_package count because it creates one
-                    let bob = bob_central.rnd_member().await;
+                    let bob = bob_central.rand_member().await;
                     // Keep track of the whatever amount was initially generated
                     let original_kpb_count = bob_central
                         .mls_backend

@@ -1,7 +1,4 @@
-use openmls::{
-    messages::Welcome,
-    prelude::{Ciphersuite, KeyPackageBundle},
-};
+use openmls::prelude::{Ciphersuite, KeyPackage, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize, Serialize};
 
@@ -11,7 +8,7 @@ use crate::prelude::{
     config::{MlsConversationConfiguration, MlsCustomConfiguration},
     identifier::ClientIdentifier,
     Client, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentralConfiguration,
-    MlsConversation, MlsError,
+    MlsConversation, MlsCredentialType, MlsError,
 };
 
 pub(crate) mod client;
@@ -22,10 +19,17 @@ pub(crate) mod external_proposal;
 pub(crate) mod member;
 pub(crate) mod proposal;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Deref)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, derive_more::Deref)]
 #[repr(transparent)]
 /// A wrapper for the OpenMLS Ciphersuite, so that we are able to provide a default value.
 pub struct MlsCiphersuite(Ciphersuite);
+
+impl MlsCiphersuite {
+    /// Number of variants wrapped by this newtype
+    /// We do it like this since we cannot apply `strum::EnumCount` on wrapped enum in openmls.
+    /// It's fine since we'll probably have to redefine Ciphersuites here when we'll move to post-quantum
+    pub(crate) const SIZE: usize = 7;
+}
 
 impl Default for MlsCiphersuite {
     fn default() -> Self {
@@ -42,6 +46,12 @@ impl From<Ciphersuite> for MlsCiphersuite {
 impl From<MlsCiphersuite> for Ciphersuite {
     fn from(ciphersuite: MlsCiphersuite) -> Self {
         ciphersuite.0
+    }
+}
+
+impl From<MlsCiphersuite> for u16 {
+    fn from(cs: MlsCiphersuite) -> Self {
+        (&cs.0).into()
     }
 }
 
@@ -266,26 +276,26 @@ impl MlsCentral {
         Ok(())
     }
 
-    /// Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID.
-    /// This method is designed to be used in conjunction with [MlsCentral::mls_init_with_client_id] and represents the first step in this process
+    /// Generates MLS KeyPairs/CredentialBundle with a temporary, random client ID.
+    /// This method is designed to be used in conjunction with [MlsCentral::mls_init_with_client_id] and represents the first step in this process.
     ///
-    /// This returns the TLS-serialized identity key (i.e. the signature keypair's public key)
-    pub async fn mls_generate_keypair(&self, ciphersuites: Vec<MlsCiphersuite>) -> CryptoResult<Vec<u8>> {
+    /// This returns the TLS-serialized identity keys (i.e. the signature keypair's public key)
+    pub async fn mls_generate_keypairs(&self, ciphersuites: Vec<MlsCiphersuite>) -> CryptoResult<Vec<Vec<u8>>> {
         if self.mls_client.is_some() {
             // prevents wrong usage of the method instead of silently hiding the mistake
             return Err(CryptoError::ImplementationError);
         }
 
-        Client::generate_raw_keypair(&ciphersuites, &self.mls_backend).await
+        Client::generate_raw_keypairs(&ciphersuites, &self.mls_backend).await
     }
 
     /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
     ///
-    /// Important: This is designed to be called after [MlsCentral::mls_generate_keypair]
+    /// Important: This is designed to be called after [MlsCentral::mls_generate_keypairs]
     pub async fn mls_init_with_client_id(
         &mut self,
         client_id: ClientId,
-        signature_public_key: &[u8],
+        signature_public_keys: Vec<Vec<u8>>,
         ciphersuites: Vec<MlsCiphersuite>,
     ) -> CryptoResult<()> {
         if self.mls_client.is_some() {
@@ -294,7 +304,7 @@ impl MlsCentral {
         }
 
         let mls_client =
-            Client::init_with_external_client_id(client_id, signature_public_key, &ciphersuites, &self.mls_backend)
+            Client::init_with_external_client_id(client_id, signature_public_keys, &ciphersuites, &self.mls_backend)
                 .await?;
 
         self.mls_client = Some(mls_client);
@@ -342,14 +352,18 @@ impl MlsCentral {
         self.callbacks = Some(callbacks);
     }
 
-    /// Returns the client's public key as a buffer
-    pub fn client_public_key(&self) -> CryptoResult<Vec<u8>> {
-        Ok(self
-            .mls_client
-            .as_ref()
-            .ok_or(CryptoError::MlsNotInitialized)?
-            .public_key()
-            .to_vec())
+    /// Returns the client's public signature key as a buffer.
+    /// Used to upload a public key to the server in order to verify client's messages signature.
+    ///
+    /// NB: only works for [MlsCredentialType::Basic]. For [MlsCredentialType::X509] we have trust anchor
+    /// certificates provided by the backend hence no client registration is required.
+    ///
+    /// # Arguments
+    /// * `ciphersuite` - a callback to be called to perform authorization
+    pub fn client_public_key(&self, ciphersuite: MlsCiphersuite) -> CryptoResult<Vec<u8>> {
+        let mls_client = self.mls_client.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        let cb = mls_client.find_credential_bundle(ciphersuite, MlsCredentialType::Basic)?;
+        Ok(cb.credential().signature_key().as_slice().to_vec())
     }
 
     /// Returns the client's id as a buffer
@@ -375,20 +389,23 @@ impl MlsCentral {
     ///
     /// # Errors
     /// Errors can happen when accessing the KeyStore
-    pub async fn client_keypackages(&self, amount_requested: usize) -> CryptoResult<Vec<KeyPackageBundle>> {
-        self.mls_client
-            .as_ref()
-            .ok_or(CryptoError::MlsNotInitialized)?
-            .request_keying_material(amount_requested, &self.mls_backend)
+    pub async fn get_or_create_client_keypackages(
+        &self,
+        ciphersuite: MlsCiphersuite,
+        amount_requested: usize,
+    ) -> CryptoResult<Vec<KeyPackage>> {
+        let mls_client = self.mls_client.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        mls_client
+            .request_key_packages(amount_requested, ciphersuite, &self.mls_backend)
             .await
     }
 
-    /// Returns the count of valid, non-expired, unclaimed keypackages in store
-    pub async fn client_valid_keypackages_count(&self) -> CryptoResult<usize> {
+    /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [MlsCiphersuite]
+    pub async fn client_valid_key_packages_count(&self, ciphersuite: MlsCiphersuite) -> CryptoResult<usize> {
         self.mls_client
             .as_ref()
             .ok_or(CryptoError::MlsNotInitialized)?
-            .valid_keypackages_count(&self.mls_backend)
+            .valid_keypackages_count(&self.mls_backend, ciphersuite)
             .await
     }
 
@@ -554,10 +571,9 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
-    use openmls::credentials::CredentialType;
     use wasm_bindgen_test::*;
 
-    use crate::prelude::{CertificateBundle, ClientIdentifier};
+    use crate::prelude::{CertificateBundle, ClientIdentifier, MlsCredentialType};
     use crate::{
         mls::{CryptoError, MlsCentral, MlsCentralConfiguration},
         test_utils::*,
@@ -841,15 +857,20 @@ pub mod tests {
                 // phase 2: init mls_client
                 let client_id = "alice".into();
                 let identifier = match case.credential_type {
-                    CredentialType::Basic => ClientIdentifier::Basic(client_id),
-                    CredentialType::X509 => {
-                        ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), client_id))
-                    }
+                    MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
+                    MlsCredentialType::X509 => CertificateBundle::rand_identifier(&[case.ciphersuite()], client_id),
                 };
                 central.mls_init(identifier, vec![case.ciphersuite()]).await.unwrap();
                 assert!(central.mls_client.is_some());
                 // expect mls_client to work
-                assert_eq!(central.client_keypackages(2).await.unwrap().len(), 2);
+                assert_eq!(
+                    central
+                        .get_or_create_client_keypackages(case.ciphersuite(), 2)
+                        .await
+                        .unwrap()
+                        .len(),
+                    2
+                );
             })
         })
         .await

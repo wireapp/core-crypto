@@ -316,9 +316,9 @@ pub mod tests {
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 pgs,
-                                case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central],
                             )
                             .await
@@ -374,7 +374,7 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let charlie_kp = charlie_central.get_one_key_package().await;
+                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
@@ -383,7 +383,7 @@ pub mod tests {
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         let commit = bob_central
-                            .add_members_to_conversation(&id, &mut [charlie_central.rnd_member().await])
+                            .add_members_to_conversation(&id, &mut [charlie_central.rand_member().await])
                             .await
                             .unwrap()
                             .commit;
@@ -419,7 +419,7 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let charlie_kp = charlie_central.get_one_key_package().await;
+                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
@@ -432,7 +432,7 @@ pub mod tests {
                         assert!(alice_central.pending_commit(&id).await.is_some());
 
                         let commit = bob_central
-                            .add_members_to_conversation(&id, &mut [charlie_central.rnd_member().await])
+                            .add_members_to_conversation(&id, &mut [charlie_central.rand_member().await])
                             .await
                             .unwrap()
                             .commit;
@@ -470,16 +470,16 @@ pub mod tests {
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 pgs,
-                                case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central],
                             )
                             .await
                             .unwrap();
 
                         // Bob will propose adding Debbie
-                        let debbie_kp = debbie_central.get_one_key_package().await;
+                        let debbie_kp = debbie_central.get_one_key_package(&case).await;
                         let proposal = bob_central
                             .new_proposal(&id, MlsProposal::Add(debbie_kp))
                             .await
@@ -526,7 +526,7 @@ pub mod tests {
                             .unwrap();
 
                         // Alice proposes adding Charlie
-                        let charlie_kp = charlie_central.get_one_key_package().await;
+                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
@@ -585,7 +585,7 @@ pub mod tests {
 
                         // Alice commits adding Charlie
                         alice_central
-                            .add_members_to_conversation(&id, &mut [charlie_central.rnd_member().await])
+                            .add_members_to_conversation(&id, &mut [charlie_central.rand_member().await])
                             .await
                             .unwrap();
                         assert!(alice_central.pending_commit(&id).await.is_some());
@@ -630,9 +630,9 @@ pub mod tests {
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 pgs,
-                                case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central],
                             )
                             .await
@@ -684,9 +684,9 @@ pub mod tests {
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 pgs,
-                                case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central],
                             )
                             .await
@@ -739,9 +739,9 @@ pub mod tests {
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 pgs,
-                                case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central],
                             )
                             .await
@@ -749,9 +749,9 @@ pub mod tests {
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         debbie_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 pgs,
-                                case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central, &mut charlie_central],
                             )
                             .await
@@ -805,9 +805,9 @@ pub mod tests {
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 pgs,
-                                case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central],
                             )
                             .await
@@ -815,9 +815,9 @@ pub mod tests {
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         debbie_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 pgs,
-                                case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central, &mut charlie_central],
                             )
                             .await
@@ -870,9 +870,9 @@ pub mod tests {
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 pgs,
-                                case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central],
                             )
                             .await
@@ -880,9 +880,9 @@ pub mod tests {
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         debbie_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 pgs,
-                                case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central, &mut charlie_central],
                             )
                             .await

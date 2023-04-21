@@ -194,7 +194,7 @@ pub mod tests {
                             .unwrap();
                         alice_central.new_proposal(&id, MlsProposal::Update).await.unwrap();
                         alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
+                            .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
                             .await
                             .unwrap();
                         assert!(!alice_central.pending_proposals(&id).await.is_empty());
@@ -231,7 +231,7 @@ pub mod tests {
                             .unwrap();
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
 
-                        let charlie_kp = charlie_central.get_one_key_package().await;
+                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         let add_ref = alice_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
                             .await

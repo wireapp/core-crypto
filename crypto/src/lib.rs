@@ -87,7 +87,7 @@ pub mod prelude {
                 },
                 *,
             },
-            credential::CertificateBundle,
+            credential::{typ::MlsCredentialType, x509::CertificateBundle},
             external_commit::MlsConversationInitBundle,
             member::*,
             proposal::{MlsProposal, MlsProposalRef},

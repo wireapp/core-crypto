@@ -7,8 +7,9 @@ const clientId = "NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg:6c1866f567616f31@w
 const displayName = "Alice Smith";
 const handle = "alice_wire";
 const expiryDays = 90;
+const ciphersuite = window.ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 
-const enrollment = await window.cc.newAcmeEnrollment(clientId, displayName, handle, expiryDays);
+const enrollment = await window.cc.newAcmeEnrollment(clientId, displayName, handle, expiryDays, ciphersuite);
 
 const directoryResp = {
     "newNonce": "https://example.com/acme/new-nonce",

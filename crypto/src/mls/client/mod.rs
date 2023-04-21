@@ -16,6 +16,7 @@
 
 pub(crate) mod id;
 pub(crate) mod identifier;
+pub(crate) mod identities;
 pub(crate) mod key_package;
 
 use openmls::credentials::CredentialBundle;
@@ -25,14 +26,16 @@ use openmls_traits::{
 };
 
 use crate::{
-    mls::credential::CredentialExt,
+    mls::credential::ext::CredentialExt,
     prelude::{
         identifier::ClientIdentifier,
         key_package::{INITIAL_KEYING_MATERIAL_COUNT, KEYPACKAGE_DEFAULT_LIFETIME},
-        ClientId, CryptoError, CryptoResult, MlsCiphersuite, MlsError,
+        ClientId, CryptoError, CryptoResult, MlsCiphersuite, MlsCredentialType, MlsError,
     },
 };
 use core_crypto_keystore::entities::{EntityFindParams, MlsIdentity};
+use futures_util::{StreamExt as _, TryStreamExt as _};
+use identities::ClientIdentities;
 use mls_crypto_provider::MlsCryptoProvider;
 
 /// Represents a MLS client which in our case is the equivalent of a device.
@@ -42,8 +45,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 #[derive(Debug, Clone)]
 pub struct Client {
     id: ClientId,
-    credentials: CredentialBundle,
-    ciphersuite: MlsCiphersuite,
+    identities: ClientIdentities,
     keypackage_lifetime: std::time::Duration,
 }
 
@@ -91,34 +93,41 @@ impl Client {
     ///
     /// # Errors
     /// KeyStore and OpenMls errors can happen
-    pub async fn generate_raw_keypair(
+    pub async fn generate_raw_keypairs(
         ciphersuites: &[MlsCiphersuite],
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<Vec<u8>> {
-        let identity_count = backend.key_store().count::<MlsIdentity>().await?;
-        if identity_count > 0 {
+    ) -> CryptoResult<Vec<Vec<u8>>> {
+        const TEMP_KEY_SIZE: usize = 16;
+
+        //TODO: dehydrate & optimize
+        let identity_count = Self::fetch_basic_identities(backend).await?.len();
+        if identity_count >= ciphersuites.len() {
             return Err(CryptoError::IdentityAlreadyPresent);
         }
 
-        use openmls_traits::random::OpenMlsRand as _;
-        // Here we generate a provisional, random, uuid-like random Client ID for no purpose other than database/store constraints
-        let provisional_client_id = backend.rand().random_vec(16)?.into();
+        futures_util::stream::iter(ciphersuites)
+            .map(Ok::<_, CryptoError>)
+            .try_fold(Vec::with_capacity(ciphersuites.len()), |mut acc, &cs| async move {
+                use openmls_traits::random::OpenMlsRand as _;
+                // Here we generate a provisional, random, uuid-like random Client ID for no purpose other than database/store constraints
+                let provisional_client_id = backend.rand().random_vec(TEMP_KEY_SIZE)?.into();
 
-        // TODO: support many ciphersuites
-        let ciphersuite = *ciphersuites.first().ok_or(CryptoError::ImplementationError)?;
-        let credentials = Self::generate_basic_credential_bundle(&provisional_client_id, ciphersuite, backend)?;
+                let cb = Self::new_basic_credential_bundle(&provisional_client_id, cs, backend)?;
+                let signature = cb.keystore_key()?;
+                let identity = MlsIdentity {
+                    id: provisional_client_id.to_string(),
+                    ciphersuite: cs.into(),
+                    credential_type: MlsCredentialType::Basic as u8,
+                    signature: signature.clone(),
+                    credential: cb.to_key_store_value().map_err(MlsError::from)?,
+                };
+                backend.key_store().save(identity).await?;
 
-        let signature = credentials.keystore_key()?;
+                acc.push(signature);
 
-        let identity = MlsIdentity {
-            id: provisional_client_id.to_string(),
-            signature: signature.clone(),
-            credential: credentials.to_key_store_value().map_err(MlsError::from)?,
-        };
-
-        backend.key_store().save(identity).await?;
-
-        Ok(signature)
+                Ok(acc)
+            })
+            .await
     }
 
     /// Finalizes initialization using a 2-step process of uploading first a public key and then associating a new Client ID to that keypair
@@ -128,66 +137,70 @@ impl Client {
     /// * `signature_public_key` - The client's public key. We need it to make sure
     /// * `backend` - the KeyStore and crypto provider to read identities from
     ///
-    /// **WARNING**: You have absolutely NO reason to call this if you didn't call [Client::generate_raw_keypair] first. You have been warned!
+    /// **WARNING**: You have absolutely NO reason to call this if you didn't call [Client::generate_raw_keypairs] first. You have been warned!
     pub async fn init_with_external_client_id(
         client_id: ClientId,
-        signature_public_key: &[u8],
+        signature_public_keys: Vec<Vec<u8>>,
         ciphersuites: &[MlsCiphersuite],
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
-        // TODO: support many ciphersuites
-        let ciphersuite = *ciphersuites.first().ok_or(CryptoError::ImplementationError)?;
-
-        let keystore = backend.key_store();
-
         // Find all the identities, get the only one that exists (or bail), then insert the new one + delete the provisional one
-        let mut store_identities: Vec<MlsIdentity> = keystore.find_all(EntityFindParams::default()).await?;
+        let basic_store_identities = Self::fetch_basic_identities(backend).await?;
 
-        if store_identities.len() > 1 {
-            return Err(CryptoError::TooManyIdentitiesPresent);
+        match basic_store_identities.len() {
+            i if i < ciphersuites.len() => return Err(CryptoError::NoProvisionalIdentityFound),
+            i if i > ciphersuites.len() => return Err(CryptoError::TooManyIdentitiesPresent),
+            i if i != signature_public_keys.len() => return Err(CryptoError::ImplementationError),
+            _ => {}
         }
 
-        let Some(provisional_identity) = store_identities.pop() else {
-            return Err(CryptoError::NoProvisionalIdentityFound);
+        let prov_public_keys = ciphersuites.iter().zip(signature_public_keys.iter());
+
+        let identities = basic_store_identities.iter().zip(prov_public_keys);
+
+        let client = Self {
+            id: client_id.clone(),
+            identities: ClientIdentities::new(basic_store_identities.len()),
+            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
         };
 
-        if signature_public_key != provisional_identity.signature {
-            return Err(CryptoError::ClientSignatureMismatch);
-        }
+        let id = &client_id;
+        futures_util::stream::iter(identities)
+            .map(Ok::<_, CryptoError>)
+            .try_fold(client, |mut acc, (provisional_identity, (&cs, prov_pk))| async move {
+                if prov_pk != &provisional_identity.signature {
+                    return Err(CryptoError::ClientSignatureMismatch);
+                }
 
-        // Now we restore the provisional credential from the store
-        let provisional_credentials: CredentialBundle =
-            CredentialBundle::from_key_store_value(&provisional_identity.credential).map_err(MlsError::from)?;
+                // Now we restore the provisional credential from the store
+                let cb =
+                    CredentialBundle::from_key_store_value(&provisional_identity.credential).map_err(MlsError::from)?;
 
-        // Extract what's interesting from it
-        let (cred, sk) = provisional_credentials.into_parts();
-        let pk = cred.signature_key().as_slice();
-        let keypair =
-            openmls::ciphersuite::signature::SignatureKeypair::from_bytes(sk.signature_scheme, sk.value, pk.to_vec());
+                // Extract what's interesting from it
+                let (cred, sk) = cb.into_parts();
+                let pk = cred.signature_key().as_slice();
+                let kp = openmls::ciphersuite::signature::SignatureKeypair::from_bytes(
+                    sk.signature_scheme,
+                    sk.value,
+                    pk.to_vec(),
+                );
 
-        // Then rebuild a proper credential with the new client ID
-        let credentials = CredentialBundle::from_parts(client_id.0.clone(), keypair);
+                // Then rebuild a proper credential with the new client ID
+                let cb = CredentialBundle::from_parts(id.0.clone(), kp);
 
-        // Delete the old identity optimistically
-        keystore
-            .delete::<CredentialBundle>(provisional_identity.id.as_bytes())
-            .await?;
+                // Delete the old identity optimistically
+                backend
+                    .key_store()
+                    .delete::<CredentialBundle>(provisional_identity.id.as_bytes())
+                    .await?;
 
-        // And now we save the new one
-        keystore
-            .save(MlsIdentity {
-                id: client_id.to_string(),
-                signature: credentials.keystore_key()?,
-                credential: credentials.to_key_store_value().map_err(MlsError::from)?,
+                // And now we save the new one
+                Self::save_identity(backend, id, cs, &cb).await?;
+
+                acc.identities.push_credential_bundle(cs, cb)?;
+                Ok(acc)
             })
-            .await?;
-
-        Ok(Self {
-            id: client_id,
-            credentials,
-            ciphersuite,
-            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
-        })
+            .await
     }
 
     /// Generates a brand new client from scratch
@@ -197,35 +210,34 @@ impl Client {
         ciphersuites: &[MlsCiphersuite],
         provision: bool,
     ) -> CryptoResult<Self> {
-        // TODO: support many ciphersuites
-        let ciphersuite = *ciphersuites.first().ok_or(CryptoError::ImplementationError)?;
-
-        let (id, credentials) = match identifier {
-            ClientIdentifier::Basic(id) => {
-                let cred = Self::generate_basic_credential_bundle(&id, ciphersuite, backend)?;
-                (id, cred)
-            }
-            ClientIdentifier::X509(cert) => (cert.get_client_id()?, Self::generate_x509_credential_bundle(cert)?),
-        };
-
-        let identity = MlsIdentity {
-            id: id.to_string(),
-            signature: credentials.keystore_key()?,
-            credential: credentials.to_key_store_value().map_err(MlsError::from)?,
-        };
-
-        backend.key_store().save(identity).await?;
-
+        let id = identifier.get_id()?;
         let client = Self {
-            id,
-            credentials,
-            ciphersuite,
+            id: id.into_owned(),
+            identities: ClientIdentities::new(ciphersuites.len()),
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
         };
 
+        let identities = identifier.generate_credential_bundles(backend, ciphersuites)?;
+        let client = futures_util::stream::iter(identities)
+            .map(Ok::<_, CryptoError>)
+            .try_fold(client, |mut acc, (cs, id, cb)| async move {
+                Self::save_identity(backend, &id, cs, &cb).await?;
+                acc.identities.push_credential_bundle(cs, cb)?;
+                Ok(acc)
+            })
+            .await?;
+
         if provision {
-            client
-                .request_keying_material(INITIAL_KEYING_MATERIAL_COUNT, backend)
+            use futures_util::{StreamExt as _, TryStreamExt as _};
+
+            futures_util::stream::iter(ciphersuites)
+                .map(Ok::<_, CryptoError>)
+                .try_for_each(|cs| async {
+                    client
+                        .request_key_packages(INITIAL_KEYING_MATERIAL_COUNT, *cs, backend)
+                        .await?;
+                    Ok(())
+                })
                 .await?;
         }
 
@@ -239,26 +251,30 @@ impl Client {
         ciphersuites: &[MlsCiphersuite],
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
-        // TODO: support many ciphersuites
-        let ciphersuite = *ciphersuites.first().ok_or(CryptoError::ImplementationError)?;
+        let identities = futures_util::stream::iter(ciphersuites)
+            .map(Ok::<_, CryptoError>)
+            .try_fold(ClientIdentities::new(ciphersuites.len()), |mut acc, &cs| async move {
+                // TODO: support many ciphersuites i.e. refactor the keystore
+                let identity = backend
+                    .key_store()
+                    .find::<MlsIdentity>(id.to_string())
+                    .await?
+                    .ok_or(CryptoError::ClientSignatureNotFound)?;
 
-        let identity: MlsIdentity = backend
-            .key_store()
-            .find(id.to_string())
-            .await?
-            .ok_or(CryptoError::ClientSignatureNotFound)?;
+                if signature_public_key != identity.signature {
+                    return Err(CryptoError::ClientSignatureMismatch);
+                }
 
-        if signature_public_key != identity.signature {
-            return Err(CryptoError::ClientSignatureMismatch);
-        }
+                let cb = CredentialBundle::from_key_store_value(&identity.credential).map_err(MlsError::from)?;
 
-        let credentials: CredentialBundle =
-            CredentialBundle::from_key_store_value(&identity.credential).map_err(MlsError::from)?;
+                acc.push_credential_bundle(cs, cb)?;
+                Ok(acc)
+            })
+            .await?;
 
         Ok(Self {
-            id: identity.id.as_bytes().into(),
-            credentials,
-            ciphersuite,
+            id: id.clone(),
+            identities,
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
         })
     }
@@ -269,12 +285,40 @@ impl Client {
         signature_public_key: &[u8],
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<CredentialBundle> {
-        let credentials: CredentialBundle = backend
+        backend
             .key_store()
-            .read(signature_public_key)
+            .read::<CredentialBundle>(signature_public_key)
             .await
-            .ok_or(CryptoError::ClientSignatureNotFound)?;
-        Ok(credentials)
+            .ok_or(CryptoError::ClientSignatureNotFound)
+    }
+
+    async fn fetch_basic_identities(backend: &MlsCryptoProvider) -> CryptoResult<Vec<MlsIdentity>> {
+        Ok(backend
+            .key_store()
+            .find_all::<MlsIdentity>(EntityFindParams::default())
+            .await?
+            .into_iter()
+            .filter(|i| i.credential_type == (MlsCredentialType::Basic as u8))
+            .collect::<Vec<_>>())
+    }
+
+    async fn save_identity(
+        backend: &MlsCryptoProvider,
+        id: &ClientId,
+        cs: MlsCiphersuite,
+        cb: &CredentialBundle,
+    ) -> CryptoResult<()> {
+        Ok(backend
+            .key_store()
+            .save(MlsIdentity {
+                id: id.to_string(),
+                ciphersuite: cs.into(),
+                credential_type: cb.get_type() as u8,
+                signature: cb.keystore_key()?,
+                credential: cb.to_key_store_value().map_err(MlsError::from)?,
+            })
+            .await
+            .map(|_| ())?)
     }
 
     /// Retrieves the client's client id. This is free-form and not inspected.
@@ -282,14 +326,49 @@ impl Client {
         &self.id
     }
 
-    /// Returns the client's public signature key from its [openmls::credentials::Credential]
-    pub fn public_key(&self) -> &[u8] {
-        self.credentials.credential().signature_key().as_slice()
+    pub(crate) async fn get_or_create_credential_bundle(
+        &mut self,
+        backend: &MlsCryptoProvider,
+        cs: MlsCiphersuite,
+        ct: MlsCredentialType,
+    ) -> CryptoResult<&CredentialBundle> {
+        self.init_credential_bundle_when_missing(backend, cs, ct).await?;
+        self.find_credential_bundle(cs, ct)
     }
 
-    /// Returns the client's [`CredentialBundle`] ([openmls::credentials::Credential] + private signature key)
-    pub fn credentials(&self) -> &CredentialBundle {
-        &self.credentials
+    async fn init_credential_bundle_when_missing(
+        &mut self,
+        backend: &MlsCryptoProvider,
+        cs: MlsCiphersuite,
+        ct: MlsCredentialType,
+    ) -> CryptoResult<()> {
+        match (ct, self.identities.find_credential_bundle(cs, ct)) {
+            (MlsCredentialType::Basic, None) => {
+                let cb = Self::new_basic_credential_bundle(self.id(), cs, backend)?;
+                let identity = MlsIdentity {
+                    id: self.id().to_string(),
+                    ciphersuite: cs.into(),
+                    credential_type: MlsCredentialType::Basic as u8,
+                    signature: cb.keystore_key()?,
+                    credential: cb.to_key_store_value().map_err(MlsError::from)?,
+                };
+                backend.key_store().save(identity).await?;
+                self.identities.push_credential_bundle(cs, cb)?;
+                Ok(())
+            }
+            _ => Ok(()),
+        }
+    }
+
+    pub(crate) fn find_credential_bundle(
+        &self,
+        cs: MlsCiphersuite,
+        ct: MlsCredentialType,
+    ) -> CryptoResult<&CredentialBundle> {
+        // TODO: proper error
+        self.identities
+            .find_credential_bundle(cs, ct)
+            .ok_or(CryptoError::ImplementationError)
     }
 }
 
@@ -314,29 +393,28 @@ impl Client {
             .as_bytes()
             .into();
         let identity = match case.credential_type {
-            openmls::credentials::CredentialType::Basic => ClientIdentifier::Basic(client_id),
-            openmls::credentials::CredentialType::X509 => {
-                ClientIdentifier::X509(crate::prelude::CertificateBundle::rand(case.ciphersuite(), client_id))
+            MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
+            MlsCredentialType::X509 => {
+                crate::prelude::CertificateBundle::rand_identifier(&[case.ciphersuite()], client_id)
             }
         };
         Self::generate(identity, backend, &[case.ciphersuite()], provision).await
     }
 
-    pub async fn keypackages(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<openmls::prelude::KeyPackage>> {
+    pub async fn find_keypackages(
+        &self,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<Vec<openmls::prelude::KeyPackage>> {
         use core_crypto_keystore::CryptoKeystoreMls as _;
         let kps = backend
             .key_store()
-            .mls_fetch_keypackage_bundles(u32::MAX)
+            .mls_fetch_keypackage_bundles::<openmls::prelude::KeyPackageBundle>(u32::MAX)
             .await?
             .into_iter()
-            .try_fold(
-                vec![],
-                |mut acc, kpb: openmls::prelude::KeyPackageBundle| -> CryptoResult<_> {
-                    acc.push(kpb.key_package().clone());
-                    Ok(acc)
-                },
-            )?;
-
+            .try_fold(vec![], |mut acc, kpb| -> CryptoResult<_> {
+                acc.push(kpb.key_package().clone());
+                Ok(acc)
+            })?;
         Ok(kps)
     }
 }
@@ -345,7 +423,8 @@ impl Client {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{mls::credential::CredentialExt, test_utils::*};
+    use crate::prelude::MlsCredentialType;
+    use crate::{mls::credential::ext::CredentialExt, test_utils::*};
     use mls_crypto_provider::MlsCryptoProvider;
 
     use super::Client;
@@ -362,44 +441,52 @@ pub mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn can_externally_generate_client(case: TestCase) {
-        run_tests(move |[tmp_dir_argument]| {
-            Box::pin(async move {
-                let backend = MlsCryptoProvider::try_new(tmp_dir_argument, "test").await.unwrap();
-                // phase 1: generate standalone keypair
-                let keypair_sig_pk = Client::generate_raw_keypair(&[case.ciphersuite()], &backend)
+        if matches!(case.credential_type, MlsCredentialType::Basic) {
+            run_tests(move |[tmp_dir_argument]| {
+                Box::pin(async move {
+                    let backend = MlsCryptoProvider::try_new(tmp_dir_argument, "test").await.unwrap();
+                    // phase 1: generate standalone keypair
+                    let keypair_sig_pk = Client::generate_raw_keypairs(&[case.ciphersuite()], &backend)
+                        .await
+                        .unwrap();
+
+                    let mut identities: Vec<core_crypto_keystore::entities::MlsIdentity> = backend
+                        .borrow_keystore()
+                        .find_all(core_crypto_keystore::entities::EntityFindParams::default())
+                        .await
+                        .unwrap();
+
+                    assert_eq!(identities.len(), 1);
+
+                    let prov_identity = identities.pop().unwrap();
+
+                    // Make sure we are actually returning the signature public key
+                    // TODO: test with multi-ciphersuite
+                    assert_eq!(&prov_identity.signature, keypair_sig_pk.first().unwrap());
+
+                    // phase 2: pretend we have a new client ID from the backend, and try to init the client this way
+                    let client_id: super::ClientId = b"whatever:my:client:is@wire.com".to_vec().into();
+                    let alice = Client::init_with_external_client_id(
+                        client_id.clone(),
+                        keypair_sig_pk.clone(),
+                        &[case.ciphersuite()],
+                        &backend,
+                    )
                     .await
                     .unwrap();
 
-                let mut identities: Vec<core_crypto_keystore::entities::MlsIdentity> = backend
-                    .borrow_keystore()
-                    .find_all(core_crypto_keystore::entities::EntityFindParams::default())
-                    .await
-                    .unwrap();
-
-                assert_eq!(identities.len(), 1);
-
-                let prov_identity = identities.pop().unwrap();
-
-                // Make sure we are actually returning the signature public key
-                assert_eq!(prov_identity.signature, keypair_sig_pk);
-
-                // phase 2: pretend we have a new client ID from the backend, and try to init the client this way
-                let client_id: super::ClientId = b"whatever:my:client:is@wire.com".to_vec().into();
-                let alice = Client::init_with_external_client_id(
-                    client_id.clone(),
-                    &keypair_sig_pk,
-                    &[case.ciphersuite()],
-                    &backend,
-                )
-                .await
-                .unwrap();
-
-                // Make sure both client id and PK are intact
-                assert_eq!(alice.id, client_id);
-                let credentials = alice.credentials();
-                assert_eq!(credentials.keystore_key().unwrap(), keypair_sig_pk.as_slice());
+                    // Make sure both client id and PK are intact
+                    assert_eq!(alice.id(), &client_id);
+                    let credentials = alice
+                        .find_credential_bundle(case.ciphersuite(), case.credential_type)
+                        .unwrap();
+                    assert_eq!(
+                        &credentials.keystore_key().unwrap().as_slice(),
+                        keypair_sig_pk.first().unwrap()
+                    );
+                })
             })
-        })
-        .await
+            .await
+        }
     }
 }

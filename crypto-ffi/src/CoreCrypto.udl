@@ -51,6 +51,11 @@ enum CiphersuiteName {
     "MLS_256_DHKEMP384_AES256GCM_SHA384_P384"
 };
 
+enum MlsCredentialType {
+    "Basic",
+    "X509",
+};
+
 [Error]
 enum CryptoError {
     "ConversationNotFound",
@@ -151,19 +156,19 @@ callback interface CoreCryptoCallbacks {
 
 interface CoreCrypto {
     [Throws=CryptoError, Name=new]
-    constructor([ByRef] string path, [ByRef] string key, [ByRef] ClientId client_id, sequence<u8>? entropy_seed);
+    constructor([ByRef] string path, [ByRef] string key, [ByRef] ClientId client_id, sequence<CiphersuiteName> ciphersuites, sequence<u8>? entropy_seed);
 
     [Throws=CryptoError, Name=deferred_init]
-    constructor([ByRef] string path, [ByRef] string key, sequence<u8>? entropy_seed);
+    constructor([ByRef] string path, [ByRef] string key, sequence<CiphersuiteName> ciphersuites, sequence<u8>? entropy_seed);
 
     [Throws=CryptoError]
-    void mls_init([ByRef] ClientId client_id);
+    void mls_init([ByRef] ClientId client_id, sequence<CiphersuiteName> ciphersuites);
 
     [Throws=CryptoError]
-    sequence<u8> mls_generate_keypair();
+    sequence<sequence<u8>> mls_generate_keypairs(sequence<CiphersuiteName> ciphersuites);
 
     [Throws=CryptoError]
-    void mls_init_with_client_id([ByRef] ClientId client_id, [ByRef] sequence<u8> signature_public_key);
+    void mls_init_with_client_id([ByRef] ClientId client_id, sequence<sequence<u8>> signature_public_keys, sequence<CiphersuiteName> ciphersuites);
 
     [Throws=CryptoError]
     void restore_from_disk();
@@ -172,13 +177,13 @@ interface CoreCrypto {
     void set_callbacks(CoreCryptoCallbacks callbacks);
 
     [Throws=CryptoError]
-    sequence<u8> client_public_key();
+    sequence<u8> client_public_key(CiphersuiteName ciphersuite);
 
     [Throws=CryptoError]
-    sequence<sequence<u8>> client_keypackages(u32 amount_requested);
+    sequence<sequence<u8>> client_keypackages(CiphersuiteName ciphersuite, u32 amount_requested);
 
     [Throws=CryptoError]
-    u64 client_valid_keypackages_count();
+    u64 client_valid_keypackages_count(CiphersuiteName ciphersuite);
 
     [Throws=CryptoError]
     void create_conversation(ConversationId conversation_id, ConversationConfiguration config);
@@ -225,13 +230,13 @@ interface CoreCrypto {
     ProposalBundle new_remove_proposal(ConversationId conversation_id, ClientId client_id);
 
     [Throws=CryptoError]
-    sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch);
+    sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch, CiphersuiteName ciphersuite, MlsCredentialType credential_type);
 
     [Throws=CryptoError]
     sequence<u8> new_external_remove_proposal(ConversationId conversation_id, u64 epoch, sequence<u8> key_package_ref);
 
     [Throws=CryptoError]
-    ConversationInitBundle join_by_external_commit(sequence<u8> public_group_state, CustomConfiguration custom_configuration);
+    ConversationInitBundle join_by_external_commit(sequence<u8> public_group_state, CustomConfiguration custom_configuration, MlsCredentialType credential_type);
 
     [Throws=CryptoError]
     void merge_pending_group_from_external_commit(ConversationId conversation_id);

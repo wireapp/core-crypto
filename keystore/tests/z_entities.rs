@@ -159,6 +159,7 @@ pub mod tests {
 
 #[cfg(test)]
 pub mod utils {
+    use openmls_traits::types::Ciphersuite;
     use rand::Rng as _;
     const MAX_BLOB_SIZE: std::ops::Range<usize> = 1024..8192;
 
@@ -203,6 +204,8 @@ pub mod utils {
 
                     Self {
                         id,
+                        ciphersuite: (&Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519).into(),
+                        credential_type: 1,
                         signature,
                         credential,
                     }

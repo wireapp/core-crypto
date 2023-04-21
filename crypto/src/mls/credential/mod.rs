@@ -1,95 +1,29 @@
-use openmls::prelude::{CredentialBundle, SignaturePrivateKey};
-use tls_codec::Serialize;
-#[cfg(test)]
-use wire_e2e_identity::prelude::WireIdentityBuilder;
-use wire_e2e_identity::prelude::WireIdentityReader;
+pub(crate) mod ext;
+pub(crate) mod typ;
+pub(crate) mod x509;
+
+use openmls::prelude::CredentialBundle;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::{
-    mls::{Client, ClientId, MlsCiphersuite},
-    CryptoError, CryptoResult, MlsError,
-};
-
-/// Represents a x509 certificate chain supplied by the client
-/// It can fetch it after an end-to-end identity process where it can get back a certificate
-/// from the Authentication Service
-#[derive(Debug, Clone)]
-pub struct CertificateBundle {
-    /// x509 certificate chain
-    /// First entry is the leaf certificate and each subsequent is its issuer
-    pub certificate_chain: Vec<Vec<u8>>,
-    /// Leaf certificate private key
-    pub private_key: SignaturePrivateKey,
-}
-
-impl CertificateBundle {
-    /// Reads the client_id from the leaf certificate
-    pub fn get_client_id(&self) -> CryptoResult<ClientId> {
-        let leaf = self.certificate_chain.get(0).ok_or(CryptoError::InvalidIdentity)?;
-        let identity = leaf.extract_identity().map_err(|_| CryptoError::InvalidIdentity)?;
-        Ok(identity.client_id.as_bytes().into())
-    }
-}
-
-#[cfg(test)]
-impl CertificateBundle {
-    /// Generates a supplier that is later turned into a [openmls::prelude::CredentialBundle]
-    pub fn rand(cs: MlsCiphersuite, client_id: ClientId) -> CertificateBundle {
-        // here in our tests client_id is generally just "alice" or "bob"
-        // so we will use it to augment handle & display_name
-        // and not a real client_id, instead we'll generate a random one
-        let client_id = String::from_utf8(client_id.into()).unwrap();
-        let handle = format!("{}_wire", client_id);
-        let display_name = format!("{} Smith", client_id);
-        let (certificate_chain, sign_key) = WireIdentityBuilder {
-            handle,
-            display_name,
-            ..Default::default()
-        }
-        .build_x509_der();
-        Self {
-            certificate_chain,
-            private_key: SignaturePrivateKey {
-                value: sign_key,
-                signature_scheme: cs.signature_algorithm(),
-            },
-        }
-    }
-}
+use crate::prelude::{CertificateBundle, Client, ClientId, CryptoResult, MlsCiphersuite, MlsError};
 
 impl Client {
-    pub(crate) fn generate_basic_credential_bundle(
+    pub(crate) fn new_basic_credential_bundle(
         id: &ClientId,
         ciphersuite: MlsCiphersuite,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<CredentialBundle> {
         let signature_scheme = ciphersuite.signature_algorithm();
-        CredentialBundle::new_basic(id.to_vec(), signature_scheme, backend)
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)
+        let cb = CredentialBundle::new_basic(id.to_vec(), signature_scheme, backend).map_err(MlsError::from)?;
+        Ok(cb)
     }
 
-    pub(crate) fn generate_x509_credential_bundle(cert: CertificateBundle) -> CryptoResult<CredentialBundle> {
+    pub(crate) fn new_x509_credential_bundle(cert: CertificateBundle) -> CryptoResult<CredentialBundle> {
         let client_id = cert.get_client_id()?;
-        CredentialBundle::new_x509(client_id.into(), cert.certificate_chain, cert.private_key)
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)
-    }
-}
-
-pub(crate) trait CredentialExt {
-    fn keystore_key(&self) -> CryptoResult<Vec<u8>>;
-}
-
-impl CredentialExt for CredentialBundle {
-    #[inline(always)]
-    fn keystore_key(&self) -> CryptoResult<Vec<u8>> {
-        self.credential()
-            .signature_key()
-            .tls_serialize_detached()
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)
+        let cb = CredentialBundle::new_x509(client_id.into(), cert.certificate_chain, cert.private_key)
+            .map_err(MlsError::from)?;
+        Ok(cb)
     }
 }
 
@@ -97,8 +31,10 @@ impl CredentialExt for CredentialBundle {
 // Requires more than 1 ciphersuite supported at the moment.
 #[cfg(test)]
 pub mod tests {
-    use openmls::prelude::{CredentialError, WelcomeError};
+    use openmls::prelude::{CredentialError, SignaturePrivateKey, WelcomeError};
+    use std::collections::HashMap;
     use wasm_bindgen_test::*;
+    use wire_e2e_identity::prelude::WireIdentityBuilder;
 
     use crate::prelude::ClientIdentifier;
     use crate::{
@@ -122,8 +58,8 @@ pub mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn certificate_clients_can_send_messages(case: TestCase) {
-        let alice_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "alice".into()));
-        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let alice_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "alice".into());
+        let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
         assert!(try_talk(alice_identifier, bob_identifier, case.cfg).await.is_ok());
     }
 
@@ -133,14 +69,14 @@ pub mod tests {
         // check that both credentials can initiate/join a group
         {
             let alice_identifier = ClientIdentifier::Basic("alice".into());
-            let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+            let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
             assert!(try_talk(alice_identifier, bob_identifier, case.cfg.clone())
                 .await
                 .is_ok());
             // drop alice & bob key stores
         }
         {
-            let alice_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "alice".into()));
+            let alice_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "alice".into());
             let bob_identifier = ClientIdentifier::Basic("bob".into());
             assert!(try_talk(alice_identifier, bob_identifier, case.cfg).await.is_ok());
         }
@@ -151,9 +87,9 @@ pub mod tests {
     async fn should_fail_when_certificate_chain_is_empty(case: TestCase) {
         let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
         certs.certificate_chain = vec![];
-        let alice_identifier = ClientIdentifier::X509(certs);
+        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), certs)]));
 
-        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
         assert!(matches!(
             try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::InvalidIdentity
@@ -166,9 +102,9 @@ pub mod tests {
         let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
         let root_ca = certs.certificate_chain.last().unwrap().to_owned();
         certs.certificate_chain = vec![root_ca];
-        let alice_identifier = ClientIdentifier::X509(certs);
+        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), certs)]));
 
-        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
         assert!(matches!(
             try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::InvalidIdentity
@@ -182,9 +118,9 @@ pub mod tests {
         let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
         let leaf = certs.certificate_chain.first().unwrap().to_owned();
         certs.certificate_chain = vec![leaf];
-        let alice_identifier = ClientIdentifier::X509(certs);
+        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), certs)]));
 
-        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
         assert!(matches!(
             try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsCredentialError(
@@ -199,9 +135,9 @@ pub mod tests {
         // chain must be [leaf, leaf-issuer, ..., root-ca]
         let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
         certs.certificate_chain.reverse();
-        let alice_identifier = ClientIdentifier::X509(certs);
+        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), certs)]));
 
-        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
         assert!(matches!(
             try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::InvalidIdentity
@@ -217,9 +153,9 @@ pub mod tests {
         certs.certificate_chain.pop().unwrap();
         // and replace it with the malicious one
         certs.certificate_chain.push(eve_ca.serialize_der().unwrap());
-        let alice_identifier = ClientIdentifier::X509(certs);
+        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), certs)]));
 
-        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
         assert!(matches!(
             try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
@@ -235,12 +171,13 @@ pub mod tests {
             value: sign_key,
             signature_scheme: case.ciphersuite().signature_algorithm(),
         };
-        let alice_identifier = ClientIdentifier::X509(CertificateBundle {
+        let cb = CertificateBundle {
             certificate_chain: certs.certificate_chain,
             private_key: eve_key,
-        });
+        };
+        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), cb)]));
 
-        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
         assert!(matches!(
             try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
@@ -258,15 +195,16 @@ pub mod tests {
         }
         .build_x509_der();
 
-        let alice_identifier = ClientIdentifier::X509(CertificateBundle {
+        let cb = CertificateBundle {
             certificate_chain,
             private_key: SignaturePrivateKey {
                 value: sign_key,
                 signature_scheme: case.ciphersuite().signature_algorithm(),
             },
-        });
+        };
+        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), cb)]));
 
-        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
         assert!(matches!(
             try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
@@ -284,15 +222,16 @@ pub mod tests {
         }
         .build_x509_der();
 
-        let alice_identifier = ClientIdentifier::X509(CertificateBundle {
+        let cb = CertificateBundle {
             certificate_chain,
             private_key: SignaturePrivateKey {
                 value: sign_key,
                 signature_scheme: case.ciphersuite().signature_algorithm(),
             },
-        });
+        };
+        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), cb)]));
 
-        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
         assert!(matches!(
             try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))

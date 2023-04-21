@@ -80,8 +80,9 @@ impl EmulatedClient for CoreCryptoNativeClient {
 #[async_trait::async_trait(?Send)]
 impl EmulatedMlsClient for CoreCryptoNativeClient {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
-        let kps = self.cc.client_keypackages(1).await?;
-        Ok(kps[0].key_package().tls_serialize_detached()?)
+        let ciphersuite = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+        let kps = self.cc.get_or_create_client_keypackages(ciphersuite.into(), 1).await?;
+        Ok(kps[0].tls_serialize_detached()?)
     }
 
     async fn add_client(&mut self, conversation_id: &[u8], client_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {

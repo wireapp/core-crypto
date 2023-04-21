@@ -57,11 +57,13 @@ test("init", async () => {
   const [ctx, page] = await initBrowser();
 
   const version = await page.evaluate(async () => {
-    const { CoreCrypto } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
 
+    const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const cc = await CoreCrypto.init({
       databaseName: "test init",
       key: "test",
+      ciphersuites: [ciphersuite],
       clientId: "test",
     });
 
@@ -78,11 +80,12 @@ test("can use pgs enums", async () => {
   const [ctx, page] = await initBrowser();
 
   const [PublicGroupStateEncryptionType, RatchetTreeType] = await page.evaluate(async () => {
-    const { CoreCrypto, PublicGroupStateEncryptionType, RatchetTreeType } = await import ("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite, PublicGroupStateEncryptionType, RatchetTreeType } = await import ("./corecrypto.js");
 
     window.PublicGroupStateEncryptionType = PublicGroupStateEncryptionType;
     window.RatchetTreeType = RatchetTreeType;
     window.CoreCrypto = CoreCrypto;
+    window.Ciphersuite = Ciphersuite;
 
     return [PublicGroupStateEncryptionType, RatchetTreeType];
   });
@@ -99,22 +102,25 @@ test("can use pgs enums", async () => {
   expect(await page.evaluate(() => window.RatchetTreeType.ByRef)).toBe(0x03);
 
   const pgs = await page.evaluate(async () => {
+    const ciphersuite = window.Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const client1Config = {
       databaseName: "test init",
       key: "test",
+      ciphersuites: [ciphersuite],
       clientId: "test",
     };
 
     const client2Config = {
       databaseName: "roundtrip message test 2",
       key: "test2",
+      ciphersuites: [ciphersuite],
       clientId: "test2",
     };
 
     const cc = await window.CoreCrypto.init(client1Config);
     const cc2 = await window.CoreCrypto.init(client2Config);
 
-    const [kp] = await cc2.clientKeypackages(1);
+    const [kp] = await cc2.clientKeypackages(ciphersuite, 1);
 
     const encoder = new TextEncoder();
     const conversationId = encoder.encode("testConversation");
@@ -146,6 +152,7 @@ test("can import ciphersuite enum", async () => {
     window.cc = await CoreCrypto.init({
       databaseName: "test ciphersuite",
       key: "test",
+      ciphersuites: [Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519],
       clientId: "test",
     });
 
@@ -184,15 +191,17 @@ test("external entropy", async () => {
   ]);
 
   let [produced1, produced2] = await page.evaluate(async (expected1Length, expected2Length) => {
-    const { CoreCrypto } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
 
     // Null byte seed
     const seed = new Uint8Array(32);
 
+    const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const cc = await CoreCrypto.init({
       databaseName: "test init",
       key: "test",
       clientId: "test",
+      ciphersuites: [ciphersuite],
       entropySeed: seed,
     });
 
@@ -221,28 +230,31 @@ test("externally generated clients", async () => {
   const [ctx, page] = await initBrowser();
 
   await page.evaluate(async () => {
-    const { CoreCrypto } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
 
+    const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const alice = await CoreCrypto.deferredInit({
       databaseName: "extgen alice test",
-      key: "test"
+      key: "test",
+      ciphersuites: [ciphersuite],
     });
 
-    const signaturePk = await alice.mlsGenerateKeypair();
+    const signaturePks = await alice.mlsGenerateKeypair([ciphersuite]);
 
     const shinyClientId = "my:shiny:client@wire.com";
     const encoder = new TextEncoder();
     const clientId = encoder.encode(shinyClientId);
 
-    await alice.mlsInitWithClientId(clientId, signaturePk);
+    await alice.mlsInitWithClientId(clientId, signaturePks, [ciphersuite]);
 
     const bob = await CoreCrypto.init({
       databaseName: "extgen bob test",
       key: "test",
+      ciphersuites: [ciphersuite],
       clientId: "bob",
     });
 
-    const [bobKp, ] = await bob.clientKeypackages(1);
+    const [bobKp, ] = await bob.clientKeypackages(ciphersuite, 1);
 
     const conversationId = encoder.encode("testConversation");
 
@@ -305,20 +317,21 @@ test("externally generated clients", async () => {
   await ctx.close();
 });
 
-
 test("get client public key", async () => {
   const [ctx, page] = await initBrowser();
 
   const pkLength = await page.evaluate(async () => {
-    const { CoreCrypto } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
 
+    const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const cc = await CoreCrypto.init({
       databaseName: "get client public key",
       key: "test",
+      ciphersuites: [ciphersuite],
       clientId: "test",
     });
 
-    const len = (await cc.clientPublicKey()).length;
+    const len = (await cc.clientPublicKey(ciphersuite)).length;
     await cc.wipe();
     return len;
   });
@@ -333,15 +346,17 @@ test("get client keypackages", async () => {
   const [ctx, page] = await initBrowser();
 
   const kpNumber = await page.evaluate(async () => {
-    const { CoreCrypto } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
 
+    const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const cc = await CoreCrypto.init({
       databaseName: "get client keypackages",
       key: "test",
       clientId: "test",
+      ciphersuites: [ciphersuite],
     });
 
-    const kps = await cc.clientKeypackages(20);
+    const kps = await cc.clientKeypackages(ciphersuite, 20);
     const len = kps.length;
 
     await cc.wipe();
@@ -359,11 +374,13 @@ test("encrypt message", async () => {
   const [ctx, page] = await initBrowser();
 
   const msgLen = await page.evaluate(async () => {
-    const { CoreCrypto } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
 
+    const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const cc = await CoreCrypto.init({
       databaseName: "encrypt message",
       key: "test",
+      ciphersuites: [ciphersuite],
       clientId: "test",
     });
 
@@ -397,35 +414,40 @@ test("roundtrip message", async () => {
 
   const messageText = "Hello World!";
   const conversationId = "testConversation";
+  const clientId2 = "test2";
 
-  const client1Config = {
-    databaseName: "roundtrip message test 1",
-    key: "test",
-    clientId: "test",
-  };
+  let kp = await page2.evaluate(async (clientId) => {
+    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
 
-  const client2Config = {
-    databaseName: "roundtrip message test 2",
-    key: "test2",
-    clientId: "test2",
-  };
-
-  let kp = await page2.evaluate(async (config) => {
-    const { CoreCrypto } = await import("./corecrypto.js");
+    const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+    const config = {
+        databaseName: "roundtrip message test 2",
+        key: "test2",
+        clientId: clientId,
+        ciphersuites: [ciphersuite],
+    };
 
     const cc2 = await CoreCrypto.init(config);
 
-    const [kp] = await cc2.clientKeypackages(1);
+    const [kp] = await cc2.clientKeypackages(ciphersuite, 1);
     await cc2.close();
     return kp;
-  }, client2Config);
+  }, clientId2);
 
   kp = Uint8Array.from(Object.values(kp));
 
-  let [welcome, message] = await page.evaluate(async (kp, messageText, conversationId, client1Config, client2Config) => {
-    const { CoreCrypto } = await import("./corecrypto.js");
+  let [welcome, message] = await page.evaluate(async (kp, messageText, conversationId, clientId2) => {
+    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
 
-    const cc = await CoreCrypto.init(client1Config);
+    const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+    const config = {
+        databaseName: "roundtrip message test 1",
+        key: "test",
+        clientId: "test",
+        ciphersuites: [ciphersuite],
+    };
+
+    const cc = await CoreCrypto.init(config);
 
     const encoder = new TextEncoder();
 
@@ -434,7 +456,7 @@ test("roundtrip message", async () => {
     await cc.createConversation(conversationIdBuffer);
 
     const memberAdded = await cc.addClientsToConversation(conversationIdBuffer, [
-      { id: encoder.encode(client2Config.clientId), kp: Uint8Array.from(Object.values(kp)) },
+      { id: encoder.encode(clientId2), kp: Uint8Array.from(Object.values(kp)) },
     ]);
 
     await cc.commitAccepted(conversationIdBuffer);
@@ -449,7 +471,7 @@ test("roundtrip message", async () => {
     );
 
     return [memberAdded, message];
-  }, kp, messageText, conversationId, client1Config, client2Config);
+  }, kp, messageText, conversationId, clientId2);
 
   welcome.welcome = Uint8Array.from(welcome.welcome);
   welcome.commit = Uint8Array.from(welcome.commit);
@@ -457,13 +479,20 @@ test("roundtrip message", async () => {
 
   message = Uint8Array.from(Object.values(message));
 
-  const isMessageIdentical = await page2.evaluate(async (welcome, message, messageText, conversationId, config) => {
+  const isMessageIdentical = await page2.evaluate(async (welcome, message, messageText, conversationId, clientId) => {
     const welcomeMessage = Uint8Array.from(Object.values(welcome));
     const encryptedMessage = Uint8Array.from(Object.values(message));
-    const { CoreCrypto } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
 
     const encoder = new TextEncoder();
 
+    const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+    const config = {
+      databaseName: "roundtrip message test 2",
+      key: "test2",
+      clientId: clientId,
+      ciphersuites: [ciphersuite],
+    };
     const cc2 = await CoreCrypto.init(config);
 
     const messageBuffer = encoder.encode(messageText);
@@ -482,7 +511,7 @@ test("roundtrip message", async () => {
     }
 
     return decryptedMessage.message.every((val, i) => val === messageBuffer[i]);
-  }, welcome.welcome, message, messageText, conversationId, client2Config);
+  }, welcome.welcome, message, messageText, conversationId, clientId2);
 
   expect(isMessageIdentical).toBe(true);
 
@@ -496,18 +525,21 @@ test("callbacks default to false when not async", async () => {
   const [ctx, page] = await initBrowser({ captureLogs: false });
 
   const result = await page.evaluate(async () => {
-    const { CoreCrypto, ExternalProposalType } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite, ExternalProposalType } = await import("./corecrypto.js");
 
+    const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const client1Config = {
       databaseName: "test cb",
       key: "test",
       clientId: "test",
+      ciphersuites: [ciphersuite],
     };
 
     const client2Config = {
       databaseName: "test cb2",
       key: "test",
       clientId: "test2",
+      ciphersuites: [ciphersuite],
     };
 
     const callbacks = {
@@ -527,7 +559,7 @@ test("callbacks default to false when not async", async () => {
     await cc.registerCallbacks(callbacks);
 
     const cc2 = await CoreCrypto.init(client2Config);
-    const [cc2Kp] = await cc2.clientKeypackages(1);
+    const [cc2Kp] = await cc2.clientKeypackages(ciphersuite, 1);
 
     const encoder = new TextEncoder();
 
@@ -553,7 +585,7 @@ test("ext commits|proposals & callbacks", async () => {
   const [ctx, page] = await initBrowser();
 
   const callbacksResults = await page.evaluate(async () => {
-    const { CoreCrypto, ExternalProposalType } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite, CredentialType, ExternalProposalType } = await import("./corecrypto.js");
 
     let theoreticalEpoch = 0;
 
@@ -570,28 +602,34 @@ test("ext commits|proposals & callbacks", async () => {
       clientIsExistingGroupUser: false,
     };
 
+    const credentialType = CredentialType.Basic;
+    const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const client1Config = {
       databaseName: "test init",
       key: "test",
       clientId: "test",
+      ciphersuites: [ciphersuite],
     };
 
     const client2Config = {
       databaseName: "test init2",
       key: "test",
       clientId: "test2",
+      ciphersuites: [ciphersuite],
     };
 
     const clientExtProposalConfig = {
       databaseName: "test init ext proposal",
       key: "test",
       clientId: "testExternalProposal",
+      ciphersuites: [ciphersuite],
     };
 
     const clientExtCommitConfig = {
       databaseName: "test init ext commit",
       key: "test",
       clientId: "testExternalCommit",
+      ciphersuites: [ciphersuite],
     };
 
     const callbacks = {
@@ -614,7 +652,7 @@ test("ext commits|proposals & callbacks", async () => {
     await cc.registerCallbacks(callbacks);
 
     const cc2 = await CoreCrypto.init(client2Config);
-    const [cc2Kp] = await cc2.clientKeypackages(1);
+    const [cc2Kp] = await cc2.clientKeypackages(ciphersuite, 1);
 
     const ccExternalProposal = await CoreCrypto.init(clientExtProposalConfig);
     const ccExternalCommit = await CoreCrypto.init(clientExtCommitConfig);
@@ -639,12 +677,15 @@ test("ext commits|proposals & callbacks", async () => {
 
     await cc2.processWelcomeMessage(creationMessage.welcome);
 
+
     const extProposal = await ccExternalProposal.newExternalProposal(ExternalProposalType.Add, {
       conversationId,
       // ? Be careful; If you change anything above the epoch might change because right now it's a guesswork
       // ? Normally, clients should obtain the epoch *somehow*, usually from the MLS DS, but we just guess that since we only added
       // ? one client, the epoch should only have moved from 0 (initial state) to 1 (added 1 client -> committed)
       epoch: theoreticalEpoch,
+      ciphersuite: ciphersuite,
+      credentialType: credentialType,
     });
 
     // ! This should trigger the clientIsExistingGroupUser callback
@@ -660,7 +701,7 @@ test("ext commits|proposals & callbacks", async () => {
 
     const pgs = extProposalCommit.publicGroupState;
 
-    const extCommit = await ccExternalCommit.joinByExternalCommit(pgs.payload);
+    const extCommit = await ccExternalCommit.joinByExternalCommit(pgs.payload, credentialType);
     // ! This should trigger the userAuthorize callback
     const somethingCommit = cc.decryptMessage(conversationId, extCommit.commit);
 
@@ -729,19 +770,22 @@ test("proteus", async () => {
   const [ctx, page] = await initBrowser();
 
   await page.evaluate(async () => {
-    const { CoreCrypto, CoreCryptoError } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite, CoreCryptoError } = await import("./corecrypto.js");
 
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
+    const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const client1Config = {
       databaseName: "proteus test1",
       key: "test",
+      ciphersuites: [ciphersuite],
     };
 
     const client2Config = {
       databaseName: "proteus test2",
       key: "test",
+      ciphersuites: [ciphersuite],
     };
 
     const message = "Hello world!";
@@ -819,11 +863,13 @@ test("end-to-end-identity", async () => {
   const [ctx, page] = await initBrowser();
 
   await page.evaluate(async () => {
-    const { CoreCrypto, CoreCryptoError } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite, CoreCryptoError } = await import("./corecrypto.js");
 
+    const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const cc = await CoreCrypto.deferredInit({
       databaseName: "e2ei test",
       key: "test",
+      ciphersuites: [ciphersuite],
     });
 
     const encoder = new TextEncoder();
@@ -834,7 +880,7 @@ test("end-to-end-identity", async () => {
     const handle = "alice_wire";
     const expiryDays = 90;
 
-    const enrollment = await cc.newAcmeEnrollment(clientId, displayName, handle, expiryDays);
+    const enrollment = await cc.newAcmeEnrollment(clientId, displayName, handle, expiryDays, ciphersuite);
 
     const directoryResp = {
         "newNonce": "https://example.com/acme/new-nonce",

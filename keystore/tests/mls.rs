@@ -84,6 +84,8 @@ pub mod tests {
 
         let identity = MlsIdentity {
             id: identity_id.hyphenated().to_string(),
+            ciphersuite: (&ciphersuite).into(),
+            credential_type: 1,
             signature: signature.clone(),
             credential: credentials.to_key_store_value().unwrap(),
         };
@@ -139,6 +141,8 @@ pub mod tests {
             .unwrap();
         let identity = MlsIdentity {
             id: identity_id.hyphenated().to_string(),
+            ciphersuite: (&ciphersuite).into(),
+            credential_type: 1,
             signature: signature.clone(),
             credential: credentials.to_key_store_value().unwrap(),
         };

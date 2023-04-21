@@ -237,17 +237,12 @@ impl MlsCentral {
 pub mod tests {
     use super::*;
     use crate::{
-        mls::proposal::MlsProposal,
-        prelude::{handshake::MlsCommitBundle, MlsWirePolicy},
+        prelude::{handshake::MlsCommitBundle, MlsProposal, MlsWirePolicy},
         test_utils::*,
     };
-    use openmls::{
-        framing::errors::MlsMessageError,
-        prelude::{KeyPackageRef, MlsCertificate, MlsCredentialType},
-    };
+    use openmls::{framing::errors::MlsMessageError, prelude::KeyPackageRef};
     use std::time::Duration;
     use wasm_bindgen_test::*;
-    use wire_e2e_identity::prelude::WireIdentityReader as _;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -355,7 +350,7 @@ pub mod tests {
                         assert!(decrypted.delay.is_none());
                         assert!(decrypted.app_msg.is_none());
 
-                        alice_central.verify_sender_identity(&decrypted);
+                        alice_central.verify_sender_identity(&case, &decrypted);
                     })
                 },
             )
@@ -381,8 +376,8 @@ pub mod tests {
                             .unwrap();
 
                         // Alice creates a commit which will be superseded by Bob's one
-                        let charlie = charlie_central.rnd_member().await;
-                        let debbie = debbie_central.rnd_member().await;
+                        let charlie = charlie_central.rand_member().await;
+                        let debbie = debbie_central.rand_member().await;
                         alice_central
                             .add_members_to_conversation(&id, &mut [charlie.clone()])
                             .await
@@ -441,7 +436,7 @@ pub mod tests {
                         // Alice will create a commit to add Charlie
                         // Bob will create a commit which will be accepted first by DS so Alice will decrypt it
                         // Then Alice will renew the proposal in her pending commit
-                        let charlie = charlie_central.rnd_member().await;
+                        let charlie = charlie_central.rand_member().await;
 
                         let bob_commit = bob_central.update_keying_material(&id).await.unwrap().commit;
                         bob_central.commit_accepted(&id).await.unwrap();
@@ -545,7 +540,7 @@ pub mod tests {
                         // Alice will decrypt this proposal
                         // Then Bob will create a commit to update
                         // Alice will decrypt the commit but musn't renew the proposal to add Charlie
-                        let charlie_kp = charlie_central.get_one_key_package().await;
+                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
 
                         let add_charlie_proposal = bob_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
@@ -603,7 +598,7 @@ pub mod tests {
                         let commit_epoch = bob_commit.epoch();
 
                         // Alice propose to add Charlie
-                        let charlie_kp = charlie_central.get_one_key_package().await;
+                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         alice_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
                             .await
@@ -692,6 +687,8 @@ pub mod tests {
                             .new_external_add_proposal(
                                 id.clone(),
                                 alice_central.get_conversation_unchecked(&id).await.group.epoch(),
+                                case.ciphersuite(),
+                                case.credential_type,
                             )
                             .await
                             .unwrap();
@@ -774,7 +771,7 @@ pub mod tests {
 
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let ext_proposal = alice2_central
-                            .new_external_add_proposal(id.clone(), epoch)
+                            .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
                             .await
                             .unwrap();
 
@@ -819,7 +816,7 @@ pub mod tests {
 
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let message = alice2_central
-                            .new_external_add_proposal(id.clone(), epoch)
+                            .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
                             .await
                             .unwrap();
 
@@ -869,7 +866,7 @@ pub mod tests {
 
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let external_proposal = alice2_central
-                            .new_external_add_proposal(id.clone(), epoch)
+                            .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
                             .await
                             .unwrap();
 
@@ -916,7 +913,7 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let charlie_kp = charlie_central.get_one_key_package().await;
+                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
                             .await
@@ -935,7 +932,7 @@ pub mod tests {
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
                         assert!(!decrypted.has_epoch_changed);
 
-                        alice_central.verify_sender_identity(&decrypted);
+                        alice_central.verify_sender_identity(&case, &decrypted);
                     })
                 },
             )
@@ -1004,25 +1001,10 @@ pub mod tests {
                         let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
                         assert_ne!(&msg[..], &encrypted[..]);
                         let decrypted = bob_central.decrypt_message(&id, encrypted).await.unwrap();
-                        let dec_msg = decrypted.app_msg.unwrap();
-                        assert_eq!(&dec_msg[..], &msg[..]);
+                        let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
+                        assert_eq!(dec_msg, &msg[..]);
                         assert!(!decrypted.has_epoch_changed);
-
-                        let sender_credential = alice_central.mls_client.as_ref().unwrap().credentials().credential();
-                        if let MlsCredentialType::X509(MlsCertificate {
-                            identity: dup_client_id,
-                            cert_chain,
-                        }) = &sender_credential.credential
-                        {
-                            let leaf = cert_chain.get(0).map(|c| c.clone().into_vec()).unwrap();
-                            let identity = leaf.extract_identity().unwrap();
-                            let decr_identity = decrypted.identity.unwrap();
-                            assert_eq!(decr_identity.client_id, identity.client_id);
-                            assert_eq!(decr_identity.client_id.as_bytes(), dup_client_id.as_slice());
-                            assert_eq!(decr_identity.handle, identity.handle);
-                            assert_eq!(decr_identity.display_name, identity.display_name);
-                            assert_eq!(decr_identity.domain, identity.domain);
-                        }
+                        alice_central.verify_sender_identity(&case, &decrypted);
 
                         let msg = b"Hello alice";
                         let encrypted = bob_central.encrypt_message(&id, msg).await.unwrap();
@@ -1031,8 +1013,7 @@ pub mod tests {
                         let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
                         assert_eq!(dec_msg, &msg[..]);
                         assert!(!decrypted.has_epoch_changed);
-
-                        bob_central.verify_sender_identity(&decrypted);
+                        bob_central.verify_sender_identity(&case, &decrypted);
                     })
                 },
             )
@@ -1097,7 +1078,7 @@ pub mod tests {
                         // in epoch 2 which should fail
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         bob_central
-                            .join_by_external_commit(pgs, case.custom_cfg())
+                            .join_by_external_commit(pgs, case.custom_cfg(), case.credential_type)
                             .await
                             .unwrap();
                         bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
@@ -1366,7 +1347,7 @@ pub mod tests {
                         // Bob will have generated a bunch of long to expire KeyPackage, no suitable for a test.
                         // So we will prune all his KeyPackages and replace them by shorter ones
                         let bob_client = bob_central.mls_client.as_mut().unwrap();
-                        let bob_kps = bob_client.keypackages(&bob_central.mls_backend).await.unwrap();
+                        let bob_kps = bob_client.find_keypackages(&bob_central.mls_backend).await.unwrap();
                         let bob_kp_refs = bob_kps
                             .iter()
                             .map(|k| k.hash_ref(bob_central.mls_backend.crypto()).unwrap())
@@ -1376,7 +1357,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         let bob_nb_kps = bob_client
-                            .valid_keypackages_count(&bob_central.mls_backend)
+                            .valid_keypackages_count(&bob_central.mls_backend, case.ciphersuite())
                             .await
                             .unwrap();
                         // Alright Bob does not have any KeyPackage
