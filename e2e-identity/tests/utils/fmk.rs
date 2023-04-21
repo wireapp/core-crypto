@@ -437,8 +437,8 @@ impl<'a> E2eTest<'a> {
         let client = CoreClient::from_provider_metadata(provider_metadata, client_id, Some(client_secret))
             .set_redirect_uri(redirect_url);
 
-        self.display_step("OAuth2: generate Verifier & Challenge Codes");
-        self.display_operation(Actor::WireClient, "verifier & challenge codes");
+        self.display_step("OAUTH authorization request");
+        self.display_operation(Actor::WireClient, "OAUTH authorization request");
         let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
         let (code_verifier, code_challenge) = (pkce_verifier.secret(), pkce_challenge.as_str());
         let cv_cc_msg = format!("code_verifier={code_verifier}&code_challenge={code_challenge}");
@@ -454,15 +454,15 @@ impl<'a> E2eTest<'a> {
             .set_pkce_challenge(pkce_challenge)
             .url();
 
-        self.display_step("Call /authorize");
+        self.display_step("OAUTH authorization request (auth code endpoint)");
         let authz_req = self.client.get(authz_url.as_str()).build().unwrap();
         self.display_req(Actor::WireClient, Actor::OidcProvider, Some(&authz_req), None);
 
-        self.display_step("Authorization server redirects to login prompt");
+        // self.display_step("Authorization Server redirects to login prompt");
         let resp = self.client.execute(authz_req).await.unwrap();
         let html = resp.text().await.unwrap();
-        self.display_resp(Actor::OidcProvider, Actor::WireClient, None);
-        self.display_str(&html, false);
+        // self.display_resp(Actor::OidcProvider, Actor::WireClient, None);
+        // self.display_str(&html, false);
         let action = scrap_login(html.to_string());
 
         // client signs in
@@ -473,14 +473,14 @@ impl<'a> E2eTest<'a> {
             ("password", self.ldap_cfg.password.clone()),
         ]);
 
-        self.display_step("Client submits the login form");
+        // self.display_step("Client submits login form");
         let login_form_req = self.client.post(form_uri).form(&form_body).build().unwrap();
-        self.display_req(Actor::WireClient, Actor::OidcProvider, Some(&login_form_req), None);
-        self.display_str(Self::req_body_str(&login_form_req)?.unwrap(), false);
+        // self.display_req(Actor::WireClient, Actor::OidcProvider, Some(&login_form_req), None);
+        // self.display_str(Self::req_body_str(&login_form_req)?.unwrap(), false);
         let resp = self.client.execute(login_form_req).await.unwrap();
 
         // and gets an approval form which he fills
-        self.display_step("Authorization Server presents consent form to client");
+        // self.display_step("Authorization Server presents consent form to client");
         let hmac = resp
             .url()
             .query_pairs()
@@ -489,24 +489,27 @@ impl<'a> E2eTest<'a> {
                 _ => None,
             })
             .unwrap();
-        self.display_resp(Actor::OidcProvider, Actor::WireClient, Some(&resp));
+        // self.display_resp(Actor::OidcProvider, Actor::WireClient, Some(&resp));
         let html = resp.text().await.unwrap();
-        self.display_str(&html, false);
+        // self.display_str(&html, false);
         let code = scrap_grant(html);
 
-        self.display_step("Client submits consent form");
+        // self.display_step("Client submits consent form");
         let form_uri = Url::parse(&format!("{authz_server_uri}/dex/approval?req={code}&hmac={hmac}")).unwrap();
         let form_body =
             HashMap::<&str, &str, RandomState>::from_iter(vec![("req", code.as_str()), ("approval", "approve")]);
         let consent_req = self.client.post(form_uri).form(&form_body).build().unwrap();
-        self.display_req(Actor::WireClient, Actor::OidcProvider, Some(&consent_req), None);
-        self.display_str(Self::req_body_str(&consent_req)?.unwrap(), false);
+        // self.display_req(Actor::WireClient, Actor::OidcProvider, Some(&consent_req), None);
+        // self.display_str(Self::req_body_str(&consent_req)?.unwrap(), false);
 
-        self.display_step("Authorization server redirects to callback url with authorization code");
+        self.display_step("OAUTH authorization code");
         let resp = self.client.execute(consent_req).await.unwrap();
         let authz_code = resp.text().await.unwrap();
 
-        self.display_step("Call /oauth/token to get Id token");
+        self.display_step("OAUTH authorization code");
+        self.display_operation(Actor::WireClient, "OAUTH authorization code");
+
+        self.display_step("OAUTH authorization code + verifier (token endpoint)");
         let id_token = client
             .exchange_code(openidconnect::AuthorizationCode::new(authz_code))
             .set_pkce_verifier(pkce_verifier)
@@ -517,11 +520,11 @@ impl<'a> E2eTest<'a> {
         self.display_req(Actor::WireClient, Actor::OidcProvider, Some(&exchange_code_req), None);
         self.display_str(Self::req_body_str(&exchange_code_req)?.unwrap(), false);
 
-        self.display_step("Authorization server validates Verifier & Challenge Codes");
-        self.display_operation(Actor::OidcProvider, "verify verifier & challenge codes");
-        self.display_str(&cv_cc_msg, false);
+        // self.display_step("Authorization server validates Verifier & Challenge Codes");
+        // self.display_operation(Actor::OidcProvider, "verify verifier & challenge codes");
+        // self.display_str(&cv_cc_msg, false);
 
-        self.display_step("Authorization server returns Access & Id token");
+        self.display_step("OAUTH access token");
         let exchange_code_resp = ctx_get_resp("exchange-code", false);
         self.display_resp(Actor::OidcProvider, Actor::WireClient, None);
         let exchange_code_resp = serde_json::from_str::<Value>(&exchange_code_resp).unwrap();
