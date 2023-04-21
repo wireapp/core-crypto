@@ -4,6 +4,7 @@ import com.wire.crypto.ClientId
 import com.wire.crypto.ConversationId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCallbacks
+import com.wire.crypto.CiphersuiteName
 import java.io.File
 
 private class Callbacks: CoreCryptoCallbacks {
@@ -41,7 +42,8 @@ class CoreCryptoCentral constructor(
     private val coreCrypto: CoreCrypto
     init {
         File(rootDir).mkdirs()
-        coreCrypto = CoreCrypto.deferredInit(path, databaseKey, null)
+        val ciphersuites = listOf(CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519)
+        coreCrypto = CoreCrypto.deferredInit(path, databaseKey, ciphersuites, null)
         coreCrypto.setCallbacks(Callbacks())
     }
 

@@ -21,11 +21,10 @@ use core_crypto_keystore::CryptoKeystoreMls;
 
 use crate::{
     group_store::GroupStoreValue,
-    mls::{ConversationId, MlsCentral},
     prelude::{
-        id::ClientId, MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration, MlsPublicGroupStateBundle,
+        id::ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsConversation,
+        MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsError, MlsPublicGroupStateBundle,
     },
-    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };
 
 /// Returned when a commit is created
@@ -67,6 +66,10 @@ impl MlsCentral {
     /// * `group_state` - a verifiable public group state. it can be obtained by deserializing a TLS
     /// serialized `PublicGroupState` object
     /// * `custom_cfg` - configuration of the MLS conversation fetched from the Delivery Service
+    /// * `credential_type` - kind of [openmls::prelude::Credential] to use for joining this group.
+    /// If [MlsCredentialType::Basic] is chosen and no Credential has been created yet for it,
+    /// a new one will be generated. When [MlsCredentialType::X509] is chosen, it fails when no
+    /// [openmls::prelude::Credential] has been created for the given Ciphersuite.
     ///
     /// # Return type
     /// It will return a tuple with the group/conversation id and the message containing the
@@ -75,15 +78,17 @@ impl MlsCentral {
     /// # Errors
     /// Errors resulting from OpenMls, the KeyStore calls and serialization
     pub async fn join_by_external_commit(
-        &self,
+        &mut self,
         public_group_state: VerifiablePublicGroupState,
         custom_cfg: MlsCustomConfiguration,
+        credential_type: MlsCredentialType,
     ) -> CryptoResult<MlsConversationInitBundle> {
-        let credentials = self
-            .mls_client
-            .as_ref()
-            .ok_or(CryptoError::MlsNotInitialized)?
-            .credentials();
+        let mls_client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
+
+        let cs = public_group_state.ciphersuite().into();
+        let cb = mls_client
+            .get_or_create_credential_bundle(&self.mls_backend, cs, credential_type)
+            .await?;
 
         let serialized_cfg = serde_json::to_vec(&custom_cfg).map_err(MlsError::MlsKeystoreSerializationError)?;
 
@@ -97,7 +102,7 @@ impl MlsCentral {
             public_group_state,
             &configuration.as_openmls_default_configuration()?,
             &[],
-            credentials,
+            cb,
         )
         .await
         .map_err(MlsError::from)?;
@@ -254,7 +259,7 @@ mod tests {
                         commit: external_commit,
                         ..
                     } = bob_central
-                        .join_by_external_commit(public_group_state, case.custom_cfg())
+                        .join_by_external_commit(public_group_state, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
                     assert_eq!(group_id.as_slice(), &id);
@@ -268,7 +273,7 @@ mod tests {
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     // verify Bob's (sender) identity
-                    bob_central.verify_sender_identity(&decrypted);
+                    bob_central.verify_sender_identity(&case, &decrypted);
 
                     // Let's say backend accepted our external commit.
                     // So Bob can merge the commit and update the local state
@@ -313,7 +318,7 @@ mod tests {
 
                     // Bob tries to join Alice's group
                     bob_central
-                        .join_by_external_commit(public_group_state.clone(), case.custom_cfg())
+                        .join_by_external_commit(public_group_state.clone(), case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
                     // BUT for some reason the Delivery Service will reject this external commit
@@ -325,7 +330,7 @@ mod tests {
                         commit: external_commit,
                         ..
                     } = bob_central
-                        .join_by_external_commit(public_group_state, case.custom_cfg())
+                        .join_by_external_commit(public_group_state, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
                     assert_eq!(conversation_id.as_slice(), &id);
@@ -355,7 +360,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, bob_central]| {
+            move |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -369,7 +374,7 @@ mod tests {
                         commit: external_commit,
                         ..
                     } = bob_central
-                        .join_by_external_commit(public_group_state, case.custom_cfg())
+                        .join_by_external_commit(public_group_state, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
 
@@ -409,12 +414,12 @@ mod tests {
                     let public_group_state = alice_central.verifiable_public_group_state(&id).await;
                     // Alice can rejoin by external commit
                     let alice_join = alice_central
-                        .join_by_external_commit(public_group_state.clone(), case.custom_cfg())
+                        .join_by_external_commit(public_group_state.clone(), case.custom_cfg(), case.credential_type)
                         .await;
                     assert!(alice_join.is_ok());
                     // So can Bob
                     let bob_join = bob_central
-                        .join_by_external_commit(public_group_state, case.custom_cfg())
+                        .join_by_external_commit(public_group_state, case.custom_cfg(), case.credential_type)
                         .await;
                     assert!(bob_join.is_ok());
                 })
@@ -466,7 +471,7 @@ mod tests {
                         public_group_state,
                         ..
                     } = bob_central
-                        .join_by_external_commit(public_group_state, case.custom_cfg())
+                        .join_by_external_commit(public_group_state, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
 
@@ -489,7 +494,7 @@ mod tests {
                         commit: charlie_external_commit,
                         ..
                     } = charlie_central
-                        .join_by_external_commit(bob_pgs, case.custom_cfg())
+                        .join_by_external_commit(bob_pgs, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
 
@@ -526,7 +531,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, bob_central]| {
+            move |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
 
@@ -545,7 +550,7 @@ mod tests {
 
                     // Bob tries to join Alice's group
                     let MlsConversationInitBundle { commit, .. } = bob_central
-                        .join_by_external_commit(public_group_state, case.custom_cfg())
+                        .join_by_external_commit(public_group_state, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
                     let alice_accepts_ext_commit =
@@ -566,7 +571,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, bob_central]| {
+            move |[mut alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
 
@@ -585,7 +590,7 @@ mod tests {
 
                     // Bob tries to join Alice's group
                     let MlsConversationInitBundle { commit, .. } = bob_central
-                        .join_by_external_commit(public_group_state, case.custom_cfg())
+                        .join_by_external_commit(public_group_state, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
                     let alice_accepts_ext_commit =
@@ -619,7 +624,7 @@ mod tests {
 
                     // Bob tries to join Alice's group
                     bob_central
-                        .join_by_external_commit(public_group_state, case.custom_cfg())
+                        .join_by_external_commit(public_group_state, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
 

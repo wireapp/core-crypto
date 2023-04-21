@@ -14,7 +14,7 @@ fn generate_key_package_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || setup_mls(ciphersuite, &credential, in_memory),
                     |(central, _)| async move {
-                        black_box(central.client_keypackages(*i).await.unwrap());
+                        black_box(central.get_or_create_client_keypackages(ciphersuite, *i).await.unwrap());
                     },
                     BatchSize::SmallInput,
                 )
@@ -33,12 +33,12 @@ fn count_key_packages_bench(c: &mut Criterion) {
                     || {
                         let (central, ..) = setup_mls(ciphersuite, &credential, in_memory);
                         block_on(async {
-                            central.client_keypackages(*i).await.unwrap();
+                            central.get_or_create_client_keypackages(ciphersuite, *i).await.unwrap();
                         });
                         central
                     },
                     |central| async move {
-                        black_box(central.client_valid_keypackages_count().await.unwrap());
+                        black_box(central.client_valid_key_packages_count(ciphersuite).await.unwrap());
                     },
                     BatchSize::SmallInput,
                 )

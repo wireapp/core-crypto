@@ -420,7 +420,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         let MlsConversationCreationMessage { welcome, .. } = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
+                            .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
                             .await
                             .unwrap();
 
@@ -471,7 +471,7 @@ pub mod tests {
                             .unwrap();
 
                         let welcome = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
+                            .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
                             .await
                             .unwrap()
                             .welcome;
@@ -503,7 +503,7 @@ pub mod tests {
                             .unwrap();
 
                         let public_group_state = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rnd_member().await])
+                            .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
                             .await
                             .unwrap()
                             .public_group_state;
@@ -511,9 +511,9 @@ pub mod tests {
 
                         assert!(guest_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 public_group_state.get_pgs(),
-                                case.custom_cfg(),
                                 vec![&mut alice_central]
                             )
                             .await
@@ -545,7 +545,7 @@ pub mod tests {
                             .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
-                        let charlie_kp = charlie_central.get_one_key_package().await;
+                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         let proposal = alice_central
@@ -658,7 +658,7 @@ pub mod tests {
                             .unwrap();
 
                         let proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Add(guest_central.get_one_key_package().await))
+                            .new_proposal(&id, MlsProposal::Add(guest_central.get_one_key_package(&case).await))
                             .await
                             .unwrap();
                         bob_central
@@ -713,9 +713,9 @@ pub mod tests {
 
                         assert!(guest_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 public_group_state.get_pgs(),
-                                case.custom_cfg(),
                                 vec![&mut alice_central]
                             )
                             .await
@@ -752,9 +752,9 @@ pub mod tests {
                         let pgs = alice_central.verifiable_public_group_state(&id).await;
                         charlie_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 pgs,
-                                case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central],
                             )
                             .await
@@ -918,7 +918,7 @@ pub mod tests {
                         let alice_key = alice_central.key_package_of(&id, alice_central.read_client_id()).await;
 
                         // proposing adding charlie
-                        let charlie_kp = charlie_central.get_one_key_package().await;
+                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         let add_charlie_proposal = alice_central
                             .new_proposal(&id, MlsProposal::Add(charlie_kp))
                             .await
@@ -1015,7 +1015,7 @@ pub mod tests {
                             .unwrap();
 
                         let proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Add(guest_central.get_one_key_package().await))
+                            .new_proposal(&id, MlsProposal::Add(guest_central.get_one_key_package(&case).await))
                             .await
                             .unwrap()
                             .proposal;
@@ -1075,9 +1075,9 @@ pub mod tests {
 
                         assert!(guest_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 public_group_state.get_pgs(),
-                                case.custom_cfg(),
                                 vec![&mut alice_central]
                             )
                             .await
@@ -1200,7 +1200,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package().await))
+                            .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package(&case).await))
                             .await
                             .unwrap();
                         assert!(!alice_central.pending_proposals(&id).await.is_empty());
@@ -1256,7 +1256,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         let proposal = bob_central
-                            .new_proposal(&id, MlsProposal::Add(charlie_central.get_one_key_package().await))
+                            .new_proposal(&id, MlsProposal::Add(charlie_central.get_one_key_package(&case).await))
                             .await
                             .unwrap();
                         assert!(!bob_central.pending_proposals(&id).await.is_empty());
@@ -1297,7 +1297,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package().await))
+                            .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package(&case).await))
                             .await
                             .unwrap();
                         let MlsCommitBundle { welcome, .. } =
@@ -1329,7 +1329,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package().await))
+                            .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package(&case).await))
                             .await
                             .unwrap();
                         let MlsCommitBundle { public_group_state, .. } =
@@ -1338,9 +1338,9 @@ pub mod tests {
 
                         assert!(guest_central
                             .try_join_from_public_group_state(
+                                &case,
                                 &id,
                                 public_group_state.get_pgs(),
-                                case.custom_cfg(),
                                 vec![&mut alice_central]
                             )
                             .await

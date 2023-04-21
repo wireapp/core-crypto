@@ -102,6 +102,10 @@ args = [
     "--mode", "normal", "${@}"
 ]
 
+# Quiets warning related to wasm-opt. Used to generate bindings and check Typescript wrapper
+[tasks.wasm-build-dev]
+script = "cargo make wasm-build --dev"
+
 [tasks.wasm]
 dependencies = ["wasm-build"]
 command = "npm"

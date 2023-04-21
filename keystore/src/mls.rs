@@ -193,6 +193,9 @@ impl CryptoKeystoreMls for crate::connection::Connection {
     ) -> CryptoKeystoreResult<()> {
         let identity = MlsIdentity {
             id: id.into(),
+            // TODO: ciphersuite in MlsIdentity
+            ciphersuite: 0,
+            credential_type: 1,
             signature: signature.into(),
             credential: credential.into(),
         };

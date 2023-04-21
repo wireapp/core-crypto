@@ -62,7 +62,7 @@ fn decryption_bench_var_msg_size(c: &mut Criterion) {
                     || {
                         let (mut alice_central, id) = setup_mls(ciphersuite, &credential, in_memory);
                         let (mut bob_central, ..) = new_central(ciphersuite, &credential, in_memory);
-                        invite(&mut alice_central, &mut bob_central, &id);
+                        invite(&mut alice_central, &mut bob_central, &id, ciphersuite);
 
                         let text = Alphanumeric.sample_string(&mut rand::thread_rng(), *i);
                         let encrypted = block_on(async { alice_central.encrypt_message(&id, text).await.unwrap() });

@@ -45,6 +45,7 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 js-sys = "0.3"
 web-sys = "0.3"
+strum = "0.24"
 
 [build-dependencies]
 # UniFFI - Android + iOS bindings - Build support

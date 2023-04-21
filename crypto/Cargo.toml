@@ -21,12 +21,12 @@ test-all-cipher = []
 bench-in-db = []
 
 [dependencies]
-async-recursion = "1.0"
 thiserror = "1.0"
 derive_more = { version = "0.99", features = ["from", "into", "deref"] }
 strum = { version = "0.24", features = ["derive"] }
 cfg-if = "1.0"
 hex = "0.4"
+futures-util = "0.3"
 
 openmls = { version = "0.4", features = ["crypto-subtle"] }
 openmls_traits = "0.1"

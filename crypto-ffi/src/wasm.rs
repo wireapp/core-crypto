@@ -43,6 +43,8 @@ enum WasmError {
     E2eError(#[from] E2eIdentityError),
     #[error(transparent)]
     SerializationError(#[from] serde_wasm_bindgen::Error),
+    #[error("Failed lifting an enum")]
+    EnumError,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -61,6 +63,7 @@ impl<'a> From<&'a CoreCryptoError> for CoreCryptoJsRichError {
                 WasmError::CryptoError(_) => "CryptoError",
                 WasmError::E2eError(_) => "E2eError",
                 WasmError::SerializationError(_) => "SerializationError",
+                WasmError::EnumError => "EnumError",
             }
             .to_string(),
             message: e.0.to_string(),
@@ -119,7 +122,7 @@ pub type WasmCryptoResult<T> = Result<T, CoreCryptoError>;
 
 #[allow(non_camel_case_types)]
 #[wasm_bindgen]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, strum::FromRepr)]
 #[repr(u16)]
 /// see [core_crypto::prelude::CiphersuiteName]
 pub enum Ciphersuite {
@@ -137,6 +140,19 @@ pub enum Ciphersuite {
     MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 = 0x0006,
     /// DH KEM P384 | AES-GCM 256 | SHA2-384 | EcDSA P384
     MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = 0x0007,
+}
+
+impl From<MlsCiphersuite> for Ciphersuite {
+    fn from(c: MlsCiphersuite) -> Self {
+        Self::from(CiphersuiteName::from(c))
+    }
+}
+
+impl From<Ciphersuite> for MlsCiphersuite {
+    fn from(c: Ciphersuite) -> Self {
+        let c: CiphersuiteName = c.into();
+        Self::from(c)
+    }
 }
 
 impl From<CiphersuiteName> for Ciphersuite {
@@ -176,6 +192,49 @@ impl Into<CiphersuiteName> for Ciphersuite {
                 CiphersuiteName::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448
             }
             Self::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => CiphersuiteName::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
+        }
+    }
+}
+
+/// Helper to lower arrays of Ciphersuites (js -> rust)
+fn lower_ciphersuites(ciphersuites: Box<[u16]>) -> WasmCryptoResult<Vec<MlsCiphersuite>> {
+    ciphersuites.into_iter().try_fold(
+        Vec::with_capacity(ciphersuites.len()),
+        |mut acc, &cs| -> WasmCryptoResult<_> {
+            let cs = Ciphersuite::from_repr(cs).ok_or(WasmError::EnumError)?;
+            let cs: MlsCiphersuite = cs.into();
+            acc.push(cs);
+            Ok(acc)
+        },
+    )
+}
+
+#[allow(non_camel_case_types)]
+#[wasm_bindgen]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[repr(u16)]
+/// see [core_crypto::prelude::MlsCredentialType]
+pub enum CredentialType {
+    /// Just a KeyPair
+    Basic = 0x0001,
+    /// A certificate obtained through e2e identity enrollment process
+    X509 = 0x0002,
+}
+
+impl From<CredentialType> for core_crypto::prelude::MlsCredentialType {
+    fn from(from: CredentialType) -> Self {
+        match from {
+            CredentialType::Basic => core_crypto::prelude::MlsCredentialType::Basic,
+            CredentialType::X509 => core_crypto::prelude::MlsCredentialType::X509,
+        }
+    }
+}
+
+impl From<core_crypto::prelude::MlsCredentialType> for CredentialType {
+    fn from(from: core_crypto::prelude::MlsCredentialType) -> Self {
+        match from {
+            core_crypto::prelude::MlsCredentialType::Basic => CredentialType::Basic,
+            core_crypto::prelude::MlsCredentialType::X509 => CredentialType::X509,
         }
     }
 }
@@ -861,9 +920,10 @@ impl CoreCrypto {
         path: String,
         key: String,
         client_id: FfiClientId,
+        ciphersuites: Box<[u16]>,
         entropy_seed: Option<Box<[u8]>>,
     ) -> WasmCryptoResult<CoreCrypto> {
-        let ciphersuites = vec![MlsCiphersuite::default()];
+        let ciphersuites = lower_ciphersuites(ciphersuites)?;
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
         let configuration =
             MlsCentralConfiguration::try_new(path, key, Some(client_id.into()), ciphersuites, entropy_seed)
@@ -882,9 +942,10 @@ impl CoreCrypto {
     pub async fn deferred_init(
         path: String,
         key: String,
+        ciphersuites: Box<[u16]>,
         entropy_seed: Option<Box<[u8]>>,
     ) -> WasmCryptoResult<CoreCrypto> {
-        let ciphersuites = vec![MlsCiphersuite::default()];
+        let ciphersuites = lower_ciphersuites(ciphersuites)?;
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
         let configuration = MlsCentralConfiguration::try_new(path, key, None, ciphersuites, entropy_seed)
             .map_err(CoreCryptoError::from)?;
@@ -900,12 +961,12 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::MlsCentral::mls_init]
-    pub async fn mls_init(&self, client_id: FfiClientId) -> Promise {
+    pub async fn mls_init(&self, client_id: FfiClientId, ciphersuites: Box<[u16]>) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                let ciphersuites = vec![MlsCiphersuite::default()];
                 let mut central = this.write().await;
+                let ciphersuites = lower_ciphersuites(ciphersuites)?;
                 central
                     .mls_init(ClientIdentifier::Basic(client_id.clone().into()), ciphersuites)
                     .await
@@ -919,18 +980,25 @@ impl CoreCrypto {
     /// Returns [`WasmCryptoResult<Vec<u8>>`]
     ///
     /// See [core_crypto::mls::MlsCentral::mls_generate_keypair]
-    pub fn mls_generate_keypair(&self) -> Promise {
+    pub fn mls_generate_keypair(&self, ciphersuites: Box<[u16]>) -> Promise {
         let this = self.inner.clone();
 
         future_to_promise(
             async move {
-                let ciphersuites = vec![MlsCiphersuite::default()];
+                let ciphersuites = lower_ciphersuites(ciphersuites)?;
                 let central = this.read().await;
-                let pk = central
-                    .mls_generate_keypair(ciphersuites)
+                let pks = central
+                    .mls_generate_keypairs(ciphersuites)
                     .await
                     .map_err(CoreCryptoError::from)?;
-                WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
+
+                let js_pks = js_sys::Array::from_iter(
+                    pks.into_iter()
+                        .map(|kp| js_sys::Uint8Array::from(kp.as_slice()))
+                        .map(JsValue::from),
+                );
+
+                WasmCryptoResult::Ok(js_pks.into())
             }
             .err_into(),
         )
@@ -939,16 +1007,25 @@ impl CoreCrypto {
     /// Returns [`WasmCryptoResult<()>`]
     ///
     /// See [core_crypto::mls::MlsCentral::mls_init_with_client_id]
-    pub fn mls_init_with_client_id(&self, client_id: FfiClientId, signature_public_key: Box<[u8]>) -> Promise {
+    pub fn mls_init_with_client_id(
+        &self,
+        client_id: FfiClientId,
+        signature_public_keys: Box<[Uint8Array]>,
+        ciphersuites: Box<[u16]>,
+    ) -> Promise {
         let this = self.inner.clone();
 
         future_to_promise(
             async move {
-                let ciphersuites = vec![MlsCiphersuite::default()];
+                let ciphersuites = lower_ciphersuites(ciphersuites)?;
+                let signature_public_keys = signature_public_keys
+                    .iter()
+                    .map(|c| c.to_vec())
+                    .collect::<Vec<Vec<u8>>>();
 
                 let mut central = this.write().await;
                 central
-                    .mls_init_with_client_id(client_id.into(), &signature_public_key, ciphersuites)
+                    .mls_init_with_client_id(client_id.into(), signature_public_keys, ciphersuites)
                     .await
                     .map_err(CoreCryptoError::from)?;
 
@@ -1057,12 +1134,15 @@ impl CoreCrypto {
     /// Returns:: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::mls::MlsCentral::client_public_key]
-    pub fn client_public_key(&self) -> Promise {
+    pub fn client_public_key(&self, ciphersuite: Ciphersuite) -> Promise {
         let this = self.inner.clone();
+        let ciphersuite: CiphersuiteName = ciphersuite.into();
         future_to_promise(
             async move {
                 let cc = this.read().await;
-                let pk = cc.client_public_key().map_err(CoreCryptoError::from)?;
+                let pk = cc
+                    .client_public_key(ciphersuite.into())
+                    .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
             }
             .err_into(),
@@ -1072,20 +1152,20 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<js_sys::Array<js_sys::Uint8Array>>`]
     ///
     /// see [core_crypto::mls::MlsCentral::client_keypackages]
-    pub fn client_keypackages(&self, amount_requested: u32) -> Promise {
+    pub fn client_keypackages(&self, ciphersuite: Ciphersuite, amount_requested: u32) -> Promise {
         let this = self.inner.clone();
+        let ciphersuite: CiphersuiteName = ciphersuite.into();
         future_to_promise(
             async move {
                 use core_crypto::prelude::tls_codec::Serialize as _;
                 let kps = this
                     .write()
                     .await
-                    .client_keypackages(amount_requested as usize)
+                    .get_or_create_client_keypackages(ciphersuite.into(), amount_requested as usize)
                     .await?
                     .into_iter()
                     .map(|kpb| {
-                        kpb.key_package()
-                            .tls_serialize_detached()
+                        kpb.tls_serialize_detached()
                             .map_err(MlsError::from)
                             .map_err(CryptoError::from)
                             .map(Into::into)
@@ -1108,15 +1188,16 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<usize>`]
     ///
     /// see [core_crypto::mls::MlsCentral::client_valid_keypackages_count]
-    pub fn client_valid_keypackages_count(&self) -> Promise {
+    pub fn client_valid_keypackages_count(&self, ciphersuite: Ciphersuite) -> Promise {
         let this = self.inner.clone();
+        let ciphersuite: CiphersuiteName = ciphersuite.into();
 
         future_to_promise(
             async move {
                 let count = this
                     .read()
                     .await
-                    .client_valid_keypackages_count()
+                    .client_valid_key_packages_count(ciphersuite.into())
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(count.into())
@@ -1235,11 +1316,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<Option<js_sys::Uint8Array>>`]
     ///
     /// see [core_crypto::mls::MlsCentral::remove_members_from_conversation]
-    pub fn remove_clients_from_conversation(
-        &self,
-        conversation_id: Box<[u8]>,
-        clients: Box<[js_sys::Uint8Array]>,
-    ) -> Promise {
+    pub fn remove_clients_from_conversation(&self, conversation_id: Box<[u8]>, clients: Box<[Uint8Array]>) -> Promise {
         let this = self.inner.clone();
 
         future_to_promise(
@@ -1460,14 +1537,26 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::mls::MlsCentral::new_external_add_proposal]
-    pub fn new_external_add_proposal(&self, conversation_id: Box<[u8]>, epoch: u32) -> Promise {
+    pub fn new_external_add_proposal(
+        &self,
+        conversation_id: Box<[u8]>,
+        epoch: u32,
+        ciphersuite: Ciphersuite,
+        credential_type: CredentialType,
+    ) -> Promise {
         let this = self.inner.clone();
+        let ciphersuite: CiphersuiteName = ciphersuite.into();
         future_to_promise(
             async move {
                 let proposal_bytes = this
                     .write()
                     .await
-                    .new_external_add_proposal(conversation_id.to_vec(), u64::from(epoch).into())
+                    .new_external_add_proposal(
+                        conversation_id.to_vec(),
+                        u64::from(epoch).into(),
+                        ciphersuite.into(),
+                        credential_type.into(),
+                    )
                     .await
                     .map_err(CoreCryptoError::from)?
                     .to_bytes()
@@ -1499,10 +1588,21 @@ impl CoreCrypto {
                     .map_err(|_| CryptoError::InvalidByteArrayError(16))
                     .map_err(CoreCryptoError::from)?;
                 let kpr = KeyPackageRef::from(*kpr);
+                // TODO: we might not need this after all so let's not complicate things
+                let (cs, ct) = (
+                    core_crypto::prelude::MlsCiphersuite::default(),
+                    core_crypto::prelude::MlsCredentialType::default(),
+                );
                 let proposal_bytes = this
                     .write()
                     .await
-                    .new_external_remove_proposal(conversation_id.to_vec(), u64::from(epoch).into(), kpr)
+                    .new_external_remove_proposal(
+                        conversation_id.to_vec(),
+                        u64::from(epoch).into(),
+                        kpr,
+                        cs.into(),
+                        ct.into(),
+                    )
                     .await
                     .map_err(CoreCryptoError::from)?
                     .to_bytes()
@@ -1544,6 +1644,7 @@ impl CoreCrypto {
         &self,
         public_group_state: Box<[u8]>,
         custom_configuration: CustomConfiguration,
+        credential_type: CredentialType,
     ) -> Promise {
         use core_crypto::prelude::tls_codec::Deserialize as _;
 
@@ -1558,9 +1659,9 @@ impl CoreCrypto {
                     .map_err(CoreCryptoError::from)?;
 
                 let result: ConversationInitBundle = this
-                    .read()
+                    .write()
                     .await
-                    .join_by_external_commit(group_state, custom_configuration.into())
+                    .join_by_external_commit(group_state, custom_configuration.into(), credential_type.into())
                     .await
                     .map_err(CoreCryptoError::from)?
                     .try_into()?;

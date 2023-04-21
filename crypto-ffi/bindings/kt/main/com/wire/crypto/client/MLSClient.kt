@@ -19,6 +19,7 @@
 package com.wire.crypto.client
 
 import com.wire.crypto.CiphersuiteName
+import com.wire.crypto.MlsCredentialType
 import com.wire.crypto.ConversationConfiguration
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CustomConfiguration
@@ -61,11 +62,11 @@ class DecryptedMessageBundle(
 )
 
 interface MLSClient {
-    fun getPublicKey(): ByteArray
+    fun getPublicKey(ciphersuite: CiphersuiteName): ByteArray
 
-    fun generateKeyPackages(amount: Int): List<ByteArray>
+    fun generateKeyPackages(ciphersuite: CiphersuiteName, amount: Int): List<ByteArray>
 
-    fun validKeyPackageCount(): ULong
+    fun validKeyPackageCount(ciphersuite: CiphersuiteName): ULong
 
     fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle
 
@@ -73,8 +74,8 @@ interface MLSClient {
 
     fun conversationEpoch(groupId: MLSGroupId): ULong
 
-    fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage
-    fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle
+    fun joinConversation(groupId: MLSGroupId, epoch: ULong, ciphersuite: CiphersuiteName, credentialType: MlsCredentialType): HandshakeMessage
+    fun joinByExternalCommit(publicGroupState: ByteArray, credentialType: MlsCredentialType): CommitBundle
 
     fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId)
 
@@ -125,19 +126,20 @@ class MLSClientImpl constructor(
     private val defaultCiphersuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
 
     init {
-        coreCrypto.mlsInit(toUByteList(clientId))
+        val ciphersuites = listOf(CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519)
+        coreCrypto.mlsInit(toUByteList(clientId), ciphersuites)
     }
 
-    override fun getPublicKey(): ByteArray {
-        return coreCrypto.clientPublicKey().toUByteArray().asByteArray()
+    override fun getPublicKey(ciphersuite: CiphersuiteName): ByteArray {
+        return coreCrypto.clientPublicKey(ciphersuite).toUByteArray().asByteArray()
     }
 
-    override fun generateKeyPackages(amount: Int): List<ByteArray> {
-        return coreCrypto.clientKeypackages(amount.toUInt()).map { it.toUByteArray().asByteArray() }
+    override fun generateKeyPackages(ciphersuite: CiphersuiteName, amount: Int): List<ByteArray> {
+        return coreCrypto.clientKeypackages(ciphersuite, amount.toUInt()).map { it.toUByteArray().asByteArray() }
     }
 
-    override fun validKeyPackageCount(): ULong {
-        return coreCrypto.clientValidKeypackagesCount()
+    override fun validKeyPackageCount(ciphersuite: CiphersuiteName): ULong {
+        return coreCrypto.clientValidKeypackagesCount(ciphersuite)
     }
 
     override fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
@@ -152,17 +154,19 @@ class MLSClientImpl constructor(
         return coreCrypto.conversationEpoch(toUByteList(groupId))
     }
 
-    override fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage {
+    override fun joinConversation(groupId: MLSGroupId, epoch: ULong, ciphersuite: CiphersuiteName, credentialType: MlsCredentialType): HandshakeMessage {
         return toByteArray(
             coreCrypto.newExternalAddProposal(
                 conversationId = toUByteList(groupId),
-                epoch = epoch
+                epoch = epoch,
+                ciphersuite,
+                credentialType,
             )
         )
     }
 
-    override fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle {
-        return toCommitBundle(coreCrypto.joinByExternalCommit(toUByteList(publicGroupState), defaultGroupConfiguration))
+    override fun joinByExternalCommit(publicGroupState: ByteArray, credentialType: MlsCredentialType): CommitBundle {
+        return toCommitBundle(coreCrypto.joinByExternalCommit(toUByteList(publicGroupState), defaultGroupConfiguration, credentialType))
     }
 
     override fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {

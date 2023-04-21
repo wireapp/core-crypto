@@ -5,7 +5,8 @@ use futures_lite::future::block_on;
 use openmls::prelude::VerifiablePublicGroupState;
 
 use core_crypto::prelude::{
-    ConversationMember, MlsConversationConfiguration, MlsConversationInitBundle, MlsCustomConfiguration,
+    ConversationMember, MlsConversationConfiguration, MlsConversationInitBundle, MlsCredentialType,
+    MlsCustomConfiguration,
 };
 
 use crate::utils::*;
@@ -52,8 +53,13 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                         add_clients(&mut alice_central, &id, ciphersuite, *i);
 
                         let (bob_central, ..) = new_central(ciphersuite, &credential, in_memory);
-                        let bob_kpbs = block_on(async { bob_central.client_keypackages(1).await.unwrap() });
-                        let bob_kp = bob_kpbs.first().unwrap().key_package().clone();
+                        let bob_kpbs = block_on(async {
+                            bob_central
+                                .get_or_create_client_keypackages(ciphersuite, 1)
+                                .await
+                                .unwrap()
+                        });
+                        let bob_kp = bob_kpbs.first().unwrap().clone();
                         let bob_member = ConversationMember::new(bob_central.client_id().unwrap(), bob_kp);
                         let welcome = block_on(async {
                             alice_central
@@ -99,7 +105,11 @@ fn join_from_public_group_state_bench(c: &mut Criterion) {
                     |(mut central, pgs)| async move {
                         let MlsConversationInitBundle { conversation_id, .. } = black_box(
                             central
-                                .join_by_external_commit(pgs, MlsCustomConfiguration::default())
+                                .join_by_external_commit(
+                                    pgs,
+                                    MlsCustomConfiguration::default(),
+                                    MlsCredentialType::Basic,
+                                )
                                 .await
                                 .unwrap(),
                         );

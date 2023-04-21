@@ -129,6 +129,17 @@ export enum Ciphersuite {
     MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = 0x0007,
 }
 
+export enum CredentialType {
+    /**
+     * Just a KeyPair
+     */
+    Basic = 0x0001,
+    /**
+     * A certificate obtained through e2e identity enrollment process
+     */
+    X509 = 0x0002,
+}
+
 /**
  * Configuration object for new conversations
  */
@@ -327,6 +338,10 @@ export interface CoreCryptoDeferredParams {
      * This should be appropriately stored in a secure location (i.e. WebCrypto private key storage)
      */
     key: string;
+    /**
+     * All the ciphersuites this MLS client can support
+     */
+    ciphersuites: Ciphersuite[]
     /**
      * External PRNG entropy pool seed.
      * This **must** be exactly 32 bytes
@@ -546,6 +561,18 @@ export interface ExternalRemoveProposalArgs extends ExternalProposalArgs {
     keyPackageRef: Uint8Array;
 }
 
+export interface ExternalAddProposalArgs extends ExternalProposalArgs {
+    /**
+     * {@link Ciphersuite} to propose to join the MLS group with.
+     */
+    ciphersuite: Ciphersuite,
+    /**
+     * Fails when it is {@link CredentialType.X509} and no Credential has been created
+     * for it beforehand with {@link CoreCrypto.e2eiMlsInit} or variants.
+     */
+    credentialType: CredentialType,
+}
+
 export interface CoreCryptoCallbacks {
     /**
      * This callback is called by CoreCrypto to know whether a given clientId is authorized to "write"
@@ -635,13 +662,14 @@ export class CoreCrypto {
      * });
      * ````
      */
-    static async init({ databaseName, key, clientId, wasmFilePath, entropySeed }: CoreCryptoParams): Promise<CoreCrypto> {
+    static async init({ databaseName, key, clientId, wasmFilePath, ciphersuites, entropySeed }: CoreCryptoParams): Promise<CoreCrypto> {
         if (!this.#module) {
             const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
             const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
             this.#module = exports;
         }
-        const cc = await CoreCryptoError.asyncMapErr(this.#module.CoreCrypto._internal_new(databaseName, key, clientId, entropySeed));
+        let cs = ciphersuites.map(cs => cs.valueOf());
+        const cc = await CoreCryptoError.asyncMapErr(this.#module.CoreCrypto._internal_new(databaseName, key, clientId, Uint16Array.of(...cs), entropySeed));
         return new this(cc);
     }
 
@@ -652,13 +680,14 @@ export class CoreCrypto {
      * Use this clientId to initialize MLS with {@link CoreCrypto.mlsInit}.
      * @param params - {@link CoreCryptoDeferredParams}
      */
-    static async deferredInit({ databaseName, key, entropySeed, wasmFilePath }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
+    static async deferredInit({ databaseName, key, ciphersuites, entropySeed, wasmFilePath }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
         if (!this.#module) {
             const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
             const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
             this.#module = exports;
         }
-        const cc = await CoreCryptoError.asyncMapErr(this.#module.CoreCrypto.deferred_init(databaseName, key, entropySeed));
+        let cs = ciphersuites.map(cs => cs.valueOf());
+        const cc = await CoreCryptoError.asyncMapErr(this.#module.CoreCrypto.deferred_init(databaseName, key, Uint16Array.of(...cs), entropySeed));
         return new this(cc);
     }
 
@@ -666,31 +695,37 @@ export class CoreCrypto {
      * Use this after {@link CoreCrypto.deferredInit} when you have a clientId. It initializes MLS.
      *
      * @param clientId - {@link CoreCryptoParams#clientId} but required
+     * @param ciphersuites - All the ciphersuites supported by this MLS client
      */
-    async mlsInit(clientId: ClientId): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.mls_init(clientId));
+    async mlsInit(clientId: ClientId, ciphersuites: Ciphersuite[]): Promise<void> {
+        let cs = ciphersuites.map(cs => cs.valueOf());
+        return await CoreCryptoError.asyncMapErr(this.#cc.mls_init(clientId, Uint16Array.of(...cs)));
     }
 
     /**
      * Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID.
-     * This method is designed to be used in conjunction with {@link CoreCrypto.mlsInitWithClientID} and represents the first step in this process
+     * This method is designed to be used in conjunction with {@link CoreCrypto.mlsInitWithClientId} and represents the first step in this process
      *
+     * @param ciphersuites - All the ciphersuites supported by this MLS client
      * @returns This returns the TLS-serialized identity key (i.e. the signature keypair's public key)
      */
-    async mlsGenerateKeypair(): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.mls_generate_keypair());
+    async mlsGenerateKeypair(ciphersuites: Ciphersuite[]): Promise<Uint8Array[]> {
+        let cs = ciphersuites.map(cs => cs.valueOf());
+        return await CoreCryptoError.asyncMapErr(this.#cc.mls_generate_keypair(Uint16Array.of(...cs)));
     }
 
     /**
      * Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
      *
-     * Important: This is designed to be called after {@link CoreCrypto.mlsGenerateKeyPair}
+     * Important: This is designed to be called after {@link CoreCrypto.mlsGenerateKeypair}
      *
      * @param clientId - The newly-allocated client ID by the MLS Authentication Service
-     * @param signaturePublicKey - The public key you were given at the first step; This is for authentication purposes
+     * @param signaturePublicKeys - The public key you were given at the first step; This is for authentication purposes
+     * @param ciphersuites - All the ciphersuites supported by this MLS client
      */
-    async mlsInitWithClientId(clientId: ClientId, signaturePublicKey: Uint8Array): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.mls_init_with_client_id(clientId, signaturePublicKey));
+    async mlsInitWithClientId(clientId: ClientId, signaturePublicKeys: Uint8Array[], ciphersuites: Ciphersuite[]): Promise<void> {
+        let cs = ciphersuites.map(cs => cs.valueOf());
+        return await CoreCryptoError.asyncMapErr(this.#cc.mls_init_with_client_id(clientId, signaturePublicKeys, Uint16Array.of(...cs)));
     }
 
     /** @hidden */
@@ -905,25 +940,28 @@ export class CoreCrypto {
     /**
      * @returns The client's public key
      */
-    async clientPublicKey(): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.client_public_key());
+    async clientPublicKey(ciphersuite: Ciphersuite): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.client_public_key(ciphersuite));
     }
 
     /**
+     *
+     * @param ciphersuite - of the KeyPackages to count
      * @returns The amount of valid, non-expired KeyPackages that are persisted in the backing storage
      */
-    async clientValidKeypackagesCount(): Promise<number> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.client_valid_keypackages_count());
+    async clientValidKeypackagesCount(ciphersuite: Ciphersuite): Promise<number> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.client_valid_keypackages_count(ciphersuite));
     }
 
     /**
      * Fetches a requested amount of keypackages
      *
+     * @param ciphersuite - of the KeyPackages to generate
      * @param amountRequested - The amount of keypackages requested
      * @returns An array of length `amountRequested` containing TLS-serialized KeyPackages
      */
-    async clientKeypackages(amountRequested: number): Promise<Array<Uint8Array>> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.client_keypackages(amountRequested));
+    async clientKeypackages(ciphersuite: Ciphersuite, amountRequested: number): Promise<Array<Uint8Array>> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.client_keypackages(ciphersuite, amountRequested));
     }
 
     /**
@@ -1130,11 +1168,12 @@ export class CoreCrypto {
 
     async newExternalProposal(
         externalProposalType: ExternalProposalType,
-        args: ExternalProposalArgs | ExternalRemoveProposalArgs
+        args: ExternalAddProposalArgs | ExternalRemoveProposalArgs
     ): Promise<Uint8Array> {
         switch (externalProposalType) {
             case ExternalProposalType.Add: {
-                return await CoreCryptoError.asyncMapErr(this.#cc.new_external_add_proposal(args.conversationId, args.epoch));
+                let addArgs = (args as ExternalAddProposalArgs);
+                return await CoreCryptoError.asyncMapErr(this.#cc.new_external_add_proposal(args.conversationId, args.epoch, addArgs.ciphersuite, addArgs.credentialType));
             }
             case ExternalProposalType.Remove: {
                 if (!(args as ExternalRemoveProposalArgs).keyPackageRef) {
@@ -1173,14 +1212,17 @@ export class CoreCrypto {
      * bad can happen if you forget to except some storage space wasted.
      *
      * @param publicGroupState - a TLS encoded PublicGroupState fetched from the Delivery Service
+     * @param credentialType - kind of Credential to use for joining this group. If {@link CredentialType.Basic} is
+     * chosen and no Credential has been created yet for it, a new one will be generated.
      * @param configuration - configuration of the MLS group
+     * When {@link CredentialType.X509} is chosen, it fails when no Credential has been created for the given {@link Ciphersuite}.
      * @returns see {@link ConversationInitBundle}
      */
-    async joinByExternalCommit(publicGroupState: Uint8Array, configuration: CustomConfiguration = {}): Promise<ConversationInitBundle> {
+    async joinByExternalCommit(publicGroupState: Uint8Array, credentialType: CredentialType, configuration: CustomConfiguration = {}): Promise<ConversationInitBundle> {
         try {
             const {keyRotationSpan, wirePolicy} = configuration || {};
             const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
-            const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await CoreCryptoError.asyncMapErr(this.#cc.join_by_external_commit(publicGroupState, config));
+            const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await CoreCryptoError.asyncMapErr(this.#cc.join_by_external_commit(publicGroupState, config, credentialType));
 
             const pgs = ffiInitMessage.public_group_state;
 
@@ -1509,14 +1551,10 @@ export class CoreCrypto {
      * @param displayName human readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays generated x509 certificate expiry
-     * @param ciphersuite - For generating signing key material. Only {@link Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519} is supported currently
+     * @param ciphersuite - for generating signing key material
      * @returns The new {@link WireE2eIdentity} object
      */
-    async newAcmeEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519): Promise<WireE2eIdentity> {
-        if (ciphersuite !== Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519) {
-            throw new Error("This ACME ciphersuite isn't supported. Only `Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519` is as of now");
-        }
-
+    async newAcmeEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<WireE2eIdentity> {
         const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.new_acme_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
         return new WireE2eIdentity(e2ei);
     }

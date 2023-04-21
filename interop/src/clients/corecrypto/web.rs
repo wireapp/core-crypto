@@ -17,6 +17,7 @@
 use crate::clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient};
 use color_eyre::eyre::Result;
 use core_crypto::mls::MlsCiphersuite;
+use core_crypto::prelude::CiphersuiteName;
 use std::net::SocketAddr;
 
 #[derive(Debug)]
@@ -31,9 +32,11 @@ impl CoreCryptoWebClient {
     pub async fn new(driver_addr: &SocketAddr) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
         let client_id_str = client_id.as_hyphenated().to_string();
+        let ciphersuite = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u8;
         let client_config = serde_json::json!({
             "databaseName": format!("db-{client_id_str}"),
             "key": "test",
+            "ciphersuites": [ciphersuite],
             "clientId": client_id_str
         });
         let browser = crate::build::web::webdriver::setup_browser(driver_addr, "core-crypto").await?;
@@ -125,13 +128,14 @@ impl EmulatedClient for CoreCryptoWebClient {
 #[async_trait::async_trait(?Send)]
 impl EmulatedMlsClient for CoreCryptoWebClient {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
+        let ciphersuite = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u8;
         Ok(self
             .browser
             .execute_async(
                 r#"
-const [callback] = arguments;
-window.cc.clientKeypackages(1).then(([kp]) => callback(kp));"#,
-                vec![],
+const [ciphersuite, callback] = arguments;
+window.cc.clientKeypackages(ciphersuite, 1).then(([kp]) => callback(kp));"#,
+                vec![serde_json::json!(ciphersuite)],
             )
             .await
             .and_then(|value| Ok(serde_json::from_value(value)?))?)

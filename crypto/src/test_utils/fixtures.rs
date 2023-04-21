@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::prelude::MlsCredentialType;
 use crate::prelude::{MlsCiphersuite, MlsConversationConfiguration, MlsCustomConfiguration};
 use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
@@ -23,49 +24,49 @@ pub use rstest_reuse::{self, *};
 #[rstest(
     case,
     case::basic_cs1(TestCase::new(
-        openmls::prelude::CredentialType::Basic,
+        crate::prelude::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )),
     case::cert_cs1(TestCase::new(
-        openmls::prelude::CredentialType::X509,
+        crate::prelude::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs2(TestCase::new(
-        openmls::prelude::CredentialType::Basic,
+        crate::prelude::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     )),
     /*
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs2(TestCase::new(
-        openmls::prelude::CredentialType::X509,
+        crate::prelude::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     )),
     */
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs3(TestCase::new(
-        openmls::prelude::CredentialType::Basic,
+        crate::prelude::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs3(TestCase::new(
-        openmls::prelude::CredentialType::X509,
+        crate::prelude::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs7(TestCase::new(
-        openmls::prelude::CredentialType::Basic,
+        crate::prelude::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
     /*
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs7(TestCase::new(
-        openmls::prelude::CredentialType::X509,
+        crate::prelude::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
     */
     case::pure_ciphertext(TestCase {
-        credential_type: openmls::prelude::CredentialType::Basic,
+        credential_type: crate::prelude::MlsCredentialType::Basic,
         cfg: $crate::prelude::MlsConversationConfiguration {
             custom: $crate::prelude::MlsCustomConfiguration {
                 wire_policy: $crate::prelude::MlsWirePolicy::Ciphertext,
@@ -80,12 +81,12 @@ pub fn all_cred_cipher(case: TestCase) {}
 
 #[derive(Debug, Clone)]
 pub struct TestCase {
-    pub credential_type: openmls::prelude::CredentialType,
+    pub credential_type: MlsCredentialType,
     pub cfg: MlsConversationConfiguration,
 }
 
 impl TestCase {
-    pub fn new(credential_type: openmls::prelude::CredentialType, cs: openmls::prelude::Ciphersuite) -> Self {
+    pub fn new(credential_type: MlsCredentialType, cs: openmls::prelude::Ciphersuite) -> Self {
         Self {
             credential_type,
             cfg: MlsConversationConfiguration {
@@ -111,7 +112,7 @@ impl TestCase {
 impl Default for TestCase {
     fn default() -> Self {
         Self {
-            credential_type: openmls::prelude::CredentialType::Basic,
+            credential_type: MlsCredentialType::Basic,
             cfg: MlsConversationConfiguration::default(),
         }
     }

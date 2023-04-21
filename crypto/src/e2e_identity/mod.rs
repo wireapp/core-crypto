@@ -1,4 +1,5 @@
 use openmls::prelude::SignaturePrivateKey;
+use std::collections::HashMap;
 use wire_e2e_identity::prelude::RustyE2eIdentity;
 
 use error::*;
@@ -386,10 +387,12 @@ impl WireE2eIdentity {
             value: self.sign_sk,
             signature_scheme: self.ciphersuite.signature_algorithm(),
         };
-        let identifier = ClientIdentifier::X509(CertificateBundle {
+        let cert_bundle = CertificateBundle {
             certificate_chain,
             private_key,
-        });
+        };
+        // TODO
+        let identifier = ClientIdentifier::X509(HashMap::from([(self.ciphersuite, cert_bundle)]));
         mls_central.mls_init(identifier, vec![self.ciphersuite]).await?;
         Ok(())
     }

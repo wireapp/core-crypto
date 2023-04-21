@@ -14,16 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::connection::DatabaseConnection;
-use crate::entities::EntityFindParams;
-use crate::entities::MlsIdentity;
-use crate::entities::MlsIdentityExt;
-use crate::entities::StringEntityId;
-use crate::CryptoKeystoreResult;
 use crate::{
-    connection::KeystoreDatabaseConnection,
-    entities::{Entity, EntityBase},
-    MissingKeyErrorKind,
+    connection::{DatabaseConnection, KeystoreDatabaseConnection},
+    entities::{Entity, EntityBase, EntityFindParams, MlsIdentity, MlsIdentityExt, StringEntityId},
+    CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 impl Entity for MlsIdentity {
@@ -74,6 +68,9 @@ impl EntityBase for MlsIdentity {
 
             acc.push(Self {
                 id,
+                // TODO: ciphersuite in MlsIdentity
+                ciphersuite: 1,
+                credential_type: 1,
                 signature,
                 credential,
             });
@@ -188,6 +185,9 @@ impl EntityBase for MlsIdentity {
 
             Ok(Some(Self {
                 id,
+                // TODO: ciphersuite in MlsIdentity
+                ciphersuite: 1,
+                credential_type: 1,
                 signature,
                 credential,
             }))
@@ -267,6 +267,9 @@ impl MlsIdentityExt for MlsIdentity {
 
             Ok(Some(Self {
                 id,
+                // TODO: ciphersuite in MlsIdentity
+                ciphersuite: 1,
+                credential_type: 1,
                 signature,
                 credential,
             }))

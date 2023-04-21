@@ -17,6 +17,7 @@
 
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
+use std::collections::HashMap;
 
 use crate::{
     prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration},
@@ -29,7 +30,7 @@ pub mod fixtures;
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
 
-use crate::prelude::ClientIdentifier;
+use crate::prelude::{ClientIdentifier, MlsCredentialType};
 pub use central::*;
 pub use fixtures::TestCase;
 pub use fixtures::*;
@@ -61,11 +62,11 @@ pub async fn run_test_with_client_ids<const N: usize>(
                     MlsCentralConfiguration::try_new(p, "test".into(), None, vec![case.cfg.ciphersuite], None).unwrap();
                 let mut central = MlsCentral::try_new(configuration).await.unwrap();
 
-                let cred_type = case.credential_type;
-                let identity = match cred_type {
-                    openmls::prelude::CredentialType::Basic => ClientIdentifier::Basic(client_id),
-                    openmls::prelude::CredentialType::X509 => {
-                        ClientIdentifier::X509(crate::prelude::CertificateBundle::rand(case.cfg.ciphersuite, client_id))
+                let identity = match case.credential_type {
+                    MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
+                    MlsCredentialType::X509 => {
+                        let cert = crate::prelude::CertificateBundle::rand(case.cfg.ciphersuite, client_id);
+                        ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite, cert)]))
                     }
                 };
                 central.mls_init(identity, vec![case.cfg.ciphersuite]).await.unwrap();

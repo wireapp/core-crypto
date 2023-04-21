@@ -130,7 +130,7 @@ pub mod proposal_tests {
                             .new_conversation(id.clone(), case.cfg.clone())
                             .await
                             .unwrap();
-                        let bob_kp = bob_central.get_one_key_package().await;
+                        let bob_kp = bob_central.get_one_key_package(&case).await;
                         alice_central.new_proposal(&id, MlsProposal::Add(bob_kp)).await.unwrap();
                         let MlsCommitBundle { welcome, .. } =
                             alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
@@ -264,7 +264,7 @@ pub mod proposal_tests {
             move |[mut alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    let bob_kp = bob_central.get_one_key_package().await;
+                    let bob_kp = bob_central.get_one_key_package(&case).await;
                     let add_proposal = alice_central.new_proposal(&id, MlsProposal::Add(bob_kp)).await;
                     assert!(matches!(
                         add_proposal.unwrap_err(),
