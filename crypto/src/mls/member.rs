@@ -171,7 +171,8 @@ pub mod tests {
 
     use mls_crypto_provider::MlsCryptoProvider;
 
-    use crate::{mls::ClientId, prelude::INITIAL_KEYING_MATERIAL_COUNT, test_utils::*};
+    use crate::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
+    use crate::{mls::ClientId, test_utils::*};
 
     use super::ConversationMember;
 
