@@ -1382,7 +1382,7 @@ pub mod tests {
                         // Alright Bob does not have any KeyPackage
                         assert_eq!(bob_nb_kps, 0);
 
-                        bob_client.keypackage_lifetime(Duration::from_secs(2));
+                        bob_client.set_keypackage_lifetime(Duration::from_secs(2));
 
                         // Now Bob will have shorter KeyPackages. Let's add Bob to the group before those expire
                         alice_central
