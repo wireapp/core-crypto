@@ -40,7 +40,6 @@ async-lock = "2.6"
 schnellru = "0.2"
 zeroize = "1.5"
 wire-e2e-identity = "0.4"
-either = "1.8"
 
 [dependencies.proteus-wasm]
 version = "2.0"

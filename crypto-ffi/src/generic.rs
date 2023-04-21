@@ -378,7 +378,7 @@ impl CoreCrypto<'_> {
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .mls_init(either::Left(client_id.clone()), ciphersuites),
+                    .mls_init(ClientIdentifier::Basic(client_id.clone()), ciphersuites),
             ),
         )
     }

@@ -74,6 +74,7 @@ pub mod prelude {
         error::*,
         mls::{
             client::id::ClientId,
+            client::identifier::ClientIdentifier,
             client::*,
             config::MlsCentralConfiguration,
             conversation::{

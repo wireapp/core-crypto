@@ -29,6 +29,7 @@ pub mod fixtures;
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
 
+use crate::prelude::ClientIdentifier;
 pub use central::*;
 pub use fixtures::TestCase;
 pub use fixtures::*;
@@ -62,9 +63,9 @@ pub async fn run_test_with_client_ids<const N: usize>(
 
                 let cred_type = case.credential_type;
                 let identity = match cred_type {
-                    openmls::prelude::CredentialType::Basic => either::Left(client_id),
+                    openmls::prelude::CredentialType::Basic => ClientIdentifier::Basic(client_id),
                     openmls::prelude::CredentialType::X509 => {
-                        either::Right(crate::prelude::CertificateBundle::rand(case.cfg.ciphersuite, client_id))
+                        ClientIdentifier::X509(crate::prelude::CertificateBundle::rand(case.cfg.ciphersuite, client_id))
                     }
                 };
                 central.mls_init(identity, vec![case.cfg.ciphersuite]).await.unwrap();

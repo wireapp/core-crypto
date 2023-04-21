@@ -84,6 +84,7 @@ pub mod tests {
     use openmls::prelude::{CredentialError, WelcomeError};
     use wasm_bindgen_test::*;
 
+    use crate::prelude::ClientIdentifier;
     use crate::{
         error::CryptoError,
         mls::{MlsCentral, MlsCentralConfiguration, MlsConversationConfiguration},
@@ -97,17 +98,17 @@ pub mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn basic_clients_can_send_messages(case: TestCase) {
-        let alice_identity = either::Left("alice".into());
-        let bob_identity = either::Left("bob".into());
-        assert!(try_talk(alice_identity, bob_identity, case.cfg).await.is_ok());
+        let alice_identifier = ClientIdentifier::Basic("alice".into());
+        let bob_identifier = ClientIdentifier::Basic("bob".into());
+        assert!(try_talk(alice_identifier, bob_identifier, case.cfg).await.is_ok());
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn certificate_clients_can_send_messages(case: TestCase) {
-        let alice_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "alice".into()));
-        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
-        assert!(try_talk(alice_identity, bob_identity, case.cfg).await.is_ok());
+        let alice_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "alice".into()));
+        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        assert!(try_talk(alice_identifier, bob_identifier, case.cfg).await.is_ok());
     }
 
     #[apply(all_cred_cipher)]
@@ -115,15 +116,17 @@ pub mod tests {
     async fn heterogeneous_clients_can_send_messages(case: TestCase) {
         // check that both credentials can initiate/join a group
         {
-            let alice_identity = either::Left("alice".into());
-            let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
-            assert!(try_talk(alice_identity, bob_identity, case.cfg.clone()).await.is_ok());
+            let alice_identifier = ClientIdentifier::Basic("alice".into());
+            let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+            assert!(try_talk(alice_identifier, bob_identifier, case.cfg.clone())
+                .await
+                .is_ok());
             // drop alice & bob key stores
         }
         {
-            let alice_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "alice".into()));
-            let bob_identity = either::Left("bob".into());
-            assert!(try_talk(alice_identity, bob_identity, case.cfg).await.is_ok());
+            let alice_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "alice".into()));
+            let bob_identifier = ClientIdentifier::Basic("bob".into());
+            assert!(try_talk(alice_identifier, bob_identifier, case.cfg).await.is_ok());
         }
     }
 
@@ -132,11 +135,11 @@ pub mod tests {
     async fn should_fail_when_certificate_chain_is_empty(case: TestCase) {
         let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
         certs.certificate_chain = vec![];
-        let alice_identity = either::Right(certs);
+        let alice_identifier = ClientIdentifier::X509(certs);
 
-        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
+            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::InvalidIdentity
         ));
     }
@@ -147,11 +150,11 @@ pub mod tests {
         let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
         let root_ca = certs.certificate_chain.last().unwrap().to_owned();
         certs.certificate_chain = vec![root_ca];
-        let alice_identity = either::Right(certs);
+        let alice_identifier = ClientIdentifier::X509(certs);
 
-        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
+            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::InvalidIdentity
         ));
     }
@@ -163,11 +166,11 @@ pub mod tests {
         let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
         let leaf = certs.certificate_chain.first().unwrap().to_owned();
         certs.certificate_chain = vec![leaf];
-        let alice_identity = either::Right(certs);
+        let alice_identifier = ClientIdentifier::X509(certs);
 
-        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
+            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsCredentialError(
                 CredentialError::IncompleteCertificateChain
             ))
@@ -180,11 +183,11 @@ pub mod tests {
         // chain must be [leaf, leaf-issuer, ..., root-ca]
         let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
         certs.certificate_chain.reverse();
-        let alice_identity = either::Right(certs);
+        let alice_identifier = ClientIdentifier::X509(certs);
 
-        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
+            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::InvalidIdentity
         ));
     }
@@ -198,11 +201,11 @@ pub mod tests {
         certs.certificate_chain.pop().unwrap();
         // and replace it with the malicious one
         certs.certificate_chain.push(eve_ca.serialize_der().unwrap());
-        let alice_identity = either::Right(certs);
+        let alice_identifier = ClientIdentifier::X509(certs);
 
-        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
+            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
         ));
     }
@@ -216,14 +219,14 @@ pub mod tests {
             value: sign_key,
             signature_scheme: case.ciphersuite().signature_algorithm(),
         };
-        let alice_identity = either::Right(CertificateBundle {
+        let alice_identifier = ClientIdentifier::X509(CertificateBundle {
             certificate_chain: certs.certificate_chain,
             private_key: eve_key,
         });
 
-        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
+            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
         ));
     }
@@ -239,7 +242,7 @@ pub mod tests {
         }
         .build_x509_der();
 
-        let alice_identity = either::Right(CertificateBundle {
+        let alice_identifier = ClientIdentifier::X509(CertificateBundle {
             certificate_chain,
             private_key: SignaturePrivateKey {
                 value: sign_key,
@@ -247,9 +250,9 @@ pub mod tests {
             },
         });
 
-        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
+            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
         ));
     }
@@ -265,7 +268,7 @@ pub mod tests {
         }
         .build_x509_der();
 
-        let alice_identity = either::Right(CertificateBundle {
+        let alice_identifier = ClientIdentifier::X509(CertificateBundle {
             certificate_chain,
             private_key: SignaturePrivateKey {
                 value: sign_key,
@@ -273,16 +276,16 @@ pub mod tests {
             },
         });
 
-        let bob_identity = either::Right(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
+        let bob_identifier = ClientIdentifier::X509(CertificateBundle::rand(case.ciphersuite(), "bob".into()));
         assert!(matches!(
-            try_talk(alice_identity, bob_identity, case.cfg).await.unwrap_err(),
+            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
             CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
         ));
     }
 
     async fn try_talk(
-        alice_identity: either::Either<ClientId, CertificateBundle>,
-        bob_identity: either::Either<ClientId, CertificateBundle>,
+        alice_identifier: ClientIdentifier,
+        bob_identifier: ClientIdentifier,
         cfg: MlsConversationConfiguration,
     ) -> CryptoResult<()> {
         let id = conversation_id();
@@ -293,13 +296,13 @@ pub mod tests {
             MlsCentralConfiguration::try_new(alice_path.0, "alice".into(), None, ciphersuites.clone(), None)?;
 
         let mut alice_central = MlsCentral::try_new(alice_cfg).await?;
-        alice_central.mls_init(alice_identity, ciphersuites.clone()).await?;
+        alice_central.mls_init(alice_identifier, ciphersuites.clone()).await?;
 
         let bob_path = tmp_db_file();
         let bob_cfg = MlsCentralConfiguration::try_new(bob_path.0, "bob".into(), None, ciphersuites.clone(), None)?;
 
         let mut bob_central = MlsCentral::try_new(bob_cfg).await?;
-        bob_central.mls_init(bob_identity, ciphersuites.clone()).await?;
+        bob_central.mls_init(bob_identifier, ciphersuites.clone()).await?;
 
         alice_central.new_conversation(id.clone(), cfg.clone()).await?;
         alice_central.invite(&id, &mut bob_central, cfg.custom).await?;

@@ -907,7 +907,7 @@ impl CoreCrypto {
                 let ciphersuites = vec![MlsCiphersuite::default()];
                 let mut central = this.write().await;
                 central
-                    .mls_init(either::Left(client_id.clone().into()), ciphersuites)
+                    .mls_init(ClientIdentifier::Basic(client_id.clone().into()), ciphersuites)
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
