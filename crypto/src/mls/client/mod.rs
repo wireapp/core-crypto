@@ -20,20 +20,22 @@ pub(crate) mod identifier;
 use openmls::{
     credentials::CredentialBundle,
     extensions::Extension,
-    prelude::{KeyPackageBundle, KeyPackageRef, LifetimeExtension, TlsSerializeTrait},
+    prelude::{KeyPackageBundle, KeyPackageRef, LifetimeExtension},
 };
 use openmls_traits::{
     key_store::{FromKeyStoreValue, OpenMlsKeyStore, ToKeyStoreValue},
     OpenMlsCryptoProvider,
 };
 
+use crate::{
+    mls::credential::CredentialExt,
+    prelude::{identifier::ClientIdentifier, ClientId, CryptoError, CryptoResult, MlsCiphersuite, MlsError},
+};
 use core_crypto_keystore::{
     entities::{EntityFindParams, MlsIdentity, MlsKeypackage, StringEntityId},
     CryptoKeystoreError, CryptoKeystoreResult,
 };
 use mls_crypto_provider::MlsCryptoProvider;
-
-use crate::prelude::{identifier::ClientIdentifier, ClientId, CryptoError, CryptoResult, MlsCiphersuite, MlsError};
 
 pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 
@@ -49,15 +51,6 @@ pub struct Client {
     credentials: CredentialBundle,
     ciphersuite: MlsCiphersuite,
     keypackage_lifetime: std::time::Duration,
-}
-
-#[inline(always)]
-pub(super) fn identity_key(credentials: &CredentialBundle) -> Result<Vec<u8>, MlsError> {
-    credentials
-        .credential()
-        .signature_key()
-        .tls_serialize_detached()
-        .map_err(MlsError::from)
 }
 
 impl Client {
@@ -121,7 +114,7 @@ impl Client {
         let ciphersuite = *ciphersuites.first().ok_or(CryptoError::ImplementationError)?;
         let credentials = Self::generate_basic_credential_bundle(&provisional_client_id, ciphersuite, backend)?;
 
-        let signature = identity_key(&credentials)?;
+        let signature = credentials.keystore_key()?;
 
         let identity = MlsIdentity {
             id: provisional_client_id.to_string(),
@@ -190,7 +183,7 @@ impl Client {
         keystore
             .save(MlsIdentity {
                 id: client_id.to_string(),
-                signature: identity_key(&credentials)?,
+                signature: credentials.keystore_key()?,
                 credential: credentials.to_key_store_value().map_err(MlsError::from)?,
             })
             .await?;
@@ -223,7 +216,7 @@ impl Client {
 
         let identity = MlsIdentity {
             id: id.to_string(),
-            signature: identity_key(&credentials)?,
+            signature: credentials.keystore_key()?,
             credential: credentials.to_key_store_value().map_err(MlsError::from)?,
         };
 
@@ -536,10 +529,8 @@ pub mod tests {
 
     use mls_crypto_provider::MlsCryptoProvider;
 
-    use crate::test_utils::*;
-
-    use super::identity_key;
     use super::Client;
+    use crate::test_utils::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -605,7 +596,8 @@ pub mod tests {
 
                 // Make sure both client id and PK are intact
                 assert_eq!(alice.id, client_id);
-                assert_eq!(identity_key(alice.credentials()).unwrap(), keypair_sig_pk.as_slice());
+                let credentials = alice.credentials();
+                assert_eq!(credentials.keystore_key().unwrap(), keypair_sig_pk.as_slice());
             })
         })
         .await

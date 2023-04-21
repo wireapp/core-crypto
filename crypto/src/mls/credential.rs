@@ -1,4 +1,5 @@
 use openmls::prelude::{CredentialBundle, SignaturePrivateKey};
+use tls_codec::Serialize;
 #[cfg(test)]
 use wire_e2e_identity::prelude::WireIdentityBuilder;
 use wire_e2e_identity::prelude::WireIdentityReader;
@@ -72,6 +73,21 @@ impl Client {
     pub(crate) fn generate_x509_credential_bundle(cert: CertificateBundle) -> CryptoResult<CredentialBundle> {
         let client_id = cert.get_client_id()?;
         CredentialBundle::new_x509(client_id.into(), cert.certificate_chain, cert.private_key)
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)
+    }
+}
+
+pub(crate) trait CredentialExt {
+    fn keystore_key(&self) -> CryptoResult<Vec<u8>>;
+}
+
+impl CredentialExt for CredentialBundle {
+    #[inline(always)]
+    fn keystore_key(&self) -> CryptoResult<Vec<u8>> {
+        self.credential()
+            .signature_key()
+            .tls_serialize_detached()
             .map_err(MlsError::from)
             .map_err(CryptoError::from)
     }
