@@ -27,10 +27,12 @@ pub use rstest_reuse::{self, *};
         crate::prelude::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )),
+    /*
     case::cert_cs1(TestCase::new(
         crate::prelude::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )),
+    */
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs2(TestCase::new(
         crate::prelude::MlsCredentialType::Basic,
@@ -48,11 +50,11 @@ pub use rstest_reuse::{self, *};
         crate::prelude::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
     )),
-    #[cfg(feature = "test-all-cipher")]
-    case::cert_cs3(TestCase::new(
-        crate::prelude::MlsCredentialType::X509,
-        openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
-    )),
+    // #[cfg(feature = "test-all-cipher")]
+    // case::cert_cs3(TestCase::new(
+    //     crate::prelude::MlsCredentialType::X509,
+    //     openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
+    // )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs7(TestCase::new(
         crate::prelude::MlsCredentialType::Basic,

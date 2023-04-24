@@ -73,8 +73,12 @@ pub mod tests {
 
         assert!(store_names.contains(&"regression_check".into()));
 
-        assert!(store_names.contains(&"mls_keys".into()));
-        assert!(store_names.contains(&"mls_identities".into()));
+        assert!(store_names.contains(&"mls_psk_bundles".into()));
+        assert!(store_names.contains(&"mls_signature_keypairs".into()));
+        assert!(store_names.contains(&"mls_hpke_private_keys".into()));
+        assert!(store_names.contains(&"mls_encryption_keypairs".into()));
+        assert!(store_names.contains(&"mls_keypackages".into()));
+        assert!(store_names.contains(&"mls_credentials".into()));
         assert!(store_names.contains(&"mls_groups".into()));
         assert!(store_names.contains(&"mls_pending_groups".into()));
         assert!(store_names.contains(&"proteus_prekeys".into()));

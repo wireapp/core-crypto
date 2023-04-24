@@ -57,7 +57,7 @@ impl EntityBase for ProteusIdentity {
 
     async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
-        let ids = ids.iter().map(StringEntityId::as_bytes).collect::<Vec<_>>();
+        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::to_bytes).collect();
         storage.delete("proteus_identities", &ids).await
     }
 }

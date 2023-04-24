@@ -22,6 +22,7 @@
 #![doc = include_str!("../../README.md")]
 #![deny(missing_docs)]
 #![allow(clippy::single_component_path_imports)]
+#![allow(ambiguous_glob_reexports)]
 
 #[cfg(test)]
 use rstest_reuse;
@@ -52,17 +53,15 @@ mod group_store;
 
 /// Common imports that should be useful for most uses of the crate
 pub mod prelude {
-    pub use openmls::group::{MlsGroup, MlsGroupConfig};
-    pub use openmls::prelude::Ciphersuite as CiphersuiteName;
-    pub use openmls::prelude::Credential;
-    pub use openmls::prelude::GroupEpoch;
-    pub use openmls::prelude::KeyPackage;
-    pub use openmls::prelude::KeyPackageRef;
-    pub use openmls::prelude::Node;
-    pub use openmls::prelude::VerifiablePublicGroupState;
-    pub use tls_codec;
+    pub use openmls::{
+        group::{MlsGroup, MlsGroupConfig},
+        prelude::{
+            group_info::VerifiableGroupInfo, Ciphersuite as CiphersuiteName, Credential, GroupEpoch, KeyPackage,
+            KeyPackageIn, KeyPackageRef, MlsMessageIn, Node,
+        },
+    };
 
-    pub use mls_crypto_provider::{EntropySeed, RawEntropySeed};
+    pub use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed};
 
     pub use crate::{
         e2e_identity::{
@@ -80,16 +79,13 @@ pub mod prelude {
             conversation::{
                 config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
                 decrypt::MlsConversationDecryptMessage,
+                group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
                 handshake::{MlsCommitBundle, MlsConversationCreationMessage, MlsProposalBundle},
-                public_group_state::{
-                    MlsPublicGroupStateBundle, MlsPublicGroupStateEncryptionType, MlsRatchetTreeType,
-                    PublicGroupStatePayload,
-                },
                 *,
             },
             credential::{typ::MlsCredentialType, x509::CertificateBundle},
             external_commit::MlsConversationInitBundle,
-            member::*,
+            member::{ConversationMember, MemberId},
             proposal::{MlsProposal, MlsProposalRef},
             MlsCentral, MlsCiphersuite,
         },

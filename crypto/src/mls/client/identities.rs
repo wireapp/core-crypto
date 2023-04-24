@@ -1,5 +1,5 @@
+use crate::mls::credential::CredentialBundle;
 use crate::{mls::credential::typ::MlsCredentialType, prelude::MlsCiphersuite, CryptoResult};
-use openmls::credentials::CredentialBundle;
 use std::collections::HashMap;
 use strum::EnumCount as _;
 
@@ -24,9 +24,9 @@ impl ClientIdentities {
     ) -> Option<&CredentialBundle> {
         self.0.get(&cs)?.iter().find(|c| {
             matches!(
-                (ct, &c.credential().credential),
-                (MlsCredentialType::Basic, openmls::prelude::MlsCredentialType::Basic(_))
-                    | (MlsCredentialType::X509, openmls::prelude::MlsCredentialType::X509(_))
+                (ct, &c.credential.credential_type()),
+                (MlsCredentialType::Basic, openmls::prelude::CredentialType::Basic)
+                    | (MlsCredentialType::X509, openmls::prelude::CredentialType::X509)
             )
         })
     }

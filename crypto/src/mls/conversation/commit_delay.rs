@@ -1,7 +1,7 @@
-use openmls_traits::OpenMlsCryptoProvider;
+use openmls::prelude::LeafNodeIndex;
 
 use super::MlsConversation;
-use crate::{mls::MlsCryptoProvider, MlsError};
+use crate::MlsError;
 
 /// These constants intend to ramp up the delay and flatten the curve for later positions
 pub(self) const DELAY_RAMP_UP_MULTIPLIER: f32 = 120.0;
@@ -15,11 +15,11 @@ impl MlsConversation {
     /// * `self_index` - ratchet tree index of self client
     /// * `epoch` - current group epoch
     /// * `nb_members` - number of clients in the group
-    pub fn compute_next_commit_delay(&self, backend: &MlsCryptoProvider) -> Option<u64> {
-        use openmls::{messages::proposals::Proposal, prelude::KeyPackageRef};
+    pub fn compute_next_commit_delay(&self) -> Option<u64> {
+        use openmls::messages::proposals::Proposal;
 
         if self.group.pending_proposals().count() > 0 {
-            let removed_kprefs: Vec<&KeyPackageRef> = self
+            let removed_index = self
                 .group
                 .pending_proposals()
                 .filter_map(|proposal| {
@@ -29,16 +29,11 @@ impl MlsConversation {
                         None
                     }
                 })
-                .collect();
+                .collect::<Vec<LeafNodeIndex>>();
 
-            let is_self_removed = if let Some(self_kpref) = self.group.key_package_ref() {
-                // Find a remove proposal that concerns us
-                removed_kprefs.iter().any(|kpref| *kpref == self_kpref)
-            } else {
-                // If we don't have a leaf node for the current client, MOST likely we've been removed from the group from a previous commit.
-                // So we shouldn't be committing anything
-                true
-            };
+            let self_index = self.group.own_leaf_index();
+            // Find a remove proposal that concerns us
+            let is_self_removed = removed_index.iter().any(|&i| i == self_index);
 
             // If our own client has been removed, don't commit
             if is_self_removed {
@@ -46,16 +41,15 @@ impl MlsConversation {
             }
 
             let epoch = self.group.epoch().as_u64();
-            let mut own_index = self.group.own_leaf_index() as u64;
-            let members = self.group.members();
+            let mut own_index = self.group.own_leaf_index().u32() as u64;
 
             // Look for members that were removed at the left of our tree in order to shift our own leaf index (post-commit tree visualization)
-            let left_tree_diff = members
-                .iter()
+            let left_tree_diff = self
+                .group
+                .members()
                 .take(own_index as usize)
-                .try_fold(0u32, |mut acc, keypackage| {
-                    let hash_ref = keypackage.hash_ref(backend.crypto())?;
-                    if removed_kprefs.contains(&&hash_ref) {
+                .try_fold(0u32, |mut acc, kp| {
+                    if removed_index.contains(&&kp.index) {
                         acc += 1;
                     }
 
@@ -65,7 +59,7 @@ impl MlsConversation {
                 .unwrap_or_default();
 
             // Post-commit visualization of the number of members after remove proposals
-            let nb_members = (self.group.members().len() as u64).saturating_sub(removed_kprefs.len() as u64);
+            let nb_members = (self.group.members().count() as u64).saturating_sub(removed_index.len() as u64);
             // This shifts our own leaf index to the left (tree-wise) from as many as there was removed members that have a smaller leaf index than us (older members)
             own_index = own_index.saturating_sub(left_tree_diff as u64);
 
@@ -195,7 +189,7 @@ pub mod tests {
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     bob_central
-                        .process_welcome_message(bob_welcome.clone(), case.custom_cfg())
+                        .process_welcome_message(bob_welcome.clone().into(), case.custom_cfg())
                         .await
                         .unwrap();
 
@@ -217,7 +211,7 @@ pub mod tests {
                         .unwrap();
 
                     charlie_central
-                        .process_welcome_message(charlie_welcome, case.custom_cfg())
+                        .process_welcome_message(charlie_welcome.into(), case.custom_cfg())
                         .await
                         .unwrap();
 

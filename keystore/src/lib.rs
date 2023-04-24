@@ -27,6 +27,7 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "mls-keystore")] {
         mod mls;
         pub use self::mls::CryptoKeystoreMls;
+        pub use self::mls::{ser, deser};
     }
 }
 

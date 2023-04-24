@@ -59,12 +59,12 @@ impl<'a> StringEntityId<'a> {
         hex::encode(self.0)
     }
 
-    pub fn into_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         self.0.into()
     }
 
-    pub fn as_bytes(&self) -> &[u8] {
-        self.0
+    pub fn as_slice(&self) -> &[u8] {
+        &self.0
     }
 
     pub fn try_as_str(&self) -> Result<&str, ::core::str::Utf8Error> {
@@ -110,10 +110,9 @@ impl EntityFindParams {
         if let Some(offset) = self.offset {
             let _ = write!(query, " OFFSET {offset}");
         }
+        let _ = write!(query, " ORDER BY rowid");
         if self.reverse {
-            let _ = write!(query, " ORDER BY rowid DESC");
-        } else {
-            let _ = write!(query, " ORDER BY rowid");
+            let _ = write!(query, " DESC");
         }
 
         query

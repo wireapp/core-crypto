@@ -37,9 +37,9 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use config::MlsConversationConfiguration;
 
-use crate::prelude::MlsCredentialType;
 use crate::{
-    mls::{client::Client, member::MemberId, ClientId, MlsCentral},
+    mls::{client::Client, member::MemberId, ClientId, MlsCentral, MlsCiphersuite},
+    prelude::MlsCredentialType,
     CryptoError, CryptoResult, MlsError,
 };
 
@@ -50,9 +50,9 @@ pub mod decrypt;
 mod durability;
 pub mod encrypt;
 pub mod export;
+pub(crate) mod group_info;
 pub mod handshake;
 pub mod merge;
-pub(crate) mod public_group_state;
 mod renew;
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
@@ -89,16 +89,15 @@ impl MlsConversation {
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
-        let kp = author_client
-            .generate_keypackage(backend, configuration.ciphersuite, creator_credential_type)
-            .await?;
-        let kp_hash = kp.hash_ref(backend.crypto()).map_err(MlsError::from)?;
+        let (cs, ct) = (configuration.ciphersuite, creator_credential_type);
+        let cb = author_client.get_or_create_credential_bundle(backend, cs, ct).await?;
 
-        let group = MlsGroup::new(
+        let group = MlsGroup::new_with_group_id(
             backend,
+            &cb.signature_key,
             &configuration.as_openmls_default_configuration()?,
-            openmls::group::GroupId::from_slice(&id),
-            kp_hash.value(),
+            openmls::prelude::GroupId::from_slice(id.as_slice()),
+            cb.to_mls_credential_with_key(),
         )
         .await
         .map_err(MlsError::from)?;
@@ -159,7 +158,7 @@ impl MlsConversation {
 
     /// Internal API: restore the conversation from a persistence-saved serialized Group State.
     pub(crate) fn from_serialized_state(buf: Vec<u8>, parent_id: Option<ConversationId>) -> CryptoResult<Self> {
-        let group = MlsGroup::load(&mut &buf[..])?;
+        let group: MlsGroup = core_crypto_keystore::deser(&buf)?;
         let id = ConversationId::from(group.group_id().as_slice());
         let configuration = MlsConversationConfiguration {
             ciphersuite: group.ciphersuite().into(),
@@ -181,8 +180,8 @@ impl MlsConversation {
 
     /// Returns all members credentials from the group/conversation
     pub fn members(&self) -> HashMap<MemberId, Vec<Credential>> {
-        self.group.members().iter().fold(HashMap::new(), |mut acc, kp| {
-            let credential = kp.credential();
+        self.group.members().fold(HashMap::new(), |mut acc, kp| {
+            let credential = kp.credential;
             let client_id: ClientId = credential.identity().into();
             let member_id: MemberId = client_id.to_vec();
             acc.entry(member_id).or_insert_with(Vec::new).push(credential.clone());
@@ -196,17 +195,20 @@ impl MlsConversation {
         force: bool,
     ) -> CryptoResult<()> {
         if force || self.group.state_changed() == openmls::group::InnerState::Changed {
-            let mut buf = vec![];
-            self.group.save(&mut buf)?;
-
             use core_crypto_keystore::CryptoKeystoreMls as _;
-            Ok(backend
+            backend
                 .key_store()
-                .mls_group_persist(&self.id, &buf, self.parent_id.as_deref())
-                .await?)
-        } else {
-            Ok(())
+                .mls_group_persist(
+                    &self.id,
+                    &core_crypto_keystore::ser(&self.group)?,
+                    self.parent_id.as_deref(),
+                )
+                .await?;
+
+            self.group.set_state(openmls::group::InnerState::Persisted);
         }
+
+        Ok(())
     }
 
     /// Marks this conversation as child of another.
@@ -223,6 +225,20 @@ impl MlsConversation {
         } else {
             Err(CryptoError::ParentGroupNotFound)
         }
+    }
+
+    pub(crate) fn own_credential_type(&self) -> CryptoResult<MlsCredentialType> {
+        Ok(self
+            .group
+            .own_leaf_node()
+            .ok_or(CryptoError::ImplementationError)?
+            .credential()
+            .credential_type()
+            .into())
+    }
+
+    pub(crate) fn ciphersuite(&self) -> MlsCiphersuite {
+        self.configuration.ciphersuite
     }
 }
 
@@ -366,7 +382,7 @@ pub mod tests {
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     bob_central
-                        .process_welcome_message(welcome, case.custom_cfg())
+                        .process_welcome_message(welcome.into(), case.custom_cfg())
                         .await
                         .unwrap();
 
@@ -442,7 +458,7 @@ pub mod tests {
                 let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
                 // TODO: Do things in parallel, this is waaaaay too slow (takes around 5 minutes)
                 for mut c in bob_and_friends {
-                    c.process_welcome_message(welcome.clone(), case.custom_cfg())
+                    c.process_welcome_message(welcome.clone().into(), case.custom_cfg())
                         .await
                         .unwrap();
                     assert!(c.try_talk_to(&id, &mut alice_central).await.is_ok());
@@ -489,7 +505,7 @@ pub mod tests {
 
                     // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
                     bob_central
-                        .process_welcome_message(welcome, case.custom_cfg())
+                        .process_welcome_message(welcome.into(), case.custom_cfg())
                         .await
                         .unwrap();
 

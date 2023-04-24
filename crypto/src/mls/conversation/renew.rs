@@ -1,8 +1,9 @@
-use openmls::prelude::{KeyPackageRef, Proposal, QueuedProposal, Sender, StagedCommit};
+use openmls::prelude::{LeafNodeIndex, Proposal, QueuedProposal, Sender, StagedCommit};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::prelude::handshake::MlsProposalBundle;
+use crate::prelude::Client;
 use crate::{mls::MlsConversation, CryptoError, CryptoResult};
 
 /// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)
@@ -22,7 +23,7 @@ impl Renew {
     /// * `pending_commit` - local pending commit which is now invalid
     /// * `valid_commit` - commit accepted by the backend which will now supersede our local pending commit
     pub(crate) fn renew<'a>(
-        self_kpr: Option<KeyPackageRef>,
+        self_kpr: Option<LeafNodeIndex>,
         pending_proposals: impl Iterator<Item = QueuedProposal> + 'a,
         pending_commit: Option<&'a StagedCommit>,
         valid_commit: &'a StagedCommit,
@@ -34,7 +35,7 @@ impl Renew {
 
         let renewed_pending_proposals = if let Some(pending_commit) = pending_commit {
             // present in pending commit but not in valid commit
-            let commit_proposals = pending_commit.staged_proposal_queue().cloned().collect::<Vec<_>>();
+            let commit_proposals = pending_commit.queued_proposals().cloned().collect::<Vec<_>>();
 
             // if our own pending commit is empty it means we were attempting to update
             let empty_commit = commit_proposals.is_empty();
@@ -65,14 +66,16 @@ impl Renew {
         if let Some(commit) = commit {
             let in_commit = match proposal.proposal() {
                 Proposal::Add(ref add) => commit.add_proposals().any(|p| {
-                    p.add_proposal().key_package().credential().identity() == add.key_package().credential().identity()
+                    let commits_identity = p.add_proposal().key_package().leaf_node().credential().identity();
+                    let proposal_identity = add.key_package().leaf_node().credential().identity();
+                    commits_identity == proposal_identity
                 }),
                 Proposal::Remove(ref remove) => commit
                     .remove_proposals()
                     .any(|p| p.remove_proposal().removed() == remove.removed()),
                 Proposal::Update(ref update) => commit
                     .update_proposals()
-                    .any(|p| p.update_proposal().key_package() == update.key_package()),
+                    .any(|p| p.update_proposal().leaf_node() == update.leaf_node()),
                 _ => true,
             };
             if in_commit {
@@ -92,31 +95,32 @@ impl MlsConversation {
     /// This will also add them to the local proposal store
     pub(crate) async fn renew_proposals_for_current_epoch(
         &mut self,
+        client: &Client,
         backend: &MlsCryptoProvider,
         proposals: impl Iterator<Item = QueuedProposal>,
         update_self: bool,
     ) -> CryptoResult<Vec<MlsProposalBundle>> {
         let mut result = vec![];
-        let is_external = |p: &QueuedProposal| matches!(p.sender(), Sender::External(_) | Sender::NewMember);
+        let is_external = |p: &QueuedProposal| matches!(p.sender(), Sender::External(_) | Sender::NewMemberProposal);
         let proposals = proposals.filter(|p| !is_external(p));
         for proposal in proposals {
             let msg = match proposal.proposal() {
-                Proposal::Add(add) => self.propose_add_member(backend, add.key_package()).await?,
-                Proposal::Remove(remove) => self.propose_remove_member(backend, remove.removed()).await?,
-                Proposal::Update(_) => self.propose_self_update(backend).await?,
+                Proposal::Add(add) => self.propose_add_member(client, backend, add.key_package()).await?,
+                Proposal::Remove(remove) => self.propose_remove_member(client, backend, remove.removed()).await?,
+                Proposal::Update(_) => self.propose_self_update(client, backend).await?,
                 _ => return Err(CryptoError::ImplementationError),
             };
             result.push(msg);
         }
         if update_self {
-            result.push(self.propose_self_update(backend).await?);
+            result.push(self.propose_self_update(client, backend).await?);
         }
         Ok(result)
     }
 
     pub(crate) fn self_pending_proposals(&self) -> impl Iterator<Item = &QueuedProposal> {
         self.group.pending_proposals().filter(|&p| match p.sender() {
-            Sender::Member(sender_kpr) => self.group.key_package_ref() == Some(sender_kpr),
+            Sender::Member(sender_kpr) => self.group.own_leaf_index() == *sender_kpr,
             _ => false,
         })
     }
@@ -313,14 +317,9 @@ pub mod tests {
                             .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
-                        let pgs = alice_central.verifiable_public_group_state(&id).await;
+                        let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(
-                                &case,
-                                &id,
-                                pgs,
-                                vec![&mut alice_central, &mut bob_central],
-                            )
+                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
 
@@ -467,14 +466,9 @@ pub mod tests {
                             .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
-                        let pgs = alice_central.verifiable_public_group_state(&id).await;
+                        let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(
-                                &case,
-                                &id,
-                                pgs,
-                                vec![&mut alice_central, &mut bob_central],
-                            )
+                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
 
@@ -567,7 +561,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renews_pending_commit_when_valid_commit_doesnt_adds_same(case: TestCase) {
+        pub async fn renews_pending_commit_when_valid_commit_doesnt_add_same(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -627,14 +621,9 @@ pub mod tests {
                             .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
-                        let pgs = alice_central.verifiable_public_group_state(&id).await;
+                        let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(
-                                &case,
-                                &id,
-                                pgs,
-                                vec![&mut alice_central, &mut bob_central],
-                            )
+                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
 
@@ -681,14 +670,9 @@ pub mod tests {
                             .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
-                        let pgs = alice_central.verifiable_public_group_state(&id).await;
+                        let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(
-                                &case,
-                                &id,
-                                pgs,
-                                vec![&mut alice_central, &mut bob_central],
-                            )
+                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
 
@@ -736,22 +720,17 @@ pub mod tests {
                             .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
-                        let pgs = alice_central.verifiable_public_group_state(&id).await;
+                        let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(
-                                &case,
-                                &id,
-                                pgs,
-                                vec![&mut alice_central, &mut bob_central],
-                            )
+                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
-                        let pgs = alice_central.verifiable_public_group_state(&id).await;
+                        let gi = alice_central.get_group_info(&id).await;
                         debbie_central
-                            .try_join_from_public_group_state(
+                            .try_join_from_group_info(
                                 &case,
                                 &id,
-                                pgs,
+                                gi.into(),
                                 vec![&mut alice_central, &mut bob_central, &mut charlie_central],
                             )
                             .await
@@ -802,22 +781,17 @@ pub mod tests {
                             .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
-                        let pgs = alice_central.verifiable_public_group_state(&id).await;
+                        let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(
-                                &case,
-                                &id,
-                                pgs,
-                                vec![&mut alice_central, &mut bob_central],
-                            )
+                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
-                        let pgs = alice_central.verifiable_public_group_state(&id).await;
+                        let gi = alice_central.get_group_info(&id).await;
                         debbie_central
-                            .try_join_from_public_group_state(
+                            .try_join_from_group_info(
                                 &case,
                                 &id,
-                                pgs,
+                                gi.into(),
                                 vec![&mut alice_central, &mut bob_central, &mut charlie_central],
                             )
                             .await
@@ -867,22 +841,17 @@ pub mod tests {
                             .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
-                        let pgs = alice_central.verifiable_public_group_state(&id).await;
+                        let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(
-                                &case,
-                                &id,
-                                pgs,
-                                vec![&mut alice_central, &mut bob_central],
-                            )
+                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
-                        let pgs = alice_central.verifiable_public_group_state(&id).await;
+                        let gi = alice_central.get_group_info(&id).await;
                         debbie_central
-                            .try_join_from_public_group_state(
+                            .try_join_from_group_info(
                                 &case,
                                 &id,
-                                pgs,
+                                gi.into(),
                                 vec![&mut alice_central, &mut bob_central, &mut charlie_central],
                             )
                             .await

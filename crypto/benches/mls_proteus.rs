@@ -100,7 +100,7 @@ fn add_client_bench(c: &mut Criterion) {
                     || {
                         let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
                         add_clients(&mut central, &id, ciphersuite, *i);
-                        let member = rand_member(ciphersuite);
+                        let member = block_on(async { rand_member(ciphersuite).await });
                         (central, id, member)
                     },
                     |(mut central, id, member)| async move {

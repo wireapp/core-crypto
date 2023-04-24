@@ -16,26 +16,26 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, MlsIdentity, MlsIdentityExt, StringEntityId},
+    entities::{Entity, EntityBase, EntityFindParams, MlsHpkePrivateKey, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 #[async_trait::async_trait(?Send)]
-impl EntityBase for MlsIdentity {
+impl EntityBase for MlsHpkePrivateKey {
     type ConnectionType = KeystoreDatabaseConnection;
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
-        MissingKeyErrorKind::MlsIdentityBundle
+        MissingKeyErrorKind::MlsHpkePrivateKey
     }
 
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
-        storage.get_all("mls_identities", Some(params)).await
+        storage.get_all("mls_hpke_private_keys", Some(params)).await
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
-        storage.save("mls_identities", &mut [self.clone()]).await?;
+        storage.save("mls_hpke_private_keys", &mut [self.clone()]).await?;
 
         Ok(())
     }
@@ -44,60 +44,34 @@ impl EntityBase for MlsIdentity {
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        conn.storage().get("mls_identities", id.as_bytes()).await
+        conn.storage().get("mls_hpke_private_keys", id.as_slice()).await
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        conn.storage().count("mls_identities").await
+        conn.storage().count("mls_hpke_private_keys").await
     }
 
     async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
-        let ids = ids.iter().map(StringEntityId::as_bytes).collect::<Vec<_>>();
-        storage.delete("mls_identities", &ids).await
+        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::to_bytes).collect();
+        storage.delete("mls_hpke_private_keys", &ids).await
     }
 }
 
-impl Entity for MlsIdentity {
+impl Entity for MlsHpkePrivateKey {
     fn id_raw(&self) -> &[u8] {
-        self.id.as_bytes()
+        self.pk.as_slice()
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.signature = Self::encrypt_data(cipher, self.signature.as_slice(), self.aad())?;
-        self.credential = Self::encrypt_data(cipher, self.credential.as_slice(), self.aad())?;
-        Self::ConnectionType::check_buffer_size(self.signature.len())?;
-        Self::ConnectionType::check_buffer_size(self.credential.len())?;
+        self.sk = Self::encrypt_data(cipher, self.sk.as_slice(), self.aad())?;
+        Self::ConnectionType::check_buffer_size(self.sk.len())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.signature = Self::decrypt_data(cipher, self.signature.as_slice(), self.aad())?;
-        self.credential = Self::decrypt_data(cipher, self.credential.as_slice(), self.aad())?;
-
-        Ok(())
-    }
-}
-
-#[async_trait::async_trait(?Send)]
-impl MlsIdentityExt for MlsIdentity {
-    async fn find_by_signature(
-        conn: &mut Self::ConnectionType,
-        signature: &[u8],
-    ) -> CryptoKeystoreResult<Option<Self>> {
-        conn.storage()
-            .get_indexed("mls_identities", "signature", signature)
-            .await
-    }
-
-    async fn delete_by_signature(conn: &mut Self::ConnectionType, signature: &[u8]) -> CryptoKeystoreResult<()> {
-        if let Some(identity) = Self::find_by_signature(conn, signature).await? {
-            let _ = conn
-                .storage_mut()
-                .delete("mls_identities", &[identity.id.as_bytes()])
-                .await?;
-        }
+        self.sk = Self::decrypt_data(cipher, self.sk.as_slice(), self.aad())?;
 
         Ok(())
     }

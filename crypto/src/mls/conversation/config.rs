@@ -20,13 +20,12 @@
 //! when joining one by Welcome or external commit
 
 use openmls::prelude::{
-    ExternalSender, SenderRatchetConfiguration, SignaturePublicKey, WireFormatPolicy,
+    Credential, ExternalSender, SenderRatchetConfiguration, SignaturePublicKey, WireFormatPolicy,
     PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
 };
-use openmls_traits::types::SignatureScheme;
 use serde::{Deserialize, Serialize};
 
-use crate::{mls::MlsCiphersuite, CryptoError, CryptoResult, MlsError};
+use crate::{mls::MlsCiphersuite, CryptoResult};
 
 /// The configuration parameters for a group/conversation
 #[derive(Debug, Clone, Default)]
@@ -51,7 +50,7 @@ impl MlsConversationConfiguration {
             .wire_format_policy(self.custom.wire_policy.into())
             .max_past_epochs(3)
             .padding_size(Self::PADDING_SIZE)
-            .number_of_resumtion_secrets(1)
+            .number_of_resumption_psks(1)
             .sender_ratchet_configuration(SenderRatchetConfiguration::new(
                 self.custom.out_of_order_tolerance,
                 self.custom.maximum_forward_distance,
@@ -65,17 +64,15 @@ impl MlsConversationConfiguration {
     /// Note that this only works currently with Ed25519 keys and will have to be changed to accept
     /// other key schemes
     pub fn set_raw_external_senders(&mut self, external_senders: Vec<Vec<u8>>) {
-        let external_senders = external_senders
-            .iter()
+        self.external_senders = external_senders
+            .into_iter()
             .map(|key| {
-                SignaturePublicKey::new(key.clone(), SignatureScheme::ED25519)
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)
+                ExternalSender::new(
+                    SignaturePublicKey::from(key),
+                    Credential::new_basic(Self::WIRE_SERVER_IDENTITY.into()),
+                )
             })
-            .filter_map(|r: CryptoResult<SignaturePublicKey>| r.ok())
-            .map(|signature_key| ExternalSender::new_basic(Self::WIRE_SERVER_IDENTITY, signature_key))
             .collect();
-        self.external_senders = external_senders;
     }
 }
 

@@ -4,8 +4,11 @@ use std::fmt::{Display, Formatter};
 use criterion::BenchmarkId;
 
 use futures_lite::future::block_on;
-use openmls::prelude::{CredentialBundle, Extension, KeyPackage, KeyPackageBundle, LifetimeExtension};
+use openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, SignaturePublicKey};
+use openmls_basic_credential::SignatureKeyPair;
+use openmls_traits::random::OpenMlsRand;
 use openmls_traits::types::Ciphersuite;
+use openmls_traits::OpenMlsCryptoProvider;
 
 use core_crypto::prelude::MlsCredentialType;
 use core_crypto::{
@@ -186,7 +189,7 @@ pub fn add_clients(
 
         let mut members = (0..nb_clients)
             .map(|_| {
-                let member = rand_member(ciphersuite);
+                let member = block_on(async { rand_member(ciphersuite).await });
                 client_ids.push(member.id().as_slice().into());
                 member
             })
@@ -202,21 +205,34 @@ pub fn add_clients(
     })
 }
 
-pub fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, ClientId) {
+pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, ClientId) {
     let client_id = Alphanumeric
         .sample_string(&mut rand::thread_rng(), 16)
         .as_bytes()
         .to_vec();
     let backend = block_on(async { MlsCryptoProvider::try_new_in_memory("secret").await.unwrap() });
-    let ciphersuite: Ciphersuite = ciphersuite.clone().into();
-    let cred = CredentialBundle::new_basic(client_id.clone(), ciphersuite.signature_algorithm(), &backend).unwrap();
-    let lifetime_extension = Extension::LifeTime(LifetimeExtension::new(3600));
-    let kpb = KeyPackageBundle::new(&[ciphersuite], &cred, &backend, vec![lifetime_extension]).unwrap();
-    (kpb.key_package().clone(), client_id.into())
+    let cs: Ciphersuite = ciphersuite.clone().into();
+
+    let mut rng = &mut *backend.rand().borrow_rand().unwrap();
+    let signer = SignatureKeyPair::new(ciphersuite.signature_algorithm(), &mut rng).unwrap();
+
+    let cred = Credential::new_basic(client_id.clone());
+    let signature_key = SignaturePublicKey::from(signer.public());
+    let credential = CredentialWithKey {
+        credential: cred,
+        signature_key,
+    };
+
+    let cfg = CryptoConfig::with_default_version(cs);
+    let kp = KeyPackage::builder()
+        .build(cfg, &backend, &signer, credential)
+        .await
+        .unwrap();
+    (kp, client_id.into())
 }
 
-pub fn rand_member(ciphersuite: MlsCiphersuite) -> ConversationMember {
-    let (kp, client_id) = rand_key_package(ciphersuite);
+pub async fn rand_member(ciphersuite: MlsCiphersuite) -> ConversationMember {
+    let (kp, client_id) = rand_key_package(ciphersuite).await;
     ConversationMember::new(client_id, kp)
 }
 
@@ -231,7 +247,7 @@ pub fn invite(from: &mut MlsCentral, other: &mut MlsCentral, id: &ConversationId
             .unwrap()
             .welcome;
         other
-            .process_welcome_message(welcome, MlsCustomConfiguration::default())
+            .process_welcome_message(welcome.into(), MlsCustomConfiguration::default())
             .await
             .unwrap();
         from.commit_accepted(id).await.unwrap();

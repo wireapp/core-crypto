@@ -44,7 +44,18 @@ impl std::ops::DerefMut for SqlCipherConnection {
 }
 
 impl SqlCipherConnection {
-    fn init_with_connection(conn: rusqlite::Connection, path: &str, key: &str) -> CryptoKeystoreResult<Self> {
+    #[allow(unused_mut)]
+    fn init_with_connection(mut conn: rusqlite::Connection, path: &str, key: &str) -> CryptoKeystoreResult<Self> {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "log-queries")] {
+                fn log_query(q: &str) {
+                    log::info!("{}", q);
+                }
+
+                conn.trace(Some(log_query));
+            }
+        }
+
         conn.pragma_update(None, "key", key)?;
 
         // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
@@ -53,6 +64,9 @@ impl SqlCipherConnection {
 
         // Enable WAL journaling mode
         conn.pragma_update(None, "journal_mode", "wal")?;
+
+        // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
+        conn.pragma_update(None, "foreign_keys", "OFF")?;
 
         let mut conn = Self {
             path: path.into(),
@@ -195,13 +209,16 @@ impl SqlCipherConnection {
 
         const CIPHER_PLAINTEXT_BYTES: u32 = 32;
         conn.pragma_update(None, "cipher_plaintext_header_size", CIPHER_PLAINTEXT_BYTES)?;
-        conn.pragma_update(None, "user_version", 1u32)?;
+        conn.pragma_update(None, "user_version", 2u32)?;
 
         Ok(())
     }
 
     fn run_migrations(&mut self) -> CryptoKeystoreResult<()> {
-        migrations::runner().run(&mut self.conn).map_err(Box::new)?;
+        let report = migrations::runner().run(&mut self.conn).map_err(Box::new)?;
+        if let Some(version) = report.applied_migrations().into_iter().map(|m| m.version()).max() {
+            self.conn.pragma_update(None, "schema_version", version)?;
+        }
 
         Ok(())
     }

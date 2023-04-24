@@ -87,7 +87,7 @@ impl EntityBase for E2eiEnrollment {
         let transaction = conn.transaction()?;
         use rusqlite::OptionalExtension as _;
         let mut row_id = transaction
-            .query_row("SELECT rowid FROM e2ei_enrollment WHERE id = ?", [id.as_bytes()], |r| {
+            .query_row("SELECT rowid FROM e2ei_enrollment WHERE id = ?", [id.as_slice()], |r| {
                 r.get::<_, i64>(0)
             })
             .optional()?;
@@ -103,7 +103,7 @@ impl EntityBase for E2eiEnrollment {
             transaction.commit()?;
 
             Ok(Some(Self {
-                id: id.into_bytes(),
+                id: id.to_bytes(),
                 content: buf,
             }))
         } else {
@@ -120,7 +120,7 @@ impl EntityBase for E2eiEnrollment {
         let len = ids.len();
         let mut updated = 0;
         for id in ids {
-            updated += transaction.execute("DELETE FROM e2ei_enrollment WHERE id = ?", [id.as_bytes()])?;
+            updated += transaction.execute("DELETE FROM e2ei_enrollment WHERE id = ?", [id.as_slice()])?;
         }
 
         if updated == len {

@@ -46,7 +46,7 @@ impl EntityBase for PersistedMlsGroup {
         id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
         let storage = conn.storage();
-        storage.get("mls_groups", id.as_bytes()).await
+        storage.get("mls_groups", id.as_slice()).await
     }
 
     async fn find_many(
@@ -65,7 +65,7 @@ impl EntityBase for PersistedMlsGroup {
 
     async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
-        let ids = ids.iter().map(StringEntityId::as_bytes).collect::<Vec<_>>();
+        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::to_bytes).collect();
         let _ = storage.delete("mls_groups", &ids).await?;
         Ok(())
     }
@@ -109,7 +109,7 @@ impl EntityBase for PersistedMlsPendingGroup {
     type ConnectionType = KeystoreDatabaseConnection;
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
-        MissingKeyErrorKind::MlsGroup
+        MissingKeyErrorKind::MlsPendingGroup
     }
 
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
@@ -129,7 +129,7 @@ impl EntityBase for PersistedMlsPendingGroup {
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        conn.storage().get("mls_pending_groups", id.as_bytes()).await
+        conn.storage().get("mls_pending_groups", id.as_slice()).await
     }
 
     async fn find_many(
@@ -144,8 +144,8 @@ impl EntityBase for PersistedMlsPendingGroup {
         conn.storage().count("mls_pending_groups").await
     }
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<()> {
-        let ids = ids.iter().map(StringEntityId::as_bytes).collect::<Vec<_>>();
+    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
+        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::to_bytes).collect();
         let _ = conn.storage_mut().delete("mls_pending_groups", &ids).await?;
         Ok(())
     }

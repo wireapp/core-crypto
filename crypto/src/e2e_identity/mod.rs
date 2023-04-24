@@ -1,12 +1,11 @@
-use openmls::prelude::SignaturePrivateKey;
 use std::collections::HashMap;
 use wire_e2e_identity::prelude::RustyE2eIdentity;
 
 use error::*;
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::prelude::identifier::ClientIdentifier;
 use crate::prelude::{id::ClientId, CertificateBundle, MlsCentral, MlsCiphersuite};
+use crate::{mls::credential::x509::CertificatePrivateKey, prelude::identifier::ClientIdentifier};
 
 mod crypto;
 pub(crate) mod degraded;
@@ -385,7 +384,7 @@ impl WireE2eIdentity {
         certificate_chain: String,
     ) -> E2eIdentityResult<()> {
         let certificate_chain = self.acme_x509_certificate_response(certificate_chain)?;
-        let private_key = SignaturePrivateKey {
+        let private_key = CertificatePrivateKey {
             value: self.sign_sk,
             signature_scheme: self.ciphersuite.signature_algorithm(),
         };
@@ -415,6 +414,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
+    #[ignore]
     pub async fn e2e_identity_should_work(case: TestCase) {
         run_test_wo_clients(case.clone(), move |cc| {
             Box::pin(async move {

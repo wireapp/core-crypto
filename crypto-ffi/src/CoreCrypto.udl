@@ -10,13 +10,13 @@ typedef sequence<u8> ClientId;
 dictionary MemberAddedMessages {
     sequence<u8> commit;
     sequence<u8> welcome;
-    PublicGroupStateBundle public_group_state;
+    GroupInfoBundle group_info;
 };
 
 dictionary CommitBundle {
     sequence<u8>? welcome;
     sequence<u8> commit;
-    PublicGroupStateBundle public_group_state;
+    GroupInfoBundle group_info;
 };
 
 dictionary ProteusAutoPrekeyBundle {
@@ -24,13 +24,13 @@ dictionary ProteusAutoPrekeyBundle {
     sequence<u8> pkb;
 };
 
-dictionary PublicGroupStateBundle {
-    MlsPublicGroupStateEncryptionType encryption_type;
+dictionary GroupInfoBundle {
+    MlsGroupInfoEncryptionType encryption_type;
     MlsRatchetTreeType ratchet_tree_type;
     sequence<u8> payload;
 };
 
-enum MlsPublicGroupStateEncryptionType {
+enum MlsGroupInfoEncryptionType {
     "Plaintext",
     "JweEncrypted",
 };
@@ -70,7 +70,6 @@ enum CryptoError {
     "PendingCommitNotFound",
     "MalformedIdentifier",
     "ClientSignatureNotFound",
-    "ClientSignatureMismatch",
     "LockPoisonError",
     "ImplementationError",
     "OutOfKeyPackage",
@@ -136,7 +135,7 @@ dictionary ProposalBundle {
 dictionary ConversationInitBundle {
     sequence<u8> conversation_id;
     sequence<u8> commit;
-    PublicGroupStateBundle public_group_state;
+    GroupInfoBundle group_info;
 };
 
 dictionary ConversationConfiguration {
@@ -172,10 +171,10 @@ interface CoreCrypto {
     void mls_init([ByRef] ClientId client_id, [ByRef] Ciphersuites ciphersuites);
 
     [Throws=CryptoError]
-    sequence<sequence<u8>> mls_generate_keypairs([ByRef] Ciphersuites ciphersuites);
+    sequence<ClientId> mls_generate_keypairs(sequence<CiphersuiteName> ciphersuites);
 
     [Throws=CryptoError]
-    void mls_init_with_client_id([ByRef] ClientId client_id, sequence<sequence<u8>> signature_public_keys, [ByRef] Ciphersuites ciphersuites);
+    void mls_init_with_client_id([ByRef] ClientId client_id, sequence<ClientId> signature_public_keys, sequence<CiphersuiteName> ciphersuites);
 
     [Throws=CryptoError]
     void restore_from_disk();
@@ -240,10 +239,10 @@ interface CoreCrypto {
     sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch, Ciphersuite ciphersuite, MlsCredentialType credential_type);
 
     [Throws=CryptoError]
-    sequence<u8> new_external_remove_proposal(ConversationId conversation_id, u64 epoch, sequence<u8> key_package_ref);
+    sequence<u8> new_external_remove_proposal(ConversationId conversation_id, u64 epoch, u32 leaf_index);
 
     [Throws=CryptoError]
-    ConversationInitBundle join_by_external_commit(sequence<u8> public_group_state, CustomConfiguration custom_configuration, MlsCredentialType credential_type);
+    ConversationInitBundle join_by_external_commit(sequence<u8> group_info, CustomConfiguration custom_configuration, MlsCredentialType credential_type);
 
     [Throws=CryptoError]
     void merge_pending_group_from_external_commit(ConversationId conversation_id);

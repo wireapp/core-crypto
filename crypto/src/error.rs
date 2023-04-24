@@ -53,9 +53,6 @@ pub enum CryptoError {
         "Somehow CoreCrypto holds more than one MLS identity. Something might've gone very wrong with this client!"
     )]
     TooManyIdentitiesPresent,
-    /// The keystore has found the client, but the provided signature doesn't match against what is stored
-    #[error("The provided client signature doesn't match the keystore's")]
-    ClientSignatureMismatch,
     /// !!!! Something went very wrong and one of our locks has been poisoned by an in-thread panic !!!!
     #[error("One of the locks has been poisoned")]
     LockPoisonError,
@@ -172,7 +169,7 @@ impl CryptoError {
 pub enum MlsError {
     /// Welcome error
     #[error(transparent)]
-    MlsWelcomeError(#[from] openmls::prelude::WelcomeError),
+    MlsWelcomeError(#[from] openmls::prelude::WelcomeError<core_crypto_keystore::CryptoKeystoreError>),
     /// Generic error type that indicates unrecoverable errors in the library. See [openmls::error::LibraryError]
     #[error(transparent)]
     MlsLibraryError(#[from] openmls::error::LibraryError),
@@ -187,46 +184,44 @@ pub enum MlsError {
     MlsCredentialError(#[from] openmls::prelude::CredentialError),
     /// New group error
     #[error(transparent)]
-    MlsNewGroupError(#[from] openmls::prelude::NewGroupError),
+    MlsNewGroupError(#[from] openmls::prelude::NewGroupError<core_crypto_keystore::CryptoKeystoreError>),
     /// Add members error
     #[error(transparent)]
-    MlsAddMembersError(#[from] openmls::prelude::AddMembersError),
+    MlsAddMembersError(#[from] openmls::prelude::AddMembersError<core_crypto_keystore::CryptoKeystoreError>),
     /// Remove members error
     #[error(transparent)]
-    MlsRemoveMembersError(#[from] openmls::prelude::RemoveMembersError),
-    /// Unverified message error
-    #[error(transparent)]
-    MlsUnverifiedMessageError(#[from] openmls::prelude::UnverifiedMessageError),
+    MlsRemoveMembersError(#[from] openmls::prelude::RemoveMembersError<core_crypto_keystore::CryptoKeystoreError>),
     /// Parse message error
     #[error(transparent)]
-    MlsParseMessageError(#[from] openmls::prelude::ParseMessageError),
+    MlsMessageError(#[from] openmls::prelude::ProcessMessageError),
     /// [openmls::key_packages::KeyPackageBundle] new error
     #[error(transparent)]
-    MlsKeyPackageBundleNewError(#[from] openmls::prelude::KeyPackageBundleNewError),
+    MlsKeyPackageBundleNewError(
+        #[from] openmls::prelude::KeyPackageNewError<core_crypto_keystore::CryptoKeystoreError>,
+    ),
     /// Self update error
     #[error(transparent)]
-    MlsSelfUpdateError(#[from] openmls::prelude::SelfUpdateError),
+    MlsSelfUpdateError(#[from] openmls::prelude::SelfUpdateError<core_crypto_keystore::CryptoKeystoreError>),
     /// Group state error
     #[error(transparent)]
     MlsMlsGroupStateError(#[from] openmls::prelude::MlsGroupStateError),
-    /// MlsMessage error
-    #[error(transparent)]
-    MlsMessageError(#[from] openmls::framing::errors::MlsMessageError),
     /// Propose add members error
     #[error(transparent)]
     ProposeAddMemberError(#[from] openmls::prelude::ProposeAddMemberError),
     /// Propose self update error
     #[error(transparent)]
-    ProposeSelfUpdateError(#[from] openmls::prelude::ProposeSelfUpdateError),
+    ProposeSelfUpdateError(#[from] openmls::prelude::ProposeSelfUpdateError<core_crypto_keystore::CryptoKeystoreError>),
     /// Propose remove members error
     #[error(transparent)]
     ProposeRemoveMemberError(#[from] openmls::prelude::ProposeRemoveMemberError),
     /// Commit to pending proposals error
     #[error(transparent)]
-    MlsCommitToPendingProposalsError(#[from] openmls::prelude::CommitToPendingProposalsError),
+    MlsCommitToPendingProposalsError(
+        #[from] openmls::prelude::CommitToPendingProposalsError<core_crypto_keystore::CryptoKeystoreError>,
+    ),
     /// Export public group state error
     #[error(transparent)]
-    MlsExportPublicGroupStateError(#[from] openmls::prelude::ExportPublicGroupStateError),
+    MlsExportGroupInfoError(#[from] openmls::prelude::ExportGroupInfoError),
     /// Errors that are thrown by TLS serialization crate.
     #[error(transparent)]
     MlsTlsCodecError(#[from] tls_codec::Error),
@@ -247,6 +242,20 @@ pub enum MlsError {
     /// OpenMls Export Secret error
     #[error(transparent)]
     MlsExportSecretError(#[from] openmls::prelude::ExportSecretError),
+    /// OpenMLS merge commit error
+    #[error(transparent)]
+    MlsMergeCommitError(#[from] openmls::prelude::MergeCommitError<core_crypto_keystore::CryptoKeystoreError>),
+    /// OpenMLS keypackage validation error
+    #[error(transparent)]
+    MlsKeyPackageValidationError(#[from] openmls::prelude::KeyPackageVerifyError),
+    /// OpenMLS Commit merge error
+    #[error(transparent)]
+    MlsMergePendingCommitError(
+        #[from] openmls::prelude::MergePendingCommitError<core_crypto_keystore::CryptoKeystoreError>,
+    ),
+    /// OpenMLS encrypt message error
+    #[error(transparent)]
+    MlsEncryptMessageError(#[from] openmls::framing::errors::MlsMessageError),
 }
 
 #[derive(Debug, thiserror::Error, strum::IntoStaticStr)]

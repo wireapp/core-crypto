@@ -14,8 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+pub mod credential;
+pub mod encryption_keypair;
 pub mod enrollment;
 pub mod group;
-pub mod identity;
+pub mod hpke_private_key;
 pub mod keypackage;
 pub mod pending_group;
+pub mod psk_bundle;
+pub mod signature_keypair;

@@ -17,6 +17,7 @@
 #![cfg_attr(target_family = "wasm", allow(dead_code, unused_imports))]
 
 use color_eyre::eyre::{eyre, Result};
+use tls_codec::Serialize;
 
 #[cfg(not(target_family = "wasm"))]
 mod build;
@@ -115,7 +116,7 @@ fn run_test() -> Result<()> {
 
 #[cfg(not(target_family = "wasm"))]
 async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
-    use core_crypto::prelude::{tls_codec::Serialize, *};
+    use core_crypto::prelude::*;
 
     let spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
 
@@ -150,7 +151,11 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     let mut members = vec![];
     for c in clients.iter_mut() {
         let kp = c.get_keypackage().await?;
-        members.push(ConversationMember::new_raw(c.client_id().into(), kp)?);
+        members.push(ConversationMember::new_raw(
+            c.client_id().into(),
+            kp,
+            master_client.provider(),
+        )?);
     }
 
     spinner.success("[MLS] Step 1: KeyPackages [OK]");

@@ -1,6 +1,6 @@
+use super::CredentialBundle;
 use crate::prelude::{CertificateBundle, Client, ClientId, CryptoResult, MlsCiphersuite};
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::CredentialBundle;
 use std::collections::HashMap;
 
 /// Used by consumers to initializes a MLS client. Encompasses all the client types available.
@@ -23,7 +23,7 @@ impl ClientIdentifier {
                 // since ClientId has uniqueness constraints, it is the same for all certificates.
                 // hence no need to compute it for every certificate then verify its uniqueness
                 // that's not a getter's job
-                let cert = certs.values().find(|_| true).unwrap();
+                let cert = certs.values().next().unwrap();
                 let id = cert.get_client_id()?;
                 Ok(std::borrow::Cow::Owned(id))
             }

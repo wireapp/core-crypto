@@ -91,7 +91,7 @@ pub mod tests {
         // https://tools.ietf.org/html/draft-nir-cfrg-chacha20-poly1305-04
         let seed = [0u8; 32];
         backend.reseed(Some(EntropySeed::from_raw(seed)));
-        let mut rng = backend.rand().borrow_rand();
+        let mut rng = backend.rand().borrow_rand().unwrap();
 
         let mut results = [0u32; 16];
         for i in results.iter_mut() {
@@ -127,7 +127,7 @@ pub mod tests {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
         ];
         backend.reseed(Some(EntropySeed::from_raw(seed)));
-        let mut rng = backend.rand().borrow_rand();
+        let mut rng = backend.rand().borrow_rand().unwrap();
 
         // Skip block 0
         for _ in 0..16 {
@@ -167,7 +167,7 @@ pub mod tests {
 
         // Test block 2 by skipping block 0 and 1
         backend.reseed(Some(EntropySeed::from_raw(seed)));
-        let mut rng1 = backend.rand().borrow_rand();
+        let mut rng1 = backend.rand().borrow_rand().unwrap();
         for _ in 0..32 {
             rng1.next_u32();
         }
@@ -181,7 +181,7 @@ pub mod tests {
 
         // Test block 2 by using `set_word_pos`
         backend.reseed(Some(EntropySeed::from_raw(seed)));
-        let mut rng2 = backend.rand().borrow_rand();
+        let mut rng2 = backend.rand().borrow_rand().unwrap();
         rng2.set_word_pos(2 * 16);
         for i in results.iter_mut() {
             *i = rng2.next_u32();
@@ -214,7 +214,7 @@ pub mod tests {
         // https://tools.ietf.org/html/draft-nir-cfrg-chacha20-poly1305-04
         let seed = [0u8; 32];
         backend.reseed(Some(EntropySeed::from_raw(seed)));
-        let mut rng = backend.rand().borrow_rand();
+        let mut rng = backend.rand().borrow_rand().unwrap();
         // 96-bit nonce in LE order is: 0,0,0,0, 0,0,0,0, 0,0,0,2
         rng.set_stream(2u64 << (24 + 32));
 

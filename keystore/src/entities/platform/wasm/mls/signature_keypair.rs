@@ -16,63 +16,87 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, ProteusPrekey, StringEntityId},
-    CryptoKeystoreResult, MissingKeyErrorKind,
+    entities::{Entity, EntityBase, EntityFindParams, MlsSignatureKeyPair, MlsSignatureKeyPairExt, StringEntityId},
+    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
+use openmls_traits::types::SignatureScheme;
+
 #[async_trait::async_trait(?Send)]
-impl EntityBase for ProteusPrekey {
+impl EntityBase for MlsSignatureKeyPair {
     type ConnectionType = KeystoreDatabaseConnection;
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
-        MissingKeyErrorKind::ProteusPrekey
+        MissingKeyErrorKind::MlsSignatureKeyPair
     }
 
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
-        storage.get_all("proteus_prekeys", Some(params)).await
+        storage.get_all("mls_signature_keypairs", Some(params)).await
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
-        storage.save("proteus_prekeys", &mut [self.clone()]).await
+        storage.save("mls_signature_keypairs", &mut [self.clone()]).await?;
+
+        Ok(())
     }
 
     async fn find_one(
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        let storage = conn.storage();
-        storage.get("proteus_prekeys", id.as_slice()).await
+        conn.storage().get("mls_signature_keypairs", id.as_slice()).await
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        let storage = conn.storage();
-        storage.count("proteus_prekeys").await
+        conn.storage().count("mls_signature_keypairs").await
     }
 
     async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
         let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::to_bytes).collect();
-        storage.delete("proteus_prekeys", &ids).await
+        storage.delete("mls_signature_keypairs", &ids).await
     }
 }
 
-impl Entity for ProteusPrekey {
+impl Entity for MlsSignatureKeyPair {
     fn id_raw(&self) -> &[u8] {
-        self.id_bytes()
+        self.pk.as_slice()
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.prekey = Self::encrypt_data(cipher, self.prekey.as_slice(), self.aad())?;
-        Self::ConnectionType::check_buffer_size(self.prekey.len())?;
+        self.keypair = Self::encrypt_data(cipher, self.keypair.as_slice(), self.aad())?;
+        Self::ConnectionType::check_buffer_size(self.keypair.len())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.prekey = Self::decrypt_data(cipher, self.prekey.as_slice(), self.aad())?;
+        self.keypair = Self::decrypt_data(cipher, self.keypair.as_slice(), self.aad())?;
 
         Ok(())
+    }
+}
+
+#[async_trait::async_trait(?Send)]
+impl MlsSignatureKeyPairExt for MlsSignatureKeyPair {
+    async fn keypair_for_signature_scheme(
+        conn: &mut Self::ConnectionType,
+        credential_id: &[u8],
+        signature_scheme: SignatureScheme,
+    ) -> CryptoKeystoreResult<Option<Self>> {
+        let storage = conn.storage();
+        let Some(keypair) = storage
+            .get_indexed::<Self>("mls_signature_keypairs", "signature_scheme", (signature_scheme as u16).to_be_bytes())
+            .await? else {
+            return Err(CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsSignatureKeyPair));
+        };
+
+        if !keypair.credential_id.is_empty() && keypair.credential_id != credential_id {
+            return Err(CryptoKeystoreError::SignatureKeyPairDoesNotBelongToCredential);
+        }
+
+        Ok(Some(keypair))
     }
 }

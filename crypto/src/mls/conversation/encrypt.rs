@@ -9,6 +9,7 @@
 
 use mls_crypto_provider::MlsCryptoProvider;
 
+use crate::prelude::Client;
 use crate::{mls::ConversationId, mls::MlsCentral, CryptoResult, MlsError};
 
 use super::MlsConversation;
@@ -20,13 +21,16 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn encrypt_message(
         &mut self,
+        client: &Client,
         message: impl AsRef<[u8]>,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<u8>> {
+        let cs = self.ciphersuite();
+        let ct = self.own_credential_type()?;
+        let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
         let encrypted = self
             .group
-            .create_message(backend, message.as_ref())
-            .await
+            .create_message(backend, signer, message.as_ref())
             .map_err(MlsError::from)
             .and_then(|m| m.to_bytes().map_err(MlsError::from))?;
         self.persist_group_when_changed(backend, false).await?;
@@ -56,7 +60,7 @@ impl MlsCentral {
             .await?
             .write()
             .await
-            .encrypt_message(message, &self.mls_backend)
+            .encrypt_message(self.mls_client()?, message, &self.mls_backend)
             .await
     }
 }
