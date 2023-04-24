@@ -290,7 +290,7 @@ impl CoreCrypto {
 
 /// Proteus counterpart of [crate::mls::MlsCentral]
 /// The big difference is that [ProteusCentral] doesn't *own* its own keystore but must borrow it from the outside.
-/// Whether it's exclusively for this struct's purposes or it's shared with our main struct, [MlsCentral]
+/// Whether it's exclusively for this struct's purposes or it's shared with our main struct, [crate::mls::MlsCentral]
 #[derive(Debug)]
 pub struct ProteusCentral {
     proteus_identity: Arc<IdentityKeyPair>,

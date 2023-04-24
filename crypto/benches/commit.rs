@@ -17,12 +17,13 @@ fn commit_add_bench(c: &mut Criterion) {
                     || {
                         let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
                         add_clients(&mut central, &id, ciphersuite, *i);
-                        let member = rand_member(ciphersuite);
+                        let member = block_on(async { rand_member(ciphersuite).await });
                         (central, id, member)
                     },
                     |(mut central, id, member)| async move {
                         black_box(central.add_members_to_conversation(&id, &mut [member]).await.unwrap());
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -41,7 +42,7 @@ fn commit_add_n_clients_bench(c: &mut Criterion) {
                     || {
                         let (central, id) = setup_mls(ciphersuite, &credential, in_memory);
                         let members = (0..*i)
-                            .map(|_| rand_member(ciphersuite))
+                            .map(|_| block_on(async { rand_member(ciphersuite).await }))
                             .collect::<Vec<ConversationMember>>();
                         (central, id, members)
                     },
@@ -52,7 +53,8 @@ fn commit_add_n_clients_bench(c: &mut Criterion) {
                                 .await
                                 .unwrap(),
                         );
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -80,7 +82,8 @@ fn commit_remove_bench(c: &mut Criterion) {
                                 .await
                                 .unwrap(),
                         );
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -109,7 +112,8 @@ fn commit_remove_n_clients_bench(c: &mut Criterion) {
                                 .await
                                 .unwrap(),
                         );
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -132,7 +136,8 @@ fn commit_update_bench(c: &mut Criterion) {
                     },
                     |(mut central, id)| async move {
                         black_box(central.update_keying_material(&id).await.unwrap());
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -153,7 +158,7 @@ fn commit_pending_proposals_bench_var_n_proposals(c: &mut Criterion) {
                         add_clients(&mut central, &id, ciphersuite, GROUP_MAX);
                         block_on(async {
                             for _ in 0..*i {
-                                let (kp, ..) = rand_key_package(ciphersuite);
+                                let (kp, ..) = rand_key_package(ciphersuite).await;
                                 central.new_proposal(&id, MlsProposal::Add(kp)).await.unwrap();
                             }
                         });
@@ -161,7 +166,8 @@ fn commit_pending_proposals_bench_var_n_proposals(c: &mut Criterion) {
                     },
                     |(mut central, id)| async move {
                         black_box(central.commit_pending_proposals(&id).await.unwrap());
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -182,7 +188,7 @@ fn commit_pending_proposals_bench_var_group_size(c: &mut Criterion) {
                         add_clients(&mut central, &id, ciphersuite, *i);
                         block_on(async {
                             for _ in 0..PENDING_MAX {
-                                let (kp, ..) = rand_key_package(ciphersuite);
+                                let (kp, ..) = rand_key_package(ciphersuite).await;
                                 central.new_proposal(&id, MlsProposal::Add(kp)).await.unwrap();
                             }
                         });
@@ -190,7 +196,8 @@ fn commit_pending_proposals_bench_var_group_size(c: &mut Criterion) {
                     },
                     |(mut central, id)| async move {
                         black_box(central.commit_pending_proposals(&id).await.unwrap());
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )

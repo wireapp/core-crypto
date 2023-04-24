@@ -39,8 +39,7 @@ impl MlsConversation {
     pub fn get_client_ids(&self) -> Vec<ClientId> {
         self.group
             .members()
-            .iter()
-            .map(|kp| ClientId::from(kp.credential().identity()))
+            .map(|kp| ClientId::from(kp.credential.identity()))
             .collect()
     }
 }

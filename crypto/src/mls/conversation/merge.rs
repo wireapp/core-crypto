@@ -26,7 +26,7 @@ impl MlsConversation {
     /// see [MlsCentral::commit_accepted]
     #[cfg_attr(test, crate::durable)]
     pub async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
-        self.group.merge_pending_commit().map_err(MlsError::from)?;
+        self.group.merge_pending_commit(backend).await.map_err(MlsError::from)?;
         self.persist_group_when_changed(backend, false).await
     }
 
@@ -37,10 +37,12 @@ impl MlsConversation {
         proposal_ref: MlsProposalRef,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<()> {
-        self.group.clear_pending_proposal(*proposal_ref).map_err(|e| match e {
-            MlsGroupStateError::PendingProposalNotFound => CryptoError::PendingProposalNotFound(proposal_ref),
-            _ => CryptoError::from(MlsError::from(e)),
-        })?;
+        self.group
+            .remove_pending_proposal(proposal_ref.clone().into_inner())
+            .map_err(|e| match e {
+                MlsGroupStateError::PendingProposalNotFound => CryptoError::PendingProposalNotFound(proposal_ref),
+                _ => CryptoError::from(MlsError::from(e)),
+            })?;
         self.persist_group_when_changed(backend, true).await?;
         Ok(())
     }
@@ -107,7 +109,7 @@ impl MlsCentral {
             .await?
             .write()
             .await
-            .clear_pending_proposal(proposal_ref.try_into()?, &self.mls_backend)
+            .clear_pending_proposal(proposal_ref.into(), &self.mls_backend)
             .await
     }
 
@@ -292,7 +294,9 @@ pub mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    let simple_ref = MlsProposalRef::try_from(vec![0; 16]).unwrap().into();
+                    let simple_ref = MlsProposalRef::try_from(vec![0; case.ciphersuite().hash_length()])
+                        .unwrap()
+                        .into();
                     let clear = alice_central.clear_pending_proposal(&id, simple_ref).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::ConversationNotFound(conv_id) if conv_id == id))
                 })
@@ -311,8 +315,8 @@ pub mod tests {
                         .await
                         .unwrap();
                     assert!(alice_central.pending_proposals(&id).await.is_empty());
-                    let any_ref = MlsProposalRef::try_from(vec![0; 16]).unwrap();
-                    let clear = alice_central.clear_pending_proposal(&id, any_ref.into()).await;
+                    let any_ref = MlsProposalRef::try_from(vec![0; case.ciphersuite().hash_length()]).unwrap();
+                    let clear = alice_central.clear_pending_proposal(&id, any_ref.clone().into()).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::PendingProposalNotFound(prop_ref) if prop_ref == any_ref))
                 })
             })

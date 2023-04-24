@@ -26,6 +26,7 @@ use crate::{
 
 pub mod central;
 pub mod fixtures;
+pub mod message;
 // Cannot name it `proteus` because then it conflicts with proteus the crate :(
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
@@ -34,6 +35,7 @@ use crate::prelude::{ClientIdentifier, MlsCredentialType};
 pub use central::*;
 pub use fixtures::TestCase;
 pub use fixtures::*;
+pub use message::*;
 
 // FIXME: This takes around 10 minutes on WASM
 // #[cfg(debug_assertions)]

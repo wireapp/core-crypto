@@ -19,17 +19,13 @@
 use criterion::{
     async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, Criterion, Throughput,
 };
-use openmls::{
-    credentials::CredentialBundle,
-    extensions::{Extension, ExternalKeyIdExtension},
-    key_packages::KeyPackageBundle,
-    prelude::Ciphersuite,
-};
+use openmls::prelude::Ciphersuite;
 use openmls_traits::{key_store::OpenMlsKeyStore, random::OpenMlsRand, OpenMlsCryptoProvider};
 
 use core_crypto_keystore::Connection as CryptoKeystore;
 use futures_lite::future::block_on;
 use mls_crypto_provider::MlsCryptoProvider;
+use openmls_basic_credential::SignatureKeyPair;
 
 #[cfg(feature = "proteus-keystore")]
 fn benchmark_writes_proteus(c: &mut Criterion) {
@@ -71,41 +67,14 @@ fn benchmark_writes_mls(c: &mut Criterion) {
     group.bench_with_input("Writes", backend.borrow_keystore(), |b, store| {
         b.to_async(FuturesExecutor).iter_batched(
             || {
-                let uuid: [u8; 16] = backend.rand().random_array().unwrap();
                 let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519;
+                let key = uuid::Uuid::new_v4();
+                let mut rng = &mut *backend.rand().borrow_rand().unwrap();
+                let kp = SignatureKeyPair::new(ciphersuite.signature_algorithm(), &mut rng).unwrap();
 
-                let key_id = uuid::Uuid::from_bytes(uuid);
-
-                let credentials =
-                    CredentialBundle::new_basic(vec![1, 2, 3], ciphersuite.signature_algorithm(), &backend).unwrap();
-
-                let keypackage_bundle = KeyPackageBundle::new(
-                    &[ciphersuite],
-                    &credentials,
-                    &backend,
-                    vec![Extension::ExternalKeyId(ExternalKeyIdExtension::new(key_id.as_bytes()))],
-                )
-                .unwrap();
-
-                keypackage_bundle.key_package().verify(&backend).unwrap();
-
-                let key = {
-                    let id = keypackage_bundle
-                        .key_package()
-                        .extensions()
-                        .iter()
-                        .find(|e| e.as_external_key_id_extension().is_ok())
-                        .unwrap()
-                        .as_external_key_id_extension()
-                        .unwrap()
-                        .as_slice();
-
-                    uuid::Uuid::from_slice(id).unwrap()
-                };
-
-                (key, keypackage_bundle)
+                (key, kp)
             },
-            |(key, bundle)| async move { black_box(store.store(key.as_bytes(), &bundle).await) },
+            |(key, skp)| async move { black_box(store.store(key.as_bytes(), &skp).await) },
             BatchSize::SmallInput,
         )
     });

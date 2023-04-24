@@ -17,6 +17,7 @@
 #![cfg_attr(target_family = "wasm", allow(dead_code, unused_imports))]
 
 use color_eyre::eyre::{eyre, Result};
+use tls_codec::Serialize;
 
 #[cfg(not(target_family = "wasm"))]
 mod build;
@@ -115,7 +116,7 @@ fn run_test() -> Result<()> {
 
 #[cfg(not(target_family = "wasm"))]
 async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
-    use core_crypto::prelude::{tls_codec::Serialize, *};
+    use core_crypto::prelude::*;
 
     let spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
 
@@ -150,7 +151,11 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     let mut members = vec![];
     for c in clients.iter_mut() {
         let kp = c.get_keypackage().await?;
-        members.push(ConversationMember::new_raw(c.client_id().into(), kp)?);
+        members.push(ConversationMember::new_raw(
+            c.client_id().into(),
+            kp,
+            master_client.provider(),
+        )?);
     }
 
     spinner.success("[MLS] Step 1: KeyPackages [OK]");
@@ -374,8 +379,6 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
 // - This whole EmulatedE2eIdentityClient thing makes little sense
 #[allow(dead_code)]
 async fn run_e2e_identity_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
-    use core_crypto::prelude::*;
-
     let spinner = util::RunningProcess::new("[E2EI] Step 0: Perform ACME enrollment", true);
 
     let mut clients: Vec<Box<dyn clients::EmulatedE2eIdentityClient>> = vec![];
@@ -389,9 +392,11 @@ async fn run_e2e_identity_test(chrome_driver_addr: &std::net::SocketAddr) -> Res
         clients::corecrypto::web::CoreCryptoWebClient::new_deferred(chrome_driver_addr).await?,
     ));
 
+    /*
+    use core_crypto::prelude::*;
     for c in clients.iter_mut() {
         c.e2ei_new_enrollment(MlsCiphersuite::default()).await?;
-    }
+    }*/
     spinner.success("[E2EI] Step 0: Perform ACME enrollment [OK]");
 
     Ok(())

@@ -100,12 +100,13 @@ fn add_client_bench(c: &mut Criterion) {
                     || {
                         let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
                         add_clients(&mut central, &id, ciphersuite, *i);
-                        let member = rand_member(ciphersuite);
+                        let member = block_on(async { rand_member(ciphersuite).await });
                         (central, id, member)
                     },
                     |(mut central, id, member)| async move {
                         black_box(central.add_members_to_conversation(&id, &mut [member]).await.unwrap());
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -157,7 +158,8 @@ fn remove_client_bench(c: &mut Criterion) {
                                 .await
                                 .unwrap(),
                         );
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -183,7 +185,8 @@ fn remove_client_bench(c: &mut Criterion) {
                     },
                     |(mut central, keystore, session_material)| async move {
                         for (session_id, _) in session_material {
-                            black_box(central.session_delete(&keystore, &session_id).await.unwrap());
+                            central.session_delete(&keystore, &session_id).await.unwrap();
+                            black_box(());
                         }
                     },
                     BatchSize::SmallInput,
@@ -208,7 +211,8 @@ fn update_client_bench(c: &mut Criterion) {
                     },
                     |(mut central, id)| async move {
                         black_box(central.update_keying_material(&id).await.unwrap());
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -243,7 +247,8 @@ fn update_client_bench(c: &mut Criterion) {
                     |(mut central, keystore, new_pkb, session_material)| async move {
                         for (session_id, _) in session_material {
                             // replace existing session
-                            black_box(central.session_delete(&keystore, &session_id).await.unwrap());
+                            central.session_delete(&keystore, &session_id).await.unwrap();
+                            black_box(());
                             black_box(central.session_from_prekey(&session_id, &new_pkb).await.unwrap());
                         }
                     },

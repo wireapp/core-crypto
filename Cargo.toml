@@ -16,6 +16,9 @@ exclude = [
 ]
 resolver = "2"
 
+[workspace.dependencies]
+tls_codec = "0.3.0-pre.3"
+
 [patch.crates-io.schnellru]
 git = "https://github.com/otak/schnellru"
 branch = "feat/try-insert"
@@ -39,32 +42,31 @@ branch = "otak/2.0-error-codes"
 [patch.crates-io.openmls]
 package = "openmls"
 git = "https://github.com/wireapp/openmls"
-tag = "v0.5.6-pre.core-crypto-0.7.0"
+tag = "v0.20.0-pre.core-crypto-1.0.0"
 
 [patch.crates-io.openmls_traits]
 package = "openmls_traits"
 git = "https://github.com/wireapp/openmls"
-tag = "v0.5.6-pre.core-crypto-0.7.0"
+ tag = "v0.20.0-pre.core-crypto-1.0.0"
+
+[patch.crates-io.openmls_basic_credential]
+package = "openmls_basic_credential"
+git = "https://github.com/wireapp/openmls"
+tag = "v0.20.0-pre.core-crypto-1.0.0"
+
+[patch.crates-io.openmls_x509_credential]
+package = "openmls_x509_credential"
+git = "https://github.com/wireapp/openmls"
+tag = "v0.20.0-pre.core-crypto-1.0.0"
+
+[patch.crates-io.hpke]
+git = "https://github.com/rozbb/rust-hpke.git"
+rev = "2867b0ae90a36f27e2c312fe741f268ad558abbd"
 
 [patch.crates-io.wire-e2e-identity]
 git = "https://github.com/wireapp/rusty-jwt-tools"
 package = "wire-e2e-identity"
 tag = "v0.4.3"
-
-[patch.crates-io.hpke-rs]
-git = "https://github.com/wireapp/hpke-rs"
-branch = "feat/0.2"
-package = "hpke-rs"
-
-[patch.crates-io.hpke-rs-crypto]
-git = "https://github.com/wireapp/hpke-rs"
-branch = "feat/0.2"
-package = "hpke-rs-crypto"
-
-[patch.crates-io.hpke-rs-rust-crypto]
-git = "https://github.com/wireapp/hpke-rs"
-branch = "feat/0.2"
-package = "hpke-rs-rust-crypto"
 
 # aarch64-apple-ios-sim target support has not yet been released
 [patch.crates-io.openssl-src]
@@ -76,11 +78,6 @@ package = "openssl-src"
 git = "https://github.com/wireapp/rust-jwt-simple"
 tag = "v0.11.4-pre.core-crypto-0.7.0"
 
-# Needed for quick mode and (later) result comparison see (https://www.tweag.io/blog/2022-03-03-criterion-rs/)
-# TODO: remove once branch got merged in 0.4 release
-[patch.crates-io.criterion]
-git = "https://github.com/bheisler/criterion.rs"
-branch = "version-0.4"
 
 [profile.release]
 lto = true

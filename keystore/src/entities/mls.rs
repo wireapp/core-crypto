@@ -16,6 +16,7 @@
 
 use super::Entity;
 use crate::CryptoKeystoreResult;
+use openmls_traits::types::SignatureScheme;
 use zeroize::Zeroize;
 
 /// Entity representing a persisted `MlsGroup`
@@ -24,13 +25,14 @@ use zeroize::Zeroize;
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
 pub struct PersistedMlsGroup {
     pub id: Vec<u8>,
-    pub parent_id: Option<Vec<u8>>,
     pub state: Vec<u8>,
+    pub parent_id: Option<Vec<u8>>,
 }
 
 #[async_trait::async_trait(?Send)]
 pub trait PersistedMlsGroupExt: Entity {
     fn parent_id(&self) -> Option<&[u8]>;
+
     async fn parent_group(
         &self,
         conn: &mut <Self as super::EntityBase>::ConnectionType,
@@ -57,7 +59,7 @@ pub trait PersistedMlsGroupExt: Entity {
     }
 }
 
-/// Entity representing a temporary persisted `MlsGroup`
+/// Entity representing a temporarily persisted `MlsGroup`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
@@ -68,32 +70,69 @@ pub struct PersistedMlsPendingGroup {
     pub custom_configuration: Vec<u8>,
 }
 
-/// Entity representing a persisted `MlsIdentity`
+/// Entity representing a persisted `Credential`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
-pub struct MlsIdentity {
-    pub id: String,
-    pub ciphersuite: u16,
-    pub credential_type: u8,
-    pub signature: Vec<u8>,
+pub struct MlsCredential {
+    pub id: Vec<u8>,
     pub credential: Vec<u8>,
 }
 
+/// Entity representing a persisted `SignatureKeyPair`
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[zeroize(drop)]
+#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+pub struct MlsSignatureKeyPair {
+    pub signature_scheme: u16,
+    pub keypair: Vec<u8>,
+    pub pk: Vec<u8>,
+    pub credential_id: Vec<u8>,
+}
+
 #[async_trait::async_trait(?Send)]
-pub trait MlsIdentityExt: Entity {
-    async fn find_by_signature(conn: &mut Self::ConnectionType, signature: &[u8])
-        -> CryptoKeystoreResult<Option<Self>>;
-    async fn delete_by_signature(conn: &mut Self::ConnectionType, signature: &[u8]) -> CryptoKeystoreResult<()>;
+pub trait MlsSignatureKeyPairExt: Entity {
+    async fn keypair_for_signature_scheme(
+        conn: &mut Self::ConnectionType,
+        credential_id: &[u8],
+        signature_scheme: SignatureScheme,
+    ) -> CryptoKeystoreResult<Option<Self>>;
+}
+
+/// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[zeroize(drop)]
+#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+pub struct MlsHpkePrivateKey {
+    pub sk: Vec<u8>,
+    pub pk: Vec<u8>,
+}
+
+/// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[zeroize(drop)]
+#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+pub struct MlsEncryptionKeyPair {
+    pub sk: Vec<u8>,
+    pub pk: Vec<u8>,
+}
+
+/// Entity representing a persisted `SignatureKeyPair`
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[zeroize(drop)]
+#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+pub struct MlsPskBundle {
+    pub psk_id: Vec<u8>,
+    pub psk: Vec<u8>,
 }
 
 /// Entity representing a persisted `KeyPackage`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
-pub struct MlsKeypackage {
-    pub id: String,
-    pub key: Vec<u8>,
+pub struct MlsKeyPackage {
+    pub keypackage_ref: Vec<u8>,
+    pub keypackage: Vec<u8>,
 }
 
 /// Entity representing an enrollment instance used to fetch a x509 certificate and persisted when

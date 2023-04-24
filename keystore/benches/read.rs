@@ -19,17 +19,13 @@
 use criterion::{
     async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
 };
-use openmls::{
-    credentials::CredentialBundle,
-    extensions::{Extension, ExternalKeyIdExtension},
-    key_packages::KeyPackageBundle,
-    prelude::Ciphersuite,
-};
+use openmls::prelude::Ciphersuite;
 use openmls_traits::{key_store::OpenMlsKeyStore, random::OpenMlsRand, OpenMlsCryptoProvider};
 
 use core_crypto_keystore::Connection as CryptoKeystore;
 use futures_lite::future::block_on;
 use mls_crypto_provider::MlsCryptoProvider;
+use openmls_basic_credential::SignatureKeyPair;
 
 #[cfg(feature = "proteus-keystore")]
 struct ProteusReadParams {
@@ -114,40 +110,14 @@ fn benchmark_reads_mls(c: &mut Criterion) {
 
     let backend = block_on(async { MlsCryptoProvider::try_new("mls-read.edb", "secret").await.unwrap() });
 
-    let uuid: [u8; 16] = backend.rand().random_array().unwrap();
     let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519;
-
-    let key_id = uuid::Uuid::from_bytes(uuid);
-
-    let credentials = CredentialBundle::new_basic(vec![1, 2, 3], ciphersuite.signature_algorithm(), &backend).unwrap();
-
-    let keypackage_bundle = KeyPackageBundle::new(
-        &[ciphersuite],
-        &credentials,
-        &backend,
-        vec![Extension::ExternalKeyId(ExternalKeyIdExtension::new(key_id.as_bytes()))],
-    )
-    .unwrap();
-
-    keypackage_bundle.key_package().verify(&backend).unwrap();
-
-    let key = {
-        let id = keypackage_bundle
-            .key_package()
-            .extensions()
-            .iter()
-            .find(|e| e.as_external_key_id_extension().is_ok())
-            .unwrap()
-            .as_external_key_id_extension()
-            .unwrap()
-            .as_slice();
-
-        uuid::Uuid::from_slice(id).unwrap()
-    };
+    let key = uuid::Uuid::new_v4();
+    let mut rng = &mut *backend.rand().borrow_rand().unwrap();
+    let kp = SignatureKeyPair::new(ciphersuite.signature_algorithm(), &mut rng).unwrap();
 
     block_on(async {
-        store_cached.store(key.as_bytes(), &keypackage_bundle).await.unwrap();
-        store_uncached.store(key.as_bytes(), &keypackage_bundle).await.unwrap();
+        store_cached.store(key.as_bytes(), &kp).await.unwrap();
+        store_uncached.store(key.as_bytes(), &kp).await.unwrap();
     });
 
     let mut group = c.benchmark_group("MLS Reads");
@@ -155,15 +125,15 @@ fn benchmark_reads_mls(c: &mut Criterion) {
 
     group.bench_with_input(BenchmarkId::new("Reads", "cached"), &key, |b, key| {
         b.to_async(FuturesExecutor).iter(|| async {
-            let bundle: KeyPackageBundle = store_cached.read(key.as_bytes()).await.unwrap();
-            black_box(bundle);
+            let skp: SignatureKeyPair = store_cached.read(key.as_bytes()).await.unwrap();
+            black_box(skp);
         })
     });
 
     group.bench_with_input(BenchmarkId::new("Reads", "uncached"), &key, |b, key| {
         b.to_async(FuturesExecutor).iter(|| async {
-            let bundle: KeyPackageBundle = store_uncached.read(key.as_bytes()).await.unwrap();
-            black_box(bundle);
+            let skp: SignatureKeyPair = store_uncached.read(key.as_bytes()).await.unwrap();
+            black_box(skp);
         })
     });
 

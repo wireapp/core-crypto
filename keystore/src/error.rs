@@ -19,8 +19,16 @@
 pub enum MissingKeyErrorKind {
     #[error("MLS KeyPackageBundle")]
     MlsKeyPackageBundle,
+    #[error("MLS SignatureKeyPair")]
+    MlsSignatureKeyPair,
+    #[error("MLS HpkePrivateKey")]
+    MlsHpkePrivateKey,
+    #[error("MLS EncryptionKeyPair")]
+    MlsEncryptionKeyPair,
+    #[error("MLS PreSharedKeyBundle")]
+    MlsPskBundle,
     #[error("MLS CredentialBundle")]
-    MlsIdentityBundle,
+    MlsCredential,
     #[error("MLS Persisted Group")]
     MlsGroup,
     #[error("MLS Persisted Pending Group")]
@@ -53,13 +61,17 @@ pub enum CryptoKeystoreError {
     ImplementationError,
     #[error("The keystore has run out of keypackage bundles!")]
     OutOfKeyPackageBundles,
+    #[error("Incorrect API usage: {0}")]
+    IncorrectApiUsage(&'static str),
+    #[error("The credential tied to this signature keypair is different from the provided one")]
+    SignatureKeyPairDoesNotBelongToCredential,
     #[error("A uniqueness constraint has been violated")]
     AlreadyExists,
     #[error("The provided buffer is too big to be persisted in the store")]
     BlobTooBig,
     #[cfg(feature = "mls-keystore")]
     #[error(transparent)]
-    KeyStoreValueTransformError(Box<dyn std::error::Error + Send + Sync + 'static>),
+    KeyStoreValueTransformError(#[from] postcard::Error),
     #[error(transparent)]
     IoError(#[from] std::io::Error),
     #[cfg(target_family = "wasm")]

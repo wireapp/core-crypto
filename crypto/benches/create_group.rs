@@ -2,7 +2,8 @@ use criterion::{
     async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion,
 };
 use futures_lite::future::block_on;
-use openmls::prelude::VerifiablePublicGroupState;
+
+use openmls::prelude::MlsMessageIn;
 
 use core_crypto::prelude::{
     ConversationMember, MlsConversationConfiguration, MlsConversationInitBundle, MlsCredentialType,
@@ -32,12 +33,11 @@ fn create_group_bench(c: &mut Criterion) {
                         (central, id, cfg)
                     },
                     |(mut central, id, cfg)| async move {
-                        black_box(
-                            central
-                                .new_conversation(id, MlsCredentialType::Basic, cfg)
-                                .await
-                                .unwrap(),
-                        );
+                        central
+                            .new_conversation(id, MlsCredentialType::Basic, cfg)
+                            .await
+                            .unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -78,7 +78,7 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                     |(mut central, welcome)| async move {
                         black_box(
                             central
-                                .process_welcome_message(welcome, MlsCustomConfiguration::default())
+                                .process_welcome_message(welcome.into(), MlsCustomConfiguration::default())
                                 .await
                                 .unwrap(),
                         );
@@ -91,7 +91,7 @@ fn join_from_welcome_bench(c: &mut Criterion) {
     group.finish();
 }
 
-fn join_from_public_group_state_bench(c: &mut Criterion) {
+fn join_from_group_info_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Join from external commit f(group size)");
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
         for i in (GROUP_RANGE).step_by(GROUP_STEP) {
@@ -101,29 +101,27 @@ fn join_from_public_group_state_bench(c: &mut Criterion) {
                         use openmls::prelude::TlsDeserializeTrait as _;
                         let (mut alice_central, id) = setup_mls(ciphersuite, &credential, in_memory);
                         add_clients(&mut alice_central, &id, ciphersuite, *i);
-                        let pgs = block_on(async { alice_central.export_public_group_state(&id).await.unwrap() });
-                        let pgs: VerifiablePublicGroupState =
-                            VerifiablePublicGroupState::tls_deserialize(&mut pgs.as_slice()).unwrap();
+                        let gi = block_on(async { alice_central.export_group_info(&id).await.unwrap() });
+                        let gi = MlsMessageIn::tls_deserialize(&mut gi.as_slice()).unwrap();
                         let (bob_central, ..) = new_central(ciphersuite, &credential, in_memory);
-                        (bob_central, pgs)
+                        (bob_central, gi)
                     },
-                    |(mut central, pgs)| async move {
+                    |(mut central, group_info)| async move {
                         let MlsConversationInitBundle { conversation_id, .. } = black_box(
                             central
                                 .join_by_external_commit(
-                                    pgs,
+                                    group_info,
                                     MlsCustomConfiguration::default(),
                                     MlsCredentialType::Basic,
                                 )
                                 .await
                                 .unwrap(),
                         );
-                        black_box(
-                            central
-                                .merge_pending_group_from_external_commit(&conversation_id)
-                                .await
-                                .unwrap(),
-                        );
+                        central
+                            .merge_pending_group_from_external_commit(&conversation_id)
+                            .await
+                            .unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -139,6 +137,6 @@ criterion_group!(
     targets =
     create_group_bench,
     join_from_welcome_bench,
-    join_from_public_group_state_bench,
+    join_from_group_info_bench,
 );
 criterion_main!(create_group);

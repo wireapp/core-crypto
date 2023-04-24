@@ -28,10 +28,12 @@ cfg-if = "1.0"
 hex = "0.4"
 futures-util = "0.3"
 
-openmls = { version = "0.4", features = ["crypto-subtle"] }
+openmls = { version = "0.20", features = ["crypto-subtle"] }
+openmls_basic_credential = "0.1"
+openmls_x509_credential = "0.1"
 openmls_traits = "0.1"
 # FIXME: This is being pulled only because of flaky error types from openmls
-tls_codec = "0.2"
+tls_codec = { workspace = true }
 serde = "1.0"
 serde_json = "1.0"
 url = "2.3"
@@ -73,6 +75,7 @@ version = "^0.11.0"
 path = "../mls-provider"
 
 [dev-dependencies]
+itertools = "0.10"
 uuid = { version = "1.0", features = ["v4", "v5"] }
 rand = "0.8"
 tempfile = "3.3"
@@ -88,6 +91,7 @@ futures-lite = "1.12"
 proteus-traits = "2.0"
 async-trait = "0.1"
 wire-e2e-identity = { version = "0.4", features = ["identity-builder"] }
+fluvio-wasm-timer = "0.2"
 
 [dev-dependencies.core-crypto-keystore]
 version = "^0.11.0"
@@ -99,7 +103,7 @@ cryptobox = { git = "https://github.com/wireapp/cryptobox", tag = "v1.0.3" }
 proteus = { git = "https://github.com/wireapp//proteus", branch = "otak/fix-1.0.3" }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
-version = "0.3"
+version = "0.4"
 features = ["async_futures", "html_reports"]
 
 [dev-dependencies.core-crypto-attributes]
@@ -118,7 +122,7 @@ name = "proposal"
 harness = false
 
 [[bench]]
-name = "public_group_state"
+name = "group_info"
 harness = false
 
 [[bench]]

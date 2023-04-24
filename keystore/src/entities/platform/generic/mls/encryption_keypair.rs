@@ -16,23 +16,23 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, MlsKeyPackage, StringEntityId},
+    entities::{Entity, EntityBase, EntityFindParams, MlsEncryptionKeyPair, StringEntityId},
     MissingKeyErrorKind,
 };
-use std::io::Read;
+use std::io::{Read, Write};
 
-impl Entity for MlsKeyPackage {
+impl Entity for MlsEncryptionKeyPair {
     fn id_raw(&self) -> &[u8] {
-        self.keypackage_ref.as_slice()
+        self.pk.as_slice()
     }
 }
 
 #[async_trait::async_trait(?Send)]
-impl EntityBase for MlsKeyPackage {
+impl EntityBase for MlsEncryptionKeyPair {
     type ConnectionType = KeystoreDatabaseConnection;
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
-        MissingKeyErrorKind::MlsKeyPackageBundle
+        MissingKeyErrorKind::MlsEncryptionKeyPair
     }
 
     async fn find_all(
@@ -40,7 +40,7 @@ impl EntityBase for MlsKeyPackage {
         params: EntityFindParams,
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
         let transaction = conn.transaction()?;
-        let query: String = format!("SELECT rowid FROM mls_keypackages {}", params.to_sql());
+        let query: String = format!("SELECT rowid FROM mls_encryption_keypairs {}", params.to_sql());
 
         let mut stmt = transaction.prepare_cached(&query)?;
         let mut rows = stmt.query_map([], |r| r.get(0))?;
@@ -50,30 +50,29 @@ impl EntityBase for MlsKeyPackage {
 
             let mut blob = transaction.blob_open(
                 rusqlite::DatabaseName::Main,
-                "mls_keypackages",
-                "keypackage_ref",
+                "mls_encryption_keypairs",
+                "sk",
                 rowid,
                 true,
             )?;
-            let mut keypackage_ref = vec![];
-            blob.read_to_end(&mut keypackage_ref)?;
+
+            let mut sk = vec![];
+            blob.read_to_end(&mut sk)?;
             blob.close()?;
 
             let mut blob = transaction.blob_open(
                 rusqlite::DatabaseName::Main,
-                "mls_keypackages",
-                "keypackage",
+                "mls_encryption_keypairs",
+                "pk",
                 rowid,
                 true,
             )?;
-            let mut keypackage = vec![];
-            blob.read_to_end(&mut keypackage)?;
+
+            let mut pk = vec![];
+            blob.read_to_end(&mut pk)?;
             blob.close()?;
 
-            acc.push(Self {
-                keypackage_ref,
-                keypackage,
-            });
+            acc.push(Self { sk, pk });
 
             crate::CryptoKeystoreResult::Ok(acc)
         })?;
@@ -83,62 +82,57 @@ impl EntityBase for MlsKeyPackage {
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
         use rusqlite::OptionalExtension as _;
-        use rusqlite::ToSql as _;
 
-        Self::ConnectionType::check_buffer_size(self.keypackage_ref.len())?;
-        Self::ConnectionType::check_buffer_size(self.keypackage.len())?;
+        Self::ConnectionType::check_buffer_size(self.sk.len())?;
+        Self::ConnectionType::check_buffer_size(self.pk.len())?;
+
+        let zb_pk = rusqlite::blob::ZeroBlob(self.pk.len() as i32);
+        let zb_sk = rusqlite::blob::ZeroBlob(self.sk.len() as i32);
 
         let transaction = conn.transaction()?;
         let mut existing_rowid = transaction
             .query_row(
-                "SELECT rowid FROM mls_keypackages WHERE keypackage_ref = ?",
-                [&self.keypackage_ref],
+                "SELECT rowid FROM mls_encryption_keypairs WHERE pk = ?",
+                [&self.pk],
                 |r| r.get::<_, i64>(0),
             )
             .optional()?;
 
-        let kp_zb = rusqlite::blob::ZeroBlob(self.keypackage.len() as i32);
-
         let row_id = if let Some(rowid) = existing_rowid.take() {
+            use rusqlite::ToSql as _;
             transaction.execute(
-                "UPDATE mls_keypackages SET keypackage = ? WHERE rowid = ?",
-                [kp_zb.to_sql()?, rowid.to_sql()?],
+                "UPDATE mls_encryption_keypairs SET pk = ?, sk = ? WHERE rowid = ?",
+                [&zb_pk.to_sql()?, &zb_sk.to_sql()?, &rowid.to_sql()?],
             )?;
-
             rowid
         } else {
-            let kp_ref_zb = rusqlite::blob::ZeroBlob(self.keypackage_ref.len() as i32);
-            let params: [rusqlite::types::ToSqlOutput; 2] = [kp_ref_zb.to_sql()?, kp_zb.to_sql()?];
-            transaction.execute(
-                "INSERT INTO mls_keypackages (keypackage_ref, keypackage) VALUES (?, ?)",
-                params,
-            )?;
-            let row_id = transaction.last_insert_rowid();
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_keypackages",
-                "keypackage_ref",
-                row_id,
-                false,
-            )?;
+            use rusqlite::ToSql as _;
+            let params: [rusqlite::types::ToSqlOutput; 2] = [zb_pk.to_sql()?, zb_sk.to_sql()?];
 
-            use std::io::Write as _;
-            blob.write_all(&self.keypackage_ref)?;
-            blob.close()?;
-
-            row_id
+            transaction.execute("INSERT INTO mls_encryption_keypairs (pk, sk) VALUES (?, ?)", params)?;
+            transaction.last_insert_rowid()
         };
 
         let mut blob = transaction.blob_open(
             rusqlite::DatabaseName::Main,
-            "mls_keypackages",
-            "keypackage",
+            "mls_encryption_keypairs",
+            "pk",
             row_id,
             false,
         )?;
 
-        use std::io::Write as _;
-        blob.write_all(&self.keypackage)?;
+        blob.write_all(&self.pk)?;
+        blob.close()?;
+
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            "mls_encryption_keypairs",
+            "sk",
+            row_id,
+            false,
+        )?;
+
+        blob.write_all(&self.sk)?;
         blob.close()?;
 
         transaction.commit()?;
@@ -152,53 +146,47 @@ impl EntityBase for MlsKeyPackage {
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
         let transaction = conn.transaction()?;
         use rusqlite::OptionalExtension as _;
-        let mut row_id = transaction
+        let maybe_rowid = transaction
             .query_row(
-                "SELECT rowid FROM mls_keypackages WHERE keypackage_ref = ?",
+                "SELECT rowid FROM mls_encryption_keypairs WHERE pk = ?",
                 [id.as_slice()],
                 |r| r.get::<_, i64>(0),
             )
             .optional()?;
 
-        if let Some(rowid) = row_id.take() {
+        if let Some(rowid) = maybe_rowid {
             let mut blob = transaction.blob_open(
                 rusqlite::DatabaseName::Main,
-                "mls_keypackages",
-                "keypackage_ref",
+                "mls_encryption_keypairs",
+                "pk",
                 rowid,
                 true,
             )?;
 
-            let mut keypackage_ref = Vec::with_capacity(blob.len());
-            blob.read_to_end(&mut keypackage_ref)?;
+            let mut pk = Vec::with_capacity(blob.len());
+            blob.read_to_end(&mut pk)?;
             blob.close()?;
 
             let mut blob = transaction.blob_open(
                 rusqlite::DatabaseName::Main,
-                "mls_keypackages",
-                "keypackage",
+                "mls_encryption_keypairs",
+                "sk",
                 rowid,
                 true,
             )?;
 
-            let mut keypackage = Vec::with_capacity(blob.len());
-            blob.read_to_end(&mut keypackage)?;
+            let mut sk = Vec::with_capacity(blob.len());
+            blob.read_to_end(&mut sk)?;
             blob.close()?;
 
-            transaction.commit()?;
-
-            Ok(Some(Self {
-                keypackage_ref,
-                keypackage,
-            }))
+            Ok(Some(Self { pk, sk }))
         } else {
             Ok(None)
         }
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        let count: usize = conn.query_row("SELECT COUNT(*) FROM mls_keypackages", [], |r| r.get(0))?;
-        Ok(count)
+        Ok(conn.query_row("SELECT COUNT(*) FROM mls_encryption_keypairs", [], |r| r.get(0))?)
     }
 
     async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
@@ -206,7 +194,7 @@ impl EntityBase for MlsKeyPackage {
         let len = ids.len();
         let mut updated = 0;
         for id in ids {
-            updated += transaction.execute("DELETE FROM mls_keypackages WHERE keypackage_ref = ?", [id.as_slice()])?;
+            updated += transaction.execute("DELETE FROM mls_encryption_keypairs WHERE pk = ?", [id.as_slice()])?;
         }
 
         if updated == len {

@@ -51,18 +51,68 @@ impl DatabaseConnection for WasmConnection {
 
         let rexie_builder = rexie::Rexie::builder(&name)
             .version(version)
-            .add_object_store(ObjectStore::new("mls_keys").auto_increment(false))
             .add_object_store(
-                ObjectStore::new("mls_identities")
+                ObjectStore::new("mls_credentials")
                     .auto_increment(false)
-                    .add_index(Index::new("signature", "signature").unique(true)),
+                    .add_index(Index::new("id", "id").unique(true)),
             )
-            .add_object_store(ObjectStore::new("mls_groups").auto_increment(false))
-            .add_object_store(ObjectStore::new("e2ei_enrollment").auto_increment(false))
-            .add_object_store(ObjectStore::new("mls_pending_groups").auto_increment(false))
-            .add_object_store(ObjectStore::new("proteus_prekeys").auto_increment(false))
-            .add_object_store(ObjectStore::new("proteus_identities").auto_increment(false))
-            .add_object_store(ObjectStore::new("proteus_sessions").auto_increment(false));
+            .add_object_store(
+                ObjectStore::new("mls_signature_keypairs")
+                    .auto_increment(false)
+                    .add_index(Index::new("mls_id", "mls_id").unique(true))
+                    .add_index(Index::new("signature_scheme", "signature_scheme"))
+                    .add_index(Index::new("pk", "pk").unique(true)),
+            )
+            .add_object_store(
+                ObjectStore::new("mls_hpke_private_keys")
+                    .auto_increment(false)
+                    .add_index(Index::new("pk", "pk").unique(true)),
+            )
+            .add_object_store(
+                ObjectStore::new("mls_encryption_keypairs")
+                    .auto_increment(false)
+                    .add_index(Index::new("pk", "pk").unique(true)),
+            )
+            .add_object_store(
+                ObjectStore::new("mls_psk_bundles")
+                    .auto_increment(false)
+                    .add_index(Index::new("psk_id", "psk_id").unique(true)),
+            )
+            .add_object_store(
+                ObjectStore::new("mls_keypackages")
+                    .auto_increment(false)
+                    .add_index(Index::new("keypackage_ref", "keypackage_ref").unique(true)),
+            )
+            .add_object_store(
+                ObjectStore::new("mls_groups")
+                    .auto_increment(false)
+                    .add_index(Index::new("id", "id").unique(true)),
+            )
+            .add_object_store(
+                ObjectStore::new("mls_pending_groups")
+                    .auto_increment(false)
+                    .add_index(Index::new("id", "id").unique(true)),
+            )
+            .add_object_store(
+                ObjectStore::new("e2ei_enrollment")
+                    .auto_increment(false)
+                    .add_index(Index::new("id", "id").unique(true)),
+            )
+            .add_object_store(
+                ObjectStore::new("proteus_prekeys")
+                    .auto_increment(false)
+                    .add_index(Index::new("id", "id").unique(true)),
+            )
+            .add_object_store(
+                ObjectStore::new("proteus_identities")
+                    .auto_increment(false)
+                    .add_index(Index::new("pk", "pk").unique(true)),
+            )
+            .add_object_store(
+                ObjectStore::new("proteus_sessions")
+                    .auto_increment(false)
+                    .add_index(Index::new("id", "id").unique(true)),
+            );
 
         #[cfg(feature = "idb-regression-test")]
         let rexie_builder = rexie_builder.add_object_store(ObjectStore::new("regression_check").auto_increment(false));

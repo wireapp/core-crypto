@@ -1,12 +1,11 @@
-use openmls::prelude::SignaturePrivateKey;
 use std::collections::HashMap;
 use wire_e2e_identity::prelude::RustyE2eIdentity;
 
 use error::*;
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::prelude::identifier::ClientIdentifier;
 use crate::prelude::{id::ClientId, CertificateBundle, MlsCentral, MlsCiphersuite};
+use crate::{mls::credential::x509::CertificatePrivateKey, prelude::identifier::ClientIdentifier};
 
 mod crypto;
 pub(crate) mod degraded;
@@ -20,8 +19,6 @@ type Json = Vec<u8>;
 impl MlsCentral {
     /// Creates an enrollment instance with private key material you can use in order to fetch
     /// a new x509 certificate from the acme server.
-    /// Make sure to call [WireE2eIdentity::free] (not yet available) to dispose this instance and its associated
-    /// keying material.
     ///
     /// # Parameters
     /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
@@ -49,7 +46,21 @@ impl MlsCentral {
     /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it
     /// to initialize the MLS client with a certificate
     pub async fn e2ei_mls_init(&mut self, e2ei: WireE2eIdentity, certificate_chain: String) -> E2eIdentityResult<()> {
-        e2ei.certificate_response(self, certificate_chain).await
+        let sk = e2ei.get_sign_key_for_mls()?;
+        let cs = e2ei.ciphersuite;
+        let certificate_chain = e2ei.certificate_response(certificate_chain).await?;
+        let private_key = CertificatePrivateKey {
+            value: sk,
+            signature_scheme: cs.signature_algorithm(),
+        };
+
+        let cert_bundle = CertificateBundle {
+            certificate_chain,
+            private_key,
+        };
+        let identifier = ClientIdentifier::X509(HashMap::from([(cs, cert_bundle)]));
+        self.mls_init(identifier, vec![cs]).await?;
+        Ok(())
     }
 }
 
@@ -116,8 +127,8 @@ impl WireE2eIdentity {
     }
 
     /// Parses the response from `GET /acme/{provisioner-name}/directory`.
-    /// Use this [AcmeDirectory] in the next step to fetch the first nonce from the acme server. Use
-    /// [AcmeDirectory::new_nonce].
+    /// Use this [types::E2eiAcmeDirectory] in the next step to fetch the first nonce from the acme server. Use
+    /// [types::E2eiAcmeDirectory.new_nonce].
     ///
     /// See [RFC 8555 Section 7.1.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1)
     ///
@@ -136,7 +147,7 @@ impl WireE2eIdentity {
     /// See [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3).
     ///
     /// # Parameters
-    /// * `directory` - you got from [Self::acme_directory_response]
+    /// * `directory` - you got from [Self::directory_response]
     /// * `previous_nonce` - you got from calling `HEAD {directory.new_nonce}`
     pub fn new_account_request(&self, previous_nonce: String) -> E2eIdentityResult<Json> {
         let directory = self.directory.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
@@ -196,8 +207,8 @@ impl WireE2eIdentity {
     /// See [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5).
     ///
     /// # Parameters
-    /// * `url` - one of the URL in new order's authorizations (from [Self::acme_new_order_response])
-    /// * `account` - you got from [Self::acme_new_account_response]
+    /// * `url` - one of the URL in new order's authorizations (from [Self::new_order_response])
+    /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-order`
     /// (or from the previous to this method if you are creating the second authorization)
     pub fn new_authz_request(&self, url: String, previous_nonce: String) -> E2eIdentityResult<Json> {
@@ -250,8 +261,8 @@ impl WireE2eIdentity {
     ///
     /// # Parameters
     /// * `access_token` - returned by wire-server from [this endpoint](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token)
-    /// * `dpop_challenge` - you found after [Self::acme_new_authz_response]
-    /// * `account` - you got from [Self::acme_new_account_response]
+    /// * `dpop_challenge` - you found after [Self::new_authz_response]
+    /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
     pub fn new_dpop_challenge_request(&self, access_token: String, previous_nonce: String) -> E2eIdentityResult<Json> {
         let authz = self.authz.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
@@ -271,8 +282,8 @@ impl WireE2eIdentity {
     ///
     /// # Parameters
     /// * `id_token` - you get back from Identity Provider
-    /// * `oidc_challenge` - you found after [Self::acme_new_authz_response]
-    /// * `account` - you got from [Self::acme_new_account_response]
+    /// * `oidc_challenge` - you found after [Self::new_authz_response]
+    /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
     pub fn new_oidc_challenge_request(&self, id_token: String, previous_nonce: String) -> E2eIdentityResult<Json> {
         let authz = self.authz.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
@@ -302,8 +313,8 @@ impl WireE2eIdentity {
     /// See [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
     ///
     /// # Parameters
-    /// * `order_url` - `location` header from http response you got from [Self::acme_new_order_response]
-    /// * `account` - you got from [Self::acme_new_account_response]
+    /// * `order_url` - `location` header from http response you got from [Self::new_order_response]
+    /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/challenge/{challenge-id}`
     pub fn check_order_request(&self, order_url: String, previous_nonce: String) -> E2eIdentityResult<Json> {
         let account = self.account.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
@@ -335,8 +346,8 @@ impl WireE2eIdentity {
     ///
     /// # Parameters
     /// * `domains` - you want to generate a certificate for e.g. `["wire.com"]`
-    /// * `order` - you got from [Self::acme_check_order_response]
-    /// * `account` - you got from [Self::acme_new_account_response]
+    /// * `order` - you got from [Self::check_order_response]
+    /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
     pub fn finalize_request(&mut self, previous_nonce: String) -> E2eIdentityResult<Json> {
         let account = self.account.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
@@ -369,7 +380,7 @@ impl WireE2eIdentity {
     ///
     /// # Parameters
     /// * `finalize` - you got from [Self::finalize_response]
-    /// * `account` - you got from [Self::acme_new_account_response]
+    /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}/finalize`
     pub fn certificate_request(&mut self, previous_nonce: String) -> E2eIdentityResult<Json> {
         let account = self.account.take().ok_or(E2eIdentityError::ImplementationError)?;
@@ -379,25 +390,8 @@ impl WireE2eIdentity {
         Ok(certificate)
     }
 
-    async fn certificate_response(
-        self,
-        mls_central: &mut MlsCentral,
-        certificate_chain: String,
-    ) -> E2eIdentityResult<()> {
-        let certificate_chain = self.acme_x509_certificate_response(certificate_chain)?;
-        let private_key = SignaturePrivateKey {
-            value: self.sign_sk,
-            signature_scheme: self.ciphersuite.signature_algorithm(),
-        };
-
-        let cert_bundle = CertificateBundle {
-            certificate_chain,
-            private_key,
-        };
-        // TODO
-        let identifier = ClientIdentifier::X509(HashMap::from([(self.ciphersuite, cert_bundle)]));
-        mls_central.mls_init(identifier, vec![self.ciphersuite]).await?;
-        Ok(())
+    async fn certificate_response(self, certificate_chain: String) -> E2eIdentityResult<Vec<Vec<u8>>> {
+        Ok(self.acme_x509_certificate_response(certificate_chain)?)
     }
 }
 
@@ -603,30 +597,30 @@ pub mod tests {
         let _certificate_req = enrollment.certificate_request(previous_nonce.to_string())?;
 
         let certificate_resp = r#"-----BEGIN CERTIFICATE-----
-MIICLjCCAdSgAwIBAgIQIi6jHWSEF/LHAkiyoiSHbjAKBggqhkjOPQQDAjAuMQ0w
+MIICIjCCAcigAwIBAgIQKRapc1IDZvJc88zB+vlrNTAKBggqhkjOPQQDAjAuMQ0w
 CwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3aXJlIEludGVybWVkaWF0ZSBDQTAeFw0y
-MzA0MDUwOTI2NThaFw0yMzA0MDUxMDI2NThaMCkxETAPBgNVBAoTCHdpcmUuY29t
-MRQwEgYDVQQDEwtBbGljZSBTbWl0aDAqMAUGAytlcAMhAGzbFXHk2ngUGpBYzabE
-AtDJIefbX1/wDUSDJbEL/nJNo4IBBjCCAQIwDgYDVR0PAQH/BAQDAgeAMB0GA1Ud
-JQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAdBgNVHQ4EFgQUhifYTPG7M3pyQMrz
-HYmakvfDG80wHwYDVR0jBBgwFoAUHPSH1n7X87LAYJnc+cFG2a3ZAQ4wcgYDVR0R
-BGswaYZQaW06d2lyZWFwcD1OamhsTXpJeE9XRmpPRFJpTkRBd1lqazBaR0ZoWkRB
-Mk56RXhOVEV5TlRnLzZjMTg2NmY1Njc2MTZmMzFAd2lyZS5jb22GFWltOndpcmVh
-cHA9YWxpY2Vfd2lyZTAdBgwrBgEEAYKkZMYoQAEEDTALAgEGBAR3aXJlBAAwCgYI
-KoZIzj0EAwIDSAAwRQIhAKY0Zs8SYwS7mFFenPDoCDHPQbCbV9VdvYpBQncOFD5K
-AiAisX68Di4B0dN059YsVDXpM0drnkrVTRKHV+F+ipDjZQ==
+MzA2MDYxMjAzMDlaFw0zMzA2MDMxMjAzMDlaMCkxETAPBgNVBAoTCHdpcmUuY29t
+MRQwEgYDVQQDEwtBbGljZSBTbWl0aDAqMAUGAytlcAMhACqExBb1vLgMNq8GkLgM
+R+W+dp0szvjYL2GybNkPKzoto4H7MIH4MA4GA1UdDwEB/wQEAwIHgDATBgNVHSUE
+DDAKBggrBgEFBQcDAjAdBgNVHQ4EFgQUaPHUDloFLv5o4j4J4EmvoYToqHcwHwYD
+VR0jBBgwFoAUlbTj2u59dFDGs1LVj0GrGKJUK/gwcgYDVR0RBGswaYYVaW06d2ly
+ZWFwcD1hbGljZV93aXJlhlBpbTp3aXJlYXBwPVl6QXpZalZoT1dRMFpqSXdOR0k1
+T1Rrek9HRTRPREptT1RjeE0yWm1PR00vNDk1OWJjNmFiMTJmMjg0NkB3aXJlLmNv
+bTAdBgwrBgEEAYKkZMYoQAEEDTALAgEGBAR3aXJlBAAwCgYIKoZIzj0EAwIDSAAw
+RQIhAIRaoCuyIAXtpAsUhZvJb7Qb+2EKsc9iIzHtsBU5MtVMAiAz2Tm4ojAolq4J
+ZjWPVSDz4AN1gd200EpS50cS/mLDqw==
 -----END CERTIFICATE-----
 -----BEGIN CERTIFICATE-----
-MIIBtzCCAV6gAwIBAgIQPbElEJQ58HlbQf7bqrJjXTAKBggqhkjOPQQDAjAmMQ0w
-CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjMwNDA1MDky
-NjUzWhcNMzMwNDAyMDkyNjUzWjAuMQ0wCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3
-aXJlIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGbM
-rA1eqJE9xlGOwO+sYbexThtlU/to9jJj5SBoKPx7Q8QMBlmPTjqDVumXhUvSe+xY
-JE7M+lBXfVZCywzIIPWjZjBkMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG
-AQH/AgEAMB0GA1UdDgQWBBQc9IfWftfzssBgmdz5wUbZrdkBDjAfBgNVHSMEGDAW
-gBQY+1rDw64QLm/weFQC1mo9y29ddTAKBggqhkjOPQQDAgNHADBEAiARvd7RBuuv
-OhUy7ncjd/nzoN5Qs0p6D+ujdSLDqLlNIAIgfkwAAgsQMDF3ClqVM/p9cmS95B0g
-CAdIObqPoNL5MJo=
+MIIBuTCCAV6gAwIBAgIQYiSIW2ebbC32Iq5YO0AyLDAKBggqhkjOPQQDAjAmMQ0w
+CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjMwNjA2MTIw
+MzA2WhcNMzMwNjAzMTIwMzA2WjAuMQ0wCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3
+aXJlIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEKu
+1Ekx95MKKr9FxUspwFtyErShqoPKZNlyfz8u8lmvi50FpwqUXem1EoOUOm7UHy5m
+HJO513uJY0Q/ecZUwAKjZjBkMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG
+AQH/AgEAMB0GA1UdDgQWBBSVtOPa7n10UMazUtWPQasYolQr+DAfBgNVHSMEGDAW
+gBSy9uS81ABjfHbkz42x/Gf160mt1jAKBggqhkjOPQQDAgNJADBGAiEAq/T83XSg
+7/GN+fUi79bzXI9oQdDuXqyhGnjIXtr2D8YCIQCuS1tZQm6lVcDZMWYQWLfv/b46
+GjWuPgx1fD4m+ar9Tw==
 -----END CERTIFICATE-----"#;
         cc.e2ei_mls_init(enrollment, certificate_resp.to_string()).await
     }

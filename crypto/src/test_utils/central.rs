@@ -14,22 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::mls::credential::ext::CredentialExt;
-use crate::prelude::{CertificateBundle, MlsCiphersuite, MlsCredentialType};
 use crate::{
     prelude::{
-        Client, ClientId, ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral, MlsConversation,
+        ClientId, ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral, MlsConversation,
         MlsConversationDecryptMessage, MlsConversationInitBundle, MlsCustomConfiguration, MlsError,
     },
     test_utils::TestCase,
 };
-use core_crypto_keystore::entities::MlsIdentity;
+
+use crate::mls::MlsCiphersuite;
+use crate::prelude::{CertificateBundle, Client, MlsCredentialType};
+use core_crypto_keystore::entities::{MlsCredential, MlsSignatureKeyPair};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
-    KeyPackage, PublicGroupState, QueuedProposal, SignaturePublicKey, StagedCommit, VerifiablePublicGroupState, Welcome,
+    KeyPackage, LeafNodeIndex, MlsMessageIn, MlsMessageOut, QueuedProposal, SignaturePublicKey, StagedCommit,
 };
-use openmls_traits::key_store::ToKeyStoreValue;
 use openmls_traits::OpenMlsCryptoProvider;
+use tls_codec::Serialize;
 use wire_e2e_identity::prelude::WireIdentityReader;
 
 impl MlsCentral {
@@ -105,7 +106,7 @@ impl MlsCentral {
             .add_members_to_conversation(id, &mut [other.rand_member().await])
             .await?
             .welcome;
-        other.process_welcome_message(welcome, custom_cfg).await?;
+        other.process_welcome_message(welcome.into(), custom_cfg).await?;
         self.commit_accepted(id).await?;
         assert_eq!(
             self.get_conversation_unchecked(id).await.members().len(),
@@ -119,28 +120,26 @@ impl MlsCentral {
         Ok(())
     }
 
-    pub async fn try_join_from_public_group_state(
+    pub async fn try_join_from_group_info(
         &mut self,
-        case: &crate::test_utils::TestCase,
+        case: &TestCase,
         id: &ConversationId,
-        public_group_state: VerifiablePublicGroupState,
+        group_info: MlsMessageIn,
         others: Vec<&mut Self>,
     ) -> CryptoResult<()> {
-        use tls_codec::{Deserialize as _, Serialize as _};
-        let public_group_state = public_group_state.tls_serialize_detached().map_err(MlsError::from)?;
-        let public_group_state =
-            VerifiablePublicGroupState::tls_deserialize(&mut public_group_state.as_slice()).map_err(MlsError::from)?;
+        use tls_codec::Serialize as _;
+
         let MlsConversationInitBundle {
             conversation_id,
             commit,
             ..
         } = self
-            .join_by_external_commit(public_group_state, case.custom_cfg(), case.credential_type)
+            .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
             .await?;
         self.merge_pending_group_from_external_commit(&conversation_id).await?;
         assert_eq!(conversation_id.as_slice(), id.as_slice());
         for other in others {
-            let commit = commit.to_bytes().map_err(MlsError::from)?;
+            let commit = commit.tls_serialize_detached().map_err(MlsError::from)?;
             other.decrypt_message(id, commit).await?;
             self.try_talk_to(id, other).await?;
         }
@@ -150,7 +149,7 @@ impl MlsCentral {
     pub async fn try_join_from_welcome(
         &mut self,
         id: &ConversationId,
-        welcome: Welcome,
+        welcome: MlsMessageIn,
         custom_cfg: MlsCustomConfiguration,
         others: Vec<&mut Self>,
     ) -> CryptoResult<()> {
@@ -161,26 +160,45 @@ impl MlsCentral {
         Ok(())
     }
 
-    pub async fn verifiable_public_group_state(&mut self, id: &ConversationId) -> VerifiablePublicGroupState {
-        use tls_codec::{Deserialize as _, Serialize as _};
-        let public_group_state = self.public_group_state(id).await.tls_serialize_detached().unwrap();
-        VerifiablePublicGroupState::tls_deserialize(&mut public_group_state.as_slice()).unwrap()
+    pub async fn get_group_info(&mut self, id: &ConversationId) -> MlsMessageOut {
+        let conversation_arc = self.get_conversation(id).await.unwrap();
+        let mut conversation = conversation_arc.write().await;
+        let group = &mut conversation.group;
+        let ct = group.credential().unwrap().credential_type();
+        let cs = group.ciphersuite();
+        let cb = self
+            .mls_client
+            .as_ref()
+            .unwrap()
+            .find_credential_bundle(cs.into(), ct.into())
+            .unwrap();
+
+        group
+            .export_group_info(&self.mls_backend, &cb.signature_key, true)
+            .unwrap()
     }
 
-    pub async fn public_group_state(&mut self, id: &ConversationId) -> PublicGroupState {
-        self.get_conversation(id)
+    /// Finds the [SignaturePublicKey] of a [Client] within a [MlsGroup]
+    pub async fn signature_key_of(&mut self, conv_id: &ConversationId, client_id: ClientId) -> SignaturePublicKey {
+        let sign_key = self
+            .mls_groups
+            .get_fetch(conv_id, self.mls_backend.borrow_keystore_mut(), None)
             .await
             .unwrap()
-            .write()
+            .unwrap()
+            .read()
             .await
             .group
-            .export_public_group_state(&self.mls_backend)
-            .await
+            .members()
+            .find(|k| k.credential.identity() == client_id.0.as_slice())
             .unwrap()
+            .signature_key;
+
+        SignaturePublicKey::from(sign_key)
     }
 
-    /// Finds the [KeyPackage] of a [Client] within a [MlsGroup]
-    pub async fn key_package_of(&mut self, conv_id: &ConversationId, client_id: ClientId) -> KeyPackage {
+    /// Finds the HPKE Public key of a [Client] within a [MlsGroup]
+    pub async fn encryption_key_of(&mut self, conv_id: &ConversationId, client_id: ClientId) -> Vec<u8> {
         self.mls_groups
             .get_fetch(conv_id, self.mls_backend.borrow_keystore_mut(), None)
             .await
@@ -190,17 +208,32 @@ impl MlsCentral {
             .await
             .group
             .members()
-            .into_iter()
-            .find(|k| k.credential().identity() == client_id.0.as_slice())
+            .find(|k| k.credential.identity() == client_id.0.as_slice())
             .unwrap()
-            .clone()
+            .encryption_key
     }
 
-    pub fn client_signature_key(&self, case: &TestCase) -> &SignaturePublicKey {
+    /// Finds the [LeafNodeIndex] of a [Client] within a [MlsGroup]
+    pub async fn index_of(&mut self, conv_id: &ConversationId, client_id: ClientId) -> LeafNodeIndex {
+        self.mls_groups
+            .get_fetch(conv_id, self.mls_backend.borrow_keystore_mut(), None)
+            .await
+            .unwrap()
+            .unwrap()
+            .read()
+            .await
+            .group
+            .members()
+            .find(|k| k.credential.identity() == client_id.as_slice())
+            .unwrap()
+            .index
+    }
+
+    pub fn client_signature_key(&self, case: &TestCase) -> SignaturePublicKey {
         let mls_client = self.mls_client.as_ref().unwrap();
         let (cs, ct) = (case.ciphersuite(), case.credential_type);
         let cb = mls_client.find_credential_bundle(cs, ct).unwrap();
-        cb.credential().signature_key()
+        SignaturePublicKey::from(cb.signature_key.public())
     }
 
     pub async fn get_conversation_unchecked(
@@ -221,13 +254,13 @@ impl MlsCentral {
         let cb = mls_client.find_credential_bundle(cs, ct).unwrap();
         let sender_credential = cb.credential();
 
-        if let openmls::prelude::MlsCredentialType::X509(openmls::prelude::MlsCertificate {
+        if let openmls::prelude::MlsCredentialType::X509(openmls::prelude::Certificate {
             identity: dup_client_id,
-            cert_chain,
-        }) = &sender_credential.credential
+            cert_data: cert_chain,
+        }) = &sender_credential.mls_credential()
         {
-            let leaf = cert_chain.get(0).map(|c| c.clone().into_vec()).unwrap();
-            let identity = leaf.extract_identity().unwrap();
+            let leaf: Vec<u8> = cert_chain.get(0).map(|c| c.clone().into()).unwrap();
+            let identity = leaf.as_slice().extract_identity().unwrap();
             let decr_identity = decrypted.identity.as_ref().unwrap();
             assert_eq!(decr_identity.client_id, identity.client_id);
             assert_eq!(decr_identity.client_id.as_bytes(), dup_client_id.as_slice());
@@ -235,6 +268,19 @@ impl MlsCentral {
             assert_eq!(decr_identity.display_name, identity.display_name);
             assert_eq!(decr_identity.domain, identity.domain);
         }
+    }
+}
+
+impl MlsConversation {
+    pub fn signature_keys(&self) -> impl Iterator<Item = SignaturePublicKey> + '_ {
+        self.group
+            .members()
+            .map(|m| m.signature_key)
+            .map(|mpk| SignaturePublicKey::from(mpk.as_slice()))
+    }
+
+    pub fn encryption_keys(&self) -> impl Iterator<Item = Vec<u8>> + '_ {
+        self.group.members().map(|m| m.encryption_key)
     }
 }
 
@@ -251,15 +297,26 @@ impl Client {
             .find_credential_bundle(cs, MlsCredentialType::X509)
             .is_none()
         {
+            let id = cb.get_client_id()?;
             let cb = Self::new_x509_credential_bundle(cb)?;
-            let identity = MlsIdentity {
-                id: self.id().to_string(),
-                ciphersuite: cs.into(),
-                credential_type: MlsCredentialType::X509 as u8,
-                signature: cb.keystore_key()?,
-                credential: cb.to_key_store_value().map_err(MlsError::from)?,
-            };
-            backend.key_store().save(identity).await?;
+
+            backend
+                .key_store()
+                .save(MlsCredential {
+                    id: id.clone().into(),
+                    credential: cb.credential.tls_serialize_detached().map_err(MlsError::from)?,
+                })
+                .await?;
+            backend
+                .key_store()
+                .save(MlsSignatureKeyPair {
+                    signature_scheme: cb.signature_key.signature_scheme() as _,
+                    keypair: cb.signature_key.tls_serialize_detached().map_err(MlsError::from)?,
+                    pk: cb.signature_key.to_public_vec(),
+                    credential_id: id.clone().into(),
+                })
+                .await?;
+
             self.identities.push_credential_bundle(cs, cb)?;
         }
         Ok(())

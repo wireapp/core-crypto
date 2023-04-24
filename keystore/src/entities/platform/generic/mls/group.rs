@@ -22,7 +22,7 @@ use crate::{
 
 impl Entity for PersistedMlsGroup {
     fn id_raw(&self) -> &[u8] {
-        &self.id
+        self.id.as_slice()
     }
 }
 
@@ -85,7 +85,7 @@ impl EntityBase for PersistedMlsGroup {
         let parent_id = self.parent_id.as_ref();
         let transaction = conn.transaction()?;
 
-        let id_bytes = &self.id;
+        let id_bytes = self.id.as_slice();
 
         Self::ConnectionType::check_buffer_size(state.len())?;
         Self::ConnectionType::check_buffer_size(id_bytes.len())?;
@@ -145,7 +145,7 @@ impl EntityBase for PersistedMlsGroup {
         use rusqlite::OptionalExtension as _;
         let transaction = conn.transaction()?;
         let mut rowid: Option<i64> = transaction
-            .query_row("SELECT rowid FROM mls_groups WHERE id = ?", [id.into_bytes()], |r| {
+            .query_row("SELECT rowid FROM mls_groups WHERE id = ?", [id.as_slice()], |r| {
                 r.get::<_, i64>(0)
             })
             .optional()?;
@@ -243,7 +243,7 @@ impl EntityBase for PersistedMlsGroup {
         let len = ids.len();
         let mut updated = 0;
         for id in ids {
-            updated += transaction.execute("DELETE FROM mls_groups WHERE id = ?", [id.into_bytes()])?;
+            updated += transaction.execute("DELETE FROM mls_groups WHERE id = ?", [id.as_slice()])?;
         }
 
         if updated == len {

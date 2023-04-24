@@ -21,10 +21,11 @@ harness = false
 
 [features]
 default = ["mls-keystore", "proteus-keystore"]
-mls-keystore = ["dep:openmls_traits"]
+mls-keystore = ["dep:openmls_traits", "dep:openmls_basic_credential", "dep:openmls_x509_credential"]
 proteus-keystore = ["dep:proteus-traits"]
 ios-wal-compat = ["dep:security-framework", "dep:security-framework-sys", "dep:core-foundation"]
 idb-regression-test = []
+log-queries = ["dep:log", "rusqlite/trace"]
 dummy-entity = ["dep:serde"]
 
 [dependencies]
@@ -34,7 +35,7 @@ hex = "0.4"
 zeroize = { version = "1.5", features = ["zeroize_derive"] }
 async-trait = "0.1"
 async-lock = "2.5"
-serde_json = "1.0"
+postcard = { version = "1.0", default-features = false, features = ["use-std"] }
 sha2 = "0.10"
 
 # iOS specific things
@@ -42,8 +43,11 @@ security-framework = { version = "2.8", optional = true }
 security-framework-sys = { version = "2.8", optional = true }
 core-foundation = { version = "0.9", optional = true }
 
-openmls_traits = { version = "0.1", optional = true, features = ["single-threaded"] }
+openmls_traits = { version = "0.1", optional = true }
+openmls_basic_credential = { version = "0.1", optional = true }
+openmls_x509_credential = { version = "0.1", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
+log = { version = "0.4", optional = true }
 
 [dependencies.proteus-traits]
 optional = true
@@ -95,13 +99,14 @@ wasm-bindgen-test = "0.3"
 uuid = { version = "1.0", features = ["v4", "js"] }
 rand = { version = "0.8", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
-openmls = { version = "0.4", default-features = false, features = ["crypto-subtle"] }
+openmls = { version = "0.20", default-features = false, features = ["crypto-subtle"] }
 mls-crypto-provider = { path = "../mls-provider" }
 rstest = "0.17"
 rstest_reuse = "0.5"
 async-std = { version = "1.12", features = ["attributes"] }
 futures-lite = "1.12"
-core-crypto-keystore = { path = ".", features = ["idb-regression-test"] }
+core-crypto-keystore = { path = ".", features = ["idb-regression-test", "log-queries"] }
+pretty_env_logger = "0.4"
 
 [dev-dependencies.proteus-wasm]
 version = "2.0"

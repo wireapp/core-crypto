@@ -43,7 +43,7 @@ impl EntityBase for ProteusSession {
         id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
         let storage = conn.storage();
-        storage.get("proteus_sessions", id.as_bytes()).await
+        storage.get("proteus_sessions", id.as_slice()).await
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
@@ -53,7 +53,7 @@ impl EntityBase for ProteusSession {
 
     async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
-        let ids = ids.iter().map(StringEntityId::as_bytes).collect::<Vec<_>>();
+        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::to_bytes).collect();
         storage.delete("proteus_sessions", &ids).await
     }
 }

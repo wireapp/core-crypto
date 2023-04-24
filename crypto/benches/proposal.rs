@@ -1,3 +1,4 @@
+use async_std::task::block_on;
 use criterion::{async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, Criterion};
 
 use core_crypto::prelude::MlsProposal;
@@ -16,7 +17,7 @@ fn proposal_add_bench(c: &mut Criterion) {
                     || {
                         let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
                         add_clients(&mut central, &id, ciphersuite, *i);
-                        let (kp, ..) = rand_key_package(ciphersuite);
+                        let (kp, ..) = block_on(async { rand_key_package(ciphersuite).await });
                         (central, id, kp)
                     },
                     |(mut central, id, kp)| async move {

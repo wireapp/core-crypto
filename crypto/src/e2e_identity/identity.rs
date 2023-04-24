@@ -1,8 +1,7 @@
+use openmls::credentials::MlsCredentialType;
+
 use crate::{prelude::MlsConversation, CryptoError, CryptoResult};
-use openmls::{
-    credentials::MlsCredentialType,
-    prelude::{Credential, MlsCertificate},
-};
+use openmls::prelude::Credential;
 
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group
@@ -31,17 +30,17 @@ impl From<wire_e2e_identity::prelude::WireIdentity> for WireIdentity {
 
 impl MlsConversation {
     pub(crate) fn extract_identity(credential: &Credential) -> CryptoResult<Option<WireIdentity>> {
-        match &credential.credential {
-            MlsCredentialType::X509(MlsCertificate { cert_chain, .. }) => {
-                let cert = cert_chain.get(0).ok_or(CryptoError::InvalidIdentity)?;
+        match credential.mls_credential() {
+            MlsCredentialType::X509(openmls::prelude::Certificate { cert_data, .. }) => {
+                let leaf = cert_data.get(0).ok_or(CryptoError::InvalidIdentity)?;
                 use wire_e2e_identity::prelude::WireIdentityReader as _;
-                let identity = cert
+                let identity = leaf
                     .as_slice()
                     .extract_identity()
                     .map_err(|_| CryptoError::InvalidIdentity)?;
                 Ok(Some(identity.into()))
             }
-            MlsCredentialType::Basic(_) => Ok(None),
+            _ => Ok(None),
         }
     }
 }
