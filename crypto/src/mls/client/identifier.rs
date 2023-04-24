@@ -1,6 +1,6 @@
+use super::CredentialBundle;
 use crate::prelude::{CertificateBundle, Client, ClientId, CryptoResult, MlsCiphersuite};
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::CredentialBundle;
 use std::collections::HashMap;
 
 /// Used by consumers to initializes a MLS client. Encompasses all the client types available.
@@ -23,14 +23,15 @@ impl ClientIdentifier {
                 // since ClientId has uniqueness constraints, it is the same for all certificates.
                 // hence no need to compute it for every certificate then verify its uniqueness
                 // that's not a getter's job
-                let cert = certs.values().find(|_| true).unwrap();
+                let cert = certs.values().next().unwrap();
                 let id = cert.get_client_id()?;
                 Ok(std::borrow::Cow::Owned(id))
             }
         }
     }
 
-    /// TODO
+    /// Generate a new CredentialBundle (Credential + KeyPair) for each ciphersuite.
+    /// This method does not persist them in the keystore !
     pub fn generate_credential_bundles(
         self,
         backend: &MlsCryptoProvider,
@@ -46,10 +47,9 @@ impl ClientIdentifier {
                 },
             ),
             ClientIdentifier::X509(certs) => {
-                let size = certs.len();
                 certs
                     .into_iter()
-                    .try_fold(Vec::with_capacity(size), |mut acc, (cs, cert)| -> CryptoResult<_> {
+                    .try_fold(vec![], |mut acc, (cs, cert)| -> CryptoResult<_> {
                         let id = cert.get_client_id()?;
                         let cb = Client::new_x509_credential_bundle(cert)?;
                         acc.push((cs, id, cb));

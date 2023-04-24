@@ -16,8 +16,8 @@
 
 use color_eyre::eyre::Result;
 use serde_json::json;
+use tls_codec::Serialize;
 
-use core_crypto::prelude::tls_codec::Serialize;
 use core_crypto::prelude::*;
 
 use crate::clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient};
@@ -101,7 +101,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
                 .await?;
         }
 
-        let member = ConversationMember::new_raw(client_id.to_vec().into(), kp.to_vec())?;
+        let member = ConversationMember::new_raw(client_id.to_vec().into(), kp.to_vec(), self.cc.provider())?;
         let welcome = self
             .cc
             .add_members_to_conversation(&conversation_id.to_vec(), &mut [member])

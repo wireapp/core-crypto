@@ -36,6 +36,7 @@ macro_rules! test_for_entity {
         #[wasm_bindgen_test]
         pub async fn $test_name(store: core_crypto_keystore::Connection) {
             let store = store.await;
+            let _ = pretty_env_logger::try_init();
             let mut entity = crate::tests_impl::can_save_entity::<$entity>(&store).await;
 
             crate::tests_impl::can_find_entity::<$entity>(&store, &entity).await;
@@ -144,8 +145,12 @@ pub mod tests {
         if #[cfg(feature = "mls-keystore")] {
             test_for_entity!(test_persisted_mls_group, PersistedMlsGroup);
             test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
-            test_for_entity!(test_mls_identity, MlsIdentity);
-            test_for_entity!(test_mls_keypackage, MlsKeypackage);
+            test_for_entity!(test_mls_credential, MlsCredential);
+            test_for_entity!(test_mls_keypackage, MlsKeyPackage);
+            test_for_entity!(test_mls_signature_keypair, MlsSignatureKeyPair);
+            test_for_entity!(test_mls_psk_bundle, MlsPskBundle);
+            test_for_entity!(test_mls_encryption_keypair, MlsEncryptionKeyPair);
+            test_for_entity!(test_mls_hpke_private_key, MlsHpkePrivateKey);
         }
     }
     cfg_if::cfg_if! {
@@ -159,7 +164,6 @@ pub mod tests {
 
 #[cfg(test)]
 pub mod utils {
-    use openmls_traits::types::Ciphersuite;
     use rand::Rng as _;
     const MAX_BLOB_SIZE: std::ops::Range<usize> = 1024..8192;
 
@@ -170,53 +174,144 @@ pub mod utils {
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "mls-keystore")] {
-            impl EntityTestExt for core_crypto_keystore::entities::MlsKeypackage {
+            impl EntityTestExt for core_crypto_keystore::entities::MlsKeyPackage {
                 fn random() -> Self {
                     let mut rng = rand::thread_rng();
 
-                    let id: String = uuid::Uuid::new_v4().hyphenated().to_string();
-                    let mut key = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
-                    rng.fill(&mut key[..]);
+                    let keypackage_ref = uuid::Uuid::new_v4().hyphenated().to_string().into_bytes();
+                    let mut keypackage = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut keypackage[..]);
 
                     Self {
-                        id,
-                        key
+                        keypackage_ref,
+                        keypackage,
                     }
                 }
 
                 fn random_update(&mut self) {
                     let mut rng = rand::thread_rng();
-                    self.key = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
-                    rng.fill(&mut self.key[..]);
+                    self.keypackage = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut self.keypackage[..]);
                 }
             }
 
-            impl EntityTestExt for core_crypto_keystore::entities::MlsIdentity {
+            impl EntityTestExt for core_crypto_keystore::entities::MlsCredential {
                 fn random() -> Self {
                     let mut rng = rand::thread_rng();
 
                     let id: String = uuid::Uuid::new_v4().hyphenated().to_string();
-                    let mut signature = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
-                    rng.fill(&mut signature[..]);
 
-                    let mut credential = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
+                    let mut credential = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut credential[..]);
 
                     Self {
-                        id,
-                        ciphersuite: (&Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519).into(),
-                        credential_type: 1,
-                        signature,
+                        id: id.into(),
                         credential,
                     }
                 }
 
                 fn random_update(&mut self) {
                     let mut rng = rand::thread_rng();
-                    self.signature = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
-                    self.credential = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
-                    rng.fill(&mut self.signature[..]);
+                    self.credential = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut self.credential[..]);
+                }
+            }
+
+            impl EntityTestExt for core_crypto_keystore::entities::MlsSignatureKeyPair {
+                fn random() -> Self {
+                    let mut rng = rand::thread_rng();
+
+                    let mut pk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut pk[..]);
+
+                    let mut keypair = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut keypair[..]);
+
+                    let mut credential_id = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut credential_id[..]);
+
+                    Self {
+                        signature_scheme: rand::random(),
+                        keypair, pk, credential_id
+                    }
+                }
+
+                fn random_update(&mut self) {
+                    let mut rng = rand::thread_rng();
+
+                    self.keypair = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut self.keypair[..]);
+
+                    self.credential_id = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut self.credential_id[..]);
+                }
+            }
+
+            impl EntityTestExt for core_crypto_keystore::entities::MlsHpkePrivateKey {
+                fn random() -> Self {
+                    let mut rng = rand::thread_rng();
+
+                    let mut pk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut pk[..]);
+
+                    let mut sk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut sk[..]);
+
+                    Self {
+                        pk, sk
+                    }
+                }
+
+                fn random_update(&mut self) {
+                    let mut rng = rand::thread_rng();
+
+                    self.sk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut self.sk[..]);
+                }
+            }
+
+            impl EntityTestExt for core_crypto_keystore::entities::MlsEncryptionKeyPair {
+                fn random() -> Self {
+                    let mut rng = rand::thread_rng();
+
+                    let mut pk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut pk[..]);
+
+                    let mut sk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut sk[..]);
+
+                    Self {
+                        pk, sk
+                    }
+                }
+
+                fn random_update(&mut self) {
+                    let mut rng = rand::thread_rng();
+
+                    self.sk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut self.sk[..]);
+                }
+            }
+
+            impl EntityTestExt for core_crypto_keystore::entities::MlsPskBundle {
+                fn random() -> Self {
+                    let mut rng = rand::thread_rng();
+
+                    let mut psk_id = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut psk_id[..]);
+
+                    let mut psk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut psk[..]);
+
+                    Self {
+                        psk, psk_id
+                    }
+                }
+
+                fn random_update(&mut self) {
+                    let mut rng = rand::thread_rng();
+                    self.psk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut self.psk[..]);
                 }
             }
 
@@ -228,7 +323,7 @@ pub mod utils {
                     let uuid = uuid::Uuid::new_v4();
                     let id: [u8; 16] = uuid.into_bytes();
 
-                    let mut state = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
+                    let mut state = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut state[..]);
 
                     Self {
@@ -240,7 +335,7 @@ pub mod utils {
 
                 fn random_update(&mut self) {
                     let mut rng = rand::thread_rng();
-                    self.state = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
+                    self.state = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut self.state[..]);
                 }
             }
@@ -253,10 +348,10 @@ pub mod utils {
                     let uuid = uuid::Uuid::new_v4();
                     let id: [u8; 16] = uuid.into_bytes();
 
-                    let mut state = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
+                    let mut state = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut state[..]);
 
-                    let mut custom_configuration = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
+                    let mut custom_configuration = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut custom_configuration[..]);
 
                     Self {
@@ -269,7 +364,7 @@ pub mod utils {
 
                 fn random_update(&mut self) {
                     let mut rng = rand::thread_rng();
-                    self.state = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
+                    self.state = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut self.state[..]);
                 }
             }
@@ -331,7 +426,7 @@ pub mod utils {
 
                     let uuid = uuid::Uuid::new_v4();
 
-                    let mut session = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
+                    let mut session = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut session[..]);
 
                     Self {
@@ -343,7 +438,7 @@ pub mod utils {
                 fn random_update(&mut self) {
                     let mut rng = rand::thread_rng();
 
-                    self.session = Vec::with_capacity(rng.gen_range(MAX_BLOB_SIZE));
+                    self.session = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut self.session[..]);
                 }
             }

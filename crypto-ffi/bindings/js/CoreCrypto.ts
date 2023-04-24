@@ -240,11 +240,11 @@ export interface MemberAddedMessages {
      */
     welcome: Uint8Array;
     /**
-     * MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit
+     * MLS GroupInfo which is required for joining a group by external commit
      *
      * @readonly
      */
-    publicGroupState: PublicGroupStateBundle;
+    groupInfo: GroupInfoBundle;
 }
 
 /**
@@ -264,37 +264,37 @@ export interface CommitBundle {
      */
     welcome?: Uint8Array;
     /**
-     * MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit
+     * MLS GroupInfo which is required for joining a group by external commit
      *
      * @readonly
      */
-    publicGroupState: PublicGroupStateBundle;
+    groupInfo: GroupInfoBundle;
 }
 
 /**
- * Wraps a PublicGroupState in order to efficiently upload it to the Delivery Service.
+ * Wraps a GroupInfo in order to efficiently upload it to the Delivery Service.
  * This is not part of MLS protocol but parts might be standardized at some point.
  */
-export interface PublicGroupStateBundle {
+export interface GroupInfoBundle {
     /**
-     * see {@link PublicGroupStateEncryptionType}
+     * see {@link GroupInfoEncryptionType}
      */
-    encryptionType: PublicGroupStateEncryptionType,
+    encryptionType: GroupInfoEncryptionType,
     /**
      * see {@link RatchetTreeType}
      */
     ratchetTreeType: RatchetTreeType,
     /**
-     * TLS-serialized PublicGroupState
+     * TLS-serialized GroupInfo
      */
     payload: Uint8Array,
 }
 
 /**
- * Informs whether the PublicGroupState is confidential
- * see [core_crypto::mls::conversation::public_group_state::PublicGroupStateEncryptionType]
+ * Informs whether the GroupInfo is confidential
+ * see [core_crypto::mls::conversation::group_info::GroupInfoEncryptionType]
  */
-export enum PublicGroupStateEncryptionType {
+export enum GroupInfoEncryptionType {
     /**
      * Unencrypted
      */
@@ -307,11 +307,11 @@ export enum PublicGroupStateEncryptionType {
 
 /**
  * Represents different ways of carrying the Ratchet Tree with some optimizations to save some space
- * see [core_crypto::mls::conversation::public_group_state::RatchetTreeType]
+ * see [core_crypto::mls::conversation::group_info::RatchetTreeType]
  */
 export enum RatchetTreeType {
     /**
-     * Complete PublicGroupState
+     * Complete GroupInfo
      */
     Full = 0x01,
     /**
@@ -398,7 +398,7 @@ export interface ConversationInitBundle {
      *
      * @readonly
      */
-    publicGroupState: PublicGroupStateBundle;
+    groupInfo: GroupInfoBundle;
 }
 
 /**
@@ -536,10 +536,6 @@ export enum ExternalProposalType {
      * This allows to propose the addition of other clients to the MLS group/conversation
      */
     Add,
-    /**
-     * This allows to propose the removal of clients from the MLS group/conversation
-     */
-    Remove,
 }
 
 export interface ExternalProposalArgs {
@@ -552,13 +548,6 @@ export interface ExternalProposalArgs {
      * This needs to be the current epoch of the group or this proposal **will** be rejected
      */
     epoch: number;
-}
-
-export interface ExternalRemoveProposalArgs extends ExternalProposalArgs {
-    /**
-     * KeyPackageRef of the client that needs to be removed in the proposal
-     */
-    keyPackageRef: Uint8Array;
 }
 
 export interface ExternalAddProposalArgs extends ExternalProposalArgs {
@@ -994,15 +983,15 @@ export class CoreCrypto {
 
             ffiClients.forEach(c => c.free());
 
-            const pgs = ffiRet.public_group_state;
+            const gi = ffiRet.group_info;
 
             const ret: MemberAddedMessages = {
                 welcome: ffiRet.welcome,
                 commit: ffiRet.commit,
-                publicGroupState: {
-                    encryptionType: pgs.encryption_type,
-                    ratchetTreeType: pgs.ratchet_tree_type,
-                    payload: pgs.payload
+                groupInfo: {
+                    encryptionType: gi.encryption_type,
+                    ratchetTreeType: gi.ratchet_tree_type,
+                    payload: gi.payload
                 },
             };
 
@@ -1035,15 +1024,15 @@ export class CoreCrypto {
                 clientIds
             ));
 
-            const pgs = ffiRet.public_group_state;
+            const gi = ffiRet.group_info;
 
             const ret: CommitBundle = {
                 welcome: ffiRet.welcome,
                 commit: ffiRet.commit,
-                publicGroupState: {
-                    encryptionType: pgs.encryption_type,
-                    ratchetTreeType: pgs.ratchet_tree_type,
-                    payload: pgs.payload
+                groupInfo: {
+                    encryptionType: gi.encryption_type,
+                    ratchetTreeType: gi.ratchet_tree_type,
+                    payload: gi.payload
                 },
             };
 
@@ -1070,15 +1059,15 @@ export class CoreCrypto {
                 conversationId
             ));
 
-            const pgs = ffiRet.public_group_state;
+            const gi = ffiRet.group_info;
 
             const ret: CommitBundle = {
                 welcome: ffiRet.welcome,
                 commit: ffiRet.commit,
-                publicGroupState: {
-                    encryptionType: pgs.encryption_type,
-                    ratchetTreeType: pgs.ratchet_tree_type,
-                    payload: pgs.payload
+                groupInfo: {
+                    encryptionType: gi.encryption_type,
+                    ratchetTreeType: gi.ratchet_tree_type,
+                    payload: gi.payload
                 },
             };
 
@@ -1109,15 +1098,15 @@ export class CoreCrypto {
                 return undefined;
             }
 
-            const pgs = ffiCommitBundle.public_group_state;
+            const gi = ffiCommitBundle.group_info;
 
             return {
                 welcome: ffiCommitBundle.welcome,
                 commit: ffiCommitBundle.commit,
-                publicGroupState: {
-                    encryptionType: pgs.encryption_type,
-                    ratchetTreeType: pgs.ratchet_tree_type,
-                    payload: pgs.payload
+                groupInfo: {
+                    encryptionType: gi.encryption_type,
+                    ratchetTreeType: gi.ratchet_tree_type,
+                    payload: gi.payload
                 },
             };
         } catch(e) {
@@ -1170,23 +1159,12 @@ export class CoreCrypto {
 
     async newExternalProposal(
         externalProposalType: ExternalProposalType,
-        args: ExternalAddProposalArgs | ExternalRemoveProposalArgs
+        args: ExternalAddProposalArgs
     ): Promise<Uint8Array> {
         switch (externalProposalType) {
             case ExternalProposalType.Add: {
                 let addArgs = (args as ExternalAddProposalArgs);
                 return await CoreCryptoError.asyncMapErr(this.#cc.new_external_add_proposal(args.conversationId, args.epoch, addArgs.ciphersuite, addArgs.credentialType));
-            }
-            case ExternalProposalType.Remove: {
-                if (!(args as ExternalRemoveProposalArgs).keyPackageRef) {
-                    throw new Error("keyPackageRef is not contained in the external proposal arguments");
-                }
-
-                return await CoreCryptoError.asyncMapErr(this.#cc.new_external_remove_proposal(
-                    args.conversationId,
-                    args.epoch,
-                    (args as ExternalRemoveProposalArgs).keyPackageRef
-                ));
             }
             default:
                 throw new Error("Invalid external proposal type!");
@@ -1194,17 +1172,17 @@ export class CoreCrypto {
     }
 
     /**
-     * Exports public group state for use in external commits
+     * Exports GroupInfo for use in external commits
      *
      * @param conversationId - MLS Conversation ID
-     * @returns TLS-serialized MLS public group state
+     * @returns TLS-serialized MLS GroupInfo
      */
-    async exportGroupState(conversationId: ConversationId): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.export_group_state(conversationId));
+    async exportGroupInfo(conversationId: ConversationId): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.export_group_info(conversationId));
     }
 
     /**
-     * Allows to create an external commit to "apply" to join a group through its public group state.
+     * Allows to create an external commit to "apply" to join a group through its GroupInfo.
      *
      * If the Delivery Service accepts the external commit, you have to {@link CoreCrypto.mergePendingGroupFromExternalCommit}
      * in order to get back a functional MLS group. On the opposite, if it rejects it, you can either retry by just
@@ -1213,28 +1191,28 @@ export class CoreCrypto {
      * {@link CoreCrypto.clearPendingGroupFromExternalCommit} in order not to bloat the user's storage but nothing
      * bad can happen if you forget to except some storage space wasted.
      *
-     * @param publicGroupState - a TLS encoded PublicGroupState fetched from the Delivery Service
+     * @param groupInfo - a TLS encoded GroupInfo fetched from the Delivery Service
      * @param credentialType - kind of Credential to use for joining this group. If {@link CredentialType.Basic} is
      * chosen and no Credential has been created yet for it, a new one will be generated.
      * @param configuration - configuration of the MLS group
      * When {@link CredentialType.X509} is chosen, it fails when no Credential has been created for the given {@link Ciphersuite}.
      * @returns see {@link ConversationInitBundle}
      */
-    async joinByExternalCommit(publicGroupState: Uint8Array, credentialType: CredentialType, configuration: CustomConfiguration = {}): Promise<ConversationInitBundle> {
+    async joinByExternalCommit(groupInfo: Uint8Array, credentialType: CredentialType, configuration: CustomConfiguration = {}): Promise<ConversationInitBundle> {
         try {
             const {keyRotationSpan, wirePolicy} = configuration || {};
             const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
-            const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await CoreCryptoError.asyncMapErr(this.#cc.join_by_external_commit(publicGroupState, config, credentialType));
+            const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await CoreCryptoError.asyncMapErr(this.#cc.join_by_external_commit(groupInfo, config, credentialType));
 
-            const pgs = ffiInitMessage.public_group_state;
+            const gi = ffiInitMessage.group_info;
 
             const ret: ConversationInitBundle = {
                 conversationId: ffiInitMessage.conversation_id,
                 commit: ffiInitMessage.commit,
-                publicGroupState: {
-                    encryptionType: pgs.encryption_type,
-                    ratchetTreeType: pgs.ratchet_tree_type,
-                    payload: pgs.payload
+                groupInfo: {
+                    encryptionType: gi.encryption_type,
+                    ratchetTreeType: gi.ratchet_tree_type,
+                    payload: gi.payload
                 },
             };
 
@@ -1806,7 +1784,6 @@ export class WireE2eIdentity {
      * Verifies that the previous challenge has been completed.
      *
      * @param orderUrl `location` header from http response you got from {@link newOrderResponse}
-     * @param account you found after {@link newAccountResponse}
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/challenge/{challenge-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
@@ -1836,7 +1813,6 @@ export class WireE2eIdentity {
     /**
      * Final step before fetching the certificate.
      *
-     * @param order - order you got from {@link checkOrderResponse}
      * @param previousNonce - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */

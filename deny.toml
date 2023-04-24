@@ -72,8 +72,6 @@ allow-git = [
     "https://github.com/briansmith/ring",
 ]
 private = [
-    # for criterion (test only)
-    "https://github.com/bheisler",
     # TODO: remove when no longer required
     "https://github.com/otak",
 ]

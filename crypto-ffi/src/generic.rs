@@ -15,15 +15,16 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use std::collections::HashMap;
+use tls_codec::Deserialize;
+use tls_codec::Serialize;
 
 use futures_lite::future;
 use futures_util::TryFutureExt;
 
 use core_crypto::prelude::*;
 pub use core_crypto::prelude::{
-    tls_codec::Serialize, CiphersuiteName, ClientId, ConversationId, CryptoError, E2eIdentityError, E2eIdentityResult,
-    MemberId, MlsCredentialType, MlsPublicGroupStateBundle, MlsPublicGroupStateEncryptionType, MlsRatchetTreeType,
-    MlsWirePolicy, PublicGroupStatePayload,
+    CiphersuiteName, ClientId, ConversationId, CryptoError, E2eIdentityError, E2eIdentityResult, MemberId,
+    MlsCredentialType, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType, MlsWirePolicy,
 };
 
 cfg_if::cfg_if! {
@@ -90,18 +91,18 @@ pub struct ProteusAutoPrekeyBundle {
 pub struct MemberAddedMessages {
     pub welcome: Vec<u8>,
     pub commit: Vec<u8>,
-    pub public_group_state: PublicGroupStateBundle,
+    pub group_info: GroupInfoBundle,
 }
 
 impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     type Error = CryptoError;
 
     fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, commit, pgs) = msg.to_bytes_triple()?;
+        let (welcome, commit, group_info) = msg.to_bytes_triple()?;
         Ok(Self {
             welcome,
             commit,
-            public_group_state: pgs.into(),
+            group_info: group_info.into(),
         })
     }
 }
@@ -110,36 +111,36 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
 pub struct CommitBundle {
     pub welcome: Option<Vec<u8>>,
     pub commit: Vec<u8>,
-    pub public_group_state: PublicGroupStateBundle,
+    pub group_info: GroupInfoBundle,
 }
 
 impl TryFrom<MlsCommitBundle> for CommitBundle {
     type Error = CryptoError;
 
     fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
-        let (welcome, commit, pgs) = msg.to_bytes_triple()?;
+        let (welcome, commit, group_info) = msg.to_bytes_triple()?;
         Ok(Self {
             welcome,
             commit,
-            public_group_state: pgs.into(),
+            group_info: group_info.into(),
         })
     }
 }
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct PublicGroupStateBundle {
-    pub encryption_type: MlsPublicGroupStateEncryptionType,
+pub struct GroupInfoBundle {
+    pub encryption_type: MlsGroupInfoEncryptionType,
     pub ratchet_tree_type: MlsRatchetTreeType,
     pub payload: Vec<u8>,
 }
 
-impl From<MlsPublicGroupStateBundle> for PublicGroupStateBundle {
-    fn from(pgs: MlsPublicGroupStateBundle) -> Self {
+impl From<MlsGroupInfoBundle> for GroupInfoBundle {
+    fn from(gi: MlsGroupInfoBundle) -> Self {
         Self {
-            encryption_type: pgs.encryption_type,
-            ratchet_tree_type: pgs.ratchet_tree_type,
-            payload: pgs.payload.bytes(),
+            encryption_type: gi.encryption_type,
+            ratchet_tree_type: gi.ratchet_tree_type,
+            payload: gi.payload.bytes(),
         }
     }
 }
@@ -169,7 +170,7 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
 pub struct ConversationInitBundle {
     pub conversation_id: ConversationId,
     pub commit: Vec<u8>,
-    pub public_group_state: PublicGroupStateBundle,
+    pub group_info: GroupInfoBundle,
 }
 
 impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
@@ -177,11 +178,11 @@ impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
 
     fn try_from(mut from: MlsConversationInitBundle) -> Result<Self, Self::Error> {
         let conversation_id = std::mem::take(&mut from.conversation_id);
-        let (commit, pgs) = from.to_bytes_pair()?;
+        let (commit, gi) = from.to_bytes_pair()?;
         Ok(Self {
             conversation_id,
             commit,
-            public_group_state: pgs.into(),
+            group_info: gi.into(),
         })
     }
 }
@@ -242,30 +243,25 @@ impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
 
 impl Invitee {
     #[inline(always)]
-    fn group_to_conversation_member(clients: Vec<Self>) -> CryptoResult<Vec<ConversationMember>> {
+    fn group_to_conversation_member(
+        clients: Vec<Self>,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<Vec<ConversationMember>> {
         Ok(clients
             .into_iter()
             .try_fold(
                 HashMap::new(),
                 |mut acc, c| -> CryptoResult<HashMap<ClientId, ConversationMember>> {
                     if let Some(member) = acc.get_mut(&c.id) {
-                        member.add_keypackage(c.kp)?;
+                        member.add_keypackage(c.kp, backend)?;
                     } else {
-                        acc.insert(c.id.clone(), ConversationMember::new_raw(c.id, c.kp)?);
+                        acc.insert(c.id.clone(), ConversationMember::new_raw(c.id, c.kp, backend)?);
                     }
                     Ok(acc)
                 },
             )?
             .into_values()
             .collect::<Vec<ConversationMember>>())
-    }
-}
-
-impl TryInto<ConversationMember> for Invitee {
-    type Error = CryptoError;
-
-    fn try_into(self) -> Result<ConversationMember, Self::Error> {
-        ConversationMember::new_raw(self.id, self.kp)
     }
 }
 
@@ -409,7 +405,7 @@ impl CoreCrypto<'_> {
         })
     }
 
-    /// See [core_crypto::MlsCentral::mls_init]
+    /// See [core_crypto::mls::MlsCentral::mls_init]
     pub fn mls_init(&self, client_id: &ClientId, ciphersuites: &Ciphersuites) -> CryptoResult<()> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -422,7 +418,7 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::mls_generate_keypairs]
-    pub fn mls_generate_keypairs(&self, ciphersuites: &Ciphersuites) -> CryptoResult<Vec<Vec<u8>>> {
+    pub fn mls_generate_keypairs(&self, ciphersuites: &Ciphersuites) -> CryptoResult<Vec<ClientId>> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
@@ -437,7 +433,7 @@ impl CoreCrypto<'_> {
     pub fn mls_init_with_client_id(
         &self,
         client_id: &ClientId,
-        signature_public_keys: Vec<Vec<u8>>,
+        tmp_client_ids: Vec<ClientId>,
         ciphersuites: &Ciphersuites,
     ) -> CryptoResult<()> {
         future::block_on(
@@ -445,7 +441,7 @@ impl CoreCrypto<'_> {
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .mls_init_with_client_id(client_id.clone(), signature_public_keys, ciphersuites.into()),
+                    .mls_init_with_client_id(client_id.clone(), tmp_client_ids, ciphersuites.into()),
             ),
         )
     }
@@ -604,7 +600,13 @@ impl CoreCrypto<'_> {
         conversation_id: ConversationId,
         clients: Vec<Invitee>,
     ) -> CryptoResult<MemberAddedMessages> {
-        let mut members = Invitee::group_to_conversation_member(clients)?;
+        let mut members = Invitee::group_to_conversation_member(
+            clients,
+            self.central
+                .lock()
+                .map_err(|_| CryptoError::LockPoisonError)?
+                .provider(),
+        )?;
 
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -740,13 +742,13 @@ impl CoreCrypto<'_> {
         conversation_id: ConversationId,
         keypackage: Vec<u8>,
     ) -> CryptoResult<ProposalBundle> {
-        let kp = KeyPackage::try_from(&keypackage[..]).map_err(MlsError::from)?;
+        let kp = KeyPackageIn::tls_deserialize_bytes(keypackage).map_err(MlsError::from)?;
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .new_proposal(&conversation_id, MlsProposal::Add(kp)),
+                    .new_proposal(&conversation_id, MlsProposal::Add(kp.into())),
             ),
         )?
         .try_into()
@@ -802,39 +804,14 @@ impl CoreCrypto<'_> {
         .map_err(MlsError::from)?)
     }
 
-    /// See [core_crypto::mls::MlsCentral::new_external_remove_proposal]
-    pub fn new_external_remove_proposal(
-        &self,
-        conversation_id: ConversationId,
-        epoch: u64,
-        keypackage_ref: Vec<u8>,
-    ) -> CryptoResult<Vec<u8>> {
-        let value: [u8; 16] = keypackage_ref
-            .try_into()
-            .map_err(|_| CryptoError::InvalidByteArrayError(16))?;
-        let kpr = KeyPackageRef::from(value);
-        // TODO: we might not need this after all so let's not complicate things
-        let (cs, ct) = (MlsCiphersuite::default(), MlsCredentialType::default());
-        Ok(future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .new_external_remove_proposal(conversation_id, epoch.into(), kpr, cs, ct),
-            ),
-        )?
-        .to_bytes()
-        .map_err(MlsError::from)?)
-    }
-
-    /// See [core_crypto::mls::MlsCentral::export_public_group_state]
-    pub fn export_group_state(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
+    /// See [core_crypto::mls::MlsCentral::export_group_info]
+    pub fn export_group_info(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .export_public_group_state(&conversation_id),
+                    .export_group_info(&conversation_id),
             ),
         )
     }
@@ -842,20 +819,17 @@ impl CoreCrypto<'_> {
     /// See [core_crypto::mls::MlsCentral::join_by_external_commit]
     pub fn join_by_external_commit(
         &self,
-        public_group_state: Vec<u8>,
+        group_info: Vec<u8>,
         custom_configuration: CustomConfiguration,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<ConversationInitBundle> {
-        use core_crypto::prelude::tls_codec::Deserialize as _;
-
-        let group_state =
-            VerifiablePublicGroupState::tls_deserialize(&mut &public_group_state[..]).map_err(MlsError::from)?;
+        let group_info = MlsMessageIn::tls_deserialize_bytes(group_info).map_err(MlsError::from)?;
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .join_by_external_commit(group_state, custom_configuration.into(), credential_type),
+                    .join_by_external_commit(group_info, custom_configuration.into(), credential_type),
             ),
         )?
         .try_into()
@@ -897,7 +871,7 @@ impl CoreCrypto<'_> {
             .random_bytes(len.try_into()?)
     }
 
-    /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
+    /// see [MlsCryptoProvider::reseed]
     pub fn reseed_rng(&self, seed: Vec<u8>) -> CryptoResult<()> {
         let seed = EntropySeed::try_from_slice(&seed)?;
         self.central
@@ -999,7 +973,7 @@ impl CoreCrypto<'_> {
             .map_err(|_| CryptoError::ImplementationError)
     }
 
-    /// See [core_crypto::MlsCentral::e2ei_mls_init]
+    /// See [core_crypto::mls::MlsCentral::e2ei_mls_init]
     pub fn e2ei_mls_init(
         &self,
         enrollment: std::sync::Arc<WireE2eIdentity>,
@@ -1028,7 +1002,7 @@ impl CoreCrypto<'_> {
         )
     }
 
-    /// See [core_crypto::MlsCentral::e2ei_enrollment_stash]
+    /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash]
     pub fn e2ei_enrollment_stash(&self, enrollment: std::sync::Arc<WireE2eIdentity>) -> CryptoResult<Vec<u8>> {
         let enrollment = std::sync::Arc::try_unwrap(enrollment).map_err(|_| CryptoError::LockPoisonError)?;
         let enrollment = std::sync::Arc::try_unwrap(enrollment.0).map_err(|_| CryptoError::LockPoisonError)?;
@@ -1045,7 +1019,7 @@ impl CoreCrypto<'_> {
         )
     }
 
-    /// See [core_crypto::MlsCentral::e2ei_enrollment_stash_pop]
+    /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash_pop]
     pub fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CryptoResult<std::sync::Arc<WireE2eIdentity>> {
         let cc = self.central.lock().map_err(|_| CryptoError::LockPoisonError)?;
         let executor = self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?;
@@ -1058,7 +1032,7 @@ impl CoreCrypto<'_> {
             .map_err(|_| CryptoError::ImplementationError)
     }
 
-    /// See [core_crypto::MlsCentral::e2ei_is_degraded]
+    /// See [core_crypto::mls::MlsCentral::e2ei_is_degraded]
     pub fn e2ei_is_degraded(&self, conversation_id: ConversationId) -> CryptoResult<bool> {
         let is_degraded = future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(

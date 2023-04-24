@@ -59,11 +59,11 @@ impl<'a> StringEntityId<'a> {
         hex::encode(self.0)
     }
 
-    pub fn into_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         self.0.into()
     }
 
-    pub fn as_bytes(&self) -> &[u8] {
+    pub fn as_slice(&self) -> &[u8] {
         self.0
     }
 
@@ -110,10 +110,9 @@ impl EntityFindParams {
         if let Some(offset) = self.offset {
             let _ = write!(query, " OFFSET {offset}");
         }
+        let _ = write!(query, " ORDER BY rowid");
         if self.reverse {
-            let _ = write!(query, " ORDER BY rowid DESC");
-        } else {
-            let _ = write!(query, " ORDER BY rowid");
+            let _ = write!(query, " DESC");
         }
 
         query
@@ -146,7 +145,7 @@ pub trait EntityBase: Send + Sized + Clone + PartialEq + Eq + std::fmt::Debug {
 
 cfg_if::cfg_if! {
     if #[cfg(target_family = "wasm")] {
-        const AES_CBC_256_NONCE_SIZE: usize = 12;
+        const AES_GCM_256_NONCE_SIZE: usize = 12;
 
         pub trait Entity: EntityBase + serde::Serialize + serde::de::DeserializeOwned {
             fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
@@ -183,12 +182,12 @@ cfg_if::cfg_if! {
             }
 
             fn encrypt_data(cipher: &aes_gcm::Aes256Gcm, data: &[u8], aad: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
-                let nonce_bytes: [u8; AES_CBC_256_NONCE_SIZE] = rand::random();
+                let nonce_bytes: [u8; AES_GCM_256_NONCE_SIZE] = rand::random();
                 Self::encrypt_with_nonce_and_aad(cipher, data, &nonce_bytes, aad)
             }
 
             fn reencrypt_data(cipher: &aes_gcm::Aes256Gcm, encrypted: &[u8], clear: &[u8], aad: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
-                let nonce_bytes = &encrypted[..AES_CBC_256_NONCE_SIZE];
+                let nonce_bytes = &encrypted[..AES_GCM_256_NONCE_SIZE];
                 Self::encrypt_with_nonce_and_aad(cipher, clear, nonce_bytes, aad)
             }
 
@@ -196,9 +195,16 @@ cfg_if::cfg_if! {
             fn decrypt_data(cipher: &aes_gcm::Aes256Gcm, data: &[u8], aad: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
                 use aes_gcm::aead::Aead as _;
 
-                let nonce_bytes = &data[..AES_CBC_256_NONCE_SIZE];
+                if data.is_empty() {
+                    return Err(CryptoKeystoreError::MissingKeyInStore(Self::to_missing_key_err_kind()));
+                }
+                if data.len() < AES_GCM_256_NONCE_SIZE {
+                    return Err(CryptoKeystoreError::AesGcmError);
+                }
+
+                let nonce_bytes = &data[..AES_GCM_256_NONCE_SIZE];
                 let nonce = aes_gcm::Nonce::from_slice(nonce_bytes);
-                let msg = &data[AES_CBC_256_NONCE_SIZE..];
+                let msg = &data[AES_GCM_256_NONCE_SIZE..];
                 let payload = aes_gcm::aead::Payload {
                     msg,
                     aad,

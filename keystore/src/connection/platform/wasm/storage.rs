@@ -132,50 +132,26 @@ impl WasmEncryptedStorage {
         }
     }
 
+    /// Note: get_indexed only supports unencrypted indexes
     pub async fn get_indexed<R: Entity<ConnectionType = WasmConnection> + 'static>(
         &self,
         collection: impl AsRef<str>,
         index: impl AsRef<str>,
-        id: impl AsRef<[u8]>,
+        id: &wasm_bindgen::JsValue,
     ) -> CryptoKeystoreResult<Option<R>> {
         match &self.storage {
             crate::connection::storage::WasmStorageWrapper::Persistent(rexie) => {
                 let transaction = rexie.transaction(&[collection.as_ref()], rexie::TransactionMode::ReadOnly)?;
                 let store = transaction.store(collection.as_ref())?;
                 let store_index = store.index(index.as_ref())?;
-                let id = id.as_ref();
-                let js_key = js_sys::Uint8Array::from(id);
 
-                // Optimistic case where the targeted index isn't encrypted
-                if let Some(entity_raw) = store_index.get(&js_key).await? {
-                    let mut entity: R = serde_wasm_bindgen::from_value(entity_raw)?;
-                    entity.decrypt(&self.cipher)?;
+                let Some(entity_raw) = store_index.get(id).await? else {
+                    return Ok(None);
+                };
+                let mut entity: R = serde_wasm_bindgen::from_value(entity_raw)?;
+                entity.decrypt(&self.cipher)?;
 
-                    Ok(Some(entity))
-                } else {
-                    // Extra work...
-                    let records_iter = store_index
-                        .get_all(None, None, None, None)
-                        .await?
-                        .into_iter()
-                        .map(|(_, value)| value);
-
-                    for store_value in records_iter {
-                        let prop_bytes = js_sys::Reflect::get(&store_value, &index.as_ref().into())
-                            .map(|prop| Uint8Array::from(prop).to_vec())?;
-
-                        let mut entity: R = serde_wasm_bindgen::from_value(store_value)?;
-                        entity.decrypt(&self.cipher)?;
-                        let entity_id = entity.id_raw();
-
-                        let decrypted_id = R::decrypt_data(&self.cipher, &prop_bytes, entity_id)?;
-                        if decrypted_id == id {
-                            return Ok(Some(entity));
-                        }
-                    }
-
-                    Ok(None)
-                }
+                Ok(Some(entity))
             }
             crate::connection::storage::WasmStorageWrapper::InMemory(map) => {
                 if let Some(store) = map.get(collection.as_ref()) {
@@ -184,28 +160,14 @@ impl WasmEncryptedStorage {
                             return None;
                         }
 
-                        let prop_bytes = js_sys::Reflect::get(v, &index.as_ref().into())
-                            .map(|prop| Uint8Array::from(prop).to_vec())
-                            .ok()?;
+                        let entity_id = js_sys::Reflect::get(v, &index.as_ref().into()).ok()?;
+                        if id != &entity_id {
+                            return None;
+                        }
 
                         let mut entity: R = serde_wasm_bindgen::from_value(v.clone()).ok()?;
                         entity.decrypt(&self.cipher).ok()?;
-                        let entity_id = entity.id_raw();
-                        let clear_prop_bytes = R::decrypt_data(&self.cipher, &prop_bytes, entity_id).ok()?;
-                        if clear_prop_bytes == id.as_ref() {
-                            if let Some(mut entity) = serde_wasm_bindgen::from_value::<Option<R>>(v.clone())
-                                .ok()
-                                .flatten()
-                                .take()
-                            {
-                                entity.decrypt(&self.cipher).ok()?;
-                                Some(entity)
-                            } else {
-                                None
-                            }
-                        } else {
-                            None
-                        }
+                        Some(entity)
                     }))
                 } else {
                     Ok(None)

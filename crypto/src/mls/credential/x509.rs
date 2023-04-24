@@ -1,7 +1,23 @@
-use openmls::prelude::SignaturePrivateKey;
+use openmls_traits::types::SignatureScheme;
 use wire_e2e_identity::prelude::WireIdentityReader;
 
 use crate::prelude::{ClientId, CryptoError, CryptoResult};
+
+use zeroize::Zeroize;
+
+#[derive(Debug, Clone, Zeroize)]
+#[zeroize(drop)]
+pub struct CertificatePrivateKey {
+    pub(crate) value: Vec<u8>,
+    #[zeroize(skip)]
+    pub(crate) signature_scheme: SignatureScheme,
+}
+
+impl CertificatePrivateKey {
+    pub(crate) fn into_parts(mut self) -> (Vec<u8>, SignatureScheme) {
+        (std::mem::take(&mut self.value), self.signature_scheme)
+    }
+}
 
 /// Represents a x509 certificate chain supplied by the client
 /// It can fetch it after an end-to-end identity process where it can get back a certificate
@@ -12,7 +28,7 @@ pub struct CertificateBundle {
     /// First entry is the leaf certificate and each subsequent is its issuer
     pub certificate_chain: Vec<Vec<u8>>,
     /// Leaf certificate private key
-    pub private_key: SignaturePrivateKey,
+    pub private_key: CertificatePrivateKey,
 }
 
 impl CertificateBundle {
@@ -42,7 +58,7 @@ impl CertificateBundle {
         .build_x509_der();
         Self {
             certificate_chain,
-            private_key: SignaturePrivateKey {
+            private_key: CertificatePrivateKey {
                 value: sign_key,
                 signature_scheme: cs.signature_algorithm(),
             },

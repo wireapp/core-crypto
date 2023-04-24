@@ -8,16 +8,13 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
-use openmls::prelude::{KeyPackage, KeyPackageRef, MlsMessageOut, Welcome};
-use openmls_traits::OpenMlsCryptoProvider;
+use openmls::prelude::{KeyPackage, LeafNodeIndex, MlsMessageOut};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::mls::conversation::public_group_state::MlsPublicGroupStateBundle;
-use crate::prelude::MlsProposalRef;
-use crate::{
-    mls::member::ConversationMember, mls::ClientId, mls::ConversationId, mls::MlsCentral, CryptoError, CryptoResult,
-    MlsError,
+use crate::prelude::{
+    Client, ClientId, ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral, MlsError,
+    MlsGroupInfoBundle, MlsProposalRef,
 };
 
 use super::MlsConversation;
@@ -46,7 +43,7 @@ impl MlsProposalBundle {
     /// 1 -> proposal reference
     pub fn to_bytes_pair(&self) -> CryptoResult<(Vec<u8>, Vec<u8>)> {
         use openmls::prelude::TlsSerializeTrait as _;
-        let proposal = self.proposal.to_bytes().map_err(MlsError::from)?;
+        let proposal = self.proposal.tls_serialize_detached().map_err(MlsError::from)?;
         let proposal_ref = self.proposal_ref.tls_serialize_detached().map_err(MlsError::from)?;
 
         Ok((proposal, proposal_ref))
@@ -59,13 +56,16 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn propose_add_member(
         &mut self,
+        client: &Client,
         backend: &MlsCryptoProvider,
         key_package: &KeyPackage,
     ) -> CryptoResult<MlsProposalBundle> {
+        let cs = self.ciphersuite();
+        let ct = self.own_credential_type()?;
+        let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
         let proposal = self
             .group
-            .propose_add_member(backend, key_package)
-            .await
+            .propose_add_member(backend, signer, key_package)
             .map_err(MlsError::from)
             .map(MlsProposalBundle::from)?;
         self.persist_group_when_changed(backend, false).await?;
@@ -74,10 +74,17 @@ impl MlsConversation {
 
     /// see [openmls::group::MlsGroup::propose_self_update]
     #[cfg_attr(test, crate::durable)]
-    pub async fn propose_self_update(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<MlsProposalBundle> {
+    pub async fn propose_self_update(
+        &mut self,
+        client: &Client,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<MlsProposalBundle> {
+        let cs = self.ciphersuite();
+        let ct = self.own_credential_type()?;
+        let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
         let proposal = self
             .group
-            .propose_self_update(backend, None)
+            .propose_self_update(backend, signer, None)
             .await
             .map_err(MlsError::from)
             .map(MlsProposalBundle::from)?;
@@ -89,13 +96,16 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn propose_remove_member(
         &mut self,
+        client: &Client,
         backend: &MlsCryptoProvider,
-        member: &KeyPackageRef,
+        member: LeafNodeIndex,
     ) -> CryptoResult<MlsProposalBundle> {
+        let cs = self.ciphersuite();
+        let ct = self.own_credential_type()?;
+        let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
         let proposal = self
             .group
-            .propose_remove_member(backend, member)
-            .await
+            .propose_remove_member(backend, signer, member)
             .map_err(MlsError::from)
             .map_err(CryptoError::from)
             .map(MlsProposalBundle::from)?;
@@ -109,23 +119,23 @@ impl MlsConversation {
 #[derive(Debug)]
 pub struct MlsConversationCreationMessage {
     /// A welcome message for new members to join the group
-    pub welcome: Welcome,
+    pub welcome: MlsMessageOut,
     /// Commit message adding members to the group
     pub commit: MlsMessageOut,
-    /// [`PublicGroupState`] (aka GroupInfo) if the commit is merged
-    pub public_group_state: MlsPublicGroupStateBundle,
+    /// [`GroupInfo`] (aka GroupInfo) if the commit is merged
+    pub group_info: MlsGroupInfoBundle,
 }
 
 impl MlsConversationCreationMessage {
     /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
     /// 0 -> welcome
     /// 1 -> commit
-    /// 2 -> public_group_state
-    pub fn to_bytes_triple(self) -> CryptoResult<(Vec<u8>, Vec<u8>, MlsPublicGroupStateBundle)> {
+    /// 2 -> group_info
+    pub fn to_bytes_triple(self) -> CryptoResult<(Vec<u8>, Vec<u8>, MlsGroupInfoBundle)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self.welcome.tls_serialize_detached().map_err(MlsError::from)?;
-        let msg = self.commit.to_bytes().map_err(MlsError::from)?;
-        Ok((welcome, msg, self.public_group_state))
+        let msg = self.commit.tls_serialize_detached().map_err(MlsError::from)?;
+        Ok((welcome, msg, self.group_info))
     }
 }
 
@@ -133,11 +143,11 @@ impl MlsConversationCreationMessage {
 #[derive(Debug)]
 pub struct MlsCommitBundle {
     /// A welcome message if there are pending Add proposals
-    pub welcome: Option<Welcome>,
+    pub welcome: Option<MlsMessageOut>,
     /// The commit message
     pub commit: MlsMessageOut,
-    /// [`PublicGroupState`] (aka GroupInfo) if the commit is merged
-    pub public_group_state: MlsPublicGroupStateBundle,
+    /// [`GroupInfo`] (aka GroupInfo) if the commit is merged
+    pub group_info: MlsGroupInfoBundle,
 }
 
 impl MlsCommitBundle {
@@ -146,15 +156,15 @@ impl MlsCommitBundle {
     /// 1 -> message
     /// 2 -> public group state
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes_triple(self) -> CryptoResult<(Option<Vec<u8>>, Vec<u8>, MlsPublicGroupStateBundle)> {
+    pub fn to_bytes_triple(self) -> CryptoResult<(Option<Vec<u8>>, Vec<u8>, MlsGroupInfoBundle)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self
             .welcome
             .as_ref()
             .map(|w| w.tls_serialize_detached().map_err(MlsError::from))
             .transpose()?;
-        let commit = self.commit.to_bytes().map_err(MlsError::from)?;
-        Ok((welcome, commit, self.public_group_state))
+        let commit = self.commit.tls_serialize_detached().map_err(MlsError::from)?;
+        Ok((welcome, commit, self.group_info))
     }
 }
 
@@ -165,6 +175,7 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub(crate) async fn add_members(
         &mut self,
+        client: &Client,
         members: &mut [ConversationMember],
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsConversationCreationMessage> {
@@ -174,19 +185,26 @@ impl MlsConversation {
             .filter_map(|(_, kps)| kps)
             .collect::<Vec<KeyPackage>>();
 
-        let (commit, welcome, pgs) = self
+        let cs = self.ciphersuite();
+        let ct = self.own_credential_type()?;
+        let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
+
+        let (commit, welcome, gi) = self
             .group
-            .add_members(backend, &keypackages)
+            .add_members(backend, signer, keypackages.as_slice())
             .await
             .map_err(MlsError::from)?;
-        let public_group_state = MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?;
+
+        // SAFETY: This should be safe as adding members always generates a new commit
+        let gi = gi.ok_or(CryptoError::ImplementationError)?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi)?;
 
         self.persist_group_when_changed(backend, false).await?;
 
         Ok(MlsConversationCreationMessage {
             welcome,
             commit,
-            public_group_state,
+            group_info,
         })
     }
 
@@ -195,38 +213,43 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub(crate) async fn remove_members(
         &mut self,
+        client: &Client,
         clients: &[ClientId],
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsCommitBundle> {
-        let crypto = backend.crypto();
-
         let member_kps = self
             .group
             .members()
-            .into_iter()
             .filter(|kp| {
                 clients
                     .iter()
-                    .any(move |client_id| client_id.as_slice() == kp.credential().identity())
+                    .any(move |client_id| client_id.as_slice() == kp.credential.identity())
             })
-            .try_fold(Vec::new(), |mut acc, kp| -> CryptoResult<Vec<KeyPackageRef>> {
-                acc.push(kp.hash_ref(crypto).map_err(MlsError::from)?);
+            .try_fold(vec![], |mut acc, kp| -> CryptoResult<Vec<LeafNodeIndex>> {
+                acc.push(kp.index);
                 Ok(acc)
             })?;
 
-        let (commit, welcome, pgs) = self
+        let cs = self.ciphersuite();
+        let ct = self.own_credential_type()?;
+        let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
+
+        let (commit, welcome, gi) = self
             .group
-            .remove_members(backend, &member_kps)
+            .remove_members(backend, signer, &member_kps)
             .await
             .map_err(MlsError::from)?;
-        let public_group_state = MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?;
+
+        // SAFETY: This should be safe as removing members always generates a new commit
+        let gi = gi.ok_or(CryptoError::ImplementationError)?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi)?;
 
         self.persist_group_when_changed(backend, false).await?;
 
         Ok(MlsCommitBundle {
             commit,
             welcome,
-            public_group_state,
+            group_info,
         })
     }
 
@@ -234,17 +257,24 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub(crate) async fn update_keying_material(
         &mut self,
+        client: &Client,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsCommitBundle> {
-        let (commit, welcome, pgs) = self.group.self_update(backend, None).await.map_err(MlsError::from)?;
-        let public_group_state = MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?;
+        let cs = self.ciphersuite();
+        let ct = self.own_credential_type()?;
+        let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
+        let (commit, welcome, group_info) = self.group.self_update(backend, signer).await.map_err(MlsError::from)?;
+
+        // We should always have ratchet tree extension turned on hence GroupInfo should always be present
+        let group_info = group_info.ok_or(CryptoError::ImplementationError)?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
 
         self.persist_group_when_changed(backend, false).await?;
 
         Ok(MlsCommitBundle {
             welcome,
             commit,
-            public_group_state,
+            group_info,
         })
     }
 
@@ -252,22 +282,27 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub(crate) async fn commit_pending_proposals(
         &mut self,
+        client: &Client,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Option<MlsCommitBundle>> {
         if self.group.pending_proposals().count() > 0 {
-            let (commit, welcome, pgs) = self
+            let cs = self.ciphersuite();
+            let ct = self.own_credential_type()?;
+            let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
+
+            let (commit, welcome, gi) = self
                 .group
-                .commit_to_pending_proposals(backend)
+                .commit_to_pending_proposals(backend, signer)
                 .await
                 .map_err(MlsError::from)?;
-            let public_group_state = MlsPublicGroupStateBundle::try_new_full_plaintext(pgs)?;
+            let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
 
             self.persist_group_when_changed(backend, false).await?;
 
             Ok(Some(MlsCommitBundle {
                 welcome,
                 commit,
-                public_group_state,
+                group_info,
             }))
         } else {
             Ok(None)
@@ -296,21 +331,17 @@ impl MlsCentral {
         members: &mut [ConversationMember],
     ) -> CryptoResult<MlsConversationCreationMessage> {
         if let Some(callbacks) = self.callbacks.as_ref() {
-            let client_id = self
-                .mls_client
-                .as_ref()
-                .ok_or(CryptoError::MlsNotInitialized)?
-                .id()
-                .clone();
+            let client_id = self.mls_client()?.id().clone();
             if !callbacks.authorize(id.clone(), client_id).await {
                 return Err(CryptoError::Unauthorized);
             }
         }
+
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .add_members(members, &self.mls_backend)
+            .add_members(self.mls_client()?, members, &self.mls_backend)
             .await
     }
 
@@ -333,12 +364,7 @@ impl MlsCentral {
         clients: &[ClientId],
     ) -> CryptoResult<MlsCommitBundle> {
         if let Some(callbacks) = self.callbacks.as_ref() {
-            let client_id = self
-                .mls_client
-                .as_ref()
-                .ok_or(CryptoError::MlsNotInitialized)?
-                .id()
-                .clone();
+            let client_id = self.mls_client()?.id().clone();
             if !callbacks.authorize(id.clone(), client_id).await {
                 return Err(CryptoError::Unauthorized);
             }
@@ -347,7 +373,7 @@ impl MlsCentral {
             .await?
             .write()
             .await
-            .remove_members(clients, &self.mls_backend)
+            .remove_members(self.mls_client()?, clients, &self.mls_backend)
             .await
     }
 
@@ -368,7 +394,7 @@ impl MlsCentral {
             .await?
             .write()
             .await
-            .update_keying_material(&self.mls_backend)
+            .update_keying_material(self.mls_client()?, &self.mls_backend)
             .await
     }
 
@@ -387,7 +413,7 @@ impl MlsCentral {
             .await?
             .write()
             .await
-            .commit_pending_proposals(&self.mls_backend)
+            .commit_pending_proposals(self.mls_client()?, &self.mls_backend)
             .await
     }
 }
@@ -397,6 +423,8 @@ pub mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{mls::proposal::MlsProposal, test_utils::*};
+    use itertools::Itertools;
+    use openmls::prelude::SignaturePublicKey;
 
     use super::*;
 
@@ -441,7 +469,7 @@ pub mod tests {
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         bob_central
-                            .process_welcome_message(welcome, case.custom_cfg())
+                            .process_welcome_message(welcome.into(), case.custom_cfg())
                             .await
                             .unwrap();
                         assert_eq!(
@@ -478,7 +506,7 @@ pub mod tests {
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         bob_central
-                            .process_welcome_message(welcome, case.custom_cfg())
+                            .process_welcome_message(welcome.into(), case.custom_cfg())
                             .await
                             .unwrap();
                         assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
@@ -490,7 +518,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_public_group_state(case: TestCase) {
+        pub async fn should_return_valid_group_info(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -502,20 +530,15 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let public_group_state = alice_central
+                        let group_info = alice_central
                             .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
                             .await
                             .unwrap()
-                            .public_group_state;
+                            .group_info;
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_public_group_state(
-                                &case,
-                                &id,
-                                public_group_state.get_pgs(),
-                                vec![&mut alice_central]
-                            )
+                            .try_join_from_group_info(&case, &id, group_info.get_payload(), vec![&mut alice_central])
                             .await
                             .is_ok());
                     })
@@ -574,7 +597,7 @@ pub mod tests {
                         charlie_central
                             .try_join_from_welcome(
                                 &id,
-                                welcome.unwrap(),
+                                welcome.unwrap().into(),
                                 case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central],
                             )
@@ -674,7 +697,12 @@ pub mod tests {
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_welcome(&id, welcome.unwrap(), case.custom_cfg(), vec![&mut alice_central])
+                            .try_join_from_welcome(
+                                &id,
+                                welcome.unwrap().into(),
+                                case.custom_cfg(),
+                                vec![&mut alice_central]
+                            )
                             .await
                             .is_ok());
                         // because Bob has been removed from the group
@@ -687,7 +715,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_public_group_state(case: TestCase) {
+        pub async fn should_return_valid_group_info(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -704,20 +732,15 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let public_group_state = alice_central
+                        let group_info = alice_central
                             .remove_members_from_conversation(&id, &[bob_central.read_client_id()])
                             .await
                             .unwrap()
-                            .public_group_state;
+                            .group_info;
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_public_group_state(
-                                &case,
-                                &id,
-                                public_group_state.get_pgs(),
-                                vec![&mut alice_central]
-                            )
+                            .try_join_from_group_info(&case, &id, group_info.get_payload(), vec![&mut alice_central])
                             .await
                             .is_ok());
                         // because Bob has been removed from the group
@@ -749,14 +772,9 @@ pub mod tests {
                             .invite(&id, &mut bob_central, case.custom_cfg())
                             .await
                             .unwrap();
-                        let pgs = alice_central.verifiable_public_group_state(&id).await;
+                        let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_public_group_state(
-                                &case,
-                                &id,
-                                pgs,
-                                vec![&mut alice_central, &mut bob_central],
-                            )
+                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
 
@@ -810,25 +828,21 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let bob_keys: Vec<KeyPackage> = bob_central
+                        let bob_keys = bob_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .into_iter()
-                            .cloned()
-                            .collect();
-                        let alice_keys: Vec<KeyPackage> = alice_central
+                            .encryption_keys()
+                            .collect::<Vec<Vec<u8>>>();
+                        let alice_keys = alice_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .into_iter()
-                            .cloned()
-                            .collect();
+                            .encryption_keys()
+                            .collect::<Vec<Vec<u8>>>();
                         assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
-                        let alice_key = alice_central.key_package_of(&id, alice_central.read_client_id()).await;
+                        let alice_key = alice_central
+                            .encryption_key_of(&id, alice_central.read_client_id())
+                            .await;
 
                         // proposing the key update for alice
                         let MlsCommitBundle { commit, welcome, .. } =
@@ -839,18 +853,22 @@ pub mod tests {
                         assert!(alice_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .contains(&&alice_key));
+                            .encryption_keys()
+                            .contains(&alice_key));
+
                         alice_central.commit_accepted(&id).await.unwrap();
-                        let alice_new_keys: Vec<KeyPackage> = alice_central
+
+                        assert!(!alice_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .into_iter()
-                            .cloned()
-                            .collect();
+                            .encryption_keys()
+                            .contains(&alice_key));
+
+                        let alice_new_keys = alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .encryption_keys()
+                            .collect::<Vec<_>>();
                         assert!(!alice_new_keys.contains(&alice_key));
 
                         // receiving the commit on bob's side (updating key from alice)
@@ -859,14 +877,11 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let bob_new_keys: Vec<KeyPackage> = bob_central
+                        let bob_new_keys = bob_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .into_iter()
-                            .cloned()
-                            .collect();
+                            .encryption_keys()
+                            .collect::<Vec<_>>();
                         assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
 
                         // ensuring both can encrypt messages
@@ -895,27 +910,23 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let bob_keys: Vec<KeyPackage> = bob_central
+                        let bob_keys = bob_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .into_iter()
-                            .cloned()
-                            .collect();
-                        let alice_keys: Vec<KeyPackage> = alice_central
+                            .signature_keys()
+                            .collect::<Vec<SignaturePublicKey>>();
+                        let alice_keys = alice_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .into_iter()
-                            .cloned()
-                            .collect();
+                            .signature_keys()
+                            .collect::<Vec<SignaturePublicKey>>();
 
                         // checking that the members on both sides are the same
                         assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
-                        let alice_key = alice_central.key_package_of(&id, alice_central.read_client_id()).await;
+                        let alice_key = alice_central
+                            .encryption_key_of(&id, alice_central.read_client_id())
+                            .await;
 
                         // proposing adding charlie
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
@@ -937,20 +948,18 @@ pub mod tests {
                         assert!(alice_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .contains(&&alice_key));
+                            .encryption_keys()
+                            .contains(&alice_key));
                         alice_central.commit_accepted(&id).await.unwrap();
                         assert!(!alice_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .contains(&&alice_key));
+                            .encryption_keys()
+                            .contains(&alice_key));
 
                         // create the group on charlie's side
                         charlie_central
-                            .process_welcome_message(welcome.unwrap(), case.custom_cfg())
+                            .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
                             .await
                             .unwrap();
 
@@ -959,14 +968,11 @@ pub mod tests {
                         // bob still didn't receive the message with the updated key and charlie's addition
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
-                        let alice_new_keys: Vec<KeyPackage> = alice_central
+                        let alice_new_keys = alice_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .into_iter()
-                            .cloned()
-                            .collect();
+                            .encryption_keys()
+                            .collect::<Vec<Vec<u8>>>();
                         assert!(!alice_new_keys.contains(&alice_key));
 
                         // receiving the key update and the charlie's addition to the group
@@ -976,14 +982,11 @@ pub mod tests {
                             .unwrap();
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
-                        let bob_new_keys: Vec<KeyPackage> = bob_central
+                        let bob_new_keys = bob_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .into_iter()
-                            .cloned()
-                            .collect();
+                            .encryption_keys()
+                            .collect::<Vec<Vec<u8>>>();
                         assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
 
                         // ensure all parties can encrypt messages
@@ -1036,7 +1039,7 @@ pub mod tests {
                         assert!(guest_central
                             .try_join_from_welcome(
                                 &id,
-                                welcome.unwrap(),
+                                welcome.unwrap().into(),
                                 case.custom_cfg(),
                                 vec![&mut alice_central, &mut bob_central]
                             )
@@ -1050,7 +1053,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_public_group_state(case: TestCase) {
+        pub async fn should_return_valid_group_info(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -1066,20 +1069,11 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let public_group_state = alice_central
-                            .update_keying_material(&id)
-                            .await
-                            .unwrap()
-                            .public_group_state;
+                        let group_info = alice_central.update_keying_material(&id).await.unwrap().group_info;
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_public_group_state(
-                                &case,
-                                &id,
-                                public_group_state.get_pgs(),
-                                vec![&mut alice_central]
-                            )
+                            .try_join_from_group_info(&case, &id, group_info.get_payload(), vec![&mut alice_central])
                             .await
                             .is_ok());
                     })
@@ -1110,24 +1104,20 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let bob_keys: Vec<KeyPackage> = bob_central
+                        let bob_keys = bob_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .into_iter()
-                            .cloned()
-                            .collect();
-                        let alice_keys: Vec<_> = alice_central
+                            .signature_keys()
+                            .collect::<Vec<SignaturePublicKey>>();
+                        let alice_keys = alice_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .into_iter()
-                            .cloned()
-                            .collect();
+                            .signature_keys()
+                            .collect::<Vec<SignaturePublicKey>>();
                         assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
-                        let alice_key = alice_central.key_package_of(&id, alice_central.read_client_id()).await;
+                        let alice_key = alice_central
+                            .encryption_key_of(&id, alice_central.read_client_id())
+                            .await;
 
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Update)
@@ -1144,23 +1134,20 @@ pub mod tests {
                         assert!(bob_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .contains(&&alice_key));
+                            .encryption_keys()
+                            .contains(&alice_key));
                         bob_central.commit_accepted(&id).await.unwrap();
                         assert!(!bob_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .contains(&&alice_key));
+                            .encryption_keys()
+                            .contains(&alice_key));
 
                         assert!(alice_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .contains(&&alice_key));
+                            .encryption_keys()
+                            .contains(&alice_key));
                         // if 'new_proposal' wasn't durable this would fail because proposal would
                         // not be referenced in commit
                         alice_central
@@ -1170,9 +1157,8 @@ pub mod tests {
                         assert!(!alice_central
                             .get_conversation_unchecked(&id)
                             .await
-                            .group
-                            .members()
-                            .contains(&&alice_key));
+                            .encryption_keys()
+                            .contains(&alice_key));
 
                         // ensuring both can encrypt messages
                         assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
@@ -1211,7 +1197,7 @@ pub mod tests {
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         bob_central
-                            .process_welcome_message(welcome.unwrap(), case.custom_cfg())
+                            .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
                             .await
                             .unwrap();
                         assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
@@ -1305,7 +1291,7 @@ pub mod tests {
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         bob_central
-                            .process_welcome_message(welcome.unwrap(), case.custom_cfg())
+                            .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
                             .await
                             .unwrap();
                         assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
@@ -1317,7 +1303,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_public_group_state(case: TestCase) {
+        pub async fn should_return_valid_group_info(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -1332,17 +1318,12 @@ pub mod tests {
                             .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package(&case).await))
                             .await
                             .unwrap();
-                        let MlsCommitBundle { public_group_state, .. } =
+                        let MlsCommitBundle { group_info, .. } =
                             alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_public_group_state(
-                                &case,
-                                &id,
-                                public_group_state.get_pgs(),
-                                vec![&mut alice_central]
-                            )
+                            .try_join_from_group_info(&case, &id, group_info.get_payload(), vec![&mut alice_central])
                             .await
                             .is_ok());
                     })

@@ -23,7 +23,7 @@ use crate::{
 
 impl Entity for PersistedMlsPendingGroup {
     fn id_raw(&self) -> &[u8] {
-        &self.id
+        self.id.as_slice()
     }
 }
 
@@ -32,35 +32,32 @@ impl EntityBase for PersistedMlsPendingGroup {
     type ConnectionType = KeystoreDatabaseConnection;
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
-        MissingKeyErrorKind::MlsGroup
+        MissingKeyErrorKind::MlsPendingGroup
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        let state = &self.state;
-        let id_bytes = &self.id;
         let parent_id = self.parent_id.as_ref();
 
         let transaction = conn.transaction()?;
-
         use rusqlite::OptionalExtension as _;
 
-        Self::ConnectionType::check_buffer_size(state.len())?;
-        Self::ConnectionType::check_buffer_size(id_bytes.len())?;
+        Self::ConnectionType::check_buffer_size(self.state.len())?;
+        Self::ConnectionType::check_buffer_size(self.id.len())?;
         Self::ConnectionType::check_buffer_size(parent_id.map(Vec::len).unwrap_or_default())?;
 
         let zcfg = rusqlite::blob::ZeroBlob(self.custom_configuration.len() as i32);
         let zpid = rusqlite::blob::ZeroBlob(parent_id.map(Vec::len).unwrap_or_default() as i32);
-        let zb = rusqlite::blob::ZeroBlob(state.len() as i32);
-        let zid = rusqlite::blob::ZeroBlob(id_bytes.len() as i32);
+        let zb = rusqlite::blob::ZeroBlob(self.state.len() as i32);
+        let zid = rusqlite::blob::ZeroBlob(self.id.len() as i32);
 
         let rowid: i64 = if let Some(rowid) = transaction
-            .query_row("SELECT rowid FROM mls_pending_groups WHERE id = ?", [&self.id], |r| {
-                r.get(0)
-            })
+            .query_row(
+                "SELECT rowid FROM mls_pending_groups WHERE id = ?",
+                [self.id.as_slice()],
+                |r| r.get(0),
+            )
             .optional()?
         {
-            // we have to update the size of the blob, otherwise we can have trash in the data
-            let zb = rusqlite::blob::ZeroBlob(state.len() as i32);
             use rusqlite::ToSql as _;
             transaction.execute(
                 "UPDATE mls_pending_groups SET state = ?, parent_id = ?, cfg = ? WHERE id = ?",
@@ -94,7 +91,7 @@ impl EntityBase for PersistedMlsPendingGroup {
             false,
         )?;
         use std::io::Write as _;
-        blob.write_all(state)?;
+        blob.write_all(&self.state)?;
         blob.close()?;
 
         let mut blob =
@@ -130,7 +127,7 @@ impl EntityBase for PersistedMlsPendingGroup {
         let rowid: Option<i64> = transaction
             .query_row(
                 "SELECT rowid FROM mls_pending_groups WHERE id = ?",
-                [&id.into_bytes()],
+                [&id.as_slice()],
                 |r| r.get(0),
             )
             .optional()?;
@@ -316,7 +313,7 @@ impl EntityBase for PersistedMlsPendingGroup {
         let len = ids.len();
         let mut updated = 0;
         for id in ids {
-            updated += transaction.execute("DELETE FROM mls_pending_groups WHERE id = ?", [id.into_bytes()])?;
+            updated += transaction.execute("DELETE FROM mls_pending_groups WHERE id = ?", [id.as_slice()])?;
         }
 
         if updated == len {

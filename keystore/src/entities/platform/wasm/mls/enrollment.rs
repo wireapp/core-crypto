@@ -39,7 +39,7 @@ impl EntityBase for E2eiEnrollment {
     }
 
     async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
-        conn.storage().get("e2ei_enrollment", id.as_bytes()).await
+        conn.storage().get("e2ei_enrollment", id.as_slice()).await
     }
 
     async fn count(_conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
@@ -48,7 +48,7 @@ impl EntityBase for E2eiEnrollment {
 
     async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
-        let ids = ids.iter().map(StringEntityId::as_bytes).collect::<Vec<_>>();
+        let ids = ids.iter().map(StringEntityId::as_slice).collect::<Vec<_>>();
         storage.delete("e2ei_enrollment", &ids).await
     }
 }

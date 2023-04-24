@@ -76,25 +76,25 @@ test("init", async () => {
   await ctx.close();
 });
 
-test("can use pgs enums", async () => {
+test("can use groupInfo enums", async () => {
   const [ctx, page] = await initBrowser();
 
-  const [PublicGroupStateEncryptionType, RatchetTreeType] = await page.evaluate(async () => {
-    const { CoreCrypto, Ciphersuite, CredentialType, PublicGroupStateEncryptionType, RatchetTreeType } = await import ("./corecrypto.js");
+  const [GroupInfoEncryptionType, RatchetTreeType] = await page.evaluate(async () => {
+    const { CoreCrypto, Ciphersuite, CredentialType, GroupInfoEncryptionType, RatchetTreeType } = await import ("./corecrypto.js");
 
-    window.PublicGroupStateEncryptionType = PublicGroupStateEncryptionType;
+    window.GroupInfoEncryptionType = GroupInfoEncryptionType;
     window.RatchetTreeType = RatchetTreeType;
     window.CoreCrypto = CoreCrypto;
     window.Ciphersuite = Ciphersuite;
     window.CredentialType = CredentialType.Basic;
 
-    return [PublicGroupStateEncryptionType, RatchetTreeType];
+    return [GroupInfoEncryptionType, RatchetTreeType];
   });
 
-  expect(PublicGroupStateEncryptionType.Plaintext).toBe(0x01);
-  expect(PublicGroupStateEncryptionType.JweEncrypted).toBe(0x02);
-  expect(await page.evaluate(() => window.PublicGroupStateEncryptionType.Plaintext)).toBe(0x01);
-  expect(await page.evaluate(() => window.PublicGroupStateEncryptionType.JweEncrypted)).toBe(0x02);
+  expect(GroupInfoEncryptionType.Plaintext).toBe(0x01);
+  expect(GroupInfoEncryptionType.JweEncrypted).toBe(0x02);
+  expect(await page.evaluate(() => window.GroupInfoEncryptionType.Plaintext)).toBe(0x01);
+  expect(await page.evaluate(() => window.GroupInfoEncryptionType.JweEncrypted)).toBe(0x02);
   expect(RatchetTreeType.Full).toBe(0x01);
   expect(RatchetTreeType.Delta).toBe(0x02);
   expect(RatchetTreeType.ByRef).toBe(0x03);
@@ -128,15 +128,15 @@ test("can use pgs enums", async () => {
 
     await cc.createConversation(conversationId, window.CredentialType);
 
-    const { publicGroupState } = await cc.addClientsToConversation(conversationId, [
+    const { groupInfo: groupInfo } = await cc.addClientsToConversation(conversationId, [
       { id: encoder.encode(client2Config.clientId), kp },
     ]);
 
-    return publicGroupState;
+    return groupInfo;
   });
 
   expect(pgs.encryptionType).toBe(0x01);
-  expect(pgs.encryptionType).toBe(PublicGroupStateEncryptionType.Plaintext);
+  expect(pgs.encryptionType).toBe(GroupInfoEncryptionType.Plaintext);
   expect(pgs.ratchetTreeType).toBe(0x01);
   expect(pgs.ratchetTreeType).toBe(RatchetTreeType.Full);
 
@@ -479,7 +479,7 @@ test("roundtrip message", async () => {
 
   welcome.welcome = Uint8Array.from(welcome.welcome);
   welcome.commit = Uint8Array.from(welcome.commit);
-  welcome.publicGroupState = Uint8Array.from(welcome.publicGroupState);
+  welcome.groupInfo = Uint8Array.from(welcome.groupInfo);
 
   message = Uint8Array.from(Object.values(message));
 
@@ -704,9 +704,9 @@ test("ext commits|proposals & callbacks", async () => {
       throw new Error("clientIsExistingGroupUser callback wasn't triggered");
     }
 
-    const pgs = extProposalCommit.publicGroupState;
+    const gi = extProposalCommit.groupInfo;
 
-    const extCommit = await ccExternalCommit.joinByExternalCommit(pgs.payload, credentialType);
+    const extCommit = await ccExternalCommit.joinByExternalCommit(gi.payload, credentialType);
     // ! This should trigger the userAuthorize callback
     const somethingCommit = cc.decryptMessage(conversationId, extCommit.commit);
 
@@ -1024,30 +1024,30 @@ test("end-to-end-identity", async () => {
     const certificateReq = enrollment.certificateRequest(previousNonce);
 
     const certificateResp = "-----BEGIN CERTIFICATE-----\n" +
-        "MIICLjCCAdSgAwIBAgIQIi6jHWSEF/LHAkiyoiSHbjAKBggqhkjOPQQDAjAuMQ0w\n" +
+        "MIICIjCCAcigAwIBAgIQKRapc1IDZvJc88zB+vlrNTAKBggqhkjOPQQDAjAuMQ0w\n" +
         "CwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3aXJlIEludGVybWVkaWF0ZSBDQTAeFw0y\n" +
-        "MzA0MDUwOTI2NThaFw0yMzA0MDUxMDI2NThaMCkxETAPBgNVBAoTCHdpcmUuY29t\n" +
-        "MRQwEgYDVQQDEwtBbGljZSBTbWl0aDAqMAUGAytlcAMhAGzbFXHk2ngUGpBYzabE\n" +
-        "AtDJIefbX1/wDUSDJbEL/nJNo4IBBjCCAQIwDgYDVR0PAQH/BAQDAgeAMB0GA1Ud\n" +
-        "JQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAdBgNVHQ4EFgQUhifYTPG7M3pyQMrz\n" +
-        "HYmakvfDG80wHwYDVR0jBBgwFoAUHPSH1n7X87LAYJnc+cFG2a3ZAQ4wcgYDVR0R\n" +
-        "BGswaYZQaW06d2lyZWFwcD1OamhsTXpJeE9XRmpPRFJpTkRBd1lqazBaR0ZoWkRB\n" +
-        "Mk56RXhOVEV5TlRnLzZjMTg2NmY1Njc2MTZmMzFAd2lyZS5jb22GFWltOndpcmVh\n" +
-        "cHA9YWxpY2Vfd2lyZTAdBgwrBgEEAYKkZMYoQAEEDTALAgEGBAR3aXJlBAAwCgYI\n" +
-        "KoZIzj0EAwIDSAAwRQIhAKY0Zs8SYwS7mFFenPDoCDHPQbCbV9VdvYpBQncOFD5K\n" +
-        "AiAisX68Di4B0dN059YsVDXpM0drnkrVTRKHV+F+ipDjZQ==\n" +
+        "MzA2MDYxMjAzMDlaFw0zMzA2MDMxMjAzMDlaMCkxETAPBgNVBAoTCHdpcmUuY29t\n" +
+        "MRQwEgYDVQQDEwtBbGljZSBTbWl0aDAqMAUGAytlcAMhACqExBb1vLgMNq8GkLgM\n" +
+        "R+W+dp0szvjYL2GybNkPKzoto4H7MIH4MA4GA1UdDwEB/wQEAwIHgDATBgNVHSUE\n" +
+        "DDAKBggrBgEFBQcDAjAdBgNVHQ4EFgQUaPHUDloFLv5o4j4J4EmvoYToqHcwHwYD\n" +
+        "VR0jBBgwFoAUlbTj2u59dFDGs1LVj0GrGKJUK/gwcgYDVR0RBGswaYYVaW06d2ly\n" +
+        "ZWFwcD1hbGljZV93aXJlhlBpbTp3aXJlYXBwPVl6QXpZalZoT1dRMFpqSXdOR0k1\n" +
+        "T1Rrek9HRTRPREptT1RjeE0yWm1PR00vNDk1OWJjNmFiMTJmMjg0NkB3aXJlLmNv\n" +
+        "bTAdBgwrBgEEAYKkZMYoQAEEDTALAgEGBAR3aXJlBAAwCgYIKoZIzj0EAwIDSAAw\n" +
+        "RQIhAIRaoCuyIAXtpAsUhZvJb7Qb+2EKsc9iIzHtsBU5MtVMAiAz2Tm4ojAolq4J\n" +
+        "ZjWPVSDz4AN1gd200EpS50cS/mLDqw==\n" +
         "-----END CERTIFICATE-----\n" +
         "-----BEGIN CERTIFICATE-----\n" +
-        "MIIBtzCCAV6gAwIBAgIQPbElEJQ58HlbQf7bqrJjXTAKBggqhkjOPQQDAjAmMQ0w\n" +
-        "CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjMwNDA1MDky\n" +
-        "NjUzWhcNMzMwNDAyMDkyNjUzWjAuMQ0wCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3\n" +
-        "aXJlIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGbM\n" +
-        "rA1eqJE9xlGOwO+sYbexThtlU/to9jJj5SBoKPx7Q8QMBlmPTjqDVumXhUvSe+xY\n" +
-        "JE7M+lBXfVZCywzIIPWjZjBkMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG\n" +
-        "AQH/AgEAMB0GA1UdDgQWBBQc9IfWftfzssBgmdz5wUbZrdkBDjAfBgNVHSMEGDAW\n" +
-        "gBQY+1rDw64QLm/weFQC1mo9y29ddTAKBggqhkjOPQQDAgNHADBEAiARvd7RBuuv\n" +
-        "OhUy7ncjd/nzoN5Qs0p6D+ujdSLDqLlNIAIgfkwAAgsQMDF3ClqVM/p9cmS95B0g\n" +
-        "CAdIObqPoNL5MJo=\n" +
+        "MIIBuTCCAV6gAwIBAgIQYiSIW2ebbC32Iq5YO0AyLDAKBggqhkjOPQQDAjAmMQ0w\n" +
+        "CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjMwNjA2MTIw\n" +
+        "MzA2WhcNMzMwNjAzMTIwMzA2WjAuMQ0wCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3\n" +
+        "aXJlIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEKu\n" +
+        "1Ekx95MKKr9FxUspwFtyErShqoPKZNlyfz8u8lmvi50FpwqUXem1EoOUOm7UHy5m\n" +
+        "HJO513uJY0Q/ecZUwAKjZjBkMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG\n" +
+        "AQH/AgEAMB0GA1UdDgQWBBSVtOPa7n10UMazUtWPQasYolQr+DAfBgNVHSMEGDAW\n" +
+        "gBSy9uS81ABjfHbkz42x/Gf160mt1jAKBggqhkjOPQQDAgNJADBGAiEAq/T83XSg\n" +
+        "7/GN+fUi79bzXI9oQdDuXqyhGnjIXtr2D8YCIQCuS1tZQm6lVcDZMWYQWLfv/b46\n" +
+        "GjWuPgx1fD4m+ar9Tw==\n" +
         "-----END CERTIFICATE-----";
 
     await cc.e2eiMlsInit(enrollment, certificateResp);

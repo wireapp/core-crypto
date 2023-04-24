@@ -22,6 +22,8 @@
 #![doc = include_str!("../../README.md")]
 #![deny(missing_docs)]
 #![allow(clippy::single_component_path_imports)]
+// TODO: remove that and clean prelude when we got time
+#![allow(ambiguous_glob_reexports)]
 
 #[cfg(test)]
 use rstest_reuse;
@@ -52,17 +54,15 @@ mod group_store;
 
 /// Common imports that should be useful for most uses of the crate
 pub mod prelude {
-    pub use openmls::group::{MlsGroup, MlsGroupConfig};
-    pub use openmls::prelude::Ciphersuite as CiphersuiteName;
-    pub use openmls::prelude::Credential;
-    pub use openmls::prelude::GroupEpoch;
-    pub use openmls::prelude::KeyPackage;
-    pub use openmls::prelude::KeyPackageRef;
-    pub use openmls::prelude::Node;
-    pub use openmls::prelude::VerifiablePublicGroupState;
-    pub use tls_codec;
+    pub use openmls::{
+        group::{MlsGroup, MlsGroupConfig},
+        prelude::{
+            group_info::VerifiableGroupInfo, Ciphersuite as CiphersuiteName, Credential, GroupEpoch, KeyPackage,
+            KeyPackageIn, KeyPackageRef, MlsMessageIn, Node,
+        },
+    };
 
-    pub use mls_crypto_provider::{EntropySeed, RawEntropySeed};
+    pub use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed};
 
     pub use crate::{
         e2e_identity::{
@@ -80,16 +80,13 @@ pub mod prelude {
             conversation::{
                 config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
                 decrypt::MlsConversationDecryptMessage,
+                group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
                 handshake::{MlsCommitBundle, MlsConversationCreationMessage, MlsProposalBundle},
-                public_group_state::{
-                    MlsPublicGroupStateBundle, MlsPublicGroupStateEncryptionType, MlsRatchetTreeType,
-                    PublicGroupStatePayload,
-                },
                 *,
             },
             credential::{typ::MlsCredentialType, x509::CertificateBundle},
             external_commit::MlsConversationInitBundle,
-            member::*,
+            member::{ConversationMember, MemberId},
             proposal::{MlsProposal, MlsProposalRef},
             MlsCentral, MlsCiphersuite,
         },
@@ -110,9 +107,9 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     /// * `client_id` - id of the client to authorize
     async fn authorize(&self, conversation_id: prelude::ConversationId, client_id: prelude::ClientId) -> bool;
     /// Function responsible for authorizing an operation for a given user.
-    /// Use [external_client_id] & [existing_clients] to get all the 'client_id' belonging to the same user
-    /// as [external_client_id]. Then, given those client ids, verify that at least one has the right role
-    /// (is authorized) exactly like it's done in [authorize]
+    /// Use `external_client_id` & `existing_clients` to get all the 'client_id' belonging to the same user
+    /// as `external_client_id`. Then, given those client ids, verify that at least one has the right role
+    /// (is authorized) exactly like it's done in [Self::authorize]
     /// Returns `true` if the operation is authorized.
     ///
     /// # Arguments

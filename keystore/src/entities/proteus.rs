@@ -105,21 +105,3 @@ pub struct ProteusSession {
     pub id: String,
     pub session: Vec<u8>,
 }
-
-// TODO: Implement this in CoreCrypto
-// impl TryFrom<proteus::keys::PreKey> for ProteusPrekey {
-//     type Error = crate::CryptoKeystoreError;
-//     fn try_from(prekey: proteus::keys::PreKey) -> crate::CryptoKeystoreResult<Self> {
-//         let id = prekey.key_id.value();
-//         let prekey = prekey.serialise()?;
-//         Ok(Self { id, prekey })
-//     }
-// }
-
-// impl TryInto<proteus::keys::PreKey> for ProteusPrekey {
-//     type Error = crate::CryptoKeystoreError;
-//     fn try_into(self) -> crate::CryptoKeystoreResult<proteus::keys::PreKey> {
-//         let prekey = proteus::keys::PreKey::deserialise(&self.prekey)?;
-//         Ok(prekey)
-//     }
-// }

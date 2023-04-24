@@ -6,18 +6,18 @@ use crate::utils::*;
 mod utils;
 
 fn export_pgs_bench(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Export PublicGroupState");
+    let mut group = c.benchmark_group("Export GroupInfo");
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
         for i in (GROUP_RANGE).step_by(GROUP_STEP) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup_mls(ciphersuite, &&credential, in_memory);
+                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
                         add_clients(&mut central, &id, ciphersuite, *i);
                         (central, id)
                     },
                     |(mut central, id)| async move {
-                        black_box(central.export_public_group_state(&id).await.unwrap());
+                        black_box(central.export_group_info(&id).await.unwrap());
                     },
                     BatchSize::SmallInput,
                 )
@@ -28,8 +28,8 @@ fn export_pgs_bench(c: &mut Criterion) {
 }
 
 criterion_group!(
-    name = public_group_state;
+    name = group_info;
     config = criterion();
     targets = export_pgs_bench
 );
-criterion_main!(public_group_state);
+criterion_main!(group_info);

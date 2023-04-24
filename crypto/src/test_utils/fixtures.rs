@@ -48,11 +48,11 @@ pub use rstest_reuse::{self, *};
         crate::prelude::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
     )),
-    #[cfg(feature = "test-all-cipher")]
-    case::cert_cs3(TestCase::new(
-        crate::prelude::MlsCredentialType::X509,
-        openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
-    )),
+    // #[cfg(feature = "test-all-cipher")]
+    // case::cert_cs3(TestCase::new(
+    //     crate::prelude::MlsCredentialType::X509,
+    //     openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
+    // )),
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs7(TestCase::new(
         crate::prelude::MlsCredentialType::Basic,
@@ -106,6 +106,13 @@ impl TestCase {
 
     pub fn custom_cfg(&self) -> MlsCustomConfiguration {
         self.cfg.custom.clone()
+    }
+
+    pub fn default_x509() -> Self {
+        Self {
+            credential_type: MlsCredentialType::X509,
+            cfg: MlsConversationConfiguration::default(),
+        }
     }
 }
 

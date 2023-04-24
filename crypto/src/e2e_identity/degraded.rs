@@ -13,9 +13,9 @@ impl MlsCentral {
 
 impl MlsConversation {
     fn e2ei_is_degraded(&self) -> bool {
-        self.group.members().iter().any(|kp| {
-            let is_basic = matches!(kp.credential().get_type(), MlsCredentialType::Basic);
-            let invalid_identity = kp.credential().extract_identity().is_none();
+        self.group.members().any(|kp| {
+            let is_basic = matches!(kp.credential.get_type(), Ok(MlsCredentialType::Basic));
+            let invalid_identity = Self::extract_identity(&kp.credential).is_err();
             is_basic || invalid_identity
         })
     }
@@ -33,7 +33,7 @@ pub mod tests {
     // testing the case where both Bob & Alice have the same Credential type
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn uniform_conversation_should_be_degraded(case: TestCase) {
+    pub async fn uniform_conversation_should_be_degraded_when_basic(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],

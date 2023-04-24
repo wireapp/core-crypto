@@ -14,27 +14,29 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use openmls::prelude::KeyPackage;
-use openmls_traits::OpenMlsCryptoProvider;
+use openmls::prelude::{hash_ref::ProposalRef, KeyPackage};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
     mls::{ClientId, ConversationId, MlsCentral, MlsConversation},
-    prelude::handshake::MlsProposalBundle,
-    CryptoError, CryptoResult, MlsError,
+    prelude::{handshake::MlsProposalBundle, Client, CryptoError, CryptoResult},
 };
 
 /// Abstraction over a [openmls::prelude::hash_ref::ProposalRef] to deal with conversions
-#[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::From, derive_more::Deref, derive_more::Display)]
-pub struct MlsProposalRef(openmls::prelude::hash_ref::ProposalRef);
+#[derive(Debug, Clone, Eq, PartialEq, derive_more::From, derive_more::Deref, derive_more::Display)]
+pub struct MlsProposalRef(ProposalRef);
 
-impl TryFrom<Vec<u8>> for MlsProposalRef {
-    type Error = CryptoError;
+impl From<Vec<u8>> for MlsProposalRef {
+    fn from(value: Vec<u8>) -> Self {
+        Self(ProposalRef::from_slice(value.as_slice()))
+    }
+}
 
-    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        let value: [u8; 16] = value.try_into().map_err(|_| Self::Error::InvalidHashReference)?;
-        Ok(Self(value.into()))
+impl MlsProposalRef {
+    /// Duh
+    pub fn into_inner(self) -> ProposalRef {
+        self.0
     }
 }
 
@@ -60,21 +62,21 @@ impl MlsProposal {
     /// Creates a new proposal within the specified `MlsGroup`
     async fn create(
         self,
+        client: &Client,
         backend: &MlsCryptoProvider,
         mut conversation: impl std::ops::DerefMut<Target = MlsConversation>,
     ) -> CryptoResult<MlsProposalBundle> {
         let proposal = match self {
-            MlsProposal::Add(key_package) => (*conversation).propose_add_member(backend, &key_package).await,
-            MlsProposal::Update => (*conversation).propose_self_update(backend).await,
+            MlsProposal::Add(key_package) => (*conversation).propose_add_member(client, backend, &key_package).await,
+            MlsProposal::Update => (*conversation).propose_self_update(client, backend).await,
             MlsProposal::Remove(client_id) => {
-                let href = conversation
+                let index = conversation
                     .group
                     .members()
-                    .into_iter()
-                    .find(|kp| kp.credential().identity() == client_id.as_slice())
+                    .find(|kp| kp.credential.identity() == client_id.as_slice())
                     .ok_or(CryptoError::ClientNotFound(client_id))
-                    .and_then(|kp| Ok(kp.hash_ref(backend.crypto()).map_err(MlsError::from)?))?;
-                (*conversation).propose_remove_member(backend, &href).await
+                    .map(|kp| kp.index)?;
+                (*conversation).propose_remove_member(client, backend, index).await
             }
         }?;
         Ok(proposal)
@@ -89,7 +91,7 @@ impl MlsCentral {
     /// * `proposal` - the proposal do be added in the group
     ///
     /// # Return type
-    /// A [ProposalBundle] with the proposal in a Mls message and a reference to that proposal in order to rollback it if required
+    /// A [MlsProposalBundle] with the proposal in a Mls message and a reference to that proposal in order to rollback it if required
     ///
     /// # Errors
     /// If the conversation is not found, an error will be returned. Errors from OpenMls can be
@@ -100,7 +102,10 @@ impl MlsCentral {
         proposal: MlsProposal,
     ) -> CryptoResult<MlsProposalBundle> {
         let conversation = self.get_conversation(conversation).await?;
-        proposal.create(&self.mls_backend, conversation.write().await).await
+        let client = self.mls_client()?;
+        proposal
+            .create(client, &self.mls_backend, conversation.write().await)
+            .await
     }
 }
 
@@ -137,7 +142,7 @@ pub mod proposal_tests {
                         alice_central.commit_accepted(&id).await.unwrap();
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         let new_id = bob_central
-                            .process_welcome_message(welcome.unwrap(), case.custom_cfg())
+                            .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
                             .await
                             .unwrap();
                         assert_eq!(id, new_id);
@@ -151,10 +156,11 @@ pub mod proposal_tests {
 
     pub mod update {
         use super::*;
+        use itertools::Itertools;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_update_key_package(case: TestCase) {
+        pub async fn should_update_hpke_key(case: TestCase) {
             run_test_with_central(case.clone(), move |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -162,25 +168,21 @@ pub mod proposal_tests {
                         .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    let before = &(*central
+                    let before = central
                         .get_conversation_unchecked(&id)
                         .await
-                        .group
-                        .members()
-                        .first()
-                        .unwrap())
-                    .clone();
+                        .encryption_keys()
+                        .find_or_first(|_| true)
+                        .unwrap();
                     central.new_proposal(&id, MlsProposal::Update).await.unwrap();
                     central.commit_pending_proposals(&id).await.unwrap();
                     central.commit_accepted(&id).await.unwrap();
-                    let after = &(*central
+                    let after = central
                         .get_conversation_unchecked(&id)
                         .await
-                        .group
-                        .members()
-                        .first()
-                        .unwrap())
-                    .clone();
+                        .encryption_keys()
+                        .find_or_first(|_| true)
+                        .unwrap();
                     assert_ne!(before, after)
                 })
             })

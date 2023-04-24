@@ -30,14 +30,6 @@ impl CryptoKeystoreProteus for Connection {
     }
 }
 
-impl Connection {
-    #[cfg(feature = "memory-cache")]
-    #[inline(always)]
-    fn proteus_memory_key<S: std::fmt::Display>(k: S) -> Vec<u8> {
-        format!("proteus:{}", k).into_bytes()
-    }
-}
-
 #[async_trait::async_trait(?Send)]
 impl proteus_traits::PreKeyStore for Connection {
     type Error = CryptoKeystoreError;
@@ -46,15 +38,6 @@ impl proteus_traits::PreKeyStore for Connection {
         &mut self,
         id: proteus_traits::RawPreKeyId,
     ) -> Result<Option<proteus_traits::RawPreKey>, Self::Error> {
-        #[cfg(feature = "memory-cache")]
-        if self.is_cache_enabled() {
-            let mut cache = self.memory_cache.lock().await;
-
-            if let Some(buf) = cache.get(&Self::proteus_memory_key(id)) {
-                return Ok(Some(buf.clone()));
-            }
-        }
-
         Ok(self
             .find::<ProteusPrekey>(id.to_le_bytes())
             .await?
@@ -62,11 +45,6 @@ impl proteus_traits::PreKeyStore for Connection {
     }
 
     async fn remove(&mut self, id: proteus_traits::RawPreKeyId) -> Result<(), Self::Error> {
-        #[cfg(feature = "memory-cache")]
-        if self.is_cache_enabled() {
-            let _ = self.memory_cache.lock().await.pop(format!("proteus:{}", id).as_bytes());
-        }
-
         Connection::remove::<ProteusPrekey, _>(self, id.to_le_bytes()).await?;
 
         Ok(())
