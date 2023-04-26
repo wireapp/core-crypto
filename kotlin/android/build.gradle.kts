@@ -1,5 +1,3 @@
-import com.android.build.gradle.tasks.MergeResources
-
 plugins {
     id("com.android.library")
     id("kotlin-android")
@@ -56,8 +54,10 @@ val copyBinariesTasks = listOf(
     registerCopyJvmBinaryTask("x86_64-linux-android", "x86_64")
 )
 
-tasks.withType<MergeResources> {
-    dependsOn(copyBinariesTasks)
+project.afterEvaluate {
+    tasks.getByName("mergeReleaseJniLibFolders") {
+        dependsOn(copyBinariesTasks)
+    }
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
