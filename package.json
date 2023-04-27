@@ -4,7 +4,7 @@
   "description": "CoreCrypto bindings for the Web",
   "type": "module",
   "module": "platforms/web/corecrypto.js",
-  "types": "platforms/web/corecrypto.d.js",
+  "types": "platforms/web/corecrypto.d.ts",
   "scripts": {
     "prepare": "npm run build",
     "build": "npm run clean && rollup -c crypto-ffi/bindings/js/rollup.config.js",
