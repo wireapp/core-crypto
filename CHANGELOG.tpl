@@ -7,11 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.8.2] - 2023-04-28
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.8.2" unreleased=true}}
+</details>
+
+* build: fix Android packaging (again) by sourcing bindings
+
 ## [0.8.1] - 2023-04-27
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.8.1" unreleased=true}}
+{{git-cliff tag="v0.8.1"}}
 </details>
 
 * build: fix Android packaging
