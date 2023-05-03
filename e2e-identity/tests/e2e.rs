@@ -43,7 +43,7 @@ async fn google_demo_should_succeed() {
     let jwks_uri = "https://www.googleapis.com/oauth2/v3/certs".to_string();
     let domain = "wire.com";
     let new_sub =
-        ClientId::try_from_raw_parts(default.sub.user.as_ref(), default.sub.client, domain.as_bytes()).unwrap();
+        ClientId::try_from_raw_parts(default.sub.user_id.as_ref(), default.sub.device_id, domain.as_bytes()).unwrap();
     let test = E2eTest {
         domain: domain.to_string(),
         sub: new_sub,
@@ -96,8 +96,9 @@ mod alg {
 /// Since the acme server is a fork, verify its invariants are respected
 #[cfg(not(ci))]
 mod acme_server {
-    use super::*;
     use rusty_acme::prelude::RustyAcmeError;
+
+    use super::*;
 
     /// Challenges returned by ACME server are mixed up
     #[should_panic]
@@ -144,12 +145,31 @@ mod acme_server {
     async fn should_fail_when_challenges_inverted() {
         let test = E2eTest::new().start(docker()).await;
 
+        let real_chall = std::sync::Arc::new(std::sync::Mutex::new(None));
+        let (real_chall_setter, rc1, rc2) = (real_chall.clone(), real_chall.clone(), real_chall.clone());
+
         let flow = EnrollmentFlow {
             extract_challenges: Box::new(|mut test, authz| {
                 Box::pin(async move {
                     let (dpop_chall, oidc_chall) = test.extract_challenges(authz)?;
+                    *real_chall_setter.lock().unwrap() = Some(dpop_chall.clone());
                     // let's invert those challenges for the rest of the flow
                     Ok((test, (oidc_chall, dpop_chall)))
+                })
+            }),
+            // undo the inversion here to verify that it fails on acme server side (we do not want to test wire-server here)
+            create_dpop_token: Box::new(|mut test, (_, nonce, expiry)| {
+                Box::pin(async move {
+                    let challenge = rc1.lock().unwrap().clone().unwrap();
+                    let dpop_token = test.create_dpop_token(&challenge, nonce, expiry).await?;
+                    Ok((test, dpop_token))
+                })
+            }),
+            get_access_token: Box::new(|mut test, (_, dpop_token)| {
+                Box::pin(async move {
+                    let challenge = rc2.lock().unwrap().clone().unwrap();
+                    let access_token = test.get_access_token(&challenge, dpop_token).await?;
+                    Ok((test, access_token))
                 })
             }),
             ..Default::default()
@@ -220,7 +240,6 @@ mod acme_server {
 #[cfg(not(ci))]
 mod dpop_challenge {
     use super::*;
-    use rusty_acme::prelude::{AcmeChallError, AcmeChallenge};
 
     /// Demonstrates that the client possesses the clientId. Client makes an authenticated request
     /// to wire-server, it delivers a nonce which the client seals in a signed DPoP JWT.
@@ -303,7 +322,7 @@ mod dpop_challenge {
                 Box::pin(async move {
                     // just alter the clientId for the order creation...
                     let sub = test.sub.clone();
-                    test.sub = rand_client_id();
+                    test.sub = rand_client_id(Some(sub.device_id));
                     let (order, order_url, previous_nonce) =
                         test.new_order(&directory, &account, previous_nonce).await?;
                     // ...then resume to the regular one to create the client dpop token & access token
@@ -341,6 +360,124 @@ mod dpop_challenge {
             ..Default::default()
         };
         test.enrollment(flow).await.unwrap();
+    }
+
+    /// In order to tie DPoP challenge verification on the acme server, the latter is configured
+    /// with the accepted wire-server host which is present in the DPoP "htu" claim and in the access token
+    /// "iss" claim.
+    /// The challenge should fail if any of those does not match the expected value
+    #[tokio::test]
+    async fn should_fail_when_access_token_iss_mismatches_target() {
+        // "iss" in access token mismatches expected target
+        let test = E2eTest::new().start(docker()).await;
+        let flow = EnrollmentFlow {
+            get_access_token: Box::new(|test, _| {
+                Box::pin(async move {
+                    let client_id = test.sub.clone();
+                    let htu: Htu = "https://unknown.io".try_into().unwrap();
+                    let backend_nonce: BackendNonce = rand_base64_str(32).into();
+                    let acme_nonce = rand_base64_str(32).into();
+
+                    let client_dpop_token = RustyJwtTools::generate_dpop_token(
+                        Dpop {
+                            htm: Htm::Post,
+                            htu: htu.clone(),
+                            challenge: acme_nonce,
+                            extra_claims: None,
+                        },
+                        &client_id,
+                        backend_nonce.clone(),
+                        core::time::Duration::from_secs(3600),
+                        test.alg,
+                        &test.client_kp,
+                    )
+                    .unwrap();
+
+                    let backend_kp: Pem = test.backend_kp.clone();
+                    let access_token = RustyJwtTools::generate_access_token(
+                        &client_dpop_token,
+                        &client_id,
+                        backend_nonce,
+                        htu,
+                        Htm::Post,
+                        360,
+                        2136351646,
+                        backend_kp,
+                        test.hash_alg,
+                    )
+                    .unwrap();
+                    Ok((test, access_token))
+                })
+            }),
+            ..Default::default()
+        };
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
+        ));
+    }
+
+    /// see [should_fail_when_access_token_iss_mismatches_target]
+    #[tokio::test]
+    async fn should_fail_when_access_token_device_id_mismatches_target() {
+        // "iss" deviceId mismatches the actual deviceId
+        let test = E2eTest::new().start(docker()).await;
+        let flow = EnrollmentFlow {
+            get_access_token: Box::new(|test, _| {
+                Box::pin(async move {
+                    // here the DeviceId will be different in "sub" than in "iss" (in the access token)
+                    let client_id = ClientId {
+                        device_id: 42,
+                        ..test.sub.clone()
+                    };
+                    let htu: Htu = test
+                        .ca_cfg
+                        .dpop_target_uri
+                        .as_ref()
+                        .unwrap()
+                        .as_str()
+                        .try_into()
+                        .unwrap();
+                    let backend_nonce: BackendNonce = rand_base64_str(32).into();
+                    let acme_nonce = rand_base64_str(32).into();
+
+                    let client_dpop_token = RustyJwtTools::generate_dpop_token(
+                        Dpop {
+                            htm: Htm::Post,
+                            htu: htu.clone(),
+                            challenge: acme_nonce,
+                            extra_claims: None,
+                        },
+                        &client_id,
+                        backend_nonce.clone(),
+                        core::time::Duration::from_secs(3600),
+                        test.alg,
+                        &test.client_kp,
+                    )
+                    .unwrap();
+
+                    let backend_kp: Pem = test.backend_kp.clone();
+                    let access_token = RustyJwtTools::generate_access_token(
+                        &client_dpop_token,
+                        &client_id,
+                        backend_nonce,
+                        htu,
+                        Htm::Post,
+                        360,
+                        2136351646,
+                        backend_kp,
+                        test.hash_alg,
+                    )
+                    .unwrap();
+                    Ok((test, access_token))
+                })
+            }),
+            ..Default::default()
+        };
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
+        ));
     }
 }
 
@@ -411,11 +548,11 @@ mod oidc_challenge {
         let test = test.start(docker).await;
 
         let flow = EnrollmentFlow {
-            fetch_id_token: Box::new(|mut test, _| {
+            fetch_id_token: Box::new(|mut test, oidc_chall| {
                 Box::pin(async move {
                     let dex_pk = test.fetch_dex_public_key().await;
                     let dex_pk = RS256PublicKey::from_pem(&dex_pk).unwrap();
-                    let id_token = test.fetch_id_token().await?;
+                    let id_token = test.fetch_id_token(&oidc_chall).await?;
 
                     let change_handle = |mut claims: JWTClaims<Value>| {
                         let wrong_handle = format!("{}john.doe.qa@wire.com", ClientId::URI_PREFIX);
@@ -453,11 +590,11 @@ mod oidc_challenge {
         let test = test.start(docker).await;
 
         let flow = EnrollmentFlow {
-            fetch_id_token: Box::new(|mut test, _| {
+            fetch_id_token: Box::new(|mut test, oidc_chall| {
                 Box::pin(async move {
                     let dex_pk = test.fetch_dex_public_key().await;
                     let dex_pk = RS256PublicKey::from_pem(&dex_pk).unwrap();
-                    let id_token = test.fetch_id_token().await?;
+                    let id_token = test.fetch_id_token(&oidc_chall).await?;
 
                     let change_handle = |mut claims: JWTClaims<Value>| {
                         let wrong_handle = "Doe, John (QA)";
@@ -532,7 +669,7 @@ mod optimize {
                 .create_dpop_token(&dpop_chall, backend_nonce, expiry)
                 .await
                 .unwrap();
-            let access_token = test.get_access_token(client_dpop_token).await.unwrap();
+            let access_token = test.get_access_token(&dpop_chall, client_dpop_token).await.unwrap();
             test.verify_dpop_challenge(&acc1, dpop_chall, access_token, previous_nonce)
                 .await
                 .unwrap()
@@ -546,7 +683,7 @@ mod optimize {
         tokio::task::spawn(async move {
             let mut test = t2.lock().await;
             let previous_nonce = test.get_acme_nonce(&directory).await.unwrap();
-            let id_token = test.fetch_id_token().await.unwrap();
+            let id_token = test.fetch_id_token(&oidc_chall).await.unwrap();
             test.verify_oidc_challenge(&acc2, oidc_chall, id_token, previous_nonce)
                 .await
                 .unwrap();

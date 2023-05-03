@@ -1,7 +1,9 @@
-use crate::utils::docker::{rand_str, NETWORK};
 use std::net::SocketAddr;
 use std::{collections::HashMap, path::PathBuf};
+
 use testcontainers::{clients::Cli, core::WaitFor, Container, Image, RunnableImage};
+
+use crate::utils::docker::{rand_str, NETWORK};
 
 pub struct AcmeServer<'a> {
     pub uri: String,
@@ -16,6 +18,7 @@ pub struct CaCfg {
     pub issuer: String,
     pub audience: String,
     pub jwks_uri: String,
+    pub dpop_target_uri: Option<String>,
     pub host: String,
 }
 
@@ -28,8 +31,10 @@ impl CaCfg {
             issuer,
             audience,
             jwks_uri,
+            dpop_target_uri,
             ..
         } = self;
+        let dpop_target_uri = dpop_target_uri.as_ref().unwrap();
         // TODO: remove RS256 when EcDSA & EdDSA are supported in Dex
         serde_json::json!({
             "provisioners": [
@@ -70,6 +75,7 @@ impl CaCfg {
                         },
                         "dpop": {
                             "key": sign_key,
+                            "dpop-target": dpop_target_uri,
                             "validation-exec-path": "/usr/local/bin/rusty-jwt-cli"
                         }
                     }
@@ -89,7 +95,7 @@ pub struct StepCaImage {
 
 impl StepCaImage {
     const NAME: &'static str = "quay.io/wire/smallstep-acme";
-    const TAG: &'static str = "0.0.42-test.54";
+    const TAG: &'static str = "0.0.42-test.64";
     const CA_NAME: &'static str = "wire";
     pub const ACME_PROVISIONER: &'static str = "wire";
     pub const PORT: u16 = 9000;

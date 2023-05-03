@@ -1,10 +1,11 @@
-use error::*;
 use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, Ed25519KeyPair, Jwk};
+use zeroize::Zeroize;
+
+use error::*;
 use prelude::*;
-use rusty_acme::prelude::AcmeChallenge;
+use rusty_acme::prelude::{AcmeChallenge, AcmeChallengeType};
 use rusty_jwt_tools::jwk::TryIntoJwk;
 use rusty_jwt_tools::prelude::{ClientId, Dpop, Htm, Pem, RustyJwtTools};
-use zeroize::Zeroize;
 
 #[cfg(feature = "identity-builder")]
 mod builder;
@@ -12,16 +13,16 @@ mod error;
 mod types;
 
 pub mod prelude {
+    pub use rusty_acme::prelude::{AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader};
+    pub use rusty_jwt_tools::prelude::{HashAlgorithm, JwsAlgorithm, RustyJwtError};
+
     #[cfg(feature = "identity-builder")]
     pub use super::builder::*;
     pub use super::error::{E2eIdentityError, E2eIdentityResult};
     pub use super::types::{
         E2eiAcmeAccount, E2eiAcmeChall, E2eiAcmeFinalize, E2eiAcmeOrder, E2eiNewAcmeAuthz, E2eiNewAcmeOrder,
     };
-
     pub use super::RustyE2eIdentity;
-    pub use rusty_acme::prelude::{AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader};
-    pub use rusty_jwt_tools::prelude::{HashAlgorithm, JwsAlgorithm, RustyJwtError};
 }
 
 pub type Json = serde_json::Value;
@@ -196,19 +197,18 @@ impl RustyE2eIdentity {
     /// * `new_authz` - http response body
     pub fn acme_new_authz_response(&self, new_authz: Json) -> E2eIdentityResult<E2eiNewAcmeAuthz> {
         let new_authz = serde_json::from_value(new_authz)?;
-        let new_authz = RustyAcme::new_authz_response(new_authz)?;
+        let mut new_authz = RustyAcme::new_authz_response(new_authz)?;
+
         let identifier = new_authz.identifier.to_json()?;
 
         let wire_dpop_challenge = new_authz
-            .wire_dpop_challenge()
-            .map(|c| serde_json::to_value(c).map(|chall| (chall, c.url.clone())))
-            .transpose()?
-            .map(|(chall, url)| E2eiAcmeChall { url, chall });
+            .take_challenge(AcmeChallengeType::WireDpop01)
+            .map(TryInto::try_into)
+            .transpose()?;
         let wire_oidc_challenge = new_authz
-            .wire_oidc_challenge()
-            .map(|c| serde_json::to_value(c).map(|chall| (chall, c.url.clone())))
-            .transpose()?
-            .map(|(chall, url)| E2eiAcmeChall { url, chall });
+            .take_challenge(AcmeChallengeType::WireOidc01)
+            .map(TryInto::try_into)
+            .transpose()?;
 
         Ok(E2eiNewAcmeAuthz {
             identifier,
@@ -235,7 +235,6 @@ impl RustyE2eIdentity {
     #[allow(clippy::too_many_arguments)]
     pub fn new_dpop_token(
         &self,
-        access_token_url: &url::Url,
         client_id: &str,
         dpop_challenge: &E2eiAcmeChall,
         backend_nonce: String,
@@ -243,8 +242,8 @@ impl RustyE2eIdentity {
     ) -> E2eIdentityResult<String> {
         let client_id_challenge = serde_json::from_value::<AcmeChallenge>(dpop_challenge.chall.clone())?;
         let dpop = Dpop {
-            htu: access_token_url.as_str().try_into()?,
             htm: Htm::Post,
+            htu: dpop_challenge.target.clone().into(),
             challenge: client_id_challenge.token.into(),
             extra_claims: None,
         };

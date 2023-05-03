@@ -7,6 +7,9 @@ use jwt_simple::prelude::*;
 use rand::random;
 use testcontainers::clients::Cli;
 
+use rusty_acme::prelude::{AcmeAccount, AcmeAuthz, AcmeChallenge, AcmeDirectory, AcmeFinalize, AcmeOrder};
+use rusty_jwt_tools::{jwk::TryIntoJwk, prelude::*};
+
 use crate::utils::{
     ctx::ctx_store_http_client,
     display::TestDisplay,
@@ -19,9 +22,6 @@ use crate::utils::{
     wire_server::{oidc::OidcCfg, OauthCfg, WireServer},
     TestResult,
 };
-
-use rusty_acme::prelude::{AcmeAccount, AcmeAuthz, AcmeChallenge, AcmeDirectory, AcmeFinalize, AcmeOrder};
-use rusty_jwt_tools::{jwk::TryIntoJwk, prelude::*};
 
 pub struct E2eTest<'a> {
     pub display_name: String,
@@ -131,6 +131,7 @@ impl<'a> E2eTest<'a> {
                 issuer,
                 audience: audience.to_string(),
                 jwks_uri,
+                dpop_target_uri: None,
                 host: ca_host,
             },
             oauth_cfg: OauthCfg {
@@ -223,16 +224,12 @@ impl<'a> E2eTest<'a> {
         };
         let wire_server = WireServer::run_on_port(wire_server_port).await;
 
-        let redirect_uri = format!("http://{wire_server_host}:{wire_server_port}/{redirect}");
-        // Acme server
-        let acme_server = StepCaImage::run(docker, self.ca_cfg.clone());
-        // configure http client custom dns resolution for this test
-        // this helps having domain names in request URIs instead of 'localhost:{port}'
-        let mut dns_mappings = HashMap::<String, SocketAddr, RandomState>::from_iter(vec![
-            (self.ca_cfg.host.clone(), acme_server.socket),
-            (self.domain.clone(), wire_server.socket),
-        ]);
+        let wire_server_uri = format!("http://{wire_server_host}:{wire_server_port}");
+        let redirect_uri = format!("{wire_server_uri}/{redirect}");
 
+        let mut dns_mappings = HashMap::<String, SocketAddr, RandomState>::new();
+
+        // start OIDC server
         if self.oidc_provider == OidcProvider::Dex {
             // LDAP (required by Dex)
             let ldap_server = LdapImage::run(docker, self.ldap_cfg.clone());
@@ -243,6 +240,18 @@ impl<'a> E2eTest<'a> {
             dns_mappings.insert(self.dex_cfg.host.clone(), dex_server.socket);
             self.dex_server = Some(dex_server);
         }
+
+        // start ACME server
+        let template = r#"{{.DeviceId}}"#;
+        let dpop_target_uri = format!("{wire_server_uri}/clients/{template}/access-token");
+        self.ca_cfg.dpop_target_uri = Some(dpop_target_uri);
+        // Acme server
+        let acme_server = StepCaImage::run(docker, self.ca_cfg.clone());
+
+        // configure http client custom dns resolution for this test
+        // this helps having domain names in request URIs instead of 'localhost:{port}'
+        dns_mappings.insert(self.ca_cfg.host.clone(), acme_server.socket);
+        dns_mappings.insert(self.domain.clone(), wire_server.socket);
 
         ctx_store_http_client(&dns_mappings);
 
@@ -345,9 +354,9 @@ pub struct EnrollmentFlow {
     pub extract_challenges: Flow<AcmeAuthz, (AcmeChallenge, AcmeChallenge)>,
     pub get_wire_server_nonce: Flow<(), BackendNonce>,
     pub create_dpop_token: Flow<(AcmeChallenge, BackendNonce, core::time::Duration), String>,
-    pub get_access_token: Flow<String, String>,
+    pub get_access_token: Flow<(AcmeChallenge, String), String>,
     pub verify_dpop_challenge: Flow<(AcmeAccount, AcmeChallenge, String, String), String>,
-    pub fetch_id_token: Flow<(), String>,
+    pub fetch_id_token: Flow<AcmeChallenge, String>,
     pub verify_oidc_challenge: Flow<(AcmeAccount, AcmeChallenge, String, String), String>,
     pub verify_order_status: Flow<(AcmeAccount, url::Url, String), (AcmeOrder, String)>,
     pub finalize: Flow<(AcmeAccount, AcmeOrder, String), (AcmeFinalize, String)>,
@@ -406,9 +415,9 @@ impl Default for EnrollmentFlow {
                     Ok((test, client_dpop_token))
                 })
             }),
-            get_access_token: Box::new(|mut test, client_dpop_token| {
+            get_access_token: Box::new(|mut test, (dpop_chall, client_dpop_token)| {
                 Box::pin(async move {
-                    let access_token = test.get_access_token(client_dpop_token).await?;
+                    let access_token = test.get_access_token(&dpop_chall, client_dpop_token).await?;
                     Ok((test, access_token))
                 })
             }),
@@ -420,9 +429,9 @@ impl Default for EnrollmentFlow {
                     Ok((test, previous_nonce))
                 })
             }),
-            fetch_id_token: Box::new(|mut test, _| {
+            fetch_id_token: Box::new(|mut test, oidc_chall| {
                 Box::pin(async move {
-                    let id_token = test.fetch_id_token().await?;
+                    let id_token = test.fetch_id_token(&oidc_chall).await?;
                     Ok((test, id_token))
                 })
             }),

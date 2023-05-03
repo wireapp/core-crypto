@@ -29,10 +29,11 @@ pub fn rand_base64_str(size: usize) -> String {
     base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(rand_str(size))
 }
 
-pub fn rand_client_id() -> ClientId {
+pub fn rand_client_id(device_id: Option<u64>) -> ClientId {
+    let device_id = device_id.unwrap_or_else(rand::random::<u64>);
     ClientId::try_from_raw_parts(
         uuid::Uuid::new_v4().as_ref(),
-        rand::random::<u64>(),
+        device_id,
         format!("{}.com", rand_str(6)).as_bytes(),
     )
     .unwrap()

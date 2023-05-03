@@ -11,33 +11,33 @@ sequenceDiagram
     acme-server->>-wire-client: 201
     wire-client->>+acme-server: 🔒 POST /acme/wire/new-order
     acme-server->>-wire-client: 201
-    wire-client->>+acme-server: 🔒 POST /acme/wire/authz/AwegYhMFAzT09PbztvcVlG4owLEPkEtb
+    wire-client->>+acme-server: 🔒 POST /acme/wire/authz/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf
     acme-server->>-wire-client: 200
     wire-client->>+wire-server:  GET /clients/token/nonce
     wire-server->>-wire-client: 200
     wire-client->>wire-client: create DPoP token
-    wire-client->>+wire-server:  POST /clients/3773524069437416930/access-token
+    wire-client->>+wire-server:  POST /clients/7358d069e64422ca/access-token
     wire-server->>-wire-client: 200
-    wire-client->>+acme-server: 🔒 POST /acme/wire/challenge/AwegYhMFAzT09PbztvcVlG4owLEPkEtb/o2l6SiuLShSUJxcRKJEdBmUIj8SQSSb8
+    wire-client->>+acme-server: 🔒 POST /acme/wire/challenge/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf/V3LKiNPifdQwz0PLladtHRH9WtOu9XFj
     acme-server->>-wire-client: 200
     wire-client->>wire-client: OAUTH authorization request
     wire-client->>+authorization-server:  GET /dex/auth
     wire-client->>wire-client: OAUTH authorization code
     wire-client->>+authorization-server:  POST /dex/token
     authorization-server->>-wire-client: 200
-    wire-client->>+acme-server: 🔒 POST /acme/wire/challenge/AwegYhMFAzT09PbztvcVlG4owLEPkEtb/YaUtWZ2bKbrpplQLvuJTUsLFKKxX0xq1
+    wire-client->>+acme-server: 🔒 POST /acme/wire/challenge/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf/oPyI2NPNHw9do0Mql8ZNfvjSo0rQn9H1
     acme-server->>-wire-client: 200
-    wire-client->>+acme-server: 🔒 POST /acme/wire/order/8WH2kHmLgJV7rPh8RgrVKEO8GndcZJDg
+    wire-client->>+acme-server: 🔒 POST /acme/wire/order/dIIN9chdQ0MxGmPsts7zr5hsCJyInl9X
     acme-server->>-wire-client: 200
-    wire-client->>+acme-server: 🔒 POST /acme/wire/order/8WH2kHmLgJV7rPh8RgrVKEO8GndcZJDg/finalize
+    wire-client->>+acme-server: 🔒 POST /acme/wire/order/dIIN9chdQ0MxGmPsts7zr5hsCJyInl9X/finalize
     acme-server->>-wire-client: 200
-    wire-client->>+acme-server: 🔒 POST /acme/wire/certificate/NEgEpPxAHrXqKp3SyaQW30erIEDjg9bv
+    wire-client->>+acme-server: 🔒 POST /acme/wire/certificate/c0exFVPsOlFAzAnROtOZlL8am0ZGx91A
     acme-server->>-wire-client: 200
 ```
 ### Initial setup with ACME server
 #### 1. fetch acme directory for hyperlinks
 ```http request
-GET https://stepca:32885/acme/wire/directory
+GET https://stepca:33294/acme/wire/directory
                         /acme/{acme-provisioner}/directory
 ```
 #### 2. get the ACME directory with links for newNonce, newAccount & newOrder
@@ -47,37 +47,37 @@ content-type: application/json
 ```
 ```json
 {
-  "newNonce": "https://stepca:32885/acme/wire/new-nonce",
-  "newAccount": "https://stepca:32885/acme/wire/new-account",
-  "newOrder": "https://stepca:32885/acme/wire/new-order"
+  "newNonce": "https://stepca:33294/acme/wire/new-nonce",
+  "newAccount": "https://stepca:33294/acme/wire/new-account",
+  "newOrder": "https://stepca:33294/acme/wire/new-order"
 }
 ```
 #### 3. fetch a new nonce for the very first request
 ```http request
-HEAD https://stepca:32885/acme/wire/new-nonce
+HEAD https://stepca:33294/acme/wire/new-nonce
                          /acme/{acme-provisioner}/new-nonce
 ```
 #### 4. get a nonce for creating an account
 ```http request
 200
 cache-control: no-store
-link: <https://stepca:32885/acme/wire/directory>;rel="index"
-replay-nonce: THV2VXlKVGR2RFRqZ0NVQmhiUURwSzJVWDViUlQzVU8
+link: <https://stepca:33294/acme/wire/directory>;rel="index"
+replay-nonce: ald2NnlpUnRJYUM3UFI5UHNDVVR4SUtEUU1EN2lKcEk
 ```
 ```text
-THV2VXlKVGR2RFRqZ0NVQmhiUURwSzJVWDViUlQzVU8
+ald2NnlpUnRJYUM3UFI5UHNDVVR4SUtEUU1EN2lKcEk
 ```
 #### 5. create a new account
 ```http request
-POST https://stepca:32885/acme/wire/new-account
+POST https://stepca:33294/acme/wire/new-account
                          /acme/{acme-provisioner}/new-account
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6InBDUVlETnBwNU5wUDZ1WDlPQmtlQ2ZnWGhDR3BXaEEwZ0FFSnFiRVh6OU0ifSwibm9uY2UiOiJUSFYyVlhsS1ZHUjJSRlJxWjBOVlFtaGlVVVJ3U3pKVldEVmlVbFF6VlU4IiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzI4ODUvYWNtZS93aXJlL25ldy1hY2NvdW50In0",
+  "protected": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6InJGZ2FMTFExTlY0eFVVQlpLczk0YTVDUzVSLVU2QmwtckdvVEVvR2NyazgifSwibm9uY2UiOiJhbGQyTm5scFVuUkpZVU0zVUZJNVVITkRWVlI0U1V0RVVVMUVOMmxLY0VrIiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzMyOTQvYWNtZS93aXJlL25ldy1hY2NvdW50In0",
   "payload": "eyJ0ZXJtc09mU2VydmljZUFncmVlZCI6dHJ1ZSwiY29udGFjdCI6WyJ1bmtub3duQGV4YW1wbGUuY29tIl0sIm9ubHlSZXR1cm5FeGlzdGluZyI6ZmFsc2V9",
-  "signature": "CPbU9bY6YT6hjrCWBxGn7ys60LyJdnRyRcYZZppLPpvDS74tyqnhPsiYoBp7OLSUPdVLzkCkXhs69ngMHXsRBA"
+  "signature": "pj1JKuIR8_KWJcgD5fhIIUuUurfP0LVBcgsAkGPdNmi_yWOO-Ci7B2LY_PR5Pfc_6F3rmgoSoGGWzpqUkW38BQ"
 }
 ```
 ```json
@@ -94,11 +94,11 @@ content-type: application/jose+json
     "jwk": {
       "crv": "Ed25519",
       "kty": "OKP",
-      "x": "pCQYDNpp5NpP6uX9OBkeCfgXhCGpWhA0gAEJqbEXz9M"
+      "x": "rFgaLLQ1NV4xUUBZKs94a5CS5R-U6Bl-rGoTEoGcrk8"
     },
-    "nonce": "THV2VXlKVGR2RFRqZ0NVQmhiUURwSzJVWDViUlQzVU8",
+    "nonce": "ald2NnlpUnRJYUM3UFI5UHNDVVR4SUtEUU1EN2lKcEk",
     "typ": "JWT",
-    "url": "https://stepca:32885/acme/wire/new-account"
+    "url": "https://stepca:33294/acme/wire/new-account"
   }
 }
 ```
@@ -107,28 +107,28 @@ content-type: application/jose+json
 201
 cache-control: no-store
 content-type: application/json
-link: <https://stepca:32885/acme/wire/directory>;rel="index"
-location: https://stepca:32885/acme/wire/account/gkjIfTp9ZUm6qzDVdPCUhS2eoB4mXWjG
-replay-nonce: RU9UQkV4eEpUdFZ2SUJXdmJYQk1KMFFNVlZvUnRpOHQ
+link: <https://stepca:33294/acme/wire/directory>;rel="index"
+location: https://stepca:33294/acme/wire/account/4gQp2PqyGfW5PrCZ0d60EkGOPiM5U231
+replay-nonce: YVdxQlNYRTFWZ1puTEN0Ym1CbUY0R0tlSnQ2MElDZzA
 ```
 ```json
 {
   "status": "valid",
-  "orders": "https://stepca:32885/acme/wire/account/gkjIfTp9ZUm6qzDVdPCUhS2eoB4mXWjG/orders"
+  "orders": "https://stepca:33294/acme/wire/account/4gQp2PqyGfW5PrCZ0d60EkGOPiM5U231/orders"
 }
 ```
 ### Request a certificate with relevant identifiers
 #### 7. create a new order
 ```http request
-POST https://stepca:32885/acme/wire/new-order
+POST https://stepca:33294/acme/wire/new-order
                          /acme/{acme-provisioner}/new-order
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vc3RlcGNhOjMyODg1L2FjbWUvd2lyZS9hY2NvdW50L2draklmVHA5WlVtNnF6RFZkUENVaFMyZW9CNG1YV2pHIiwidHlwIjoiSldUIiwibm9uY2UiOiJSVTlVUWtWNGVFcFVkRloyU1VKWGRtSllRazFLTUZGTlZsWnZVblJwT0hRIiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzI4ODUvYWNtZS93aXJlL25ldy1vcmRlciJ9",
-  "payload": "eyJpZGVudGlmaWVycyI6W3sidHlwZSI6IndpcmVhcHAtaWQiLCJ2YWx1ZSI6IntcIm5hbWVcIjpcIkFsaWNlIFNtaXRoXCIsXCJkb21haW5cIjpcIndpcmUuY29tXCIsXCJjbGllbnQtaWRcIjpcImltOndpcmVhcHA9WVRWaE9HWTFNemRrTkdNM05HVmhaamhsTWpsaE9UQTVNMk13T0RrMVlUWS8zNDVlNDAyNWVlMzQyNWUyQHdpcmUuY29tXCIsXCJoYW5kbGVcIjpcImltOndpcmVhcHA9YWxpY2Vfd2lyZVwifSJ9XSwibm90QmVmb3JlIjoiMjAyMy0wNC0yMVQwOToxNjozOC4yOTg2NjdaIiwibm90QWZ0ZXIiOiIyMDIzLTA0LTIxVDEwOjE2OjM4LjI5ODY2N1oifQ",
-  "signature": "4yqtCeLTUriJxSWyIjYNQe9VdbkyAJYdTyLhgmmngqeJhLY0D6pjoCKCKp2foZE-82ZqsbNvK4EP_xCMHMbJAg"
+  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vc3RlcGNhOjMzMjk0L2FjbWUvd2lyZS9hY2NvdW50LzRnUXAyUHF5R2ZXNVByQ1owZDYwRWtHT1BpTTVVMjMxIiwidHlwIjoiSldUIiwibm9uY2UiOiJZVmR4UWxOWVJURldaMXB1VEVOMFltMUNiVVkwUjB0bFNuUTJNRWxEWnpBIiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzMyOTQvYWNtZS93aXJlL25ldy1vcmRlciJ9",
+  "payload": "eyJpZGVudGlmaWVycyI6W3sidHlwZSI6IndpcmVhcHAtaWQiLCJ2YWx1ZSI6IntcIm5hbWVcIjpcIkFsaWNlIFNtaXRoXCIsXCJkb21haW5cIjpcIndpcmUuY29tXCIsXCJjbGllbnQtaWRcIjpcImltOndpcmVhcHA9T0dZMU4yVmxaREpqTUdJd05EUm1PVGsyT0daaU16bGlNakUwTkRreU9HTS83MzU4ZDA2OWU2NDQyMmNhQHdpcmUuY29tXCIsXCJoYW5kbGVcIjpcImltOndpcmVhcHA9YWxpY2Vfd2lyZVwifSJ9XSwibm90QmVmb3JlIjoiMjAyMy0wNS0wOVQwOTo1NjoxOC41NzY5NzhaIiwibm90QWZ0ZXIiOiIyMDIzLTA1LTA5VDEwOjU2OjE4LjU3Njk3OFoifQ",
+  "signature": "CDcE1-N8DWnP-JqJtyvBTumjdUr4M3ICXkVZ7TXK41Mt99_pahXslgP2pO-lOsFnNVx2WO4lS2U3BiYFgJ6EDg"
 }
 ```
 ```json
@@ -137,18 +137,18 @@ content-type: application/jose+json
     "identifiers": [
       {
         "type": "wireapp-id",
-        "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YTVhOGY1MzdkNGM3NGVhZjhlMjlhOTA5M2MwODk1YTY/345e4025ee3425e2@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+        "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=OGY1N2VlZDJjMGIwNDRmOTk2OGZiMzliMjE0NDkyOGM/7358d069e64422ca@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
       }
     ],
-    "notAfter": "2023-04-21T10:16:38.298667Z",
-    "notBefore": "2023-04-21T09:16:38.298667Z"
+    "notAfter": "2023-05-09T10:56:18.576978Z",
+    "notBefore": "2023-05-09T09:56:18.576978Z"
   },
   "protected": {
     "alg": "EdDSA",
-    "kid": "https://stepca:32885/acme/wire/account/gkjIfTp9ZUm6qzDVdPCUhS2eoB4mXWjG",
-    "nonce": "RU9UQkV4eEpUdFZ2SUJXdmJYQk1KMFFNVlZvUnRpOHQ",
+    "kid": "https://stepca:33294/acme/wire/account/4gQp2PqyGfW5PrCZ0d60EkGOPiM5U231",
+    "nonce": "YVdxQlNYRTFWZ1puTEN0Ym1CbUY0R0tlSnQ2MElDZzA",
     "typ": "JWT",
-    "url": "https://stepca:32885/acme/wire/new-order"
+    "url": "https://stepca:33294/acme/wire/new-order"
   }
 }
 ```
@@ -157,40 +157,40 @@ content-type: application/jose+json
 201
 cache-control: no-store
 content-type: application/json
-link: <https://stepca:32885/acme/wire/directory>;rel="index"
-location: https://stepca:32885/acme/wire/order/8WH2kHmLgJV7rPh8RgrVKEO8GndcZJDg
-replay-nonce: OXd1cGVtMzJ0cHlwUXgwNDd3VVZvMGpwS2h5cHY5R2E
+link: <https://stepca:33294/acme/wire/directory>;rel="index"
+location: https://stepca:33294/acme/wire/order/dIIN9chdQ0MxGmPsts7zr5hsCJyInl9X
+replay-nonce: bFlFTHZKNnBPdEVwV1NVTnZnS2hzdGlQMVJIdm9naHc
 ```
 ```json
 {
   "status": "pending",
-  "finalize": "https://stepca:32885/acme/wire/order/8WH2kHmLgJV7rPh8RgrVKEO8GndcZJDg/finalize",
+  "finalize": "https://stepca:33294/acme/wire/order/dIIN9chdQ0MxGmPsts7zr5hsCJyInl9X/finalize",
   "identifiers": [
     {
       "type": "wireapp-id",
-      "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YTVhOGY1MzdkNGM3NGVhZjhlMjlhOTA5M2MwODk1YTY/345e4025ee3425e2@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+      "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=OGY1N2VlZDJjMGIwNDRmOTk2OGZiMzliMjE0NDkyOGM/7358d069e64422ca@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
     }
   ],
   "authorizations": [
-    "https://stepca:32885/acme/wire/authz/AwegYhMFAzT09PbztvcVlG4owLEPkEtb"
+    "https://stepca:33294/acme/wire/authz/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf"
   ],
-  "expires": "2023-04-22T09:16:38Z",
-  "notBefore": "2023-04-21T09:16:38.298667Z",
-  "notAfter": "2023-04-21T10:16:38.298667Z"
+  "expires": "2023-05-10T09:56:18Z",
+  "notBefore": "2023-05-09T09:56:18.576978Z",
+  "notAfter": "2023-05-09T10:56:18.576978Z"
 }
 ```
 ### Display-name and handle already authorized
-#### 9. fetch challenge
+#### 9. create authorization and fetch challenges
 ```http request
-POST https://stepca:32885/acme/wire/authz/AwegYhMFAzT09PbztvcVlG4owLEPkEtb
+POST https://stepca:33294/acme/wire/authz/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf
                          /acme/{acme-provisioner}/authz/{authz-id}
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vc3RlcGNhOjMyODg1L2FjbWUvd2lyZS9hY2NvdW50L2draklmVHA5WlVtNnF6RFZkUENVaFMyZW9CNG1YV2pHIiwidHlwIjoiSldUIiwibm9uY2UiOiJPWGQxY0dWdE16SjBjSGx3VVhnd05EZDNWVlp2TUdwd1MyaDVjSFk1UjJFIiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzI4ODUvYWNtZS93aXJlL2F1dGh6L0F3ZWdZaE1GQXpUMDlQYnp0dmNWbEc0b3dMRVBrRXRiIn0",
+  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vc3RlcGNhOjMzMjk0L2FjbWUvd2lyZS9hY2NvdW50LzRnUXAyUHF5R2ZXNVByQ1owZDYwRWtHT1BpTTVVMjMxIiwidHlwIjoiSldUIiwibm9uY2UiOiJiRmxGVEhaS05uQlBkRVZ3VjFOVlRuWm5TMmh6ZEdsUU1WSklkbTluYUhjIiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzMyOTQvYWNtZS93aXJlL2F1dGh6L29Zem9NaGp0V2ZCZkNyeWJVT1BTYXptWU5aaHI2aERmIn0",
   "payload": "",
-  "signature": "evQSHAwCyctTJjuYkA73rWJVMLE63oXUIuaQWpN05_sv8lo1CpEG5ejbFZv1APOkjbLkW1H6O4vd6xYJTUWFCQ"
+  "signature": "7DxlfHWNYUjOgF48wfdTn0UJ0KJUi8clLaNI4fx8gMVQRFLqAVAGwq5YeHD10IJBXXmP3cLNzH-M0YjlfHMPAA"
 }
 ```
 ```json
@@ -198,50 +198,52 @@ content-type: application/jose+json
   "payload": {},
   "protected": {
     "alg": "EdDSA",
-    "kid": "https://stepca:32885/acme/wire/account/gkjIfTp9ZUm6qzDVdPCUhS2eoB4mXWjG",
-    "nonce": "OXd1cGVtMzJ0cHlwUXgwNDd3VVZvMGpwS2h5cHY5R2E",
+    "kid": "https://stepca:33294/acme/wire/account/4gQp2PqyGfW5PrCZ0d60EkGOPiM5U231",
+    "nonce": "bFlFTHZKNnBPdEVwV1NVTnZnS2hzdGlQMVJIdm9naHc",
     "typ": "JWT",
-    "url": "https://stepca:32885/acme/wire/authz/AwegYhMFAzT09PbztvcVlG4owLEPkEtb"
+    "url": "https://stepca:33294/acme/wire/authz/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf"
   }
 }
 ```
-#### 10. get back challenge
+#### 10. get back challenges
 ```http request
 200
 cache-control: no-store
 content-type: application/json
-link: <https://stepca:32885/acme/wire/directory>;rel="index"
-location: https://stepca:32885/acme/wire/authz/AwegYhMFAzT09PbztvcVlG4owLEPkEtb
-replay-nonce: ZUxZUk4wdkFkTUN3a29wVVFvazI3bHhqSHdDYTNQM3U
+link: <https://stepca:33294/acme/wire/directory>;rel="index"
+location: https://stepca:33294/acme/wire/authz/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf
+replay-nonce: NWsyWmdzZUIzZ2lJSko2aGNtYXI5MzVsaVMwa2xYTko
 ```
 ```json
 {
   "status": "pending",
-  "expires": "2023-04-22T09:16:38Z",
+  "expires": "2023-05-10T09:56:18Z",
   "challenges": [
     {
       "type": "wire-oidc-01",
-      "url": "https://stepca:32885/acme/wire/challenge/AwegYhMFAzT09PbztvcVlG4owLEPkEtb/YaUtWZ2bKbrpplQLvuJTUsLFKKxX0xq1",
+      "url": "https://stepca:33294/acme/wire/challenge/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf/oPyI2NPNHw9do0Mql8ZNfvjSo0rQn9H1",
       "status": "pending",
-      "token": "eXxUenCbjifle7yTobRmYlGcdnlzljm2"
+      "token": "lzKZqjB6Xc3KbLJkEnfKbPYphnZhjNv0",
+      "target": "http://dex:18263/dex"
     },
     {
       "type": "wire-dpop-01",
-      "url": "https://stepca:32885/acme/wire/challenge/AwegYhMFAzT09PbztvcVlG4owLEPkEtb/o2l6SiuLShSUJxcRKJEdBmUIj8SQSSb8",
+      "url": "https://stepca:33294/acme/wire/challenge/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf/V3LKiNPifdQwz0PLladtHRH9WtOu9XFj",
       "status": "pending",
-      "token": "eXxUenCbjifle7yTobRmYlGcdnlzljm2"
+      "token": "lzKZqjB6Xc3KbLJkEnfKbPYphnZhjNv0",
+      "target": "http://wire.com:22899/clients/7358d069e64422ca/access-token"
     }
   ],
   "identifier": {
     "type": "wireapp-id",
-    "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YTVhOGY1MzdkNGM3NGVhZjhlMjlhOTA5M2MwODk1YTY/345e4025ee3425e2@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+    "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=OGY1N2VlZDJjMGIwNDRmOTk2OGZiMzliMjE0NDkyOGM/7358d069e64422ca@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
   }
 }
 ```
 ### Client fetches JWT DPoP access token (with wire-server)
 #### 11. fetch a nonce from wire-server
 ```http request
-GET http://wire.com:18691/clients/token/nonce
+GET http://wire.com:22899/clients/token/nonce
 ```
 #### 12. get wire-server nonce
 ```http request
@@ -249,7 +251,7 @@ GET http://wire.com:18691/clients/token/nonce
 
 ```
 ```text
-WVB6T2RHT3BvQW1CdXRpMXNYOTV0S2NxbW9TVTRjOHQ
+bEsydFlSNTNCS01NV2dxMGJ6bmJUdFJuZFRMa0FPUUs
 ```
 #### 13. create client DPoP token
 
@@ -257,21 +259,22 @@ WVB6T2RHT3BvQW1CdXRpMXNYOTV0S2NxbW9TVTRjOHQ
 <details>
 <summary><b>Dpop token</b></summary>
 
-See it on [jwt.io](https://jwt.io/#id_token=eyJhbGciOiJFZERTQSIsInR5cCI6ImRwb3Arand0IiwiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoicENRWUROcHA1TnBQNnVYOU9Ca2VDZmdYaENHcFdoQTBnQUVKcWJFWHo5TSJ9fQ.eyJpYXQiOjE2ODIwNjg1OTgsImV4cCI6MTY4MjA3MjE5OCwibmJmIjoxNjgyMDY4NTk4LCJzdWIiOiJpbTp3aXJlYXBwPVlUVmhPR1kxTXpka05HTTNOR1ZoWmpobE1qbGhPVEE1TTJNd09EazFZVFkvMzQ1ZTQwMjVlZTM0MjVlMkB3aXJlLmNvbSIsImp0aSI6IjNhMTg4Yzc2LTZmYTYtNGM2Ny1iMzk0LWRlMDgxZWFiNGFmMCIsIm5vbmNlIjoiV1ZCNlQyUkhUM0J2UVcxQ2RYUnBNWE5ZT1RWMFMyTnhiVzlUVlRSak9IUSIsImh0bSI6IlBPU1QiLCJodHUiOiJodHRwOi8vd2lyZS5jb206MTg2OTEvIiwiY2hhbCI6ImVYeFVlbkNiamlmbGU3eVRvYlJtWWxHY2RubHpsam0yIn0.PdAWTGtoWBEWW7g_Qlf39rAQRIesp1lglVSC4GuGhKg5W8GeaM-mzccYyVRx1G1jdwSV90AH9m5xeuvKi-RVCQ)
+See it on [jwt.io](https://jwt.io/#id_token=eyJhbGciOiJFZERTQSIsInR5cCI6ImRwb3Arand0IiwiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoickZnYUxMUTFOVjR4VVVCWktzOTRhNUNTNVItVTZCbC1yR29URW9HY3JrOCJ9fQ.eyJpYXQiOjE2ODM2MjYxNzgsImV4cCI6MTY4MzYyOTc3OCwibmJmIjoxNjgzNjI2MTczLCJzdWIiOiJpbTp3aXJlYXBwPU9HWTFOMlZsWkRKak1HSXdORFJtT1RrMk9HWmlNemxpTWpFME5Ea3lPR00vNzM1OGQwNjllNjQ0MjJjYUB3aXJlLmNvbSIsImp0aSI6ImNjMzUzMmE3LWY5ZGEtNDFjNS04ZWVjLTk5YWViNzFlMmRiMyIsIm5vbmNlIjoiYkVzeWRGbFNOVE5DUzAxTlYyZHhNR0o2Ym1KVWRGSnVaRlJNYTBGUFVVcyIsImh0bSI6IlBPU1QiLCJodHUiOiJodHRwOi8vd2lyZS5jb206MjI4OTkvY2xpZW50cy83MzU4ZDA2OWU2NDQyMmNhL2FjY2Vzcy10b2tlbiIsImNoYWwiOiJsektacWpCNlhjM0tiTEprRW5mS2JQWXBoblpoak52MCJ9.EUOZbGivzgYa2tebgIjVogc6zYsERzq5L1cJ45_T1qbiVDcLLwlvTBs1U-LLWL9palub8vVLhFofUPTszni6Bg)
 
 Raw:
 ```text
 eyJhbGciOiJFZERTQSIsInR5cCI6ImRwb3Arand0IiwiandrIjp7Imt0eSI6Ik9L
-UCIsImNydiI6IkVkMjU1MTkiLCJ4IjoicENRWUROcHA1TnBQNnVYOU9Ca2VDZmdY
-aENHcFdoQTBnQUVKcWJFWHo5TSJ9fQ.eyJpYXQiOjE2ODIwNjg1OTgsImV4cCI6M
-TY4MjA3MjE5OCwibmJmIjoxNjgyMDY4NTk4LCJzdWIiOiJpbTp3aXJlYXBwPVlUV
-mhPR1kxTXpka05HTTNOR1ZoWmpobE1qbGhPVEE1TTJNd09EazFZVFkvMzQ1ZTQwM
-jVlZTM0MjVlMkB3aXJlLmNvbSIsImp0aSI6IjNhMTg4Yzc2LTZmYTYtNGM2Ny1iM
-zk0LWRlMDgxZWFiNGFmMCIsIm5vbmNlIjoiV1ZCNlQyUkhUM0J2UVcxQ2RYUnBNW
-E5ZT1RWMFMyTnhiVzlUVlRSak9IUSIsImh0bSI6IlBPU1QiLCJodHUiOiJodHRwO
-i8vd2lyZS5jb206MTg2OTEvIiwiY2hhbCI6ImVYeFVlbkNiamlmbGU3eVRvYlJtW
-WxHY2RubHpsam0yIn0.PdAWTGtoWBEWW7g_Qlf39rAQRIesp1lglVSC4GuGhKg5W
-8GeaM-mzccYyVRx1G1jdwSV90AH9m5xeuvKi-RVCQ
+UCIsImNydiI6IkVkMjU1MTkiLCJ4IjoickZnYUxMUTFOVjR4VVVCWktzOTRhNUNT
+NVItVTZCbC1yR29URW9HY3JrOCJ9fQ.eyJpYXQiOjE2ODM2MjYxNzgsImV4cCI6M
+TY4MzYyOTc3OCwibmJmIjoxNjgzNjI2MTczLCJzdWIiOiJpbTp3aXJlYXBwPU9HW
+TFOMlZsWkRKak1HSXdORFJtT1RrMk9HWmlNemxpTWpFME5Ea3lPR00vNzM1OGQwN
+jllNjQ0MjJjYUB3aXJlLmNvbSIsImp0aSI6ImNjMzUzMmE3LWY5ZGEtNDFjNS04Z
+WVjLTk5YWViNzFlMmRiMyIsIm5vbmNlIjoiYkVzeWRGbFNOVE5DUzAxTlYyZHhNR
+0o2Ym1KVWRGSnVaRlJNYTBGUFVVcyIsImh0bSI6IlBPU1QiLCJodHUiOiJodHRwO
+i8vd2lyZS5jb206MjI4OTkvY2xpZW50cy83MzU4ZDA2OWU2NDQyMmNhL2FjY2Vzc
+y10b2tlbiIsImNoYWwiOiJsektacWpCNlhjM0tiTEprRW5mS2JQWXBoblpoak52M
+CJ9.EUOZbGivzgYa2tebgIjVogc6zYsERzq5L1cJ45_T1qbiVDcLLwlvTBs1U-LL
+WL9palub8vVLhFofUPTszni6Bg
 ```
 
 Decoded:
@@ -282,7 +285,7 @@ Decoded:
   "jwk": {
     "crv": "Ed25519",
     "kty": "OKP",
-    "x": "pCQYDNpp5NpP6uX9OBkeCfgXhCGpWhA0gAEJqbEXz9M"
+    "x": "rFgaLLQ1NV4xUUBZKs94a5CS5R-U6Bl-rGoTEoGcrk8"
   },
   "typ": "dpop+jwt"
 }
@@ -290,15 +293,15 @@ Decoded:
 
 ```json
 {
-  "chal": "eXxUenCbjifle7yTobRmYlGcdnlzljm2",
-  "exp": 1682072198,
+  "chal": "lzKZqjB6Xc3KbLJkEnfKbPYphnZhjNv0",
+  "exp": 1683629778,
   "htm": "POST",
-  "htu": "http://wire.com:18691/",
-  "iat": 1682068598,
-  "jti": "3a188c76-6fa6-4c67-b394-de081eab4af0",
-  "nbf": 1682068598,
-  "nonce": "WVB6T2RHT3BvQW1CdXRpMXNYOTV0S2NxbW9TVTRjOHQ",
-  "sub": "im:wireapp=YTVhOGY1MzdkNGM3NGVhZjhlMjlhOTA5M2MwODk1YTY/345e4025ee3425e2@wire.com"
+  "htu": "http://wire.com:22899/clients/7358d069e64422ca/access-token",
+  "iat": 1683626178,
+  "jti": "cc3532a7-f9da-41c5-8eec-99aeb71e2db3",
+  "nbf": 1683626173,
+  "nonce": "bEsydFlSNTNCS01NV2dxMGJ6bmJUdFJuZFRMa0FPUUs",
+  "sub": "im:wireapp=OGY1N2VlZDJjMGIwNDRmOTk2OGZiMzliMjE0NDkyOGM/7358d069e64422ca@wire.com"
 }
 ```
 
@@ -306,10 +309,10 @@ Decoded:
 ✅ Signature Verified with key:
 ```text
 -----BEGIN PRIVATE KEY-----
-MC4CAQAwBQYDK2VwBCIEIAEqjuwlod5vniAl1Jjm5N4bOlcLqamHE6Tx1XBIFmBC
+MC4CAQAwBQYDK2VwBCIEILOYwT3j6Um76IrP7w5Aq2d6byhLWOvAgnw7HO0yFSBj
 -----END PRIVATE KEY-----
 -----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEApCQYDNpp5NpP6uX9OBkeCfgXhCGpWhA0gAEJqbEXz9M=
+MCowBQYDK2VwAyEArFgaLLQ1NV4xUUBZKs94a5CS5R+U6Bl+rGoTEoGcrk8=
 -----END PUBLIC KEY-----
 ```
 
@@ -318,9 +321,9 @@ MCowBQYDK2VwAyEApCQYDNpp5NpP6uX9OBkeCfgXhCGpWhA0gAEJqbEXz9M=
 
 #### 14. trade client DPoP token for an access token
 ```http request
-POST http://wire.com:18691/clients/3773524069437416930/access-token
-                          /clients/{wire-client-id}/access-token
-dpop: ZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNkltUndiM0FyYW5kMElpd2lhbmRySWpwN0ltdDBlU0k2SWs5TFVDSXNJbU55ZGlJNklrVmtNalUxTVRraUxDSjRJam9pY0VOUldVUk9jSEExVG5CUU5uVllPVTlDYTJWRFptZFlhRU5IY0Zkb1FUQm5RVVZLY1dKRldIbzVUU0o5ZlEuZXlKcFlYUWlPakUyT0RJd05qZzFPVGdzSW1WNGNDSTZNVFk0TWpBM01qRTVPQ3dpYm1KbUlqb3hOamd5TURZNE5UazRMQ0p6ZFdJaU9pSnBiVHAzYVhKbFlYQndQVmxVVm1oUFIxa3hUWHBrYTA1SFRUTk9SMVpvV21wb2JFMXFiR2hQVkVFMVRUSk5kMDlFYXpGWlZGa3ZNelExWlRRd01qVmxaVE0wTWpWbE1rQjNhWEpsTG1OdmJTSXNJbXAwYVNJNklqTmhNVGc0WXpjMkxUWm1ZVFl0TkdNMk55MWlNemswTFdSbE1EZ3haV0ZpTkdGbU1DSXNJbTV2Ym1ObElqb2lWMVpDTmxReVVraFVNMEoyVVZjeFEyUllVbkJOV0U1WlQxUldNRk15VG5oaVZ6bFVWbFJTYWs5SVVTSXNJbWgwYlNJNklsQlBVMVFpTENKb2RIVWlPaUpvZEhSd09pOHZkMmx5WlM1amIyMDZNVGcyT1RFdklpd2lZMmhoYkNJNkltVlllRlZsYmtOaWFtbG1iR1UzZVZSdllsSnRXV3hIWTJSdWJIcHNhbTB5SW4wLlBkQVdUR3RvV0JFV1c3Z19RbGYzOXJBUVJJZXNwMWxnbFZTQzRHdUdoS2c1VzhHZWFNLW16Y2NZeVZSeDFHMWpkd1NWOTBBSDltNXhldXZLaS1SVkNR
+POST http://wire.com:22899/clients/7358d069e64422ca/access-token
+                          /clients/{device-id}/access-token
+dpop: ZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNkltUndiM0FyYW5kMElpd2lhbmRySWpwN0ltdDBlU0k2SWs5TFVDSXNJbU55ZGlJNklrVmtNalUxTVRraUxDSjRJam9pY2tabllVeE1VVEZPVmpSNFZWVkNXa3R6T1RSaE5VTlROVkl0VlRaQ2JDMXlSMjlVUlc5SFkzSnJPQ0o5ZlEuZXlKcFlYUWlPakUyT0RNMk1qWXhOemdzSW1WNGNDSTZNVFk0TXpZeU9UYzNPQ3dpYm1KbUlqb3hOamd6TmpJMk1UY3pMQ0p6ZFdJaU9pSnBiVHAzYVhKbFlYQndQVTlIV1RGT01sWnNXa1JLYWsxSFNYZE9SRkp0VDFSck1rOUhXbWxOZW14cFRXcEZNRTVFYTNsUFIwMHZOek0xT0dRd05qbGxOalEwTWpKallVQjNhWEpsTG1OdmJTSXNJbXAwYVNJNkltTmpNelV6TW1FM0xXWTVaR0V0TkRGak5TMDRaV1ZqTFRrNVlXVmlOekZsTW1SaU15SXNJbTV2Ym1ObElqb2lZa1Z6ZVdSR2JGTk9WRTVEVXpBeFRsWXlaSGhOUjBvMlltMUtWV1JHU25WYVJsSk5ZVEJHVUZWVmN5SXNJbWgwYlNJNklsQlBVMVFpTENKb2RIVWlPaUpvZEhSd09pOHZkMmx5WlM1amIyMDZNakk0T1RrdlkyeHBaVzUwY3k4M016VTRaREEyT1dVMk5EUXlNbU5oTDJGalkyVnpjeTEwYjJ0bGJpSXNJbU5vWVd3aU9pSnNla3RhY1dwQ05saGpNMHRpVEVwclJXNW1TMkpRV1hCb2JscG9hazUyTUNKOS5FVU9aYkdpdnpnWWEydGViZ0lqVm9nYzZ6WXNFUnpxNUwxY0o0NV9UMXFiaVZEY0xMd2x2VEJzMVUtTExXTDlwYWx1Yjh2VkxoRm9mVVBUc3puaTZCZw
 ```
 #### 15. get a Dpop access token from wire-server
 ```http request
@@ -330,7 +333,7 @@ dpop: ZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNkltUndiM0FyYW5kMElpd2lhbmRySWpwN0ltdD
 ```json
 {
   "expires_in": 2082008461,
-  "token": "eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6IkctWHEwZnJZTjcwWENqTGVxQURvNURqUGRMR1VRb0xLNy1Pdk1jazd2Yk0ifX0.eyJpYXQiOjE2ODIwNjg1OTgsImV4cCI6MTY4OTg0NDU5OCwibmJmIjoxNjgyMDY4NTk4LCJpc3MiOiJodHRwOi8vd2lyZS5jb206MTg2OTEvIiwic3ViIjoiaW06d2lyZWFwcD1ZVFZoT0dZMU16ZGtOR00zTkdWaFpqaGxNamxoT1RBNU0yTXdPRGsxWVRZLzM0NWU0MDI1ZWUzNDI1ZTJAd2lyZS5jb20iLCJhdWQiOiJodHRwOi8vd2lyZS5jb206MTg2OTEvIiwianRpIjoiM2UwZGUyYjYtNTFhMS00NGI2LWE0YTAtODVjNzFkNmQ2ODlmIiwibm9uY2UiOiJXVkI2VDJSSFQzQnZRVzFDZFhScE1YTllPVFYwUzJOeGJXOVRWVFJqT0hRIiwiY2hhbCI6ImVYeFVlbkNiamlmbGU3eVRvYlJtWWxHY2RubHpsam0yIiwiY25mIjp7ImtpZCI6IjJIMzhwemRZVU5oUmVVWHJ5cnh0R0k0b3oxem01Y1pKSjY5Qlp5bVQ5N2sifSwicHJvb2YiOiJleUpoYkdjaU9pSkZaRVJUUVNJc0luUjVjQ0k2SW1Sd2IzQXJhbmQwSWl3aWFuZHJJanA3SW10MGVTSTZJazlMVUNJc0ltTnlkaUk2SWtWa01qVTFNVGtpTENKNElqb2ljRU5SV1VST2NIQTFUbkJRTm5WWU9VOUNhMlZEWm1kWWFFTkhjRmRvUVRCblFVVktjV0pGV0hvNVRTSjlmUS5leUpwWVhRaU9qRTJPREl3TmpnMU9UZ3NJbVY0Y0NJNk1UWTRNakEzTWpFNU9Dd2libUptSWpveE5qZ3lNRFk0TlRrNExDSnpkV0lpT2lKcGJUcDNhWEpsWVhCd1BWbFVWbWhQUjFreFRYcGthMDVIVFROT1IxWm9XbXBvYkUxcWJHaFBWRUUxVFRKTmQwOUVhekZaVkZrdk16UTFaVFF3TWpWbFpUTTBNalZsTWtCM2FYSmxMbU52YlNJc0ltcDBhU0k2SWpOaE1UZzRZemMyTFRabVlUWXROR00yTnkxaU16azBMV1JsTURneFpXRmlOR0ZtTUNJc0ltNXZibU5sSWpvaVYxWkNObFF5VWtoVU0wSjJVVmN4UTJSWVVuQk5XRTVaVDFSV01GTXlUbmhpVnpsVVZsUlNhazlJVVNJc0ltaDBiU0k2SWxCUFUxUWlMQ0pvZEhVaU9pSm9kSFJ3T2k4dmQybHlaUzVqYjIwNk1UZzJPVEV2SWl3aVkyaGhiQ0k2SW1WWWVGVmxia05pYW1sbWJHVTNlVlJ2WWxKdFdXeEhZMlJ1Ykhwc2FtMHlJbjAuUGRBV1RHdG9XQkVXVzdnX1FsZjM5ckFRUkllc3AxbGdsVlNDNEd1R2hLZzVXOEdlYU0tbXpjY1l5VlJ4MUcxamR3U1Y5MEFIOW01eGV1dktpLVJWQ1EiLCJjbGllbnRfaWQiOiJpbTp3aXJlYXBwPVlUVmhPR1kxTXpka05HTTNOR1ZoWmpobE1qbGhPVEE1TTJNd09EazFZVFkvMzQ1ZTQwMjVlZTM0MjVlMkB3aXJlLmNvbSIsImFwaV92ZXJzaW9uIjozLCJzY29wZSI6IndpcmVfY2xpZW50X2lkIn0.--wxzLC8OoRM1KjUC-SIfN2lU3MgerFUinCNhTj1eAvhKe13WsM7opzWO6snNvzKjsbEzYwC29RGmVfH4MV1Aw",
+  "token": "eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6IlV6bG1UdEZqZzk1ZXB5NFpiS3J3QU9pRk5vaTk0NVhJZUJib1UtNU5tT28ifX0.eyJpYXQiOjE2ODM2MjYxNzgsImV4cCI6MTY5MTQwMjE3OCwibmJmIjoxNjgzNjI2MTczLCJpc3MiOiJodHRwOi8vd2lyZS5jb206MjI4OTkvY2xpZW50cy83MzU4ZDA2OWU2NDQyMmNhL2FjY2Vzcy10b2tlbiIsInN1YiI6ImltOndpcmVhcHA9T0dZMU4yVmxaREpqTUdJd05EUm1PVGsyT0daaU16bGlNakUwTkRreU9HTS83MzU4ZDA2OWU2NDQyMmNhQHdpcmUuY29tIiwiYXVkIjoiaHR0cDovL3dpcmUuY29tOjIyODk5L2NsaWVudHMvNzM1OGQwNjllNjQ0MjJjYS9hY2Nlc3MtdG9rZW4iLCJqdGkiOiJhM2VhMDM5Zi00M2Q0LTQ4YTMtOTliYi02NWE5MTY0MmUxMDMiLCJub25jZSI6ImJFc3lkRmxTTlROQ1MwMU5WMmR4TUdKNmJtSlVkRkp1WkZSTWEwRlBVVXMiLCJjaGFsIjoibHpLWnFqQjZYYzNLYkxKa0VuZktiUFlwaG5aaGpOdjAiLCJjbmYiOnsia2lkIjoiMEExZ1J5c3dLUlRjd0RtNXBQTTZid0hSNFYzMnhtTFFGSi1QZGVkSWRjdyJ9LCJwcm9vZiI6ImV5SmhiR2NpT2lKRlpFUlRRU0lzSW5SNWNDSTZJbVJ3YjNBcmFuZDBJaXdpYW5kcklqcDdJbXQwZVNJNklrOUxVQ0lzSW1OeWRpSTZJa1ZrTWpVMU1Ua2lMQ0o0SWpvaWNrWm5ZVXhNVVRGT1ZqUjRWVlZDV2t0ek9UUmhOVU5UTlZJdFZUWkNiQzF5UjI5VVJXOUhZM0pyT0NKOWZRLmV5SnBZWFFpT2pFMk9ETTJNall4Tnpnc0ltVjRjQ0k2TVRZNE16WXlPVGMzT0N3aWJtSm1Jam94Tmpnek5qSTJNVGN6TENKemRXSWlPaUpwYlRwM2FYSmxZWEJ3UFU5SFdURk9NbFpzV2tSS2FrMUhTWGRPUkZKdFQxUnJNazlIV21sTmVteHBUV3BGTUU1RWEzbFBSMDB2TnpNMU9HUXdOamxsTmpRME1qSmpZVUIzYVhKbExtTnZiU0lzSW1wMGFTSTZJbU5qTXpVek1tRTNMV1k1WkdFdE5ERmpOUzA0WldWakxUazVZV1ZpTnpGbE1tUmlNeUlzSW01dmJtTmxJam9pWWtWemVXUkdiRk5PVkU1RFV6QXhUbFl5WkhoTlIwbzJZbTFLVldSR1NuVmFSbEpOWVRCR1VGVlZjeUlzSW1oMGJTSTZJbEJQVTFRaUxDSm9kSFVpT2lKb2RIUndPaTh2ZDJseVpTNWpiMjA2TWpJNE9Ua3ZZMnhwWlc1MGN5ODNNelU0WkRBMk9XVTJORFF5TW1OaEwyRmpZMlZ6Y3kxMGIydGxiaUlzSW1Ob1lXd2lPaUpzZWt0YWNXcENObGhqTTB0aVRFcHJSVzVtUzJKUVdYQm9ibHBvYWs1Mk1DSjkuRVVPWmJHaXZ6Z1lhMnRlYmdJalZvZ2M2ellzRVJ6cTVMMWNKNDVfVDFxYmlWRGNMTHdsdlRCczFVLUxMV0w5cGFsdWI4dlZMaEZvZlVQVHN6bmk2QmciLCJjbGllbnRfaWQiOiJpbTp3aXJlYXBwPU9HWTFOMlZsWkRKak1HSXdORFJtT1RrMk9HWmlNemxpTWpFME5Ea3lPR00vNzM1OGQwNjllNjQ0MjJjYUB3aXJlLmNvbSIsImFwaV92ZXJzaW9uIjozLCJzY29wZSI6IndpcmVfY2xpZW50X2lkIn0.9fK_PeHZK6DzJmaGTNmWkT1PjfsvOmP0ekzcl95FdwX9hFqcXXjsgu6lC3MpgyfFvwnY3__6g70fBii7eKhiCw",
   "type": "DPoP"
 }
 ```
@@ -338,40 +341,43 @@ dpop: ZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNkltUndiM0FyYW5kMElpd2lhbmRySWpwN0ltdD
 <details>
 <summary><b>Access token</b></summary>
 
-See it on [jwt.io](https://jwt.io/#id_token=eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6IkctWHEwZnJZTjcwWENqTGVxQURvNURqUGRMR1VRb0xLNy1Pdk1jazd2Yk0ifX0.eyJpYXQiOjE2ODIwNjg1OTgsImV4cCI6MTY4OTg0NDU5OCwibmJmIjoxNjgyMDY4NTk4LCJpc3MiOiJodHRwOi8vd2lyZS5jb206MTg2OTEvIiwic3ViIjoiaW06d2lyZWFwcD1ZVFZoT0dZMU16ZGtOR00zTkdWaFpqaGxNamxoT1RBNU0yTXdPRGsxWVRZLzM0NWU0MDI1ZWUzNDI1ZTJAd2lyZS5jb20iLCJhdWQiOiJodHRwOi8vd2lyZS5jb206MTg2OTEvIiwianRpIjoiM2UwZGUyYjYtNTFhMS00NGI2LWE0YTAtODVjNzFkNmQ2ODlmIiwibm9uY2UiOiJXVkI2VDJSSFQzQnZRVzFDZFhScE1YTllPVFYwUzJOeGJXOVRWVFJqT0hRIiwiY2hhbCI6ImVYeFVlbkNiamlmbGU3eVRvYlJtWWxHY2RubHpsam0yIiwiY25mIjp7ImtpZCI6IjJIMzhwemRZVU5oUmVVWHJ5cnh0R0k0b3oxem01Y1pKSjY5Qlp5bVQ5N2sifSwicHJvb2YiOiJleUpoYkdjaU9pSkZaRVJUUVNJc0luUjVjQ0k2SW1Sd2IzQXJhbmQwSWl3aWFuZHJJanA3SW10MGVTSTZJazlMVUNJc0ltTnlkaUk2SWtWa01qVTFNVGtpTENKNElqb2ljRU5SV1VST2NIQTFUbkJRTm5WWU9VOUNhMlZEWm1kWWFFTkhjRmRvUVRCblFVVktjV0pGV0hvNVRTSjlmUS5leUpwWVhRaU9qRTJPREl3TmpnMU9UZ3NJbVY0Y0NJNk1UWTRNakEzTWpFNU9Dd2libUptSWpveE5qZ3lNRFk0TlRrNExDSnpkV0lpT2lKcGJUcDNhWEpsWVhCd1BWbFVWbWhQUjFreFRYcGthMDVIVFROT1IxWm9XbXBvYkUxcWJHaFBWRUUxVFRKTmQwOUVhekZaVkZrdk16UTFaVFF3TWpWbFpUTTBNalZsTWtCM2FYSmxMbU52YlNJc0ltcDBhU0k2SWpOaE1UZzRZemMyTFRabVlUWXROR00yTnkxaU16azBMV1JsTURneFpXRmlOR0ZtTUNJc0ltNXZibU5sSWpvaVYxWkNObFF5VWtoVU0wSjJVVmN4UTJSWVVuQk5XRTVaVDFSV01GTXlUbmhpVnpsVVZsUlNhazlJVVNJc0ltaDBiU0k2SWxCUFUxUWlMQ0pvZEhVaU9pSm9kSFJ3T2k4dmQybHlaUzVqYjIwNk1UZzJPVEV2SWl3aVkyaGhiQ0k2SW1WWWVGVmxia05pYW1sbWJHVTNlVlJ2WWxKdFdXeEhZMlJ1Ykhwc2FtMHlJbjAuUGRBV1RHdG9XQkVXVzdnX1FsZjM5ckFRUkllc3AxbGdsVlNDNEd1R2hLZzVXOEdlYU0tbXpjY1l5VlJ4MUcxamR3U1Y5MEFIOW01eGV1dktpLVJWQ1EiLCJjbGllbnRfaWQiOiJpbTp3aXJlYXBwPVlUVmhPR1kxTXpka05HTTNOR1ZoWmpobE1qbGhPVEE1TTJNd09EazFZVFkvMzQ1ZTQwMjVlZTM0MjVlMkB3aXJlLmNvbSIsImFwaV92ZXJzaW9uIjozLCJzY29wZSI6IndpcmVfY2xpZW50X2lkIn0.--wxzLC8OoRM1KjUC-SIfN2lU3MgerFUinCNhTj1eAvhKe13WsM7opzWO6snNvzKjsbEzYwC29RGmVfH4MV1Aw)
+See it on [jwt.io](https://jwt.io/#id_token=eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6IlV6bG1UdEZqZzk1ZXB5NFpiS3J3QU9pRk5vaTk0NVhJZUJib1UtNU5tT28ifX0.eyJpYXQiOjE2ODM2MjYxNzgsImV4cCI6MTY5MTQwMjE3OCwibmJmIjoxNjgzNjI2MTczLCJpc3MiOiJodHRwOi8vd2lyZS5jb206MjI4OTkvY2xpZW50cy83MzU4ZDA2OWU2NDQyMmNhL2FjY2Vzcy10b2tlbiIsInN1YiI6ImltOndpcmVhcHA9T0dZMU4yVmxaREpqTUdJd05EUm1PVGsyT0daaU16bGlNakUwTkRreU9HTS83MzU4ZDA2OWU2NDQyMmNhQHdpcmUuY29tIiwiYXVkIjoiaHR0cDovL3dpcmUuY29tOjIyODk5L2NsaWVudHMvNzM1OGQwNjllNjQ0MjJjYS9hY2Nlc3MtdG9rZW4iLCJqdGkiOiJhM2VhMDM5Zi00M2Q0LTQ4YTMtOTliYi02NWE5MTY0MmUxMDMiLCJub25jZSI6ImJFc3lkRmxTTlROQ1MwMU5WMmR4TUdKNmJtSlVkRkp1WkZSTWEwRlBVVXMiLCJjaGFsIjoibHpLWnFqQjZYYzNLYkxKa0VuZktiUFlwaG5aaGpOdjAiLCJjbmYiOnsia2lkIjoiMEExZ1J5c3dLUlRjd0RtNXBQTTZid0hSNFYzMnhtTFFGSi1QZGVkSWRjdyJ9LCJwcm9vZiI6ImV5SmhiR2NpT2lKRlpFUlRRU0lzSW5SNWNDSTZJbVJ3YjNBcmFuZDBJaXdpYW5kcklqcDdJbXQwZVNJNklrOUxVQ0lzSW1OeWRpSTZJa1ZrTWpVMU1Ua2lMQ0o0SWpvaWNrWm5ZVXhNVVRGT1ZqUjRWVlZDV2t0ek9UUmhOVU5UTlZJdFZUWkNiQzF5UjI5VVJXOUhZM0pyT0NKOWZRLmV5SnBZWFFpT2pFMk9ETTJNall4Tnpnc0ltVjRjQ0k2TVRZNE16WXlPVGMzT0N3aWJtSm1Jam94Tmpnek5qSTJNVGN6TENKemRXSWlPaUpwYlRwM2FYSmxZWEJ3UFU5SFdURk9NbFpzV2tSS2FrMUhTWGRPUkZKdFQxUnJNazlIV21sTmVteHBUV3BGTUU1RWEzbFBSMDB2TnpNMU9HUXdOamxsTmpRME1qSmpZVUIzYVhKbExtTnZiU0lzSW1wMGFTSTZJbU5qTXpVek1tRTNMV1k1WkdFdE5ERmpOUzA0WldWakxUazVZV1ZpTnpGbE1tUmlNeUlzSW01dmJtTmxJam9pWWtWemVXUkdiRk5PVkU1RFV6QXhUbFl5WkhoTlIwbzJZbTFLVldSR1NuVmFSbEpOWVRCR1VGVlZjeUlzSW1oMGJTSTZJbEJQVTFRaUxDSm9kSFVpT2lKb2RIUndPaTh2ZDJseVpTNWpiMjA2TWpJNE9Ua3ZZMnhwWlc1MGN5ODNNelU0WkRBMk9XVTJORFF5TW1OaEwyRmpZMlZ6Y3kxMGIydGxiaUlzSW1Ob1lXd2lPaUpzZWt0YWNXcENObGhqTTB0aVRFcHJSVzVtUzJKUVdYQm9ibHBvYWs1Mk1DSjkuRVVPWmJHaXZ6Z1lhMnRlYmdJalZvZ2M2ellzRVJ6cTVMMWNKNDVfVDFxYmlWRGNMTHdsdlRCczFVLUxMV0w5cGFsdWI4dlZMaEZvZlVQVHN6bmk2QmciLCJjbGllbnRfaWQiOiJpbTp3aXJlYXBwPU9HWTFOMlZsWkRKak1HSXdORFJtT1RrMk9HWmlNemxpTWpFME5Ea3lPR00vNzM1OGQwNjllNjQ0MjJjYUB3aXJlLmNvbSIsImFwaV92ZXJzaW9uIjozLCJzY29wZSI6IndpcmVfY2xpZW50X2lkIn0.9fK_PeHZK6DzJmaGTNmWkT1PjfsvOmP0ekzcl95FdwX9hFqcXXjsgu6lC3MpgyfFvwnY3__6g70fBii7eKhiCw)
 
 Raw:
 ```text
 eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1Ai
-LCJjcnYiOiJFZDI1NTE5IiwieCI6IkctWHEwZnJZTjcwWENqTGVxQURvNURqUGRM
-R1VRb0xLNy1Pdk1jazd2Yk0ifX0.eyJpYXQiOjE2ODIwNjg1OTgsImV4cCI6MTY4
-OTg0NDU5OCwibmJmIjoxNjgyMDY4NTk4LCJpc3MiOiJodHRwOi8vd2lyZS5jb206
-MTg2OTEvIiwic3ViIjoiaW06d2lyZWFwcD1ZVFZoT0dZMU16ZGtOR00zTkdWaFpq
-aGxNamxoT1RBNU0yTXdPRGsxWVRZLzM0NWU0MDI1ZWUzNDI1ZTJAd2lyZS5jb20i
-LCJhdWQiOiJodHRwOi8vd2lyZS5jb206MTg2OTEvIiwianRpIjoiM2UwZGUyYjYt
-NTFhMS00NGI2LWE0YTAtODVjNzFkNmQ2ODlmIiwibm9uY2UiOiJXVkI2VDJSSFQz
-QnZRVzFDZFhScE1YTllPVFYwUzJOeGJXOVRWVFJqT0hRIiwiY2hhbCI6ImVYeFVl
-bkNiamlmbGU3eVRvYlJtWWxHY2RubHpsam0yIiwiY25mIjp7ImtpZCI6IjJIMzhw
-emRZVU5oUmVVWHJ5cnh0R0k0b3oxem01Y1pKSjY5Qlp5bVQ5N2sifSwicHJvb2Yi
-OiJleUpoYkdjaU9pSkZaRVJUUVNJc0luUjVjQ0k2SW1Sd2IzQXJhbmQwSWl3aWFu
-ZHJJanA3SW10MGVTSTZJazlMVUNJc0ltTnlkaUk2SWtWa01qVTFNVGtpTENKNElq
-b2ljRU5SV1VST2NIQTFUbkJRTm5WWU9VOUNhMlZEWm1kWWFFTkhjRmRvUVRCblFV
-VktjV0pGV0hvNVRTSjlmUS5leUpwWVhRaU9qRTJPREl3TmpnMU9UZ3NJbVY0Y0NJ
-Nk1UWTRNakEzTWpFNU9Dd2libUptSWpveE5qZ3lNRFk0TlRrNExDSnpkV0lpT2lK
-cGJUcDNhWEpsWVhCd1BWbFVWbWhQUjFreFRYcGthMDVIVFROT1IxWm9XbXBvYkUx
-cWJHaFBWRUUxVFRKTmQwOUVhekZaVkZrdk16UTFaVFF3TWpWbFpUTTBNalZsTWtC
-M2FYSmxMbU52YlNJc0ltcDBhU0k2SWpOaE1UZzRZemMyTFRabVlUWXROR00yTnkx
-aU16azBMV1JsTURneFpXRmlOR0ZtTUNJc0ltNXZibU5sSWpvaVYxWkNObFF5VWto
-VU0wSjJVVmN4UTJSWVVuQk5XRTVaVDFSV01GTXlUbmhpVnpsVVZsUlNhazlJVVNJ
-c0ltaDBiU0k2SWxCUFUxUWlMQ0pvZEhVaU9pSm9kSFJ3T2k4dmQybHlaUzVqYjIw
-Nk1UZzJPVEV2SWl3aVkyaGhiQ0k2SW1WWWVGVmxia05pYW1sbWJHVTNlVlJ2WWxK
-dFdXeEhZMlJ1Ykhwc2FtMHlJbjAuUGRBV1RHdG9XQkVXVzdnX1FsZjM5ckFRUkll
-c3AxbGdsVlNDNEd1R2hLZzVXOEdlYU0tbXpjY1l5VlJ4MUcxamR3U1Y5MEFIOW01
-eGV1dktpLVJWQ1EiLCJjbGllbnRfaWQiOiJpbTp3aXJlYXBwPVlUVmhPR1kxTXpk
-a05HTTNOR1ZoWmpobE1qbGhPVEE1TTJNd09EazFZVFkvMzQ1ZTQwMjVlZTM0MjVl
-MkB3aXJlLmNvbSIsImFwaV92ZXJzaW9uIjozLCJzY29wZSI6IndpcmVfY2xpZW50
-X2lkIn0.--wxzLC8OoRM1KjUC-SIfN2lU3MgerFUinCNhTj1eAvhKe13WsM7opzW
-O6snNvzKjsbEzYwC29RGmVfH4MV1Aw
+LCJjcnYiOiJFZDI1NTE5IiwieCI6IlV6bG1UdEZqZzk1ZXB5NFpiS3J3QU9pRk5v
+aTk0NVhJZUJib1UtNU5tT28ifX0.eyJpYXQiOjE2ODM2MjYxNzgsImV4cCI6MTY5
+MTQwMjE3OCwibmJmIjoxNjgzNjI2MTczLCJpc3MiOiJodHRwOi8vd2lyZS5jb206
+MjI4OTkvY2xpZW50cy83MzU4ZDA2OWU2NDQyMmNhL2FjY2Vzcy10b2tlbiIsInN1
+YiI6ImltOndpcmVhcHA9T0dZMU4yVmxaREpqTUdJd05EUm1PVGsyT0daaU16bGlN
+akUwTkRreU9HTS83MzU4ZDA2OWU2NDQyMmNhQHdpcmUuY29tIiwiYXVkIjoiaHR0
+cDovL3dpcmUuY29tOjIyODk5L2NsaWVudHMvNzM1OGQwNjllNjQ0MjJjYS9hY2Nl
+c3MtdG9rZW4iLCJqdGkiOiJhM2VhMDM5Zi00M2Q0LTQ4YTMtOTliYi02NWE5MTY0
+MmUxMDMiLCJub25jZSI6ImJFc3lkRmxTTlROQ1MwMU5WMmR4TUdKNmJtSlVkRkp1
+WkZSTWEwRlBVVXMiLCJjaGFsIjoibHpLWnFqQjZYYzNLYkxKa0VuZktiUFlwaG5a
+aGpOdjAiLCJjbmYiOnsia2lkIjoiMEExZ1J5c3dLUlRjd0RtNXBQTTZid0hSNFYz
+MnhtTFFGSi1QZGVkSWRjdyJ9LCJwcm9vZiI6ImV5SmhiR2NpT2lKRlpFUlRRU0lz
+SW5SNWNDSTZJbVJ3YjNBcmFuZDBJaXdpYW5kcklqcDdJbXQwZVNJNklrOUxVQ0lz
+SW1OeWRpSTZJa1ZrTWpVMU1Ua2lMQ0o0SWpvaWNrWm5ZVXhNVVRGT1ZqUjRWVlZD
+V2t0ek9UUmhOVU5UTlZJdFZUWkNiQzF5UjI5VVJXOUhZM0pyT0NKOWZRLmV5SnBZ
+WFFpT2pFMk9ETTJNall4Tnpnc0ltVjRjQ0k2TVRZNE16WXlPVGMzT0N3aWJtSm1J
+am94Tmpnek5qSTJNVGN6TENKemRXSWlPaUpwYlRwM2FYSmxZWEJ3UFU5SFdURk9N
+bFpzV2tSS2FrMUhTWGRPUkZKdFQxUnJNazlIV21sTmVteHBUV3BGTUU1RWEzbFBS
+MDB2TnpNMU9HUXdOamxsTmpRME1qSmpZVUIzYVhKbExtTnZiU0lzSW1wMGFTSTZJ
+bU5qTXpVek1tRTNMV1k1WkdFdE5ERmpOUzA0WldWakxUazVZV1ZpTnpGbE1tUmlN
+eUlzSW01dmJtTmxJam9pWWtWemVXUkdiRk5PVkU1RFV6QXhUbFl5WkhoTlIwbzJZ
+bTFLVldSR1NuVmFSbEpOWVRCR1VGVlZjeUlzSW1oMGJTSTZJbEJQVTFRaUxDSm9k
+SFVpT2lKb2RIUndPaTh2ZDJseVpTNWpiMjA2TWpJNE9Ua3ZZMnhwWlc1MGN5ODNN
+elU0WkRBMk9XVTJORFF5TW1OaEwyRmpZMlZ6Y3kxMGIydGxiaUlzSW1Ob1lXd2lP
+aUpzZWt0YWNXcENObGhqTTB0aVRFcHJSVzVtUzJKUVdYQm9ibHBvYWs1Mk1DSjku
+RVVPWmJHaXZ6Z1lhMnRlYmdJalZvZ2M2ellzRVJ6cTVMMWNKNDVfVDFxYmlWRGNM
+THdsdlRCczFVLUxMV0w5cGFsdWI4dlZMaEZvZlVQVHN6bmk2QmciLCJjbGllbnRf
+aWQiOiJpbTp3aXJlYXBwPU9HWTFOMlZsWkRKak1HSXdORFJtT1RrMk9HWmlNemxp
+TWpFME5Ea3lPR00vNzM1OGQwNjllNjQ0MjJjYUB3aXJlLmNvbSIsImFwaV92ZXJz
+aW9uIjozLCJzY29wZSI6IndpcmVfY2xpZW50X2lkIn0.9fK_PeHZK6DzJmaGTNmW
+kT1PjfsvOmP0ekzcl95FdwX9hFqcXXjsgu6lC3MpgyfFvwnY3__6g70fBii7eKhi
+Cw
 ```
 
 Decoded:
@@ -382,7 +388,7 @@ Decoded:
   "jwk": {
     "crv": "Ed25519",
     "kty": "OKP",
-    "x": "G-Xq0frYN70XCjLeqADo5DjPdLGUQoLK7-OvMck7vbM"
+    "x": "UzlmTtFjg95epy4ZbKrwAOiFNoi945XIeBboU-5NmOo"
   },
   "typ": "at+jwt"
 }
@@ -391,21 +397,21 @@ Decoded:
 ```json
 {
   "api_version": 3,
-  "aud": "http://wire.com:18691/",
-  "chal": "eXxUenCbjifle7yTobRmYlGcdnlzljm2",
-  "client_id": "im:wireapp=YTVhOGY1MzdkNGM3NGVhZjhlMjlhOTA5M2MwODk1YTY/345e4025ee3425e2@wire.com",
+  "aud": "http://wire.com:22899/clients/7358d069e64422ca/access-token",
+  "chal": "lzKZqjB6Xc3KbLJkEnfKbPYphnZhjNv0",
+  "client_id": "im:wireapp=OGY1N2VlZDJjMGIwNDRmOTk2OGZiMzliMjE0NDkyOGM/7358d069e64422ca@wire.com",
   "cnf": {
-    "kid": "2H38pzdYUNhReUXryrxtGI4oz1zm5cZJJ69BZymT97k"
+    "kid": "0A1gRyswKRTcwDm5pPM6bwHR4V32xmLQFJ-PdedIdcw"
   },
-  "exp": 1689844598,
-  "iat": 1682068598,
-  "iss": "http://wire.com:18691/",
-  "jti": "3e0de2b6-51a1-44b6-a4a0-85c71d6d689f",
-  "nbf": 1682068598,
-  "nonce": "WVB6T2RHT3BvQW1CdXRpMXNYOTV0S2NxbW9TVTRjOHQ",
-  "proof": "eyJhbGciOiJFZERTQSIsInR5cCI6ImRwb3Arand0IiwiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoicENRWUROcHA1TnBQNnVYOU9Ca2VDZmdYaENHcFdoQTBnQUVKcWJFWHo5TSJ9fQ.eyJpYXQiOjE2ODIwNjg1OTgsImV4cCI6MTY4MjA3MjE5OCwibmJmIjoxNjgyMDY4NTk4LCJzdWIiOiJpbTp3aXJlYXBwPVlUVmhPR1kxTXpka05HTTNOR1ZoWmpobE1qbGhPVEE1TTJNd09EazFZVFkvMzQ1ZTQwMjVlZTM0MjVlMkB3aXJlLmNvbSIsImp0aSI6IjNhMTg4Yzc2LTZmYTYtNGM2Ny1iMzk0LWRlMDgxZWFiNGFmMCIsIm5vbmNlIjoiV1ZCNlQyUkhUM0J2UVcxQ2RYUnBNWE5ZT1RWMFMyTnhiVzlUVlRSak9IUSIsImh0bSI6IlBPU1QiLCJodHUiOiJodHRwOi8vd2lyZS5jb206MTg2OTEvIiwiY2hhbCI6ImVYeFVlbkNiamlmbGU3eVRvYlJtWWxHY2RubHpsam0yIn0.PdAWTGtoWBEWW7g_Qlf39rAQRIesp1lglVSC4GuGhKg5W8GeaM-mzccYyVRx1G1jdwSV90AH9m5xeuvKi-RVCQ",
+  "exp": 1691402178,
+  "iat": 1683626178,
+  "iss": "http://wire.com:22899/clients/7358d069e64422ca/access-token",
+  "jti": "a3ea039f-43d4-48a3-99bb-65a91642e103",
+  "nbf": 1683626173,
+  "nonce": "bEsydFlSNTNCS01NV2dxMGJ6bmJUdFJuZFRMa0FPUUs",
+  "proof": "eyJhbGciOiJFZERTQSIsInR5cCI6ImRwb3Arand0IiwiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoickZnYUxMUTFOVjR4VVVCWktzOTRhNUNTNVItVTZCbC1yR29URW9HY3JrOCJ9fQ.eyJpYXQiOjE2ODM2MjYxNzgsImV4cCI6MTY4MzYyOTc3OCwibmJmIjoxNjgzNjI2MTczLCJzdWIiOiJpbTp3aXJlYXBwPU9HWTFOMlZsWkRKak1HSXdORFJtT1RrMk9HWmlNemxpTWpFME5Ea3lPR00vNzM1OGQwNjllNjQ0MjJjYUB3aXJlLmNvbSIsImp0aSI6ImNjMzUzMmE3LWY5ZGEtNDFjNS04ZWVjLTk5YWViNzFlMmRiMyIsIm5vbmNlIjoiYkVzeWRGbFNOVE5DUzAxTlYyZHhNR0o2Ym1KVWRGSnVaRlJNYTBGUFVVcyIsImh0bSI6IlBPU1QiLCJodHUiOiJodHRwOi8vd2lyZS5jb206MjI4OTkvY2xpZW50cy83MzU4ZDA2OWU2NDQyMmNhL2FjY2Vzcy10b2tlbiIsImNoYWwiOiJsektacWpCNlhjM0tiTEprRW5mS2JQWXBoblpoak52MCJ9.EUOZbGivzgYa2tebgIjVogc6zYsERzq5L1cJ45_T1qbiVDcLLwlvTBs1U-LLWL9palub8vVLhFofUPTszni6Bg",
   "scope": "wire_client_id",
-  "sub": "im:wireapp=YTVhOGY1MzdkNGM3NGVhZjhlMjlhOTA5M2MwODk1YTY/345e4025ee3425e2@wire.com"
+  "sub": "im:wireapp=OGY1N2VlZDJjMGIwNDRmOTk2OGZiMzliMjE0NDkyOGM/7358d069e64422ca@wire.com"
 }
 ```
 
@@ -413,10 +419,10 @@ Decoded:
 ✅ Signature Verified with key:
 ```text
 -----BEGIN PRIVATE KEY-----
-MC4CAQAwBQYDK2VwBCIEIDUFcx0RvRuMqrVBOL5r0vhOe8P9OZ4nSadFrLbBKNQe
+MC4CAQAwBQYDK2VwBCIEICR0lVby4b9GqzADW2SVyCF648L9FBBRZZs+Xb3K8+OU
 -----END PRIVATE KEY-----
 -----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAG+Xq0frYN70XCjLeqADo5DjPdLGUQoLK7+OvMck7vbM=
+MCowBQYDK2VwAyEAUzlmTtFjg95epy4ZbKrwAOiFNoi945XIeBboU+5NmOo=
 -----END PUBLIC KEY-----
 ```
 
@@ -426,28 +432,28 @@ MCowBQYDK2VwAyEAG+Xq0frYN70XCjLeqADo5DjPdLGUQoLK7+OvMck7vbM=
 ### Client provides access token
 #### 16. validate Dpop challenge (clientId)
 ```http request
-POST https://stepca:32885/acme/wire/challenge/AwegYhMFAzT09PbztvcVlG4owLEPkEtb/o2l6SiuLShSUJxcRKJEdBmUIj8SQSSb8
+POST https://stepca:33294/acme/wire/challenge/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf/V3LKiNPifdQwz0PLladtHRH9WtOu9XFj
                          /acme/{acme-provisioner}/challenge/{authz-id}/{challenge-id}
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vc3RlcGNhOjMyODg1L2FjbWUvd2lyZS9hY2NvdW50L2draklmVHA5WlVtNnF6RFZkUENVaFMyZW9CNG1YV2pHIiwidHlwIjoiSldUIiwibm9uY2UiOiJaVXhaVWs0d2RrRmtUVU4zYTI5d1ZWRnZhekkzYkhocVNIZERZVE5RTTNVIiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzI4ODUvYWNtZS93aXJlL2NoYWxsZW5nZS9Bd2VnWWhNRkF6VDA5UGJ6dHZjVmxHNG93TEVQa0V0Yi9vMmw2U2l1TFNoU1VKeGNSS0pFZEJtVUlqOFNRU1NiOCJ9",
-  "payload": "eyJhY2Nlc3NfdG9rZW4iOiJleUpoYkdjaU9pSkZaRVJUUVNJc0luUjVjQ0k2SW1GMEsycDNkQ0lzSW1wM2F5STZleUpyZEhraU9pSlBTMUFpTENKamNuWWlPaUpGWkRJMU5URTVJaXdpZUNJNklrY3RXSEV3Wm5KWlRqY3dXRU5xVEdWeFFVUnZOVVJxVUdSTVIxVlJiMHhMTnkxUGRrMWphemQyWWswaWZYMC5leUpwWVhRaU9qRTJPREl3TmpnMU9UZ3NJbVY0Y0NJNk1UWTRPVGcwTkRVNU9Dd2libUptSWpveE5qZ3lNRFk0TlRrNExDSnBjM01pT2lKb2RIUndPaTh2ZDJseVpTNWpiMjA2TVRnMk9URXZJaXdpYzNWaUlqb2lhVzA2ZDJseVpXRndjRDFaVkZab1QwZFpNVTE2Wkd0T1IwMHpUa2RXYUZwcWFHeE5hbXhvVDFSQk5VMHlUWGRQUkdzeFdWUlpMek0wTldVME1ESTFaV1V6TkRJMVpUSkFkMmx5WlM1amIyMGlMQ0poZFdRaU9pSm9kSFJ3T2k4dmQybHlaUzVqYjIwNk1UZzJPVEV2SWl3aWFuUnBJam9pTTJVd1pHVXlZall0TlRGaE1TMDBOR0kyTFdFMFlUQXRPRFZqTnpGa05tUTJPRGxtSWl3aWJtOXVZMlVpT2lKWFZrSTJWREpTU0ZRelFuWlJWekZEWkZoU2NFMVlUbGxQVkZZd1V6Sk9lR0pYT1ZSV1ZGSnFUMGhSSWl3aVkyaGhiQ0k2SW1WWWVGVmxia05pYW1sbWJHVTNlVlJ2WWxKdFdXeEhZMlJ1Ykhwc2FtMHlJaXdpWTI1bUlqcDdJbXRwWkNJNklqSklNemh3ZW1SWlZVNW9VbVZWV0hKNWNuaDBSMGswYjNveGVtMDFZMXBLU2pZNVFscDViVlE1TjJzaWZTd2ljSEp2YjJZaU9pSmxlVXBvWWtkamFVOXBTa1phUlZKVVVWTkpjMGx1VWpWalEwazJTVzFTZDJJelFYSmhibVF3U1dsM2FXRnVaSEpKYW5BM1NXMTBNR1ZUU1RaSmF6bE1WVU5KYzBsdFRubGthVWsyU1d0V2EwMXFWVEZOVkd0cFRFTktORWxxYjJsalJVNVNWMVZTVDJOSVFURlVia0pSVG01V1dVOVZPVU5oTWxaRVdtMWtXV0ZGVGtoalJtUnZVVlJDYmxGVlZrdGpWMHBHVjBodk5WUlRTamxtVVM1bGVVcHdXVmhSYVU5cVJUSlBSRWwzVG1wbk1VOVVaM05KYlZZMFkwTkpOazFVV1RSTmFrRXpUV3BGTlU5RGQybGliVXB0U1dwdmVFNXFaM2xOUkZrMFRsUnJORXhEU25wa1YwbHBUMmxLY0dKVWNETmhXRXBzV1ZoQ2QxQldiRlZXYldoUVVqRnJlRlJZY0d0aE1EVklWRlJPVDFJeFdtOVhiWEJ2WWtVeGNXSkhhRkJXUlVVeFZGUktUbVF3T1VWaGVrWmFWa1pyZGsxNlVURmFWRkYzVFdwV2JGcFVUVEJOYWxac1RXdENNMkZZU214TWJVNTJZbE5KYzBsdGNEQmhVMGsyU1dwT2FFMVVaelJaZW1NeVRGUmFiVmxVV1hST1IwMHlUbmt4YVUxNmF6Qk1WMUpzVFVSbmVGcFhSbWxPUjBadFRVTkpjMGx0TlhaaWJVNXNTV3B2YVZZeFdrTk9iRkY1Vld0b1ZVMHdTakpWVm1ONFVUSlNXVlZ1UWs1WFJUVmFWREZTVjAxR1RYbFVibWhwVm5wc1ZWWnNVbE5oYXpsSlZWTkpjMGx0YURCaVUwazJTV3hDVUZVeFVXbE1RMHB2WkVoVmFVOXBTbTlrU0ZKM1QyazRkbVF5YkhsYVV6VnFZakl3TmsxVVp6SlBWRVYyU1dsM2FWa3lhR2hpUTBrMlNXMVdXV1ZHVm14aWEwNXBZVzFzYldKSFZUTmxWbEoyV1d4S2RGZFhlRWhaTWxKMVlraHdjMkZ0TUhsSmJqQXVVR1JCVjFSSGRHOVhRa1ZYVnpkblgxRnNaak01Y2tGUlVrbGxjM0F4Ykdkc1ZsTkRORWQxUjJoTFp6VlhPRWRsWVUwdGJYcGpZMWw1VmxKNE1VY3hhbVIzVTFZNU1FRklPVzAxZUdWMWRrdHBMVkpXUTFFaUxDSmpiR2xsYm5SZmFXUWlPaUpwYlRwM2FYSmxZWEJ3UFZsVVZtaFBSMWt4VFhwa2EwNUhUVE5PUjFab1dtcG9iRTFxYkdoUFZFRTFUVEpOZDA5RWF6RlpWRmt2TXpRMVpUUXdNalZsWlRNME1qVmxNa0IzYVhKbExtTnZiU0lzSW1Gd2FWOTJaWEp6YVc5dUlqb3pMQ0p6WTI5d1pTSTZJbmRwY21WZlkyeHBaVzUwWDJsa0luMC4tLXd4ekxDOE9vUk0xS2pVQy1TSWZOMmxVM01nZXJGVWluQ05oVGoxZUF2aEtlMTNXc003b3B6V082c25OdnpLanNiRXpZd0MyOVJHbVZmSDRNVjFBdyJ9",
-  "signature": "zBxCAvCQifRwk3JMEc7ahMm1wk9t874ZdbDZEtxGg-US1PgDNCgibDvq_947dh3UIXAY9LU4gssKA-ajnacTBA"
+  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vc3RlcGNhOjMzMjk0L2FjbWUvd2lyZS9hY2NvdW50LzRnUXAyUHF5R2ZXNVByQ1owZDYwRWtHT1BpTTVVMjMxIiwidHlwIjoiSldUIiwibm9uY2UiOiJOV3N5V21kelpVSXpaMmxKU2tvMmFHTnRZWEk1TXpWc2FWTXdhMnhZVGtvIiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzMyOTQvYWNtZS93aXJlL2NoYWxsZW5nZS9vWXpvTWhqdFdmQmZDcnliVU9QU2F6bVlOWmhyNmhEZi9WM0xLaU5QaWZkUXd6MFBMbGFkdEhSSDlXdE91OVhGaiJ9",
+  "payload": "eyJhY2Nlc3NfdG9rZW4iOiJleUpoYkdjaU9pSkZaRVJUUVNJc0luUjVjQ0k2SW1GMEsycDNkQ0lzSW1wM2F5STZleUpyZEhraU9pSlBTMUFpTENKamNuWWlPaUpGWkRJMU5URTVJaXdpZUNJNklsVjZiRzFVZEVacVp6azFaWEI1TkZwaVMzSjNRVTlwUms1dmFUazBOVmhKWlVKaWIxVXROVTV0VDI4aWZYMC5leUpwWVhRaU9qRTJPRE0yTWpZeE56Z3NJbVY0Y0NJNk1UWTVNVFF3TWpFM09Dd2libUptSWpveE5qZ3pOakkyTVRjekxDSnBjM01pT2lKb2RIUndPaTh2ZDJseVpTNWpiMjA2TWpJNE9Ua3ZZMnhwWlc1MGN5ODNNelU0WkRBMk9XVTJORFF5TW1OaEwyRmpZMlZ6Y3kxMGIydGxiaUlzSW5OMVlpSTZJbWx0T25kcGNtVmhjSEE5VDBkWk1VNHlWbXhhUkVwcVRVZEpkMDVFVW0xUFZHc3lUMGRhYVUxNmJHbE5ha1V3VGtScmVVOUhUUzgzTXpVNFpEQTJPV1UyTkRReU1tTmhRSGRwY21VdVkyOXRJaXdpWVhWa0lqb2lhSFIwY0RvdkwzZHBjbVV1WTI5dE9qSXlPRGs1TDJOc2FXVnVkSE12TnpNMU9HUXdOamxsTmpRME1qSmpZUzloWTJObGMzTXRkRzlyWlc0aUxDSnFkR2tpT2lKaE0yVmhNRE01WmkwME0yUTBMVFE0WVRNdE9UbGlZaTAyTldFNU1UWTBNbVV4TURNaUxDSnViMjVqWlNJNkltSkZjM2xrUm14VFRsUk9RMU13TVU1V01tUjRUVWRLTm1KdFNsVmtSa3AxV2taU1RXRXdSbEJWVlhNaUxDSmphR0ZzSWpvaWJIcExXbkZxUWpaWVl6TkxZa3hLYTBWdVprdGlVRmx3YUc1YWFHcE9kakFpTENKamJtWWlPbnNpYTJsa0lqb2lNRUV4WjFKNWMzZExVbFJqZDBSdE5YQlFUVFppZDBoU05GWXpNbmh0VEZGR1NpMVFaR1ZrU1dSamR5SjlMQ0p3Y205dlppSTZJbVY1U21oaVIyTnBUMmxLUmxwRlVsUlJVMGx6U1c1U05XTkRTVFpKYlZKM1lqTkJjbUZ1WkRCSmFYZHBZVzVrY2tscWNEZEpiWFF3WlZOSk5rbHJPVXhWUTBselNXMU9lV1JwU1RaSmExWnJUV3BWTVUxVWEybE1RMG8wU1dwdmFXTnJXbTVaVlhoTlZWUkdUMVpxVWpSV1ZsWkRWMnQwZWs5VVVtaE9WVTVVVGxaSmRGWlVXa05pUXpGNVVqSTVWVkpYT1VoWk0wcHlUME5LT1daUkxtVjVTbkJaV0ZGcFQycEZNazlFVFRKTmFsbDRUbnBuYzBsdFZqUmpRMGsyVFZSWk5FMTZXWGxQVkdNelQwTjNhV0p0U20xSmFtOTRUbXBuZWs1cVNUSk5WR042VEVOS2VtUlhTV2xQYVVwd1lsUndNMkZZU214WldFSjNVRlU1U0ZkVVJrOU5iRnB6VjJ0U1MyRnJNVWhUV0dSUFVrWktkRlF4VW5KTmF6bElWMjFzVG1WdGVIQlVWM0JHVFVVMVJXRXpiRkJTTURCMlRucE5NVTlIVVhkT2FteHNUbXBSTUUxcVNtcFpWVUl6WVZoS2JFeHRUblppVTBselNXMXdNR0ZUU1RaSmJVNXFUWHBWZWsxdFJUTk1WMWsxV2tkRmRFNUVSbXBPVXpBMFdsZFdha3hVYXpWWlYxWnBUbnBHYkUxdFVtbE5lVWx6U1cwMWRtSnRUbXhKYW05cFdXdFdlbVZYVWtkaVJrNVBWa1UxUkZWNlFYaFViRmw1V2tob1RsSXdiekpaYlRGTFZsZFNSMU51Vm1GU2JFcE9XVlJDUjFWR1ZsWmplVWx6U1cxb01HSlRTVFpKYkVKUVZURlJhVXhEU205a1NGVnBUMmxLYjJSSVVuZFBhVGgyWkRKc2VWcFROV3BpTWpBMlRXcEpORTlVYTNaWk1uaHdXbGMxTUdONU9ETk5lbFUwV2tSQk1rOVhWVEpPUkZGNVRXMU9hRXd5Um1wWk1sWjZZM2t4TUdJeWRHeGlhVWx6U1cxT2IxbFhkMmxQYVVwelpXdDBZV05YY0VOT2JHaHFUVEIwYVZSRmNISlNWelZ0VXpKS1VWZFlRbTlpYkhCdllXczFNazFEU2prdVJWVlBXbUpIYVhaNloxbGhNblJsWW1kSmFsWnZaMk0yZWxselJWSjZjVFZNTVdOS05EVmZWREZ4WW1sV1JHTk1USGRzZGxSQ2N6RlZMVXhNVjB3NWNHRnNkV0k0ZGxaTWFFWnZabFZRVkhONmJtazJRbWNpTENKamJHbGxiblJmYVdRaU9pSnBiVHAzYVhKbFlYQndQVTlIV1RGT01sWnNXa1JLYWsxSFNYZE9SRkp0VDFSck1rOUhXbWxOZW14cFRXcEZNRTVFYTNsUFIwMHZOek0xT0dRd05qbGxOalEwTWpKallVQjNhWEpsTG1OdmJTSXNJbUZ3YVY5MlpYSnphVzl1SWpvekxDSnpZMjl3WlNJNkluZHBjbVZmWTJ4cFpXNTBYMmxrSW4wLjlmS19QZUhaSzZEekptYUdUTm1Xa1QxUGpmc3ZPbVAwZWt6Y2w5NUZkd1g5aEZxY1hYanNndTZsQzNNcGd5ZkZ2d25ZM19fNmc3MGZCaWk3ZUtoaUN3In0",
+  "signature": "FJoC4NATNKxMUqKPTovrYmgTTO8SvYbNgYgydRc7FEkR39wHYWnqC0W4CwZdQg7khiutHSALOK8ylvpvOKAWBw"
 }
 ```
 ```json
 {
   "payload": {
-    "access_token": "eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6IkctWHEwZnJZTjcwWENqTGVxQURvNURqUGRMR1VRb0xLNy1Pdk1jazd2Yk0ifX0.eyJpYXQiOjE2ODIwNjg1OTgsImV4cCI6MTY4OTg0NDU5OCwibmJmIjoxNjgyMDY4NTk4LCJpc3MiOiJodHRwOi8vd2lyZS5jb206MTg2OTEvIiwic3ViIjoiaW06d2lyZWFwcD1ZVFZoT0dZMU16ZGtOR00zTkdWaFpqaGxNamxoT1RBNU0yTXdPRGsxWVRZLzM0NWU0MDI1ZWUzNDI1ZTJAd2lyZS5jb20iLCJhdWQiOiJodHRwOi8vd2lyZS5jb206MTg2OTEvIiwianRpIjoiM2UwZGUyYjYtNTFhMS00NGI2LWE0YTAtODVjNzFkNmQ2ODlmIiwibm9uY2UiOiJXVkI2VDJSSFQzQnZRVzFDZFhScE1YTllPVFYwUzJOeGJXOVRWVFJqT0hRIiwiY2hhbCI6ImVYeFVlbkNiamlmbGU3eVRvYlJtWWxHY2RubHpsam0yIiwiY25mIjp7ImtpZCI6IjJIMzhwemRZVU5oUmVVWHJ5cnh0R0k0b3oxem01Y1pKSjY5Qlp5bVQ5N2sifSwicHJvb2YiOiJleUpoYkdjaU9pSkZaRVJUUVNJc0luUjVjQ0k2SW1Sd2IzQXJhbmQwSWl3aWFuZHJJanA3SW10MGVTSTZJazlMVUNJc0ltTnlkaUk2SWtWa01qVTFNVGtpTENKNElqb2ljRU5SV1VST2NIQTFUbkJRTm5WWU9VOUNhMlZEWm1kWWFFTkhjRmRvUVRCblFVVktjV0pGV0hvNVRTSjlmUS5leUpwWVhRaU9qRTJPREl3TmpnMU9UZ3NJbVY0Y0NJNk1UWTRNakEzTWpFNU9Dd2libUptSWpveE5qZ3lNRFk0TlRrNExDSnpkV0lpT2lKcGJUcDNhWEpsWVhCd1BWbFVWbWhQUjFreFRYcGthMDVIVFROT1IxWm9XbXBvYkUxcWJHaFBWRUUxVFRKTmQwOUVhekZaVkZrdk16UTFaVFF3TWpWbFpUTTBNalZsTWtCM2FYSmxMbU52YlNJc0ltcDBhU0k2SWpOaE1UZzRZemMyTFRabVlUWXROR00yTnkxaU16azBMV1JsTURneFpXRmlOR0ZtTUNJc0ltNXZibU5sSWpvaVYxWkNObFF5VWtoVU0wSjJVVmN4UTJSWVVuQk5XRTVaVDFSV01GTXlUbmhpVnpsVVZsUlNhazlJVVNJc0ltaDBiU0k2SWxCUFUxUWlMQ0pvZEhVaU9pSm9kSFJ3T2k4dmQybHlaUzVqYjIwNk1UZzJPVEV2SWl3aVkyaGhiQ0k2SW1WWWVGVmxia05pYW1sbWJHVTNlVlJ2WWxKdFdXeEhZMlJ1Ykhwc2FtMHlJbjAuUGRBV1RHdG9XQkVXVzdnX1FsZjM5ckFRUkllc3AxbGdsVlNDNEd1R2hLZzVXOEdlYU0tbXpjY1l5VlJ4MUcxamR3U1Y5MEFIOW01eGV1dktpLVJWQ1EiLCJjbGllbnRfaWQiOiJpbTp3aXJlYXBwPVlUVmhPR1kxTXpka05HTTNOR1ZoWmpobE1qbGhPVEE1TTJNd09EazFZVFkvMzQ1ZTQwMjVlZTM0MjVlMkB3aXJlLmNvbSIsImFwaV92ZXJzaW9uIjozLCJzY29wZSI6IndpcmVfY2xpZW50X2lkIn0.--wxzLC8OoRM1KjUC-SIfN2lU3MgerFUinCNhTj1eAvhKe13WsM7opzWO6snNvzKjsbEzYwC29RGmVfH4MV1Aw"
+    "access_token": "eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6IlV6bG1UdEZqZzk1ZXB5NFpiS3J3QU9pRk5vaTk0NVhJZUJib1UtNU5tT28ifX0.eyJpYXQiOjE2ODM2MjYxNzgsImV4cCI6MTY5MTQwMjE3OCwibmJmIjoxNjgzNjI2MTczLCJpc3MiOiJodHRwOi8vd2lyZS5jb206MjI4OTkvY2xpZW50cy83MzU4ZDA2OWU2NDQyMmNhL2FjY2Vzcy10b2tlbiIsInN1YiI6ImltOndpcmVhcHA9T0dZMU4yVmxaREpqTUdJd05EUm1PVGsyT0daaU16bGlNakUwTkRreU9HTS83MzU4ZDA2OWU2NDQyMmNhQHdpcmUuY29tIiwiYXVkIjoiaHR0cDovL3dpcmUuY29tOjIyODk5L2NsaWVudHMvNzM1OGQwNjllNjQ0MjJjYS9hY2Nlc3MtdG9rZW4iLCJqdGkiOiJhM2VhMDM5Zi00M2Q0LTQ4YTMtOTliYi02NWE5MTY0MmUxMDMiLCJub25jZSI6ImJFc3lkRmxTTlROQ1MwMU5WMmR4TUdKNmJtSlVkRkp1WkZSTWEwRlBVVXMiLCJjaGFsIjoibHpLWnFqQjZYYzNLYkxKa0VuZktiUFlwaG5aaGpOdjAiLCJjbmYiOnsia2lkIjoiMEExZ1J5c3dLUlRjd0RtNXBQTTZid0hSNFYzMnhtTFFGSi1QZGVkSWRjdyJ9LCJwcm9vZiI6ImV5SmhiR2NpT2lKRlpFUlRRU0lzSW5SNWNDSTZJbVJ3YjNBcmFuZDBJaXdpYW5kcklqcDdJbXQwZVNJNklrOUxVQ0lzSW1OeWRpSTZJa1ZrTWpVMU1Ua2lMQ0o0SWpvaWNrWm5ZVXhNVVRGT1ZqUjRWVlZDV2t0ek9UUmhOVU5UTlZJdFZUWkNiQzF5UjI5VVJXOUhZM0pyT0NKOWZRLmV5SnBZWFFpT2pFMk9ETTJNall4Tnpnc0ltVjRjQ0k2TVRZNE16WXlPVGMzT0N3aWJtSm1Jam94Tmpnek5qSTJNVGN6TENKemRXSWlPaUpwYlRwM2FYSmxZWEJ3UFU5SFdURk9NbFpzV2tSS2FrMUhTWGRPUkZKdFQxUnJNazlIV21sTmVteHBUV3BGTUU1RWEzbFBSMDB2TnpNMU9HUXdOamxsTmpRME1qSmpZVUIzYVhKbExtTnZiU0lzSW1wMGFTSTZJbU5qTXpVek1tRTNMV1k1WkdFdE5ERmpOUzA0WldWakxUazVZV1ZpTnpGbE1tUmlNeUlzSW01dmJtTmxJam9pWWtWemVXUkdiRk5PVkU1RFV6QXhUbFl5WkhoTlIwbzJZbTFLVldSR1NuVmFSbEpOWVRCR1VGVlZjeUlzSW1oMGJTSTZJbEJQVTFRaUxDSm9kSFVpT2lKb2RIUndPaTh2ZDJseVpTNWpiMjA2TWpJNE9Ua3ZZMnhwWlc1MGN5ODNNelU0WkRBMk9XVTJORFF5TW1OaEwyRmpZMlZ6Y3kxMGIydGxiaUlzSW1Ob1lXd2lPaUpzZWt0YWNXcENObGhqTTB0aVRFcHJSVzVtUzJKUVdYQm9ibHBvYWs1Mk1DSjkuRVVPWmJHaXZ6Z1lhMnRlYmdJalZvZ2M2ellzRVJ6cTVMMWNKNDVfVDFxYmlWRGNMTHdsdlRCczFVLUxMV0w5cGFsdWI4dlZMaEZvZlVQVHN6bmk2QmciLCJjbGllbnRfaWQiOiJpbTp3aXJlYXBwPU9HWTFOMlZsWkRKak1HSXdORFJtT1RrMk9HWmlNemxpTWpFME5Ea3lPR00vNzM1OGQwNjllNjQ0MjJjYUB3aXJlLmNvbSIsImFwaV92ZXJzaW9uIjozLCJzY29wZSI6IndpcmVfY2xpZW50X2lkIn0.9fK_PeHZK6DzJmaGTNmWkT1PjfsvOmP0ekzcl95FdwX9hFqcXXjsgu6lC3MpgyfFvwnY3__6g70fBii7eKhiCw"
   },
   "protected": {
     "alg": "EdDSA",
-    "kid": "https://stepca:32885/acme/wire/account/gkjIfTp9ZUm6qzDVdPCUhS2eoB4mXWjG",
-    "nonce": "ZUxZUk4wdkFkTUN3a29wVVFvazI3bHhqSHdDYTNQM3U",
+    "kid": "https://stepca:33294/acme/wire/account/4gQp2PqyGfW5PrCZ0d60EkGOPiM5U231",
+    "nonce": "NWsyWmdzZUIzZ2lJSko2aGNtYXI5MzVsaVMwa2xYTko",
     "typ": "JWT",
-    "url": "https://stepca:32885/acme/wire/challenge/AwegYhMFAzT09PbztvcVlG4owLEPkEtb/o2l6SiuLShSUJxcRKJEdBmUIj8SQSSb8"
+    "url": "https://stepca:33294/acme/wire/challenge/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf/V3LKiNPifdQwz0PLladtHRH9WtOu9XFj"
   }
 }
 ```
@@ -456,79 +462,80 @@ content-type: application/jose+json
 200
 cache-control: no-store
 content-type: application/json
-link: <https://stepca:32885/acme/wire/directory>;rel="index"
-link: <https://stepca:32885/acme/wire/authz/AwegYhMFAzT09PbztvcVlG4owLEPkEtb>;rel="up"
-location: https://stepca:32885/acme/wire/challenge/AwegYhMFAzT09PbztvcVlG4owLEPkEtb/o2l6SiuLShSUJxcRKJEdBmUIj8SQSSb8
-replay-nonce: VkJuMmk5Y2NJSWtTWEJuMzBnaVlOTDZLWHBkWXYzVnM
+link: <https://stepca:33294/acme/wire/directory>;rel="index"
+link: <https://stepca:33294/acme/wire/authz/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf>;rel="up"
+location: https://stepca:33294/acme/wire/challenge/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf/V3LKiNPifdQwz0PLladtHRH9WtOu9XFj
+replay-nonce: MjBocU5SUXp3azhlamxVTGdZZzh6bFA2NlBvR2RhMjI
 ```
 ```json
 {
   "type": "wire-dpop-01",
-  "url": "https://stepca:32885/acme/wire/challenge/AwegYhMFAzT09PbztvcVlG4owLEPkEtb/o2l6SiuLShSUJxcRKJEdBmUIj8SQSSb8",
+  "url": "https://stepca:33294/acme/wire/challenge/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf/V3LKiNPifdQwz0PLladtHRH9WtOu9XFj",
   "status": "valid",
-  "token": "eXxUenCbjifle7yTobRmYlGcdnlzljm2"
+  "token": "lzKZqjB6Xc3KbLJkEnfKbPYphnZhjNv0",
+  "target": "http://wire.com:22899/clients/7358d069e64422ca/access-token"
 }
 ```
 ### Authenticate end user using OIDC Authorization Code with PKCE flow
 #### 18. OAUTH authorization request
 
 ```text
-code_verifier=0zF5_aKUpiNB0XytUnT8MCy5YdeddZG9dpOxskIBEEw&code_challenge=fe2MaonylX_vDWyEfSQWzCIhrZ2z99CfcL3qJ8wn7f0
+code_verifier=CTpN5s4PnzcqX7AOcZflrhta3ZYGOD7sCrPTTU5yHd0&code_challenge=ljoQqvGofFHxWQ9pIxNbfziFmhOagoIL-woDMeXiPtc
 ```
 #### 19. OAUTH authorization request (auth code endpoint)
 ```http request
-GET http://dex:18119/dex/auth?response_type=code&client_id=wireapp&state=hBRbCY6c8eLM-7zvSUtYQg&code_challenge=fe2MaonylX_vDWyEfSQWzCIhrZ2z99CfcL3qJ8wn7f0&code_challenge_method=S256&redirect_uri=http%3A%2F%2Fwire.com%3A18691%2Fcallback&scope=openid+profile&nonce=x9qQfg_EdbfRS5Q4Bw4nPg
+GET http://dex:18263/dex/auth?response_type=code&client_id=wireapp&state=Smpg4xAilCp49HJ7TNkspA&code_challenge=ljoQqvGofFHxWQ9pIxNbfziFmhOagoIL-woDMeXiPtc&code_challenge_method=S256&redirect_uri=http%3A%2F%2Fwire.com%3A22899%2Fcallback&scope=openid+profile&nonce=0R0OZs_6LMrYaIFqtEd8wQ
 ```
 #### 20. OAUTH authorization code
 #### 21. OAUTH authorization code
 
 #### 22. OAUTH authorization code + verifier (token endpoint)
 ```http request
-POST http://dex:18119/dex/token
+POST http://dex:18263/dex/token
 accept: application/json
 content-type: application/x-www-form-urlencoded
-authorization: Basic d2lyZWFwcDpiRmQ2Wlc0MFRuUlhWVUUxUW0xdk5IVTVhazF3VkRRMw==
+authorization: Basic d2lyZWFwcDpSWEpqYzBZemJtVkdNVVI1YkV0WmRubzFka05MYVRGNg==
 ```
 ```text
-grant_type=authorization_code&code=wmx5uu6vdumqghsr6trczecly&code_verifier=0zF5_aKUpiNB0XytUnT8MCy5YdeddZG9dpOxskIBEEw&redirect_uri=http%3A%2F%2Fwire.com%3A18691%2Fcallback
+grant_type=authorization_code&code=dzddq64yorlb2gxb7u6s2h4sd&code_verifier=CTpN5s4PnzcqX7AOcZflrhta3ZYGOD7sCrPTTU5yHd0&redirect_uri=http%3A%2F%2Fwire.com%3A22899%2Fcallback
 ```
 #### 23. OAUTH access token
 
 ```text
 {
-  "access_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjBkMjMxNjNiNTg5OWI0MzlmNDE1YTQ0YTEzZTIxMzMwNjY0ZGI3MzUifQ.eyJpc3MiOiJodHRwOi8vZGV4OjE4MTE5L2RleCIsInN1YiI6IkNsQnBiVHAzYVhKbFlYQndQVmxVVm1oUFIxa3hUWHBrYTA1SFRUTk9SMVpvV21wb2JFMXFiR2hQVkVFMVRUSk5kMDlFYXpGWlZGa3ZNelExWlRRd01qVmxaVE0wTWpWbE1rQjNhWEpsTG1OdmJSSUViR1JoY0EiLCJhdWQiOiJ3aXJlYXBwIiwiZXhwIjoxNjgyMTU0OTk4LCJpYXQiOjE2ODIwNjg1OTgsIm5vbmNlIjoieDlxUWZnX0VkYmZSUzVRNEJ3NG5QZyIsImF0X2hhc2giOiJCWWVtTVRTYTJ5OEdkVWYyR3hXcUNBIiwibmFtZSI6ImltOndpcmVhcHA9YWxpY2Vfd2lyZSIsInByZWZlcnJlZF91c2VybmFtZSI6IkFsaWNlIFNtaXRoIn0.Hs4N-VuYUFUwibjgoEgZYwCJH0so_qF_4puC6QXtKkXolXAcDqRBllo_H1_AJQOgvDEvGr17-IN6chdh5yCOkDT6VlFDpdysLpR7CKpNZFQViDezX3Lnm3kzS4Yv9Zp78eQ0qOuBilNojiwmB9IoOvdu5yoaX9ckatYjdURMveYP_6KIageXo1AS2vcDc2FQAckl-Z50KFNVRYT207qtF2SUDRJURC1XoF0qFBa8l7YcQ_dnZ7J__gHK2eJo-zopBdAOK90MdhfDpDzRZG2Gp8rYX7T_qYv2YkbobslFwPtmUzx0MlMMvFCaiuv0JCH5Je4uRcQnz_USjTTY4IrxWw",
+  "access_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjVmYzMzZjIxM2M1YzAwM2FiZWM4NzZkZDE3NWFmMmQzMGI5M2M1ZTIifQ.eyJpc3MiOiJodHRwOi8vZGV4OjE4MjYzL2RleCIsInN1YiI6IkNsQnBiVHAzYVhKbFlYQndQVTlIV1RGT01sWnNXa1JLYWsxSFNYZE9SRkp0VDFSck1rOUhXbWxOZW14cFRXcEZNRTVFYTNsUFIwMHZOek0xT0dRd05qbGxOalEwTWpKallVQjNhWEpsTG1OdmJSSUViR1JoY0EiLCJhdWQiOiJ3aXJlYXBwIiwiZXhwIjoxNjgzNzEyNTc4LCJpYXQiOjE2ODM2MjYxNzgsIm5vbmNlIjoiMFIwT1pzXzZMTXJZYUlGcXRFZDh3USIsImF0X2hhc2giOiJiUklFTFhSZzZaTFV3dE9JTm1sbnFBIiwibmFtZSI6ImltOndpcmVhcHA9YWxpY2Vfd2lyZSIsInByZWZlcnJlZF91c2VybmFtZSI6IkFsaWNlIFNtaXRoIn0.Wkn5jiFhir75HJk_z_YcLfeeFJd1z8X2P8QOTMPNQVX10gIf_tjA6fXIJ-sBeW2dZXomfAIkBh17EJZ5DQA3SEAxBHeIduz__0x08ryscjUHgYutMCyqGPNHU7XlInSDKQjYhYsoUkvwZC7v9b0gXUpgGM58KyF2F2B_l3EoEnr-zsTrjlbK3umu_-1NFCXiuMEnP3wit5VmZU3GlHPPuej1SSN8OTDawq8ileKTmrMUpsWLnlHa9lrv_3bwV9_K8XBogkQC8oL-q9IE5zWdvbonzlbhyDcM_U-9kucKffTvajGO4d0G7U6442b5S9LWge6YsmAy6nUcG-hJxTyEQA",
   "expires_in": 86399,
-  "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjBkMjMxNjNiNTg5OWI0MzlmNDE1YTQ0YTEzZTIxMzMwNjY0ZGI3MzUifQ.eyJpc3MiOiJodHRwOi8vZGV4OjE4MTE5L2RleCIsInN1YiI6IkNsQnBiVHAzYVhKbFlYQndQVmxVVm1oUFIxa3hUWHBrYTA1SFRUTk9SMVpvV21wb2JFMXFiR2hQVkVFMVRUSk5kMDlFYXpGWlZGa3ZNelExWlRRd01qVmxaVE0wTWpWbE1rQjNhWEpsTG1OdmJSSUViR1JoY0EiLCJhdWQiOiJ3aXJlYXBwIiwiZXhwIjoxNjgyMTU0OTk4LCJpYXQiOjE2ODIwNjg1OTgsIm5vbmNlIjoieDlxUWZnX0VkYmZSUzVRNEJ3NG5QZyIsImF0X2hhc2giOiIxVFh5ZWVJTm9ULThZZnF1a2tBUDJ3IiwiY19oYXNoIjoiZUhDMndnRVRCMklWckNvN3ktUXQ3dyIsIm5hbWUiOiJpbTp3aXJlYXBwPWFsaWNlX3dpcmUiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJBbGljZSBTbWl0aCJ9.kpff72BE56IFcnpopHQ55BfN-gLBBGH7xTUt4_MFUP1zYQPOrmhSTaL7JdIPN3R9CuOXEIkoey4zGiqiIRTdKH0U1cL0yl8yz6fvsOuEkrilkbYYU83fxLFwRydidS2SGQo8B3DwIn-u4LAollPLobX1EXOKIZ-1fLm-9qjijTWQXlp_trpj9pKa0fi1YQxXmNMw2swmvnZuQZTmaQZ9FJ8ZlfEaw7u29n5mF27mnxGYX5WgRqJDyXA2jAwxxKgXhkZa71BNP_hkHgvLPs7j2fOC0kO_EQMqgmsBoDlQBikuU_7MqZ0ETeuHYlOEzWofPYT2hxcwKnNVchDm0IQztQ",
+  "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjVmYzMzZjIxM2M1YzAwM2FiZWM4NzZkZDE3NWFmMmQzMGI5M2M1ZTIifQ.eyJpc3MiOiJodHRwOi8vZGV4OjE4MjYzL2RleCIsInN1YiI6IkNsQnBiVHAzYVhKbFlYQndQVTlIV1RGT01sWnNXa1JLYWsxSFNYZE9SRkp0VDFSck1rOUhXbWxOZW14cFRXcEZNRTVFYTNsUFIwMHZOek0xT0dRd05qbGxOalEwTWpKallVQjNhWEpsTG1OdmJSSUViR1JoY0EiLCJhdWQiOiJ3aXJlYXBwIiwiZXhwIjoxNjgzNzEyNTc4LCJpYXQiOjE2ODM2MjYxNzgsIm5vbmNlIjoiMFIwT1pzXzZMTXJZYUlGcXRFZDh3USIsImF0X2hhc2giOiJ6MDc4UWowRDF0MWRPbDhaQ1pRQWJnIiwiY19oYXNoIjoiYVJCMEhTM2J4MHAxUjRRdHRtbmxiQSIsIm5hbWUiOiJpbTp3aXJlYXBwPWFsaWNlX3dpcmUiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJBbGljZSBTbWl0aCJ9.A_qu0xb8hzhGYeCYBcfNCLp9-5wKyp5SOrCfLspOwo5WNKNyTgfQsnY3KGA1Q5rcjkl09pOMpVIdo38_IdFs7A0HQcBMepKELsk4Ygz6i0Dg_06NuWfbDSbKz91zkdJZvQnLMIjtRS83rrbvDnnOlcClu1xykO0hZzEcA9yme_HrWbr8PDPHloDCn_FWH8Ab_1WXSkRhB9r6Mq09OXGCtoiqcwSWpc2CwHWjaqGDj2S4bSp9nKrdLiMPFAsAVhEp4Wc61ZjMRtjYmN1xAntBmTuKORbCEJd2B1zAszl0oRznI7Eq7hjR-1wul-OaCo4IyItWWVuoh4-plnnk21YgTQ",
   "token_type": "bearer"
 }
 ```
 ```text
-eyJhbGciOiJSUzI1NiIsImtpZCI6IjBkMjMxNjNiNTg5OWI0MzlmNDE1YTQ0YTEzZTIxMzMwNjY0ZGI3MzUifQ.eyJpc3MiOiJodHRwOi8vZGV4OjE4MTE5L2RleCIsInN1YiI6IkNsQnBiVHAzYVhKbFlYQndQVmxVVm1oUFIxa3hUWHBrYTA1SFRUTk9SMVpvV21wb2JFMXFiR2hQVkVFMVRUSk5kMDlFYXpGWlZGa3ZNelExWlRRd01qVmxaVE0wTWpWbE1rQjNhWEpsTG1OdmJSSUViR1JoY0EiLCJhdWQiOiJ3aXJlYXBwIiwiZXhwIjoxNjgyMTU0OTk4LCJpYXQiOjE2ODIwNjg1OTgsIm5vbmNlIjoieDlxUWZnX0VkYmZSUzVRNEJ3NG5QZyIsImF0X2hhc2giOiIxVFh5ZWVJTm9ULThZZnF1a2tBUDJ3IiwiY19oYXNoIjoiZUhDMndnRVRCMklWckNvN3ktUXQ3dyIsIm5hbWUiOiJpbTp3aXJlYXBwPWFsaWNlX3dpcmUiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJBbGljZSBTbWl0aCJ9.kpff72BE56IFcnpopHQ55BfN-gLBBGH7xTUt4_MFUP1zYQPOrmhSTaL7JdIPN3R9CuOXEIkoey4zGiqiIRTdKH0U1cL0yl8yz6fvsOuEkrilkbYYU83fxLFwRydidS2SGQo8B3DwIn-u4LAollPLobX1EXOKIZ-1fLm-9qjijTWQXlp_trpj9pKa0fi1YQxXmNMw2swmvnZuQZTmaQZ9FJ8ZlfEaw7u29n5mF27mnxGYX5WgRqJDyXA2jAwxxKgXhkZa71BNP_hkHgvLPs7j2fOC0kO_EQMqgmsBoDlQBikuU_7MqZ0ETeuHYlOEzWofPYT2hxcwKnNVchDm0IQztQ
+eyJhbGciOiJSUzI1NiIsImtpZCI6IjVmYzMzZjIxM2M1YzAwM2FiZWM4NzZkZDE3NWFmMmQzMGI5M2M1ZTIifQ.eyJpc3MiOiJodHRwOi8vZGV4OjE4MjYzL2RleCIsInN1YiI6IkNsQnBiVHAzYVhKbFlYQndQVTlIV1RGT01sWnNXa1JLYWsxSFNYZE9SRkp0VDFSck1rOUhXbWxOZW14cFRXcEZNRTVFYTNsUFIwMHZOek0xT0dRd05qbGxOalEwTWpKallVQjNhWEpsTG1OdmJSSUViR1JoY0EiLCJhdWQiOiJ3aXJlYXBwIiwiZXhwIjoxNjgzNzEyNTc4LCJpYXQiOjE2ODM2MjYxNzgsIm5vbmNlIjoiMFIwT1pzXzZMTXJZYUlGcXRFZDh3USIsImF0X2hhc2giOiJ6MDc4UWowRDF0MWRPbDhaQ1pRQWJnIiwiY19oYXNoIjoiYVJCMEhTM2J4MHAxUjRRdHRtbmxiQSIsIm5hbWUiOiJpbTp3aXJlYXBwPWFsaWNlX3dpcmUiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJBbGljZSBTbWl0aCJ9.A_qu0xb8hzhGYeCYBcfNCLp9-5wKyp5SOrCfLspOwo5WNKNyTgfQsnY3KGA1Q5rcjkl09pOMpVIdo38_IdFs7A0HQcBMepKELsk4Ygz6i0Dg_06NuWfbDSbKz91zkdJZvQnLMIjtRS83rrbvDnnOlcClu1xykO0hZzEcA9yme_HrWbr8PDPHloDCn_FWH8Ab_1WXSkRhB9r6Mq09OXGCtoiqcwSWpc2CwHWjaqGDj2S4bSp9nKrdLiMPFAsAVhEp4Wc61ZjMRtjYmN1xAntBmTuKORbCEJd2B1zAszl0oRznI7Eq7hjR-1wul-OaCo4IyItWWVuoh4-plnnk21YgTQ
 ```
 #### 24. validate oidc challenge (userId + displayName)
 
 <details>
 <summary><b>Id token</b></summary>
 
-See it on [jwt.io](https://jwt.io/#id_token=eyJhbGciOiJSUzI1NiIsImtpZCI6IjBkMjMxNjNiNTg5OWI0MzlmNDE1YTQ0YTEzZTIxMzMwNjY0ZGI3MzUifQ.eyJpc3MiOiJodHRwOi8vZGV4OjE4MTE5L2RleCIsInN1YiI6IkNsQnBiVHAzYVhKbFlYQndQVmxVVm1oUFIxa3hUWHBrYTA1SFRUTk9SMVpvV21wb2JFMXFiR2hQVkVFMVRUSk5kMDlFYXpGWlZGa3ZNelExWlRRd01qVmxaVE0wTWpWbE1rQjNhWEpsTG1OdmJSSUViR1JoY0EiLCJhdWQiOiJ3aXJlYXBwIiwiZXhwIjoxNjgyMTU0OTk4LCJpYXQiOjE2ODIwNjg1OTgsIm5vbmNlIjoieDlxUWZnX0VkYmZSUzVRNEJ3NG5QZyIsImF0X2hhc2giOiIxVFh5ZWVJTm9ULThZZnF1a2tBUDJ3IiwiY19oYXNoIjoiZUhDMndnRVRCMklWckNvN3ktUXQ3dyIsIm5hbWUiOiJpbTp3aXJlYXBwPWFsaWNlX3dpcmUiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJBbGljZSBTbWl0aCJ9.kpff72BE56IFcnpopHQ55BfN-gLBBGH7xTUt4_MFUP1zYQPOrmhSTaL7JdIPN3R9CuOXEIkoey4zGiqiIRTdKH0U1cL0yl8yz6fvsOuEkrilkbYYU83fxLFwRydidS2SGQo8B3DwIn-u4LAollPLobX1EXOKIZ-1fLm-9qjijTWQXlp_trpj9pKa0fi1YQxXmNMw2swmvnZuQZTmaQZ9FJ8ZlfEaw7u29n5mF27mnxGYX5WgRqJDyXA2jAwxxKgXhkZa71BNP_hkHgvLPs7j2fOC0kO_EQMqgmsBoDlQBikuU_7MqZ0ETeuHYlOEzWofPYT2hxcwKnNVchDm0IQztQ)
+See it on [jwt.io](https://jwt.io/#id_token=eyJhbGciOiJSUzI1NiIsImtpZCI6IjVmYzMzZjIxM2M1YzAwM2FiZWM4NzZkZDE3NWFmMmQzMGI5M2M1ZTIifQ.eyJpc3MiOiJodHRwOi8vZGV4OjE4MjYzL2RleCIsInN1YiI6IkNsQnBiVHAzYVhKbFlYQndQVTlIV1RGT01sWnNXa1JLYWsxSFNYZE9SRkp0VDFSck1rOUhXbWxOZW14cFRXcEZNRTVFYTNsUFIwMHZOek0xT0dRd05qbGxOalEwTWpKallVQjNhWEpsTG1OdmJSSUViR1JoY0EiLCJhdWQiOiJ3aXJlYXBwIiwiZXhwIjoxNjgzNzEyNTc4LCJpYXQiOjE2ODM2MjYxNzgsIm5vbmNlIjoiMFIwT1pzXzZMTXJZYUlGcXRFZDh3USIsImF0X2hhc2giOiJ6MDc4UWowRDF0MWRPbDhaQ1pRQWJnIiwiY19oYXNoIjoiYVJCMEhTM2J4MHAxUjRRdHRtbmxiQSIsIm5hbWUiOiJpbTp3aXJlYXBwPWFsaWNlX3dpcmUiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJBbGljZSBTbWl0aCJ9.A_qu0xb8hzhGYeCYBcfNCLp9-5wKyp5SOrCfLspOwo5WNKNyTgfQsnY3KGA1Q5rcjkl09pOMpVIdo38_IdFs7A0HQcBMepKELsk4Ygz6i0Dg_06NuWfbDSbKz91zkdJZvQnLMIjtRS83rrbvDnnOlcClu1xykO0hZzEcA9yme_HrWbr8PDPHloDCn_FWH8Ab_1WXSkRhB9r6Mq09OXGCtoiqcwSWpc2CwHWjaqGDj2S4bSp9nKrdLiMPFAsAVhEp4Wc61ZjMRtjYmN1xAntBmTuKORbCEJd2B1zAszl0oRznI7Eq7hjR-1wul-OaCo4IyItWWVuoh4-plnnk21YgTQ)
 
 Raw:
 ```text
-eyJhbGciOiJSUzI1NiIsImtpZCI6IjBkMjMxNjNiNTg5OWI0MzlmNDE1YTQ0YTEz
-ZTIxMzMwNjY0ZGI3MzUifQ.eyJpc3MiOiJodHRwOi8vZGV4OjE4MTE5L2RleCIsI
-nN1YiI6IkNsQnBiVHAzYVhKbFlYQndQVmxVVm1oUFIxa3hUWHBrYTA1SFRUTk9SM
-VpvV21wb2JFMXFiR2hQVkVFMVRUSk5kMDlFYXpGWlZGa3ZNelExWlRRd01qVmxaV
-E0wTWpWbE1rQjNhWEpsTG1OdmJSSUViR1JoY0EiLCJhdWQiOiJ3aXJlYXBwIiwiZ
-XhwIjoxNjgyMTU0OTk4LCJpYXQiOjE2ODIwNjg1OTgsIm5vbmNlIjoieDlxUWZnX
-0VkYmZSUzVRNEJ3NG5QZyIsImF0X2hhc2giOiIxVFh5ZWVJTm9ULThZZnF1a2tBU
-DJ3IiwiY19oYXNoIjoiZUhDMndnRVRCMklWckNvN3ktUXQ3dyIsIm5hbWUiOiJpb
+eyJhbGciOiJSUzI1NiIsImtpZCI6IjVmYzMzZjIxM2M1YzAwM2FiZWM4NzZkZDE3
+NWFmMmQzMGI5M2M1ZTIifQ.eyJpc3MiOiJodHRwOi8vZGV4OjE4MjYzL2RleCIsI
+nN1YiI6IkNsQnBiVHAzYVhKbFlYQndQVTlIV1RGT01sWnNXa1JLYWsxSFNYZE9SR
+kp0VDFSck1rOUhXbWxOZW14cFRXcEZNRTVFYTNsUFIwMHZOek0xT0dRd05qbGxOa
+lEwTWpKallVQjNhWEpsTG1OdmJSSUViR1JoY0EiLCJhdWQiOiJ3aXJlYXBwIiwiZ
+XhwIjoxNjgzNzEyNTc4LCJpYXQiOjE2ODM2MjYxNzgsIm5vbmNlIjoiMFIwT1pzX
+zZMTXJZYUlGcXRFZDh3USIsImF0X2hhc2giOiJ6MDc4UWowRDF0MWRPbDhaQ1pRQ
+WJnIiwiY19oYXNoIjoiYVJCMEhTM2J4MHAxUjRRdHRtbmxiQSIsIm5hbWUiOiJpb
 Tp3aXJlYXBwPWFsaWNlX3dpcmUiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJBbGljZ
-SBTbWl0aCJ9.kpff72BE56IFcnpopHQ55BfN-gLBBGH7xTUt4_MFUP1zYQPOrmhS
-TaL7JdIPN3R9CuOXEIkoey4zGiqiIRTdKH0U1cL0yl8yz6fvsOuEkrilkbYYU83f
-xLFwRydidS2SGQo8B3DwIn-u4LAollPLobX1EXOKIZ-1fLm-9qjijTWQXlp_trpj
-9pKa0fi1YQxXmNMw2swmvnZuQZTmaQZ9FJ8ZlfEaw7u29n5mF27mnxGYX5WgRqJD
-yXA2jAwxxKgXhkZa71BNP_hkHgvLPs7j2fOC0kO_EQMqgmsBoDlQBikuU_7MqZ0E
-TeuHYlOEzWofPYT2hxcwKnNVchDm0IQztQ
+SBTbWl0aCJ9.A_qu0xb8hzhGYeCYBcfNCLp9-5wKyp5SOrCfLspOwo5WNKNyTgfQ
+snY3KGA1Q5rcjkl09pOMpVIdo38_IdFs7A0HQcBMepKELsk4Ygz6i0Dg_06NuWfb
+DSbKz91zkdJZvQnLMIjtRS83rrbvDnnOlcClu1xykO0hZzEcA9yme_HrWbr8PDPH
+loDCn_FWH8Ab_1WXSkRhB9r6Mq09OXGCtoiqcwSWpc2CwHWjaqGDj2S4bSp9nKrd
+LiMPFAsAVhEp4Wc61ZjMRtjYmN1xAntBmTuKORbCEJd2B1zAszl0oRznI7Eq7hjR
+-1wul-OaCo4IyItWWVuoh4-plnnk21YgTQ
 ```
 
 Decoded:
@@ -536,22 +543,22 @@ Decoded:
 ```json
 {
   "alg": "RS256",
-  "kid": "0d23163b5899b439f415a44a13e21330664db735"
+  "kid": "5fc33f213c5c003abec876dd175af2d30b93c5e2"
 }
 ```
 
 ```json
 {
-  "at_hash": "1TXyeeINoT-8YfqukkAP2w",
+  "at_hash": "z078Qj0D1t1dOl8ZCZQAbg",
   "aud": "wireapp",
-  "c_hash": "eHC2wgETB2IVrCo7y-Qt7w",
-  "exp": 1682154998,
-  "iat": 1682068598,
-  "iss": "http://dex:18119/dex",
+  "c_hash": "aRB0HS3bx0p1R4QttmnlbA",
+  "exp": 1683712578,
+  "iat": 1683626178,
+  "iss": "http://dex:18263/dex",
   "name": "im:wireapp=alice_wire",
-  "nonce": "x9qQfg_EdbfRS5Q4Bw4nPg",
+  "nonce": "0R0OZs_6LMrYaIFqtEd8wQ",
   "preferred_username": "Alice Smith",
-  "sub": "ClBpbTp3aXJlYXBwPVlUVmhPR1kxTXpka05HTTNOR1ZoWmpobE1qbGhPVEE1TTJNd09EazFZVFkvMzQ1ZTQwMjVlZTM0MjVlMkB3aXJlLmNvbRIEbGRhcA"
+  "sub": "ClBpbTp3aXJlYXBwPU9HWTFOMlZsWkRKak1HSXdORFJtT1RrMk9HWmlNemxpTWpFME5Ea3lPR00vNzM1OGQwNjllNjQ0MjJjYUB3aXJlLmNvbRIEbGRhcA"
 }
 ```
 
@@ -559,13 +566,13 @@ Decoded:
 ✅ Signature Verified with key:
 ```text
 -----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvHpGfhNu2b6CncJMplCi
-qVW78CvvgSv3PkVXNb/BfQtSxgLU7HPt9NFxg0ZyrcLyuFtaFRh8FwdlMpGQ3HcP
-aaCZKEcG1+UhgawUVCH2Swm8BFFx3A/f0mOlzksSNCjixLQAVQFWw5JHC/uPXBLN
-n74TkrX2K2lVeA2+OCr0J6AtO1gIvoJ/Jsg4jsNrifqXCER7eOqqxqgIoUmdwyLk
-FihFbVs8WE77W9RDj6i9IquPBQDrkDjQwgklV8+FencRBE8LIhAQSc7l7Ig7S7jc
-5tvjrY6sAGKXmA+1b81QcqN9xtQbdOopffuto4Y6hPkrraNeAvROwC947YdzKCPy
-+QIDAQAB
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoGEAhIIMwHxQyMdGuoeG
+/gdlZNclWNGfvKszfmu5fZ6G66i5tm2YjPKZPuvxZOJ5nJjlpDErwF6WI3LZuRX1
+wp7UjoTV0XRA50LQs0CT4rsvDXUwa6RLmsQ6FMZQEqtosq5wPel9Ds8Cs0LBC+VK
+eG05WYOvg6a1S/z+Sj3J1cuLsHtkqiy9EhgliumRasBvqAPfk5JsmEurFa5rOvGj
+4Xsa94rI/jX4dpFU0RdMurvaFviNYD8VIVfo3ndfYx3DHqKPpkp8KkxnPCS9kdKy
+9CyN0YCh5XRYtZv9tJQvK9aQgODHU8kHOCVk4UkMLF6+PI8d1vttm1Pt0aajzniT
+ZwIDAQAB
 -----END PUBLIC KEY-----
 ```
 
@@ -574,29 +581,29 @@ FihFbVs8WE77W9RDj6i9IquPBQDrkDjQwgklV8+FencRBE8LIhAQSc7l7Ig7S7jc
 
 Note: The ACME provisioner is configured with rules for transforming values received in the token into a Wire handle and display name.
 ```http request
-POST https://stepca:32885/acme/wire/challenge/AwegYhMFAzT09PbztvcVlG4owLEPkEtb/YaUtWZ2bKbrpplQLvuJTUsLFKKxX0xq1
+POST https://stepca:33294/acme/wire/challenge/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf/oPyI2NPNHw9do0Mql8ZNfvjSo0rQn9H1
                          /acme/{acme-provisioner}/challenge/{authz-id}/{challenge-id}
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vc3RlcGNhOjMyODg1L2FjbWUvd2lyZS9hY2NvdW50L2draklmVHA5WlVtNnF6RFZkUENVaFMyZW9CNG1YV2pHIiwidHlwIjoiSldUIiwibm9uY2UiOiJWa0p1TW1rNVkyTkpTV3RUV0VKdU16Qm5hVmxPVERaTFdIQmtXWFl6Vm5NIiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzI4ODUvYWNtZS93aXJlL2NoYWxsZW5nZS9Bd2VnWWhNRkF6VDA5UGJ6dHZjVmxHNG93TEVQa0V0Yi9ZYVV0V1oyYkticnBwbFFMdnVKVFVzTEZLS3hYMHhxMSJ9",
-  "payload": "eyJpZF90b2tlbiI6ImV5SmhiR2NpT2lKU1V6STFOaUlzSW10cFpDSTZJakJrTWpNeE5qTmlOVGc1T1dJME16bG1OREUxWVRRMFlURXpaVEl4TXpNd05qWTBaR0kzTXpVaWZRLmV5SnBjM01pT2lKb2RIUndPaTh2WkdWNE9qRTRNVEU1TDJSbGVDSXNJbk4xWWlJNklrTnNRbkJpVkhBellWaEtiRmxZUW5kUVZteFZWbTFvVUZJeGEzaFVXSEJyWVRBMVNGUlVUazlTTVZwdlYyMXdiMkpGTVhGaVIyaFFWa1ZGTVZSVVNrNWtNRGxGWVhwR1dsWkdhM1pOZWxFeFdsUlJkMDFxVm14YVZFMHdUV3BXYkUxclFqTmhXRXBzVEcxT2RtSlNTVVZpUjFKb1kwRWlMQ0poZFdRaU9pSjNhWEpsWVhCd0lpd2laWGh3SWpveE5qZ3lNVFUwT1RrNExDSnBZWFFpT2pFMk9ESXdOamcxT1Rnc0ltNXZibU5sSWpvaWVEbHhVV1puWDBWa1ltWlNVelZSTkVKM05HNVFaeUlzSW1GMFgyaGhjMmdpT2lJeFZGaDVaV1ZKVG05VUxUaFpabkYxYTJ0QlVESjNJaXdpWTE5b1lYTm9Jam9pWlVoRE1uZG5SVlJDTWtsV2NrTnZOM2t0VVhRM2R5SXNJbTVoYldVaU9pSnBiVHAzYVhKbFlYQndQV0ZzYVdObFgzZHBjbVVpTENKd2NtVm1aWEp5WldSZmRYTmxjbTVoYldVaU9pSkJiR2xqWlNCVGJXbDBhQ0o5LmtwZmY3MkJFNTZJRmNucG9wSFE1NUJmTi1nTEJCR0g3eFRVdDRfTUZVUDF6WVFQT3JtaFNUYUw3SmRJUE4zUjlDdU9YRUlrb2V5NHpHaXFpSVJUZEtIMFUxY0wweWw4eXo2ZnZzT3VFa3JpbGtiWVlVODNmeExGd1J5ZGlkUzJTR1FvOEIzRHdJbi11NExBb2xsUExvYlgxRVhPS0laLTFmTG0tOXFqaWpUV1FYbHBfdHJwajlwS2EwZmkxWVF4WG1OTXcyc3dtdm5adVFaVG1hUVo5Rko4WmxmRWF3N3UyOW41bUYyN21ueEdZWDVXZ1JxSkR5WEEyakF3eHhLZ1hoa1phNzFCTlBfaGtIZ3ZMUHM3ajJmT0Mwa09fRVFNcWdtc0JvRGxRQmlrdVVfN01xWjBFVGV1SFlsT0V6V29mUFlUMmh4Y3dLbk5WY2hEbTBJUXp0USIsImtleWF1dGgiOiJlWHhVZW5DYmppZmxlN3lUb2JSbVlsR2Nkbmx6bGptMi55V2szZ1JBTXR1VE95NnZndUo5b2FYNENhNHFtRXNyTzkweVQ3NXV4ZVFnIn0",
-  "signature": "STeJq2Ba4ZQSdQUjNayOO99n77rh0hByXwJ1RE74oRckKJQnRc9636n0E42ZDLEmUSOYSyOtB6OW9y4ch4XEDg"
+  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vc3RlcGNhOjMzMjk0L2FjbWUvd2lyZS9hY2NvdW50LzRnUXAyUHF5R2ZXNVByQ1owZDYwRWtHT1BpTTVVMjMxIiwidHlwIjoiSldUIiwibm9uY2UiOiJNakJvY1U1U1VYcDNhemhsYW14VlRHZFpaemg2YkZBMk5sQnZSMlJoTWpJIiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzMyOTQvYWNtZS93aXJlL2NoYWxsZW5nZS9vWXpvTWhqdFdmQmZDcnliVU9QU2F6bVlOWmhyNmhEZi9vUHlJMk5QTkh3OWRvME1xbDhaTmZ2alNvMHJRbjlIMSJ9",
+  "payload": "eyJpZF90b2tlbiI6ImV5SmhiR2NpT2lKU1V6STFOaUlzSW10cFpDSTZJalZtWXpNelpqSXhNMk0xWXpBd00yRmlaV000Tnpaa1pERTNOV0ZtTW1Rek1HSTVNMk0xWlRJaWZRLmV5SnBjM01pT2lKb2RIUndPaTh2WkdWNE9qRTRNall6TDJSbGVDSXNJbk4xWWlJNklrTnNRbkJpVkhBellWaEtiRmxZUW5kUVZUbElWMVJHVDAxc1duTlhhMUpMWVdzeFNGTllaRTlTUmtwMFZERlNjazFyT1VoWGJXeE9aVzE0Y0ZSWGNFWk5SVFZGWVROc1VGSXdNSFpPZWsweFQwZFJkMDVxYkd4T2FsRXdUV3BLYWxsVlFqTmhXRXBzVEcxT2RtSlNTVVZpUjFKb1kwRWlMQ0poZFdRaU9pSjNhWEpsWVhCd0lpd2laWGh3SWpveE5qZ3pOekV5TlRjNExDSnBZWFFpT2pFMk9ETTJNall4Tnpnc0ltNXZibU5sSWpvaU1GSXdUMXB6WHpaTVRYSlpZVWxHY1hSRlpEaDNVU0lzSW1GMFgyaGhjMmdpT2lKNk1EYzRVV293UkRGME1XUlBiRGhhUTFwUlFXSm5JaXdpWTE5b1lYTm9Jam9pWVZKQ01FaFRNMko0TUhBeFVqUlJkSFJ0Ym14aVFTSXNJbTVoYldVaU9pSnBiVHAzYVhKbFlYQndQV0ZzYVdObFgzZHBjbVVpTENKd2NtVm1aWEp5WldSZmRYTmxjbTVoYldVaU9pSkJiR2xqWlNCVGJXbDBhQ0o5LkFfcXUweGI4aHpoR1llQ1lCY2ZOQ0xwOS01d0t5cDVTT3JDZkxzcE93bzVXTktOeVRnZlFzblkzS0dBMVE1cmNqa2wwOXBPTXBWSWRvMzhfSWRGczdBMEhRY0JNZXBLRUxzazRZZ3o2aTBEZ18wNk51V2ZiRFNiS3o5MXprZEpadlFuTE1JanRSUzgzcnJidkRubk9sY0NsdTF4eWtPMGhaekVjQTl5bWVfSHJXYnI4UERQSGxvRENuX0ZXSDhBYl8xV1hTa1JoQjlyNk1xMDlPWEdDdG9pcWN3U1dwYzJDd0hXamFxR0RqMlM0YlNwOW5LcmRMaU1QRkFzQVZoRXA0V2M2MVpqTVJ0alltTjF4QW50Qm1UdUtPUmJDRUpkMkIxekFzemwwb1J6bkk3RXE3aGpSLTF3dWwtT2FDbzRJeUl0V1dWdW9oNC1wbG5uazIxWWdUUSIsImtleWF1dGgiOiJsektacWpCNlhjM0tiTEprRW5mS2JQWXBoblpoak52MC4wZHdQVnluRGg0WUpRTUZuYVBpZy1id1ZsOGNxN3h5emlBeXR3d2FsQXg4In0",
+  "signature": "qPt1_7jKM9WqHmeo552kyc8aeDUIfyhmWrjtpfnehArLLNkFv4TJ4SrEBRjfLvhlHRjZKcJaKVrKf6Edz7l6BA"
 }
 ```
 ```json
 {
   "payload": {
-    "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjBkMjMxNjNiNTg5OWI0MzlmNDE1YTQ0YTEzZTIxMzMwNjY0ZGI3MzUifQ.eyJpc3MiOiJodHRwOi8vZGV4OjE4MTE5L2RleCIsInN1YiI6IkNsQnBiVHAzYVhKbFlYQndQVmxVVm1oUFIxa3hUWHBrYTA1SFRUTk9SMVpvV21wb2JFMXFiR2hQVkVFMVRUSk5kMDlFYXpGWlZGa3ZNelExWlRRd01qVmxaVE0wTWpWbE1rQjNhWEpsTG1OdmJSSUViR1JoY0EiLCJhdWQiOiJ3aXJlYXBwIiwiZXhwIjoxNjgyMTU0OTk4LCJpYXQiOjE2ODIwNjg1OTgsIm5vbmNlIjoieDlxUWZnX0VkYmZSUzVRNEJ3NG5QZyIsImF0X2hhc2giOiIxVFh5ZWVJTm9ULThZZnF1a2tBUDJ3IiwiY19oYXNoIjoiZUhDMndnRVRCMklWckNvN3ktUXQ3dyIsIm5hbWUiOiJpbTp3aXJlYXBwPWFsaWNlX3dpcmUiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJBbGljZSBTbWl0aCJ9.kpff72BE56IFcnpopHQ55BfN-gLBBGH7xTUt4_MFUP1zYQPOrmhSTaL7JdIPN3R9CuOXEIkoey4zGiqiIRTdKH0U1cL0yl8yz6fvsOuEkrilkbYYU83fxLFwRydidS2SGQo8B3DwIn-u4LAollPLobX1EXOKIZ-1fLm-9qjijTWQXlp_trpj9pKa0fi1YQxXmNMw2swmvnZuQZTmaQZ9FJ8ZlfEaw7u29n5mF27mnxGYX5WgRqJDyXA2jAwxxKgXhkZa71BNP_hkHgvLPs7j2fOC0kO_EQMqgmsBoDlQBikuU_7MqZ0ETeuHYlOEzWofPYT2hxcwKnNVchDm0IQztQ",
-    "keyauth": "eXxUenCbjifle7yTobRmYlGcdnlzljm2.yWk3gRAMtuTOy6vguJ9oaX4Ca4qmEsrO90yT75uxeQg"
+    "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjVmYzMzZjIxM2M1YzAwM2FiZWM4NzZkZDE3NWFmMmQzMGI5M2M1ZTIifQ.eyJpc3MiOiJodHRwOi8vZGV4OjE4MjYzL2RleCIsInN1YiI6IkNsQnBiVHAzYVhKbFlYQndQVTlIV1RGT01sWnNXa1JLYWsxSFNYZE9SRkp0VDFSck1rOUhXbWxOZW14cFRXcEZNRTVFYTNsUFIwMHZOek0xT0dRd05qbGxOalEwTWpKallVQjNhWEpsTG1OdmJSSUViR1JoY0EiLCJhdWQiOiJ3aXJlYXBwIiwiZXhwIjoxNjgzNzEyNTc4LCJpYXQiOjE2ODM2MjYxNzgsIm5vbmNlIjoiMFIwT1pzXzZMTXJZYUlGcXRFZDh3USIsImF0X2hhc2giOiJ6MDc4UWowRDF0MWRPbDhaQ1pRQWJnIiwiY19oYXNoIjoiYVJCMEhTM2J4MHAxUjRRdHRtbmxiQSIsIm5hbWUiOiJpbTp3aXJlYXBwPWFsaWNlX3dpcmUiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJBbGljZSBTbWl0aCJ9.A_qu0xb8hzhGYeCYBcfNCLp9-5wKyp5SOrCfLspOwo5WNKNyTgfQsnY3KGA1Q5rcjkl09pOMpVIdo38_IdFs7A0HQcBMepKELsk4Ygz6i0Dg_06NuWfbDSbKz91zkdJZvQnLMIjtRS83rrbvDnnOlcClu1xykO0hZzEcA9yme_HrWbr8PDPHloDCn_FWH8Ab_1WXSkRhB9r6Mq09OXGCtoiqcwSWpc2CwHWjaqGDj2S4bSp9nKrdLiMPFAsAVhEp4Wc61ZjMRtjYmN1xAntBmTuKORbCEJd2B1zAszl0oRznI7Eq7hjR-1wul-OaCo4IyItWWVuoh4-plnnk21YgTQ",
+    "keyauth": "lzKZqjB6Xc3KbLJkEnfKbPYphnZhjNv0.0dwPVynDh4YJQMFnaPig-bwVl8cq7xyziAytwwalAx8"
   },
   "protected": {
     "alg": "EdDSA",
-    "kid": "https://stepca:32885/acme/wire/account/gkjIfTp9ZUm6qzDVdPCUhS2eoB4mXWjG",
-    "nonce": "VkJuMmk5Y2NJSWtTWEJuMzBnaVlOTDZLWHBkWXYzVnM",
+    "kid": "https://stepca:33294/acme/wire/account/4gQp2PqyGfW5PrCZ0d60EkGOPiM5U231",
+    "nonce": "MjBocU5SUXp3azhlamxVTGdZZzh6bFA2NlBvR2RhMjI",
     "typ": "JWT",
-    "url": "https://stepca:32885/acme/wire/challenge/AwegYhMFAzT09PbztvcVlG4owLEPkEtb/YaUtWZ2bKbrpplQLvuJTUsLFKKxX0xq1"
+    "url": "https://stepca:33294/acme/wire/challenge/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf/oPyI2NPNHw9do0Mql8ZNfvjSo0rQn9H1"
   }
 }
 ```
@@ -605,31 +612,32 @@ content-type: application/jose+json
 200
 cache-control: no-store
 content-type: application/json
-link: <https://stepca:32885/acme/wire/directory>;rel="index"
-link: <https://stepca:32885/acme/wire/authz/AwegYhMFAzT09PbztvcVlG4owLEPkEtb>;rel="up"
-location: https://stepca:32885/acme/wire/challenge/AwegYhMFAzT09PbztvcVlG4owLEPkEtb/YaUtWZ2bKbrpplQLvuJTUsLFKKxX0xq1
-replay-nonce: VzYwTmc3M2JtWTdOT29OZnVJc0lINGYwU1MzNlRmekg
+link: <https://stepca:33294/acme/wire/directory>;rel="index"
+link: <https://stepca:33294/acme/wire/authz/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf>;rel="up"
+location: https://stepca:33294/acme/wire/challenge/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf/oPyI2NPNHw9do0Mql8ZNfvjSo0rQn9H1
+replay-nonce: TGdHTXZNWkhGQ1JUbXB2RkNHUExoS1FabFdsazRITWc
 ```
 ```json
 {
   "type": "wire-oidc-01",
-  "url": "https://stepca:32885/acme/wire/challenge/AwegYhMFAzT09PbztvcVlG4owLEPkEtb/YaUtWZ2bKbrpplQLvuJTUsLFKKxX0xq1",
+  "url": "https://stepca:33294/acme/wire/challenge/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf/oPyI2NPNHw9do0Mql8ZNfvjSo0rQn9H1",
   "status": "valid",
-  "token": "eXxUenCbjifle7yTobRmYlGcdnlzljm2"
+  "token": "lzKZqjB6Xc3KbLJkEnfKbPYphnZhjNv0",
+  "target": "http://dex:18263/dex"
 }
 ```
 ### Client presents a CSR and gets its certificate
 #### 26. verify the status of the order
 ```http request
-POST https://stepca:32885/acme/wire/order/8WH2kHmLgJV7rPh8RgrVKEO8GndcZJDg
+POST https://stepca:33294/acme/wire/order/dIIN9chdQ0MxGmPsts7zr5hsCJyInl9X
                          /acme/{acme-provisioner}/order/{order-id}
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vc3RlcGNhOjMyODg1L2FjbWUvd2lyZS9hY2NvdW50L2draklmVHA5WlVtNnF6RFZkUENVaFMyZW9CNG1YV2pHIiwidHlwIjoiSldUIiwibm9uY2UiOiJWell3VG1jM00ySnRXVGRPVDI5T1puVkpjMGxJTkdZd1UxTXpObFJtZWtnIiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzI4ODUvYWNtZS93aXJlL29yZGVyLzhXSDJrSG1MZ0pWN3JQaDhSZ3JWS0VPOEduZGNaSkRnIn0",
+  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vc3RlcGNhOjMzMjk0L2FjbWUvd2lyZS9hY2NvdW50LzRnUXAyUHF5R2ZXNVByQ1owZDYwRWtHT1BpTTVVMjMxIiwidHlwIjoiSldUIiwibm9uY2UiOiJUR2RIVFhaTldraEdRMUpVYlhCMlJrTkhVRXhvUzFGYWJGZHNhelJJVFdjIiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzMyOTQvYWNtZS93aXJlL29yZGVyL2RJSU45Y2hkUTBNeEdtUHN0czd6cjVoc0NKeUlubDlYIn0",
   "payload": "",
-  "signature": "tacRkVDfB9olS0SSnoheYfVMHq6iiAz6MVktbtPFDJO9EdBurVTV4OmdNgpNNNNukWqh9ubRPDLesIAXHnGFCA"
+  "signature": "RjXYGwHO9Pmqh3uwVz6SeiU4QnWYQKz6aIVokgh1dCFdSnsGi9uNFEN89dQWmVRXZWH8J-WSWUtPFy7efGy4AA"
 }
 ```
 ```json
@@ -637,10 +645,10 @@ content-type: application/jose+json
   "payload": {},
   "protected": {
     "alg": "EdDSA",
-    "kid": "https://stepca:32885/acme/wire/account/gkjIfTp9ZUm6qzDVdPCUhS2eoB4mXWjG",
-    "nonce": "VzYwTmc3M2JtWTdOT29OZnVJc0lINGYwU1MzNlRmekg",
+    "kid": "https://stepca:33294/acme/wire/account/4gQp2PqyGfW5PrCZ0d60EkGOPiM5U231",
+    "nonce": "TGdHTXZNWkhGQ1JUbXB2RkNHUExoS1FabFdsazRITWc",
     "typ": "JWT",
-    "url": "https://stepca:32885/acme/wire/order/8WH2kHmLgJV7rPh8RgrVKEO8GndcZJDg"
+    "url": "https://stepca:33294/acme/wire/order/dIIN9chdQ0MxGmPsts7zr5hsCJyInl9X"
   }
 }
 ```
@@ -649,52 +657,52 @@ content-type: application/jose+json
 200
 cache-control: no-store
 content-type: application/json
-link: <https://stepca:32885/acme/wire/directory>;rel="index"
-location: https://stepca:32885/acme/wire/order/8WH2kHmLgJV7rPh8RgrVKEO8GndcZJDg
-replay-nonce: Mm8zN2Z1V05QMm03TVk0b1FaQ29FWjJBNGtkY3FoRW4
+link: <https://stepca:33294/acme/wire/directory>;rel="index"
+location: https://stepca:33294/acme/wire/order/dIIN9chdQ0MxGmPsts7zr5hsCJyInl9X
+replay-nonce: UFd4ZkpBQ0ZBcTJpVTJSYzRnSWFqQzZpamdobFhmWnE
 ```
 ```json
 {
   "status": "ready",
-  "finalize": "https://stepca:32885/acme/wire/order/8WH2kHmLgJV7rPh8RgrVKEO8GndcZJDg/finalize",
+  "finalize": "https://stepca:33294/acme/wire/order/dIIN9chdQ0MxGmPsts7zr5hsCJyInl9X/finalize",
   "identifiers": [
     {
       "type": "wireapp-id",
-      "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YTVhOGY1MzdkNGM3NGVhZjhlMjlhOTA5M2MwODk1YTY/345e4025ee3425e2@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+      "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=OGY1N2VlZDJjMGIwNDRmOTk2OGZiMzliMjE0NDkyOGM/7358d069e64422ca@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
     }
   ],
   "authorizations": [
-    "https://stepca:32885/acme/wire/authz/AwegYhMFAzT09PbztvcVlG4owLEPkEtb"
+    "https://stepca:33294/acme/wire/authz/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf"
   ],
-  "expires": "2023-04-22T09:16:38Z",
-  "notBefore": "2023-04-21T09:16:38.298667Z",
-  "notAfter": "2023-04-21T10:16:38.298667Z"
+  "expires": "2023-05-10T09:56:18Z",
+  "notBefore": "2023-05-09T09:56:18.576978Z",
+  "notAfter": "2023-05-09T10:56:18.576978Z"
 }
 ```
 #### 28. create a CSR and call finalize url
 ```http request
-POST https://stepca:32885/acme/wire/order/8WH2kHmLgJV7rPh8RgrVKEO8GndcZJDg/finalize
+POST https://stepca:33294/acme/wire/order/dIIN9chdQ0MxGmPsts7zr5hsCJyInl9X/finalize
                          /acme/{acme-provisioner}/order/{order-id}/finalize
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vc3RlcGNhOjMyODg1L2FjbWUvd2lyZS9hY2NvdW50L2draklmVHA5WlVtNnF6RFZkUENVaFMyZW9CNG1YV2pHIiwidHlwIjoiSldUIiwibm9uY2UiOiJNbTh6TjJaMVYwNVFNbTAzVFZrMGIxRmFRMjlGV2pKQk5HdGtZM0ZvUlc0IiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzI4ODUvYWNtZS93aXJlL29yZGVyLzhXSDJrSG1MZ0pWN3JQaDhSZ3JWS0VPOEduZGNaSkRnL2ZpbmFsaXplIn0",
-  "payload": "eyJjc3IiOiJNSUlCT0RDQjZ3SUJBREF4TVJFd0R3WURWUVFLREFoM2FYSmxMbU52YlRFY01Cb0dDMkNHU0FHRy1FSURBWUZ4REF0QmJHbGpaU0JUYldsMGFEQXFNQVVHQXl0bGNBTWhBS1FrR0F6YWFlVGFULXJsX1RnWkhnbjRGNFFocVZvUU5JQUJDYW14RjhfVG9JR0dNSUdEQmdrcWhraUc5dzBCQ1E0eGRqQjBNSElHQTFVZEVRUnJNR21HVUdsdE9uZHBjbVZoY0hBOVdWUldhRTlIV1RGTmVtUnJUa2ROTTA1SFZtaGFhbWhzVFdwc2FFOVVRVFZOTWsxM1QwUnJNVmxVV1M4ek5EVmxOREF5TldWbE16UXlOV1V5UUhkcGNtVXVZMjl0aGhWcGJUcDNhWEpsWVhCd1BXRnNhV05sWDNkcGNtVXdCUVlESzJWd0EwRUFuVnlRMjBaYnNQcWRLbFA5am94Zkp3TGs2LUhIWTFrUHJ3UkFPanNSbTBmejNSUmxwc0NrZHRqUjZaLVdsTTRBUkFLMm41MkdFWEc4VjR3NGhjMFRDZyJ9",
-  "signature": "GIfFBd5OF6bUpls1qSPK_Zx2qqC4rFGE7kTScNhhbioWDx-EVEVoX4m6E4NBSJJzJQHEexVL_vimJ0_NTT9PDQ"
+  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vc3RlcGNhOjMzMjk0L2FjbWUvd2lyZS9hY2NvdW50LzRnUXAyUHF5R2ZXNVByQ1owZDYwRWtHT1BpTTVVMjMxIiwidHlwIjoiSldUIiwibm9uY2UiOiJVRmQ0WmtwQlEwWkJjVEpwVlRKU1l6Um5TV0ZxUXpacGFtZG9iRmhtV25FIiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzMyOTQvYWNtZS93aXJlL29yZGVyL2RJSU45Y2hkUTBNeEdtUHN0czd6cjVoc0NKeUlubDlYL2ZpbmFsaXplIn0",
+  "payload": "eyJjc3IiOiJNSUlCT0RDQjZ3SUJBREF4TVJFd0R3WURWUVFLREFoM2FYSmxMbU52YlRFY01Cb0dDMkNHU0FHRy1FSURBWUZ4REF0QmJHbGpaU0JUYldsMGFEQXFNQVVHQXl0bGNBTWhBS3hZR2l5ME5UVmVNVkZBV1NyUGVHdVFrdVVmbE9nWmZxeHFFeEtCbks1UG9JR0dNSUdEQmdrcWhraUc5dzBCQ1E0eGRqQjBNSElHQTFVZEVRUnJNR21HVUdsdE9uZHBjbVZoY0hBOVQwZFpNVTR5Vm14YVJFcHFUVWRKZDA1RVVtMVBWR3N5VDBkYWFVMTZiR2xOYWtVd1RrUnJlVTlIVFM4M016VTRaREEyT1dVMk5EUXlNbU5oUUhkcGNtVXVZMjl0aGhWcGJUcDNhWEpsWVhCd1BXRnNhV05sWDNkcGNtVXdCUVlESzJWd0EwRUFpU2VkT0N6UU9fM0lKTnRVdzdvLVJOamVfZHl0Q2IwVXY5Ukw4V0xGQ1hqYWdnLUdsdHFxdl9VSFFNSE9CakZzLURVM0ctNUJZNk53TDJSQ3dLRV9DQSJ9",
+  "signature": "yLSJfpBDjx-I70dCfabOc-HN6XHC8bjTmgUbfCvODZrXW2WZX4AaIF353bApYzXT6L4Nyj70HGAtfypda_12Cw"
 }
 ```
 ```json
 {
   "payload": {
-    "csr": "MIIBODCB6wIBADAxMREwDwYDVQQKDAh3aXJlLmNvbTEcMBoGC2CGSAGG-EIDAYFxDAtBbGljZSBTbWl0aDAqMAUGAytlcAMhAKQkGAzaaeTaT-rl_TgZHgn4F4QhqVoQNIABCamxF8_ToIGGMIGDBgkqhkiG9w0BCQ4xdjB0MHIGA1UdEQRrMGmGUGltOndpcmVhcHA9WVRWaE9HWTFNemRrTkdNM05HVmhaamhsTWpsaE9UQTVNMk13T0RrMVlUWS8zNDVlNDAyNWVlMzQyNWUyQHdpcmUuY29thhVpbTp3aXJlYXBwPWFsaWNlX3dpcmUwBQYDK2VwA0EAnVyQ20ZbsPqdKlP9joxfJwLk6-HHY1kPrwRAOjsRm0fz3RRlpsCkdtjR6Z-WlM4ARAK2n52GEXG8V4w4hc0TCg"
+    "csr": "MIIBODCB6wIBADAxMREwDwYDVQQKDAh3aXJlLmNvbTEcMBoGC2CGSAGG-EIDAYFxDAtBbGljZSBTbWl0aDAqMAUGAytlcAMhAKxYGiy0NTVeMVFAWSrPeGuQkuUflOgZfqxqExKBnK5PoIGGMIGDBgkqhkiG9w0BCQ4xdjB0MHIGA1UdEQRrMGmGUGltOndpcmVhcHA9T0dZMU4yVmxaREpqTUdJd05EUm1PVGsyT0daaU16bGlNakUwTkRreU9HTS83MzU4ZDA2OWU2NDQyMmNhQHdpcmUuY29thhVpbTp3aXJlYXBwPWFsaWNlX3dpcmUwBQYDK2VwA0EAiSedOCzQO_3IJNtUw7o-RNje_dytCb0Uv9RL8WLFCXjagg-Gltqqv_UHQMHOBjFs-DU3G-5BY6NwL2RCwKE_CA"
   },
   "protected": {
     "alg": "EdDSA",
-    "kid": "https://stepca:32885/acme/wire/account/gkjIfTp9ZUm6qzDVdPCUhS2eoB4mXWjG",
-    "nonce": "Mm8zN2Z1V05QMm03TVk0b1FaQ29FWjJBNGtkY3FoRW4",
+    "kid": "https://stepca:33294/acme/wire/account/4gQp2PqyGfW5PrCZ0d60EkGOPiM5U231",
+    "nonce": "UFd4ZkpBQ0ZBcTJpVTJSYzRnSWFqQzZpamdobFhmWnE",
     "typ": "JWT",
-    "url": "https://stepca:32885/acme/wire/order/8WH2kHmLgJV7rPh8RgrVKEO8GndcZJDg/finalize"
+    "url": "https://stepca:33294/acme/wire/order/dIIN9chdQ0MxGmPsts7zr5hsCJyInl9X/finalize"
   }
 }
 ```
@@ -703,12 +711,12 @@ openssl -verify ✅
 ```
 -----BEGIN CERTIFICATE REQUEST-----
 MIIBODCB6wIBADAxMREwDwYDVQQKDAh3aXJlLmNvbTEcMBoGC2CGSAGG+EIDAYFx
-DAtBbGljZSBTbWl0aDAqMAUGAytlcAMhAKQkGAzaaeTaT+rl/TgZHgn4F4QhqVoQ
-NIABCamxF8/ToIGGMIGDBgkqhkiG9w0BCQ4xdjB0MHIGA1UdEQRrMGmGUGltOndp
-cmVhcHA9WVRWaE9HWTFNemRrTkdNM05HVmhaamhsTWpsaE9UQTVNMk13T0RrMVlU
-WS8zNDVlNDAyNWVlMzQyNWUyQHdpcmUuY29thhVpbTp3aXJlYXBwPWFsaWNlX3dp
-cmUwBQYDK2VwA0EAnVyQ20ZbsPqdKlP9joxfJwLk6+HHY1kPrwRAOjsRm0fz3RRl
-psCkdtjR6Z+WlM4ARAK2n52GEXG8V4w4hc0TCg==
+DAtBbGljZSBTbWl0aDAqMAUGAytlcAMhAKxYGiy0NTVeMVFAWSrPeGuQkuUflOgZ
+fqxqExKBnK5PoIGGMIGDBgkqhkiG9w0BCQ4xdjB0MHIGA1UdEQRrMGmGUGltOndp
+cmVhcHA9T0dZMU4yVmxaREpqTUdJd05EUm1PVGsyT0daaU16bGlNakUwTkRreU9H
+TS83MzU4ZDA2OWU2NDQyMmNhQHdpcmUuY29thhVpbTp3aXJlYXBwPWFsaWNlX3dp
+cmUwBQYDK2VwA0EAiSedOCzQO/3IJNtUw7o+RNje/dytCb0Uv9RL8WLFCXjagg+G
+ltqqv/UHQMHOBjFs+DU3G+5BY6NwL2RCwKE/CA==
 -----END CERTIFICATE REQUEST-----
 
 ```
@@ -721,19 +729,19 @@ Certificate Request:
             Public Key Algorithm: ED25519
                 ED25519 Public-Key:
                 pub:
-                    a4:24:18:0c:da:69:e4:da:4f:ea:e5:fd:38:19:1e:
-                    09:f8:17:84:21:a9:5a:10:34:80:01:09:a9:b1:17:
-                    cf:d3
+                    ac:58:1a:2c:b4:35:35:5e:31:51:40:59:2a:cf:78:
+                    6b:90:92:e5:1f:94:e8:19:7e:ac:6a:13:12:81:9c:
+                    ae:4f
         Attributes:
             Requested Extensions:
                 X509v3 Subject Alternative Name: 
-                    URI:im:wireapp=YTVhOGY1MzdkNGM3NGVhZjhlMjlhOTA5M2MwODk1YTY/345e4025ee3425e2@wire.com, URI:im:wireapp=alice_wire
+                    URI:im:wireapp=OGY1N2VlZDJjMGIwNDRmOTk2OGZiMzliMjE0NDkyOGM/7358d069e64422ca@wire.com, URI:im:wireapp=alice_wire
     Signature Algorithm: ED25519
     Signature Value:
-        9d:5c:90:db:46:5b:b0:fa:9d:2a:53:fd:8e:8c:5f:27:02:e4:
-        eb:e1:c7:63:59:0f:af:04:40:3a:3b:11:9b:47:f3:dd:14:65:
-        a6:c0:a4:76:d8:d1:e9:9f:96:94:ce:00:44:02:b6:9f:9d:86:
-        11:71:bc:57:8c:38:85:cd:13:0a
+        89:27:9d:38:2c:d0:3b:fd:c8:24:db:54:c3:ba:3e:44:d8:de:
+        fd:dc:ad:09:bd:14:bf:d4:4b:f1:62:c5:09:78:da:82:0f:86:
+        96:da:aa:bf:f5:07:40:c1:ce:06:31:6c:f8:35:37:1b:ee:41:
+        63:a3:70:2f:64:42:c0:a1:3f:08
 
 ```
 
@@ -742,40 +750,40 @@ Certificate Request:
 200
 cache-control: no-store
 content-type: application/json
-link: <https://stepca:32885/acme/wire/directory>;rel="index"
-location: https://stepca:32885/acme/wire/order/8WH2kHmLgJV7rPh8RgrVKEO8GndcZJDg
-replay-nonce: S0NMMEVFdGVENk1aRWg0WW9oOFlyb0lzajZoTEtMMVE
+link: <https://stepca:33294/acme/wire/directory>;rel="index"
+location: https://stepca:33294/acme/wire/order/dIIN9chdQ0MxGmPsts7zr5hsCJyInl9X
+replay-nonce: alIzaDJRdHp2SVdLSnZ6MlF5N2oyZXBVcmNDYUVYVmY
 ```
 ```json
 {
-  "certificate": "https://stepca:32885/acme/wire/certificate/NEgEpPxAHrXqKp3SyaQW30erIEDjg9bv",
+  "certificate": "https://stepca:33294/acme/wire/certificate/c0exFVPsOlFAzAnROtOZlL8am0ZGx91A",
   "status": "valid",
-  "finalize": "https://stepca:32885/acme/wire/order/8WH2kHmLgJV7rPh8RgrVKEO8GndcZJDg/finalize",
+  "finalize": "https://stepca:33294/acme/wire/order/dIIN9chdQ0MxGmPsts7zr5hsCJyInl9X/finalize",
   "identifiers": [
     {
       "type": "wireapp-id",
-      "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YTVhOGY1MzdkNGM3NGVhZjhlMjlhOTA5M2MwODk1YTY/345e4025ee3425e2@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+      "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=OGY1N2VlZDJjMGIwNDRmOTk2OGZiMzliMjE0NDkyOGM/7358d069e64422ca@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
     }
   ],
   "authorizations": [
-    "https://stepca:32885/acme/wire/authz/AwegYhMFAzT09PbztvcVlG4owLEPkEtb"
+    "https://stepca:33294/acme/wire/authz/oYzoMhjtWfBfCrybUOPSazmYNZhr6hDf"
   ],
-  "expires": "2023-04-22T09:16:38Z",
-  "notBefore": "2023-04-21T09:16:38.298667Z",
-  "notAfter": "2023-04-21T10:16:38.298667Z"
+  "expires": "2023-05-10T09:56:18Z",
+  "notBefore": "2023-05-09T09:56:18.576978Z",
+  "notAfter": "2023-05-09T10:56:18.576978Z"
 }
 ```
 #### 30. fetch the certificate
 ```http request
-POST https://stepca:32885/acme/wire/certificate/NEgEpPxAHrXqKp3SyaQW30erIEDjg9bv
+POST https://stepca:33294/acme/wire/certificate/c0exFVPsOlFAzAnROtOZlL8am0ZGx91A
                          /acme/{acme-provisioner}/certificate/{certificate-id}
 content-type: application/jose+json
 ```
 ```json
 {
-  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vc3RlcGNhOjMyODg1L2FjbWUvd2lyZS9hY2NvdW50L2draklmVHA5WlVtNnF6RFZkUENVaFMyZW9CNG1YV2pHIiwidHlwIjoiSldUIiwibm9uY2UiOiJTME5NTUVWRmRHVkVOazFhUldnMFdXOW9PRmx5YjBsemFqWm9URXRNTVZFIiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzI4ODUvYWNtZS93aXJlL2NlcnRpZmljYXRlL05FZ0VwUHhBSHJYcUtwM1N5YVFXMzBlcklFRGpnOWJ2In0",
+  "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6Imh0dHBzOi8vc3RlcGNhOjMzMjk0L2FjbWUvd2lyZS9hY2NvdW50LzRnUXAyUHF5R2ZXNVByQ1owZDYwRWtHT1BpTTVVMjMxIiwidHlwIjoiSldUIiwibm9uY2UiOiJhbEl6YURKUmRIcDJTVmRMU25aNk1sRjVOMm95WlhCVmNtTkRZVVZZVm1ZIiwidXJsIjoiaHR0cHM6Ly9zdGVwY2E6MzMyOTQvYWNtZS93aXJlL2NlcnRpZmljYXRlL2MwZXhGVlBzT2xGQXpBblJPdE9abEw4YW0wWkd4OTFBIn0",
   "payload": "",
-  "signature": "9LCxpT6fJ7W1pmHU8ZAlSJklt33NJtMY33V-xbSV4nOunPK7bHoZff8cT2frfZFaoumohQ73kcAtxplk6WLCBA"
+  "signature": "7eQU8qzUAiKvVnM--4o-idlE25sReY_0JQ6csiJnFpiD8SFQw_99iMMGgktTGXhAkg7M-Q_FWokYVbMyhpFYBw"
 }
 ```
 ```json
@@ -783,10 +791,10 @@ content-type: application/jose+json
   "payload": {},
   "protected": {
     "alg": "EdDSA",
-    "kid": "https://stepca:32885/acme/wire/account/gkjIfTp9ZUm6qzDVdPCUhS2eoB4mXWjG",
-    "nonce": "S0NMMEVFdGVENk1aRWg0WW9oOFlyb0lzajZoTEtMMVE",
+    "kid": "https://stepca:33294/acme/wire/account/4gQp2PqyGfW5PrCZ0d60EkGOPiM5U231",
+    "nonce": "alIzaDJRdHp2SVdLSnZ6MlF5N2oyZXBVcmNDYUVYVmY",
     "typ": "JWT",
-    "url": "https://stepca:32885/acme/wire/certificate/NEgEpPxAHrXqKp3SyaQW30erIEDjg9bv"
+    "url": "https://stepca:33294/acme/wire/certificate/c0exFVPsOlFAzAnROtOZlL8am0ZGx91A"
   }
 }
 ```
@@ -795,28 +803,28 @@ content-type: application/jose+json
 200
 cache-control: no-store
 content-type: application/pem-certificate-chain
-link: <https://stepca:32885/acme/wire/directory>;rel="index"
-replay-nonce: UXFBU2xVbE9QZHdYSUNuYzhuMkJ1SjlMZGRHM0FycWM
+link: <https://stepca:33294/acme/wire/directory>;rel="index"
+replay-nonce: ZjdHODBnMUZLZUFURXRhc25WemVnV25IcHcweUVqZkE
 ```
 ```json
-"-----BEGIN CERTIFICATE-----\nMIICLzCCAdWgAwIBAgIRAKs0CSbaRJkV46ySwvOdHEAwCgYIKoZIzj0EAwIwLjEN\nMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMUd2lyZSBJbnRlcm1lZGlhdGUgQ0EwHhcN\nMjMwNDIxMDkxNjM4WhcNMjMwNDIxMTAxNjM4WjApMREwDwYDVQQKEwh3aXJlLmNv\nbTEUMBIGA1UEAxMLQWxpY2UgU21pdGgwKjAFBgMrZXADIQCkJBgM2mnk2k/q5f04\nGR4J+BeEIalaEDSAAQmpsRfP06OCAQYwggECMA4GA1UdDwEB/wQEAwIHgDAdBgNV\nHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwHQYDVR0OBBYEFMuIc3VaitIl8xWM\nu4SI5Fr7JjAGMB8GA1UdIwQYMBaAFKDsHzSXSDqrt6ypqml2e3hBWl0JMHIGA1Ud\nEQRrMGmGUGltOndpcmVhcHA9WVRWaE9HWTFNemRrTkdNM05HVmhaamhsTWpsaE9U\nQTVNMk13T0RrMVlUWS8zNDVlNDAyNWVlMzQyNWUyQHdpcmUuY29thhVpbTp3aXJl\nYXBwPWFsaWNlX3dpcmUwHQYMKwYBBAGCpGTGKEABBA0wCwIBBgQEd2lyZQQAMAoG\nCCqGSM49BAMCA0gAMEUCIQCb3ip4QY8lfxxO4Z9Mqg20XOUaXlRVY0OdZ1DBdehd\nvQIgQavEXR2GJ0rqiKqTy7yVsfxtrGZRd/Y5diesaWh+yQA=\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIBuTCCAV+gAwIBAgIRAKWvezzydLgr047ozMBvxEwwCgYIKoZIzj0EAwIwJjEN\nMAsGA1UEChMEd2lyZTEVMBMGA1UEAxMMd2lyZSBSb290IENBMB4XDTIzMDQyMTA5\nMTYzMloXDTMzMDQxODA5MTYzMlowLjENMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMU\nd2lyZSBJbnRlcm1lZGlhdGUgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASc\nGEtxNh0JtZfNui9ygVzJblEe8MOclKbiVNsXfnfdZMhA4RQJHNUGqfzputye/6g8\nAaMKS/hlbFb5L/jk2qdJo2YwZDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgw\nBgEB/wIBADAdBgNVHQ4EFgQUoOwfNJdIOqu3rKmqaXZ7eEFaXQkwHwYDVR0jBBgw\nFoAUxoDiIHqkPl5JpoJmZH4obS9QFvwwCgYIKoZIzj0EAwIDSAAwRQIhALZEBaLs\ngPPNcv/dF/p/Lpk68Hexsn/swwbmCJAJgBiLAiA1uqE91v088f9+4h6/RQDwmoxz\nLkuDtLxF1WNKYWzycg==\n-----END CERTIFICATE-----\n"
+"-----BEGIN CERTIFICATE-----\nMIICLzCCAdWgAwIBAgIRAP2kTtURZA1hkFXX2JFd3X4wCgYIKoZIzj0EAwIwLjEN\nMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMUd2lyZSBJbnRlcm1lZGlhdGUgQ0EwHhcN\nMjMwNTA5MDk1NjE4WhcNMjMwNTA5MTA1NjE4WjApMREwDwYDVQQKEwh3aXJlLmNv\nbTEUMBIGA1UEAxMLQWxpY2UgU21pdGgwKjAFBgMrZXADIQCsWBostDU1XjFRQFkq\nz3hrkJLlH5ToGX6sahMSgZyuT6OCAQYwggECMA4GA1UdDwEB/wQEAwIHgDAdBgNV\nHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwHQYDVR0OBBYEFDWUWMPyZJOEQ5rQ\nqEGLY8vl1ikfMB8GA1UdIwQYMBaAFCAFAdHMVtzvkqBekK8NATSWtBMKMHIGA1Ud\nEQRrMGmGUGltOndpcmVhcHA9T0dZMU4yVmxaREpqTUdJd05EUm1PVGsyT0daaU16\nbGlNakUwTkRreU9HTS83MzU4ZDA2OWU2NDQyMmNhQHdpcmUuY29thhVpbTp3aXJl\nYXBwPWFsaWNlX3dpcmUwHQYMKwYBBAGCpGTGKEABBA0wCwIBBgQEd2lyZQQAMAoG\nCCqGSM49BAMCA0gAMEUCIQDFPMfqMOvD0OqfIxfVP+Z+KoCzAaj1gCSeXrzPGg56\nnAIgfvzWTOAoFpy2bBmHX/4YFmxe3RdVNpyv4byO+s05lAs=\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIBuTCCAV+gAwIBAgIRAJu+r4Zta//Ce1zh5yCgT30wCgYIKoZIzj0EAwIwJjEN\nMAsGA1UEChMEd2lyZTEVMBMGA1UEAxMMd2lyZSBSb290IENBMB4XDTIzMDUwOTA5\nNTYxNloXDTMzMDUwNjA5NTYxNlowLjENMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMU\nd2lyZSBJbnRlcm1lZGlhdGUgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQV\nHNdHiGrq2GeqLW2Klo0X29M688ooQJGhNRGJJs7MzSwDU+7J0sVcuQ+oBinMrstS\ngDbWRfCSX4cBj4XIibNRo2YwZDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgw\nBgEB/wIBADAdBgNVHQ4EFgQUIAUB0cxW3O+SoF6Qrw0BNJa0EwowHwYDVR0jBBgw\nFoAUm/EG5fN8pwNxHaaHo/mtG5g+TXMwCgYIKoZIzj0EAwIDSAAwRQIhAOS/UjnA\nyzBsZ3Op8/HpMaJZlTygMpAnRn8UUdpubiuzAiBcQrcgR01N17Gl6DJ34OCP9xVz\nYfIvP9oBvmU7raA84w==\n-----END CERTIFICATE-----\n"
 ```
 ###### Certificate #1
 openssl -verify ✅
 ```
 -----BEGIN CERTIFICATE-----
-MIICLzCCAdWgAwIBAgIRAKs0CSbaRJkV46ySwvOdHEAwCgYIKoZIzj0EAwIwLjEN
+MIICLzCCAdWgAwIBAgIRAP2kTtURZA1hkFXX2JFd3X4wCgYIKoZIzj0EAwIwLjEN
 MAsGA1UEChMEd2lyZTEdMBsGA1UEAxMUd2lyZSBJbnRlcm1lZGlhdGUgQ0EwHhcN
-MjMwNDIxMDkxNjM4WhcNMjMwNDIxMTAxNjM4WjApMREwDwYDVQQKEwh3aXJlLmNv
-bTEUMBIGA1UEAxMLQWxpY2UgU21pdGgwKjAFBgMrZXADIQCkJBgM2mnk2k/q5f04
-GR4J+BeEIalaEDSAAQmpsRfP06OCAQYwggECMA4GA1UdDwEB/wQEAwIHgDAdBgNV
-HSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwHQYDVR0OBBYEFMuIc3VaitIl8xWM
-u4SI5Fr7JjAGMB8GA1UdIwQYMBaAFKDsHzSXSDqrt6ypqml2e3hBWl0JMHIGA1Ud
-EQRrMGmGUGltOndpcmVhcHA9WVRWaE9HWTFNemRrTkdNM05HVmhaamhsTWpsaE9U
-QTVNMk13T0RrMVlUWS8zNDVlNDAyNWVlMzQyNWUyQHdpcmUuY29thhVpbTp3aXJl
+MjMwNTA5MDk1NjE4WhcNMjMwNTA5MTA1NjE4WjApMREwDwYDVQQKEwh3aXJlLmNv
+bTEUMBIGA1UEAxMLQWxpY2UgU21pdGgwKjAFBgMrZXADIQCsWBostDU1XjFRQFkq
+z3hrkJLlH5ToGX6sahMSgZyuT6OCAQYwggECMA4GA1UdDwEB/wQEAwIHgDAdBgNV
+HSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwHQYDVR0OBBYEFDWUWMPyZJOEQ5rQ
+qEGLY8vl1ikfMB8GA1UdIwQYMBaAFCAFAdHMVtzvkqBekK8NATSWtBMKMHIGA1Ud
+EQRrMGmGUGltOndpcmVhcHA9T0dZMU4yVmxaREpqTUdJd05EUm1PVGsyT0daaU16
+bGlNakUwTkRreU9HTS83MzU4ZDA2OWU2NDQyMmNhQHdpcmUuY29thhVpbTp3aXJl
 YXBwPWFsaWNlX3dpcmUwHQYMKwYBBAGCpGTGKEABBA0wCwIBBgQEd2lyZQQAMAoG
-CCqGSM49BAMCA0gAMEUCIQCb3ip4QY8lfxxO4Z9Mqg20XOUaXlRVY0OdZ1DBdehd
-vQIgQavEXR2GJ0rqiKqTy7yVsfxtrGZRd/Y5diesaWh+yQA=
+CCqGSM49BAMCA0gAMEUCIQDFPMfqMOvD0OqfIxfVP+Z+KoCzAaj1gCSeXrzPGg56
+nAIgfvzWTOAoFpy2bBmHX/4YFmxe3RdVNpyv4byO+s05lAs=
 -----END CERTIFICATE-----
 
 ```
@@ -825,39 +833,39 @@ Certificate:
     Data:
         Version: 3 (0x2)
         Serial Number:
-            ab:34:09:26:da:44:99:15:e3:ac:92:c2:f3:9d:1c:40
+            fd:a4:4e:d5:11:64:0d:61:90:55:d7:d8:91:5d:dd:7e
         Signature Algorithm: ecdsa-with-SHA256
         Issuer: O = wire, CN = wire Intermediate CA
         Validity
-            Not Before: Apr 21 09:16:38 2023 GMT
-            Not After : Apr 21 10:16:38 2023 GMT
+            Not Before: May  9 09:56:18 2023 GMT
+            Not After : May  9 10:56:18 2023 GMT
         Subject: O = wire.com, CN = Alice Smith
         Subject Public Key Info:
             Public Key Algorithm: ED25519
                 ED25519 Public-Key:
                 pub:
-                    a4:24:18:0c:da:69:e4:da:4f:ea:e5:fd:38:19:1e:
-                    09:f8:17:84:21:a9:5a:10:34:80:01:09:a9:b1:17:
-                    cf:d3
+                    ac:58:1a:2c:b4:35:35:5e:31:51:40:59:2a:cf:78:
+                    6b:90:92:e5:1f:94:e8:19:7e:ac:6a:13:12:81:9c:
+                    ae:4f
         X509v3 extensions:
             X509v3 Key Usage: critical
                 Digital Signature
             X509v3 Extended Key Usage: 
                 TLS Web Server Authentication, TLS Web Client Authentication
             X509v3 Subject Key Identifier: 
-                CB:88:73:75:5A:8A:D2:25:F3:15:8C:BB:84:88:E4:5A:FB:26:30:06
+                35:94:58:C3:F2:64:93:84:43:9A:D0:A8:41:8B:63:CB:E5:D6:29:1F
             X509v3 Authority Key Identifier: 
-                A0:EC:1F:34:97:48:3A:AB:B7:AC:A9:AA:69:76:7B:78:41:5A:5D:09
+                20:05:01:D1:CC:56:DC:EF:92:A0:5E:90:AF:0D:01:34:96:B4:13:0A
             X509v3 Subject Alternative Name: 
-                URI:im:wireapp=YTVhOGY1MzdkNGM3NGVhZjhlMjlhOTA5M2MwODk1YTY/345e4025ee3425e2@wire.com, URI:im:wireapp=alice_wire
+                URI:im:wireapp=OGY1N2VlZDJjMGIwNDRmOTk2OGZiMzliMjE0NDkyOGM/7358d069e64422ca@wire.com, URI:im:wireapp=alice_wire
             1.3.6.1.4.1.37476.9000.64.1: 
                 0......wire..
     Signature Algorithm: ecdsa-with-SHA256
     Signature Value:
-        30:45:02:21:00:9b:de:2a:78:41:8f:25:7f:1c:4e:e1:9f:4c:
-        aa:0d:b4:5c:e5:1a:5e:54:55:63:43:9d:67:50:c1:75:e8:5d:
-        bd:02:20:41:ab:c4:5d:1d:86:27:4a:ea:88:aa:93:cb:bc:95:
-        b1:fc:6d:ac:66:51:77:f6:39:76:27:ac:69:68:7e:c9:00
+        30:45:02:21:00:c5:3c:c7:ea:30:eb:c3:d0:ea:9f:23:17:d5:
+        3f:e6:7e:2a:80:b3:01:a8:f5:80:24:9e:5e:bc:cf:1a:0e:7a:
+        9c:02:20:7e:fc:d6:4c:e0:28:16:9c:b6:6c:19:87:5f:fe:18:
+        16:6c:5e:dd:17:55:36:9c:af:e1:bc:8e:fa:cd:39:94:0b
 
 ```
 
@@ -865,16 +873,16 @@ Certificate:
 openssl -verify ✅
 ```
 -----BEGIN CERTIFICATE-----
-MIIBuTCCAV+gAwIBAgIRAKWvezzydLgr047ozMBvxEwwCgYIKoZIzj0EAwIwJjEN
-MAsGA1UEChMEd2lyZTEVMBMGA1UEAxMMd2lyZSBSb290IENBMB4XDTIzMDQyMTA5
-MTYzMloXDTMzMDQxODA5MTYzMlowLjENMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMU
-d2lyZSBJbnRlcm1lZGlhdGUgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASc
-GEtxNh0JtZfNui9ygVzJblEe8MOclKbiVNsXfnfdZMhA4RQJHNUGqfzputye/6g8
-AaMKS/hlbFb5L/jk2qdJo2YwZDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgw
-BgEB/wIBADAdBgNVHQ4EFgQUoOwfNJdIOqu3rKmqaXZ7eEFaXQkwHwYDVR0jBBgw
-FoAUxoDiIHqkPl5JpoJmZH4obS9QFvwwCgYIKoZIzj0EAwIDSAAwRQIhALZEBaLs
-gPPNcv/dF/p/Lpk68Hexsn/swwbmCJAJgBiLAiA1uqE91v088f9+4h6/RQDwmoxz
-LkuDtLxF1WNKYWzycg==
+MIIBuTCCAV+gAwIBAgIRAJu+r4Zta//Ce1zh5yCgT30wCgYIKoZIzj0EAwIwJjEN
+MAsGA1UEChMEd2lyZTEVMBMGA1UEAxMMd2lyZSBSb290IENBMB4XDTIzMDUwOTA5
+NTYxNloXDTMzMDUwNjA5NTYxNlowLjENMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMU
+d2lyZSBJbnRlcm1lZGlhdGUgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQV
+HNdHiGrq2GeqLW2Klo0X29M688ooQJGhNRGJJs7MzSwDU+7J0sVcuQ+oBinMrstS
+gDbWRfCSX4cBj4XIibNRo2YwZDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgw
+BgEB/wIBADAdBgNVHQ4EFgQUIAUB0cxW3O+SoF6Qrw0BNJa0EwowHwYDVR0jBBgw
+FoAUm/EG5fN8pwNxHaaHo/mtG5g+TXMwCgYIKoZIzj0EAwIDSAAwRQIhAOS/UjnA
+yzBsZ3Op8/HpMaJZlTygMpAnRn8UUdpubiuzAiBcQrcgR01N17Gl6DJ34OCP9xVz
+YfIvP9oBvmU7raA84w==
 -----END CERTIFICATE-----
 
 ```
@@ -883,22 +891,22 @@ Certificate:
     Data:
         Version: 3 (0x2)
         Serial Number:
-            a5:af:7b:3c:f2:74:b8:2b:d3:8e:e8:cc:c0:6f:c4:4c
+            9b:be:af:86:6d:6b:ff:c2:7b:5c:e1:e7:20:a0:4f:7d
         Signature Algorithm: ecdsa-with-SHA256
         Issuer: O = wire, CN = wire Root CA
         Validity
-            Not Before: Apr 21 09:16:32 2023 GMT
-            Not After : Apr 18 09:16:32 2033 GMT
+            Not Before: May  9 09:56:16 2023 GMT
+            Not After : May  6 09:56:16 2033 GMT
         Subject: O = wire, CN = wire Intermediate CA
         Subject Public Key Info:
             Public Key Algorithm: id-ecPublicKey
                 Public-Key: (256 bit)
                 pub:
-                    04:9c:18:4b:71:36:1d:09:b5:97:cd:ba:2f:72:81:
-                    5c:c9:6e:51:1e:f0:c3:9c:94:a6:e2:54:db:17:7e:
-                    77:dd:64:c8:40:e1:14:09:1c:d5:06:a9:fc:e9:ba:
-                    dc:9e:ff:a8:3c:01:a3:0a:4b:f8:65:6c:56:f9:2f:
-                    f8:e4:da:a7:49
+                    04:15:1c:d7:47:88:6a:ea:d8:67:aa:2d:6d:8a:96:
+                    8d:17:db:d3:3a:f3:ca:28:40:91:a1:35:11:89:26:
+                    ce:cc:cd:2c:03:53:ee:c9:d2:c5:5c:b9:0f:a8:06:
+                    29:cc:ae:cb:52:80:36:d6:45:f0:92:5f:87:01:8f:
+                    85:c8:89:b3:51
                 ASN1 OID: prime256v1
                 NIST CURVE: P-256
         X509v3 extensions:
@@ -907,14 +915,14 @@ Certificate:
             X509v3 Basic Constraints: critical
                 CA:TRUE, pathlen:0
             X509v3 Subject Key Identifier: 
-                A0:EC:1F:34:97:48:3A:AB:B7:AC:A9:AA:69:76:7B:78:41:5A:5D:09
+                20:05:01:D1:CC:56:DC:EF:92:A0:5E:90:AF:0D:01:34:96:B4:13:0A
             X509v3 Authority Key Identifier: 
-                C6:80:E2:20:7A:A4:3E:5E:49:A6:82:66:64:7E:28:6D:2F:50:16:FC
+                9B:F1:06:E5:F3:7C:A7:03:71:1D:A6:87:A3:F9:AD:1B:98:3E:4D:73
     Signature Algorithm: ecdsa-with-SHA256
     Signature Value:
-        30:45:02:21:00:b6:44:05:a2:ec:80:f3:cd:72:ff:dd:17:fa:
-        7f:2e:99:3a:f0:77:b1:b2:7f:ec:c3:06:e6:08:90:09:80:18:
-        8b:02:20:35:ba:a1:3d:d6:fd:3c:f1:ff:7e:e2:1e:bf:45:00:
-        f0:9a:8c:73:2e:4b:83:b4:bc:45:d5:63:4a:61:6c:f2:72
+        30:45:02:21:00:e4:bf:52:39:c0:cb:30:6c:67:73:a9:f3:f1:
+        e9:31:a2:59:95:3c:a0:32:90:27:46:7f:14:51:da:6e:6e:2b:
+        b3:02:20:5c:42:b7:20:47:4d:4d:d7:b1:a5:e8:32:77:e0:e0:
+        8f:f7:15:73:61:f2:2f:3f:da:01:be:65:3b:ad:a0:3c:e3
 
 ```

@@ -1,3 +1,7 @@
+use rusty_acme::prelude::{AcmeChallenge, RustyAcmeError};
+
+use crate::prelude::{E2eIdentityError, E2eIdentityResult};
+
 use super::Json;
 
 #[derive(
@@ -28,6 +32,25 @@ pub struct E2eiNewAcmeAuthz {
 pub struct E2eiAcmeChall {
     pub chall: Json,
     pub url: url::Url,
+    pub target: url::Url,
+}
+
+impl TryFrom<AcmeChallenge> for E2eiAcmeChall {
+    type Error = E2eIdentityError;
+
+    fn try_from(challenge: AcmeChallenge) -> E2eIdentityResult<Self> {
+        let chall = serde_json::to_value(&challenge)?;
+        let target = challenge.target.ok_or(E2eIdentityError::AcmeError(
+            RustyAcmeError::SmallstepImplementationError(
+                "Wire's fork of smallstep ACME server is supposed to always add a 'target' field to challenges",
+            ),
+        ))?;
+        Ok(Self {
+            chall,
+            url: challenge.url,
+            target,
+        })
+    }
 }
 
 #[derive(

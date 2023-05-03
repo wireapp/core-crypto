@@ -8,9 +8,14 @@ use openidconnect::{
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
     IssuerUrl, Nonce, TokenResponse,
 };
-use rusty_acme::prelude::*;
 use serde_json::Value;
 use url::Url;
+
+use rusty_acme::prelude::*;
+use rusty_jwt_tools::{
+    jwk::{TryFromJwk, TryIntoJwk},
+    prelude::*,
+};
 
 use crate::utils::{
     cfg::{E2eTest, EnrollmentFlow, OidcProvider},
@@ -21,10 +26,6 @@ use crate::utils::{
     rand_base64_str,
     wire_server::oidc::{scrap_grant, scrap_login},
     TestError, TestResult,
-};
-use rusty_jwt_tools::{
-    jwk::{TryFromJwk, TryIntoJwk},
-    prelude::*,
 };
 
 // unsafe static mutable channels for the Google OIDC login since it requires tester interaction in browser
@@ -47,10 +48,10 @@ impl E2eTest<'static> {
         let (t, backend_nonce) = (f.get_wire_server_nonce)(t, ()).await?;
         let expiry = core::time::Duration::from_secs(3600);
         let (t, client_dpop_token) = (f.create_dpop_token)(t, (dpop_chall.clone(), backend_nonce, expiry)).await?;
-        let (t, access_token) = (f.get_access_token)(t, client_dpop_token).await?;
+        let (t, access_token) = (f.get_access_token)(t, (dpop_chall.clone(), client_dpop_token)).await?;
         let (t, previous_nonce) =
             (f.verify_dpop_challenge)(t, (account.clone(), dpop_chall, access_token, previous_nonce)).await?;
-        let (t, id_token) = (f.fetch_id_token)(t, ()).await?;
+        let (t, id_token) = (f.fetch_id_token)(t, oidc_chall.clone()).await?;
         let (t, previous_nonce) =
             (f.verify_oidc_challenge)(t, (account.clone(), oidc_chall, id_token, previous_nonce)).await?;
         let (t, (order, previous_nonce)) =
@@ -197,7 +198,7 @@ impl<'a> E2eTest<'a> {
         previous_nonce: String,
     ) -> TestResult<(AcmeAuthz, String)> {
         self.display_chapter("Display-name and handle already authorized");
-        self.display_step("fetch challenge");
+        self.display_step("create authorization and fetch challenges");
         let authz_url = order.authorizations.get(0).unwrap();
         let authz_req = RustyAcme::new_authz_request(authz_url, account, self.alg, &self.client_kp, previous_nonce)?;
         let req = self.client.acme_req(authz_url, &authz_req)?;
@@ -209,7 +210,7 @@ impl<'a> E2eTest<'a> {
         );
         self.display_body(&authz_req);
 
-        self.display_step("get back challenge");
+        self.display_step("get back challenges");
         let mut resp = self.client.execute(req).await?;
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();
@@ -224,10 +225,14 @@ impl<'a> E2eTest<'a> {
     }
 
     /// extract challenges
-    pub fn extract_challenges(&mut self, authz: AcmeAuthz) -> TestResult<(AcmeChallenge, AcmeChallenge)> {
+    pub fn extract_challenges(&mut self, mut authz: AcmeAuthz) -> TestResult<(AcmeChallenge, AcmeChallenge)> {
         Ok((
-            authz.wire_dpop_challenge().cloned().ok_or(TestError::Internal)?,
-            authz.wire_oidc_challenge().cloned().ok_or(TestError::Internal)?,
+            authz
+                .take_challenge(AcmeChallengeType::WireDpop01)
+                .ok_or(TestError::Internal)?,
+            authz
+                .take_challenge(AcmeChallengeType::WireOidc01)
+                .ok_or(TestError::Internal)?,
         ))
     }
 
@@ -257,7 +262,7 @@ impl<'a> E2eTest<'a> {
         expiry: core::time::Duration,
     ) -> TestResult<String> {
         self.display_step("create client DPoP token");
-        let htu: Htu = self.wire_server_uri().as_str().try_into()?;
+        let htu: Htu = dpop_chall.target.as_ref().unwrap().clone().into();
         let acme_nonce: AcmeNonce = dpop_chall.token.as_str().into();
         let dpop = Dpop {
             challenge: acme_nonce,
@@ -275,21 +280,21 @@ impl<'a> E2eTest<'a> {
     }
 
     /// POST http://wire-server/client-dpop-token
-    pub async fn get_access_token(&mut self, client_dpop_token: String) -> TestResult<String> {
+    pub async fn get_access_token(
+        &mut self,
+        dpop_chall: &AcmeChallenge,
+        client_dpop_token: String,
+    ) -> TestResult<String> {
         self.display_step("trade client DPoP token for an access token");
 
-        let dpop_url = format!(
-            "{}/clients/{}/access-token",
-            self.wire_server_uri(),
-            self.wire_client_id
-        );
+        let dpop_url = dpop_chall.target.as_ref().unwrap().to_string();
         let b64 = |v: &str| base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(v);
 
         // cheat to share test context
         ctx_store("client-id", self.sub.to_uri());
         ctx_store("backend-kp", self.backend_kp.to_string());
         ctx_store("hash-alg", self.hash_alg.to_string());
-        ctx_store("wire-server-uri", self.wire_server_uri());
+        ctx_store("wire-server-uri", dpop_chall.target.as_ref().unwrap().as_str());
 
         let req = self
             .client
@@ -300,7 +305,7 @@ impl<'a> E2eTest<'a> {
             Actor::WireClient,
             Actor::WireServer,
             Some(&req),
-            Some("/clients/{wire-client-id}/access-token"),
+            Some("/clients/{device-id}/access-token"),
         );
 
         self.display_step("get a Dpop access token from wire-server");
@@ -416,16 +421,17 @@ impl<'a> E2eTest<'a> {
         Ok(previous_nonce)
     }
 
-    pub async fn fetch_id_token(&mut self) -> TestResult<String> {
+    pub async fn fetch_id_token(&mut self, oidc_chall: &AcmeChallenge) -> TestResult<String> {
         match self.oidc_provider {
-            OidcProvider::Dex => self.fetch_id_token_from_dex().await,
+            OidcProvider::Dex => self.fetch_id_token_from_dex(oidc_chall).await,
             OidcProvider::Google => self.fetch_id_token_from_google().await,
         }
     }
 
-    pub async fn fetch_id_token_from_dex(&mut self) -> TestResult<String> {
+    pub async fn fetch_id_token_from_dex(&mut self, oidc_chall: &AcmeChallenge) -> TestResult<String> {
         self.display_chapter("Authenticate end user using OIDC Authorization Code with PKCE flow");
-        let issuer_url = IssuerUrl::new(self.oauth_cfg.issuer_uri.clone()).unwrap();
+        // let issuer_url = IssuerUrl::new(self.oauth_cfg.issuer_uri.clone()).unwrap();
+        let issuer_url = IssuerUrl::new(oidc_chall.target.as_ref().unwrap().to_string()).unwrap();
         let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), move |r| {
             custom_oauth_client("discovery", ctx_get_http_client(), r)
         })

@@ -123,13 +123,15 @@ fn e2e_api() {
                   "type": "wire-oidc-01",
                   "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/RNb3z6tvknq7vz2U5DoHsSOGiWQyVtAz",
                   "status": "pending",
-                  "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY"
+                  "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
+                  "target": "https://dex/dex"
                 },
                 {
                   "type": "wire-dpop-01",
                   "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
                   "status": "pending",
-                  "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY"
+                  "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
+                  "target": "https://wire.com/clients/d2ba2c1a57588ee4/access-token"
                 }
               ],
               "identifier": {
@@ -154,11 +156,9 @@ fn e2e_api() {
 
         // POST http://wire-server/client-dpop-token
         let access_token = {
-            let access_token_url = format!("https://{domain}/clients/{client_id}/access-token");
             let expiry = Duration::from_days(1).into();
             let client_dpop_token = enrollment
                 .new_dpop_token(
-                    &access_token_url.parse().unwrap(),
                     &qualified_client_id.clone(),
                     &dpop_chall,
                     backend_nonce.to_string(),
@@ -170,7 +170,7 @@ fn e2e_api() {
             let leeway: u16 = 5;
             let max_expiration: u64 = 2136351646; // somewhere in 2037
             let htm = Htm::Post;
-            let htu: Htu = access_token_url.as_str().try_into().unwrap();
+            let htu: Htu = dpop_chall.target.clone().into();
             let alice = ClientId::try_from_qualified(&qualified_client_id).unwrap();
             let access_token = RustyJwtTools::generate_access_token(
                 client_dpop_token.as_str(),
