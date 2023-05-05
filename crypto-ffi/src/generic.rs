@@ -1273,16 +1273,11 @@ impl WireE2eIdentity {
 
     #[allow(clippy::too_many_arguments)]
     /// See [core_crypto::e2e_identity::WireE2eIdentity::create_dpop_token]
-    pub fn create_dpop_token(
-        &self,
-        access_token_url: String,
-        expiry_secs: u32,
-        backend_nonce: String,
-    ) -> E2eIdentityResult<String> {
+    pub fn create_dpop_token(&self, expiry_secs: u32, backend_nonce: String) -> E2eIdentityResult<String> {
         self.0
             .lock()
             .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .create_dpop_token(access_token_url, expiry_secs, backend_nonce)
+            .create_dpop_token(expiry_secs, backend_nonce)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_dpop_challenge_request]
@@ -1440,6 +1435,7 @@ impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
 pub struct AcmeChallenge {
     pub delegate: Vec<u8>,
     pub url: String,
+    pub target: String,
 }
 
 impl From<core_crypto::prelude::E2eiAcmeChallenge> for AcmeChallenge {
@@ -1447,6 +1443,7 @@ impl From<core_crypto::prelude::E2eiAcmeChallenge> for AcmeChallenge {
         Self {
             delegate: chall.delegate,
             url: chall.url,
+            target: chall.target,
         }
     }
 }
@@ -1456,6 +1453,7 @@ impl From<AcmeChallenge> for core_crypto::prelude::E2eiAcmeChallenge {
         Self {
             delegate: chall.delegate,
             url: chall.url,
+            target: chall.target,
         }
     }
 }

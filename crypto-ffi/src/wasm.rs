@@ -2163,13 +2163,8 @@ impl WireE2eIdentity {
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::create_dpop_token]
-    pub fn create_dpop_token(
-        &self,
-        access_token_url: String,
-        expiry_secs: u32,
-        backend_nonce: String,
-    ) -> WasmCryptoResult<Uint8Array> {
-        let dpop_token = self.0.create_dpop_token(access_token_url, expiry_secs, backend_nonce)?;
+    pub fn create_dpop_token(&self, expiry_secs: u32, backend_nonce: String) -> WasmCryptoResult<Uint8Array> {
+        let dpop_token = self.0.create_dpop_token(expiry_secs, backend_nonce)?;
         WasmCryptoResult::Ok(Uint8Array::from(dpop_token.as_bytes()).into())
     }
 
@@ -2415,15 +2410,17 @@ impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
 pub struct AcmeChallenge {
     delegate: Vec<u8>,
     url: String,
+    target: String,
 }
 
 #[wasm_bindgen]
 impl AcmeChallenge {
     #[wasm_bindgen(constructor)]
-    pub fn new(delegate: Uint8Array, url: String) -> Self {
+    pub fn new(delegate: Uint8Array, url: String, target: String) -> Self {
         Self {
             delegate: delegate.to_vec(),
             url,
+            target,
         }
     }
 
@@ -2436,6 +2433,11 @@ impl AcmeChallenge {
     pub fn url(&self) -> String {
         self.url.clone()
     }
+
+    #[wasm_bindgen(getter)]
+    pub fn target(&self) -> String {
+        self.target.clone()
+    }
 }
 
 impl From<core_crypto::prelude::E2eiAcmeChallenge> for AcmeChallenge {
@@ -2443,6 +2445,7 @@ impl From<core_crypto::prelude::E2eiAcmeChallenge> for AcmeChallenge {
         Self {
             delegate: chall.delegate,
             url: chall.url,
+            target: chall.target,
         }
     }
 }
@@ -2452,6 +2455,7 @@ impl From<AcmeChallenge> for core_crypto::prelude::E2eiAcmeChallenge {
         Self {
             delegate: chall.delegate,
             url: chall.url,
+            target: chall.target,
         }
     }
 }

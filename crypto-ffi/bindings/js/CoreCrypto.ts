@@ -1674,13 +1674,12 @@ export class WireE2eIdentity {
      * Then send it to `POST /clients/{id}/access-token`
      * {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token} on wire-server.
      *
-     * @param accessTokenUrl backend endpoint where this token will be sent. Should be this one {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token}
      * @param expirySecs of the client Dpop JWT. This should be equal to the grace period set in Team Management
      * @param backendNonce you get by calling `GET /clients/token/nonce` on wire-server as defined here {@link https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce}
      */
-    createDpopToken(accessTokenUrl: string, expirySecs: number, backendNonce: string): Uint8Array {
+    createDpopToken(expirySecs: number, backendNonce: string): Uint8Array {
         try {
-            return this.#e2ei.create_dpop_token(accessTokenUrl, expirySecs, backendNonce);
+            return this.#e2ei.create_dpop_token(expirySecs, backendNonce);
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1890,4 +1889,11 @@ export interface AcmeChallenge {
      * @readonly
      */
     url: string;
+    /**
+     * Non-standard, Wire specific claim. Indicates the consumer from where it should get the challenge proof.
+     * Either from wire-server "/access-token" endpoint in case of a DPoP challenge, or from an OAuth token endpoint for an OIDC challenge
+     *
+     * @readonly
+     */
+    target: string;
 }

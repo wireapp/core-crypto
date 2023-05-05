@@ -123,6 +123,10 @@ pub struct E2eiAcmeChallenge {
     pub delegate: super::Json,
     /// URL to call for the acme server to complete the challenge
     pub url: String,
+    /// Non-standard, Wire specific claim. Indicates the consumer from where it should get the challenge
+    /// proof. Either from wire-server "/access-token" endpoint in case of a DPoP challenge, or from
+    /// an OAuth token endpoint for an OIDC challenge
+    pub target: String,
 }
 
 impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeChall> for E2eiAcmeChallenge {
@@ -132,6 +136,7 @@ impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeChall> for E2eiAcmeChallenge {
         Ok(Self {
             delegate: serde_json::to_vec(&chall.chall)?,
             url: chall.url.to_string(),
+            target: chall.target.to_string(),
         })
     }
 }
@@ -143,6 +148,7 @@ impl TryFrom<&E2eiAcmeChallenge> for wire_e2e_identity::prelude::E2eiAcmeChall {
         Ok(Self {
             chall: serde_json::from_slice(&chall.delegate[..])?,
             url: chall.url.parse()?,
+            target: chall.target.parse()?,
         })
     }
 }
