@@ -39,7 +39,7 @@ async-trait = "0.1"
 async-lock = "2.6"
 schnellru = "0.2"
 zeroize = "1.5"
-wire-e2e-identity = "0.3"
+wire-e2e-identity = "0.4"
 either = "1.8"
 
 [dependencies.proteus-wasm]
@@ -88,7 +88,7 @@ futures-util = { version = "0.3", features = ["std", "alloc"] }
 futures-lite = "1.12"
 proteus-traits = "2.0"
 async-trait = "0.1"
-wire-e2e-identity = { version = "0.3", features = ["identity-builder"] }
+wire-e2e-identity = { version = "0.4", features = ["identity-builder"] }
 
 [dev-dependencies.core-crypto-keystore]
 version = "^0.8.2"
