@@ -402,13 +402,13 @@ interface WireE2eIdentity {
     sequence<u8> check_order_request(string order_url, string previous_nonce);
 
     [Throws=E2eIdentityError]
-    void check_order_response(sequence<u8> order);
+    string check_order_response(sequence<u8> order);
 
     [Throws=E2eIdentityError]
     sequence<u8> finalize_request(string previous_nonce);
 
     [Throws=E2eIdentityError]
-    void finalize_response(sequence<u8> finalize);
+    string finalize_response(sequence<u8> finalize);
 
     [Throws=E2eIdentityError]
     sequence<u8> certificate_request(string previous_nonce);

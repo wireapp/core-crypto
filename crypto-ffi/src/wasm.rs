@@ -2197,9 +2197,8 @@ impl WireE2eIdentity {
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::check_order_response]
-    pub fn check_order_response(&mut self, order: Uint8Array) -> WasmCryptoResult<JsValue> {
-        self.0.check_order_response(order.to_vec())?;
-        WasmCryptoResult::Ok(JsValue::UNDEFINED)
+    pub fn check_order_response(&mut self, order: Uint8Array) -> WasmCryptoResult<String> {
+        WasmCryptoResult::Ok(self.0.check_order_response(order.to_vec())?.into())
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_request]
@@ -2209,9 +2208,8 @@ impl WireE2eIdentity {
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_response]
-    pub fn finalize_response(&mut self, finalize: Uint8Array) -> WasmCryptoResult<JsValue> {
-        self.0.finalize_response(finalize.to_vec())?;
-        WasmCryptoResult::Ok(JsValue::UNDEFINED)
+    pub fn finalize_response(&mut self, finalize: Uint8Array) -> WasmCryptoResult<String> {
+        WasmCryptoResult::Ok(self.0.finalize_response(finalize.to_vec())?.into())
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::certificate_request]

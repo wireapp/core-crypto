@@ -1317,7 +1317,7 @@ impl WireE2eIdentity {
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::check_order_response]
-    pub fn check_order_response(&self, order: Vec<u8>) -> E2eIdentityResult<()> {
+    pub fn check_order_response(&self, order: Vec<u8>) -> E2eIdentityResult<String> {
         self.0
             .lock()
             .map_err(|_| E2eIdentityError::LockPoisonError)?
@@ -1333,7 +1333,7 @@ impl WireE2eIdentity {
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_response]
-    pub fn finalize_response(&self, finalize: Vec<u8>) -> E2eIdentityResult<()> {
+    pub fn finalize_response(&self, finalize: Vec<u8>) -> E2eIdentityResult<String> {
         self.0
             .lock()
             .map_err(|_| E2eIdentityError::LockPoisonError)?

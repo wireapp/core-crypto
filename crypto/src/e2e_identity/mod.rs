@@ -314,11 +314,15 @@ impl WireE2eIdentity {
     ///
     /// # Parameters
     /// * `order` - http response body
-    pub fn check_order_response(&mut self, order: Json) -> E2eIdentityResult<()> {
+    ///
+    /// # Returns
+    /// The finalize url to use with [Self::finalize_request]
+    pub fn check_order_response(&mut self, order: Json) -> E2eIdentityResult<String> {
         let order = serde_json::from_slice(&order[..])?;
         let valid_order = self.acme_check_order_response(order)?;
+        let finalize_url = valid_order.finalize_url.to_string();
         self.valid_order = Some(valid_order);
-        Ok(())
+        Ok(finalize_url)
     }
 
     /// Final step before fetching the certificate.
@@ -344,11 +348,15 @@ impl WireE2eIdentity {
     ///
     /// # Parameters
     /// * `finalize` - http response body
-    pub fn finalize_response(&mut self, finalize: Json) -> E2eIdentityResult<()> {
+    ///
+    /// # Returns
+    /// The certificate url to use with [Self::certificate_request]
+    pub fn finalize_response(&mut self, finalize: Json) -> E2eIdentityResult<String> {
         let finalize = serde_json::from_slice(&finalize[..])?;
         let finalize = self.acme_finalize_response(finalize)?;
+        let certificate_url = finalize.certificate_url.to_string();
         self.finalize = Some(finalize);
-        Ok(())
+        Ok(certificate_url)
     }
 
     /// Creates a request for finally fetching the x509 certificate.
