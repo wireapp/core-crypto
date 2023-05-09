@@ -105,8 +105,7 @@ impl RustyE2eIdentity {
     /// # Parameters
     /// * `account` - http response body
     pub fn acme_new_account_response(&self, account: Json) -> E2eIdentityResult<E2eiAcmeAccount> {
-        let account = RustyAcme::new_account_response(account)?;
-        Ok(serde_json::to_value(account)?.into())
+        RustyAcme::new_account_response(account)?.try_into()
     }
 
     /// Creates a new acme order for the handle (userId + display name) and the clientId.
@@ -133,7 +132,7 @@ impl RustyE2eIdentity {
         account: &E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
-        let account = serde_json::from_value(account.clone().into())?;
+        let account = account.clone().try_into()?;
         let client_id = ClientId::try_from_qualified(client_id)?;
         let order_req = RustyAcme::new_order_request(
             display_name,
@@ -160,7 +159,7 @@ impl RustyE2eIdentity {
         let authorizations = new_order.authorizations.clone();
         let new_order = serde_json::to_vec(&new_order)?.into();
         Ok(E2eiNewAcmeOrder {
-            new_order,
+            delegate: new_order,
             authorizations,
         })
     }
@@ -180,7 +179,7 @@ impl RustyE2eIdentity {
         account: &E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
-        let account = serde_json::from_value(account.clone().into())?;
+        let account = account.clone().try_into()?;
         let authz_req = RustyAcme::new_authz_request(url, &account, self.sign_alg, &self.sign_kp, previous_nonce)?;
         Ok(serde_json::to_value(authz_req)?)
     }
@@ -240,11 +239,11 @@ impl RustyE2eIdentity {
         backend_nonce: String,
         expiry: core::time::Duration,
     ) -> E2eIdentityResult<String> {
-        let client_id_challenge = serde_json::from_value::<AcmeChallenge>(dpop_challenge.chall.clone())?;
+        let dpop_chall: AcmeChallenge = dpop_challenge.clone().try_into()?;
         let dpop = Dpop {
             htm: Htm::Post,
             htu: dpop_challenge.target.clone().into(),
-            challenge: client_id_challenge.token.into(),
+            challenge: dpop_chall.token.into(),
             extra_claims: None,
         };
         let client_id = ClientId::try_from_qualified(client_id)?;
@@ -274,11 +273,11 @@ impl RustyE2eIdentity {
         account: &E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
-        let account = serde_json::from_value(account.clone().into())?;
-        let handle_chall = serde_json::from_value(dpop_challenge.chall.clone())?;
+        let account = account.clone().try_into()?;
+        let dpop_challenge: AcmeChallenge = dpop_challenge.clone().try_into()?;
         let new_challenge_req = RustyAcme::dpop_chall_request(
             access_token,
-            handle_chall,
+            dpop_challenge,
             &account,
             self.sign_alg,
             &self.sign_kp,
@@ -303,8 +302,8 @@ impl RustyE2eIdentity {
         account: &E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
-        let account = serde_json::from_value(account.clone().into())?;
-        let oidc_chall = serde_json::from_value(oidc_challenge.chall.clone())?;
+        let account = account.clone().try_into()?;
+        let oidc_chall: AcmeChallenge = oidc_challenge.clone().try_into()?;
         let new_challenge_req = RustyAcme::oidc_chall_request(
             id_token,
             oidc_chall,
@@ -344,7 +343,7 @@ impl RustyE2eIdentity {
         account: &E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
-        let account = serde_json::from_value(account.clone().into())?;
+        let account = account.clone().try_into()?;
         let check_order_req =
             RustyAcme::check_order_request(order_url, &account, self.sign_alg, &self.sign_kp, previous_nonce)?;
         Ok(serde_json::to_value(check_order_req)?)
@@ -357,8 +356,7 @@ impl RustyE2eIdentity {
     /// # Parameters
     /// * `order` - http response body
     pub fn acme_check_order_response(&self, order: Json) -> E2eIdentityResult<E2eiAcmeOrder> {
-        let order = RustyAcme::check_order_response(order)?;
-        Ok(serde_json::to_value(order)?.into())
+        RustyAcme::check_order_response(order)?.try_into()
     }
 
     /// Final step before fetching the certificate.
@@ -376,8 +374,8 @@ impl RustyE2eIdentity {
         account: &E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
-        let order = serde_json::from_value(order.into())?;
-        let account = serde_json::from_value(account.clone().into())?;
+        let order = order.try_into()?;
+        let account = account.clone().try_into()?;
         let finalize_req = RustyAcme::finalize_req(order, &account, self.sign_alg, &self.sign_kp, previous_nonce)?;
         Ok(serde_json::to_value(finalize_req)?)
     }
@@ -389,13 +387,7 @@ impl RustyE2eIdentity {
     /// # Parameters
     /// * `finalize` - http response body
     pub fn acme_finalize_response(&self, finalize: Json) -> E2eIdentityResult<E2eiAcmeFinalize> {
-        let finalize = RustyAcme::finalize_response(finalize)?;
-        let certificate_url = finalize.certificate.clone();
-        let finalize = serde_json::to_value(&finalize)?;
-        Ok(E2eiAcmeFinalize {
-            certificate_url,
-            finalize,
-        })
+        RustyAcme::finalize_response(finalize)?.try_into()
     }
 
     /// Creates a request for finally fetching the x509 certificate.
@@ -413,8 +405,8 @@ impl RustyE2eIdentity {
         account: E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
-        let finalize = serde_json::from_value(finalize.finalize)?;
-        let account = serde_json::from_value(account.into())?;
+        let finalize = finalize.try_into()?;
+        let account = account.try_into()?;
         let certificate_req =
             RustyAcme::certificate_req(finalize, account, self.sign_alg, &self.sign_kp, previous_nonce)?;
         Ok(serde_json::to_value(certificate_req)?)
