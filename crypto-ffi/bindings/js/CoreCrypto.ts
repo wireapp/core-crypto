@@ -1749,9 +1749,10 @@ export class WireE2eIdentity {
      * Parses the response from `POST /acme/{provisioner-name}/order/{order-id}`.
      *
      * @param order HTTP response body
+     * @return the finalize url to use with {@link finalizeRequest}
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    checkOrderResponse(order: JsonRawData): void {
+    checkOrderResponse(order: JsonRawData): string {
         try {
             return this.#e2ei.check_order_response(order);
         } catch(e) {
@@ -1778,9 +1779,10 @@ export class WireE2eIdentity {
      * Parses the response from `POST /acme/{provisioner-name}/order/{order-id}/finalize`.
      *
      * @param finalize HTTP response body
+     * @return the certificate url to use with {@link certificateRequest}
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
-    finalizeResponse(finalize: JsonRawData): void {
+    finalizeResponse(finalize: JsonRawData): string {
         try {
             return this.#e2ei.finalize_response(finalize);
         } catch(e) {

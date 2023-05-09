@@ -53,7 +53,7 @@ impl TryFrom<wire_e2e_identity::prelude::E2eiNewAcmeOrder> for E2eiNewAcmeOrder 
     fn try_from(new_order: wire_e2e_identity::prelude::E2eiNewAcmeOrder) -> E2eIdentityResult<Self> {
         Ok(Self {
             authorizations: new_order.authorizations.iter().map(url::Url::to_string).collect(),
-            delegate: serde_json::to_vec(&new_order.new_order)?,
+            delegate: serde_json::to_vec(&new_order.delegate)?,
         })
     }
 }
@@ -70,7 +70,7 @@ impl TryFrom<E2eiNewAcmeOrder> for wire_e2e_identity::prelude::E2eiNewAcmeOrder 
                     Ok(acc)
                 },
             )?,
-            new_order: serde_json::to_value(new_order.delegate)?,
+            delegate: serde_json::to_value(new_order.delegate)?,
         })
     }
 }
@@ -134,7 +134,7 @@ impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeChall> for E2eiAcmeChallenge {
 
     fn try_from(chall: wire_e2e_identity::prelude::E2eiAcmeChall) -> E2eIdentityResult<Self> {
         Ok(Self {
-            delegate: serde_json::to_vec(&chall.chall)?,
+            delegate: serde_json::to_vec(&chall.delegate)?,
             url: chall.url.to_string(),
             target: chall.target.to_string(),
         })
@@ -146,7 +146,7 @@ impl TryFrom<&E2eiAcmeChallenge> for wire_e2e_identity::prelude::E2eiAcmeChall {
 
     fn try_from(chall: &E2eiAcmeChallenge) -> E2eIdentityResult<Self> {
         Ok(Self {
-            chall: serde_json::from_slice(&chall.delegate[..])?,
+            delegate: serde_json::from_slice(&chall.delegate[..])?,
             url: chall.url.parse()?,
             target: chall.target.parse()?,
         })
