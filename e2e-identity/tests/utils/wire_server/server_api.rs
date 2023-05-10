@@ -34,10 +34,6 @@ pub async fn wire_api(req: Request<Body>) -> Result<Response<Body>, hyper::Error
             Response::builder().status(StatusCode::OK).body(nonce.into()).unwrap()
         }
         (&Method::POST, ["clients", device_id, "access-token"]) => {
-            // panic if device_id is not in hex as it is mandated
-            hex::decode(device_id)
-                .unwrap_or_else(|_| panic!("expected device id to be hexadecimal but was {device_id}"));
-
             let dpop = header("dpop");
             // fetch back the nonce we have generated at previous state
             let backend_nonce: BackendNonce = unsafe { PREVIOUS_NONCE.into() };

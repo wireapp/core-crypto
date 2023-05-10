@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 use std::{collections::HashMap, path::PathBuf};
 
+use serde_json::json;
 use testcontainers::{clients::Cli, core::WaitFor, Container, Image, RunnableImage};
 
 use crate::utils::docker::{rand_str, NETWORK};
@@ -19,6 +20,7 @@ pub struct CaCfg {
     pub audience: String,
     pub jwks_uri: String,
     pub dpop_target_uri: Option<String>,
+    pub template: serde_json::Value,
     pub host: String,
 }
 
@@ -32,11 +34,13 @@ impl CaCfg {
             audience,
             jwks_uri,
             dpop_target_uri,
+            template,
             ..
         } = self;
         let dpop_target_uri = dpop_target_uri.as_ref().unwrap();
+        let x509 = template.clone();
         // TODO: remove RS256 when EcDSA & EdDSA are supported in Dex
-        serde_json::json!({
+        json!({
             "provisioners": [
                 {
                     "type": "ACME",
@@ -73,6 +77,7 @@ impl CaCfg {
                                 ]
                             }
                         },
+                        "x509": x509,
                         "dpop": {
                             "key": sign_key,
                             "dpop-target": dpop_target_uri,
@@ -95,7 +100,7 @@ pub struct StepCaImage {
 
 impl StepCaImage {
     const NAME: &'static str = "quay.io/wire/smallstep-acme";
-    const TAG: &'static str = "0.0.42-test.64";
+    const TAG: &'static str = "0.0.42-test.84";
     const CA_NAME: &'static str = "wire";
     pub const ACME_PROVISIONER: &'static str = "wire";
     pub const PORT: u16 = 9000;
@@ -125,7 +130,6 @@ impl StepCaImage {
         cfg.as_object_mut()
             .unwrap()
             .insert("authority".to_string(), ca_cfg.cfg());
-
         std::fs::write(&cfg_file, serde_json::to_string_pretty(&cfg).unwrap()).unwrap();
 
         let image = image.with_container_name(&ca_cfg.host).with_network(NETWORK);

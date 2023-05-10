@@ -696,9 +696,9 @@ mod optimize {
             .verify_order_status(&account, order_url, previous_nonce)
             .await
             .unwrap();
-        let (finalize, previous_nonce) = test.finalize(&account, order, previous_nonce).await.unwrap();
+        let (finalize, previous_nonce) = test.finalize(&account, &order, previous_nonce).await.unwrap();
         use std::ops::Deref as _;
-        test.get_x509_certificates(account.deref().clone(), finalize, previous_nonce)
+        test.get_x509_certificates(account.deref().clone(), finalize, order, previous_nonce)
             .await
             .unwrap();
     }

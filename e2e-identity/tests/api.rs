@@ -252,7 +252,7 @@ fn e2e_api() {
         // POST http://acme-server/finalize
         let (finalize, previous_nonce) = {
             let _finalize_req = enrollment
-                .acme_finalize_request(order, &account, previous_nonce)
+                .acme_finalize_request(&order, &account, previous_nonce)
                 .unwrap();
 
             let resp = json!({
@@ -308,7 +308,9 @@ gBQY+1rDw64QLm/weFQC1mo9y29ddTAKBggqhkjOPQQDAgNHADBEAiARvd7RBuuv
 OhUy7ncjd/nzoN5Qs0p6D+ujdSLDqLlNIAIgfkwAAgsQMDF3ClqVM/p9cmS95B0g
 CAdIObqPoNL5MJo=
 -----END CERTIFICATE-----"#;
-            enrollment.acme_x509_certificate_response(resp.to_string()).unwrap()
+            enrollment
+                .acme_x509_certificate_response(resp.to_string(), order)
+                .unwrap()
         };
     }
 }

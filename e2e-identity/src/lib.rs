@@ -370,13 +370,13 @@ impl RustyE2eIdentity {
     /// * `previous_nonce` - "replay-nonce" response header from `POST /acme/{provisioner-name}/order/{order-id}`
     pub fn acme_finalize_request(
         &self,
-        order: E2eiAcmeOrder,
+        order: &E2eiAcmeOrder,
         account: &E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
-        let order = order.try_into()?;
+        let order = order.clone().try_into()?;
         let account = account.clone().try_into()?;
-        let finalize_req = RustyAcme::finalize_req(order, &account, self.sign_alg, &self.sign_kp, previous_nonce)?;
+        let finalize_req = RustyAcme::finalize_req(&order, &account, self.sign_alg, &self.sign_kp, previous_nonce)?;
         Ok(serde_json::to_value(finalize_req)?)
     }
 
@@ -418,7 +418,12 @@ impl RustyE2eIdentity {
     ///
     /// # Parameters
     /// * `response` - http string response body
-    pub fn acme_x509_certificate_response(&self, response: String) -> E2eIdentityResult<Vec<Vec<u8>>> {
-        Ok(RustyAcme::certificate_response(response)?)
+    pub fn acme_x509_certificate_response(
+        &self,
+        response: String,
+        order: E2eiAcmeOrder,
+    ) -> E2eIdentityResult<Vec<Vec<u8>>> {
+        let order = order.try_into()?;
+        Ok(RustyAcme::certificate_response(response, order)?)
     }
 }

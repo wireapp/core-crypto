@@ -64,6 +64,15 @@ impl<'a> E2eTest<'a> {
     const LDAP_HOST: &'static str = "ldap";
     const WIRE_HOST: &'static str = "wire.com";
     const HOSTS: [&'static str; 4] = [Self::DEX_HOST, Self::STEPCA_HOST, Self::LDAP_HOST, Self::WIRE_HOST];
+    const DEFAULT_TEMPLATE: &'static str = r#"{
+        	"subject": {
+        	    "organization": "wire.com",
+        	    "commonName": {{ toJson .Oidc.preferred_username }}
+        	},
+        	"uris": [{{ toJson .Oidc.name }}, {{ toJson .Dpop.sub }}],
+        	"keyUsage": ["digitalSignature"],
+        	"extKeyUsage": ["clientAuth"]
+        }"#;
 
     pub fn new() -> Self {
         Self::new_internal(false)
@@ -101,6 +110,7 @@ impl<'a> E2eTest<'a> {
         let backend_kp = Ed25519KeyPair::generate();
 
         let display = TestDisplay::new(format!("{:?} - {:?}", alg, hash_alg), false);
+        let template = Self::DEFAULT_TEMPLATE;
 
         Self {
             domain: domain.to_string(),
@@ -132,6 +142,7 @@ impl<'a> E2eTest<'a> {
                 audience: audience.to_string(),
                 jwks_uri,
                 dpop_target_uri: None,
+                template: serde_json::json!({ "template": template }),
                 host: ca_host,
             },
             oauth_cfg: OauthCfg {
@@ -360,7 +371,7 @@ pub struct EnrollmentFlow {
     pub verify_oidc_challenge: Flow<(AcmeAccount, AcmeChallenge, String, String), String>,
     pub verify_order_status: Flow<(AcmeAccount, url::Url, String), (AcmeOrder, String)>,
     pub finalize: Flow<(AcmeAccount, AcmeOrder, String), (AcmeFinalize, String)>,
-    pub get_x509_certificates: Flow<(AcmeAccount, AcmeFinalize, String), ()>,
+    pub get_x509_certificates: Flow<(AcmeAccount, AcmeFinalize, AcmeOrder, String), ()>,
 }
 
 impl Default for EnrollmentFlow {
@@ -451,13 +462,14 @@ impl Default for EnrollmentFlow {
             }),
             finalize: Box::new(|mut test, (account, order, previous_nonce)| {
                 Box::pin(async move {
-                    let (finalize, previous_nonce) = test.finalize(&account, order, previous_nonce).await?;
+                    let (finalize, previous_nonce) = test.finalize(&account, &order, previous_nonce).await?;
                     Ok((test, (finalize, previous_nonce)))
                 })
             }),
-            get_x509_certificates: Box::new(|mut test, (account, finalize, previous_nonce)| {
+            get_x509_certificates: Box::new(|mut test, (account, finalize, order, previous_nonce)| {
                 Box::pin(async move {
-                    test.get_x509_certificates(account, finalize, previous_nonce).await?;
+                    test.get_x509_certificates(account, finalize, order, previous_nonce)
+                        .await?;
                     Ok((test, ()))
                 })
             }),

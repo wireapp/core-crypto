@@ -56,8 +56,8 @@ impl E2eTest<'static> {
             (f.verify_oidc_challenge)(t, (account.clone(), oidc_chall, id_token, previous_nonce)).await?;
         let (t, (order, previous_nonce)) =
             (f.verify_order_status)(t, (account.clone(), order_url, previous_nonce)).await?;
-        let (t, (finalize, previous_nonce)) = (f.finalize)(t, (account.clone(), order, previous_nonce)).await?;
-        let (mut t, _) = (f.get_x509_certificates)(t, (account, finalize, previous_nonce)).await?;
+        let (t, (finalize, previous_nonce)) = (f.finalize)(t, (account.clone(), order.clone(), previous_nonce)).await?;
+        let (mut t, _) = (f.get_x509_certificates)(t, (account, finalize, order, previous_nonce)).await?;
         t.display();
         Ok(())
     }
@@ -637,7 +637,7 @@ impl<'a> E2eTest<'a> {
     pub async fn finalize(
         &mut self,
         account: &AcmeAccount,
-        order: AcmeOrder,
+        order: &AcmeOrder,
         previous_nonce: String,
     ) -> TestResult<(AcmeFinalize, String)> {
         self.display_step("create a CSR and call finalize url");
@@ -677,6 +677,7 @@ impl<'a> E2eTest<'a> {
         &mut self,
         account: AcmeAccount,
         finalize: AcmeFinalize,
+        order: AcmeOrder,
         previous_nonce: String,
     ) -> TestResult<Vec<Vec<u8>>> {
         self.display_step("fetch the certificate");
@@ -700,7 +701,7 @@ impl<'a> E2eTest<'a> {
             .expect_header("content-type", "application/pem-certificate-chain");
         let resp = resp.text().await?;
         self.display_body(&resp);
-        let certificates = RustyAcme::certificate_response(resp)?;
+        let certificates = RustyAcme::certificate_response(resp, order)?;
         for (i, cert) in certificates.iter().enumerate() {
             self.display_cert(&format!("Certificate #{}", i + 1), cert, false);
         }
