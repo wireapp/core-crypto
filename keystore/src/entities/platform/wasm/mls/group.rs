@@ -65,7 +65,7 @@ impl EntityBase for PersistedMlsGroup {
 
     async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
-        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::as_bytes).collect();
+        let ids = ids.iter().map(StringEntityId::as_bytes).collect::<Vec<_>>();
         let _ = storage.delete("mls_groups", &ids).await?;
         Ok(())
     }
@@ -144,8 +144,8 @@ impl EntityBase for PersistedMlsPendingGroup {
         conn.storage().count("mls_pending_groups").await
     }
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::as_bytes).collect();
+    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<()> {
+        let ids = ids.iter().map(StringEntityId::as_bytes).collect::<Vec<_>>();
         let _ = conn.storage_mut().delete("mls_pending_groups", &ids).await?;
         Ok(())
     }

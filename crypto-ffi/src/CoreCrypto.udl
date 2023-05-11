@@ -322,13 +322,19 @@ interface CoreCrypto {
     [Throws=CryptoError]
     void proteus_cryptobox_migrate([ByRef] string path);
 
-    [Throws=CryptoError]
-    WireE2eIdentity new_acme_enrollment(string client_id, string display_name, string handle, u32 expiry_days, CiphersuiteName ciphersuite);
-
-    [Throws=CryptoError]
-    void e2ei_mls_init(WireE2eIdentity e2ei, string certificate_chain);
-
     u32 proteus_last_error_code();
+
+    [Throws=CryptoError]
+    WireE2eIdentity e2ei_new_enrollment(string client_id, string display_name, string handle, u32 expiry_days, CiphersuiteName ciphersuite);
+
+    [Throws=CryptoError]
+    void e2ei_mls_init(WireE2eIdentity enrollment, string certificate_chain);
+
+    [Throws=CryptoError]
+    sequence<u8> e2ei_enrollment_stash(WireE2eIdentity enrollment);
+
+    [Throws=CryptoError]
+    WireE2eIdentity e2ei_enrollment_stash_pop(sequence<u8> handle);
 };
 
 [Error]

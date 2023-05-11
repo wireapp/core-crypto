@@ -167,7 +167,7 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoNativeClient {
 
 #[async_trait::async_trait(?Send)]
 impl crate::clients::EmulatedE2eIdentityClient for CoreCryptoNativeClient {
-    async fn new_acme_enrollment(&mut self, ciphersuite: MlsCiphersuite) -> Result<()> {
+    async fn e2ei_new_enrollment(&mut self, ciphersuite: MlsCiphersuite) -> Result<()> {
         let display_name = "Smith, Alice M (QA)".to_string();
         let domain = "example.com";
         let client_id: ClientId = format!("NDEyZGYwNjc2MzFkNDBiNTllYmVmMjQyZTIzNTc4NWQ:65c3ac1a1631c136@{domain}")
@@ -178,7 +178,7 @@ impl crate::clients::EmulatedE2eIdentityClient for CoreCryptoNativeClient {
 
         let mut enrollment = self
             .cc
-            .new_acme_enrollment(client_id, display_name, handle, expiry, ciphersuite)?;
+            .e2ei_new_enrollment(client_id, display_name, handle, expiry, ciphersuite)?;
         let directory = serde_json::json!({
             "newNonce": "https://example.com/acme/new-nonce",
             "newAccount": "https://example.com/acme/new-account",

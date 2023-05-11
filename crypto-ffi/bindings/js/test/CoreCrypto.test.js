@@ -880,7 +880,7 @@ test("end-to-end-identity", async () => {
     const handle = "alice_wire";
     const expiryDays = 90;
 
-    const enrollment = await cc.newAcmeEnrollment(clientId, displayName, handle, expiryDays, ciphersuite);
+    let enrollment = await cc.e2eiNewEnrollment(clientId, displayName, handle, expiryDays, ciphersuite);
 
     const directoryResp = {
         "newNonce": "https://example.com/acme/new-nonce",
@@ -960,6 +960,10 @@ test("end-to-end-identity", async () => {
         "token": "LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0"
     };
     enrollment.newChallengeResponse(jsonToByteArray(dpopChallengeResp));
+
+    // simulate the OAuth redirect
+    let storeHandle = await cc.e2eiEnrollmentStash(enrollment);
+    enrollment = await cc.e2eiEnrollmentStashPop(storeHandle);
 
     const idToken = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ";
     const oidcChallengeReq = enrollment.newOidcChallengeRequest(idToken, previousNonce);

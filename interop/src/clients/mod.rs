@@ -88,5 +88,5 @@ pub trait EmulatedProteusClient: EmulatedClient {
 
 #[async_trait::async_trait(?Send)]
 pub trait EmulatedE2eIdentityClient: EmulatedClient {
-    async fn new_acme_enrollment(&mut self, ciphersuite: MlsCiphersuite) -> Result<()>;
+    async fn e2ei_new_enrollment(&mut self, ciphersuite: MlsCiphersuite) -> Result<()>;
 }
