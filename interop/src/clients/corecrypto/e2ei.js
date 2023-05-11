@@ -9,7 +9,7 @@ const handle = "alice_wire";
 const expiryDays = 90;
 const ciphersuite = window.ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 
-const enrollment = await window.cc.newAcmeEnrollment(clientId, displayName, handle, expiryDays, ciphersuite);
+const enrollment = await window.cc.e2eiNewEnrollment(clientId, displayName, handle, expiryDays, ciphersuite);
 
 const directoryResp = {
     "newNonce": "https://example.com/acme/new-nonce",

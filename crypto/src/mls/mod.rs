@@ -19,7 +19,8 @@ pub(crate) mod external_proposal;
 pub(crate) mod member;
 pub(crate) mod proposal;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, derive_more::Deref)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, derive_more::Deref, serde::Serialize, serde::Deserialize)]
+#[serde(transparent)]
 #[repr(transparent)]
 /// A wrapper for the OpenMLS Ciphersuite, so that we are able to provide a default value.
 pub struct MlsCiphersuite(Ciphersuite);

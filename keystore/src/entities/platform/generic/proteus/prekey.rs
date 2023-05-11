@@ -67,7 +67,7 @@ impl EntityBase for ProteusPrekey {
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        let id = ProteusPrekey::id_from_slice(&id.as_bytes());
+        let id = ProteusPrekey::id_from_slice(&id.into_bytes());
 
         let transaction = conn.transaction()?;
 
@@ -146,7 +146,7 @@ impl EntityBase for ProteusPrekey {
 
         let mut updated = 0;
         for id in ids {
-            let id = ProteusPrekey::id_from_slice(&id.as_bytes());
+            let id = ProteusPrekey::id_from_slice(&id.into_bytes());
             updated += transaction.execute("DELETE FROM proteus_prekeys WHERE id = ?", [id])?;
         }
 

@@ -58,6 +58,7 @@ impl DatabaseConnection for WasmConnection {
                     .add_index(Index::new("signature", "signature").unique(true)),
             )
             .add_object_store(ObjectStore::new("mls_groups").auto_increment(false))
+            .add_object_store(ObjectStore::new("e2ei_enrollment").auto_increment(false))
             .add_object_store(ObjectStore::new("mls_pending_groups").auto_increment(false))
             .add_object_store(ObjectStore::new("proteus_prekeys").auto_increment(false))
             .add_object_store(ObjectStore::new("proteus_identities").auto_increment(false))

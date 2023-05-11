@@ -980,16 +980,33 @@ public class CoreCryptoWrapper {
     /// - parameter expiryDays: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material.
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func newAcmeEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: CoreCryptoSwift.CiphersuiteName) throws -> CoreCryptoSwift.WireE2eIdentity {
-        return try self.coreCrypto.newAcmeEnrollment(clientId: clientId, displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
+    public func e2eiNewEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: CoreCryptoSwift.CiphersuiteName) throws -> CoreCryptoSwift.WireE2eIdentity {
+        return try self.coreCrypto.e2eiNewEnrollment(clientId: clientId, displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
     }
 
     /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it to initialize the MLS client with a certificate
     ///
     /// - parameter e2ei: the enrollment instance used to fetch the certificates
     /// - parameter certificateChain: the raw response from ACME server
-    public func e2eiMlsInit(e2ei: CoreCryptoSwift.WireE2eIdentity, certificateChain: String) throws {
-        return try self.coreCrypto.e2eiMlsInit(e2ei: e2ei, certificateChain: certificateChain)
+    public func e2eiMlsInit(enrollment: CoreCryptoSwift.WireE2eIdentity, certificateChain: String) throws {
+        return try self.coreCrypto.e2eiMlsInit(enrollment: enrollment, certificateChain: certificateChain)
+    }
+
+    /// Allows persisting an active enrollment (for example while redirecting the user during OAuth) in order to resume
+    /// it later with [MlsCentral::e2eiEnrollmentStashPop]
+    ///
+    /// - parameter e2ei: the enrollment instance to persist
+    /// - returns: a handle to fetch the enrollment later with [MlsCentral::e2eiEnrollmentStashPop]
+    public func e2eiEnrollmentStash(enrollment: CoreCryptoSwift.WireE2eIdentity) throws -> [UInt8] {
+        return try self.coreCrypto.e2eiEnrollmentStash(enrollment: enrollment)
+    }
+
+    /// Fetches the persisted enrollment and deletes it from the keystore
+    ///
+    /// - parameter handle: returned by [MlsCentral::e2eiEnrollmentStash]
+    /// - returns: the persisted enrollment instance
+    public func e2eiEnrollmentStashPop(handle: [UInt8]) throws -> CoreCryptoSwift.WireE2eIdentity {
+        return try self.coreCrypto.e2eiEnrollmentStashPop(handle: handle)
     }
 
     /// - returns: The CoreCrypto version

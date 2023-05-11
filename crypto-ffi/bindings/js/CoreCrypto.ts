@@ -1554,19 +1554,41 @@ export class CoreCrypto {
      * @param ciphersuite - for generating signing key material
      * @returns The new {@link WireE2eIdentity} object
      */
-    async newAcmeEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<WireE2eIdentity> {
-        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.new_acme_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
+    async e2eiNewEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<WireE2eIdentity> {
+        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
         return new WireE2eIdentity(e2ei);
     }
 
     /**
      * Parses the ACME server response from the endpoint fetching x509 certificates and uses it to initialize the MLS client with a certificate
      *
-     * @param e2ei - the enrollment instance used to fetch the certificates
+     * @param enrollment - the enrollment instance used to fetch the certificates
      * @param certificateChain - the raw response from ACME server
      */
-    async e2eiMlsInit(e2ei: WireE2eIdentity, certificateChain: string): Promise<void> {
-        return await this.#cc.e2ei_mls_init(e2ei.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain);
+    async e2eiMlsInit(enrollment: WireE2eIdentity, certificateChain: string): Promise<void> {
+        return await this.#cc.e2ei_mls_init(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain);
+    }
+
+    /**
+     * Allows persisting an active enrollment (for example while redirecting the user during OAuth) in order to resume
+     * it later with {@link e2eiEnrollmentStashPop}
+     *
+     * @param enrollment the enrollment instance to persist
+     * @returns a handle to fetch the enrollment later with {@link e2eiEnrollmentStashPop}
+     */
+    async e2eiEnrollmentStash(enrollment: WireE2eIdentity): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.e2ei_enrollment_stash(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity))
+    }
+
+    /**
+     * Fetches the persisted enrollment and deletes it from the keystore
+     *
+     * @param handle returned by {@link e2eiEnrollmentStash}
+     * @returns the persisted enrollment instance
+     */
+    async e2eiEnrollmentStashPop(handle: Uint8Array): Promise<WireE2eIdentity> {
+        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_enrollment_stash_pop(handle));
+        return new WireE2eIdentity(e2ei);
     }
 
     /**

@@ -384,7 +384,7 @@ async fn run_e2e_identity_test(chrome_driver_addr: &std::net::SocketAddr) -> Res
     ));
 
     for c in clients.iter_mut() {
-        c.new_acme_enrollment(MlsCiphersuite::default()).await?;
+        c.e2ei_new_enrollment(MlsCiphersuite::default()).await?;
     }
     spinner.success("[E2EI] Step 0: Perform ACME enrollment [OK]");
 

@@ -2169,8 +2169,8 @@ impl CoreCrypto {
 impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<WireE2eIdentity>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::new_acme_enrollment]
-    pub fn new_acme_enrollment(
+    /// see [core_crypto::mls::MlsCentral::e2ei_new_enrollment]
+    pub fn e2ei_new_enrollment(
         &self,
         client_id: String,
         display_name: String,
@@ -2184,7 +2184,7 @@ impl CoreCrypto {
             async move {
                 let this = this.read().await;
                 let enrollment = this
-                    .new_acme_enrollment(
+                    .e2ei_new_enrollment(
                         client_id.into_bytes().into(),
                         display_name,
                         handle,
@@ -2202,13 +2202,45 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::MlsCentral::e2ei_mls_init]
-    pub fn e2ei_mls_init(&self, e2ei: WireE2eIdentity, certificate_chain: String) -> Promise {
+    pub fn e2ei_mls_init(&self, enrollment: WireE2eIdentity, certificate_chain: String) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
                 let mut this = this.write().await;
-                this.e2ei_mls_init(e2ei.0, certificate_chain).await?;
+                this.e2ei_mls_init(enrollment.0, certificate_chain).await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
+        )
+    }
+
+    /// see [core_crypto::mls::MlsCentral::e2ei_enrollment_stash]
+    pub fn e2ei_enrollment_stash(&self, enrollment: WireE2eIdentity) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                let this = this.write().await;
+                let handle = this.e2ei_enrollment_stash(enrollment.0).await?;
+                WasmCryptoResult::Ok(Uint8Array::from(handle.as_slice()).into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// see [core_crypto::mls::MlsCentral::e2ei_enrollment_stash_pop]
+    pub fn e2ei_enrollment_stash_pop(&self, handle: Box<[u8]>) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                let this = this.read().await;
+                let enrollment = this
+                    .e2ei_enrollment_stash_pop(handle.to_vec())
+                    .await
+                    .map(|e| WireE2eIdentity(e))
+                    .map_err(|_| CryptoError::ImplementationError)
+                    .map_err(CoreCryptoError::from)?;
+
+                WasmCryptoResult::Ok(enrollment.into())
             }
             .err_into(),
         )

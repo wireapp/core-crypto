@@ -338,7 +338,7 @@ window.cc.proteusDecrypt(sessionId, ciphertextBuffer).then(callback);"#,
 
 #[async_trait::async_trait(?Send)]
 impl crate::clients::EmulatedE2eIdentityClient for CoreCryptoWebClient {
-    async fn new_acme_enrollment(&mut self, _ciphersuite: MlsCiphersuite) -> Result<()> {
+    async fn e2ei_new_enrollment(&mut self, _ciphersuite: MlsCiphersuite) -> Result<()> {
         let script = include_str!("e2ei.js");
         Ok(self.browser.execute_async(script, vec![]).await.map(|_| ())?)
     }

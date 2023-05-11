@@ -107,7 +107,7 @@ impl EntityBase for MlsKeypackage {
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        let id = String::from_utf8(id.as_bytes())?;
+        let id = String::from_utf8(id.into_bytes())?;
 
         let transaction = conn.transaction()?;
         use rusqlite::OptionalExtension as _;
@@ -140,7 +140,7 @@ impl EntityBase for MlsKeypackage {
         let len = ids.len();
         let mut updated = 0;
         for id in ids {
-            let id = String::from_utf8(id.as_bytes())?;
+            let id = String::from_utf8(id.into_bytes())?;
             updated += transaction.execute("DELETE FROM mls_keys WHERE id = ?", [id])?;
         }
 

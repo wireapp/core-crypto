@@ -130,7 +130,7 @@ impl EntityBase for PersistedMlsPendingGroup {
         let rowid: Option<i64> = transaction
             .query_row(
                 "SELECT rowid FROM mls_pending_groups WHERE id = ?",
-                [&id.as_bytes()],
+                [&id.into_bytes()],
                 |r| r.get(0),
             )
             .optional()?;
@@ -316,7 +316,7 @@ impl EntityBase for PersistedMlsPendingGroup {
         let len = ids.len();
         let mut updated = 0;
         for id in ids {
-            updated += transaction.execute("DELETE FROM mls_pending_groups WHERE id = ?", [id.as_bytes()])?;
+            updated += transaction.execute("DELETE FROM mls_pending_groups WHERE id = ?", [id.into_bytes()])?;
         }
 
         if updated == len {

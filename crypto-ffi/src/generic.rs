@@ -929,8 +929,8 @@ impl CoreCrypto<'_> {
 // End-to-end identity methods
 #[allow(dead_code, unused_variables)]
 impl CoreCrypto<'_> {
-    /// See [core_crypto::mls::MlsCentral::new_acme_enrollment]
-    pub fn new_acme_enrollment(
+    /// See [core_crypto::mls::MlsCentral::e2ei_new_enrollment]
+    pub fn e2ei_new_enrollment(
         &self,
         client_id: String,
         display_name: String,
@@ -941,7 +941,7 @@ impl CoreCrypto<'_> {
         self.central
             .lock()
             .map_err(|_| CryptoError::LockPoisonError)?
-            .new_acme_enrollment(
+            .e2ei_new_enrollment(
                 client_id.into_bytes().into(),
                 display_name,
                 handle,
@@ -955,9 +955,13 @@ impl CoreCrypto<'_> {
             .map_err(|_| CryptoError::ImplementationError)
     }
 
-    /// See [core_crypto::MlsCentral::new_acme_enrollment]
-    pub fn e2ei_mls_init(&self, e2ei: std::sync::Arc<WireE2eIdentity>, certificate_chain: String) -> CryptoResult<()> {
-        let e2ei = std::sync::Arc::try_unwrap(e2ei).map_err(|_| CryptoError::LockPoisonError)?;
+    /// See [core_crypto::MlsCentral::e2ei_mls_init]
+    pub fn e2ei_mls_init(
+        &self,
+        enrollment: std::sync::Arc<WireE2eIdentity>,
+        certificate_chain: String,
+    ) -> CryptoResult<()> {
+        let e2ei = std::sync::Arc::try_unwrap(enrollment).map_err(|_| CryptoError::LockPoisonError)?;
         let e2ei = std::sync::Arc::try_unwrap(e2ei.0).map_err(|_| CryptoError::LockPoisonError)?;
         let e2ei = e2ei.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
 
@@ -970,6 +974,36 @@ impl CoreCrypto<'_> {
                     .map_err(|_| CryptoError::ImplementationError),
             ),
         )
+    }
+
+    /// See [core_crypto::MlsCentral::e2ei_enrollment_stash]
+    pub fn e2ei_enrollment_stash(&self, enrollment: std::sync::Arc<WireE2eIdentity>) -> CryptoResult<Vec<u8>> {
+        let enrollment = std::sync::Arc::try_unwrap(enrollment).map_err(|_| CryptoError::LockPoisonError)?;
+        let enrollment = std::sync::Arc::try_unwrap(enrollment.0).map_err(|_| CryptoError::LockPoisonError)?;
+        let enrollment = enrollment.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
+
+        let cc = self.central.lock().map_err(|_| CryptoError::LockPoisonError)?;
+        let executor = self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?;
+
+        future::block_on(
+            executor.run(
+                cc.e2ei_enrollment_stash(enrollment)
+                    .map_err(|_| CryptoError::ImplementationError),
+            ),
+        )
+    }
+
+    /// See [core_crypto::MlsCentral::e2ei_enrollment_stash_pop]
+    pub fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CryptoResult<std::sync::Arc<WireE2eIdentity>> {
+        let cc = self.central.lock().map_err(|_| CryptoError::LockPoisonError)?;
+        let executor = self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?;
+
+        future::block_on(executor.run(cc.e2ei_enrollment_stash_pop(handle)))
+            .map(std::sync::Mutex::new)
+            .map(std::sync::Arc::new)
+            .map(WireE2eIdentity)
+            .map(std::sync::Arc::new)
+            .map_err(|_| CryptoError::ImplementationError)
     }
 }
 

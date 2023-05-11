@@ -59,8 +59,16 @@ impl<'a> StringEntityId<'a> {
         hex::encode(self.0)
     }
 
-    pub fn as_bytes(&self) -> Vec<u8> {
+    pub fn into_bytes(&self) -> Vec<u8> {
         self.0.into()
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0
+    }
+
+    pub fn try_as_str(&self) -> Result<&str, ::core::str::Utf8Error> {
+        std::str::from_utf8(self.0)
     }
 }
 

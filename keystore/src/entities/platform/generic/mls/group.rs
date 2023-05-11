@@ -145,7 +145,7 @@ impl EntityBase for PersistedMlsGroup {
         use rusqlite::OptionalExtension as _;
         let transaction = conn.transaction()?;
         let mut rowid: Option<i64> = transaction
-            .query_row("SELECT rowid FROM mls_groups WHERE id = ?", [id.as_bytes()], |r| {
+            .query_row("SELECT rowid FROM mls_groups WHERE id = ?", [id.into_bytes()], |r| {
                 r.get::<_, i64>(0)
             })
             .optional()?;
@@ -243,7 +243,7 @@ impl EntityBase for PersistedMlsGroup {
         let len = ids.len();
         let mut updated = 0;
         for id in ids {
-            updated += transaction.execute("DELETE FROM mls_groups WHERE id = ?", [id.as_bytes()])?;
+            updated += transaction.execute("DELETE FROM mls_groups WHERE id = ?", [id.into_bytes()])?;
         }
 
         if updated == len {

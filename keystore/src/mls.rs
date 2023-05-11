@@ -19,8 +19,8 @@ use openmls_traits::key_store::{FromKeyStoreValue, ToKeyStoreValue};
 use crate::{
     connection::Connection,
     entities::{
-        EntityFindParams, MlsIdentity, MlsIdentityExt, MlsKeypackage, PersistedMlsGroup, PersistedMlsPendingGroup,
-        StringEntityId,
+        E2eiEnrollment, EntityFindParams, MlsIdentity, MlsIdentityExt, MlsKeypackage, PersistedMlsGroup,
+        PersistedMlsPendingGroup, StringEntityId,
     },
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
@@ -145,6 +145,19 @@ pub trait CryptoKeystoreMls: Sized {
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
     async fn mls_pending_groups_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()>;
+
+    /// Persists an enrollment instance
+    ///
+    /// # Arguments
+    /// * `id` - hash of the enrollment and unique identifier
+    /// * `content` - serialized enrollment
+    async fn save_e2ei_enrollment(&self, id: &[u8], content: &[u8]) -> CryptoKeystoreResult<()>;
+
+    /// Fetches and delete the enrollment instance
+    ///
+    /// # Arguments
+    /// * `id` - hash of the enrollment and unique identifier
+    async fn pop_e2ei_enrollment(&self, id: &[u8]) -> CryptoKeystoreResult<Vec<u8>>;
 }
 
 #[inline(always)]
@@ -419,6 +432,27 @@ impl CryptoKeystoreMls for crate::connection::Connection {
 
     async fn mls_pending_groups_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()> {
         self.remove::<PersistedMlsPendingGroup, _>(group_id).await
+    }
+
+    async fn save_e2ei_enrollment(&self, id: &[u8], content: &[u8]) -> CryptoKeystoreResult<()> {
+        self.save(E2eiEnrollment {
+            id: id.into(),
+            content: content.into(),
+        })
+        .await?;
+        Ok(())
+    }
+
+    async fn pop_e2ei_enrollment(&self, id: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
+        // someone who has time could try to optimize this but honestly it's really on the cold path
+        let enrollment = self
+            .find::<E2eiEnrollment>(id)
+            .await?
+            .ok_or(CryptoKeystoreError::MissingKeyInStore(
+                MissingKeyErrorKind::E2eiEnrollment,
+            ))?;
+        self.remove::<E2eiEnrollment, _>(id).await?;
+        Ok(enrollment.content.clone())
     }
 }
 

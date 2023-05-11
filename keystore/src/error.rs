@@ -25,6 +25,8 @@ pub enum MissingKeyErrorKind {
     MlsGroup,
     #[error("MLS Persisted Pending Group")]
     MlsPendingGroup,
+    #[error("End-to-end identity enrollment")]
+    E2eiEnrollment,
     #[cfg(feature = "proteus-keystore")]
     #[error("Proteus PreKey")]
     ProteusPrekey,
@@ -47,8 +49,12 @@ pub enum CryptoKeystoreError {
     TryFromSliceError(#[from] std::array::TryFromSliceError),
     #[error("One of the Keystore locks has been poisoned")]
     LockPoisonError,
+    #[error("We have done something terribly wrong and it needs to be fixed")]
+    ImplementationError,
     #[error("The keystore has run out of keypackage bundles!")]
     OutOfKeyPackageBundles,
+    #[error("A uniqueness constraint has been violated")]
+    AlreadyExists,
     #[error("The provided buffer is too big to be persisted in the store")]
     BlobTooBig,
     #[cfg(feature = "mls-keystore")]
