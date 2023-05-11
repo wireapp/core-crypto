@@ -27,7 +27,7 @@ pub mod prelude {
 
 pub type Json = serde_json::Value;
 
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct RustyE2eIdentity {
     sign_alg: JwsAlgorithm,
     sign_kp: Pem,
