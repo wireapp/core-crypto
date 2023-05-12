@@ -219,6 +219,8 @@ pub(crate) const ITEM_LIMIT: u32 = 100;
 
 impl HybridMemoryLimiter {
     pub(crate) fn new(count: Option<u32>, memory: Option<usize>) -> Self {
+        // false positive. We want to fetch system metrics lazily
+        #[allow(clippy::unnecessary_lazy_evaluations)]
         let maybe_memory_limit = memory.or_else(|| {
             cfg_if::cfg_if! {
                 if #[cfg(target_family = "wasm")] {

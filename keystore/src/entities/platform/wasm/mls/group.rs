@@ -93,7 +93,7 @@ impl Entity for PersistedMlsGroup {
 #[async_trait::async_trait(?Send)]
 impl PersistedMlsGroupExt for PersistedMlsGroup {
     fn parent_id(&self) -> Option<&[u8]> {
-        self.parent_id.as_ref().map(Vec::as_slice)
+        self.parent_id.as_deref()
     }
 
     // async fn child_groups(&self, conn: &mut <Self as EntityBase>::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {

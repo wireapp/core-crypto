@@ -36,6 +36,7 @@ pub extern "C" fn __stack_chk_fail() {
 }
 
 #[derive(Debug, thiserror::Error)]
+#[allow(clippy::enum_variant_names)]
 enum WasmError {
     #[error(transparent)]
     CryptoError(#[from] CryptoError),
@@ -112,9 +113,9 @@ impl From<serde_wasm_bindgen::Error> for CoreCryptoError {
     }
 }
 
-impl Into<wasm_bindgen::JsValue> for CoreCryptoError {
-    fn into(self) -> wasm_bindgen::JsValue {
-        js_sys::Error::new(&self.to_string()).into()
+impl From<CoreCryptoError> for wasm_bindgen::JsValue {
+    fn from(val: CoreCryptoError) -> Self {
+        js_sys::Error::new(&val.to_string()).into()
     }
 }
 
@@ -197,8 +198,8 @@ impl Into<CiphersuiteName> for Ciphersuite {
 }
 
 /// Helper to lower arrays of Ciphersuites (js -> rust)
-fn lower_ciphersuites(ciphersuites: Box<[u16]>) -> WasmCryptoResult<Vec<MlsCiphersuite>> {
-    ciphersuites.into_iter().try_fold(
+fn lower_ciphersuites(ciphersuites: &[u16]) -> WasmCryptoResult<Vec<MlsCiphersuite>> {
+    ciphersuites.iter().try_fold(
         Vec::with_capacity(ciphersuites.len()),
         |mut acc, &cs| -> WasmCryptoResult<_> {
             let cs = Ciphersuite::from_repr(cs).ok_or(WasmError::EnumError)?;
@@ -923,7 +924,7 @@ impl CoreCrypto {
         ciphersuites: Box<[u16]>,
         entropy_seed: Option<Box<[u8]>>,
     ) -> WasmCryptoResult<CoreCrypto> {
-        let ciphersuites = lower_ciphersuites(ciphersuites)?;
+        let ciphersuites = lower_ciphersuites(&ciphersuites)?;
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
         let configuration =
             MlsCentralConfiguration::try_new(path, key, Some(client_id.into()), ciphersuites, entropy_seed)
@@ -945,7 +946,7 @@ impl CoreCrypto {
         ciphersuites: Box<[u16]>,
         entropy_seed: Option<Box<[u8]>>,
     ) -> WasmCryptoResult<CoreCrypto> {
-        let ciphersuites = lower_ciphersuites(ciphersuites)?;
+        let ciphersuites = lower_ciphersuites(&ciphersuites)?;
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
         let configuration = MlsCentralConfiguration::try_new(path, key, None, ciphersuites, entropy_seed)
             .map_err(CoreCryptoError::from)?;
@@ -966,7 +967,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let mut central = this.write().await;
-                let ciphersuites = lower_ciphersuites(ciphersuites)?;
+                let ciphersuites = lower_ciphersuites(&ciphersuites)?;
                 central
                     .mls_init(ClientIdentifier::Basic(client_id.clone().into()), ciphersuites)
                     .await
@@ -985,7 +986,7 @@ impl CoreCrypto {
 
         future_to_promise(
             async move {
-                let ciphersuites = lower_ciphersuites(ciphersuites)?;
+                let ciphersuites = lower_ciphersuites(&ciphersuites)?;
                 let central = this.read().await;
                 let pks = central
                     .mls_generate_keypairs(ciphersuites)
@@ -1017,7 +1018,7 @@ impl CoreCrypto {
 
         future_to_promise(
             async move {
-                let ciphersuites = lower_ciphersuites(ciphersuites)?;
+                let ciphersuites = lower_ciphersuites(&ciphersuites)?;
                 let signature_public_keys = signature_public_keys
                     .iter()
                     .map(|c| c.to_vec())
@@ -1596,13 +1597,7 @@ impl CoreCrypto {
                 let proposal_bytes = this
                     .write()
                     .await
-                    .new_external_remove_proposal(
-                        conversation_id.to_vec(),
-                        u64::from(epoch).into(),
-                        kpr,
-                        cs.into(),
-                        ct.into(),
-                    )
+                    .new_external_remove_proposal(conversation_id.to_vec(), u64::from(epoch).into(), kpr, cs, ct)
                     .await
                     .map_err(CoreCryptoError::from)?
                     .to_bytes()
@@ -2108,7 +2103,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! {{
-                    let prev_value: u32 = (*(errcode.read().await)).clone();
+                    let prev_value: u32 = *(errcode.read().await);
                     let mut errcode_val = errcode.write().await;
                     *errcode_val = 0;
 
@@ -2191,7 +2186,7 @@ impl CoreCrypto {
                         expiry_days,
                         ciphersuite.into(),
                     )
-                    .map(|e| WireE2eIdentity(e))
+                    .map(WireE2eIdentity)
                     .map_err(|_| CryptoError::ImplementationError)
                     .map_err(CoreCryptoError::from)?;
 
@@ -2236,7 +2231,7 @@ impl CoreCrypto {
                 let enrollment = this
                     .e2ei_enrollment_stash_pop(handle.to_vec())
                     .await
-                    .map(|e| WireE2eIdentity(e))
+                    .map(WireE2eIdentity)
                     .map_err(|_| CryptoError::ImplementationError)
                     .map_err(CoreCryptoError::from)?;
 
@@ -2261,8 +2256,8 @@ impl WireE2eIdentity {
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_account_request]
     pub fn new_account_request(&self, previous_nonce: String) -> WasmCryptoResult<Uint8Array> {
-        let new_account: Vec<u8> = self.0.new_account_request(previous_nonce)?.into();
-        WasmCryptoResult::Ok(Uint8Array::from(new_account.as_slice()).into())
+        let new_account: Vec<u8> = self.0.new_account_request(previous_nonce)?;
+        WasmCryptoResult::Ok(Uint8Array::from(new_account.as_slice()))
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_account_response]
@@ -2274,7 +2269,7 @@ impl WireE2eIdentity {
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_order_request]
     pub fn new_order_request(&mut self, previous_nonce: String) -> WasmCryptoResult<Uint8Array> {
         let new_order = self.0.new_order_request(previous_nonce)?;
-        WasmCryptoResult::Ok(Uint8Array::from(new_order.as_slice()).into())
+        WasmCryptoResult::Ok(Uint8Array::from(new_order.as_slice()))
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_order_response]
@@ -2286,7 +2281,7 @@ impl WireE2eIdentity {
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_authz_request]
     pub fn new_authz_request(&self, url: String, previous_nonce: String) -> WasmCryptoResult<Uint8Array> {
         let new_authz = self.0.new_authz_request(url, previous_nonce)?;
-        WasmCryptoResult::Ok(Uint8Array::from(new_authz.as_slice()).into())
+        WasmCryptoResult::Ok(Uint8Array::from(new_authz.as_slice()))
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_authz_response]
@@ -2298,7 +2293,7 @@ impl WireE2eIdentity {
     /// See [core_crypto::e2e_identity::WireE2eIdentity::create_dpop_token]
     pub fn create_dpop_token(&self, expiry_secs: u32, backend_nonce: String) -> WasmCryptoResult<Uint8Array> {
         let dpop_token = self.0.create_dpop_token(expiry_secs, backend_nonce)?;
-        WasmCryptoResult::Ok(Uint8Array::from(dpop_token.as_bytes()).into())
+        WasmCryptoResult::Ok(Uint8Array::from(dpop_token.as_bytes()))
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_dpop_challenge_request]
@@ -2308,13 +2303,13 @@ impl WireE2eIdentity {
         previous_nonce: String,
     ) -> WasmCryptoResult<Uint8Array> {
         let chall = self.0.new_dpop_challenge_request(access_token, previous_nonce)?;
-        WasmCryptoResult::Ok(Uint8Array::from(chall.as_slice()).into())
+        WasmCryptoResult::Ok(Uint8Array::from(chall.as_slice()))
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_oidc_challenge_request]
     pub fn new_oidc_challenge_request(&self, id_token: String, previous_nonce: String) -> WasmCryptoResult<Uint8Array> {
         let chall = self.0.new_oidc_challenge_request(id_token, previous_nonce)?;
-        WasmCryptoResult::Ok(Uint8Array::from(chall.as_slice()).into())
+        WasmCryptoResult::Ok(Uint8Array::from(chall.as_slice()))
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_challenge_response]
@@ -2326,29 +2321,29 @@ impl WireE2eIdentity {
     /// See [core_crypto::e2e_identity::WireE2eIdentity::check_order_request]
     pub fn check_order_request(&self, order_url: String, previous_nonce: String) -> WasmCryptoResult<Uint8Array> {
         let new_order = self.0.check_order_request(order_url, previous_nonce)?;
-        WasmCryptoResult::Ok(Uint8Array::from(new_order.as_slice()).into())
+        WasmCryptoResult::Ok(Uint8Array::from(new_order.as_slice()))
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::check_order_response]
     pub fn check_order_response(&mut self, order: Uint8Array) -> WasmCryptoResult<String> {
-        WasmCryptoResult::Ok(self.0.check_order_response(order.to_vec())?.into())
+        WasmCryptoResult::Ok(self.0.check_order_response(order.to_vec())?)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_request]
     pub fn finalize_request(&mut self, previous_nonce: String) -> WasmCryptoResult<Uint8Array> {
         let finalize = self.0.finalize_request(previous_nonce)?;
-        WasmCryptoResult::Ok(Uint8Array::from(finalize.as_slice()).into())
+        WasmCryptoResult::Ok(Uint8Array::from(finalize.as_slice()))
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_response]
     pub fn finalize_response(&mut self, finalize: Uint8Array) -> WasmCryptoResult<String> {
-        WasmCryptoResult::Ok(self.0.finalize_response(finalize.to_vec())?.into())
+        WasmCryptoResult::Ok(self.0.finalize_response(finalize.to_vec())?)
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::certificate_request]
     pub fn certificate_request(&mut self, previous_nonce: String) -> WasmCryptoResult<Uint8Array> {
         let certificate_req = self.0.certificate_request(previous_nonce)?;
-        WasmCryptoResult::Ok(Uint8Array::from(certificate_req.as_slice()).into())
+        WasmCryptoResult::Ok(Uint8Array::from(certificate_req.as_slice()))
     }
 }
 
