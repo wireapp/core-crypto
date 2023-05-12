@@ -42,9 +42,9 @@ impl DatabaseConnection for WasmConnection {
         let name = name.to_string();
         // ? Maybe find a cleaner way to define the schema
 
-        let version_major = u32::from_str_radix(env!("CARGO_PKG_VERSION_MAJOR"), 10).unwrap_or_default();
-        let version_minor = u32::from_str_radix(env!("CARGO_PKG_VERSION_MINOR"), 10).unwrap_or_default();
-        let version_patch = u32::from_str_radix(env!("CARGO_PKG_VERSION_PATCH"), 10).unwrap_or_default();
+        let version_major = env!("CARGO_PKG_VERSION_MAJOR").parse::<u32>().unwrap_or_default();
+        let version_minor = env!("CARGO_PKG_VERSION_MINOR").parse::<u32>().unwrap_or_default();
+        let version_patch = env!("CARGO_PKG_VERSION_PATCH").parse::<u32>().unwrap_or_default();
 
         // Watch out: we'll have issues after major version 4294.xx.xx lol
         let version = version_major * 1_000_000 + version_minor * 1_000 + version_patch;

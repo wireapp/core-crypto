@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+#![cfg(not(target_family = "wasm"))]
+
 use criterion::{
     async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
 };
