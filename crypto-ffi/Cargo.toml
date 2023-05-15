@@ -9,7 +9,7 @@ publish = false
 
 [lib]
 name = "core_crypto_ffi"
-crate-type = ["cdylib", "staticlib"]
+crate-type = ["lib", "cdylib", "staticlib"]
 
 [features]
 default = ["proteus"]

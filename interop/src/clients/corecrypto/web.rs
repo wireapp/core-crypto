@@ -45,9 +45,10 @@ impl CoreCryptoWebClient {
             .execute_async(
                 r#"
 const [clientConfig, callback] = arguments;
-const { CoreCrypto } = await import("./corecrypto.js");
+const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
 window.CoreCrypto = CoreCrypto;
 window.cc = await window.CoreCrypto.init(clientConfig);
+window.ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 callback();"#,
                 vec![client_config],
             )
@@ -65,9 +66,11 @@ callback();"#,
     pub async fn new_deferred(driver_addr: &SocketAddr) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
         let client_id_str = client_id.as_hyphenated().to_string();
+        let ciphersuite = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u8;
         let client_config = serde_json::json!({
             "databaseName": format!("db-{client_id_str}"),
-            "key": "test"
+            "key": "test",
+            "ciphersuites": [ciphersuite],
         });
         let browser = crate::build::web::webdriver::setup_browser(driver_addr, "core-crypto").await?;
 
@@ -75,9 +78,10 @@ callback();"#,
             .execute_async(
                 r#"
 const [clientConfig, callback] = arguments;
-const { CoreCrypto } = await import("./corecrypto.js");
+const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
 window.CoreCrypto = CoreCrypto;
 window.cc = await window.CoreCrypto.deferredInit(clientConfig);
+window.ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 callback();"#,
                 vec![client_config],
             )

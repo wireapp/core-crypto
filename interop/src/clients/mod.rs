@@ -33,6 +33,8 @@ bitflags::bitflags! {
 #[allow(dead_code)]
 pub enum EmulatedClientType {
     Native,
+    // Natively test the FFI in `generic.rs`
+    NativeFfi,
     Web,
     // TODO: Bind with & drive iOS Emulator
     AppleiOS,
@@ -43,10 +45,11 @@ pub enum EmulatedClientType {
 impl std::fmt::Display for EmulatedClientType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let repr = match self {
-            EmulatedClientType::Native => "Native",
-            EmulatedClientType::Web => "Web",
-            EmulatedClientType::AppleiOS => "iOS",
-            EmulatedClientType::Android => "Android",
+            Self::Native => "Native",
+            Self::NativeFfi => "Native FFI",
+            Self::Web => "Web",
+            Self::AppleiOS => "iOS",
+            Self::Android => "Android",
         };
 
         write!(f, "{repr}")
