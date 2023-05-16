@@ -429,7 +429,24 @@ impl CoreCrypto<'_> {
                     .map_err(|_| CryptoError::LockPoisonError)?
                     .restore_from_disk(),
             ),
-        )
+        )?;
+        future::block_on(self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run({
+            cfg_if::cfg_if! {
+                if #[cfg(feature = "proteus")] {
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?.proteus_reload_sessions().map_err(|e|{
+                        let errcode = e.proteus_error_code();
+                        if errcode > 0 {
+                            self.proteus_last_error_code.store(errcode, std::sync::atomic::Ordering::SeqCst);
+                        }
+                        e
+                    })
+                } else {
+                    future::ready(Ok(()))
+                }
+            }
+        }))
     }
 
     /// See [core_crypto::mls::MlsCentral::close]
