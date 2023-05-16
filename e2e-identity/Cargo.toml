@@ -26,6 +26,7 @@ rand = { version = "0.8", optional = true }
 x509-cert = { version = "0.2", optional = true }
 oid-registry = { version = "0.6", optional = true }
 time = { version = "0.3", optional = true }
+
 [dependencies.rcgen]
 git = "https://github.com/wireapp/rcgen"
 tag = "v1.2.2-pre.core-crypto-0.7.0"
@@ -66,5 +67,5 @@ http = "0.2"
 rusty-acme = { version = "0.4.2", path = "../acme" }
 
 [features]
-default = ["identity-builder"]
+default = []
 identity-builder = ["dep:rcgen", "dep:rand", "dep:uuid", "dep:x509-cert", "dep:oid-registry", "dep:time"]
