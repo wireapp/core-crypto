@@ -978,6 +978,14 @@ impl CoreCrypto<'_> {
         enrollment: std::sync::Arc<WireE2eIdentity>,
         certificate_chain: String,
     ) -> CryptoResult<()> {
+        if std::sync::Arc::strong_count(&enrollment) > 1 {
+            unsafe {
+                // it is required because in order to pass the enrollment to Rust, uniffi lowers it by cloning the Arc
+                // hence here the Arc has a strong_count of 2. We decrement it manually then drop it with `try_unwrap`.
+                // We have to do this since this instance contains private keys that have to be zeroed once dropped.
+                std::sync::Arc::decrement_strong_count(std::sync::Arc::as_ptr(&enrollment));
+            }
+        }
         let e2ei = std::sync::Arc::try_unwrap(enrollment).map_err(|_| CryptoError::LockPoisonError)?;
         let e2ei = std::sync::Arc::try_unwrap(e2ei.0).map_err(|_| CryptoError::LockPoisonError)?;
         let e2ei = e2ei.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
