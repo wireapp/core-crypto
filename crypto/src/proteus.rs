@@ -93,6 +93,18 @@ impl CoreCrypto {
         Ok(())
     }
 
+    /// Reloads the sessions from the key store
+    ///
+    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or it will do nothing
+    pub async fn proteus_reload_sessions(&mut self) -> CryptoResult<()> {
+        if let Some(proteus) = self.proteus.as_mut() {
+            let keystore = self.mls.mls_backend.borrow_keystore();
+            proteus.reload_sessions(keystore).await
+        } else {
+            Ok(())
+        }
+    }
+
     /// Creates a proteus session from a prekey
     ///
     /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
@@ -296,6 +308,12 @@ impl ProteusCentral {
             proteus_identity,
             proteus_sessions,
         })
+    }
+
+    /// Restore proteus sessions from disk
+    pub async fn reload_sessions(&mut self, keystore: &CryptoKeystore) -> CryptoResult<()> {
+        self.proteus_sessions = Self::restore_sessions(keystore, &self.proteus_identity).await?;
+        Ok(())
     }
 
     /// This function will try to load a proteus Identity from our keystore; If it cannot, it will create a new one
