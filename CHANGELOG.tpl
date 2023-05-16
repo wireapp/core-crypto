@@ -7,11 +7,23 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.9.0] - 2023-05-16
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.9.0" unreleased=true}}
+</details>
+
+* First iteration of multi-ciphersuite support. The API now explicitly requires a Ciphersuite to be supplied anywhere where it's necessary. For now on you should only use the default one. Same thing for `MlsCredentialType`, use `Basic` whenever required
+* Allow persisting an e2e identity enrollment for web's needs
+* `check_order_response` & `finalize_response` now return the URL for where the next step's payload has to be sent
+* ACME challenges now have a "target" field which indicates the URL of the OAuth authorization and the access token endpoint
+
 ## [0.8.2] - 2023-04-28
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.8.2" unreleased=true}}
+{{git-cliff tag="v0.8.2"}}
 </details>
 
 * build: fix Android packaging (again) by sourcing bindings

@@ -7,6 +7,44 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.9.0] - 2023-05-16
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Reload proteus sessions when `restore_from_disk` is called
+- Return finalize & certificate url
+
+### Features
+
+- Add persistence options to e2ei enrollment instance
+- [**breaking**] Enable multi ciphersuite and multi credential type support
+- [**breaking**] Support & expose "target" in ACME challenges
+
+### Miscellaneous Tasks
+
+- Fix clippy lints for wasm target
+
+### Refactor
+
+- Moved Client methods related to keypackage in a dedicated mod
+- Moved function `identity_key` into a trait
+- Replace `either` by a dedicated enum since after all there could be more than just 2 types of credentials
+- Move ClientId to dedicated mod
+
+### Testing
+
+- Have interop runner verify the generic FFI
+
+</details>
+
+* First iteration of multi-ciphersuite support. The API now explicitly requires a Ciphersuite to be supplied anywhere where it's necessary. For now on you should only use the default one. Same thing for `MlsCredentialType`, use `Basic` whenever required
+* Allow persisting an e2e identity enrollment for web's needs
+* `check_order_response` & `finalize_response` now return the URL for where the next step's payload has to be sent
+* ACME challenges now have a "target" field which indicates the URL of the OAuth authorization and the access token endpoint
+
 ## [0.8.2] - 2023-04-28
 
 <details>
@@ -30,6 +68,37 @@ Platform support legends:
 - Native libraries not included in android package ([#308](https://github.com/wireapp/core-crypto/issues/308))
 - Typescript path has the wrong file extension ([#309](https://github.com/wireapp/core-crypto/issues/309))
 
+</details>
+
+* build: fix Android packaging
+
+## [0.8.0] - 2023-04-19
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Fixed iOS keychain handling with proper attributes
+
+### Features
+
+- Verify x509 credential identity and return identity (client_id, handle, display_name, domain) once message is decrypted
+
+### Miscellaneous Tasks
+
+- Release v0.7.0
+- Update deps & cargo-deny configuration
+- Get rid of internal 'CredentialSupplier' test util
+
+</details>
+
+* **[BREAKING]**(e2e identity): added an expiry in seconds in `create_dpop_token`)
+
+## [0.7.0] - 2023-04-12
+
+<details>
+    <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
@@ -588,113 +657,6 @@ Platform support legends:
 
 - Configure wire maven repository
 - Clean up gradle files
-
-</details>
-
-* build: fix Android packaging
-
-## [0.8.0] - 2023-04-19
-
-<details>
-    <summary>git-conventional changelog</summary>
-
-### Bug Fixes
-
-- Fixed iOS keychain handling with proper attributes
-
-### Features
-
-- Verify x509 credential identity and return identity (client_id, handle, display_name, domain) once message is decrypted
-
-### Miscellaneous Tasks
-
-- Release v0.7.0
-- Update deps & cargo-deny configuration
-- Get rid of internal 'CredentialSupplier' test util
-
-</details>
-
-* **[BREAKING]**(e2e identity): added an expiry in seconds in `create_dpop_token`)
-
-## [0.7.0] - 2023-04-12
-
-<details>
-    <summary>git-conventional changelog</summary>
-
-### Bug Fixes
-
-- Fixed iOS keychain handling with proper attributes
-
-### Features
-
-- Verify x509 credential identity and return identity (client_id, handle, display_name, domain) once message is decrypted
-
-### Miscellaneous Tasks
-
-- Release v0.7.0
-- Update deps & cargo-deny configuration
-- Get rid of internal 'CredentialSupplier' test util
-
-
-### Bug Fixes
-
-- [**breaking**] Tweak WASM API
-- Use schnellru fork for GroupStore faillible inserts
-- Fixed GroupStore memory limiter behavior
-
-### Features
-
-- Remove any transitive crate using ring. As a consequence supports EcDSA on WASM
-- Copy/modify kotlin wrapper from Kalium ([#284](https://github.com/wireapp/core-crypto/issues/284))
-- [**breaking**] Support creating a MLS client from an e2e identity certificate
-
-### Miscellaneous Tasks
-
-- Release v0.7.0-rc.4
-- Update interop runner `dirs` dep
-- Appease clippy
-
-
-### Bug Fixes
-
-- Proteus auto prekey ids not incrementing
-
-### Miscellaneous Tasks
-
-- Release v0.7.0-rc.3
-
-
-### Miscellaneous Tasks
-
-- Release v0.7.0-rc.2
-
-
-### Bug Fixes
-
-- [**breaking**] Make FFI parameters compliant with rfc8555
-- Added missing version() function to Swift bindings
-- Enable ios-wal-compat for iOS builds by default
-- Exclude self from self-remove-commit delay
-- Fix rustsec advisories on xtask deps
-
-### Features
-
-- [**breaking**] Latest e2e identity iteration. ClientId (from MLS) is used instead of requiring just parts of it
-- Added API to check the `Arc` strongref counter
-- [**breaking**] Add ability to mark subconversations
-- [**breaking**] Change proteus auto prekey return type to include prekey id
-- [**breaking**] Added LRU cache-based underlying group store to replace the HashMaps
-
-### Miscellaneous Tasks
-
-- Release 0.7.0-rc.1
-- Use crates.io sparse protocol on CI via env
-- Android upgrade to NDK 25 + openssl android build fix
-- Updated serde-wasm-bindgen to 0.5.0
-- Updated crypto deps (p256/384 & ecdsa)
-- Updated changelog for LRU store changes
-- [**breaking**] Drop LRU from keystore
-- Bump webdriver version to 110
 
 </details>
 
