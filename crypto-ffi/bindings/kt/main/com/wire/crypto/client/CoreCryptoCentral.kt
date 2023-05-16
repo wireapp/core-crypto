@@ -7,52 +7,66 @@ import com.wire.crypto.CoreCryptoCallbacks
 import com.wire.crypto.CiphersuiteName
 import java.io.File
 
-private class Callbacks: CoreCryptoCallbacks {
+typealias EnrollmentHandle = ByteArray
 
-    override fun authorize(
-        conversationId: List<UByte>,
-        clientId: List<UByte>): Boolean {
-        return true
-    }
+private class Callbacks : CoreCryptoCallbacks {
+
+    override fun authorize(conversationId: List<UByte>, clientId: List<UByte>): Boolean = true
 
     override fun userAuthorize(
         conversationId: ConversationId,
         externalClientId: ClientId,
         existingClients: List<ClientId>
-    ): Boolean {
-        return true
-    }
+    ): Boolean = true
 
     override fun clientIsExistingGroupUser(
         conversationId: ConversationId,
         clientId: ClientId,
         existingClients: List<ClientId>,
         parentConversationClients: List<ClientId>?
-    ): Boolean {
-        return true
-    }
+    ): Boolean = true
 }
 
 @Suppress("TooManyFunctions")
-class CoreCryptoCentral constructor(
-    private val rootDir: String,
-    databaseKey: String
-) {
+class CoreCryptoCentral(private val rootDir: String, databaseKey: String) {
+
     private val path: String = "$rootDir/$KEYSTORE_NAME"
-    private val coreCrypto: CoreCrypto
+    private val cc: CoreCrypto
+
     init {
         File(rootDir).mkdirs()
         val ciphersuites = listOf(CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519)
-        coreCrypto = CoreCrypto.deferredInit(path, databaseKey, ciphersuites, null)
-        coreCrypto.setCallbacks(Callbacks())
+        cc = CoreCrypto.deferredInit(path, databaseKey, ciphersuites, null)
+        cc.setCallbacks(Callbacks())
     }
 
-    fun proteusClient(): ProteusClient {
-        return ProteusClientImpl(coreCrypto, rootDir)
+    fun proteusClient(): ProteusClient = ProteusClientImpl(cc, rootDir)
+
+    fun mlsClient(clientId: String): MLSClient = MLSClientImpl(cc).apply { mlsInit(clientId) }
+
+    fun e2eiNewEnrollment(
+        clientId: String,
+        displayName: String,
+        handle: String,
+        expiryDays: UInt,
+        ciphersuite: CiphersuiteName,
+    ): E2EIClient {
+        return E2EIClientImpl(cc.e2eiNewEnrollment(clientId, displayName, handle, expiryDays, ciphersuite))
     }
 
-    fun mlsClient(clientId: String): MLSClient {
-        return MLSClientImpl(coreCrypto, clientId)
+    fun e2eiMlsClient(enrollment: E2EIClient, certificateChain: String): MLSClient {
+        cc.e2eiMlsInit(enrollment.delegate, certificateChain)
+        return MLSClientImpl(cc)
+    }
+
+    @OptIn(ExperimentalUnsignedTypes::class)
+    fun e2eiEnrollmentStash(enrollment: E2EIClient): EnrollmentHandle {
+        return cc.e2eiEnrollmentStash(enrollment.delegate).toUByteArray().asByteArray()
+    }
+
+    @OptIn(ExperimentalUnsignedTypes::class)
+    fun e2eiEnrollmentStashPop(handle: EnrollmentHandle): E2EIClient {
+        return E2EIClientImpl(cc.e2eiEnrollmentStashPop(handle.asUByteArray().asList()))
     }
 
     companion object {
