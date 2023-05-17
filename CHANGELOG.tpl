@@ -7,11 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.9.1] - 2023-05-17
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.9.1" unreleased=true}}
+</details>
+
+* Fixed excessive bloat in the FFI layer due to emitting rlibs
+
 ## [0.9.0] - 2023-05-16
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.9.0" unreleased=true}}
+{{git-cliff tag="v0.9.0"}}
 </details>
 
 * First iteration of multi-ciphersuite support. The API now explicitly requires a Ciphersuite to be supplied anywhere where it's necessary. For now on you should only use the default one. Same thing for `MlsCredentialType`, use `Basic` whenever required
