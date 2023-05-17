@@ -13,6 +13,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
+#![allow(clippy::assign_op_pattern)]
 
 use color_eyre::eyre::Result;
 use core_crypto::prelude::MlsCiphersuite;

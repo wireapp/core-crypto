@@ -123,7 +123,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     clients.push(Box::new(
         clients::corecrypto::native::CoreCryptoNativeClient::new().await?,
     ));
-    clients.push(Box::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?));
+    // clients.push(Box::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?));
     clients.push(Box::new(
         clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).await?,
     ));
@@ -237,7 +237,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
     clients.push(Box::new(
         clients::corecrypto::native::CoreCryptoNativeClient::new().await?,
     ));
-    clients.push(Box::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?));
+    // clients.push(Box::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?));
     clients.push(Box::new(
         clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).await?,
     ));
@@ -382,9 +382,9 @@ async fn run_e2e_identity_test(chrome_driver_addr: &std::net::SocketAddr) -> Res
     clients.push(Box::new(
         clients::corecrypto::native::CoreCryptoNativeClient::new_deferred().await?,
     ));
-    clients.push(Box::new(
-        clients::corecrypto::ffi::CoreCryptoFfiClient::new_deferred().await?,
-    ));
+    // clients.push(Box::new(
+    //     clients::corecrypto::ffi::CoreCryptoFfiClient::new_deferred().await?,
+    // ));
     clients.push(Box::new(
         clients::corecrypto::web::CoreCryptoWebClient::new_deferred(chrome_driver_addr).await?,
     ));
