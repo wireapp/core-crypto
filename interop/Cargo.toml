@@ -21,7 +21,7 @@ log = "0.4"
 femme = "2.2"
 dirs = "5.0"
 core-crypto = { path = "../crypto" }
-core-crypto-ffi = { path = "../crypto-ffi" }
+# core-crypto-ffi = { path = "../crypto-ffi" }
 
 # Utils
 async-trait = "0.1"
@@ -31,7 +31,7 @@ hex = "0.4"
 base64 = "0.21"
 const_format = "0.2"
 rand = "0.8"
-bitflags = "2.0"
+bitflags = "2.3"
 uuid = { version = "1.1", features = ["v4"] }
 tempfile = { version = "3.3", optional = true }
 # Terminal support
