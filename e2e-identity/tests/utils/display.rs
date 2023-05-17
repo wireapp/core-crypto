@@ -501,7 +501,7 @@ pub enum Actor {
     WireClient,
     WireServer,
     AcmeServer,
-    OidcProvider,
+    IdentityProvider,
 }
 
 impl std::fmt::Display for Actor {
@@ -510,7 +510,7 @@ impl std::fmt::Display for Actor {
             Actor::WireClient => "wire-client",
             Actor::WireServer => "wire-server",
             Actor::AcmeServer => "acme-server",
-            Actor::OidcProvider => "authorization-server",
+            Actor::IdentityProvider => "idp",
         };
         write!(f, "{name}")
     }

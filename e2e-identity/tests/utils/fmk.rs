@@ -462,12 +462,12 @@ impl<'a> E2eTest<'a> {
 
         self.display_step("OAUTH authorization request (auth code endpoint)");
         let authz_req = self.client.get(authz_url.as_str()).build().unwrap();
-        self.display_req(Actor::WireClient, Actor::OidcProvider, Some(&authz_req), None);
+        self.display_req(Actor::WireClient, Actor::IdentityProvider, Some(&authz_req), None);
 
         // self.display_step("Authorization Server redirects to login prompt");
         let resp = self.client.execute(authz_req).await.unwrap();
         let html = resp.text().await.unwrap();
-        // self.display_resp(Actor::OidcProvider, Actor::WireClient, None);
+        self.display_resp(Actor::IdentityProvider, Actor::WireClient, None);
         // self.display_str(&html, false);
         let action = scrap_login(html.to_string());
 
@@ -523,7 +523,12 @@ impl<'a> E2eTest<'a> {
             .await
             .unwrap();
         let exchange_code_req = ctx_get_request("exchange-code");
-        self.display_req(Actor::WireClient, Actor::OidcProvider, Some(&exchange_code_req), None);
+        self.display_req(
+            Actor::WireClient,
+            Actor::IdentityProvider,
+            Some(&exchange_code_req),
+            None,
+        );
         self.display_str(Self::req_body_str(&exchange_code_req)?.unwrap(), false);
 
         // self.display_step("Authorization server validates Verifier & Challenge Codes");
@@ -532,7 +537,7 @@ impl<'a> E2eTest<'a> {
 
         self.display_step("OAUTH access token");
         let exchange_code_resp = ctx_get_resp("exchange-code", false);
-        self.display_resp(Actor::OidcProvider, Actor::WireClient, None);
+        self.display_resp(Actor::IdentityProvider, Actor::WireClient, None);
         let exchange_code_resp = serde_json::from_str::<Value>(&exchange_code_resp).unwrap();
         let exchange_code_resp = serde_json::to_string_pretty(&exchange_code_resp).unwrap();
         self.display_str(&exchange_code_resp, false);
