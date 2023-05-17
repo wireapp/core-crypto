@@ -7,6 +7,19 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.9.1] - 2023-05-17
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Size regression on FFI
+
+</details>
+
+* Fixed excessive bloat in the FFI layer due to emitting rlibs
+
 ## [0.9.0] - 2023-05-16
 
 <details>
@@ -175,12 +188,145 @@ Platform support legends:
 - [**breaking**] Drop LRU from keystore
 - Bump webdriver version to 110
 
+</details>
+
+* Please see the previous RC releases for the full changelog
+* Fixed a bug in the iOS WAL compatibility layer that didn't specific correct keychain attributes on the stored SQLCipher salt
+* Updated internal dependencies
+* Implemented E2EI credential identity verification
+    * We are now returning extra data on decrypted messages; you'll be able to get the sender's full identity in them.
+
+## [0.7.0-rc.4] - 2023-03-28
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- [**breaking**] Tweak WASM API
+- Use schnellru fork for GroupStore faillible inserts
+- Fixed GroupStore memory limiter behavior
+
+### Features
+
+- Remove any transitive crate using ring. As a consequence supports EcDSA on WASM
+- Copy/modify kotlin wrapper from Kalium ([#284](https://github.com/wireapp/core-crypto/issues/284))
+- [**breaking**] Support creating a MLS client from an e2e identity certificate
+
+### Miscellaneous Tasks
+
+- Release v0.7.0-rc.4
+- Update interop runner `dirs` dep
+- Appease clippy
+
+</details>
+
+* Updated UniFFI to 0.23
+    * Might or might not contain breaking changes depending on your use case, please refer to [UniFFI's documentation](https://github.com/mozilla/uniffi-rs/blob/main/CHANGELOG.md)
+* Fixed a small bug in the new GroupStore internals that was a bit too eager in limiting memory usage
+* **[BREAKING]**: Renamed the WASM `strongRefCount(): number` API to `isLocked(): boolean`.
+    * This essentially hides the implementation details across the FFI and should minimize brittleness
+* Removed our dependency on [ring](https://github.com/briansmith/ring), an external crypto library. It was mostly used for validating x509 certificates and crafting Certificate Signing Request
+    * By removing `ring`, we now support the following MLS Ciphersuites using NIST elliptic curves / ECDSA on WASM:
+        * `MLS_128_DHKEMP256_AES128GCM_SHA256_P256` (`0x0002`)
+        * `MLS_256_DHKEMP384_AES256GCM_SHA384_P384` (`0x0007`)
+* **[BREAKING]**: Overhauled parts of the E2EI implementation
+      * Moved from a stateless API to a stateful one. As a consequence, methods have less parameters, less structs need to be exposed. All of this is wrapped under Rust's safe sync primitives in order to be able to perform the ACME enrollment in parallel.
+      * The new API allows creating a MLS group from the enrollment process.
+        * ~~`certificateResponse()`~~ has been removed
+        * `e2eiMlsInit()` has been introduced and permits ending the enrollment flow and use the x509 certificate to initialize a MLS client.
+      * `ClientId` is now a string as per [RFC8555](https://www.rfc-editor.org/rfc/rfc8555). It does not anymore require to be prefixed (by `impp:wireapp=`) and is exactly the same as the one used for MLS
+      * X509 SAN URIs are now prefixed by `im:wireapp=` instead of `impp:wireapp=`
+      * This release has been tested against a real OIDC provider ([Dex](https://dexidp.io/)), federating identity from a LDAP server. The OAuth2 flow used for testing is [Authorization Code with PKCE](https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow-with-proof-key-for-code-exchange-pkce)
+      * Private key materials are now properly zeroized
+
+
+
+## [0.7.0-rc.3] - 2023-03-16
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Proteus auto prekey ids not incrementing
+
+### Miscellaneous Tasks
+
+- Release v0.7.0-rc.3
+
+</details>
+
+* Fixed a bug where `proteus_new_prekey_auto` returning the same prekey ID in particular cases
+    * In case of "gaps" in the prekey id sequence, the previous algorithm (using the number of prekeys stored) would return the same ID over and over. As a consequence, the same prekey id would be overwritten over and over.
+
+## [0.7.0-rc.2] - 2023-03-15
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Miscellaneous Tasks
+
+- Release v0.7.0-rc.2
+
+</details>
+
+* Fix on documentation that prevented release on many platforms
+
+## [0.7.0-rc.1] - 2023-03-15
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+</details>
+
+* **[BREAKING]** proteus_new_prekey_auto() now returns a tuple of (prekey_id, CBOR-serialized PreKeyBundle) for backend requirements
+    * On bindings, this translates to a new struct ProteusAutoPrekeyBundle which contains two fields:
+        * `id`: the proteus prekey id (`u16`)
+        * `pkb`: the CBOR-serialized proteus PreKeyBundle
+* **[BREAKING]** Added an API to mark subconversations as child of another one (`mark_conversation_as_child_of`)
+    * This is breaking because this now allows us to provide the parent conversation's client list in the `client_is_existing_group_user` callback, which adds a new parameter to it
+* **[BREAKING]** `wipe_conversation` is now automatically called when a commit removing the local client is recieved.
+* **[BREAKING]** Huge internal change on how we cache MLS groups and Proteus sessions in memory
+    * This affects some APIs that became async on the TS bindings
+    * Our previous `HashMap`-based cache could grow indefinitely in the case of massive accounts with many, many groups/conversations, each containing a ton of clients. This replaces this memory store by a LRU cache having the following properties:
+        * Limited by number of entries AND occupied memory
+            * Defaults for memory: All the available system memory on other platforms / 100MB on WASM
+            * Defaults for number of entries:
+                * 100 MLS groups
+                * 200 Proteus sessions
+        * Flow for retrieving a value
+            1. Check the LRU store if the value exists, if yes, it's promoted as MRU (Most Recently Used) and returned
+            2. If not found, it might have been evicted, so we search the keystore
+            3. If found in the keystore, the value is placed as MRU and returned
+                * Special case: we evict the store as much as needed to fit the new MRU value in this case. This is designed to infaillible.
+            5. If not found, we return a `None` value
+    * This approach potentially allows to have an unlimited number of groups/sessions as long as a single item does not exceed the maximum memory limit.
+    * As a consequence of the internal mutability requirements of the new map and the automatic keystore fetches, many if not all APIs are now `async`. This does not concern the Mobile FFI.
+* **[BREAKING]** Because of Rust 1.68's release, CoreCrypto is now incompatible with Android NDK versions under 25.2 (the LTS version) and Android API level 24.
+* **[BREAKING]** E2EI: The API is now compliant with RFC8555
+    * Another change will come soon to be able to initialize a MLS client using the X509 certificate issued by the E2EI process
+* Enabled the iOS WAL compatibility layer to prevent spurious background kills
+* Added a WASM api to check the Arc strongref counter
+
+## [0.6.3] - 2023-02-17
+
+<details>
+    <summary>git-conventional changelog</summary>
 
 ### Miscellaneous Tasks
 
 - Release 0.6.3 ([#258](https://github.com/wireapp/core-crypto/issues/258))
 - Build linux artifacts on Ubuntu LTS for better compatibility ([#257](https://github.com/wireapp/core-crypto/issues/257))
 
+</details>
+
+* Improve compatbillity with older linux versions when running core-crypto-jvm by building on Ubuntu LTS (22.04).
+
+## [0.6.2] - 2023-02-16
+
+<details>
+    <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
@@ -191,6 +337,15 @@ Platform support legends:
 - Release v0.6.2
 - Fix native libraries not loading by moving them to the package root ([#255](https://github.com/wireapp/core-crypto/issues/255))
 
+</details>
+
+* Fixed a bug in the TypeScript bindings where the `DecryptedMessage` bundle could have `commitDelay` set to `undefined` when it should be 0
+    * This could happen in the case of external proposals where the system would determine that the proposals should be immediately committed
+
+## [0.6.1] - 2023-02-16
+
+<details>
+    <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
@@ -203,6 +358,30 @@ Platform support legends:
 - Release 0.6.1 ([#253](https://github.com/wireapp/core-crypto/issues/253))
 - Remove proteus double persistence as it's already automatically eager
 
+
+### Bug Fixes
+
+- Xtask release outputs dry-run log unconditionally
+
+### Features
+
+- Adapt with acme client library tested on real acme-server forked. Also some nits & dependencies pinned
+
+### Miscellaneous Tasks
+
+- Release v0.6.0
+
+</details>
+
+* Fixed a bug where the Proteus last resort prekey could be overwritten.
+* Fixed JVM publishing creating broken packages.
+* WASM callbacks return false by default if no promise is returned.
+* Benchmarks: Remove redundant save when persisting proteus sessions.
+
+## [0.6.0] - 2023-02-13
+
+<details>
+    <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
@@ -660,422 +839,6 @@ Platform support legends:
 
 </details>
 
-* Please see the previous RC releases for the full changelog
-* Fixed a bug in the iOS WAL compatibility layer that didn't specific correct keychain attributes on the stored SQLCipher salt
-* Updated internal dependencies
-* Implemented E2EI credential identity verification
-    * We are now returning extra data on decrypted messages; you'll be able to get the sender's full identity in them.
-
-## [0.7.0-rc.4] - 2023-03-28
-
-<details>
-    <summary>git-conventional changelog</summary>
-
-### Bug Fixes
-
-- [**breaking**] Tweak WASM API
-- Use schnellru fork for GroupStore faillible inserts
-- Fixed GroupStore memory limiter behavior
-
-### Features
-
-- Remove any transitive crate using ring. As a consequence supports EcDSA on WASM
-- Copy/modify kotlin wrapper from Kalium ([#284](https://github.com/wireapp/core-crypto/issues/284))
-- [**breaking**] Support creating a MLS client from an e2e identity certificate
-
-### Miscellaneous Tasks
-
-- Release v0.7.0-rc.4
-- Update interop runner `dirs` dep
-- Appease clippy
-
-</details>
-
-* Updated UniFFI to 0.23
-    * Might or might not contain breaking changes depending on your use case, please refer to [UniFFI's documentation](https://github.com/mozilla/uniffi-rs/blob/main/CHANGELOG.md)
-* Fixed a small bug in the new GroupStore internals that was a bit too eager in limiting memory usage
-* **[BREAKING]**: Renamed the WASM `strongRefCount(): number` API to `isLocked(): boolean`.
-    * This essentially hides the implementation details across the FFI and should minimize brittleness
-* Removed our dependency on [ring](https://github.com/briansmith/ring), an external crypto library. It was mostly used for validating x509 certificates and crafting Certificate Signing Request
-    * By removing `ring`, we now support the following MLS Ciphersuites using NIST elliptic curves / ECDSA on WASM:
-        * `MLS_128_DHKEMP256_AES128GCM_SHA256_P256` (`0x0002`)
-        * `MLS_256_DHKEMP384_AES256GCM_SHA384_P384` (`0x0007`)
-* **[BREAKING]**: Overhauled parts of the E2EI implementation
-      * Moved from a stateless API to a stateful one. As a consequence, methods have less parameters, less structs need to be exposed. All of this is wrapped under Rust's safe sync primitives in order to be able to perform the ACME enrollment in parallel.
-      * The new API allows creating a MLS group from the enrollment process.
-        * ~~`certificateResponse()`~~ has been removed
-        * `e2eiMlsInit()` has been introduced and permits ending the enrollment flow and use the x509 certificate to initialize a MLS client.
-      * `ClientId` is now a string as per [RFC8555](https://www.rfc-editor.org/rfc/rfc8555). It does not anymore require to be prefixed (by `impp:wireapp=`) and is exactly the same as the one used for MLS
-      * X509 SAN URIs are now prefixed by `im:wireapp=` instead of `impp:wireapp=`
-      * This release has been tested against a real OIDC provider ([Dex](https://dexidp.io/)), federating identity from a LDAP server. The OAuth2 flow used for testing is [Authorization Code with PKCE](https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow-with-proof-key-for-code-exchange-pkce)
-      * Private key materials are now properly zeroized
-
-
-
-## [0.7.0-rc.3] - 2023-03-16
-
-<details>
-    <summary>git-conventional changelog</summary>
-
-### Bug Fixes
-
-- Proteus auto prekey ids not incrementing
-
-### Miscellaneous Tasks
-
-- Release v0.7.0-rc.3
-
-</details>
-
-* Fixed a bug where `proteus_new_prekey_auto` returning the same prekey ID in particular cases
-    * In case of "gaps" in the prekey id sequence, the previous algorithm (using the number of prekeys stored) would return the same ID over and over. As a consequence, the same prekey id would be overwritten over and over.
-
-## [0.7.0-rc.2] - 2023-03-15
-
-<details>
-    <summary>git-conventional changelog</summary>
-
-### Miscellaneous Tasks
-
-- Release v0.7.0-rc.2
-
-</details>
-
-* Fix on documentation that prevented release on many platforms
-
-## [0.7.0-rc.1] - 2023-03-15
-
-<details>
-    <summary>git-conventional changelog</summary>
-
-</details>
-
-* **[BREAKING]** proteus_new_prekey_auto() now returns a tuple of (prekey_id, CBOR-serialized PreKeyBundle) for backend requirements
-    * On bindings, this translates to a new struct ProteusAutoPrekeyBundle which contains two fields:
-        * `id`: the proteus prekey id (`u16`)
-        * `pkb`: the CBOR-serialized proteus PreKeyBundle
-* **[BREAKING]** Added an API to mark subconversations as child of another one (`mark_conversation_as_child_of`)
-    * This is breaking because this now allows us to provide the parent conversation's client list in the `client_is_existing_group_user` callback, which adds a new parameter to it
-* **[BREAKING]** `wipe_conversation` is now automatically called when a commit removing the local client is recieved.
-* **[BREAKING]** Huge internal change on how we cache MLS groups and Proteus sessions in memory
-    * This affects some APIs that became async on the TS bindings
-    * Our previous `HashMap`-based cache could grow indefinitely in the case of massive accounts with many, many groups/conversations, each containing a ton of clients. This replaces this memory store by a LRU cache having the following properties:
-        * Limited by number of entries AND occupied memory
-            * Defaults for memory: All the available system memory on other platforms / 100MB on WASM
-            * Defaults for number of entries:
-                * 100 MLS groups
-                * 200 Proteus sessions
-        * Flow for retrieving a value
-            1. Check the LRU store if the value exists, if yes, it's promoted as MRU (Most Recently Used) and returned
-            2. If not found, it might have been evicted, so we search the keystore
-            3. If found in the keystore, the value is placed as MRU and returned
-                * Special case: we evict the store as much as needed to fit the new MRU value in this case. This is designed to infaillible.
-            5. If not found, we return a `None` value
-    * This approach potentially allows to have an unlimited number of groups/sessions as long as a single item does not exceed the maximum memory limit.
-    * As a consequence of the internal mutability requirements of the new map and the automatic keystore fetches, many if not all APIs are now `async`. This does not concern the Mobile FFI.
-* **[BREAKING]** Because of Rust 1.68's release, CoreCrypto is now incompatible with Android NDK versions under 25.2 (the LTS version) and Android API level 24.
-* **[BREAKING]** E2EI: The API is now compliant with RFC8555
-    * Another change will come soon to be able to initialize a MLS client using the X509 certificate issued by the E2EI process
-* Enabled the iOS WAL compatibility layer to prevent spurious background kills
-* Added a WASM api to check the Arc strongref counter
-
-## [0.6.3] - 2023-02-17
-
-<details>
-    <summary>git-conventional changelog</summary>
-
-### Miscellaneous Tasks
-
-- Release 0.6.3 ([#258](https://github.com/wireapp/core-crypto/issues/258))
-- Build linux artifacts on Ubuntu LTS for better compatibility ([#257](https://github.com/wireapp/core-crypto/issues/257))
-
-</details>
-
-* Improve compatbillity with older linux versions when running core-crypto-jvm by building on Ubuntu LTS (22.04).
-
-## [0.6.2] - 2023-02-16
-
-<details>
-    <summary>git-conventional changelog</summary>
-
-### Bug Fixes
-
-- Fixed commitDelay being undefined when FFI says 0
-
-### Miscellaneous Tasks
-
-- Release v0.6.2
-- Fix native libraries not loading by moving them to the package root ([#255](https://github.com/wireapp/core-crypto/issues/255))
-
-</details>
-
-* Fixed a bug in the TypeScript bindings where the `DecryptedMessage` bundle could have `commitDelay` set to `undefined` when it should be 0
-    * This could happen in the case of external proposals where the system would determine that the proposals should be immediately committed
-
-## [0.6.1] - 2023-02-16
-
-<details>
-    <summary>git-conventional changelog</summary>
-
-### Bug Fixes
-
-- Publishing for JVM generating empty artifacts ([#251](https://github.com/wireapp/core-crypto/issues/251))
-- Fall back on false when the callback doesn't retrurn a Promise
-- Proteus auto prekey might overwrite Last Resort prekey
-
-### Miscellaneous Tasks
-
-- Release 0.6.1 ([#253](https://github.com/wireapp/core-crypto/issues/253))
-- Remove proteus double persistence as it's already automatically eager
-
-
-### Bug Fixes
-
-- Xtask release outputs dry-run log unconditionally
-
-### Features
-
-- Adapt with acme client library tested on real acme-server forked. Also some nits & dependencies pinned
-
-### Miscellaneous Tasks
-
-- Release v0.6.0
-
-</details>
-
-* Fixed a bug where the Proteus last resort prekey could be overwritten.
-* Fixed JVM publishing creating broken packages.
-* WASM callbacks return false by default if no promise is returned.
-* Benchmarks: Remove redundant save when persisting proteus sessions.
-
-## [0.6.0] - 2023-02-13
-
-<details>
-    <summary>git-conventional changelog</summary>
-
-### Bug Fixes
-
-- Xtask release outputs dry-run log unconditionally
-
-### Features
-
-- Adapt with acme client library tested on real acme-server forked. Also some nits & dependencies pinned
-
-### Miscellaneous Tasks
-
-- Release v0.6.0
-
-
-### Features
-
-- Added support for Proteus Last Resort PreKeys (boooo!)
-- [**breaking**] Async callbacks
-- Externally-generated clients
-
-### Miscellaneous Tasks
-
-- Release v0.6.0-rc.8
-- Updated webdriver version to chrome 110
-
-
-### Bug Fixes
-
-- Fixed E2E interop test for breaking api changes
-- New e2eidentityerror enum member wasn't exposed over ffi
-- TS/WASM build issues & test
-
-### Miscellaneous Tasks
-
-- Release v0.6.0-rc.7
-
-
-### Bug Fixes
-
-- Proteus error system not working (at all)
-- Force cargo to use git cli to avoid intermittent CI failures
-
-### Miscellaneous Tasks
-
-- Release v0.6.0-rc.6
-- Updated rstest_reuse to 0.5
-- Updated spinoff to 0.7
-- Added codecov settings
-- Update node to LTS 18 & enable JS e2e testing
-- Make npm build run wasm-opt in Os
-- Update JVM publish workflow to build on native platforms ([#229](https://github.com/wireapp/core-crypto/issues/229))
-
-
-### Bug Fixes
-
-- [**breaking**] Added conversation id to clientIsExistingGroupUser callback
-- Increment IndexedDB store version when crate version changes
-
-### Features
-
-- Added support for Proteus error codes
-
-### Miscellaneous Tasks
-
-- Cut release 0.6.0-rc.5
-- Moved codecov from tarpaulin to llvm-cov
-- Updated RustCrypto primitives & git dep in xtask
-
-
-### Bug Fixes
-
-- Aarch64-apple-ios-sim target not compiling  ([#213](https://github.com/wireapp/core-crypto/issues/213))
-- Cryptobox import now throws errors on missing/incorrect store
-
-### Features
-
-- Expose end to end identity web API
-- Add end to end identity bindings
-
-### Miscellaneous Tasks
-
-- 0.6.0-rc.4 release
-- Updated base64, lru and spinoff deps
-- Added WebDriver-based WASM test runner
-- Xtask improvements
-- Fix 1.66 clippy warnings
-- Update base64 to 0.20
-- Fixed wrong documentation link in TS bindings docs
-- Update UniFFI to 0.22
-- Kotlin FFI docs + makefile fixes for other platforms
-
-
-### Bug Fixes
-
-- Added missing Proteus APIs and docs
-
-### Miscellaneous Tasks
-
-- Release v0.6.0-rc.3
-
-
-### Bug Fixes
-
-- Functional Android NDK 21 CI
-- Publish android CI
-- Unreachable pub makes docs build fail
-
-### Miscellaneous Tasks
-
-- Release v0.6.0-rc.2
-- Fix advisory stuff
-
-
-### Bug Fixes
-
-- Broken Proteus implementation
-- Prevent application messages signed by expired KeyPackages
-- Fix cryptobox import on WASM [CL-119]
-- Incorrect TS return types [CL-118]
-
-### Features
-
-- Expose a 'WrongEpoch' error whenever one attempts to decrypt a message in the wrong epoch
-- Add 'restore_from_disk' to enable using multiple MlsCentral instances in iOS extensions
-- Add specialized error when trying to break forward secrecy
-- Add 'out_of_order_tolerance' & 'maximum_forward_distance' to configuration without exposing them and verify they are actually applied
-- [**breaking**] Change 'client_id' in CoreCrypto constructor from a String to a byte array to remain consistent across the API
-- Expose proteus prekey fingerprint - CL-107
-
-### Miscellaneous Tasks
-
-- Release v0.6.0-rc.1
-- Use NDK 21 for android artifacts - CL-111
-
-### Testing
-
-- Ensure we are immune to duplicate commits and out of order commit/proposal
-
-
-### Features
-
-- Expose proteus session fingerprints (local and remote) - CL-108
-- Support deferred MLS initialization for proteus purposes [CL-106]
-
-### Miscellaneous Tasks
-
-- Remove C-FFI
-
-
-### Bug Fixes
-
-- [**breaking**] Incorrect handling of enums across WASM FFI
-- Commits could lead to inconsistent state in keystore in case PGS serialization fails
-- Make tags have semantic versioning names and downgrading to swift 5.5 - CL-49
-- Publication of swift packages
-
-### Features
-
-- Expose session exists through the ffi - CL-101
-
-### Miscellaneous Tasks
-
-- Fix new clippy test warnings in 1.65
-- Fix new clippy warnings in 1.65
-
-### Testing
-
-- Ensure everything keeps working when pure ciphertext format policy is selected
-
-
-### Bug Fixes
-
-- Change the internal type of the public group info to Vec<u8> so we don't have extra bytes in the serialized message - FS-1127
-
-### Miscellaneous Tasks
-
-- Adding actions to check bindings and to publish swift package - CL-49
-- Add action to publish jvm/android packages and change rust toolchain in ci ([#157](https://github.com/wireapp/core-crypto/issues/157))
-- Add support for Proteus within interop runner
-
-
-### Bug Fixes
-
-- 'join_by_external_commit' returns a non TLS serialized conversation id
-
-### Features
-
-- [**breaking**] Expose a 'PublicGroupStateBundle' struct used in 'CommitBundle' variants
-- [**breaking**] Remove all the final_* methods returning a TLS encoded CommitBundle
-- Returning if decrypted message changed the epoch - CL-92 ([#152](https://github.com/wireapp/core-crypto/issues/152))
-- Exporting secret key derived from the group and client ids from the members - CL-97 - CL-98 ([#142](https://github.com/wireapp/core-crypto/issues/142))
-- Added API to generate Proteus prekeys
-- Fixed Cryptobox import for WASM
-- Added support for migrating Cryptobox data
-- Added FFI for CoreCrypto-Proteus
-- Added support for Proteus
-- Validate received external commits making sure the sender's user already belongs to the MLS group and has the right role
-- [**breaking**] Rename callback~~`client_id_belongs_to_one_of`~~ into `client_is_existing_group_user`
-- [**breaking**] External commit returns a bundle containing the PGS
-- [**breaking**] Add `clear_pending_group_from_external_commit` to cleanly abort an external commit. Also renamed `group_state` argument into `public_group_state` wherever found which can be considered a breaking change in some languages
-- [**breaking**] Rename `MlsConversationInitMessage#group` into `MlsConversationInitMessage#conversation_id` because it was misleading about the actual returned value
-
-### Miscellaneous Tasks
-
-- Apply suggestions from code review
-- Updated bundled FFI files
-- Added Proteus testing infra
-- Added missing docs
-- Nits, fmt & cargo-deny tweak
-- Add m1 support for the jvm bindings ([#139](https://github.com/wireapp/core-crypto/issues/139))
-- Remove unneeded `map_err(CryptoError::from)`
-- Remove useless code
-
-### Testing
-
-- Fix external commit tests allowing member to rejoin a group by external commit
-- Add a default impl for 'TestCase', very useful when one has to debug on IntelliJ
-- Parameterize ciphers
-- Ensure external senders can be inferred when joining by external commit or welcome
-- Fix rcgen failing on WASM due to some unsupported elliptic curve methods invoked at compile time
-- Ensure external commit are retriable
-
-</details>
-
 Platform support status:
 
 * x86_64-unknown-linux-gnu ✅
@@ -1266,28 +1029,6 @@ There's a post mortem available here: <https://github.com/wireapp/core-crypto/pu
 
 <details>
     <summary>git-conventional changelog</summary>
-
-### Bug Fixes
-
-- Aarch64-apple-ios-sim target not compiling  ([#213](https://github.com/wireapp/core-crypto/issues/213))
-- Cryptobox import now throws errors on missing/incorrect store
-
-### Features
-
-- Expose end to end identity web API
-- Add end to end identity bindings
-
-### Miscellaneous Tasks
-
-- 0.6.0-rc.4 release
-- Updated base64, lru and spinoff deps
-- Added WebDriver-based WASM test runner
-- Xtask improvements
-- Fix 1.66 clippy warnings
-- Update base64 to 0.20
-- Fixed wrong documentation link in TS bindings docs
-- Update UniFFI to 0.22
-- Kotlin FFI docs + makefile fixes for other platforms
 
 </details>
 
@@ -1486,6 +1227,47 @@ There's a post mortem available here: <https://github.com/wireapp/core-crypto/pu
 
 <details>
     <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- 'join_by_external_commit' returns a non TLS serialized conversation id
+
+### Features
+
+- [**breaking**] Expose a 'PublicGroupStateBundle' struct used in 'CommitBundle' variants
+- [**breaking**] Remove all the final_* methods returning a TLS encoded CommitBundle
+- Returning if decrypted message changed the epoch - CL-92 ([#152](https://github.com/wireapp/core-crypto/issues/152))
+- Exporting secret key derived from the group and client ids from the members - CL-97 - CL-98 ([#142](https://github.com/wireapp/core-crypto/issues/142))
+- Added API to generate Proteus prekeys
+- Fixed Cryptobox import for WASM
+- Added support for migrating Cryptobox data
+- Added FFI for CoreCrypto-Proteus
+- Added support for Proteus
+- Validate received external commits making sure the sender's user already belongs to the MLS group and has the right role
+- [**breaking**] Rename callback~~`client_id_belongs_to_one_of`~~ into `client_is_existing_group_user`
+- [**breaking**] External commit returns a bundle containing the PGS
+- [**breaking**] Add `clear_pending_group_from_external_commit` to cleanly abort an external commit. Also renamed `group_state` argument into `public_group_state` wherever found which can be considered a breaking change in some languages
+- [**breaking**] Rename `MlsConversationInitMessage#group` into `MlsConversationInitMessage#conversation_id` because it was misleading about the actual returned value
+
+### Miscellaneous Tasks
+
+- Apply suggestions from code review
+- Updated bundled FFI files
+- Added Proteus testing infra
+- Added missing docs
+- Nits, fmt & cargo-deny tweak
+- Add m1 support for the jvm bindings ([#139](https://github.com/wireapp/core-crypto/issues/139))
+- Remove unneeded `map_err(CryptoError::from)`
+- Remove useless code
+
+### Testing
+
+- Fix external commit tests allowing member to rejoin a group by external commit
+- Add a default impl for 'TestCase', very useful when one has to debug on IntelliJ
+- Parameterize ciphers
+- Ensure external senders can be inferred when joining by external commit or welcome
+- Fix rcgen failing on WASM due to some unsupported elliptic curve methods invoked at compile time
+- Ensure external commit are retriable
 
 </details>
 
