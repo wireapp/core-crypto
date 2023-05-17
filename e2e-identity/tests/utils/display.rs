@@ -510,7 +510,7 @@ impl std::fmt::Display for Actor {
             Actor::WireClient => "wire-client",
             Actor::WireServer => "wire-server",
             Actor::AcmeServer => "acme-server",
-            Actor::IdentityProvider => "idp",
+            Actor::IdentityProvider => "IdP",
         };
         write!(f, "{name}")
     }
