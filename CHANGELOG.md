@@ -7,6 +7,15 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.9.2] - 2023-05-22
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+</details>
+
+* Fixed migrations not running because of a mistakenly added table in an older migration version
+
 ## [0.9.1] - 2023-05-17
 
 <details>
@@ -15,6 +24,10 @@ Platform support legends:
 ### Bug Fixes
 
 - Size regression on FFI
+
+### Miscellaneous Tasks
+
+- Release v0.9.1
 
 </details>
 
