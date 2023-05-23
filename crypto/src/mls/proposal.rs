@@ -127,7 +127,7 @@ pub mod proposal_tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         let bob_kp = bob_central.get_one_key_package(&case).await;
@@ -155,10 +155,13 @@ pub mod proposal_tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_update_key_package(case: TestCase) {
-            run_test_with_central(case.clone(), |[mut central]| {
+            run_test_with_central(case.clone(), move |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    central.new_conversation(id.clone(), case.cfg.clone()).await.unwrap();
+                    central
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
                     let before = &(*central
                         .get_conversation_unchecked(&id)
                         .await
@@ -195,7 +198,7 @@ pub mod proposal_tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(id.clone(), case.cfg.clone())
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central
@@ -234,11 +237,11 @@ pub mod proposal_tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_unknown_client(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], |[mut alice_central]| {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(id.clone(), case.cfg.clone())
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 

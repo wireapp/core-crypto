@@ -308,17 +308,14 @@ impl Client {
         cs: MlsCiphersuite,
         cb: &CredentialBundle,
     ) -> CryptoResult<()> {
-        Ok(backend
-            .key_store()
-            .save(MlsIdentity {
-                id: id.to_string(),
-                ciphersuite: cs.into(),
-                credential_type: cb.get_type() as u8,
-                signature: cb.keystore_key()?,
-                credential: cb.to_key_store_value().map_err(MlsError::from)?,
-            })
-            .await
-            .map(|_| ())?)
+        let identity = MlsIdentity {
+            id: id.to_string(),
+            ciphersuite: cs.into(),
+            credential_type: cb.get_type() as u8,
+            signature: cb.keystore_key()?,
+            credential: cb.to_key_store_value().map_err(MlsError::from)?,
+        };
+        Ok(backend.key_store().save(identity).await.map(|_| ())?)
     }
 
     /// Retrieves the client's client id. This is free-form and not inspected.
@@ -365,10 +362,9 @@ impl Client {
         cs: MlsCiphersuite,
         ct: MlsCredentialType,
     ) -> CryptoResult<&CredentialBundle> {
-        // TODO: proper error
         self.identities
             .find_credential_bundle(cs, ct)
-            .ok_or(CryptoError::ImplementationError)
+            .ok_or(CryptoError::IdentityInitializationError)
     }
 }
 

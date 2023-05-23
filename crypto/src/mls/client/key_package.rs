@@ -30,7 +30,7 @@ use crate::{
 };
 use core_crypto_keystore::{
     entities::{EntityFindParams, MlsKeypackage, StringEntityId},
-    CryptoKeystoreError, CryptoKeystoreResult,
+    CryptoKeystoreError,
 };
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -41,30 +41,6 @@ pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 pub(crate) const KEYPACKAGE_DEFAULT_LIFETIME: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24 * 90); // 3 months
 
 impl Client {
-    /// This method returns the hash of the oldest available KeyPackageBundle for the Client
-    /// and if necessary regenerates a new keypackage for immediate use
-    ///
-    /// # Arguments
-    /// * `backend` - the KeyStorage to load the keypackages from
-    ///
-    /// # Errors
-    /// KeyStore errors
-    pub async fn oldest_keypackage_hash(
-        &self,
-        backend: &MlsCryptoProvider,
-        cs: MlsCiphersuite,
-        ct: MlsCredentialType,
-    ) -> CryptoResult<KeyPackageRef> {
-        use core_crypto_keystore::CryptoKeystoreMls as _;
-        let kpb_result: CryptoKeystoreResult<KeyPackageBundle> = backend.key_store().mls_get_keypackage().await;
-        let kp = match kpb_result {
-            Ok(kpb) => Ok(kpb.key_package().clone()),
-            Err(CryptoKeystoreError::OutOfKeyPackageBundles) => Ok(self.generate_keypackage(backend, cs, ct).await?),
-            Err(e) => Err(CryptoError::KeyStoreError(e)),
-        }?;
-        Ok(kp.hash_ref(backend.crypto()).map_err(MlsError::from)?)
-    }
-
     /// Generates a single new keypackage
     ///
     /// # Arguments
@@ -107,10 +83,7 @@ impl Client {
         cs: MlsCiphersuite,
         ct: MlsCredentialType,
     ) -> CryptoResult<KeyPackage> {
-        let cb = self
-            .identities
-            .find_credential_bundle(cs, ct)
-            .ok_or(CryptoError::ImplementationError)?;
+        let cb = self.find_credential_bundle(cs, ct)?;
         self.generate_keypackage_from_credential_bundle(backend, cb, cs).await
     }
 
@@ -319,17 +292,6 @@ pub mod tests {
         // Sleep 2 seconds to make sure we make the kp expire
         async_std::task::sleep(std::time::Duration::from_secs(2)).await;
         assert!(Client::is_mls_keypackage_expired(&kp_1s_exp));
-    }
-
-    #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
-    pub async fn client_never_runs_out_of_keypackages(case: TestCase) {
-        let (cs, ct) = (case.ciphersuite(), case.credential_type);
-        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        let client = Client::random_generate(&case, &backend, true).await.unwrap();
-        for _ in 0..100 {
-            assert!(client.oldest_keypackage_hash(&backend, cs, ct).await.is_ok())
-        }
     }
 
     #[apply(all_cred_cipher)]

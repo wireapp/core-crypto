@@ -841,6 +841,7 @@ export class CoreCrypto {
      * You will want to use {@link CoreCrypto.addClientsToConversation} afterwards to add clients to this conversation
      *
      * @param conversationId - The conversation ID; You can either make them random or let the backend attribute MLS group IDs
+     * @param creatorCredentialType - kind of credential the creator wants to create the group with
      * @param configuration - configuration of the MLS group
      * @param configuration.ciphersuite - The {@link Ciphersuite} that is chosen to be the group's
      * @param configuration.externalSenders - Array of Client IDs that are qualified as external senders within the group
@@ -848,6 +849,7 @@ export class CoreCrypto {
      */
     async createConversation(
         conversationId: ConversationId,
+        creatorCredentialType: CredentialType,
         configuration: ConversationConfiguration = {}
     ) {
         try {
@@ -857,7 +859,7 @@ export class CoreCrypto {
                 externalSenders,
                 custom?.keyRotationSpan,
             );
-            const ret = await CoreCryptoError.asyncMapErr(this.#cc.create_conversation(conversationId, config));
+            const ret = await CoreCryptoError.asyncMapErr(this.#cc.create_conversation(conversationId, creatorCredentialType, config));
             return ret;
         } catch(e) {
             throw CoreCryptoError.fromStdError(e as Error);

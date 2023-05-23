@@ -37,6 +37,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use config::MlsConversationConfiguration;
 
+use crate::prelude::MlsCredentialType;
 use crate::{
     mls::{client::Client, member::MemberId, ClientId, MlsCentral},
     CryptoError, CryptoResult, MlsError,
@@ -75,6 +76,7 @@ impl MlsConversation {
     /// # Arguments
     /// * `id` - group/conversation identifier
     /// * `author_client` - the client responsible for creating the group
+    /// * `creator_credential_type` - kind of credential the creator wants to join the group with
     /// * `config` - group configuration
     /// * `backend` - MLS Provider that will be used to persist the group
     ///
@@ -83,11 +85,14 @@ impl MlsConversation {
     pub async fn create(
         id: ConversationId,
         author_client: &mut Client,
+        creator_credential_type: MlsCredentialType,
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
-        let (cs, ct) = (configuration.ciphersuite, configuration.credential_type);
-        let kp_hash = author_client.oldest_keypackage_hash(backend, cs, ct).await?;
+        let kp = author_client
+            .generate_keypackage(backend, configuration.ciphersuite, creator_credential_type)
+            .await?;
+        let kp_hash = kp.hash_ref(backend.crypto()).map_err(MlsError::from)?;
 
         let group = MlsGroup::new(
             backend,
@@ -304,7 +309,7 @@ pub mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .new_conversation(id.clone(), case.cfg.clone())
+                    .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
@@ -336,7 +341,7 @@ pub mod tests {
                     let id = conversation_id();
 
                     alice_central
-                        .new_conversation(id.clone(), case.cfg.clone())
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
@@ -383,7 +388,7 @@ pub mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .new_conversation(id.clone(), case.cfg.clone())
+                    .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
 
@@ -473,7 +478,7 @@ pub mod tests {
 
                     // Create a conversation from alice, where she invites bob
                     alice_central
-                        .new_conversation(id.clone(), case.cfg.clone())
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
@@ -511,7 +516,10 @@ pub mod tests {
             run_test_with_central(case.clone(), move |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    central.new_conversation(id.clone(), case.cfg.clone()).await.unwrap();
+                    central
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
                     assert!(central.get_conversation_unchecked(&id).await.group.is_active());
 
                     central.wipe_conversation(&id).await.unwrap();

@@ -415,6 +415,7 @@ impl MlsCentral {
     /// # Arguments
     /// * `id` - identifier of the group/conversation (must be unique otherwise the existing group
     /// will be overridden)
+    /// * `creator_credential_type` - kind of credential the creator wants to create the group with
     /// * `config` - configuration of the group/conversation
     ///
     /// # Errors
@@ -423,10 +424,18 @@ impl MlsCentral {
     pub async fn new_conversation(
         &mut self,
         id: ConversationId,
+        creator_credential_type: MlsCredentialType,
         config: MlsConversationConfiguration,
     ) -> CryptoResult<()> {
         let mls_client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
-        let conversation = MlsConversation::create(id.clone(), mls_client, config, &self.mls_backend).await?;
+        let conversation = MlsConversation::create(
+            id.clone(),
+            mls_client,
+            creator_credential_type,
+            config,
+            &self.mls_backend,
+        )
+        .await?;
 
         self.mls_groups.insert(id, conversation);
 
@@ -591,7 +600,10 @@ pub mod tests {
             run_test_with_central(case.clone(), move |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    central.new_conversation(id.clone(), case.cfg.clone()).await.unwrap();
+                    central
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
                     let epoch = central.conversation_epoch(&id).await.unwrap();
                     assert_eq!(epoch, 0);
                 })
@@ -609,7 +621,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
@@ -728,24 +740,35 @@ pub mod tests {
 
     pub mod persistence {
         use super::*;
+        use std::collections::HashMap;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn can_persist_group_state(case: TestCase) {
             run_tests(move |[store_path]| {
                 Box::pin(async move {
+                    let cid = match case.credential_type {
+                        MlsCredentialType::Basic => ClientIdentifier::Basic("potato".into()),
+                        MlsCredentialType::X509 => {
+                            let cert = CertificateBundle::rand(case.cfg.ciphersuite, "potato".into());
+                            ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite, cert)]))
+                        }
+                    };
                     let configuration = MlsCentralConfiguration::try_new(
                         store_path,
                         "test".to_string(),
-                        Some("potato".into()),
+                        None,
                         vec![case.ciphersuite()],
                         None,
                     )
                     .unwrap();
 
                     let mut central = MlsCentral::try_new(configuration.clone()).await.unwrap();
+                    central.mls_init(cid, vec![case.ciphersuite()]).await.unwrap();
                     let id = conversation_id();
-                    let _ = central.new_conversation(id.clone(), case.cfg.clone()).await;
+                    let _ = central
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .await;
 
                     central.close().await.unwrap();
                     let mut central = MlsCentral::try_new(configuration).await.unwrap();
@@ -764,27 +787,46 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
 
+                    let (alice_cid, bob_cid) = match case.credential_type {
+                        MlsCredentialType::Basic => (
+                            ClientIdentifier::Basic("alice".into()),
+                            ClientIdentifier::Basic("bob".into()),
+                        ),
+                        MlsCredentialType::X509 => {
+                            let cert = CertificateBundle::rand(case.cfg.ciphersuite, "alice".into());
+                            let alice = ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite, cert)]));
+                            let cert = CertificateBundle::rand(case.cfg.ciphersuite, "bob".into());
+                            let bob = ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite, cert)]));
+                            (alice, bob)
+                        }
+                    };
                     let alice_cfg = MlsCentralConfiguration::try_new(
                         alice_path,
                         "test".to_string(),
-                        Some("alice".into()),
+                        None,
                         vec![case.ciphersuite()],
                         None,
                     )
                     .unwrap();
                     let mut alice_central = MlsCentral::try_new(alice_cfg.clone()).await.unwrap();
+                    alice_central
+                        .mls_init(alice_cid, vec![case.ciphersuite()])
+                        .await
+                        .unwrap();
+
                     let bob_cfg = MlsCentralConfiguration::try_new(
                         bob_path,
                         "test".to_string(),
-                        Some("bob".into()),
+                        None,
                         vec![case.ciphersuite()],
                         None,
                     )
                     .unwrap();
                     let mut bob_central = MlsCentral::try_new(bob_cfg).await.unwrap();
+                    bob_central.mls_init(bob_cid, vec![case.ciphersuite()]).await.unwrap();
 
                     alice_central
-                        .new_conversation(id.clone(), case.cfg.clone())
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central

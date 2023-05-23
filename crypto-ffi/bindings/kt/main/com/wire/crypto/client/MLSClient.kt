@@ -87,6 +87,7 @@ interface MLSClient {
 
     fun createConversation(
         groupId: MLSGroupId,
+        creatorCredentialType: MlsCredentialType,
         externalSenders: List<Ed22519Key> = emptyList()
     )
 
@@ -184,7 +185,7 @@ class MLSClientImpl(
         cc.clearPendingGroupFromExternalCommit(groupId.toUByteList())
     }
 
-    override fun createConversation(groupId: MLSGroupId, externalSenders: List<Ed22519Key>) {
+    override fun createConversation(groupId: MLSGroupId, creatorCredentialType: MlsCredentialType, externalSenders: List<Ed22519Key>) {
         val conf = ConversationConfiguration(
             MLSClient.defaultCiphersuite,
             externalSenders.map { it.toUByteList() },
@@ -192,7 +193,7 @@ class MLSClientImpl(
         )
 
         val groupIdAsBytes = groupId.toUByteList()
-        cc.createConversation(groupIdAsBytes, conf)
+        cc.createConversation(groupIdAsBytes, creatorCredentialType, conf)
     }
 
     override fun wipeConversation(groupId: MLSGroupId) {
