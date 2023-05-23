@@ -1210,13 +1210,22 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::MlsCentral::new_conversation]
-    pub fn create_conversation(&self, conversation_id: Box<[u8]>, config: ConversationConfiguration) -> Promise {
+    pub fn create_conversation(
+        &self,
+        conversation_id: Box<[u8]>,
+        creator_credential_type: CredentialType,
+        config: ConversationConfiguration,
+    ) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
                 this.write()
                     .await
-                    .new_conversation(conversation_id.to_vec(), config.try_into()?)
+                    .new_conversation(
+                        conversation_id.to_vec(),
+                        creator_credential_type.into(),
+                        config.try_into()?,
+                    )
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)

@@ -531,6 +531,7 @@ impl CoreCrypto<'_> {
     pub fn create_conversation(
         &self,
         conversation_id: ConversationId,
+        creator_credential_type: MlsCredentialType,
         config: ConversationConfiguration,
     ) -> CryptoResult<()> {
         future::block_on(
@@ -538,7 +539,7 @@ impl CoreCrypto<'_> {
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .new_conversation(conversation_id, config.try_into()?),
+                    .new_conversation(conversation_id, creator_credential_type, config.try_into()?),
             ),
         )
     }

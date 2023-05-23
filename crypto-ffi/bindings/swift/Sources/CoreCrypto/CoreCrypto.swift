@@ -549,9 +549,10 @@ public class CoreCryptoWrapper {
     /// Creates a new conversation with the current client being the sole member
     /// You will want to use ``addClientsToConversation(conversationId:clients:)`` afterwards to add clients to this conversation
     /// - parameter conversationId: conversation identifier
+    /// - parameter creatorCredentialType: kind of credential the creator wants to create the group with
     /// - parameter config: the configuration for the conversation to be created
-    public func createConversation(conversationId: ConversationId, config: ConversationConfiguration) throws {
-        try self.coreCrypto.createConversation(conversationId: conversationId, config: config.convert())
+    public func createConversation(conversationId: ConversationId, creatorCredentialType: MlsCredentialType, config: ConversationConfiguration) throws {
+        try self.coreCrypto.createConversation(conversationId: conversationId, creatorCredentialType: creatorCredentialType.convert(), config: config.convert())
     }
 
     /// Checks if the Client is member of a given conversation and if the MLS Group is loaded up

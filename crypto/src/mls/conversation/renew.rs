@@ -141,7 +141,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
@@ -195,7 +195,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
@@ -233,7 +233,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
@@ -306,7 +306,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
@@ -366,7 +366,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
@@ -411,7 +411,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
@@ -460,7 +460,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
@@ -517,7 +517,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
@@ -575,7 +575,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
@@ -620,7 +620,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
@@ -674,7 +674,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
@@ -729,7 +729,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
@@ -795,7 +795,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
@@ -860,7 +860,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central

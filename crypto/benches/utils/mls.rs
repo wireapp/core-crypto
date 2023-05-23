@@ -7,6 +7,7 @@ use futures_lite::future::block_on;
 use openmls::prelude::{CredentialBundle, Extension, KeyPackage, KeyPackageBundle, LifetimeExtension};
 use openmls_traits::types::Ciphersuite;
 
+use core_crypto::prelude::MlsCredentialType;
 use core_crypto::{
     mls::{MlsCentral, MlsCiphersuite},
     prelude::{
@@ -129,6 +130,7 @@ pub fn setup_mls(
         central
             .new_conversation(
                 id.clone(),
+                MlsCredentialType::Basic,
                 MlsConversationConfiguration {
                     ciphersuite: ciphersuite.clone(),
                     ..Default::default()

@@ -97,6 +97,7 @@ enum CryptoError {
     "TooManyIdentitiesPresent",
     "ParentGroupNotFound",
     "InvalidIdentity",
+    "IdentityInitializationError",
 };
 
 dictionary DecryptedMessage {
@@ -186,7 +187,7 @@ interface CoreCrypto {
     u64 client_valid_keypackages_count(CiphersuiteName ciphersuite);
 
     [Throws=CryptoError]
-    void create_conversation(ConversationId conversation_id, ConversationConfiguration config);
+    void create_conversation(ConversationId conversation_id, MlsCredentialType creator_credential_type, ConversationConfiguration config);
 
     [Throws=CryptoError]
     u64 conversation_epoch(ConversationId conversation_id);

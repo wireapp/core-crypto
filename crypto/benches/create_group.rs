@@ -32,7 +32,12 @@ fn create_group_bench(c: &mut Criterion) {
                         (central, id, cfg)
                     },
                     |(mut central, id, cfg)| async move {
-                        black_box(central.new_conversation(id, cfg).await.unwrap());
+                        black_box(
+                            central
+                                .new_conversation(id, MlsCredentialType::Basic, cfg)
+                                .await
+                                .unwrap(),
+                        );
                     },
                     BatchSize::SmallInput,
                 )

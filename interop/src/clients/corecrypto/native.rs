@@ -97,7 +97,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
     async fn add_client(&mut self, conversation_id: &[u8], client_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
         if !self.cc.conversation_exists(&conversation_id.to_vec()).await {
             self.cc
-                .new_conversation(conversation_id.to_vec(), Default::default())
+                .new_conversation(conversation_id.to_vec(), MlsCredentialType::Basic, Default::default())
                 .await?;
         }
 

@@ -26,18 +26,13 @@ use openmls::prelude::{
 use openmls_traits::types::SignatureScheme;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    mls::{credential::typ::MlsCredentialType, MlsCiphersuite},
-    CryptoError, CryptoResult, MlsError,
-};
+use crate::{mls::MlsCiphersuite, CryptoError, CryptoResult, MlsError};
 
 /// The configuration parameters for a group/conversation
 #[derive(Debug, Clone, Default)]
 pub struct MlsConversationConfiguration {
     /// The `OpenMls` Ciphersuite used in the group
     pub ciphersuite: MlsCiphersuite,
-    /// Type of Credential to initialize the group with
-    pub credential_type: MlsCredentialType,
     /// Delivery service public signature key and credential
     pub external_senders: Vec<ExternalSender>,
     /// Implementation specific configuration

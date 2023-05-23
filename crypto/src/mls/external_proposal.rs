@@ -191,7 +191,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         owner_central
-                            .new_conversation(id.clone(), case.cfg.clone())
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         let epoch = owner_central.get_conversation_unchecked(&id).await.group.epoch();
@@ -253,7 +253,10 @@ mod tests {
                             let remove_key = ds.client_signature_key(&case).as_slice().to_vec();
                             let mut cfg = case.cfg.clone();
                             cfg.set_raw_external_senders(vec![remove_key]);
-                            owner_central.new_conversation(id.clone(), cfg).await.unwrap();
+                            owner_central
+                                .new_conversation(id.clone(), case.credential_type, cfg)
+                                .await
+                                .unwrap();
 
                             owner_central
                                 .invite(&id, &mut guest_central, case.custom_cfg())
@@ -318,7 +321,10 @@ mod tests {
                         let remove_key = ds.client_signature_key(&case).as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
                         cfg.set_raw_external_senders(vec![remove_key]);
-                        owner_central.new_conversation(id.clone(), cfg).await.unwrap();
+                        owner_central
+                            .new_conversation(id.clone(), case.credential_type, cfg)
+                            .await
+                            .unwrap();
 
                         owner_central
                             .invite(&id, &mut guest_central, case.custom_cfg())
@@ -382,7 +388,10 @@ mod tests {
                         let short_remove_key = short_remove_key.tls_serialize_detached().unwrap();
                         let mut cfg = case.cfg.clone();
                         cfg.set_raw_external_senders(vec![short_remove_key.as_slice().to_vec()]);
-                        owner_central.new_conversation(id.clone(), cfg).await.unwrap();
+                        owner_central
+                            .new_conversation(id.clone(), case.credential_type, cfg)
+                            .await
+                            .unwrap();
 
                         owner_central
                             .invite(&id, &mut guest_central, case.custom_cfg())
@@ -445,7 +454,10 @@ mod tests {
                             let remove_key = ds.client_signature_key(&case).as_slice().to_vec();
                             let mut cfg = case.cfg.clone();
                             cfg.set_raw_external_senders(vec![remove_key]);
-                            alice_central.new_conversation(id.clone(), cfg).await.unwrap();
+                            alice_central
+                                .new_conversation(id.clone(), case.credential_type, cfg)
+                                .await
+                                .unwrap();
 
                             alice_central
                                 .invite(&id, &mut bob_central, case.custom_cfg())
@@ -547,7 +559,10 @@ mod tests {
                             let remove_key = ds.client_signature_key(&case).as_slice().to_vec();
                             let mut cfg = case.cfg.clone();
                             cfg.set_raw_external_senders(vec![remove_key]);
-                            alice_central.new_conversation(id.clone(), cfg).await.unwrap();
+                            alice_central
+                                .new_conversation(id.clone(), case.credential_type, cfg)
+                                .await
+                                .unwrap();
 
                             alice_central
                                 .invite(&id, &mut bob_central, case.custom_cfg())

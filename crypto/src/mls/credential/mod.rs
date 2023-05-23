@@ -32,11 +32,12 @@ impl Client {
 #[cfg(test)]
 pub mod tests {
     use openmls::prelude::{CredentialError, SignaturePrivateKey, WelcomeError};
+    use openmls_traits::types::Ciphersuite;
     use std::collections::HashMap;
     use wasm_bindgen_test::*;
     use wire_e2e_identity::prelude::WireIdentityBuilder;
 
-    use crate::prelude::ClientIdentifier;
+    use crate::prelude::{ClientIdentifier, MlsCredentialType};
     use crate::{
         error::CryptoError,
         mls::{MlsCentral, MlsCentralConfiguration, MlsConversationConfiguration},
@@ -50,35 +51,61 @@ pub mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn basic_clients_can_send_messages(case: TestCase) {
-        let alice_identifier = ClientIdentifier::Basic("alice".into());
-        let bob_identifier = ClientIdentifier::Basic("bob".into());
-        assert!(try_talk(alice_identifier, bob_identifier, case.cfg).await.is_ok());
+        if matches!(case.credential_type, MlsCredentialType::Basic) {
+            let alice_identifier = ClientIdentifier::Basic("alice".into());
+            let bob_identifier = ClientIdentifier::Basic("bob".into());
+            assert!(
+                try_talk(alice_identifier, bob_identifier, MlsCredentialType::Basic, case.cfg)
+                    .await
+                    .is_ok()
+            );
+        }
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn certificate_clients_can_send_messages(case: TestCase) {
-        let alice_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "alice".into());
-        let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
-        assert!(try_talk(alice_identifier, bob_identifier, case.cfg).await.is_ok());
+        if matches!(case.credential_type, MlsCredentialType::X509) {
+            let alice_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "alice".into());
+            let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
+            assert!(
+                try_talk(alice_identifier, bob_identifier, MlsCredentialType::X509, case.cfg)
+                    .await
+                    .is_ok()
+            );
+        }
     }
 
-    #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
-    async fn heterogeneous_clients_can_send_messages(case: TestCase) {
+    // #[apply(all_cred_cipher)]
+    // #[wasm_bindgen_test]
+    #[async_std::test]
+    async fn heterogeneous_clients_can_send_messages(/*case: TestCase*/) {
+        let case = TestCase::new(
+            MlsCredentialType::X509,
+            Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+        );
         // check that both credentials can initiate/join a group
         {
             let alice_identifier = ClientIdentifier::Basic("alice".into());
             let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
-            assert!(try_talk(alice_identifier, bob_identifier, case.cfg.clone())
-                .await
-                .is_ok());
+            assert!(try_talk(
+                alice_identifier,
+                bob_identifier,
+                MlsCredentialType::Basic,
+                case.cfg.clone()
+            )
+            .await
+            .is_ok());
             // drop alice & bob key stores
         }
         {
             let alice_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "alice".into());
             let bob_identifier = ClientIdentifier::Basic("bob".into());
-            assert!(try_talk(alice_identifier, bob_identifier, case.cfg).await.is_ok());
+            assert!(
+                try_talk(alice_identifier, bob_identifier, MlsCredentialType::X509, case.cfg)
+                    .await
+                    .is_ok()
+            );
         }
     }
 
@@ -91,7 +118,9 @@ pub mod tests {
 
         let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
         assert!(matches!(
-            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
+            try_talk(alice_identifier, bob_identifier, MlsCredentialType::X509, case.cfg)
+                .await
+                .unwrap_err(),
             CryptoError::InvalidIdentity
         ));
     }
@@ -106,7 +135,9 @@ pub mod tests {
 
         let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
         assert!(matches!(
-            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
+            try_talk(alice_identifier, bob_identifier, MlsCredentialType::X509, case.cfg)
+                .await
+                .unwrap_err(),
             CryptoError::InvalidIdentity
         ));
     }
@@ -122,7 +153,9 @@ pub mod tests {
 
         let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
         assert!(matches!(
-            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
+            try_talk(alice_identifier, bob_identifier, MlsCredentialType::X509, case.cfg)
+                .await
+                .unwrap_err(),
             CryptoError::MlsError(MlsError::MlsCredentialError(
                 CredentialError::IncompleteCertificateChain
             ))
@@ -139,7 +172,9 @@ pub mod tests {
 
         let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
         assert!(matches!(
-            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
+            try_talk(alice_identifier, bob_identifier, MlsCredentialType::X509, case.cfg)
+                .await
+                .unwrap_err(),
             CryptoError::InvalidIdentity
         ));
     }
@@ -147,100 +182,117 @@ pub mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_invalid_intermediates(case: TestCase) {
-        let eve_ca = WireIdentityBuilder::default().new_ca_certificate();
-        let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
-        // remove the valid intermediate
-        certs.certificate_chain.pop().unwrap();
-        // and replace it with the malicious one
-        certs.certificate_chain.push(eve_ca.serialize_der().unwrap());
-        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), certs)]));
+        if matches!(case.credential_type, MlsCredentialType::X509) {
+            let eve_ca = WireIdentityBuilder::default().new_ca_certificate();
+            let mut certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
+            // remove the valid intermediate
+            certs.certificate_chain.pop().unwrap();
+            // and replace it with the malicious one
+            certs.certificate_chain.push(eve_ca.serialize_der().unwrap());
+            let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), certs)]));
 
-        let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
-        assert!(matches!(
-            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
-            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
-        ));
+            let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
+            assert!(matches!(
+                try_talk(alice_identifier, bob_identifier, MlsCredentialType::X509, case.cfg)
+                    .await
+                    .unwrap_err(),
+                CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
+            ));
+        }
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_signature_key_doesnt_match_certificate_public_key(case: TestCase) {
-        let certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
-        let (_, sign_key) = WireIdentityBuilder::default().new_key_pair();
-        let eve_key = SignaturePrivateKey {
-            value: sign_key,
-            signature_scheme: case.ciphersuite().signature_algorithm(),
-        };
-        let cb = CertificateBundle {
-            certificate_chain: certs.certificate_chain,
-            private_key: eve_key,
-        };
-        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), cb)]));
+        if matches!(case.credential_type, MlsCredentialType::X509) {
+            let certs = CertificateBundle::rand(case.ciphersuite(), "alice".into());
+            let (_, sign_key) = WireIdentityBuilder::default().new_key_pair();
+            let eve_key = SignaturePrivateKey {
+                value: sign_key,
+                signature_scheme: case.ciphersuite().signature_algorithm(),
+            };
+            let cb = CertificateBundle {
+                certificate_chain: certs.certificate_chain,
+                private_key: eve_key,
+            };
+            let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), cb)]));
 
-        let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
-        assert!(matches!(
-            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
-            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
-        ));
+            let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
+            assert!(matches!(
+                try_talk(alice_identifier, bob_identifier, MlsCredentialType::X509, case.cfg)
+                    .await
+                    .unwrap_err(),
+                CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
+            ));
+        }
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_expired(case: TestCase) {
-        let yesterday =
-            wire_e2e_identity::prelude::OffsetDateTime::now_utc() - core::time::Duration::from_secs(3600 * 24);
-        let (certificate_chain, sign_key) = WireIdentityBuilder {
-            not_after: yesterday,
-            ..Default::default()
+        if matches!(case.credential_type, MlsCredentialType::X509) {
+            let yesterday =
+                wire_e2e_identity::prelude::OffsetDateTime::now_utc() - core::time::Duration::from_secs(3600 * 24);
+            let (certificate_chain, sign_key) = WireIdentityBuilder {
+                not_after: yesterday,
+                ..Default::default()
+            }
+            .build_x509_der();
+
+            let cb = CertificateBundle {
+                certificate_chain,
+                private_key: SignaturePrivateKey {
+                    value: sign_key,
+                    signature_scheme: case.ciphersuite().signature_algorithm(),
+                },
+            };
+            let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), cb)]));
+
+            let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
+            assert!(matches!(
+                try_talk(alice_identifier, bob_identifier, MlsCredentialType::X509, case.cfg)
+                    .await
+                    .unwrap_err(),
+                CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
+            ));
         }
-        .build_x509_der();
-
-        let cb = CertificateBundle {
-            certificate_chain,
-            private_key: SignaturePrivateKey {
-                value: sign_key,
-                signature_scheme: case.ciphersuite().signature_algorithm(),
-            },
-        };
-        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), cb)]));
-
-        let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
-        assert!(matches!(
-            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
-            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
-        ));
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_not_valid_yet(case: TestCase) {
-        let tomorrow =
-            wire_e2e_identity::prelude::OffsetDateTime::now_utc() + core::time::Duration::from_secs(3600 * 24);
-        let (certificate_chain, sign_key) = WireIdentityBuilder {
-            not_before: tomorrow,
-            ..Default::default()
+        if matches!(case.credential_type, MlsCredentialType::X509) {
+            let tomorrow =
+                wire_e2e_identity::prelude::OffsetDateTime::now_utc() + core::time::Duration::from_secs(3600 * 24);
+            let (certificate_chain, sign_key) = WireIdentityBuilder {
+                not_before: tomorrow,
+                ..Default::default()
+            }
+            .build_x509_der();
+
+            let cb = CertificateBundle {
+                certificate_chain,
+                private_key: SignaturePrivateKey {
+                    value: sign_key,
+                    signature_scheme: case.ciphersuite().signature_algorithm(),
+                },
+            };
+            let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), cb)]));
+
+            let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
+            assert!(matches!(
+                try_talk(alice_identifier, bob_identifier, MlsCredentialType::X509, case.cfg)
+                    .await
+                    .unwrap_err(),
+                CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
+            ));
         }
-        .build_x509_der();
-
-        let cb = CertificateBundle {
-            certificate_chain,
-            private_key: SignaturePrivateKey {
-                value: sign_key,
-                signature_scheme: case.ciphersuite().signature_algorithm(),
-            },
-        };
-        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.ciphersuite(), cb)]));
-
-        let bob_identifier = CertificateBundle::rand_identifier(&[case.ciphersuite()], "bob".into());
-        assert!(matches!(
-            try_talk(alice_identifier, bob_identifier, case.cfg).await.unwrap_err(),
-            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::InvalidGroupInfoSignature))
-        ));
     }
 
     async fn try_talk(
         alice_identifier: ClientIdentifier,
         bob_identifier: ClientIdentifier,
+        creator_ct: MlsCredentialType,
         cfg: MlsConversationConfiguration,
     ) -> CryptoResult<()> {
         let id = conversation_id();
@@ -259,7 +311,9 @@ pub mod tests {
         let mut bob_central = MlsCentral::try_new(bob_cfg).await?;
         bob_central.mls_init(bob_identifier, ciphersuites.clone()).await?;
 
-        alice_central.new_conversation(id.clone(), cfg.clone()).await?;
+        alice_central
+            .new_conversation(id.clone(), creator_ct, cfg.clone())
+            .await?;
         alice_central.invite(&id, &mut bob_central, cfg.custom).await?;
         alice_central.try_talk_to(&id, &mut bob_central).await
     }

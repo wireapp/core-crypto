@@ -146,6 +146,9 @@ pub enum CryptoError {
     /// Client presented an invalid identity
     #[error("Client presented an invalid identity")]
     InvalidIdentity,
+    /// MLS Client was not initialized the right way
+    #[error("MLS Client was not initialized the right way")]
+    IdentityInitializationError,
     /// Parent group cannot be found
     #[error("The specified parent group has not been found in the keystore")]
     ParentGroupNotFound,

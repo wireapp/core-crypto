@@ -80,12 +80,13 @@ test("can use pgs enums", async () => {
   const [ctx, page] = await initBrowser();
 
   const [PublicGroupStateEncryptionType, RatchetTreeType] = await page.evaluate(async () => {
-    const { CoreCrypto, Ciphersuite, PublicGroupStateEncryptionType, RatchetTreeType } = await import ("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite, CredentialType, PublicGroupStateEncryptionType, RatchetTreeType } = await import ("./corecrypto.js");
 
     window.PublicGroupStateEncryptionType = PublicGroupStateEncryptionType;
     window.RatchetTreeType = RatchetTreeType;
     window.CoreCrypto = CoreCrypto;
     window.Ciphersuite = Ciphersuite;
+    window.CredentialType = CredentialType.Basic;
 
     return [PublicGroupStateEncryptionType, RatchetTreeType];
   });
@@ -125,7 +126,7 @@ test("can use pgs enums", async () => {
     const encoder = new TextEncoder();
     const conversationId = encoder.encode("testConversation");
 
-    await cc.createConversation(conversationId);
+    await cc.createConversation(conversationId, window.CredentialType);
 
     const { publicGroupState } = await cc.addClientsToConversation(conversationId, [
       { id: encoder.encode(client2Config.clientId), kp },
@@ -230,9 +231,10 @@ test("externally generated clients", async () => {
   const [ctx, page] = await initBrowser();
 
   await page.evaluate(async () => {
-    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite, CredentialType } = await import("./corecrypto.js");
 
     const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+    const credentialType = CredentialType.Basic;
     const alice = await CoreCrypto.deferredInit({
       databaseName: "extgen alice test",
       key: "test",
@@ -258,7 +260,7 @@ test("externally generated clients", async () => {
 
     const conversationId = encoder.encode("testConversation");
 
-    await alice.createConversation(conversationId);
+    await alice.createConversation(conversationId, credentialType);
 
     const memberAdded = await alice.addClientsToConversation(conversationId, [
       { id: encoder.encode("bob"), kp: bobKp },
@@ -374,9 +376,10 @@ test("encrypt message", async () => {
   const [ctx, page] = await initBrowser();
 
   const msgLen = await page.evaluate(async () => {
-    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite, CredentialType } = await import("./corecrypto.js");
 
     const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+    const credentialType = CredentialType.Basic;
     const cc = await CoreCrypto.init({
       databaseName: "encrypt message",
       key: "test",
@@ -388,7 +391,7 @@ test("encrypt message", async () => {
 
     const conversationId = encoder.encode("testConversation");
 
-    await cc.createConversation(conversationId);
+    await cc.createConversation(conversationId, credentialType);
 
     const encryptedMessage = await cc.encryptMessage(
       conversationId,
@@ -437,9 +440,10 @@ test("roundtrip message", async () => {
   kp = Uint8Array.from(Object.values(kp));
 
   let [welcome, message] = await page.evaluate(async (kp, messageText, conversationId, clientId2) => {
-    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite, CredentialType } = await import("./corecrypto.js");
 
     const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+    const credentialType = CredentialType.Basic;
     const config = {
         databaseName: "roundtrip message test 1",
         key: "test",
@@ -453,7 +457,7 @@ test("roundtrip message", async () => {
 
     const conversationIdBuffer = encoder.encode(conversationId);
 
-    await cc.createConversation(conversationIdBuffer);
+    await cc.createConversation(conversationIdBuffer, credentialType);
 
     const memberAdded = await cc.addClientsToConversation(conversationIdBuffer, [
       { id: encoder.encode(clientId2), kp: Uint8Array.from(Object.values(kp)) },
@@ -525,9 +529,10 @@ test("callbacks default to false when not async", async () => {
   const [ctx, page] = await initBrowser({ captureLogs: false });
 
   const result = await page.evaluate(async () => {
-    const { CoreCrypto, Ciphersuite, ExternalProposalType } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite, CredentialType, ExternalProposalType } = await import("./corecrypto.js");
 
     const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+    const credentialType = CredentialType.Basic;
     const client1Config = {
       databaseName: "test cb",
       key: "test",
@@ -565,7 +570,7 @@ test("callbacks default to false when not async", async () => {
 
     const conversationId = encoder.encode("Test conversation");
 
-    await cc.createConversation(conversationId);
+    await cc.createConversation(conversationId, credentialType);
 
     try {
       const creationMessage = await cc.addClientsToConversation(conversationId, [
@@ -661,7 +666,7 @@ test("ext commits|proposals & callbacks", async () => {
 
     const conversationId = encoder.encode("Test conversation");
 
-    await cc.createConversation(conversationId);
+    await cc.createConversation(conversationId, credentialType);
 
     // ! This should trigger the authorize callback
     const creationMessage = await cc.addClientsToConversation(conversationId, [
