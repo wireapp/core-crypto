@@ -524,7 +524,7 @@ impl CoreCrypto<'_> {
             ),
         )?;
 
-        Ok(count.try_into()?)
+        Ok(count.try_into().unwrap_or(0))
     }
 
     /// See [core_crypto::mls::MlsCentral::new_conversation]
