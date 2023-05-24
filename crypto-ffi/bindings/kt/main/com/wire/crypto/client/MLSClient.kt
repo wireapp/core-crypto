@@ -58,7 +58,7 @@ interface MLSClient {
         val defaultCiphersuite = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
     }
 
-    fun mlsInit(clientId: String, ciphersuites: List<CiphersuiteName> = listOf(defaultCiphersuite))
+    fun mlsInit(clientId: String)
 
     fun getPublicKey(ciphersuite: CiphersuiteName): ByteArray
 
@@ -126,8 +126,8 @@ class MLSClientImpl(
     private val cc: CoreCrypto,
 ) : MLSClient {
 
-    override fun mlsInit(clientId: String, ciphersuites: List<CiphersuiteName>) {
-        cc.mlsInit(clientId.toUByteList(), ciphersuites)
+    override fun mlsInit(clientId: String) {
+        cc.mlsInit(clientId.toUByteList())
     }
 
     override fun getPublicKey(ciphersuite: CiphersuiteName): ByteArray {

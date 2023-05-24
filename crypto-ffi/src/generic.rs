@@ -332,9 +332,11 @@ impl CoreCrypto<'_> {
         path: &'s str,
         key: &'s str,
         client_id: &'s ClientId,
-        ciphersuites: Vec<CiphersuiteName>,
+        // TODO: uncomment when int conversion on aarch64 mystery solved
+        // ciphersuites: Vec<CiphersuiteName>,
         entropy_seed: Option<Vec<u8>>,
     ) -> CryptoResult<Self> {
+        let ciphersuites = vec![CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519];
         let executor = async_executor::Executor::new();
         let ciphersuites = ciphersuites.into_iter().map(Into::into).collect();
         let configuration = MlsCentralConfiguration::try_new(
@@ -359,9 +361,11 @@ impl CoreCrypto<'_> {
     pub fn deferred_init<'s>(
         path: &'s str,
         key: &'s str,
-        ciphersuites: Vec<CiphersuiteName>,
+        // TODO: uncomment when int conversion on aarch64 mystery solved
+        // ciphersuites: Vec<CiphersuiteName>,
         entropy_seed: Option<Vec<u8>>,
     ) -> CryptoResult<Self> {
+        let ciphersuites = vec![CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519];
         let executor = async_executor::Executor::new();
         let ciphersuites = ciphersuites.into_iter().map(Into::into).collect();
         let configuration =
@@ -377,7 +381,13 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::MlsCentral::mls_init]
-    pub fn mls_init(&self, client_id: &ClientId, ciphersuites: Vec<CiphersuiteName>) -> CryptoResult<()> {
+    pub fn mls_init(
+        &self,
+        client_id: &ClientId,
+        // TODO: uncomment when int conversion on aarch64 mystery solved
+        // ciphersuites: Vec<CiphersuiteName>
+    ) -> CryptoResult<()> {
+        let ciphersuites = vec![CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519];
         let ciphersuites = ciphersuites.into_iter().map(Into::into).collect();
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -390,7 +400,12 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::mls_generate_keypairs]
-    pub fn mls_generate_keypairs(&self, ciphersuites: Vec<CiphersuiteName>) -> CryptoResult<Vec<Vec<u8>>> {
+    pub fn mls_generate_keypairs(
+        &self,
+        // TODO: uncomment when int conversion on aarch64 mystery solved
+        // ciphersuites: Vec<CiphersuiteName>
+    ) -> CryptoResult<Vec<Vec<u8>>> {
+        let ciphersuites = vec![CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519];
         let ciphersuites = ciphersuites.into_iter().map(Into::into).collect();
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -407,8 +422,10 @@ impl CoreCrypto<'_> {
         &self,
         client_id: &ClientId,
         signature_public_keys: Vec<Vec<u8>>,
-        ciphersuites: Vec<CiphersuiteName>,
+        // TODO: uncomment when int conversion on aarch64 mystery solved
+        // ciphersuites: Vec<CiphersuiteName>,
     ) -> CryptoResult<()> {
+        let ciphersuites = vec![CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519];
         let ciphersuites = ciphersuites.into_iter().map(Into::into).collect();
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
