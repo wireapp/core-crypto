@@ -2249,6 +2249,26 @@ impl CoreCrypto {
             .err_into(),
         )
     }
+
+    /// Returns [`WasmCryptoResult<bool>`]
+    ///
+    /// see [core_crypto::mls::MlsCentral::e2ei_is_degraded]
+    pub fn e2ei_is_degraded(&self, conversation_id: Box<[u8]>) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                WasmCryptoResult::Ok(
+                    this.write()
+                        .await
+                        .e2ei_is_degraded(&conversation_id.into())
+                        .await
+                        .map_err(CoreCryptoError::from)?
+                        .into(),
+                )
+            }
+            .err_into(),
+        )
+    }
 }
 
 #[derive(Debug)]

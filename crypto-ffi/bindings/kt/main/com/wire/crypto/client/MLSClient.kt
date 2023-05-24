@@ -118,6 +118,8 @@ interface MLSClient {
     ): CommitBundle
 
     fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
+
+    fun e2eiIsDegraded(groupId: MLSGroupId): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -255,6 +257,10 @@ class MLSClientImpl(
 
     override fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray {
         return cc.exportSecretKey(groupId.toUByteList(), keyLength).toByteArray()
+    }
+
+    override fun e2eiIsDegraded(groupId: MLSGroupId): Boolean {
+        return cc.e2eiIsDegraded(groupId.toUByteList())
     }
 
     companion object {

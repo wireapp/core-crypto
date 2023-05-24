@@ -341,6 +341,22 @@ CAdIObqPoNL5MJo=
         cc.e2eiMlsClient(enrollment, certificateChain)
     }
 
+    @Test
+    fun `conversation should be degraded when at least 1 of the members uses a Basic credential`() {
+        val aliceClient = createClient(ALICE1)
+        val bobClient = createClient(BOB1)
+
+        val aliceKp = aliceClient.generateKeyPackages(CIPHERSUITE, 1).first()
+        val aliceMember = listOf(ALICE1 to aliceKp)
+        bobClient.createConversation(MLS_CONVERSATION_ID, MlsCredentialType.BASIC)
+        val welcome = bobClient.addMember(MLS_CONVERSATION_ID, aliceMember)?.welcome!!
+        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+        val conversationId = aliceClient.processWelcomeMessage(welcome)
+
+        assertTrue { aliceClient.e2eiIsDegraded(conversationId) }
+        assertTrue { bobClient.e2eiIsDegraded(conversationId) }
+    }
+
     companion object {
         val CIPHERSUITE = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
         val CREDENTIAL_TYPE = MlsCredentialType.BASIC

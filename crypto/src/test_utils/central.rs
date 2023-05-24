@@ -14,17 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::mls::credential::ext::CredentialExt;
+use crate::prelude::{CertificateBundle, MlsCiphersuite, MlsCredentialType};
 use crate::{
     prelude::{
-        ClientId, ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral, MlsConversation,
+        Client, ClientId, ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral, MlsConversation,
         MlsConversationDecryptMessage, MlsConversationInitBundle, MlsCustomConfiguration, MlsError,
     },
     test_utils::TestCase,
 };
+use core_crypto_keystore::entities::MlsIdentity;
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
-    KeyPackage, MlsCredentialType, PublicGroupState, QueuedProposal, SignaturePublicKey, StagedCommit,
-    VerifiablePublicGroupState, Welcome,
+    KeyPackage, PublicGroupState, QueuedProposal, SignaturePublicKey, StagedCommit, VerifiablePublicGroupState, Welcome,
 };
+use openmls_traits::key_store::ToKeyStoreValue;
+use openmls_traits::OpenMlsCryptoProvider;
 use wire_e2e_identity::prelude::WireIdentityReader;
 
 impl MlsCentral {
@@ -216,7 +221,7 @@ impl MlsCentral {
         let cb = mls_client.find_credential_bundle(cs, ct).unwrap();
         let sender_credential = cb.credential();
 
-        if let MlsCredentialType::X509(openmls::prelude::MlsCertificate {
+        if let openmls::prelude::MlsCredentialType::X509(openmls::prelude::MlsCertificate {
             identity: dup_client_id,
             cert_chain,
         }) = &sender_credential.credential
@@ -230,5 +235,33 @@ impl MlsCentral {
             assert_eq!(decr_identity.display_name, identity.display_name);
             assert_eq!(decr_identity.domain, identity.domain);
         }
+    }
+}
+
+impl Client {
+    #[cfg(test)]
+    pub async fn init_x509_credential_bundle_if_missing(
+        &mut self,
+        backend: &MlsCryptoProvider,
+        cs: MlsCiphersuite,
+        cb: CertificateBundle,
+    ) -> CryptoResult<()> {
+        if self
+            .identities
+            .find_credential_bundle(cs, MlsCredentialType::X509)
+            .is_none()
+        {
+            let cb = Self::new_x509_credential_bundle(cb)?;
+            let identity = MlsIdentity {
+                id: self.id().to_string(),
+                ciphersuite: cs.into(),
+                credential_type: MlsCredentialType::X509 as u8,
+                signature: cb.keystore_key()?,
+                credential: cb.to_key_store_value().map_err(MlsError::from)?,
+            };
+            backend.key_store().save(identity).await?;
+            self.identities.push_credential_bundle(cs, cb)?;
+        }
+        Ok(())
     }
 }

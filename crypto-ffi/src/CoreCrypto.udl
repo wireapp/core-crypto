@@ -336,6 +336,9 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     WireE2eIdentity e2ei_enrollment_stash_pop(sequence<u8> handle);
+
+    [Throws=CryptoError]
+    boolean e2ei_is_degraded(ConversationId conversation_id);
 };
 
 [Error]

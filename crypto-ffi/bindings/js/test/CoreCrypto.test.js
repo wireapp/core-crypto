@@ -1056,3 +1056,34 @@ test("end-to-end-identity", async () => {
   await page.close();
   await ctx.close();
 });
+
+test("e2ei is conversation degraded", async () => {
+  const [ctx, page] = await initBrowser();
+
+  const isDegraded = await page.evaluate(async () => {
+    const { CoreCrypto, Ciphersuite, CredentialType } = await import("./corecrypto.js");
+
+    const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+    const credentialType = CredentialType.Basic;
+    const cc = await CoreCrypto.init({
+      databaseName: "is degraded",
+      key: "test",
+      ciphersuites: [ciphersuite],
+      clientId: "test",
+    });
+
+    const encoder = new TextEncoder();
+    const conversationId = encoder.encode("degradedConversation");
+    await cc.createConversation(conversationId, credentialType);
+
+    const isDegraded = await cc.e2eiIsDegraded(conversationId);
+
+    await cc.wipe();
+    return isDegraded;
+  });
+
+  expect(isDegraded).toBe(true);
+
+  await page.close();
+  await ctx.close();
+});

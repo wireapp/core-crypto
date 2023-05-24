@@ -45,7 +45,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 #[derive(Debug, Clone)]
 pub struct Client {
     id: ClientId,
-    identities: ClientIdentities,
+    pub(crate) identities: ClientIdentities,
     keypackage_lifetime: std::time::Duration,
 }
 
@@ -329,32 +329,34 @@ impl Client {
         cs: MlsCiphersuite,
         ct: MlsCredentialType,
     ) -> CryptoResult<&CredentialBundle> {
-        self.init_credential_bundle_when_missing(backend, cs, ct).await?;
+        if let MlsCredentialType::Basic = ct {
+            self.init_basic_credential_bundle_if_missing(backend, cs).await?;
+        }
         self.find_credential_bundle(cs, ct)
     }
 
-    async fn init_credential_bundle_when_missing(
+    pub(crate) async fn init_basic_credential_bundle_if_missing(
         &mut self,
         backend: &MlsCryptoProvider,
         cs: MlsCiphersuite,
-        ct: MlsCredentialType,
     ) -> CryptoResult<()> {
-        match (ct, self.identities.find_credential_bundle(cs, ct)) {
-            (MlsCredentialType::Basic, None) => {
-                let cb = Self::new_basic_credential_bundle(self.id(), cs, backend)?;
-                let identity = MlsIdentity {
-                    id: self.id().to_string(),
-                    ciphersuite: cs.into(),
-                    credential_type: MlsCredentialType::Basic as u8,
-                    signature: cb.keystore_key()?,
-                    credential: cb.to_key_store_value().map_err(MlsError::from)?,
-                };
-                backend.key_store().save(identity).await?;
-                self.identities.push_credential_bundle(cs, cb)?;
-                Ok(())
-            }
-            _ => Ok(()),
+        if self
+            .identities
+            .find_credential_bundle(cs, MlsCredentialType::Basic)
+            .is_none()
+        {
+            let cb = Self::new_basic_credential_bundle(self.id(), cs, backend)?;
+            let identity = MlsIdentity {
+                id: self.id().to_string(),
+                ciphersuite: cs.into(),
+                credential_type: MlsCredentialType::Basic as u8,
+                signature: cb.keystore_key()?,
+                credential: cb.to_key_store_value().map_err(MlsError::from)?,
+            };
+            backend.key_store().save(identity).await?;
+            self.identities.push_credential_bundle(cs, cb)?;
         }
+        Ok(())
     }
 
     pub(crate) fn find_credential_bundle(
