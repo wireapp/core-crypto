@@ -35,8 +35,7 @@ class CoreCryptoCentral(private val rootDir: String, databaseKey: String) {
 
     init {
         File(rootDir).mkdirs()
-        val ciphersuites = listOf(CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519)
-        cc = CoreCrypto.deferredInit(path, databaseKey, ciphersuites, null)
+        cc = CoreCrypto.deferredInit(path, databaseKey, null)
         cc.setCallbacks(Callbacks())
     }
 

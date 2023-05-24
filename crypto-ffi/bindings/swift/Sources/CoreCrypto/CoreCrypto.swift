@@ -477,30 +477,30 @@ public class CoreCryptoWrapper {
     /// 2. ``clientId`` should stay consistent as it will be verified against the stored signature & identity to validate the persisted credential
     /// 3. ``key`` should be appropriately stored in a secure location (i.e. WebCrypto private key storage)
     ///
-    public init(path: String, key: String, clientId: ClientId, ciphersuites: [CoreCryptoSwift.CiphersuiteName], entropySeed: [UInt8]?) throws {
-        self.coreCrypto = try CoreCrypto(path: path, key: key, clientId: clientId, ciphersuites: ciphersuites, entropySeed: entropySeed)
+    public init(path: String, key: String, clientId: ClientId, /* ciphersuites: [CoreCryptoSwift.CiphersuiteName], */ entropySeed: [UInt8]?) throws {
+        self.coreCrypto = try CoreCrypto(path: path, key: key, clientId: clientId, /* ciphersuites: ciphersuites, */ entropySeed: entropySeed)
     }
 
     /// Almost identical to ```CoreCrypto/init``` but allows a 2 phase initialization of MLS.First, calling this will
     /// set up the keystore and will allow generating proteus prekeys.Then, those keys can be traded for a clientId.
     /// Use this clientId to initialize MLS with ```CoreCrypto/mlsInit```.
-    public static func deferredInit(path: String, key: String, ciphersuites: [CoreCryptoSwift.CiphersuiteName], entropySeed: [UInt8]?) throws -> CoreCrypto {
-        try CoreCrypto.deferredInit(path: path, key: key, ciphersuites: ciphersuites, entropySeed: entropySeed)
+    public static func deferredInit(path: String, key: String, /* ciphersuites: [CoreCryptoSwift.CiphersuiteName], */ entropySeed: [UInt8]?) throws -> CoreCrypto {
+        try CoreCrypto.deferredInit(path: path, key: key, /* ciphersuites: ciphersuites, */ entropySeed: entropySeed)
     }
 
     /// Use this after ```CoreCrypto/deferredInit``` when you have a clientId. It initializes MLS.
     ///
     /// - parameter clientId: client identifier
-    public func mlsInit(clientId: ClientId, ciphersuites: [CoreCryptoSwift.CiphersuiteName]) throws {
-        try self.coreCrypto.mlsInit(clientId: clientId, ciphersuites: ciphersuites)
+    public func mlsInit(clientId: ClientId/* , ciphersuites: [CoreCryptoSwift.CiphersuiteName] */) throws {
+        try self.coreCrypto.mlsInit(clientId: clientId/* , ciphersuites: ciphersuites */)
     }
 
     /// Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID.
     /// This method is designed to be used in conjunction with ```CoreCrypto/mlsInitWithClientId``` and represents the first step in this process
     ///
     /// - returns: the TLS-serialized identity key (i.e. the signature keypair's public key)
-    public func mlsGenerateKeypairs(ciphersuites: [CoreCryptoSwift.CiphersuiteName]) throws -> [[UInt8]] {
-        try self.coreCrypto.mlsGenerateKeypairs(ciphersuites: ciphersuites)
+    public func mlsGenerateKeypairs(/* ciphersuites: [CoreCryptoSwift.CiphersuiteName] */) throws -> [[UInt8]] {
+        try self.coreCrypto.mlsGenerateKeypairs(/* ciphersuites: ciphersuites */)
     }
 
     /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
@@ -509,8 +509,8 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter clientId: The newly allocated Client ID from the MLS Authentication Service
     /// - parameter signaturePublicKey: The public key you obtained at step 1, for authentication purposes
-    public func mlsInitWithClientId(clientId: ClientId, signaturePublicKeys: [[UInt8]], ciphersuites: [CoreCryptoSwift.CiphersuiteName]) throws {
-        try self.coreCrypto.mlsInitWithClientId(clientId: clientId, signaturePublicKeys: signaturePublicKeys, ciphersuites: ciphersuites)
+    public func mlsInitWithClientId(clientId: ClientId, signaturePublicKeys: [[UInt8]]/* , ciphersuites: [CoreCryptoSwift.CiphersuiteName] */) throws {
+        try self.coreCrypto.mlsInitWithClientId(clientId: clientId, signaturePublicKeys: signaturePublicKeys/* , ciphersuites: ciphersuites */)
     }
 
     /// `CoreCrypto` is supposed to be a singleton. Knowing that, it does some optimizations by

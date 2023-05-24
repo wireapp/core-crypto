@@ -157,19 +157,19 @@ callback interface CoreCryptoCallbacks {
 
 interface CoreCrypto {
     [Throws=CryptoError, Name=new]
-    constructor([ByRef] string path, [ByRef] string key, [ByRef] ClientId client_id, sequence<CiphersuiteName> ciphersuites, sequence<u8>? entropy_seed);
+    constructor([ByRef] string path, [ByRef] string key, [ByRef] ClientId client_id, sequence<u8>? entropy_seed);
 
     [Throws=CryptoError, Name=deferred_init]
-    constructor([ByRef] string path, [ByRef] string key, sequence<CiphersuiteName> ciphersuites, sequence<u8>? entropy_seed);
+    constructor([ByRef] string path, [ByRef] string key, sequence<u8>? entropy_seed);
 
     [Throws=CryptoError]
-    void mls_init([ByRef] ClientId client_id, sequence<CiphersuiteName> ciphersuites);
+    void mls_init([ByRef] ClientId client_id);
 
     [Throws=CryptoError]
-    sequence<sequence<u8>> mls_generate_keypairs(sequence<CiphersuiteName> ciphersuites);
+    sequence<sequence<u8>> mls_generate_keypairs();
 
     [Throws=CryptoError]
-    void mls_init_with_client_id([ByRef] ClientId client_id, sequence<sequence<u8>> signature_public_keys, sequence<CiphersuiteName> ciphersuites);
+    void mls_init_with_client_id([ByRef] ClientId client_id, sequence<sequence<u8>> signature_public_keys);
 
     [Throws=CryptoError]
     void restore_from_disk();
