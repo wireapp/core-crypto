@@ -1048,6 +1048,19 @@ impl CoreCrypto<'_> {
             .map(std::sync::Arc::new)
             .map_err(|_| CryptoError::ImplementationError)
     }
+
+    /// See [core_crypto::MlsCentral::e2ei_is_degraded]
+    pub fn e2ei_is_degraded(&self, conversation_id: ConversationId) -> CryptoResult<bool> {
+        let is_degraded = future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .e2ei_is_degraded(&conversation_id),
+            ),
+        )?;
+        Ok(is_degraded)
+    }
 }
 
 #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]

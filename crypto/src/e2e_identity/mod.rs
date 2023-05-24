@@ -9,6 +9,7 @@ use crate::prelude::identifier::ClientIdentifier;
 use crate::prelude::{id::ClientId, CertificateBundle, MlsCentral, MlsCiphersuite};
 
 mod crypto;
+pub(crate) mod degraded;
 pub mod error;
 pub(crate) mod identity;
 pub(crate) mod stash;
