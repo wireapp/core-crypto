@@ -1,6 +1,4 @@
-use base64::Engine;
 use jwt_simple::prelude::*;
-use rand::random;
 use rusty_jwt_tools::prelude::*;
 use serde_json::json;
 use utils::keys::enrollments;
@@ -16,11 +14,10 @@ mod utils;
 fn e2e_api() {
     let prev_nonce = || utils::rand_base64_str(32);
     for (enrollment, backend_kp) in enrollments() {
-        let user_id = uuid::Uuid::new_v4();
-        let user_id = base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(user_id.to_string());
-        let client_id = random::<u64>();
+        let user_id = "OTcwOGYzNTk3NjNmNDk4Mzk0OTMxYjE0YTAwODdmZWE";
+        let client_id = "3238c2a01f3de75a";
         let domain = "wire.org";
-        let qualified_client_id = format!("{user_id}:{client_id:x}@{domain}");
+        let qualified_client_id = format!("{user_id}:{client_id}@{domain}");
 
         let display_name = "Alice Smith".to_string();
         let qualified_handle = "alice_wire";
@@ -89,7 +86,7 @@ fn e2e_api() {
               "identifiers": [
                 {
                   "type": "wireapp-id",
-                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjJiYTRjMTIyODJjNDY5YmE5NGZmMjhhNjFkODA0Njk/d2ba2c1a57588ee4@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=OTcwOGYzNTk3NjNmNDk4Mzk0OTMxYjE0YTAwODdmZWE/3238c2a01f3de75a@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
                 }
               ],
               "authorizations": [
@@ -131,12 +128,12 @@ fn e2e_api() {
                   "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
                   "status": "pending",
                   "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
-                  "target": "https://wire.com/clients/d2ba2c1a57588ee4/access-token"
+                  "target": "https://wire.com/clients/3238c2a01f3de75a/access-token"
                 }
               ],
               "identifier": {
                 "type": "wireapp-id",
-                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjJiYTRjMTIyODJjNDY5YmE5NGZmMjhhNjFkODA0Njk/d2ba2c1a57588ee4@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=OTcwOGYzNTk3NjNmNDk4Mzk0OTMxYjE0YTAwODdmZWE/3238c2a01f3de75a@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
               }
             });
             let authz = enrollment.acme_new_authz_response(resp).unwrap();
@@ -234,7 +231,7 @@ fn e2e_api() {
               "identifiers": [
                 {
                   "type": "wireapp-id",
-                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjJiYTRjMTIyODJjNDY5YmE5NGZmMjhhNjFkODA0Njk/d2ba2c1a57588ee4@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=OTcwOGYzNTk3NjNmNDk4Mzk0OTMxYjE0YTAwODdmZWE/3238c2a01f3de75a@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
                 }
               ],
               "authorizations": [
@@ -262,7 +259,7 @@ fn e2e_api() {
               "identifiers": [
                 {
                   "type": "wireapp-id",
-                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjJiYTRjMTIyODJjNDY5YmE5NGZmMjhhNjFkODA0Njk/d2ba2c1a57588ee4@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=OTcwOGYzNTk3NjNmNDk4Mzk0OTMxYjE0YTAwODdmZWE/3238c2a01f3de75a@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
                 }
               ],
               "authorizations": [
@@ -283,18 +280,18 @@ fn e2e_api() {
                 .unwrap();
 
             let resp = r#"-----BEGIN CERTIFICATE-----
-MIICLjCCAdSgAwIBAgIQIi6jHWSEF/LHAkiyoiSHbjAKBggqhkjOPQQDAjAuMQ0w
+MIICIjCCAcigAwIBAgIQfIQL73fDuFXiFa/H7aWcyzAKBggqhkjOPQQDAjAuMQ0w
 CwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3aXJlIEludGVybWVkaWF0ZSBDQTAeFw0y
-MzA0MDUwOTI2NThaFw0yMzA0MDUxMDI2NThaMCkxETAPBgNVBAoTCHdpcmUuY29t
-MRQwEgYDVQQDEwtBbGljZSBTbWl0aDAqMAUGAytlcAMhAGzbFXHk2ngUGpBYzabE
-AtDJIefbX1/wDUSDJbEL/nJNo4IBBjCCAQIwDgYDVR0PAQH/BAQDAgeAMB0GA1Ud
-JQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAdBgNVHQ4EFgQUhifYTPG7M3pyQMrz
-HYmakvfDG80wHwYDVR0jBBgwFoAUHPSH1n7X87LAYJnc+cFG2a3ZAQ4wcgYDVR0R
-BGswaYZQaW06d2lyZWFwcD1OamhsTXpJeE9XRmpPRFJpTkRBd1lqazBaR0ZoWkRB
-Mk56RXhOVEV5TlRnLzZjMTg2NmY1Njc2MTZmMzFAd2lyZS5jb22GFWltOndpcmVh
-cHA9YWxpY2Vfd2lyZTAdBgwrBgEEAYKkZMYoQAEEDTALAgEGBAR3aXJlBAAwCgYI
-KoZIzj0EAwIDSAAwRQIhAKY0Zs8SYwS7mFFenPDoCDHPQbCbV9VdvYpBQncOFD5K
-AiAisX68Di4B0dN059YsVDXpM0drnkrVTRKHV+F+ipDjZQ==
+MzA1MjMxNTE2NDVaFw0yMzA1MjMxNjE2NDVaMCkxETAPBgNVBAoTCHdpcmUuY29t
+MRQwEgYDVQQDEwtBbGljZSBTbWl0aDAqMAUGAytlcAMhAM+x/mumunUoxPgFwCU7
+BjF0CvMz2w6f+LYBnocnMavao4H7MIH4MA4GA1UdDwEB/wQEAwIHgDATBgNVHSUE
+DDAKBggrBgEFBQcDAjAdBgNVHQ4EFgQU4AWR1uY0FHNxkHlAjLv6B3wTLl0wHwYD
+VR0jBBgwFoAUHdrTUbdzTf1nboZujI3ZoQGdB7EwcgYDVR0RBGswaYYVaW06d2ly
+ZWFwcD1hbGljZV93aXJlhlBpbTp3aXJlYXBwPU9UY3dPR1l6TlRrM05qTm1ORGs0
+TXprME9UTXhZakUwWVRBd09EZG1aV0UvMzIzOGMyYTAxZjNkZTc1YUB3aXJlLmNv
+bTAdBgwrBgEEAYKkZMYoQAEEDTALAgEGBAR3aXJlBAAwCgYIKoZIzj0EAwIDSAAw
+RQIgB/4pxnrKgCkehd9toCiLRHanEyscBbhufeUELT5urCYCIQC9D1LWQDnXfmp1
+6AxVTHOAg61xCRrLAmqWUo/Lx0ANMA==
 -----END CERTIFICATE-----
 -----BEGIN CERTIFICATE-----
 MIIBtzCCAV6gAwIBAgIQPbElEJQ58HlbQf7bqrJjXTAKBggqhkjOPQQDAjAmMQ0w
