@@ -7,11 +7,24 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.10.0] - 2023-05-25
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.10.0" unreleased=true}}
+</details>
+
+* **[BREAKING]**: creating a MLS group was consuming an existing KeyPackage which could lead to inconsistencies if the
+former isn't pruned on the backend side. As a consequence, `createConversation()` now expects the CredentialType to pick the right credential the author wants to join the group with.
+* **[BREAKING]**: fixed unsound bug happening on aarch64 Android devices because of lowering a List of enumerations across
+the FFI. Still uncertain about the root cause but to move on all the parameters like: `ciphersuite: List<Ciphersuite>` in the public API have been replaced with a default value
+* Fixed Android FFI bug in `e2eiMlsInit` where a reference counter had one too many reference when trying to destroy it
+
 ## [0.9.2] - 2023-05-22
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.9.2" unreleased=true}}
+{{git-cliff tag="v0.9.2"}}
 </details>
 
 * Fixed migrations not running because of a mistakenly added table in an older migration version
