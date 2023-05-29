@@ -33,6 +33,51 @@ cfg_if::cfg_if! {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Ciphersuite(CiphersuiteName);
+
+impl From<CiphersuiteName> for Ciphersuite {
+    fn from(cs: CiphersuiteName) -> Self {
+        Self(cs)
+    }
+}
+
+impl From<Ciphersuite> for CiphersuiteName {
+    fn from(cs: Ciphersuite) -> Self {
+        cs.0
+    }
+}
+
+impl From<Ciphersuite> for MlsCiphersuite {
+    fn from(cs: Ciphersuite) -> Self {
+        cs.0.into()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Ciphersuites(Vec<CiphersuiteName>);
+
+impl From<Vec<CiphersuiteName>> for Ciphersuites {
+    fn from(cs: Vec<CiphersuiteName>) -> Self {
+        Self(cs)
+    }
+}
+
+impl From<Ciphersuites> for Vec<CiphersuiteName> {
+    fn from(cs: Ciphersuites) -> Self {
+        cs.0
+    }
+}
+
+impl<'a> From<&'a Ciphersuites> for Vec<MlsCiphersuite> {
+    fn from(cs: &'a Ciphersuites) -> Self {
+        cs.0.iter().fold(Vec::with_capacity(cs.0.len()), |mut acc, c| {
+            acc.push((*c).into());
+            acc
+        })
+    }
+}
+
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ProteusAutoPrekeyBundle {
@@ -227,24 +272,21 @@ impl TryInto<ConversationMember> for Invitee {
 #[derive(Debug, Clone)]
 /// See [core_crypto::prelude::MlsConversationConfiguration]
 pub struct ConversationConfiguration {
-    pub ciphersuite: Option<CiphersuiteName>,
+    pub ciphersuite: Ciphersuite,
     pub external_senders: Vec<Vec<u8>>,
     pub custom: CustomConfiguration,
 }
 
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     type Error = CryptoError;
-    fn try_into(mut self) -> CryptoResult<MlsConversationConfiguration> {
+    fn try_into(self) -> CryptoResult<MlsConversationConfiguration> {
         let mut cfg = MlsConversationConfiguration {
             custom: self.custom.into(),
+            ciphersuite: self.ciphersuite.into(),
             ..Default::default()
         };
 
         cfg.set_raw_external_senders(self.external_senders);
-
-        if let Some(ciphersuite) = self.ciphersuite.take() {
-            cfg.ciphersuite = ciphersuite.into();
-        }
 
         Ok(cfg)
     }
@@ -332,19 +374,15 @@ impl CoreCrypto<'_> {
         path: &'s str,
         key: &'s str,
         client_id: &'s ClientId,
-        // TODO: uncomment when int conversion on aarch64 mystery solved
-        // ciphersuites: Vec<CiphersuiteName>,
-        entropy_seed: Option<Vec<u8>>,
+        ciphersuites: &'s Ciphersuites,
     ) -> CryptoResult<Self> {
-        let ciphersuites = vec![CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519];
         let executor = async_executor::Executor::new();
-        let ciphersuites = ciphersuites.into_iter().map(Into::into).collect();
         let configuration = MlsCentralConfiguration::try_new(
             path.into(),
             key.into(),
             Some(client_id.clone()),
-            ciphersuites,
-            entropy_seed,
+            ciphersuites.into(),
+            None,
         )?;
 
         let central = future::block_on(executor.run(MlsCentral::try_new(configuration)))?;
@@ -358,18 +396,9 @@ impl CoreCrypto<'_> {
 
     /// Similar to [CoreCrypto::new] but defers MLS initialization. It can be initialized later
     /// with [CoreCrypto::mls_init].
-    pub fn deferred_init<'s>(
-        path: &'s str,
-        key: &'s str,
-        // TODO: uncomment when int conversion on aarch64 mystery solved
-        // ciphersuites: Vec<CiphersuiteName>,
-        entropy_seed: Option<Vec<u8>>,
-    ) -> CryptoResult<Self> {
-        let ciphersuites = vec![CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519];
+    pub fn deferred_init<'s>(path: &'s str, key: &'s str, ciphersuites: &'s Ciphersuites) -> CryptoResult<Self> {
         let executor = async_executor::Executor::new();
-        let ciphersuites = ciphersuites.into_iter().map(Into::into).collect();
-        let configuration =
-            MlsCentralConfiguration::try_new(path.into(), key.into(), None, ciphersuites, entropy_seed)?;
+        let configuration = MlsCentralConfiguration::try_new(path.into(), key.into(), None, ciphersuites.into(), None)?;
 
         let central = future::block_on(executor.run(MlsCentral::try_new(configuration)))?;
         let central = std::sync::Arc::new(core_crypto::CoreCrypto::from(central).into());
@@ -381,38 +410,25 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::MlsCentral::mls_init]
-    pub fn mls_init(
-        &self,
-        client_id: &ClientId,
-        // TODO: uncomment when int conversion on aarch64 mystery solved
-        // ciphersuites: Vec<CiphersuiteName>
-    ) -> CryptoResult<()> {
-        let ciphersuites = vec![CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519];
-        let ciphersuites = ciphersuites.into_iter().map(Into::into).collect();
+    pub fn mls_init(&self, client_id: &ClientId, ciphersuites: &Ciphersuites) -> CryptoResult<()> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .mls_init(ClientIdentifier::Basic(client_id.clone()), ciphersuites),
+                    .mls_init(ClientIdentifier::Basic(client_id.clone()), ciphersuites.into()),
             ),
         )
     }
 
     /// See [core_crypto::mls::MlsCentral::mls_generate_keypairs]
-    pub fn mls_generate_keypairs(
-        &self,
-        // TODO: uncomment when int conversion on aarch64 mystery solved
-        // ciphersuites: Vec<CiphersuiteName>
-    ) -> CryptoResult<Vec<Vec<u8>>> {
-        let ciphersuites = vec![CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519];
-        let ciphersuites = ciphersuites.into_iter().map(Into::into).collect();
+    pub fn mls_generate_keypairs(&self, ciphersuites: &Ciphersuites) -> CryptoResult<Vec<Vec<u8>>> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .mls_generate_keypairs(ciphersuites),
+                    .mls_generate_keypairs(ciphersuites.into()),
             ),
         )
     }
@@ -422,17 +438,14 @@ impl CoreCrypto<'_> {
         &self,
         client_id: &ClientId,
         signature_public_keys: Vec<Vec<u8>>,
-        // TODO: uncomment when int conversion on aarch64 mystery solved
-        // ciphersuites: Vec<CiphersuiteName>,
+        ciphersuites: &Ciphersuites,
     ) -> CryptoResult<()> {
-        let ciphersuites = vec![CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519];
-        let ciphersuites = ciphersuites.into_iter().map(Into::into).collect();
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .mls_init_with_client_id(client_id.clone(), signature_public_keys, ciphersuites),
+                    .mls_init_with_client_id(client_id.clone(), signature_public_keys, ciphersuites.into()),
             ),
         )
     }
@@ -499,7 +512,7 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::client_public_key]
-    pub fn client_public_key(&self, ciphersuite: CiphersuiteName) -> CryptoResult<Vec<u8>> {
+    pub fn client_public_key(&self, ciphersuite: Ciphersuite) -> CryptoResult<Vec<u8>> {
         self.central
             .lock()
             .map_err(|_| CryptoError::LockPoisonError)?
@@ -507,11 +520,7 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::get_or_create_client_keypackages]
-    pub fn client_keypackages(
-        &self,
-        ciphersuite: CiphersuiteName,
-        amount_requested: u32,
-    ) -> CryptoResult<Vec<Vec<u8>>> {
+    pub fn client_keypackages(&self, ciphersuite: Ciphersuite, amount_requested: u32) -> CryptoResult<Vec<Vec<u8>>> {
         let kps = future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
@@ -531,7 +540,7 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::client_valid_key_packages_count]
-    pub fn client_valid_keypackages_count(&self, ciphersuite: CiphersuiteName) -> CryptoResult<u64> {
+    pub fn client_valid_keypackages_count(&self, ciphersuite: Ciphersuite) -> CryptoResult<u64> {
         let count = future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
@@ -778,7 +787,7 @@ impl CoreCrypto<'_> {
         &self,
         conversation_id: ConversationId,
         epoch: u64,
-        ciphersuite: CiphersuiteName,
+        ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<Vec<u8>> {
         Ok(future::block_on(
@@ -971,7 +980,7 @@ impl CoreCrypto<'_> {
         display_name: String,
         handle: String,
         expiry_days: u32,
-        ciphersuite: CiphersuiteName,
+        ciphersuite: Ciphersuite,
     ) -> CryptoResult<std::sync::Arc<WireE2eIdentity>> {
         self.central
             .lock()

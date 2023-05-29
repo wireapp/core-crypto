@@ -7,8 +7,8 @@ use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
 use crate::prelude::{
     config::{MlsConversationConfiguration, MlsCustomConfiguration},
     identifier::ClientIdentifier,
-    Client, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentralConfiguration,
-    MlsConversation, MlsCredentialType, MlsError,
+    CiphersuiteName, Client, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult,
+    MlsCentralConfiguration, MlsConversation, MlsCredentialType, MlsError,
 };
 
 pub(crate) mod client;
@@ -53,6 +53,16 @@ impl From<MlsCiphersuite> for Ciphersuite {
 impl From<MlsCiphersuite> for u16 {
     fn from(cs: MlsCiphersuite) -> Self {
         (&cs.0).into()
+    }
+}
+
+impl TryFrom<u16> for MlsCiphersuite {
+    type Error = CryptoError;
+
+    fn try_from(c: u16) -> CryptoResult<Self> {
+        Ok(CiphersuiteName::try_from(c)
+            .map_err(|_| CryptoError::ImplementationError)?
+            .into())
     }
 }
 

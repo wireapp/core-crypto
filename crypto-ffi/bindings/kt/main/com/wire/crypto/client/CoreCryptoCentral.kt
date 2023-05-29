@@ -1,10 +1,7 @@
 package com.wire.crypto.client
 
+import com.wire.crypto.*
 import com.wire.crypto.ClientId
-import com.wire.crypto.ConversationId
-import com.wire.crypto.CoreCrypto
-import com.wire.crypto.CoreCryptoCallbacks
-import com.wire.crypto.CiphersuiteName
 import java.io.File
 
 typealias EnrollmentHandle = ByteArray
@@ -35,7 +32,7 @@ class CoreCryptoCentral(private val rootDir: String, databaseKey: String) {
 
     init {
         File(rootDir).mkdirs()
-        cc = CoreCrypto.deferredInit(path, databaseKey, null)
+        cc = CoreCrypto.deferredInit(path, databaseKey, DEFAULT_CIPHERSUITES)
         cc.setCallbacks(Callbacks())
     }
 
@@ -48,7 +45,7 @@ class CoreCryptoCentral(private val rootDir: String, databaseKey: String) {
         displayName: String,
         handle: String,
         expiryDays: UInt,
-        ciphersuite: CiphersuiteName,
+        ciphersuite: Ciphersuite,
     ): E2EIClient {
         return E2EIClientImpl(cc.e2eiNewEnrollment(clientId, displayName, handle, expiryDays, ciphersuite))
     }
@@ -70,6 +67,9 @@ class CoreCryptoCentral(private val rootDir: String, databaseKey: String) {
 
     companion object {
         const val KEYSTORE_NAME = "keystore"
+        fun CiphersuiteName.lower() = (ordinal + 1).toUShort()
+        val DEFAULT_CIPHERSUITE = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
+        val DEFAULT_CIPHERSUITES = listOf(DEFAULT_CIPHERSUITE)
     }
 }
 
