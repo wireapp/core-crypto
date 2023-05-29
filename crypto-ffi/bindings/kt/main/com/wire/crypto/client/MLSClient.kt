@@ -19,6 +19,8 @@
 package com.wire.crypto.client
 
 import com.wire.crypto.*
+import com.wire.crypto.client.CoreCryptoCentral.Companion.DEFAULT_CIPHERSUITE
+import com.wire.crypto.client.CoreCryptoCentral.Companion.DEFAULT_CIPHERSUITES
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -54,17 +56,13 @@ class DecryptedMessageBundle(
 
 interface MLSClient {
 
-    companion object {
-        val defaultCiphersuite = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
-    }
-
     fun mlsInit(clientId: String)
 
-    fun getPublicKey(ciphersuite: CiphersuiteName): ByteArray
+    fun getPublicKey(ciphersuite: Ciphersuite): ByteArray
 
-    fun generateKeyPackages(ciphersuite: CiphersuiteName, amount: Int): List<ByteArray>
+    fun generateKeyPackages(ciphersuite: Ciphersuite, amount: Int): List<ByteArray>
 
-    fun validKeyPackageCount(ciphersuite: CiphersuiteName): ULong
+    fun validKeyPackageCount(ciphersuite: Ciphersuite): ULong
 
     fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle
 
@@ -75,7 +73,7 @@ interface MLSClient {
     fun joinConversation(
         groupId: MLSGroupId,
         epoch: ULong,
-        ciphersuite: CiphersuiteName,
+        ciphersuite: Ciphersuite,
         credentialType: MlsCredentialType
     ): HandshakeMessage
 
@@ -129,18 +127,18 @@ class MLSClientImpl(
 ) : MLSClient {
 
     override fun mlsInit(clientId: String) {
-        cc.mlsInit(clientId.toUByteList())
+        cc.mlsInit(clientId.toUByteList(), DEFAULT_CIPHERSUITES)
     }
 
-    override fun getPublicKey(ciphersuite: CiphersuiteName): ByteArray {
+    override fun getPublicKey(ciphersuite: Ciphersuite): ByteArray {
         return cc.clientPublicKey(ciphersuite).toUByteArray().asByteArray()
     }
 
-    override fun generateKeyPackages(ciphersuite: CiphersuiteName, amount: Int): List<ByteArray> {
+    override fun generateKeyPackages(ciphersuite: Ciphersuite, amount: Int): List<ByteArray> {
         return cc.clientKeypackages(ciphersuite, amount.toUInt()).map { it.toUByteArray().asByteArray() }
     }
 
-    override fun validKeyPackageCount(ciphersuite: CiphersuiteName): ULong {
+    override fun validKeyPackageCount(ciphersuite: Ciphersuite): ULong {
         return cc.clientValidKeypackagesCount(ciphersuite)
     }
 
@@ -159,7 +157,7 @@ class MLSClientImpl(
     override fun joinConversation(
         groupId: MLSGroupId,
         epoch: ULong,
-        ciphersuite: CiphersuiteName,
+        ciphersuite: Ciphersuite,
         credentialType: MlsCredentialType
     ): HandshakeMessage {
         return cc.newExternalAddProposal(
@@ -189,7 +187,7 @@ class MLSClientImpl(
 
     override fun createConversation(groupId: MLSGroupId, creatorCredentialType: MlsCredentialType, externalSenders: List<Ed22519Key>) {
         val conf = ConversationConfiguration(
-            MLSClient.defaultCiphersuite,
+            DEFAULT_CIPHERSUITE,
             externalSenders.map { it.toUByteList() },
             defaultGroupConfiguration
         )

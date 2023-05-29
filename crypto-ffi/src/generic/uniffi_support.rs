@@ -26,10 +26,7 @@ pub fn version() -> String {
 impl crate::UniffiCustomTypeConverter for ClientId {
     type Builtin = Vec<u8>;
 
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self>
-    where
-        Self: Sized,
-    {
+    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
         Ok(val.into())
     }
 
@@ -40,14 +37,43 @@ impl crate::UniffiCustomTypeConverter for ClientId {
 
 impl crate::UniffiCustomTypeConverter for ConversationId {
     type Builtin = Vec<u8>;
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self>
-    where
-        Self: Sized,
-    {
+    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
         Ok(val.to_vec())
     }
 
     fn from_custom(obj: Self) -> Self::Builtin {
         obj
+    }
+}
+
+impl crate::UniffiCustomTypeConverter for crate::Ciphersuite {
+    type Builtin = u16;
+
+    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
+        CiphersuiteName::try_from(val)
+            .map(Into::into)
+            .map_err(|_| CryptoError::ImplementationError.into())
+    }
+
+    fn from_custom(obj: Self) -> Self::Builtin {
+        (&obj.0).into()
+    }
+}
+
+impl crate::UniffiCustomTypeConverter for crate::Ciphersuites {
+    type Builtin = Vec<u16>;
+
+    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
+        val.iter().try_fold(Self(vec![]), |mut acc, c| -> uniffi::Result<Self> {
+            let cs = CiphersuiteName::try_from(*c)
+                .map(Into::into)
+                .map_err(|_| CryptoError::ImplementationError)?;
+            acc.0.push(cs);
+            Ok(acc)
+        })
+    }
+
+    fn from_custom(obj: Self) -> Self::Builtin {
+        obj.0.into_iter().map(|c| (&c).into()).collect()
     }
 }

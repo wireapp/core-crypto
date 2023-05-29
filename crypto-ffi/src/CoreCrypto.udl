@@ -41,6 +41,12 @@ enum MlsRatchetTreeType {
     "ByRef",
 };
 
+[Custom]
+typedef u16 Ciphersuite;
+
+[Custom]
+typedef sequence<u16> Ciphersuites;
+
 enum CiphersuiteName {
     "MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519",
     "MLS_128_DHKEMP256_AES128GCM_SHA256_P256",
@@ -134,7 +140,7 @@ dictionary ConversationInitBundle {
 };
 
 dictionary ConversationConfiguration {
-    CiphersuiteName? ciphersuite;
+    Ciphersuite ciphersuite;
     sequence<sequence<u8>> external_senders;
     CustomConfiguration custom;
 };
@@ -157,19 +163,19 @@ callback interface CoreCryptoCallbacks {
 
 interface CoreCrypto {
     [Throws=CryptoError, Name=new]
-    constructor([ByRef] string path, [ByRef] string key, [ByRef] ClientId client_id, sequence<u8>? entropy_seed);
+    constructor([ByRef] string path, [ByRef] string key, [ByRef] ClientId client_id, [ByRef] Ciphersuites ciphersuites);
 
     [Throws=CryptoError, Name=deferred_init]
-    constructor([ByRef] string path, [ByRef] string key, sequence<u8>? entropy_seed);
+    constructor([ByRef] string path, [ByRef] string key, [ByRef] Ciphersuites ciphersuites);
 
     [Throws=CryptoError]
-    void mls_init([ByRef] ClientId client_id);
+    void mls_init([ByRef] ClientId client_id, [ByRef] Ciphersuites ciphersuites);
 
     [Throws=CryptoError]
-    sequence<sequence<u8>> mls_generate_keypairs();
+    sequence<sequence<u8>> mls_generate_keypairs([ByRef] Ciphersuites ciphersuites);
 
     [Throws=CryptoError]
-    void mls_init_with_client_id([ByRef] ClientId client_id, sequence<sequence<u8>> signature_public_keys);
+    void mls_init_with_client_id([ByRef] ClientId client_id, sequence<sequence<u8>> signature_public_keys, [ByRef] Ciphersuites ciphersuites);
 
     [Throws=CryptoError]
     void restore_from_disk();
@@ -178,13 +184,13 @@ interface CoreCrypto {
     void set_callbacks(CoreCryptoCallbacks callbacks);
 
     [Throws=CryptoError]
-    sequence<u8> client_public_key(CiphersuiteName ciphersuite);
+    sequence<u8> client_public_key(Ciphersuite ciphersuite);
 
     [Throws=CryptoError]
-    sequence<sequence<u8>> client_keypackages(CiphersuiteName ciphersuite, u32 amount_requested);
+    sequence<sequence<u8>> client_keypackages(Ciphersuite ciphersuite, u32 amount_requested);
 
     [Throws=CryptoError]
-    u64 client_valid_keypackages_count(CiphersuiteName ciphersuite);
+    u64 client_valid_keypackages_count(Ciphersuite ciphersuite);
 
     [Throws=CryptoError]
     void create_conversation(ConversationId conversation_id, MlsCredentialType creator_credential_type, ConversationConfiguration config);
@@ -231,7 +237,7 @@ interface CoreCrypto {
     ProposalBundle new_remove_proposal(ConversationId conversation_id, ClientId client_id);
 
     [Throws=CryptoError]
-    sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch, CiphersuiteName ciphersuite, MlsCredentialType credential_type);
+    sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch, Ciphersuite ciphersuite, MlsCredentialType credential_type);
 
     [Throws=CryptoError]
     sequence<u8> new_external_remove_proposal(ConversationId conversation_id, u64 epoch, sequence<u8> key_package_ref);
@@ -326,7 +332,7 @@ interface CoreCrypto {
     u32 proteus_last_error_code();
 
     [Throws=CryptoError]
-    WireE2eIdentity e2ei_new_enrollment(string client_id, string display_name, string handle, u32 expiry_days, CiphersuiteName ciphersuite);
+    WireE2eIdentity e2ei_new_enrollment(string client_id, string display_name, string handle, u32 expiry_days, Ciphersuite ciphersuite);
 
     [Throws=CryptoError]
     void e2ei_mls_init(WireE2eIdentity enrollment, string certificate_chain);
