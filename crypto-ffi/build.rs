@@ -41,15 +41,9 @@ fn main() {
                 UDL_FILE.into(),
                 None,
                 vec!["swift"],
-                Some("./bindings/swift/lib/".into()),
+                Some("./bindings/swift/WireCoreCrypto/WireCoreCrypto".into()),
                 None,
                 false,
-            )
-            .unwrap();
-
-            std::fs::rename(
-                "./bindings/swift/lib/CoreCrypto.swift",
-                "./bindings/swift/Sources/CoreCryptoSwift/CoreCryptoSwift.swift",
             )
             .unwrap();
         } else if #[cfg(target_family = "wasm")] {

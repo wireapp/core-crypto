@@ -137,6 +137,15 @@ args = ["build", "--target", "aarch64-apple-ios-sim", "--features", "mobile", "-
 condition = { platforms = ["mac"] }
 dependencies = ["ios-device", "ios-simulator-x86", "ios-simulator-arm"]
 
+[tasks.ios-create-xcframework]
+condition = { platforms = ["mac"] }
+script = '''
+    cd bindings/swift
+
+    ./create-xcframework.sh
+'''
+dependencies = ["ios"]
+
 [tasks.ios-test-sim-build]
 condition = { platforms = ["mac"] }
 script = '''
