@@ -146,25 +146,6 @@ script = '''
 '''
 dependencies = ["ios"]
 
-[tasks.ios-test-sim-build]
-condition = { platforms = ["mac"] }
-script = '''
-    cd bindings/swift
-
-    swift build
-'''
-dependencies = ["create-swift-package"]
-
-[tasks.create-swift-package]
-condition = { platforms = ["mac"] }
-script = '''
-    cd bindings/swift
-
-    lipo -create -output ./lib/libcore_crypto_ffi.a \
-        ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a \
-        ../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a
-'''
-dependencies = ["ios"]
 
 ################################### Android ###################################
 
