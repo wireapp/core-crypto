@@ -7,11 +7,21 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.11.0] - 2023-05-31
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v0.11.0" unreleased=true}}
+</details>
+
+* **[BREAKING]**: fix Ciphersuite lowering for mobile FFI, using either a 16-bit integer (or a List of it) to lower those types across the FFI.
+* **[BREAKING]**: removed optional entropy_seed from public API only on mobile since it was not required there and was causing the aforementioned issue with list of ciphersuites.
+
 ## [0.10.0] - 2023-05-25
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.10.0" unreleased=true}}
+{{git-cliff tag="v0.10.0"}}
 </details>
 
 * **[BREAKING]**: creating a MLS group was consuming an existing KeyPackage which could lead to inconsistencies if the
