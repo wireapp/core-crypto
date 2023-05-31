@@ -7,6 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [0.11.0] - 2023-05-31
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Features
+
+- Add `e2ei_is_degraded` to flag a conversation as degraded when at least 1 member is not using a e2ei certificate
+
+</details>
+
+* **[BREAKING]**: fix Ciphersuite lowering for mobile FFI, using either a 16-bit integer (or a List of it) to lower those types across the FFI.
+* **[BREAKING]**: removed optional entropy_seed from public API only on mobile since it was not required there and was causing the aforementioned issue with list of ciphersuites.
+
 ## [0.10.0] - 2023-05-25
 
 <details>
@@ -22,18 +36,6 @@ Platform support legends:
 
 - [**breaking**] Hide everywhere `Vec<Ciphersuite>` appears in the public API since it seems to fail for obscure reasons on aarch64 Android devices. Undo when we have a better understanding of the root cause of this
 
-</details>
-
-* **[BREAKING]**: creating a MLS group was consuming an existing KeyPackage which could lead to inconsistencies if the
-former isn't pruned on the backend side. As a consequence, `createConversation()` now expects the CredentialType to pick the right credential the author wants to join the group with.
-* **[BREAKING]**: fixed unsound bug happening on aarch64 Android devices because of lowering a List of enumerations across
-the FFI. Still uncertain about the root cause but to move on all the parameters like: `ciphersuite: List<Ciphersuite>` in the public API have been replaced with a default value
-* Fixed Android FFI bug in `e2eiMlsInit` where a reference counter had one too many reference when trying to destroy it
-
-## [0.9.2] - 2023-05-22
-
-<details>
-    <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
@@ -43,14 +45,6 @@ the FFI. Still uncertain about the root cause but to move on all the parameters 
 
 - Release v0.9.2
 
-</details>
-
-* Fixed migrations not running because of a mistakenly added table in an older migration version
-
-## [0.9.1] - 2023-05-17
-
-<details>
-    <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
@@ -60,14 +54,6 @@ the FFI. Still uncertain about the root cause but to move on all the parameters 
 
 - Release v0.9.1
 
-</details>
-
-* Fixed excessive bloat in the FFI layer due to emitting rlibs
-
-## [0.9.0] - 2023-05-16
-
-<details>
-    <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
@@ -95,30 +81,11 @@ the FFI. Still uncertain about the root cause but to move on all the parameters 
 
 - Have interop runner verify the generic FFI
 
-</details>
-
-* First iteration of multi-ciphersuite support. The API now explicitly requires a Ciphersuite to be supplied anywhere where it's necessary. For now on you should only use the default one. Same thing for `MlsCredentialType`, use `Basic` whenever required
-* Allow persisting an e2e identity enrollment for web's needs
-* `check_order_response` & `finalize_response` now return the URL for where the next step's payload has to be sent
-* ACME challenges now have a "target" field which indicates the URL of the OAuth authorization and the access token endpoint
-
-## [0.8.2] - 2023-04-28
-
-<details>
-    <summary>git-conventional changelog</summary>
 
 ### Miscellaneous Tasks
 
 - Update bindings ([#312](https://github.com/wireapp/core-crypto/issues/312))
 
-</details>
-
-* build: fix Android packaging (again) by sourcing bindings
-
-## [0.8.1] - 2023-04-27
-
-<details>
-    <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
@@ -683,6 +650,104 @@ the FFI. Still uncertain about the root cause but to move on all the parameters 
 
 - Configure wire maven repository
 - Clean up gradle files
+
+</details>
+
+* **[BREAKING]**: creating a MLS group was consuming an existing KeyPackage which could lead to inconsistencies if the
+former isn't pruned on the backend side. As a consequence, `createConversation()` now expects the CredentialType to pick the right credential the author wants to join the group with.
+* **[BREAKING]**: fixed unsound bug happening on aarch64 Android devices because of lowering a List of enumerations across
+the FFI. Still uncertain about the root cause but to move on all the parameters like: `ciphersuite: List<Ciphersuite>` in the public API have been replaced with a default value
+* Fixed Android FFI bug in `e2eiMlsInit` where a reference counter had one too many reference when trying to destroy it
+
+## [0.9.2] - 2023-05-22
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- New table was mistakenly in an old migration file
+
+### Miscellaneous Tasks
+
+- Release v0.9.2
+
+</details>
+
+* Fixed migrations not running because of a mistakenly added table in an older migration version
+
+## [0.9.1] - 2023-05-17
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Size regression on FFI
+
+### Miscellaneous Tasks
+
+- Release v0.9.1
+
+</details>
+
+* Fixed excessive bloat in the FFI layer due to emitting rlibs
+
+## [0.9.0] - 2023-05-16
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Reload proteus sessions when `restore_from_disk` is called
+- Return finalize & certificate url
+
+### Features
+
+- Add persistence options to e2ei enrollment instance
+- [**breaking**] Enable multi ciphersuite and multi credential type support
+- [**breaking**] Support & expose "target" in ACME challenges
+
+### Miscellaneous Tasks
+
+- Fix clippy lints for wasm target
+
+### Refactor
+
+- Moved Client methods related to keypackage in a dedicated mod
+- Moved function `identity_key` into a trait
+- Replace `either` by a dedicated enum since after all there could be more than just 2 types of credentials
+- Move ClientId to dedicated mod
+
+### Testing
+
+- Have interop runner verify the generic FFI
+
+</details>
+
+* First iteration of multi-ciphersuite support. The API now explicitly requires a Ciphersuite to be supplied anywhere where it's necessary. For now on you should only use the default one. Same thing for `MlsCredentialType`, use `Basic` whenever required
+* Allow persisting an e2e identity enrollment for web's needs
+* `check_order_response` & `finalize_response` now return the URL for where the next step's payload has to be sent
+* ACME challenges now have a "target" field which indicates the URL of the OAuth authorization and the access token endpoint
+
+## [0.8.2] - 2023-04-28
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Miscellaneous Tasks
+
+- Update bindings ([#312](https://github.com/wireapp/core-crypto/issues/312))
+
+</details>
+
+* build: fix Android packaging (again) by sourcing bindings
+
+## [0.8.1] - 2023-04-27
+
+<details>
+    <summary>git-conventional changelog</summary>
 
 </details>
 
