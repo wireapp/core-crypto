@@ -17,6 +17,7 @@
 		16CDD1162A2636BB0073FB8E /* WireCoreCrypto.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WireCoreCrypto.h; sourceTree = "<group>"; };
 		16CDD11D2A26392C0073FB8E /* core_cryptoFFI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = core_cryptoFFI.h; sourceTree = "<group>"; };
 		16CDD11E2A26392C0073FB8E /* CoreCrypto.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CoreCrypto.swift; sourceTree = "<group>"; };
+		16CDD1212A29E0760073FB8E /* BuildSettings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = BuildSettings.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -33,6 +34,7 @@
 		16CDD1092A2636BB0073FB8E = {
 			isa = PBXGroup;
 			children = (
+				16CDD1212A29E0760073FB8E /* BuildSettings.xcconfig */,
 				16CDD1152A2636BB0073FB8E /* WireCoreCrypto */,
 				16CDD1142A2636BB0073FB8E /* Products */,
 			);
@@ -146,6 +148,7 @@
 /* Begin XCBuildConfiguration section */
 		16CDD1182A2636BB0073FB8E /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 16CDD1212A29E0760073FB8E /* BuildSettings.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -177,7 +180,6 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -207,6 +209,7 @@
 		};
 		16CDD1192A2636BB0073FB8E /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 16CDD1212A29E0760073FB8E /* BuildSettings.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -238,7 +241,6 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
