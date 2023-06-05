@@ -44,22 +44,26 @@ package = "openmls"
 git = "https://github.com/wireapp/openmls"
 branch = "feat/d20"
 # tag = "v0.5.6-pre.core-crypto-0.7.0"
+#path = "../openmls/openmls"
 
 [patch.crates-io.openmls_traits]
 package = "openmls_traits"
 git = "https://github.com/wireapp/openmls"
 branch = "feat/d20"
 # tag = "v0.5.6-pre.core-crypto-0.7.0"
+#path = "../openmls/traits"
 
 [patch.crates-io.openmls_basic_credential]
 package = "openmls_basic_credential"
 git = "https://github.com/wireapp/openmls"
 branch = "feat/d20"
+#path = "../openmls/basic_credential"
 
 [patch.crates-io.openmls_x509_credential]
 package = "openmls_x509_credential"
 git = "https://github.com/wireapp/openmls"
 branch = "feat/d20"
+#path = "../openmls/x509_credential"
 
 [patch.crates-io.hpke]
 git = "https://github.com/rozbb/rust-hpke.git"

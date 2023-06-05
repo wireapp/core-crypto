@@ -6,6 +6,7 @@ pub(crate) mod x509;
 
 use openmls::prelude::Credential;
 use openmls_basic_credential::SignatureKeyPair;
+use openmls_x509_credential::CertificateKeyPair;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -65,12 +66,20 @@ impl Client {
         Ok(cb)
     }
 
-    pub(crate) fn new_x509_credential_bundle(_cert: CertificateBundle) -> CryptoResult<CredentialBundle> {
-        unimplemented!("x509 needs to be implemented anew")
-        // let client_id = cert.get_client_id()?;
-        // let cb = CredentialBundle::new_x509(client_id.into(), cert.certificate_chain, cert.private_key)
-        //     .map_err(MlsError::from)?;
-        // Ok(cb)
+    pub(crate) fn new_x509_credential_bundle(cert: CertificateBundle) -> CryptoResult<CredentialBundle> {
+        let client_id = cert.get_client_id()?;
+        let (sk, ..) = cert.private_key.into_parts();
+        let chain = cert.certificate_chain;
+
+        let kp = CertificateKeyPair::new(sk.into(), chain.clone()).map_err(MlsError::from)?;
+
+        let credential = Credential::new_x509(client_id.into(), chain).map_err(MlsError::from)?;
+
+        let cb = CredentialBundle {
+            credential,
+            signature_key: kp.0,
+        };
+        Ok(cb)
     }
 }
 

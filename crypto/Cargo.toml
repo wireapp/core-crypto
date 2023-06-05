@@ -30,6 +30,7 @@ futures-util = "0.3"
 
 openmls = { version = "0.20", features = ["crypto-subtle"] }
 openmls_basic_credential = "0.1"
+openmls_x509_credential = "0.1"
 openmls_traits = "0.1"
 # FIXME: This is being pulled only because of flaky error types from openmls
 tls_codec = { workspace = true }

@@ -19,7 +19,6 @@ use openmls_traits::{
     key_store::{MlsEntity, MlsEntityId},
     types::SignatureScheme,
 };
-use openmls_x509_credential::CertificateKeyPair;
 
 use crate::{
     entities::{
@@ -510,19 +509,6 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
                 };
                 self.save(kp).await?;
             }
-            MlsEntityId::CertificateKeyPair => {
-                let concrete_signature_keypair: &CertificateKeyPair = v
-                    .downcast()
-                    .expect("There's an implementation issue in OpenMLS. This shouln't be happening.");
-
-                let kp = MlsSignatureKeyPair {
-                    pk: k.into(),
-                    keypair: data,
-                    credential_id: vec![], // FIXME: find a way to set the credential id
-                    signature_scheme: concrete_signature_keypair.signature_scheme() as u16,
-                };
-                self.save(kp).await?;
-            }
             MlsEntityId::KeyPackage => {
                 let kp = MlsKeyPackage {
                     keypackage_ref: k.into(),
@@ -563,7 +549,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
                 let group: PersistedMlsGroup = self.find(k).await.ok().flatten()?;
                 deser(&group.state).ok()
             }
-            MlsEntityId::SignatureKeyPair | MlsEntityId::CertificateKeyPair => {
+            MlsEntityId::SignatureKeyPair => {
                 let sig: MlsSignatureKeyPair = self.find(k).await.ok().flatten()?;
                 deser(&sig.keypair).ok()
             }
@@ -593,9 +579,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
 
         match V::ID {
             MlsEntityId::GroupState => self.remove::<PersistedMlsGroup, _>(k).await?,
-            MlsEntityId::SignatureKeyPair | MlsEntityId::CertificateKeyPair => {
-                self.remove::<MlsSignatureKeyPair, _>(k).await?
-            }
+            MlsEntityId::SignatureKeyPair => self.remove::<MlsSignatureKeyPair, _>(k).await?,
             MlsEntityId::HpkePrivateKey => self.remove::<MlsHpkePrivateKey, _>(k).await?,
             MlsEntityId::KeyPackage => self.remove::<MlsKeyPackage, _>(k).await?,
             MlsEntityId::PskBundle => self.remove::<MlsPskBundle, _>(k).await?,

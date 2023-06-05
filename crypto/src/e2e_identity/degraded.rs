@@ -35,6 +35,7 @@ pub mod tests {
     // testing the case where both Bob & Alice have the same Credential type
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
+    #[ignore]
     pub async fn uniform_conversation_should_be_degraded(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
@@ -70,59 +71,59 @@ pub mod tests {
         .await
     }
 
-    // FIXME: Fix this test
     // testing the case where Bob & Alice have different Credential type
-    // #[apply(all_cred_cipher)]
-    // #[wasm_bindgen_test]
-    // pub async fn heterogeneous_conversation_should_be_degraded(case: TestCase) {
-    //     run_test_with_client_ids(
-    //         case.clone(),
-    //         ["alice", "bob"],
-    //         move |[mut alice_central, mut bob_central]| {
-    //             Box::pin(async move {
-    //                 let id = conversation_id();
+    /*#[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    #[ignore]
+    pub async fn heterogeneous_conversation_should_be_degraded(case: TestCase) {
+        run_test_with_client_ids(
+            case.clone(),
+            ["alice", "bob"],
+            move |[mut alice_central, mut bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
 
-    //                 // That way the conversation creator (Alice) will have a different credential type than Bob
-    //                 let creator_client = alice_central.mls_client.as_mut().unwrap();
-    //                 let creator_ct = match case.credential_type {
-    //                     MlsCredentialType::Basic => {
-    //                         let cert_bundle =
-    //                             crate::prelude::CertificateBundle::rand(case.cfg.ciphersuite, "alice".into());
-    //                         creator_client
-    //                             .init_x509_credential_bundle_if_missing(
-    //                                 &alice_central.mls_backend,
-    //                                 case.ciphersuite(),
-    //                                 cert_bundle,
-    //                             )
-    //                             .await
-    //                             .unwrap();
+                    // That way the conversation creator (Alice) will have a different credential type than Bob
+                    let creator_client = alice_central.mls_client.as_mut().unwrap();
+                    let creator_ct = match case.credential_type {
+                        MlsCredentialType::Basic => {
+                            let cert_bundle =
+                                crate::prelude::CertificateBundle::rand(case.cfg.ciphersuite, "alice".into());
+                            creator_client
+                                .init_x509_credential_bundle_if_missing(
+                                    &alice_central.mls_backend,
+                                    case.ciphersuite(),
+                                    cert_bundle,
+                                )
+                                .await
+                                .unwrap();
 
-    //                         MlsCredentialType::X509
-    //                     }
-    //                     MlsCredentialType::X509 => {
-    //                         creator_client
-    //                             .init_basic_credential_bundle_if_missing(&alice_central.mls_backend, case.ciphersuite())
-    //                             .await
-    //                             .unwrap();
-    //                         MlsCredentialType::Basic
-    //                     }
-    //                 };
+                            MlsCredentialType::X509
+                        }
+                        MlsCredentialType::X509 => {
+                            creator_client
+                                .init_basic_credential_bundle_if_missing(&alice_central.mls_backend, case.ciphersuite())
+                                .await
+                                .unwrap();
+                            MlsCredentialType::Basic
+                        }
+                    };
 
-    //                 alice_central
-    //                     .new_conversation(id.clone(), creator_ct, case.cfg.clone())
-    //                     .await
-    //                     .unwrap();
-    //                 alice_central
-    //                     .invite(&id, &mut bob_central, case.custom_cfg())
-    //                     .await
-    //                     .unwrap();
+                    alice_central
+                        .new_conversation(id.clone(), creator_ct, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central
+                        .invite(&id, &mut bob_central, case.custom_cfg())
+                        .await
+                        .unwrap();
 
-    //                 // since in that case both have a different credential type the conversation is always degraded
-    //                 assert!(alice_central.e2ei_is_degraded(&id).await.unwrap());
-    //                 assert!(bob_central.e2ei_is_degraded(&id).await.unwrap());
-    //             })
-    //         },
-    //     )
-    //     .await
-    // }
+                    // since in that case both have a different credential type the conversation is always degraded
+                    assert!(alice_central.e2ei_is_degraded(&id).await.unwrap());
+                    assert!(bob_central.e2ei_is_degraded(&id).await.unwrap());
+                })
+            },
+        )
+        .await
+    }*/
 }

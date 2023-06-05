@@ -13,6 +13,12 @@ pub struct CertificatePrivateKey {
     pub(crate) signature_scheme: SignatureScheme,
 }
 
+impl CertificatePrivateKey {
+    pub(crate) fn into_parts(mut self) -> (Vec<u8>, SignatureScheme) {
+        (std::mem::take(&mut self.value), self.signature_scheme)
+    }
+}
+
 /// Represents a x509 certificate chain supplied by the client
 /// It can fetch it after an end-to-end identity process where it can get back a certificate
 /// from the Authentication Service
