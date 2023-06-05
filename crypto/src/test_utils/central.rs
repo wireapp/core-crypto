@@ -31,6 +31,7 @@ use openmls::prelude::{
 };
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Serialize;
+use wire_e2e_identity::prelude::WireIdentityReader;
 
 impl MlsCentral {
     pub async fn get_one_key_package(&self, case: &TestCase) -> KeyPackage {
@@ -252,29 +253,25 @@ impl MlsCentral {
         self.mls_client.as_ref().unwrap().id().clone()
     }
 
-    pub fn verify_sender_identity(&self, case: &TestCase, _decrypted: &MlsConversationDecryptMessage) {
+    pub fn verify_sender_identity(&self, case: &TestCase, decrypted: &MlsConversationDecryptMessage) {
         let mls_client = self.mls_client.as_ref().unwrap();
         let (cs, ct) = (case.ciphersuite(), case.credential_type);
         let cb = mls_client.find_credential_bundle(cs, ct).unwrap();
         let sender_credential = cb.credential();
 
         if let openmls::prelude::MlsCredentialType::X509(openmls::prelude::Certificate {
-            identity: _dup_client_id,
-            cert_data: _cert_chain,
+            identity: dup_client_id,
+            cert_data: cert_chain,
         }) = &sender_credential.mls_credential()
         {
-            // TODO
-            /*
             let leaf: Vec<u8> = cert_chain.get(0).map(|c| c.clone().into()).unwrap();
-            let identity = leaf.extract_identity().unwrap();
+            let identity = leaf.as_slice().extract_identity().unwrap();
             let decr_identity = decrypted.identity.as_ref().unwrap();
             assert_eq!(decr_identity.client_id, identity.client_id);
             assert_eq!(decr_identity.client_id.as_bytes(), dup_client_id.as_slice());
             assert_eq!(decr_identity.handle, identity.handle);
             assert_eq!(decr_identity.display_name, identity.display_name);
             assert_eq!(decr_identity.domain, identity.domain);
-            */
-            todo!()
         }
     }
 }
