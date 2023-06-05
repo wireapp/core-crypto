@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use openmls::credentials::MlsCredentialType;
-
 use crate::{
     prelude::{
         ClientId, ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral, MlsConversation,
@@ -24,9 +22,15 @@ use crate::{
     test_utils::TestCase,
 };
 
+use crate::mls::MlsCiphersuite;
+use crate::prelude::{CertificateBundle, Client, MlsCredentialType};
+use core_crypto_keystore::entities::{MlsCredential, MlsSignatureKeyPair};
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
     KeyPackage, LeafNodeIndex, MlsMessageIn, MlsMessageOut, QueuedProposal, SignaturePublicKey, StagedCommit,
 };
+use openmls_traits::OpenMlsCryptoProvider;
+use tls_codec::Serialize;
 
 impl MlsCentral {
     pub async fn get_one_key_package(&self, case: &TestCase) -> KeyPackage {
@@ -254,7 +258,7 @@ impl MlsCentral {
         let cb = mls_client.find_credential_bundle(cs, ct).unwrap();
         let sender_credential = cb.credential();
 
-        if let MlsCredentialType::X509(openmls::prelude::Certificate {
+        if let openmls::prelude::MlsCredentialType::X509(openmls::prelude::Certificate {
             identity: _dup_client_id,
             cert_data: _cert_chain,
         }) = &sender_credential.mls_credential()
@@ -270,6 +274,7 @@ impl MlsCentral {
             assert_eq!(decr_identity.display_name, identity.display_name);
             assert_eq!(decr_identity.domain, identity.domain);
             */
+            todo!()
         }
     }
 }
@@ -284,5 +289,44 @@ impl MlsConversation {
 
     pub fn encryption_keys(&self) -> impl Iterator<Item = Vec<u8>> + '_ {
         self.group.members().map(|m| m.encryption_key)
+    }
+}
+
+impl Client {
+    #[cfg(test)]
+    pub async fn init_x509_credential_bundle_if_missing(
+        &mut self,
+        backend: &MlsCryptoProvider,
+        cs: MlsCiphersuite,
+        cb: CertificateBundle,
+    ) -> CryptoResult<()> {
+        if self
+            .identities
+            .find_credential_bundle(cs, MlsCredentialType::X509)
+            .is_none()
+        {
+            let id = cb.get_client_id()?;
+            let cb = Self::new_x509_credential_bundle(cb)?;
+
+            backend
+                .key_store()
+                .save(MlsCredential {
+                    id: id.clone().into(),
+                    credential: cb.credential.tls_serialize_detached().map_err(MlsError::from)?,
+                })
+                .await?;
+            backend
+                .key_store()
+                .save(MlsSignatureKeyPair {
+                    signature_scheme: cb.signature_key.signature_scheme() as _,
+                    keypair: cb.signature_key.tls_serialize_detached().map_err(MlsError::from)?,
+                    pk: cb.signature_key.to_public_vec(),
+                    credential_id: id.clone().into(),
+                })
+                .await?;
+
+            self.identities.push_credential_bundle(cs, cb)?;
+        }
+        Ok(())
     }
 }
