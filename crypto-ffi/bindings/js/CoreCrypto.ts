@@ -240,11 +240,11 @@ export interface MemberAddedMessages {
      */
     welcome: Uint8Array;
     /**
-     * MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit
+     * MLS GroupInfo which is required for joining a group by external commit
      *
      * @readonly
      */
-    publicGroupState: PublicGroupStateBundle;
+    groupInfo: GroupInfoBundle;
 }
 
 /**
@@ -264,18 +264,18 @@ export interface CommitBundle {
      */
     welcome?: Uint8Array;
     /**
-     * MLS PublicGroupState (GroupInfo in draft-15) which is required for joining a group by external commit
+     * MLS GroupInfo which is required for joining a group by external commit
      *
      * @readonly
      */
-    publicGroupState: PublicGroupStateBundle;
+    groupInfo: GroupInfoBundle;
 }
 
 /**
  * Wraps a PublicGroupState in order to efficiently upload it to the Delivery Service.
  * This is not part of MLS protocol but parts might be standardized at some point.
  */
-export interface PublicGroupStateBundle {
+export interface GroupInfoBundle {
     /**
      * see {@link PublicGroupStateEncryptionType}
      */
@@ -398,7 +398,7 @@ export interface ConversationInitBundle {
      *
      * @readonly
      */
-    publicGroupState: PublicGroupStateBundle;
+    publicGroupState: GroupInfoBundle;
 }
 
 /**
@@ -556,9 +556,9 @@ export interface ExternalProposalArgs {
 
 export interface ExternalRemoveProposalArgs extends ExternalProposalArgs {
     /**
-     * KeyPackageRef of the client that needs to be removed in the proposal
+     * Index of the member to remove in the tree (not usable currently)
      */
-    keyPackageRef: Uint8Array;
+    leafIndex: number;
 }
 
 export interface ExternalAddProposalArgs extends ExternalProposalArgs {
@@ -994,15 +994,15 @@ export class CoreCrypto {
 
             ffiClients.forEach(c => c.free());
 
-            const pgs = ffiRet.public_group_state;
+            const gi = ffiRet.group_info;
 
             const ret: MemberAddedMessages = {
                 welcome: ffiRet.welcome,
                 commit: ffiRet.commit,
-                publicGroupState: {
-                    encryptionType: pgs.encryption_type,
-                    ratchetTreeType: pgs.ratchet_tree_type,
-                    payload: pgs.payload
+                groupInfo: {
+                    encryptionType: gi.encryption_type,
+                    ratchetTreeType: gi.ratchet_tree_type,
+                    payload: gi.payload
                 },
             };
 
@@ -1035,15 +1035,15 @@ export class CoreCrypto {
                 clientIds
             ));
 
-            const pgs = ffiRet.public_group_state;
+            const gi = ffiRet.group_info;
 
             const ret: CommitBundle = {
                 welcome: ffiRet.welcome,
                 commit: ffiRet.commit,
-                publicGroupState: {
-                    encryptionType: pgs.encryption_type,
-                    ratchetTreeType: pgs.ratchet_tree_type,
-                    payload: pgs.payload
+                groupInfo: {
+                    encryptionType: gi.encryption_type,
+                    ratchetTreeType: gi.ratchet_tree_type,
+                    payload: gi.payload
                 },
             };
 
@@ -1070,15 +1070,15 @@ export class CoreCrypto {
                 conversationId
             ));
 
-            const pgs = ffiRet.public_group_state;
+            const gi = ffiRet.group_info;
 
             const ret: CommitBundle = {
                 welcome: ffiRet.welcome,
                 commit: ffiRet.commit,
-                publicGroupState: {
-                    encryptionType: pgs.encryption_type,
-                    ratchetTreeType: pgs.ratchet_tree_type,
-                    payload: pgs.payload
+                groupInfo: {
+                    encryptionType: gi.encryption_type,
+                    ratchetTreeType: gi.ratchet_tree_type,
+                    payload: gi.payload
                 },
             };
 
@@ -1109,15 +1109,15 @@ export class CoreCrypto {
                 return undefined;
             }
 
-            const pgs = ffiCommitBundle.public_group_state;
+            const gi = ffiCommitBundle.group_info;
 
             return {
                 welcome: ffiCommitBundle.welcome,
                 commit: ffiCommitBundle.commit,
-                publicGroupState: {
-                    encryptionType: pgs.encryption_type,
-                    ratchetTreeType: pgs.ratchet_tree_type,
-                    payload: pgs.payload
+                groupInfo: {
+                    encryptionType: gi.encryption_type,
+                    ratchetTreeType: gi.ratchet_tree_type,
+                    payload: gi.payload
                 },
             };
         } catch(e) {
@@ -1178,14 +1178,14 @@ export class CoreCrypto {
                 return await CoreCryptoError.asyncMapErr(this.#cc.new_external_add_proposal(args.conversationId, args.epoch, addArgs.ciphersuite, addArgs.credentialType));
             }
             case ExternalProposalType.Remove: {
-                if (!(args as ExternalRemoveProposalArgs).keyPackageRef) {
-                    throw new Error("keyPackageRef is not contained in the external proposal arguments");
+                if (!(args as ExternalRemoveProposalArgs).leafIndex) {
+                    throw new Error("LeafIndex is not contained in the external proposal arguments");
                 }
 
                 return await CoreCryptoError.asyncMapErr(this.#cc.new_external_remove_proposal(
                     args.conversationId,
                     args.epoch,
-                    (args as ExternalRemoveProposalArgs).keyPackageRef
+                    (args as ExternalRemoveProposalArgs).leafIndex
                 ));
             }
             default:
@@ -1194,13 +1194,13 @@ export class CoreCrypto {
     }
 
     /**
-     * Exports public group state for use in external commits
+     * Exports GroupInfo for use in external commits
      *
      * @param conversationId - MLS Conversation ID
-     * @returns TLS-serialized MLS public group state
+     * @returns TLS-serialized MLS GroupInfo
      */
-    async exportGroupState(conversationId: ConversationId): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.export_group_state(conversationId));
+    async exportGroupInfo(conversationId: ConversationId): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.export_group_info(conversationId));
     }
 
     /**
@@ -1226,15 +1226,15 @@ export class CoreCrypto {
             const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
             const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await CoreCryptoError.asyncMapErr(this.#cc.join_by_external_commit(publicGroupState, config, credentialType));
 
-            const pgs = ffiInitMessage.public_group_state;
+            const gi = ffiInitMessage.group_info;
 
             const ret: ConversationInitBundle = {
                 conversationId: ffiInitMessage.conversation_id,
                 commit: ffiInitMessage.commit,
                 publicGroupState: {
-                    encryptionType: pgs.encryption_type,
-                    ratchetTreeType: pgs.ratchet_tree_type,
-                    payload: pgs.payload
+                    encryptionType: gi.encryption_type,
+                    ratchetTreeType: gi.ratchet_tree_type,
+                    payload: gi.payload
                 },
             };
 
@@ -1806,7 +1806,6 @@ export class WireE2eIdentity {
      * Verifies that the previous challenge has been completed.
      *
      * @param orderUrl `location` header from http response you got from {@link newOrderResponse}
-     * @param account you found after {@link newAccountResponse}
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/challenge/{challenge-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
@@ -1836,7 +1835,6 @@ export class WireE2eIdentity {
     /**
      * Final step before fetching the certificate.
      *
-     * @param order - order you got from {@link checkOrderResponse}
      * @param previousNonce - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
