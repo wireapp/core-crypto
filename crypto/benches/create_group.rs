@@ -2,7 +2,7 @@ use criterion::{
     async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion,
 };
 use futures_lite::future::block_on;
-use openmls::prelude::group_info::GroupInfo;
+
 use openmls::prelude::MlsMessageIn;
 
 use core_crypto::prelude::{
@@ -33,11 +33,12 @@ fn create_group_bench(c: &mut Criterion) {
                         (central, id, cfg)
                     },
                     |(mut central, id, cfg)| async move {
+                        central
+                        .new_conversation(id, MlsCredentialType::Basic, cfg)
+                        .await
+                        .unwrap();
                         black_box(
-                            central
-                                .new_conversation(id, MlsCredentialType::Basic, cfg)
-                                .await
-                                .unwrap(),
+                            (),
                         );
                     },
                     BatchSize::SmallInput,
@@ -118,11 +119,12 @@ fn join_from_group_info_bench(c: &mut Criterion) {
                                 .await
                                 .unwrap(),
                         );
+                        central
+                        .merge_pending_group_from_external_commit(&conversation_id)
+                        .await
+                        .unwrap();
                         black_box(
-                            central
-                                .merge_pending_group_from_external_commit(&conversation_id)
-                                .await
-                                .unwrap(),
+                            (),
                         );
                     },
                     BatchSize::SmallInput,

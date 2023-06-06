@@ -190,11 +190,10 @@ impl MlsCentral {
             .await
             .group
             .members()
-            .into_iter()
             .find(|k| k.credential.identity() == client_id.0.as_slice())
             .unwrap()
             .signature_key
-            .clone();
+            ;
 
         SignaturePublicKey::from(sign_key)
     }
@@ -210,11 +209,10 @@ impl MlsCentral {
             .await
             .group
             .members()
-            .into_iter()
             .find(|k| k.credential.identity() == client_id.0.as_slice())
             .unwrap()
             .encryption_key
-            .clone()
+            
     }
 
     /// Finds the [LeafNodeIndex] of a [Client] within a [MlsGroup]
@@ -228,7 +226,6 @@ impl MlsCentral {
             .await
             .group
             .members()
-            .into_iter()
             .find(|k| k.credential.identity() == client_id.as_slice())
             .unwrap()
             .index

@@ -539,7 +539,7 @@ impl MlsCentral {
     pub async fn export_group_info(&mut self, conversation_id: &ConversationId) -> CryptoResult<Vec<u8>> {
         let conversation = self.get_conversation(conversation_id).await?;
         let conversation_lock = conversation.read().await;
-        let group = &(*conversation_lock).group;
+        let group = &conversation_lock.group;
         let cs = group.ciphersuite();
         let ct = group.own_leaf().unwrap().credential().credential_type();
         let cb = self.mls_client()?.find_credential_bundle(cs.into(), ct.into())?;

@@ -48,7 +48,7 @@ impl MlsTestCase {
                 None,
             ),
             MlsTestCase::Basic_Ciphersuite3 => (
-                self.clone(),
+                *self,
                 Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519.into(),
                 None,
             ),
@@ -135,7 +135,7 @@ pub fn setup_mls(
                 id.clone(),
                 MlsCredentialType::Basic,
                 MlsConversationConfiguration {
-                    ciphersuite: ciphersuite.clone(),
+                    ciphersuite,
                     ..Default::default()
                 },
             )
@@ -196,11 +196,11 @@ pub fn add_clients(
             .collect::<Vec<_>>();
 
         central
-            .add_members_to_conversation(&id, members.as_mut_slice())
+            .add_members_to_conversation(id, members.as_mut_slice())
             .await
             .unwrap();
 
-        central.commit_accepted(&id).await.unwrap();
+        central.commit_accepted(id).await.unwrap();
         client_ids
     })
 }
@@ -211,7 +211,7 @@ pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, Clien
         .as_bytes()
         .to_vec();
     let backend = block_on(async { MlsCryptoProvider::try_new_in_memory("secret").await.unwrap() });
-    let cs: Ciphersuite = ciphersuite.clone().into();
+    let cs: Ciphersuite = ciphersuite.into();
 
     let mut rng = &mut *backend.rand().borrow_rand().unwrap();
     let signer = SignatureKeyPair::new(ciphersuite.signature_algorithm(), &mut rng).unwrap();

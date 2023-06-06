@@ -22,7 +22,8 @@ fn commit_add_bench(c: &mut Criterion) {
                     },
                     |(mut central, id, member)| async move {
                         black_box(central.add_members_to_conversation(&id, &mut [member]).await.unwrap());
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -52,7 +53,8 @@ fn commit_add_n_clients_bench(c: &mut Criterion) {
                                 .await
                                 .unwrap(),
                         );
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -80,7 +82,8 @@ fn commit_remove_bench(c: &mut Criterion) {
                                 .await
                                 .unwrap(),
                         );
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -109,7 +112,8 @@ fn commit_remove_n_clients_bench(c: &mut Criterion) {
                                 .await
                                 .unwrap(),
                         );
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -132,7 +136,8 @@ fn commit_update_bench(c: &mut Criterion) {
                     },
                     |(mut central, id)| async move {
                         black_box(central.update_keying_material(&id).await.unwrap());
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -161,7 +166,8 @@ fn commit_pending_proposals_bench_var_n_proposals(c: &mut Criterion) {
                     },
                     |(mut central, id)| async move {
                         black_box(central.commit_pending_proposals(&id).await.unwrap());
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -190,7 +196,8 @@ fn commit_pending_proposals_bench_var_group_size(c: &mut Criterion) {
                     },
                     |(mut central, id)| async move {
                         black_box(central.commit_pending_proposals(&id).await.unwrap());
-                        black_box(central.commit_accepted(&id).await.unwrap());
+                        central.commit_accepted(&id).await.unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )

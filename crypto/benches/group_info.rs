@@ -12,7 +12,7 @@ fn export_pgs_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup_mls(ciphersuite, &&credential, in_memory);
+                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
                         add_clients(&mut central, &id, ciphersuite, *i);
                         (central, id)
                     },

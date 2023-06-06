@@ -425,7 +425,7 @@ impl CoreCrypto<'_> {
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .mls_generate_keypairs(ciphersuites.into()),
+                    .mls_generate_keypairs(ciphersuites),
             ),
         )
     }
@@ -745,7 +745,7 @@ impl CoreCrypto<'_> {
         conversation_id: ConversationId,
         keypackage: Vec<u8>,
     ) -> CryptoResult<ProposalBundle> {
-        let kp = KeyPackageIn::tls_deserialize_bytes(&keypackage).map_err(MlsError::from)?;
+        let kp = KeyPackageIn::tls_deserialize_bytes(keypackage).map_err(MlsError::from)?;
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
@@ -847,7 +847,7 @@ impl CoreCrypto<'_> {
         custom_configuration: CustomConfiguration,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<ConversationInitBundle> {
-        let group_info = MlsMessageIn::tls_deserialize_bytes(&group_info).map_err(MlsError::from)?;
+        let group_info = MlsMessageIn::tls_deserialize_bytes(group_info).map_err(MlsError::from)?;
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central

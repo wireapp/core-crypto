@@ -75,8 +75,7 @@ impl MlsProposal {
                     .group
                     .members()
                     .find(|kp| kp.credential.identity() == client_id.as_slice())
-                    .ok_or(CryptoError::ClientNotFound(client_id))
-                    .and_then(|kp| Ok(kp.index))?;
+                    .ok_or(CryptoError::ClientNotFound(client_id)).map(|kp| kp.index)?;
                 (*conversation).propose_remove_member(client, backend, index).await
             }
         }?;
