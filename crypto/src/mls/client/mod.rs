@@ -19,8 +19,6 @@ pub(crate) mod identifier;
 pub(crate) mod identities;
 pub(crate) mod key_package;
 
-use std::unimplemented;
-
 use crate::{
     mls::credential::CredentialBundle,
     prelude::{
@@ -143,7 +141,7 @@ impl Client {
     ///
     /// **WARNING**: You have absolutely NO reason to call this if you didn't call [Client::generate_raw_keypairs] first. You have been warned!
     pub async fn init_with_external_client_id(
-        _client_id: ClientId,
+        client_id: ClientId,
         tmp_ids: Vec<ClientId>,
         ciphersuites: &[MlsCiphersuite],
         backend: &MlsCryptoProvider,
@@ -166,62 +164,61 @@ impl Client {
             return Err(CryptoError::ImplementationError);
         }
 
-        // let identities = basic_stored_credentials.iter().zip(ciphersuites);
+        let identities = basic_stored_credentials.iter().zip(ciphersuites);
 
-        // let client = Self {
-        //     id: client_id.clone(),
-        //     identities: ClientIdentities::new(basic_stored_credentials.len()),
-        //     keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
-        // };
+        let client = Self {
+            id: client_id.clone(),
+            identities: ClientIdentities::new(basic_stored_credentials.len()),
+            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
+        };
 
-        // let id = &client_id;
-        // futures_util::stream::iter(identities)
-        //     .map(Ok::<_, CryptoError>)
-        //     .try_fold(client, |mut acc, (tmp_credential, &cs)| async move {
-        //         // Now we restore the provisional credential from the store
-        //         let tmp_keypair = backend
-        //             .key_store()
-        //             .find::<MlsSignatureKeyPair>(tmp_credential.identity())
-        //             .await?
-        //             .ok_or(CryptoError::ImplementationError)?;
+        let id = &client_id;
+        futures_util::stream::iter(identities)
+            .map(Ok::<_, CryptoError>)
+            .try_fold(client, |mut acc, (tmp_credential, &cs)| async move {
+                // Now we restore the provisional credential from the store
+                let tmp_keypair = backend
+                    .key_store()
+                    .find::<MlsSignatureKeyPair>(tmp_credential.identity())
+                    .await?
+                    .ok_or(CryptoError::ImplementationError)?;
 
-        //         let new_keypair = MlsSignatureKeyPair {
-        //             signature_scheme: tmp_keypair.signature_scheme,
-        //             keypair: tmp_keypair.keypair.clone(),
-        //             pk: tmp_keypair.pk.clone(),
-        //             credential_id: id.clone().into(),
-        //         };
+                let new_keypair = MlsSignatureKeyPair {
+                    signature_scheme: tmp_keypair.signature_scheme,
+                    keypair: tmp_keypair.keypair.clone(),
+                    pk: tmp_keypair.pk.clone(),
+                    credential_id: id.clone().into(),
+                };
 
-        //         let new_credential = MlsCredential {
-        //             id: id.clone().into(),
-        //             credential: tmp_credential.identity().to_vec(),
-        //         };
+                let new_credential = MlsCredential {
+                    id: id.clone().into(),
+                    credential: tmp_credential.identity().to_vec(),
+                };
 
-        //         // Delete the old identity optimistically
-        //         backend
-        //             .key_store()
-        //             .remove::<MlsSignatureKeyPair, &[u8]>(&new_keypair.pk)
-        //             .await?;
-        //         backend
-        //             .key_store()
-        //             .remove::<MlsCredential, &[u8]>(tmp_credential.identity())
-        //             .await?;
+                // Delete the old identity optimistically
+                backend
+                    .key_store()
+                    .remove::<MlsSignatureKeyPair, &[u8]>(&new_keypair.pk)
+                    .await?;
+                backend
+                    .key_store()
+                    .remove::<MlsCredential, &[u8]>(tmp_credential.identity())
+                    .await?;
 
-        //         let signature_key =
-        //             SignatureKeyPair::tls_deserialize_bytes(&new_keypair.keypair).map_err(MlsError::from)?;
-        //         let cb = CredentialBundle {
-        //             credential: Credential::new_basic(new_credential.credential.clone()),
-        //             signature_key,
-        //         };
+                let signature_key =
+                    SignatureKeyPair::tls_deserialize_bytes(&new_keypair.keypair).map_err(MlsError::from)?;
+                let cb = CredentialBundle {
+                    credential: Credential::new_basic(new_credential.credential.clone()),
+                    signature_key,
+                };
 
-        //         // And now we save the new one
-        //         Self::save_identity(backend, id, cs, &cb).await?;
+                // And now we save the new one
+                Self::save_identity(backend, id, cs, &cb).await?;
 
-        //         acc.identities.push_credential_bundle(cs, cb)?;
-        //         Ok(acc)
-        //     })
-        //     .await
-        unimplemented!("Rewrite needed for this method")
+                acc.identities.push_credential_bundle(cs, cb)?;
+                Ok(acc)
+            })
+            .await
     }
 
     /// Generates a brand new client from scratch
