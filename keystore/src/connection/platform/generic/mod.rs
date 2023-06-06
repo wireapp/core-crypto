@@ -216,7 +216,7 @@ impl SqlCipherConnection {
 
     fn run_migrations(&mut self) -> CryptoKeystoreResult<()> {
         let report = migrations::runner().run(&mut self.conn).map_err(Box::new)?;
-        if let Some(version) = report.applied_migrations().into_iter().map(|m| m.version()).max() {
+        if let Some(version) = report.applied_migrations().iter().map(|m| m.version()).max() {
             self.conn.pragma_update(None, "schema_version", version)?;
         }
 

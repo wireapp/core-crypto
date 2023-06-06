@@ -62,7 +62,6 @@ impl MlsConversation {
         let existing_clients = self
             .group
             .members()
-            .into_iter()
             .filter_map(|kp| {
                 if !pending_removals.contains(&kp.index) {
                     Some(kp.credential.identity().into())

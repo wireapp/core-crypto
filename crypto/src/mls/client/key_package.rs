@@ -233,7 +233,7 @@ impl Client {
             let kp = core_crypto_keystore::deser::<KeyPackage>(&store_kp.keypackage)?;
             let mut is_expired = Self::is_mls_keypackage_expired(&kp);
             if !is_expired && !refs.is_empty() {
-                is_expired = refs.iter().find(|r| r.as_slice() == store_kp.keypackage_ref).is_some();
+                is_expired = refs.iter().any(|r| r.as_slice() == store_kp.keypackage_ref);
             }
 
             if is_expired {

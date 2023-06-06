@@ -184,7 +184,7 @@ impl MlsConversation {
             let credential = kp.credential;
             let client_id: ClientId = credential.identity().into();
             let member_id: MemberId = client_id.to_vec();
-            acc.entry(member_id).or_insert_with(Vec::new).push(credential.clone());
+            acc.entry(member_id).or_insert_with(Vec::new).push(credential);
             acc
         })
     }

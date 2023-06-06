@@ -64,7 +64,7 @@ impl<'a> StringEntityId<'a> {
     }
 
     pub fn as_slice(&self) -> &[u8] {
-        &self.0
+        self.0
     }
 
     pub fn try_as_str(&self) -> Result<&str, ::core::str::Utf8Error> {

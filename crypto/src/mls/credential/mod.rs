@@ -71,7 +71,7 @@ impl Client {
         let (sk, ..) = cert.private_key.into_parts();
         let chain = cert.certificate_chain;
 
-        let kp = CertificateKeyPair::new(sk.into(), chain.clone()).map_err(MlsError::from)?;
+        let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(MlsError::from)?;
 
         let credential = Credential::new_x509(client_id.into(), chain).map_err(MlsError::from)?;
 

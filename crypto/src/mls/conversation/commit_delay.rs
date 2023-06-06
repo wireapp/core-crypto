@@ -49,7 +49,7 @@ impl MlsConversation {
                 .members()
                 .take(own_index as usize)
                 .try_fold(0u32, |mut acc, kp| {
-                    if removed_index.contains(&&kp.index) {
+                    if removed_index.contains(&kp.index) {
                         acc += 1;
                     }
 
