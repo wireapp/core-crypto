@@ -154,7 +154,7 @@ impl<'a> E2eTest<'a> {
         // see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
         self.display_chapter("Request a certificate with relevant identifiers");
         self.display_step("create a new order");
-        let expiry = core::time::Duration::from_secs(3600); // 1h
+        let expiry = core::time::Duration::from_secs(3600 * 24 * 365 * 10); // 10 years
         let order_request = RustyAcme::new_order_request(
             &self.display_name,
             self.sub.clone(),
