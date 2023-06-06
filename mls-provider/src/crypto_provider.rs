@@ -489,7 +489,7 @@ impl OpenMlsCrypto for RustCrypto {
 mod hpke_core {
     use openmls_traits::types::{CryptoError, HpkeCiphertext, HpkeKeyPair};
 
-    pub fn hpke_open<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
+    pub(crate) fn hpke_open<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
         private_key: &[u8],
         kem_output: &[u8],
         info: &[u8],
@@ -506,7 +506,7 @@ mod hpke_core {
         Ok(plaintext)
     }
 
-    pub fn hpke_seal<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
+    pub(crate) fn hpke_seal<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
         public_key: &[u8],
         info: &[u8],
         aad: &[u8],
@@ -526,7 +526,7 @@ mod hpke_core {
     }
 
     #[allow(dead_code)]
-    pub fn hpke_gen_keypair<Kem: hpke::Kem>(
+    pub(crate) fn hpke_gen_keypair<Kem: hpke::Kem>(
         csprng: &mut impl rand_core::CryptoRngCore,
     ) -> Result<HpkeKeyPair, CryptoError> {
         use hpke::Serializable as _;
@@ -536,7 +536,7 @@ mod hpke_core {
         Ok(HpkeKeyPair { private, public })
     }
 
-    pub fn hpke_derive_keypair<Kem: hpke::Kem>(ikm: &[u8]) -> Result<HpkeKeyPair, CryptoError> {
+    pub(crate) fn hpke_derive_keypair<Kem: hpke::Kem>(ikm: &[u8]) -> Result<HpkeKeyPair, CryptoError> {
         use hpke::Serializable as _;
         let (sk, pk) = Kem::derive_keypair(ikm);
         let (private, public) = (sk.to_bytes().to_vec().into(), pk.to_bytes().to_vec());
@@ -544,7 +544,7 @@ mod hpke_core {
         Ok(HpkeKeyPair { private, public })
     }
 
-    pub fn hpke_export_rx<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
+    pub(crate) fn hpke_export_rx<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
         encapped_key: &[u8],
         rx_private_key: &[u8],
         info: &[u8],
@@ -565,7 +565,7 @@ mod hpke_core {
         Ok(export)
     }
 
-    pub fn hpke_export_tx<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
+    pub(crate) fn hpke_export_tx<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
         tx_public_key: &[u8],
         info: &[u8],
         export_info: &[u8],
