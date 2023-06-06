@@ -29,8 +29,7 @@ pub struct MlsProposalRef(ProposalRef);
 
 impl From<Vec<u8>> for MlsProposalRef {
     fn from(value: Vec<u8>) -> Self {
-        let href = ProposalRef::from_slice(value.as_slice());
-        Self(href)
+        Self(ProposalRef::from_slice(value.as_slice()))
     }
 }
 
@@ -75,7 +74,8 @@ impl MlsProposal {
                     .group
                     .members()
                     .find(|kp| kp.credential.identity() == client_id.as_slice())
-                    .ok_or(CryptoError::ClientNotFound(client_id)).map(|kp| kp.index)?;
+                    .ok_or(CryptoError::ClientNotFound(client_id))
+                    .map(|kp| kp.index)?;
                 (*conversation).propose_remove_member(client, backend, index).await
             }
         }?;

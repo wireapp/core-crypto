@@ -20,6 +20,7 @@ use core_crypto::prelude::*;
 use core_crypto::CryptoError;
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
+use tls_codec::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::future_to_promise;
@@ -248,17 +249,17 @@ pub type FfiClientId = Box<[u8]>;
 pub struct MemberAddedMessages {
     welcome: Vec<u8>,
     commit: Vec<u8>,
-    public_group_state: PublicGroupStateBundle,
+    group_info: GroupInfoBundle,
 }
 
 #[wasm_bindgen]
 impl MemberAddedMessages {
     #[wasm_bindgen(constructor)]
-    pub fn new(welcome: Uint8Array, commit: Uint8Array, public_group_state: PublicGroupStateBundle) -> Self {
+    pub fn new(welcome: Uint8Array, commit: Uint8Array, group_info: GroupInfoBundle) -> Self {
         Self {
             welcome: welcome.to_vec(),
             commit: commit.to_vec(),
-            public_group_state,
+            group_info,
         }
     }
 
@@ -273,8 +274,8 @@ impl MemberAddedMessages {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn public_group_state(&self) -> PublicGroupStateBundle {
-        self.public_group_state.clone()
+    pub fn group_info(&self) -> GroupInfoBundle {
+        self.group_info.clone()
     }
 }
 
@@ -290,7 +291,7 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
         Ok(Self {
             welcome,
             commit,
-            public_group_state: pgs.into(),
+            group_info: pgs.into(),
         })
     }
 }
@@ -308,7 +309,7 @@ pub struct ProteusAutoPrekeyBundle {
 pub struct CommitBundle {
     commit: Vec<u8>,
     welcome: Option<Vec<u8>>,
-    public_group_state: PublicGroupStateBundle,
+    group_info: GroupInfoBundle,
 }
 
 #[wasm_bindgen]
@@ -324,8 +325,8 @@ impl CommitBundle {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn public_group_state(&self) -> PublicGroupStateBundle {
-        self.public_group_state.clone()
+    pub fn group_info(&self) -> GroupInfoBundle {
+        self.group_info.clone()
     }
 }
 
@@ -341,21 +342,21 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
         Ok(Self {
             welcome,
             commit,
-            public_group_state: pgs.into(),
+            group_info: pgs.into(),
         })
     }
 }
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct PublicGroupStateBundle {
+pub struct GroupInfoBundle {
     encryption_type: u8,
     ratchet_tree_type: u8,
     payload: Vec<u8>,
 }
 
 #[wasm_bindgen]
-impl PublicGroupStateBundle {
+impl GroupInfoBundle {
     #[wasm_bindgen(getter)]
     pub fn encryption_type(&self) -> u8 {
         self.encryption_type
@@ -372,12 +373,12 @@ impl PublicGroupStateBundle {
     }
 }
 
-impl From<MlsPublicGroupStateBundle> for PublicGroupStateBundle {
-    fn from(pgs: MlsPublicGroupStateBundle) -> Self {
+impl From<MlsGroupInfoBundle> for GroupInfoBundle {
+    fn from(gi: MlsGroupInfoBundle) -> Self {
         Self {
-            encryption_type: pgs.encryption_type as u8,
-            ratchet_tree_type: pgs.ratchet_tree_type as u8,
-            payload: pgs.payload.bytes(),
+            encryption_type: gi.encryption_type as u8,
+            ratchet_tree_type: gi.ratchet_tree_type as u8,
+            payload: gi.payload.bytes(),
         }
     }
 }
@@ -420,7 +421,7 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
 pub struct ConversationInitBundle {
     conversation_id: ConversationId,
     commit: Vec<u8>,
-    public_group_state: PublicGroupStateBundle,
+    group_info: GroupInfoBundle,
 }
 
 #[wasm_bindgen]
@@ -436,8 +437,8 @@ impl ConversationInitBundle {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn public_group_state(&self) -> PublicGroupStateBundle {
-        self.public_group_state.clone()
+    pub fn group_info(&self) -> GroupInfoBundle {
+        self.group_info.clone()
     }
 }
 
@@ -454,7 +455,7 @@ impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
         Ok(Self {
             conversation_id,
             commit,
-            public_group_state: pgs.into(),
+            group_info: pgs.into(),
         })
     }
 }
@@ -636,7 +637,10 @@ impl Invitee {
 
 impl Invitee {
     #[inline(always)]
-    fn group_to_conversation_member(clients: Vec<Self>) -> WasmCryptoResult<Vec<ConversationMember>> {
+    fn group_to_conversation_member(
+        clients: Vec<Self>,
+        backend: &MlsCryptoProvider,
+    ) -> WasmCryptoResult<Vec<ConversationMember>> {
         Ok(clients
             .into_iter()
             .try_fold(
@@ -644,11 +648,14 @@ impl Invitee {
                 |mut acc, c| -> WasmCryptoResult<HashMap<ClientId, ConversationMember>> {
                     let client_id: ClientId = c.id.into();
                     if let Some(member) = acc.get_mut(&client_id) {
-                        member.add_keypackage(c.kp.to_vec()).map_err(CoreCryptoError::from)?;
+                        member
+                            .add_keypackage(c.kp.to_vec(), backend)
+                            .map_err(CoreCryptoError::from)?;
                     } else {
                         acc.insert(
                             client_id.clone(),
-                            ConversationMember::new_raw(client_id, c.kp.to_vec()).map_err(CoreCryptoError::from)?,
+                            ConversationMember::new_raw(client_id, c.kp.to_vec(), backend)
+                                .map_err(CoreCryptoError::from)?,
                         );
                     }
                     Ok(acc)
@@ -656,14 +663,6 @@ impl Invitee {
             )?
             .into_values()
             .collect::<Vec<ConversationMember>>())
-    }
-}
-
-impl TryInto<ConversationMember> for Invitee {
-    type Error = CoreCryptoError;
-
-    fn try_into(self) -> Result<ConversationMember, Self::Error> {
-        Ok(ConversationMember::new_raw(self.id.into(), self.kp.to_vec())?)
     }
 }
 
@@ -1021,8 +1020,8 @@ impl CoreCrypto {
                 let ciphersuites = lower_ciphersuites(&ciphersuites)?;
                 let signature_public_keys = signature_public_keys
                     .iter()
-                    .map(|c| c.to_vec())
-                    .collect::<Vec<Vec<u8>>>();
+                    .map(|c| ClientId::from(c.to_vec()))
+                    .collect();
 
                 let mut central = this.write().await;
                 central
@@ -1158,7 +1157,6 @@ impl CoreCrypto {
         let ciphersuite: CiphersuiteName = ciphersuite.into();
         future_to_promise(
             async move {
-                use core_crypto::prelude::tls_codec::Serialize as _;
                 let kps = this
                     .write()
                     .await
@@ -1310,8 +1308,9 @@ impl CoreCrypto {
                     .map(|js_client| Ok(serde_wasm_bindgen::from_value(js_client)?))
                     .collect::<WasmCryptoResult<Vec<Invitee>>>()?;
 
-                let mut members = Invitee::group_to_conversation_member(invitees)?;
                 let mut central = this.write().await;
+                let backend = central.provider();
+                let mut members = Invitee::group_to_conversation_member(invitees, backend)?;
                 let conversation_id = conversation_id.into();
                 let commit = central
                     .add_members_to_conversation(&conversation_id, &mut members)
@@ -1484,7 +1483,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                let kp = KeyPackage::try_from(&keypackage[..])
+                let kp = KeyPackageIn::tls_deserialize_bytes(keypackage)
                     .map_err(MlsError::from)
                     .map_err(CryptoError::from)
                     .map_err(CoreCryptoError::from)?;
@@ -1492,7 +1491,7 @@ impl CoreCrypto {
                 let proposal: ProposalBundle = this
                     .write()
                     .await
-                    .new_proposal(&conversation_id.to_vec(), MlsProposal::Add(kp))
+                    .new_proposal(&conversation_id.to_vec(), MlsProposal::Add(kp.into()))
                     .await
                     .map_err(CoreCryptoError::from)?
                     .try_into()?;
@@ -1584,29 +1583,22 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::mls::MlsCentral::new_external_remove_proposal]
-    pub fn new_external_remove_proposal(
-        &self,
-        conversation_id: Box<[u8]>,
-        epoch: u32,
-        keypackage_ref: Box<[u8]>,
-    ) -> Promise {
+    pub fn new_external_remove_proposal(&self, conversation_id: Box<[u8]>, epoch: u32, leaf_index: u32) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                let kpr: Box<[u8; 16]> = keypackage_ref
-                    .try_into()
-                    .map_err(|_| CryptoError::InvalidByteArrayError(16))
-                    .map_err(CoreCryptoError::from)?;
-                let kpr = KeyPackageRef::from(*kpr);
                 // TODO: we might not need this after all so let's not complicate things
-                let (cs, ct) = (
-                    core_crypto::prelude::MlsCiphersuite::default(),
-                    core_crypto::prelude::MlsCredentialType::default(),
-                );
+                let (cs, ct) = (MlsCiphersuite::default(), MlsCredentialType::default());
                 let proposal_bytes = this
                     .write()
                     .await
-                    .new_external_remove_proposal(conversation_id.to_vec(), u64::from(epoch).into(), kpr, cs, ct)
+                    .new_external_remove_proposal(
+                        conversation_id.to_vec(),
+                        u64::from(epoch).into(),
+                        leaf_index.into(),
+                        cs,
+                        ct,
+                    )
                     .await
                     .map_err(CoreCryptoError::from)?
                     .to_bytes()
@@ -1623,15 +1615,15 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::export_public_group_state]
-    pub fn export_group_state(&self, conversation_id: Box<[u8]>) -> Promise {
+    /// see [core_crypto::mls::MlsCentral::export_group_info]
+    pub fn export_group_info(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
                 let state = this
                     .write()
                     .await
-                    .export_public_group_state(&conversation_id.to_vec())
+                    .export_group_info(&conversation_id.to_vec())
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(state.as_slice()).into())
@@ -1646,18 +1638,14 @@ impl CoreCrypto {
     /// see [core_crypto::mls::MlsCentral::join_by_external_commit]
     pub fn join_by_external_commit(
         &self,
-        public_group_state: Box<[u8]>,
+        group_info: Box<[u8]>,
         custom_configuration: CustomConfiguration,
         credential_type: CredentialType,
     ) -> Promise {
-        use core_crypto::prelude::tls_codec::Deserialize as _;
-
         let this = self.inner.clone();
-        let state = public_group_state.to_vec();
-
         future_to_promise(
             async move {
-                let group_state = VerifiablePublicGroupState::tls_deserialize(&mut &state[..])
+                let group_info = MlsMessageIn::tls_deserialize_bytes(group_info.to_vec())
                     .map_err(MlsError::from)
                     .map_err(CryptoError::from)
                     .map_err(CoreCryptoError::from)?;
@@ -1665,7 +1653,7 @@ impl CoreCrypto {
                 let result: ConversationInitBundle = this
                     .write()
                     .await
-                    .join_by_external_commit(group_state, custom_configuration.into(), credential_type.into())
+                    .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
                     .await
                     .map_err(CoreCryptoError::from)?
                     .try_into()?;

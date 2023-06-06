@@ -829,7 +829,7 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::export_group_info]
-    pub fn export_group_state(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
+    pub fn export_group_info(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
