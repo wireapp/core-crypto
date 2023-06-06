@@ -34,12 +34,10 @@ fn create_group_bench(c: &mut Criterion) {
                     },
                     |(mut central, id, cfg)| async move {
                         central
-                        .new_conversation(id, MlsCredentialType::Basic, cfg)
-                        .await
-                        .unwrap();
-                        black_box(
-                            (),
-                        );
+                            .new_conversation(id, MlsCredentialType::Basic, cfg)
+                            .await
+                            .unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
@@ -120,12 +118,10 @@ fn join_from_group_info_bench(c: &mut Criterion) {
                                 .unwrap(),
                         );
                         central
-                        .merge_pending_group_from_external_commit(&conversation_id)
-                        .await
-                        .unwrap();
-                        black_box(
-                            (),
-                        );
+                            .merge_pending_group_from_external_commit(&conversation_id)
+                            .await
+                            .unwrap();
+                        black_box(());
                     },
                     BatchSize::SmallInput,
                 )
