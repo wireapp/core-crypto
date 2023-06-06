@@ -76,7 +76,6 @@ path = "../mls-provider"
 
 [dev-dependencies]
 itertools = "0.10"
-openmls = { version = "0.20", features = ["test-utils"] }
 uuid = { version = "1.0", features = ["v4", "v5"] }
 rand = "0.8"
 tempfile = "3.3"
