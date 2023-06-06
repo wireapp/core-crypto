@@ -82,7 +82,7 @@ test("can use pgs enums", async () => {
   const [PublicGroupStateEncryptionType, RatchetTreeType] = await page.evaluate(async () => {
     const { CoreCrypto, Ciphersuite, CredentialType, PublicGroupStateEncryptionType, RatchetTreeType } = await import ("./corecrypto.js");
 
-    window.PublicGroupStateEncryptionType = PublicGroupStateEncryptionType;
+    window.GroupInfoEncryptionType = PublicGroupStateEncryptionType;
     window.RatchetTreeType = RatchetTreeType;
     window.CoreCrypto = CoreCrypto;
     window.Ciphersuite = Ciphersuite;
@@ -93,8 +93,8 @@ test("can use pgs enums", async () => {
 
   expect(PublicGroupStateEncryptionType.Plaintext).toBe(0x01);
   expect(PublicGroupStateEncryptionType.JweEncrypted).toBe(0x02);
-  expect(await page.evaluate(() => window.PublicGroupStateEncryptionType.Plaintext)).toBe(0x01);
-  expect(await page.evaluate(() => window.PublicGroupStateEncryptionType.JweEncrypted)).toBe(0x02);
+  expect(await page.evaluate(() => window.GroupInfoEncryptionType.Plaintext)).toBe(0x01);
+  expect(await page.evaluate(() => window.GroupInfoEncryptionType.JweEncrypted)).toBe(0x02);
   expect(RatchetTreeType.Full).toBe(0x01);
   expect(RatchetTreeType.Delta).toBe(0x02);
   expect(RatchetTreeType.ByRef).toBe(0x03);

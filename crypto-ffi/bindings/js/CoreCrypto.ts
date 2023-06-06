@@ -272,29 +272,29 @@ export interface CommitBundle {
 }
 
 /**
- * Wraps a PublicGroupState in order to efficiently upload it to the Delivery Service.
+ * Wraps a GroupInfo in order to efficiently upload it to the Delivery Service.
  * This is not part of MLS protocol but parts might be standardized at some point.
  */
 export interface GroupInfoBundle {
     /**
-     * see {@link PublicGroupStateEncryptionType}
+     * see {@link GroupInfoEncryptionType}
      */
-    encryptionType: PublicGroupStateEncryptionType,
+    encryptionType: GroupInfoEncryptionType,
     /**
      * see {@link RatchetTreeType}
      */
     ratchetTreeType: RatchetTreeType,
     /**
-     * TLS-serialized PublicGroupState
+     * TLS-serialized GroupInfo
      */
     payload: Uint8Array,
 }
 
 /**
- * Informs whether the PublicGroupState is confidential
- * see [core_crypto::mls::conversation::public_group_state::PublicGroupStateEncryptionType]
+ * Informs whether the GroupInfo is confidential
+ * see [core_crypto::mls::conversation::group_info::GroupInfoEncryptionType]
  */
-export enum PublicGroupStateEncryptionType {
+export enum GroupInfoEncryptionType {
     /**
      * Unencrypted
      */
@@ -307,11 +307,11 @@ export enum PublicGroupStateEncryptionType {
 
 /**
  * Represents different ways of carrying the Ratchet Tree with some optimizations to save some space
- * see [core_crypto::mls::conversation::public_group_state::RatchetTreeType]
+ * see [core_crypto::mls::conversation::group_info::RatchetTreeType]
  */
 export enum RatchetTreeType {
     /**
-     * Complete PublicGroupState
+     * Complete GroupInfo
      */
     Full = 0x01,
     /**
@@ -398,7 +398,7 @@ export interface ConversationInitBundle {
      *
      * @readonly
      */
-    publicGroupState: GroupInfoBundle;
+    groupInfo: GroupInfoBundle;
 }
 
 /**
@@ -1213,25 +1213,25 @@ export class CoreCrypto {
      * {@link CoreCrypto.clearPendingGroupFromExternalCommit} in order not to bloat the user's storage but nothing
      * bad can happen if you forget to except some storage space wasted.
      *
-     * @param publicGroupState - a TLS encoded PublicGroupState fetched from the Delivery Service
+     * @param groupInfo - a TLS encoded GroupInfo fetched from the Delivery Service
      * @param credentialType - kind of Credential to use for joining this group. If {@link CredentialType.Basic} is
      * chosen and no Credential has been created yet for it, a new one will be generated.
      * @param configuration - configuration of the MLS group
      * When {@link CredentialType.X509} is chosen, it fails when no Credential has been created for the given {@link Ciphersuite}.
      * @returns see {@link ConversationInitBundle}
      */
-    async joinByExternalCommit(publicGroupState: Uint8Array, credentialType: CredentialType, configuration: CustomConfiguration = {}): Promise<ConversationInitBundle> {
+    async joinByExternalCommit(groupInfo: Uint8Array, credentialType: CredentialType, configuration: CustomConfiguration = {}): Promise<ConversationInitBundle> {
         try {
             const {keyRotationSpan, wirePolicy} = configuration || {};
             const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
-            const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await CoreCryptoError.asyncMapErr(this.#cc.join_by_external_commit(publicGroupState, config, credentialType));
+            const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await CoreCryptoError.asyncMapErr(this.#cc.join_by_external_commit(groupInfo, config, credentialType));
 
             const gi = ffiInitMessage.group_info;
 
             const ret: ConversationInitBundle = {
                 conversationId: ffiInitMessage.conversation_id,
                 commit: ffiInitMessage.commit,
-                publicGroupState: {
+                groupInfo: {
                     encryptionType: gi.encryption_type,
                     ratchetTreeType: gi.ratchet_tree_type,
                     payload: gi.payload

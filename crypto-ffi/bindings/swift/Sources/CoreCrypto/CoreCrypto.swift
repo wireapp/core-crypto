@@ -25,19 +25,19 @@ private protocol ConvertToInner {
 
 extension CoreCryptoSwift.CommitBundle {
     func convertTo() -> CommitBundle {
-        return CommitBundle(welcome: self.welcome, commit: self.commit, publicGroupState: self.publicGroupState.convertTo())
+        return CommitBundle(welcome: self.welcome, commit: self.commit, groupInfo: self.groupInfo.convertTo())
     }
 }
 
 extension CoreCryptoSwift.MemberAddedMessages {
     func convertTo() -> MemberAddedMessages {
-        return MemberAddedMessages(commit: self.commit, welcome: self.welcome, publicGroupState: self.publicGroupState.convertTo())
+        return MemberAddedMessages(commit: self.commit, welcome: self.welcome, groupInfo: self.groupInfo.convertTo())
     }
 }
 
 extension CoreCryptoSwift.ConversationInitBundle {
     func convertTo() -> ConversationInitBundle {
-        return ConversationInitBundle(conversationId: self.conversationId, commit: self.commit, publicGroupState: self.publicGroupState.convertTo())
+        return ConversationInitBundle(conversationId: self.conversationId, commit: self.commit, groupInfo: self.groupInfo.convertTo())
     }
 }
 
@@ -61,17 +61,17 @@ extension CoreCryptoSwift.ProposalBundle {
     }
 }
 
-extension CoreCryptoSwift.PublicGroupStateBundle {
-    func convertTo() -> PublicGroupStateBundle {
-        return PublicGroupStateBundle(encryptionType: self.encryptionType.convertTo(), ratchetTreeType: self.ratchetTreeType.convertTo(), payload: self.payload)
+extension CoreCryptoSwift.GroupInfoBundle {
+    func convertTo() -> GroupInfoBundle {
+        return GroupInfoBundle(encryptionType: self.encryptionType.convertTo(), ratchetTreeType: self.ratchetTreeType.convertTo(), payload: self.payload)
     }
 }
 
-extension CoreCryptoSwift.MlsPublicGroupStateEncryptionType {
-    func convertTo() -> PublicGroupStateEncryptionType {
+extension CoreCryptoSwift.MlsGroupInfoEncryptionType {
+    func convertTo() -> GroupInfoEncryptionType {
         switch self {
-            case .jweEncrypted: return PublicGroupStateEncryptionType.JweEncrypted
-            case .plaintext: return PublicGroupStateEncryptionType.Plaintext
+            case .jweEncrypted: return GroupInfoEncryptionType.JweEncrypted
+            case .plaintext: return GroupInfoEncryptionType.Plaintext
         }
     }
 }
@@ -255,16 +255,16 @@ public struct MemberAddedMessages: ConvertToInner {
     /// TLS-serialized MLS Commit that needs to be fanned out to other (existing) members of the conversation
     public var welcome: [UInt8]
     /// The current group state
-    public var publicGroupState: PublicGroupStateBundle
+    public var groupInfo: GroupInfoBundle
 
-    public init(commit: [UInt8], welcome: [UInt8], publicGroupState: PublicGroupStateBundle) {
+    public init(commit: [UInt8], welcome: [UInt8], groupInfo: GroupInfoBundle) {
         self.commit = commit
         self.welcome = welcome
-        self.publicGroupState = publicGroupState
+        self.groupInfo = groupInfo
     }
 
     func convert() -> Inner {
-        return CoreCryptoSwift.MemberAddedMessages(commit: self.commit, welcome: self.welcome, publicGroupState: self.publicGroupState.convert())
+        return CoreCryptoSwift.MemberAddedMessages(commit: self.commit, welcome: self.welcome, groupInfo: self.groupInfo.convert())
     }
 }
 
@@ -360,19 +360,19 @@ public struct ConversationInitBundle: ConvertToInner {
     public var conversationId: ConversationId
     /// TLS-serialized MLS External Commit that needs to be fanned out
     public var commit: [UInt8]
-    /// TLS-serialized PublicGroupState (aka GroupInfo) which becomes valid when the external commit is accepted by the Delivery Service
-    public var publicGroupState: PublicGroupStateBundle
+    /// TLS-serialized GroupInfo (aka GroupInfo) which becomes valid when the external commit is accepted by the Delivery Service
+    public var groupInfo: GroupInfoBundle
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(conversationId: ConversationId, commit: [UInt8], publicGroupState: PublicGroupStateBundle) {
+    public init(conversationId: ConversationId, commit: [UInt8], groupInfo: GroupInfoBundle) {
         self.conversationId = conversationId
         self.commit = commit
-        self.publicGroupState = publicGroupState
+        self.groupInfo = groupInfo
     }
 
     func convert() -> Inner {
-        return CoreCryptoSwift.ConversationInitBundle(conversationId: self.conversationId, commit: self.commit, publicGroupState: self.publicGroupState.convert())
+        return CoreCryptoSwift.ConversationInitBundle(conversationId: self.conversationId, commit: self.commit, groupInfo: self.groupInfo.convert())
     }
 }
 
@@ -383,63 +383,63 @@ public struct CommitBundle: ConvertToInner {
     /// TLS-serialized MLS Commit that needs to be fanned out to other (existing) members of the conversation
     public var commit: [UInt8]
     /// The current state of the group
-    public var publicGroupState: PublicGroupStateBundle
+    public var groupInfo: GroupInfoBundle
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(welcome: [UInt8]?, commit: [UInt8], publicGroupState: PublicGroupStateBundle) {
+    public init(welcome: [UInt8]?, commit: [UInt8], groupInfo: GroupInfoBundle) {
         self.welcome = welcome
         self.commit = commit
-        self.publicGroupState = publicGroupState
+        self.groupInfo = groupInfo
     }
     typealias Inner = CoreCryptoSwift.CommitBundle
 
     func convert() -> Inner {
-        return CoreCryptoSwift.CommitBundle(welcome: self.welcome, commit: self.commit, publicGroupState: self.publicGroupState.convert())
+        return CoreCryptoSwift.CommitBundle(welcome: self.welcome, commit: self.commit, groupInfo: self.groupInfo.convert())
     }
 }
 
-/// A PublicGroupState with metadata
-public struct PublicGroupStateBundle: ConvertToInner {
+/// A GroupInfo with metadata
+public struct GroupInfoBundle: ConvertToInner {
     /// Indicates if the payload is encrypted or not
-    public var encryptionType: PublicGroupStateEncryptionType
-    /// Indicates if the payload contains a full, partial or referenced PublicGroupState
+    public var encryptionType: GroupInfoEncryptionType
+    /// Indicates if the payload contains a full, partial or referenced GroupInfo
     public var ratchetTreeType: RatchetTreeType
-    /// TLS encoded PublicGroupState
+    /// TLS encoded GroupInfo
     public var payload: [UInt8]
 
-    public init(encryptionType: PublicGroupStateEncryptionType, ratchetTreeType: RatchetTreeType, payload: [UInt8]) {
+    public init(encryptionType: GroupInfoEncryptionType, ratchetTreeType: RatchetTreeType, payload: [UInt8]) {
         self.encryptionType = encryptionType
         self.ratchetTreeType = ratchetTreeType
         self.payload = payload
     }
-    typealias Inner = CoreCryptoSwift.PublicGroupStateBundle
+    typealias Inner = CoreCryptoSwift.GroupInfoBundle
 
     func convert() -> Inner {
-        return CoreCryptoSwift.PublicGroupStateBundle(encryptionType: self.encryptionType.convert(), ratchetTreeType: self.ratchetTreeType.convert(), payload: self.payload)
+        return CoreCryptoSwift.GroupInfoBundle(encryptionType: self.encryptionType.convert(), ratchetTreeType: self.ratchetTreeType.convert(), payload: self.payload)
     }
 }
 
-/// In order to guarantee confidentiality of the PublicGroupState on the wire a domain can request it to be encrypted when sent to the Delivery Service.
-public enum PublicGroupStateEncryptionType: ConvertToInner {
-    typealias Inner = CoreCryptoSwift.MlsPublicGroupStateEncryptionType
+/// In order to guarantee confidentiality of the GroupInfo on the wire a domain can request it to be encrypted when sent to the Delivery Service.
+public enum GroupInfoEncryptionType: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.MlsGroupInfoEncryptionType
 
     case Plaintext
     case JweEncrypted
 }
 
-private extension PublicGroupStateEncryptionType {
+private extension GroupInfoEncryptionType {
     func convert() -> Inner {
         switch self {
         case .Plaintext:
-            return CoreCryptoSwift.MlsPublicGroupStateEncryptionType.plaintext
+            return CoreCryptoSwift.MlsGroupInfoEncryptionType.plaintext
         case .JweEncrypted:
-            return CoreCryptoSwift.MlsPublicGroupStateEncryptionType.jweEncrypted
+            return CoreCryptoSwift.MlsGroupInfoEncryptionType.jweEncrypted
         }
     }
 }
 
-/// In order to spare some precious bytes, a PublicGroupState can have different representations.
+/// In order to spare some precious bytes, a GroupInfo can have different representations.
 public enum RatchetTreeType: ConvertToInner {
     typealias Inner = CoreCryptoSwift.MlsRatchetTreeType
 
@@ -579,7 +579,7 @@ public class CoreCryptoWrapper {
     ///
     /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
     /// It also contains a Welcome message the Delivery Service will forward to invited clients and
-    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
+    /// an updated GroupInfo required by clients willing to join the group by an external commit.
     ///
     /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
     /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
@@ -599,7 +599,7 @@ public class CoreCryptoWrapper {
     ///
     /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
     /// It also contains a Welcome message the Delivery Service will forward to invited clients and
-    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
+    /// an updated GroupInfo required by clients willing to join the group by an external commit.
     ///
     /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
     /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
@@ -625,7 +625,7 @@ public class CoreCryptoWrapper {
     ///
     /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
     /// It also contains a Welcome message the Delivery Service will forward to invited clients and
-    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
+    /// an updated GroupInfo required by clients willing to join the group by an external commit.
     ///
     /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
     /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
@@ -641,7 +641,7 @@ public class CoreCryptoWrapper {
     ///
     /// The returned ``CommitBundle`` is a TLS struct that needs to be fanned out to Delivery Service in order to validate the commit.
     /// It also contains a Welcome message the Delivery Service will forward to invited clients and
-    /// an updated PublicGroupState required by clients willing to join the group by an external commit.
+    /// an updated GroupInfo required by clients willing to join the group by an external commit.
     ///
     /// **CAUTION**: ``CoreCryptoWrapper/commitAccepted`` **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
     /// '200 OK' to the ``CommitBundle`` upload. It will "merge" the commit locally i.e. increment the local group
@@ -736,11 +736,11 @@ public class CoreCryptoWrapper {
     /// ``CoreCryptoWrapper/clearPendingGroupFromExternalCommit`` in order not to bloat the user's storage but nothing
     /// bad can happen if you forget to except some storage space wasted.
     ///
-    /// - parameter publicGroupState: a TLS encoded `PublicGroupState` fetched from the Delivery Service
+    /// - parameter groupInfo: a TLS encoded `GroupInfo` fetched from the Delivery Service
     /// - parameter config: - configuration of the MLS group
     /// - returns: an object of type `ConversationInitBundle`
-    public func joinByExternalCommit(publicGroupState: [UInt8], configuration: CustomConfiguration, credentialType: MlsCredentialType) throws -> ConversationInitBundle {
-        try self.coreCrypto.joinByExternalCommit(publicGroupState: publicGroupState, customConfiguration: configuration.convert(), credentialType: credentialType.convert()).convertTo()
+    public func joinByExternalCommit(groupInfo: [UInt8], configuration: CustomConfiguration, credentialType: MlsCredentialType) throws -> ConversationInitBundle {
+        try self.coreCrypto.joinByExternalCommit(groupInfo: groupInfo, customConfiguration: configuration.convert(), credentialType: credentialType.convert()).convertTo()
     }
 
     /// Exports a TLS-serialized view of the current group state corresponding to the provided conversation ID.
