@@ -405,7 +405,7 @@ impl CoreCrypto<'_> {
         })
     }
 
-    /// See [core_crypto::MlsCentral::mls_init]
+    /// See [core_crypto::mls::MlsCentral::mls_init]
     pub fn mls_init(&self, client_id: &ClientId, ciphersuites: &Ciphersuites) -> CryptoResult<()> {
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
@@ -895,7 +895,7 @@ impl CoreCrypto<'_> {
             .random_bytes(len.try_into()?)
     }
 
-    /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
+    /// see [MlsCryptoProvider::reseed]
     pub fn reseed_rng(&self, seed: Vec<u8>) -> CryptoResult<()> {
         let seed = EntropySeed::try_from_slice(&seed)?;
         self.central
@@ -997,7 +997,7 @@ impl CoreCrypto<'_> {
             .map_err(|_| CryptoError::ImplementationError)
     }
 
-    /// See [core_crypto::MlsCentral::e2ei_mls_init]
+    /// See [core_crypto::mls::MlsCentral::e2ei_mls_init]
     pub fn e2ei_mls_init(
         &self,
         enrollment: std::sync::Arc<WireE2eIdentity>,
@@ -1026,7 +1026,7 @@ impl CoreCrypto<'_> {
         )
     }
 
-    /// See [core_crypto::MlsCentral::e2ei_enrollment_stash]
+    /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash]
     pub fn e2ei_enrollment_stash(&self, enrollment: std::sync::Arc<WireE2eIdentity>) -> CryptoResult<Vec<u8>> {
         let enrollment = std::sync::Arc::try_unwrap(enrollment).map_err(|_| CryptoError::LockPoisonError)?;
         let enrollment = std::sync::Arc::try_unwrap(enrollment.0).map_err(|_| CryptoError::LockPoisonError)?;
@@ -1043,7 +1043,7 @@ impl CoreCrypto<'_> {
         )
     }
 
-    /// See [core_crypto::MlsCentral::e2ei_enrollment_stash_pop]
+    /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash_pop]
     pub fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CryptoResult<std::sync::Arc<WireE2eIdentity>> {
         let cc = self.central.lock().map_err(|_| CryptoError::LockPoisonError)?;
         let executor = self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?;
@@ -1056,7 +1056,7 @@ impl CoreCrypto<'_> {
             .map_err(|_| CryptoError::ImplementationError)
     }
 
-    /// See [core_crypto::MlsCentral::e2ei_is_degraded]
+    /// See [core_crypto::mls::MlsCentral::e2ei_is_degraded]
     pub fn e2ei_is_degraded(&self, conversation_id: ConversationId) -> CryptoResult<bool> {
         let is_degraded = future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(

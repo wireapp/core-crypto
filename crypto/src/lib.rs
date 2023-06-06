@@ -106,9 +106,9 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     /// * `client_id` - id of the client to authorize
     async fn authorize(&self, conversation_id: prelude::ConversationId, client_id: prelude::ClientId) -> bool;
     /// Function responsible for authorizing an operation for a given user.
-    /// Use [external_client_id] & [existing_clients] to get all the 'client_id' belonging to the same user
-    /// as [external_client_id]. Then, given those client ids, verify that at least one has the right role
-    /// (is authorized) exactly like it's done in [authorize]
+    /// Use `external_client_id` & `existing_clients` to get all the 'client_id' belonging to the same user
+    /// as `external_client_id`. Then, given those client ids, verify that at least one has the right role
+    /// (is authorized) exactly like it's done in [Self::authorize]
     /// Returns `true` if the operation is authorized.
     ///
     /// # Arguments

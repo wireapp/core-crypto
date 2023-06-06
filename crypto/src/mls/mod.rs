@@ -239,7 +239,7 @@ impl MlsCentral {
         })
     }
 
-    /// Same as the [crate::MlsCentral::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
+    /// Same as the [MlsCentral::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
     pub async fn try_new_in_memory(configuration: MlsCentralConfiguration) -> CryptoResult<Self> {
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: &configuration.store_path,
@@ -270,8 +270,8 @@ impl MlsCentral {
         })
     }
 
-    /// Initializes the MLS client if [CoreCrypto] has previously been initialized with
-    /// [CoreCrypto::deferred_init] instead of [CoreCrypto::new].
+    /// Initializes the MLS client if [super::CoreCrypto] has previously been initialized with
+    /// `CoreCrypto::deferred_init` instead of `CoreCrypto::new`.
     /// This should stay as long as proteus is supported. Then it should be removed.
     pub async fn mls_init(
         &mut self,
@@ -381,7 +381,7 @@ impl MlsCentral {
         Ok(self.mls_client()?.id().clone())
     }
 
-    /// Returns `amount_requested` OpenMLS [`KeyPackageBundle`]s.
+    /// Returns `amount_requested` OpenMLS [openmls::key_packages::KeyPackage]s.
     /// Will always return the requested amount as it will generate the necessary (lacking) amount on-the-fly
     ///
     /// Note: Keypackage pruning is performed as a first step
@@ -420,7 +420,7 @@ impl MlsCentral {
     /// * `config` - configuration of the group/conversation
     ///
     /// # Errors
-    /// Errors can happen from the KeyStore or from OpenMls for ex if no [KeyPackageBundle] can
+    /// Errors can happen from the KeyStore or from OpenMls for ex if no [openmls::key_packages::KeyPackage] can
     /// be found in the KeyStore
     pub async fn new_conversation(
         &mut self,
@@ -481,7 +481,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// Errors can be originating from the KeyStore of from OpenMls:
-    /// * if no [KeyPackageBundle] can be read from the KeyStore
+    /// * if no [openmls::key_packages::KeyPackage] can be read from the KeyStore
     /// * if the message can't be decrypted
     pub async fn process_welcome_message(
         &mut self,

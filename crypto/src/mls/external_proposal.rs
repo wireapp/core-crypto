@@ -100,7 +100,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// Errors resulting from the creation of the proposal within OpenMls.
-    /// Fails when [credential_type] is [MlsCredentialType::X509] and no Credential has been created
+    /// Fails when `credential_type` is [MlsCredentialType::X509] and no Credential has been created
     /// for it beforehand with [MlsCentral::e2ei_mls_init] or variants.
     pub async fn new_external_add_proposal(
         &self,

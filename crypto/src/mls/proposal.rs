@@ -91,7 +91,7 @@ impl MlsCentral {
     /// * `proposal` - the proposal do be added in the group
     ///
     /// # Return type
-    /// A [ProposalBundle] with the proposal in a Mls message and a reference to that proposal in order to rollback it if required
+    /// A [MlsProposalBundle] with the proposal in a Mls message and a reference to that proposal in order to rollback it if required
     ///
     /// # Errors
     /// If the conversation is not found, an error will be returned. Errors from OpenMls can be
