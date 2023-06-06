@@ -5,11 +5,25 @@ use openmls_traits::{crypto::OpenMlsCrypto, types::Ciphersuite, OpenMlsCryptoPro
 use wire_e2e_identity::prelude::JwsAlgorithm;
 
 impl super::WireE2eIdentity {
+    /// Length for all signature keys since there's not method to retrieve it from openmls
+    const SIGN_KEY_LENGTH: usize = 32;
+
     pub(super) fn new_sign_key(ciphersuite: MlsCiphersuite, backend: &MlsCryptoProvider) -> E2eIdentityResult<Vec<u8>> {
         let crypto = backend.crypto();
         let cs = openmls_traits::types::Ciphersuite::from(ciphersuite);
-        let (sk, _pk) = crypto.signature_key_gen(cs.signature_algorithm())?;
-        Ok(sk)
+        let (sk, pk) = crypto.signature_key_gen(cs.signature_algorithm())?;
+        Ok(Self::into_e2ei_sign_key(sk, pk))
+    }
+
+    fn into_e2ei_sign_key(sk: Vec<u8>, pk: Vec<u8>) -> Vec<u8> {
+        [sk, pk].concat()
+    }
+
+    pub(super) fn get_sign_key_for_mls(&self) -> E2eIdentityResult<Vec<u8>> {
+        if self.sign_sk.len() != Self::SIGN_KEY_LENGTH * 2 {
+            return Err(E2eIdentityError::ImplementationError);
+        }
+        Ok(self.sign_sk[..Self::SIGN_KEY_LENGTH].to_vec())
     }
 }
 

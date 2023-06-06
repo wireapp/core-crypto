@@ -48,7 +48,21 @@ impl MlsCentral {
     /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it
     /// to initialize the MLS client with a certificate
     pub async fn e2ei_mls_init(&mut self, e2ei: WireE2eIdentity, certificate_chain: String) -> E2eIdentityResult<()> {
-        e2ei.certificate_response(self, certificate_chain).await
+        let sk = e2ei.get_sign_key_for_mls()?;
+        let cs = e2ei.ciphersuite;
+        let certificate_chain = e2ei.certificate_response(certificate_chain).await?;
+        let private_key = CertificatePrivateKey {
+            value: sk,
+            signature_scheme: cs.signature_algorithm(),
+        };
+
+        let cert_bundle = CertificateBundle {
+            certificate_chain,
+            private_key,
+        };
+        let identifier = ClientIdentifier::X509(HashMap::from([(cs, cert_bundle)]));
+        self.mls_init(identifier, vec![cs]).await?;
+        Ok(())
     }
 }
 
@@ -378,25 +392,8 @@ impl WireE2eIdentity {
         Ok(certificate)
     }
 
-    async fn certificate_response(
-        self,
-        mls_central: &mut MlsCentral,
-        certificate_chain: String,
-    ) -> E2eIdentityResult<()> {
-        let certificate_chain = self.acme_x509_certificate_response(certificate_chain)?;
-        let private_key = CertificatePrivateKey {
-            value: self.sign_sk,
-            signature_scheme: self.ciphersuite.signature_algorithm(),
-        };
-
-        let cert_bundle = CertificateBundle {
-            certificate_chain,
-            private_key,
-        };
-        // TODO
-        let identifier = ClientIdentifier::X509(HashMap::from([(self.ciphersuite, cert_bundle)]));
-        mls_central.mls_init(identifier, vec![self.ciphersuite]).await?;
-        Ok(())
+    async fn certificate_response(self, certificate_chain: String) -> E2eIdentityResult<Vec<Vec<u8>>> {
+        Ok(self.acme_x509_certificate_response(certificate_chain)?)
     }
 }
 
@@ -414,7 +411,6 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    #[ignore]
     pub async fn e2e_identity_should_work(case: TestCase) {
         run_test_wo_clients(case.clone(), move |cc| {
             Box::pin(async move {
@@ -603,30 +599,30 @@ pub mod tests {
         let _certificate_req = enrollment.certificate_request(previous_nonce.to_string())?;
 
         let certificate_resp = r#"-----BEGIN CERTIFICATE-----
-MIICLjCCAdSgAwIBAgIQIi6jHWSEF/LHAkiyoiSHbjAKBggqhkjOPQQDAjAuMQ0w
+MIICIjCCAcigAwIBAgIQKRapc1IDZvJc88zB+vlrNTAKBggqhkjOPQQDAjAuMQ0w
 CwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3aXJlIEludGVybWVkaWF0ZSBDQTAeFw0y
-MzA0MDUwOTI2NThaFw0yMzA0MDUxMDI2NThaMCkxETAPBgNVBAoTCHdpcmUuY29t
-MRQwEgYDVQQDEwtBbGljZSBTbWl0aDAqMAUGAytlcAMhAGzbFXHk2ngUGpBYzabE
-AtDJIefbX1/wDUSDJbEL/nJNo4IBBjCCAQIwDgYDVR0PAQH/BAQDAgeAMB0GA1Ud
-JQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAdBgNVHQ4EFgQUhifYTPG7M3pyQMrz
-HYmakvfDG80wHwYDVR0jBBgwFoAUHPSH1n7X87LAYJnc+cFG2a3ZAQ4wcgYDVR0R
-BGswaYZQaW06d2lyZWFwcD1OamhsTXpJeE9XRmpPRFJpTkRBd1lqazBaR0ZoWkRB
-Mk56RXhOVEV5TlRnLzZjMTg2NmY1Njc2MTZmMzFAd2lyZS5jb22GFWltOndpcmVh
-cHA9YWxpY2Vfd2lyZTAdBgwrBgEEAYKkZMYoQAEEDTALAgEGBAR3aXJlBAAwCgYI
-KoZIzj0EAwIDSAAwRQIhAKY0Zs8SYwS7mFFenPDoCDHPQbCbV9VdvYpBQncOFD5K
-AiAisX68Di4B0dN059YsVDXpM0drnkrVTRKHV+F+ipDjZQ==
+MzA2MDYxMjAzMDlaFw0zMzA2MDMxMjAzMDlaMCkxETAPBgNVBAoTCHdpcmUuY29t
+MRQwEgYDVQQDEwtBbGljZSBTbWl0aDAqMAUGAytlcAMhACqExBb1vLgMNq8GkLgM
+R+W+dp0szvjYL2GybNkPKzoto4H7MIH4MA4GA1UdDwEB/wQEAwIHgDATBgNVHSUE
+DDAKBggrBgEFBQcDAjAdBgNVHQ4EFgQUaPHUDloFLv5o4j4J4EmvoYToqHcwHwYD
+VR0jBBgwFoAUlbTj2u59dFDGs1LVj0GrGKJUK/gwcgYDVR0RBGswaYYVaW06d2ly
+ZWFwcD1hbGljZV93aXJlhlBpbTp3aXJlYXBwPVl6QXpZalZoT1dRMFpqSXdOR0k1
+T1Rrek9HRTRPREptT1RjeE0yWm1PR00vNDk1OWJjNmFiMTJmMjg0NkB3aXJlLmNv
+bTAdBgwrBgEEAYKkZMYoQAEEDTALAgEGBAR3aXJlBAAwCgYIKoZIzj0EAwIDSAAw
+RQIhAIRaoCuyIAXtpAsUhZvJb7Qb+2EKsc9iIzHtsBU5MtVMAiAz2Tm4ojAolq4J
+ZjWPVSDz4AN1gd200EpS50cS/mLDqw==
 -----END CERTIFICATE-----
 -----BEGIN CERTIFICATE-----
-MIIBtzCCAV6gAwIBAgIQPbElEJQ58HlbQf7bqrJjXTAKBggqhkjOPQQDAjAmMQ0w
-CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjMwNDA1MDky
-NjUzWhcNMzMwNDAyMDkyNjUzWjAuMQ0wCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3
-aXJlIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGbM
-rA1eqJE9xlGOwO+sYbexThtlU/to9jJj5SBoKPx7Q8QMBlmPTjqDVumXhUvSe+xY
-JE7M+lBXfVZCywzIIPWjZjBkMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG
-AQH/AgEAMB0GA1UdDgQWBBQc9IfWftfzssBgmdz5wUbZrdkBDjAfBgNVHSMEGDAW
-gBQY+1rDw64QLm/weFQC1mo9y29ddTAKBggqhkjOPQQDAgNHADBEAiARvd7RBuuv
-OhUy7ncjd/nzoN5Qs0p6D+ujdSLDqLlNIAIgfkwAAgsQMDF3ClqVM/p9cmS95B0g
-CAdIObqPoNL5MJo=
+MIIBuTCCAV6gAwIBAgIQYiSIW2ebbC32Iq5YO0AyLDAKBggqhkjOPQQDAjAmMQ0w
+CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjMwNjA2MTIw
+MzA2WhcNMzMwNjAzMTIwMzA2WjAuMQ0wCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3
+aXJlIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEKu
+1Ekx95MKKr9FxUspwFtyErShqoPKZNlyfz8u8lmvi50FpwqUXem1EoOUOm7UHy5m
+HJO513uJY0Q/ecZUwAKjZjBkMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG
+AQH/AgEAMB0GA1UdDgQWBBSVtOPa7n10UMazUtWPQasYolQr+DAfBgNVHSMEGDAW
+gBSy9uS81ABjfHbkz42x/Gf160mt1jAKBggqhkjOPQQDAgNJADBGAiEAq/T83XSg
+7/GN+fUi79bzXI9oQdDuXqyhGnjIXtr2D8YCIQCuS1tZQm6lVcDZMWYQWLfv/b46
+GjWuPgx1fD4m+ar9Tw==
 -----END CERTIFICATE-----"#;
         cc.e2ei_mls_init(enrollment, certificate_resp.to_string()).await
     }

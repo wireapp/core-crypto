@@ -61,7 +61,6 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    #[ignore]
     pub async fn e2e_identity_should_work(case: TestCase) {
         run_test_wo_clients(case.clone(), move |cc| {
             Box::pin(async move {
