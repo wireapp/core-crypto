@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::mls::conversation::config::MAX_PAST_EPOCHS;
+
 /// CoreCrypto errors
 #[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
 pub enum CryptoError {
@@ -149,6 +151,9 @@ pub enum CryptoError {
     /// Parent group cannot be found
     #[error("The specified parent group has not been found in the keystore")]
     ParentGroupNotFound,
+    /// Message epoch is too old
+    #[error("The epoch in which message was encrypted is older than {MAX_PAST_EPOCHS}")]
+    MessageEpochTooOld,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

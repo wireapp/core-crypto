@@ -9,7 +9,7 @@
 //! | 1+ pend. Proposal | ✅              | ✅              |
 
 use openmls::{
-    framing::errors::MessageDecryptionError,
+    framing::errors::{MessageDecryptionError, SecretTreeError},
     prelude::{
         MlsMessageIn, MlsMessageInBody, ProcessMessageError, ProcessedMessage, ProcessedMessageContent,
         ProtocolMessage, ValidationError,
@@ -185,6 +185,9 @@ impl MlsConversation {
                 ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
                     MessageDecryptionError::AeadError,
                 )) => CryptoError::DecryptionError,
+                ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
+                    MessageDecryptionError::SecretTreeError(SecretTreeError::TooDistantInThePast),
+                )) => CryptoError::MessageEpochTooOld,
                 _ => CryptoError::from(MlsError::from(e)),
             })
     }
@@ -1222,7 +1225,61 @@ pub mod tests {
     }
 
     pub mod epoch_sync {
+        use crate::mls::conversation::config::MAX_PAST_EPOCHS;
+
         use super::*;
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_throw_specialized_error_when_epoch_too_old(mut case: TestCase) {
+            case.cfg.custom.out_of_order_tolerance = 0;
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central
+                            .invite(&id, &mut bob_central, case.custom_cfg())
+                            .await
+                            .unwrap();
+
+                        // Alice encrypts a message to Bob
+                        let bob_message1 = alice_central.encrypt_message(&id, b"Hello Bob").await.unwrap();
+                        let bob_message2 = alice_central.encrypt_message(&id, b"Hello again Bob").await.unwrap();
+
+                        // Move group's epoch forward by self updating
+                        for _ in 0..MAX_PAST_EPOCHS {
+                            let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
+                            alice_central.commit_accepted(&id).await.unwrap();
+                            bob_central
+                                .decrypt_message(&id, commit.to_bytes().unwrap())
+                                .await
+                                .unwrap();
+                        }
+                        // Decrypt should work
+                        let decrypt = bob_central.decrypt_message(&id, &bob_message1).await.unwrap();
+                        assert_eq!(decrypt.app_msg.unwrap(), b"Hello Bob");
+
+                        // Moving the epochs once more should cause an error
+                        let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
+                        alice_central.commit_accepted(&id).await.unwrap();
+                        bob_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+
+                        let decrypt = bob_central.decrypt_message(&id, &bob_message2).await;
+                        assert!(matches!(decrypt.unwrap_err(), CryptoError::MessageEpochTooOld));
+                    })
+                },
+            )
+            .await
+        }
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]

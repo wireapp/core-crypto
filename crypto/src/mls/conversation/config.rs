@@ -27,6 +27,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{mls::MlsCiphersuite, CryptoResult};
 
+/// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
+pub(crate) const MAX_PAST_EPOCHS: usize = 2;
+
 /// The configuration parameters for a group/conversation
 #[derive(Debug, Clone, Default)]
 pub struct MlsConversationConfiguration {
@@ -48,7 +51,7 @@ impl MlsConversationConfiguration {
     pub fn as_openmls_default_configuration(&self) -> CryptoResult<openmls::group::MlsGroupConfig> {
         Ok(openmls::group::MlsGroupConfig::builder()
             .wire_format_policy(self.custom.wire_policy.into())
-            .max_past_epochs(3)
+            .max_past_epochs(MAX_PAST_EPOCHS)
             .padding_size(Self::PADDING_SIZE)
             .number_of_resumption_psks(1)
             .sender_ratchet_configuration(SenderRatchetConfiguration::new(
