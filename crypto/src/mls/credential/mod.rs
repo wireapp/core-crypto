@@ -87,19 +87,20 @@ impl Client {
 // Requires more than 1 ciphersuite supported at the moment.
 #[cfg(test)]
 pub mod tests {
-    use crate::prelude::{ConversationId, MlsCredentialType};
-    use openmls::prelude::{CreationFromExternalError, WelcomeError};
-    use openmls::treesync::errors::TreeSyncFromNodesError;
-    use openmls::treesync::RatchetTreeError;
+    use openmls::{
+        prelude::{CreationFromExternalError, WelcomeError},
+        treesync::{errors::TreeSyncFromNodesError, RatchetTreeError},
+    };
     use std::collections::HashMap;
     use wasm_bindgen_test::*;
     use wire_e2e_identity::prelude::WireIdentityBuilder;
 
-    use crate::mls::credential::x509::CertificatePrivateKey;
-    use crate::prelude::ClientIdentifier;
     use crate::{
         error::CryptoError,
-        mls::{MlsCentral, MlsCentralConfiguration, MlsConversationConfiguration},
+        mls::{
+            credential::x509::CertificatePrivateKey, MlsCentral, MlsCentralConfiguration, MlsConversationConfiguration,
+        },
+        prelude::{ClientIdentifier, ConversationId, MlsCredentialType},
         test_utils::*,
     };
 
@@ -296,8 +297,7 @@ pub mod tests {
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_expired(case: TestCase) {
         if matches!(case.credential_type, MlsCredentialType::X509) {
-            let now = wire_e2e_identity::prelude::OffsetDateTime::now_utc();
-            let in_2_secs = now + core::time::Duration::from_secs(2);
+            let in_2_secs = now() + core::time::Duration::from_secs(2);
             let (certificate_chain, sign_key) = WireIdentityBuilder {
                 not_after: in_2_secs,
                 ..Default::default()
@@ -338,8 +338,7 @@ pub mod tests {
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_not_valid_yet(case: TestCase) {
         if matches!(case.credential_type, MlsCredentialType::X509) {
-            let now = wire_e2e_identity::prelude::OffsetDateTime::now_utc();
-            let tomorrow = now + core::time::Duration::from_secs(3600 * 24);
+            let tomorrow = now() + core::time::Duration::from_secs(3600 * 24);
             let (certificate_chain, sign_key) = WireIdentityBuilder {
                 not_before: tomorrow,
                 ..Default::default()
@@ -366,6 +365,13 @@ pub mod tests {
                 ))
             ));
         }
+    }
+
+    /// In order to be WASM-compatible
+    fn now() -> wire_e2e_identity::prelude::OffsetDateTime {
+        let now = fluvio_wasm_timer::SystemTime::now();
+        let now_since_epoch = now.duration_since(fluvio_wasm_timer::UNIX_EPOCH).unwrap().as_secs() as i64;
+        wire_e2e_identity::prelude::OffsetDateTime::from_unix_timestamp(now_since_epoch).unwrap()
     }
 
     async fn try_talk(
