@@ -35,8 +35,8 @@ typealias ApplicationMessage = ByteArray
 typealias PlainMessage = ByteArray
 typealias MLSKeyPackage = ByteArray
 
-open class PublicGroupStateBundle(
-    var encryptionType: MlsPublicGroupStateEncryptionType,
+open class GroupInfoBundle(
+    var encryptionType: MlsGroupInfoEncryptionType,
     var ratchetTreeType: MlsRatchetTreeType,
     var payload: ByteArray
 )
@@ -44,7 +44,7 @@ open class PublicGroupStateBundle(
 open class CommitBundle(
     val commit: ByteArray,
     val welcome: ByteArray?,
-    val publicGroupStateBundle: PublicGroupStateBundle
+    val groupInfoBundle: GroupInfoBundle
 )
 
 class DecryptedMessageBundle(
@@ -77,7 +77,7 @@ interface MLSClient {
         credentialType: MlsCredentialType
     ): HandshakeMessage
 
-    fun joinByExternalCommit(publicGroupState: ByteArray, credentialType: MlsCredentialType): CommitBundle
+    fun joinByExternalCommit(groupInfo: ByteArray, credentialType: MlsCredentialType): CommitBundle
 
     fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId)
 
@@ -168,9 +168,9 @@ class MLSClientImpl(
         ).toByteArray()
     }
 
-    override fun joinByExternalCommit(publicGroupState: ByteArray, credentialType: MlsCredentialType): CommitBundle {
+    override fun joinByExternalCommit(groupInfo: ByteArray, credentialType: MlsCredentialType): CommitBundle {
         return cc.joinByExternalCommit(
-            publicGroupState.toUByteList(),
+            groupInfo.toUByteList(),
             defaultGroupConfiguration,
             credentialType
         ).toCommitBundle()
@@ -274,22 +274,22 @@ class MLSClientImpl(
         fun MemberAddedMessages.toCommitBundle() = CommitBundle(
             commit.toByteArray(),
             welcome.toByteArray(),
-            publicGroupState.toPublicGroupStateBundle()
+            groupInfo.toGroupInfoBundle()
         )
 
         fun com.wire.crypto.CommitBundle.toCommitBundle() = CommitBundle(
             commit.toByteArray(),
             welcome?.toByteArray(),
-            publicGroupState.toPublicGroupStateBundle()
+            groupInfo.toGroupInfoBundle()
         )
 
         fun ConversationInitBundle.toCommitBundle() = CommitBundle(
             commit.toByteArray(),
             null,
-            publicGroupState.toPublicGroupStateBundle()
+            groupInfo.toGroupInfoBundle()
         )
 
-        fun com.wire.crypto.PublicGroupStateBundle.toPublicGroupStateBundle() = PublicGroupStateBundle(
+        fun com.wire.crypto.GroupInfoBundle.toGroupInfoBundle() = GroupInfoBundle(
             encryptionType,
             ratchetTreeType,
             payload.toByteArray()
