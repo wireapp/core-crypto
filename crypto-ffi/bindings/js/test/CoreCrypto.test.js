@@ -76,23 +76,23 @@ test("init", async () => {
   await ctx.close();
 });
 
-test("can use pgs enums", async () => {
+test("can use groupInfo enums", async () => {
   const [ctx, page] = await initBrowser();
 
-  const [PublicGroupStateEncryptionType, RatchetTreeType] = await page.evaluate(async () => {
-    const { CoreCrypto, Ciphersuite, CredentialType, PublicGroupStateEncryptionType, RatchetTreeType } = await import ("./corecrypto.js");
+  const [GroupInfoEncryptionType, RatchetTreeType] = await page.evaluate(async () => {
+    const { CoreCrypto, Ciphersuite, CredentialType, GroupInfoEncryptionType, RatchetTreeType } = await import ("./corecrypto.js");
 
-    window.GroupInfoEncryptionType = PublicGroupStateEncryptionType;
+    window.GroupInfoEncryptionType = GroupInfoEncryptionType;
     window.RatchetTreeType = RatchetTreeType;
     window.CoreCrypto = CoreCrypto;
     window.Ciphersuite = Ciphersuite;
     window.CredentialType = CredentialType.Basic;
 
-    return [PublicGroupStateEncryptionType, RatchetTreeType];
+    return [GroupInfoEncryptionType, RatchetTreeType];
   });
 
-  expect(PublicGroupStateEncryptionType.Plaintext).toBe(0x01);
-  expect(PublicGroupStateEncryptionType.JweEncrypted).toBe(0x02);
+  expect(GroupInfoEncryptionType.Plaintext).toBe(0x01);
+  expect(GroupInfoEncryptionType.JweEncrypted).toBe(0x02);
   expect(await page.evaluate(() => window.GroupInfoEncryptionType.Plaintext)).toBe(0x01);
   expect(await page.evaluate(() => window.GroupInfoEncryptionType.JweEncrypted)).toBe(0x02);
   expect(RatchetTreeType.Full).toBe(0x01);
@@ -128,15 +128,15 @@ test("can use pgs enums", async () => {
 
     await cc.createConversation(conversationId, window.CredentialType);
 
-    const { publicGroupState } = await cc.addClientsToConversation(conversationId, [
+    const { groupInfo: groupInfo } = await cc.addClientsToConversation(conversationId, [
       { id: encoder.encode(client2Config.clientId), kp },
     ]);
 
-    return publicGroupState;
+    return groupInfo;
   });
 
   expect(pgs.encryptionType).toBe(0x01);
-  expect(pgs.encryptionType).toBe(PublicGroupStateEncryptionType.Plaintext);
+  expect(pgs.encryptionType).toBe(GroupInfoEncryptionType.Plaintext);
   expect(pgs.ratchetTreeType).toBe(0x01);
   expect(pgs.ratchetTreeType).toBe(RatchetTreeType.Full);
 
@@ -479,7 +479,7 @@ test("roundtrip message", async () => {
 
   welcome.welcome = Uint8Array.from(welcome.welcome);
   welcome.commit = Uint8Array.from(welcome.commit);
-  welcome.publicGroupState = Uint8Array.from(welcome.publicGroupState);
+  welcome.groupInfo = Uint8Array.from(welcome.groupInfo);
 
   message = Uint8Array.from(Object.values(message));
 
@@ -704,9 +704,9 @@ test("ext commits|proposals & callbacks", async () => {
       throw new Error("clientIsExistingGroupUser callback wasn't triggered");
     }
 
-    const pgs = extProposalCommit.publicGroupState;
+    const gi = extProposalCommit.groupInfo;
 
-    const extCommit = await ccExternalCommit.joinByExternalCommit(pgs.payload, credentialType);
+    const extCommit = await ccExternalCommit.joinByExternalCommit(gi.payload, credentialType);
     // ! This should trigger the userAuthorize callback
     const somethingCommit = cc.decryptMessage(conversationId, extCommit.commit);
 

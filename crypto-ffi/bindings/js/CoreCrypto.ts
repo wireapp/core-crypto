@@ -1204,7 +1204,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Allows to create an external commit to "apply" to join a group through its public group state.
+     * Allows to create an external commit to "apply" to join a group through its GroupInfo.
      *
      * If the Delivery Service accepts the external commit, you have to {@link CoreCrypto.mergePendingGroupFromExternalCommit}
      * in order to get back a functional MLS group. On the opposite, if it rejects it, you can either retry by just
