@@ -271,7 +271,12 @@ pub mod tests {
     use super::*;
     use rusty_acme::prelude::WireIdentityReader as _;
 
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
     #[test]
+    #[wasm_bindgen_test]
     fn should_have_expected_identity_claims() {
         let client_id = "ZTNlZGQyZTE3YjVjNDcxYmExYzRlZDI3ZDc3OGM0MmM:6bf3531c4811b575@wire.com";
         let handle = "alice_wire";
@@ -295,6 +300,7 @@ pub mod tests {
     }
 
     #[test]
+    #[wasm_bindgen_test]
     fn default_should_be_valid() {
         let (cert_chain, ..) = WireIdentityBuilder::default().build_x509();
         let cert = cert_chain.get(0).unwrap();
