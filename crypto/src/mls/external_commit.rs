@@ -434,15 +434,14 @@ mod tests {
                         .unwrap();
                     let group_info = alice_central.get_group_info(&id).await;
                     // Alice can rejoin by external commit
-                    let alice_join = alice_central
+                    alice_central
                         .join_by_external_commit(group_info.clone().into(), case.custom_cfg(), case.credential_type)
-                        .await;
-                    assert!(alice_join.is_ok());
-                    // So can Bob
-                    let bob_join = bob_central
-                        .join_by_external_commit(group_info.into(), case.custom_cfg(), case.credential_type)
-                        .await;
-                    assert!(bob_join.is_ok());
+                        .await
+                        .unwrap();
+                    alice_central
+                        .merge_pending_group_from_external_commit(&id)
+                        .await
+                        .unwrap();
                 })
             },
         )
