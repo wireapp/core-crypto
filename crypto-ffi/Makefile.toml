@@ -142,7 +142,7 @@ condition = { platforms = ["mac"] }
 script = '''
     cd bindings/swift
 
-    ./create-xcframework.sh
+    ./build-xcframework.sh
 '''
 dependencies = ["ios"]
 
