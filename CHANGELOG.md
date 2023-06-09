@@ -7,6 +7,25 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-pre.1] - 2023-06-11
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Features
+
+- CoreCrypto draft-20 upgrade
+- Generate XCFramework when releasing for Swift ([#330](https://github.com/wireapp/core-crypto/issues/330))
+
+</details>
+
+* **[BREAKING]**: MLS draft-20 !
+  * internally use the latest version of openmls compatible with draft-20 (not yet RFC9420)
+  * `Public Group State` methods/fields etc.. have been renamed into `Group Info`
+  * `CommitBundle` fields (welcome, commit, group_info) are now wrapped in MLS messages
+  * `new_external_proposal()` has been removed
+  * By default, partial commits (w/o UpdatePath) are created
+
 ## [0.11.0] - 2023-05-31
 
 <details>

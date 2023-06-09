@@ -7,11 +7,25 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-pre.1] - 2023-06-11
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-pre.1" unreleased=true}}
+</details>
+
+* **[BREAKING]**: MLS draft-20 !
+  * internally use the latest version of openmls compatible with draft-20 (not yet RFC9420)
+  * `Public Group State` methods/fields etc.. have been renamed into `Group Info`
+  * `CommitBundle` fields (welcome, commit, group_info) are now wrapped in MLS messages
+  * `new_external_proposal()` has been removed
+  * By default, partial commits (w/o UpdatePath) are created
+
 ## [0.11.0] - 2023-05-31
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v0.11.0" unreleased=true}}
+{{git-cliff tag="v0.11.0"}}
 </details>
 
 * **[BREAKING]**: fix Ciphersuite lowering for mobile FFI, using either a 16-bit integer (or a List of it) to lower those types across the FFI.
