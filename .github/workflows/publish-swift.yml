@@ -32,7 +32,7 @@ jobs:
       - name: Build xcframework
         run: |
           cd crypto-ffi
-          cargo make create-ios-xcframework
+          cargo make ios-create-xcframework
       - name: Upload xcframework
         uses: softprops/action-gh-release@v1
         with:
