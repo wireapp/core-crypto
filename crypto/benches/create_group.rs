@@ -2,6 +2,7 @@ use criterion::{
     async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion,
 };
 use futures_lite::future::block_on;
+use openmls::framing::MlsMessageInBody;
 
 use openmls::prelude::MlsMessageIn;
 
@@ -103,6 +104,10 @@ fn join_from_group_info_bench(c: &mut Criterion) {
                         add_clients(&mut alice_central, &id, ciphersuite, *i);
                         let gi = block_on(async { alice_central.export_group_info(&id).await.unwrap() });
                         let gi = MlsMessageIn::tls_deserialize(&mut gi.as_slice()).unwrap();
+                        let gi = match gi.extract() {
+                            MlsMessageInBody::GroupInfo(vgi) => vgi,
+                            _ => panic!("oups"),
+                        };
                         let (bob_central, ..) = new_central(ciphersuite, &credential, in_memory);
                         (bob_central, gi)
                     },

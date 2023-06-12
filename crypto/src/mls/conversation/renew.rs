@@ -319,7 +319,7 @@ pub mod tests {
                             .unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
 
@@ -468,7 +468,7 @@ pub mod tests {
                             .unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
 
@@ -623,7 +623,7 @@ pub mod tests {
                             .unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
 
@@ -672,7 +672,7 @@ pub mod tests {
                             .unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
 
@@ -722,7 +722,7 @@ pub mod tests {
                             .unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
                         let gi = alice_central.get_group_info(&id).await;
@@ -730,7 +730,7 @@ pub mod tests {
                             .try_join_from_group_info(
                                 &case,
                                 &id,
-                                gi.into(),
+                                gi,
                                 vec![&mut alice_central, &mut bob_central, &mut charlie_central],
                             )
                             .await
@@ -783,7 +783,7 @@ pub mod tests {
                             .unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
                         let gi = alice_central.get_group_info(&id).await;
@@ -791,7 +791,7 @@ pub mod tests {
                             .try_join_from_group_info(
                                 &case,
                                 &id,
-                                gi.into(),
+                                gi,
                                 vec![&mut alice_central, &mut bob_central, &mut charlie_central],
                             )
                             .await
@@ -843,7 +843,7 @@ pub mod tests {
                             .unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
                         let gi = alice_central.get_group_info(&id).await;
@@ -851,7 +851,7 @@ pub mod tests {
                             .try_join_from_group_info(
                                 &case,
                                 &id,
-                                gi.into(),
+                                gi,
                                 vec![&mut alice_central, &mut bob_central, &mut charlie_central],
                             )
                             .await

@@ -14,8 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use openmls::framing::{MlsMessageIn, MlsMessageInBody};
-use openmls::prelude::{MlsGroup, MlsMessageOut, Proposal, Sender, StagedCommit};
+use openmls::prelude::{group_info::VerifiableGroupInfo, MlsGroup, MlsMessageOut, Proposal, Sender, StagedCommit};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use core_crypto_keystore::CryptoKeystoreMls;
@@ -81,17 +80,11 @@ impl MlsCentral {
     /// Errors resulting from OpenMls, the KeyStore calls and serialization
     pub async fn join_by_external_commit(
         &mut self,
-        group_info: MlsMessageIn,
+        group_info: VerifiableGroupInfo,
         custom_cfg: MlsCustomConfiguration,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<MlsConversationInitBundle> {
         let mls_client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
-
-        let group_info = match group_info.extract() {
-            MlsMessageInBody::GroupInfo(gi) => gi,
-            // TODO: proper error handling
-            _ => return Err(CryptoError::ImplementationError),
-        };
 
         let cs = group_info.ciphersuite().into();
         let cb = mls_client
@@ -280,7 +273,7 @@ mod tests {
                         commit: external_commit,
                         ..
                     } = bob_central
-                        .join_by_external_commit(group_info.into(), case.custom_cfg(), case.credential_type)
+                        .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
                     assert_eq!(group_id.as_slice(), &id);
@@ -339,7 +332,7 @@ mod tests {
 
                     // Bob tries to join Alice's group
                     bob_central
-                        .join_by_external_commit(group_info.clone().into(), case.custom_cfg(), case.credential_type)
+                        .join_by_external_commit(group_info.clone(), case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
                     // BUT for some reason the Delivery Service will reject this external commit
@@ -351,7 +344,7 @@ mod tests {
                         commit: external_commit,
                         ..
                     } = bob_central
-                        .join_by_external_commit(group_info.into(), case.custom_cfg(), case.credential_type)
+                        .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
                     assert_eq!(conversation_id.as_slice(), &id);
@@ -395,7 +388,7 @@ mod tests {
                         commit: external_commit,
                         ..
                     } = bob_central
-                        .join_by_external_commit(group_info.into(), case.custom_cfg(), case.credential_type)
+                        .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
 
@@ -435,7 +428,7 @@ mod tests {
                     let group_info = alice_central.get_group_info(&id).await;
                     // Alice can rejoin by external commit
                     alice_central
-                        .join_by_external_commit(group_info.clone().into(), case.custom_cfg(), case.credential_type)
+                        .join_by_external_commit(group_info.clone(), case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
                     alice_central
@@ -491,7 +484,7 @@ mod tests {
                         group_info,
                         ..
                     } = bob_central
-                        .join_by_external_commit(group_info.into(), case.custom_cfg(), case.credential_type)
+                        .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
 
@@ -509,7 +502,7 @@ mod tests {
                     assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
 
                     // Now charlie wants to join with the [GroupInfo] from Bob's external commit
-                    let bob_gi = group_info.get_payload();
+                    let bob_gi = group_info.get_group_info();
                     let MlsConversationInitBundle {
                         commit: charlie_external_commit,
                         ..
@@ -570,7 +563,7 @@ mod tests {
 
                     // Bob tries to join Alice's group
                     let MlsConversationInitBundle { commit, .. } = bob_central
-                        .join_by_external_commit(group_info.into(), case.custom_cfg(), case.credential_type)
+                        .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
                     let alice_accepts_ext_commit =
@@ -610,7 +603,7 @@ mod tests {
 
                     // Bob tries to join Alice's group
                     let MlsConversationInitBundle { commit, .. } = bob_central
-                        .join_by_external_commit(group_info.into(), case.custom_cfg(), case.credential_type)
+                        .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
                     let alice_accepts_ext_commit =
@@ -644,7 +637,7 @@ mod tests {
 
                     // Bob tries to join Alice's group
                     bob_central
-                        .join_by_external_commit(group_info.into(), case.custom_cfg(), case.credential_type)
+                        .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
 

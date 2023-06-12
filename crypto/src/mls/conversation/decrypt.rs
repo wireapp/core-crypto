@@ -1082,7 +1082,7 @@ pub mod tests {
                         // in epoch 2 which should fail
                         let gi = alice_central.get_group_info(&id).await;
                         bob_central
-                            .join_by_external_commit(gi.into(), case.custom_cfg(), case.credential_type)
+                            .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
                             .await
                             .unwrap();
                         bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
