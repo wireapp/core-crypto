@@ -7,11 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-pre.4] - 2023-06-12
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-pre.4" unreleased=true}}
+</details>
+
+* build: fixed different sources of tls_codec
+
 ## [1.0.0-pre.3] - 2023-06-11
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-pre.3" unreleased=true}}
+{{git-cliff tag="v1.0.0-pre.3"}}
 </details>
 
 * fix: tls_codec had an issue with variable length encoding
