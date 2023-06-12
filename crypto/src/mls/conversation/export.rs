@@ -179,10 +179,7 @@ pub mod tests {
 
                         assert_eq!(alice_central.get_client_ids(&id).await.unwrap().len(), 1);
 
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         assert_eq!(alice_central.get_client_ids(&id).await.unwrap().len(), 2);
                     })
                 },

@@ -15,7 +15,7 @@ impl MlsConversation {
     fn e2ei_is_degraded(&self) -> bool {
         self.group.members().any(|kp| {
             let is_basic = matches!(kp.credential.get_type(), Ok(MlsCredentialType::Basic));
-            let invalid_identity = Self::extract_identity(&kp.credential).is_err();
+            let invalid_identity = kp.credential.extract_identity().is_err();
             is_basic || invalid_identity
         })
     }
@@ -47,10 +47,7 @@ pub mod tests {
                         .new_conversation(id.clone(), creator_ct, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central
-                        .invite(&id, &mut bob_central, case.custom_cfg())
-                        .await
-                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                     match case.credential_type {
                         MlsCredentialType::Basic => {
@@ -83,12 +80,14 @@ pub mod tests {
                     let creator_client = alice_central.mls_client.as_mut().unwrap();
                     let creator_ct = match case.credential_type {
                         MlsCredentialType::Basic => {
-                            let cert_bundle =
-                                crate::prelude::CertificateBundle::rand(case.cfg.ciphersuite, "alice".into());
+                            let cert_bundle = crate::prelude::CertificateBundle::rand(
+                                creator_client.id(),
+                                case.cfg.ciphersuite.signature_algorithm(),
+                            );
                             creator_client
                                 .init_x509_credential_bundle_if_missing(
                                     &alice_central.mls_backend,
-                                    case.ciphersuite(),
+                                    case.signature_scheme(),
                                     cert_bundle,
                                 )
                                 .await
@@ -98,7 +97,10 @@ pub mod tests {
                         }
                         MlsCredentialType::X509 => {
                             creator_client
-                                .init_basic_credential_bundle_if_missing(&alice_central.mls_backend, case.ciphersuite())
+                                .init_basic_credential_bundle_if_missing(
+                                    &alice_central.mls_backend,
+                                    case.signature_scheme(),
+                                )
                                 .await
                                 .unwrap();
                             MlsCredentialType::Basic
@@ -109,10 +111,7 @@ pub mod tests {
                         .new_conversation(id.clone(), creator_ct, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central
-                        .invite(&id, &mut bob_central, case.custom_cfg())
-                        .await
-                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                     // since in that case both have a different credential type the conversation is always degraded
                     assert!(alice_central.e2ei_is_degraded(&id).await.unwrap());

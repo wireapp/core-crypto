@@ -74,6 +74,9 @@ pub enum CryptoKeystoreError {
     KeyStoreValueTransformError(#[from] postcard::Error),
     #[error(transparent)]
     IoError(#[from] std::io::Error),
+    #[cfg(not(target_family = "wasm"))]
+    #[error(transparent)]
+    TimeError(#[from] std::time::SystemTimeError),
     #[cfg(target_family = "wasm")]
     #[error(transparent)]
     ChannelError(#[from] std::sync::mpsc::TryRecvError),
@@ -132,6 +135,12 @@ pub enum CryptoKeystoreError {
     #[cfg(target_family = "wasm")]
     #[error("{0}")]
     JsError(String),
+    #[error("Not implemented (and probably never will)")]
+    NotImplemented,
+    #[error("Failed getting current timestamp")]
+    TimestampError,
+    #[error("Could not find {0} in keystore with value {1}")]
+    NotFound(&'static str, String),
 }
 
 #[cfg(target_family = "wasm")]

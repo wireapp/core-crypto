@@ -154,6 +154,15 @@ pub enum CryptoError {
     /// Message epoch is too old
     #[error("The epoch in which message was encrypted is older than {MAX_PAST_EPOCHS}")]
     MessageEpochTooOld,
+    /// When looking for a X509 credential for a given ciphersuite and it has not been done
+    #[error("End-to-end identity enrollment has not been done")]
+    E2eiEnrollmentNotDone,
+    /// A Credential was not found locally which is very likely an implementation error
+    #[error("A Credential was not found locally which is very likely an implementation error")]
+    CredentialNotFound,
+    /// The MLS group is in an invalid state for an unknown reason
+    #[error("The MLS group is in an invalid state for an unknown reason")]
+    InternalMlsError,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]
@@ -261,6 +270,11 @@ pub enum MlsError {
     /// OpenMLS encrypt message error
     #[error(transparent)]
     MlsEncryptMessageError(#[from] openmls::framing::errors::MlsMessageError),
+    /// OpenMLS delete KeyPackage error
+    #[error(transparent)]
+    MlsDeleteKeyPackageError(
+        #[from] openmls::key_packages::errors::KeyPackageDeleteError<core_crypto_keystore::CryptoKeystoreError>,
+    ),
 }
 
 #[derive(Debug, thiserror::Error, strum::IntoStaticStr)]

@@ -19,6 +19,12 @@ dictionary CommitBundle {
     GroupInfoBundle group_info;
 };
 
+dictionary RotateBundle {
+    sequence<CommitBundle> commits;
+    sequence<sequence<u8>> new_key_packages;
+    sequence<sequence<u8>> key_package_refs_to_remove;
+};
+
 dictionary ProteusAutoPrekeyBundle {
     u16 id;
     sequence<u8> pkb;
@@ -105,6 +111,9 @@ enum CryptoError {
     "InvalidIdentity",
     "IdentityInitializationError",
     "MessageEpochTooOld",
+    "E2eiEnrollmentNotDone",
+    "CredentialNotFound",
+    "InternalMlsError",
 };
 
 dictionary DecryptedMessage {
@@ -192,6 +201,9 @@ interface CoreCrypto {
 
     [Throws=CryptoError]
     u64 client_valid_keypackages_count(Ciphersuite ciphersuite, MlsCredentialType credential_type);
+
+    [Throws=CryptoError]
+    void delete_keypackages(sequence<sequence<u8>> refs);
 
     [Throws=CryptoError]
     void create_conversation(ConversationId conversation_id, MlsCredentialType creator_credential_type, ConversationConfiguration config);
@@ -330,7 +342,16 @@ interface CoreCrypto {
     WireE2eIdentity e2ei_new_enrollment(string client_id, string display_name, string handle, u32 expiry_days, Ciphersuite ciphersuite);
 
     [Throws=CryptoError]
-    void e2ei_mls_init(WireE2eIdentity enrollment, string certificate_chain);
+    WireE2eIdentity e2ei_new_activation_enrollment(string display_name, string handle, u32 expiry_days, Ciphersuite ciphersuite);
+
+    [Throws=CryptoError]
+    WireE2eIdentity e2ei_new_rotate_enrollment(string? display_name, string? handle, u32 expiry_days, Ciphersuite ciphersuite);
+
+    [Throws=CryptoError]
+    void e2ei_mls_init_only(WireE2eIdentity enrollment, string certificate_chain);
+
+    [Throws=CryptoError]
+    RotateBundle e2ei_rotate_all(WireE2eIdentity enrollment, string certificate_chain, u32 new_key_packages_count);
 
     [Throws=CryptoError]
     sequence<u8> e2ei_enrollment_stash(WireE2eIdentity enrollment);

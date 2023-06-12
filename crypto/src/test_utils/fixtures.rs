@@ -36,13 +36,11 @@ pub use rstest_reuse::{self, *};
         crate::prelude::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     )),
-    /*
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs2(TestCase::new(
         crate::prelude::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     )),
-    */
     #[cfg(feature = "test-all-cipher")]
     case::basic_cs3(TestCase::new(
         crate::prelude::MlsCredentialType::Basic,
@@ -58,13 +56,11 @@ pub use rstest_reuse::{self, *};
         crate::prelude::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
-    /*
     #[cfg(feature = "test-all-cipher")]
     case::cert_cs7(TestCase::new(
         crate::prelude::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
-    */
     #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
     case::basic_cs_pq(TestCase::new(
         crate::prelude::MlsCredentialType::Basic,
@@ -123,6 +119,14 @@ impl TestCase {
             credential_type: MlsCredentialType::X509,
             cfg: MlsConversationConfiguration::default(),
         }
+    }
+
+    pub fn is_x509(&self) -> bool {
+        matches!(self.credential_type, MlsCredentialType::X509)
+    }
+
+    pub fn is_basic(&self) -> bool {
+        matches!(self.credential_type, MlsCredentialType::Basic)
     }
 }
 

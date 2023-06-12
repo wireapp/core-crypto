@@ -20,6 +20,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 use core_crypto_keystore::CryptoKeystoreMls;
 use tls_codec::Serialize;
 
+use crate::prelude::MlsCiphersuite;
 use crate::{
     group_store::GroupStoreValue,
     prelude::{
@@ -86,9 +87,9 @@ impl MlsCentral {
     ) -> CryptoResult<MlsConversationInitBundle> {
         let mls_client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
 
-        let cs = group_info.ciphersuite().into();
+        let cs: MlsCiphersuite = group_info.ciphersuite().into();
         let cb = mls_client
-            .get_or_create_credential_bundle(&self.mls_backend, cs, credential_type)
+            .get_most_recent_or_create_credential_bundle(&self.mls_backend, cs.signature_algorithm(), credential_type)
             .await?;
 
         let serialized_cfg = serde_json::to_vec(&custom_cfg).map_err(MlsError::MlsKeystoreSerializationError)?;
@@ -243,7 +244,7 @@ impl MlsConversation {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use crate::{prelude::MlsConversationInitBundle, test_utils::*, CryptoError};
     use openmls::prelude::*;
     use wasm_bindgen_test::*;
@@ -423,10 +424,7 @@ mod tests {
                         .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central
-                        .invite(&id, &mut bob_central, case.custom_cfg())
-                        .await
-                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                     let group_info = alice_central.get_group_info(&id).await;
                     // Alice can rejoin by external commit
                     alice_central

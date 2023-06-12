@@ -42,25 +42,25 @@ branch = "otak/2.0-error-codes"
 [patch.crates-io.openmls]
 package = "openmls"
 git = "https://github.com/wireapp/openmls"
-# tag = "v0.20.1-pre.core-crypto-1.0.0"
+#tag = "v0.20.1-pre.core-crypto-1.0.0"
 branch = "feat/d20"
 
 [patch.crates-io.openmls_traits]
 package = "openmls_traits"
 git = "https://github.com/wireapp/openmls"
- # tag = "v0.20.1-pre.core-crypto-1.0.0"
- branch = "feat/d20"
+# tag = "v0.20.1-pre.core-crypto-1.0.0"
+branch = "feat/d20"
 
 [patch.crates-io.openmls_basic_credential]
 package = "openmls_basic_credential"
 git = "https://github.com/wireapp/openmls"
-# tag = "v0.20.1-pre.core-crypto-1.0.0"
+#tag = "v0.20.1-pre.core-crypto-1.0.0"
 branch = "feat/d20"
 
 [patch.crates-io.openmls_x509_credential]
 package = "openmls_x509_credential"
 git = "https://github.com/wireapp/openmls"
-# tag = "v0.20.1-pre.core-crypto-1.0.0"
+#tag = "v0.20.1-pre.core-crypto-1.0.0"
 branch = "feat/d20"
 
 [patch.crates-io.hpke]
@@ -70,7 +70,7 @@ branch = "xyber768d00"
 [patch.crates-io.wire-e2e-identity]
 git = "https://github.com/wireapp/rusty-jwt-tools"
 package = "wire-e2e-identity"
-tag = "v0.4.3"
+tag = "v0.4.5"
 
 # aarch64-apple-ios-sim target support has not yet been released
 [patch.crates-io.openssl-src]

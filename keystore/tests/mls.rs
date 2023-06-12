@@ -106,12 +106,12 @@ pub mod tests {
         )
         .unwrap();
 
-        let store_keypair = MlsSignatureKeyPair {
-            credential_id: credential_id.clone(),
-            pk: keypair.to_public_vec(),
-            signature_scheme: keypair.signature_scheme() as u16,
-            keypair: keypair.tls_serialize_detached().unwrap(),
-        };
+        let store_keypair = MlsSignatureKeyPair::new(
+            keypair.signature_scheme(),
+            keypair.to_public_vec(),
+            keypair.tls_serialize_detached().unwrap(),
+            credential_id.clone(),
+        );
 
         backend.key_store().save(store_keypair).await.unwrap();
 

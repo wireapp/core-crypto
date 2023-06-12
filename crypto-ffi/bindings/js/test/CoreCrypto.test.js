@@ -889,7 +889,7 @@ test("end-to-end-identity", async () => {
     const encoder = new TextEncoder();
     const jsonToByteArray = json => encoder.encode(JSON.stringify(json, null, 0));
 
-    const clientId = "NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg:6c1866f567616f31@wire.com";
+    const clientId = "YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM:4959bc6ab12f2846@wire.com";
     const displayName = "Alice Smith";
     const handle = "alice_wire";
     const expiryDays = 90;
@@ -922,7 +922,7 @@ test("end-to-end-identity", async () => {
         "identifiers": [
             {
                 "type": "wireapp-id",
-                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg/6c1866f567616f31@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
             }
         ],
         "authorizations": [
@@ -940,7 +940,7 @@ test("end-to-end-identity", async () => {
         "expires": "2016-01-02T14:09:30Z",
         "identifier": {
             "type": "wireapp-id",
-            "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg/6c1866f567616f31@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+            "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
         },
         "challenges": [
             {
@@ -955,7 +955,7 @@ test("end-to-end-identity", async () => {
                 "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
                 "status": "pending",
                 "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
-                "target": "https://wire.com/clients/6c1866f567616f31/access-token"
+                "target": "https://wire.com/clients/4959bc6ab12f2846/access-token"
             }
         ]
     };
@@ -998,7 +998,7 @@ test("end-to-end-identity", async () => {
         "identifiers": [
             {
                 "type": "wireapp-id",
-                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg/6c1866f567616f31@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
             }
         ],
         "authorizations": [
@@ -1018,7 +1018,7 @@ test("end-to-end-identity", async () => {
         "identifiers": [
             {
                 "type": "wireapp-id",
-                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg/6c1866f567616f31@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
             }
         ],
         "authorizations": [
@@ -1031,35 +1031,6 @@ test("end-to-end-identity", async () => {
     enrollment.finalizeResponse(jsonToByteArray(finalizeResp));
 
     const certificateReq = enrollment.certificateRequest(previousNonce);
-
-    const certificateResp = "-----BEGIN CERTIFICATE-----\n" +
-        "MIICIjCCAcigAwIBAgIQKRapc1IDZvJc88zB+vlrNTAKBggqhkjOPQQDAjAuMQ0w\n" +
-        "CwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3aXJlIEludGVybWVkaWF0ZSBDQTAeFw0y\n" +
-        "MzA2MDYxMjAzMDlaFw0zMzA2MDMxMjAzMDlaMCkxETAPBgNVBAoTCHdpcmUuY29t\n" +
-        "MRQwEgYDVQQDEwtBbGljZSBTbWl0aDAqMAUGAytlcAMhACqExBb1vLgMNq8GkLgM\n" +
-        "R+W+dp0szvjYL2GybNkPKzoto4H7MIH4MA4GA1UdDwEB/wQEAwIHgDATBgNVHSUE\n" +
-        "DDAKBggrBgEFBQcDAjAdBgNVHQ4EFgQUaPHUDloFLv5o4j4J4EmvoYToqHcwHwYD\n" +
-        "VR0jBBgwFoAUlbTj2u59dFDGs1LVj0GrGKJUK/gwcgYDVR0RBGswaYYVaW06d2ly\n" +
-        "ZWFwcD1hbGljZV93aXJlhlBpbTp3aXJlYXBwPVl6QXpZalZoT1dRMFpqSXdOR0k1\n" +
-        "T1Rrek9HRTRPREptT1RjeE0yWm1PR00vNDk1OWJjNmFiMTJmMjg0NkB3aXJlLmNv\n" +
-        "bTAdBgwrBgEEAYKkZMYoQAEEDTALAgEGBAR3aXJlBAAwCgYIKoZIzj0EAwIDSAAw\n" +
-        "RQIhAIRaoCuyIAXtpAsUhZvJb7Qb+2EKsc9iIzHtsBU5MtVMAiAz2Tm4ojAolq4J\n" +
-        "ZjWPVSDz4AN1gd200EpS50cS/mLDqw==\n" +
-        "-----END CERTIFICATE-----\n" +
-        "-----BEGIN CERTIFICATE-----\n" +
-        "MIIBuTCCAV6gAwIBAgIQYiSIW2ebbC32Iq5YO0AyLDAKBggqhkjOPQQDAjAmMQ0w\n" +
-        "CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjMwNjA2MTIw\n" +
-        "MzA2WhcNMzMwNjAzMTIwMzA2WjAuMQ0wCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3\n" +
-        "aXJlIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEKu\n" +
-        "1Ekx95MKKr9FxUspwFtyErShqoPKZNlyfz8u8lmvi50FpwqUXem1EoOUOm7UHy5m\n" +
-        "HJO513uJY0Q/ecZUwAKjZjBkMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG\n" +
-        "AQH/AgEAMB0GA1UdDgQWBBSVtOPa7n10UMazUtWPQasYolQr+DAfBgNVHSMEGDAW\n" +
-        "gBSy9uS81ABjfHbkz42x/Gf160mt1jAKBggqhkjOPQQDAgNJADBGAiEAq/T83XSg\n" +
-        "7/GN+fUi79bzXI9oQdDuXqyhGnjIXtr2D8YCIQCuS1tZQm6lVcDZMWYQWLfv/b46\n" +
-        "GjWuPgx1fD4m+ar9Tw==\n" +
-        "-----END CERTIFICATE-----";
-
-    await cc.e2eiMlsInit(enrollment, certificateResp);
   });
 
   await page.close();

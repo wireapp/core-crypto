@@ -1,0 +1,1 @@
+ALTER TABLE mls_signature_keypairs ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP;

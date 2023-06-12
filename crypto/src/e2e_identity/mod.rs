@@ -4,13 +4,16 @@ use wire_e2e_identity::prelude::RustyE2eIdentity;
 use error::*;
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::prelude::{id::ClientId, CertificateBundle, MlsCentral, MlsCiphersuite};
-use crate::{mls::credential::x509::CertificatePrivateKey, prelude::identifier::ClientIdentifier};
+use crate::{
+    mls::credential::x509::CertificatePrivateKey,
+    prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCentral, MlsCiphersuite},
+};
 
 mod crypto;
 pub(crate) mod degraded;
 pub mod error;
 pub(crate) mod identity;
+pub(crate) mod rotate;
 pub(crate) mod stash;
 pub mod types;
 
@@ -32,8 +35,8 @@ impl MlsCentral {
         handle: String,
         expiry_days: u32,
         ciphersuite: MlsCiphersuite,
-    ) -> E2eIdentityResult<WireE2eIdentity> {
-        WireE2eIdentity::try_new(
+    ) -> E2eIdentityResult<E2eiEnrollment> {
+        E2eiEnrollment::try_new(
             client_id,
             display_name,
             handle,
@@ -45,10 +48,14 @@ impl MlsCentral {
 
     /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it
     /// to initialize the MLS client with a certificate
-    pub async fn e2ei_mls_init(&mut self, e2ei: WireE2eIdentity, certificate_chain: String) -> E2eIdentityResult<()> {
-        let sk = e2ei.get_sign_key_for_mls()?;
-        let cs = e2ei.ciphersuite;
-        let certificate_chain = e2ei.certificate_response(certificate_chain).await?;
+    pub async fn e2ei_mls_init_only(
+        &mut self,
+        enrollment: E2eiEnrollment,
+        certificate_chain: String,
+    ) -> E2eIdentityResult<()> {
+        let sk = enrollment.get_sign_key_for_mls()?;
+        let cs = enrollment.ciphersuite;
+        let certificate_chain = enrollment.certificate_response(certificate_chain).await?;
         let private_key = CertificatePrivateKey {
             value: sk,
             signature_scheme: cs.signature_algorithm(),
@@ -58,7 +65,7 @@ impl MlsCentral {
             certificate_chain,
             private_key,
         };
-        let identifier = ClientIdentifier::X509(HashMap::from([(cs, cert_bundle)]));
+        let identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
         self.mls_init(identifier, vec![cs]).await?;
         Ok(())
     }
@@ -66,7 +73,7 @@ impl MlsCentral {
 
 /// Wire end to end identity solution for fetching a x509 certificate which identifies a client.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct WireE2eIdentity {
+pub struct E2eiEnrollment {
     delegate: RustyE2eIdentity,
     sign_sk: Vec<u8>,
     client_id: String,
@@ -81,7 +88,7 @@ pub struct WireE2eIdentity {
     ciphersuite: MlsCiphersuite,
 }
 
-impl std::ops::Deref for WireE2eIdentity {
+impl std::ops::Deref for E2eiEnrollment {
     type Target = RustyE2eIdentity;
 
     fn deref(&self) -> &Self::Target {
@@ -89,7 +96,7 @@ impl std::ops::Deref for WireE2eIdentity {
     }
 }
 
-impl WireE2eIdentity {
+impl E2eiEnrollment {
     /// Builds an instance holding private key material. This instance has to be used in the whole
     /// enrollment process then dropped to clear secret key material.
     ///
@@ -351,7 +358,7 @@ impl WireE2eIdentity {
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
     pub fn finalize_request(&mut self, previous_nonce: String) -> E2eIdentityResult<Json> {
         let account = self.account.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
-        let order = self.valid_order.take().ok_or(E2eIdentityError::ImplementationError)?;
+        let order = self.valid_order.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
         let finalize = self.acme_finalize_request(order, account, previous_nonce)?;
         let finalize = serde_json::to_vec(&finalize)?;
         Ok(finalize)
@@ -390,53 +397,76 @@ impl WireE2eIdentity {
         Ok(certificate)
     }
 
-    async fn certificate_response(self, certificate_chain: String) -> E2eIdentityResult<Vec<Vec<u8>>> {
-        Ok(self.acme_x509_certificate_response(certificate_chain)?)
+    async fn certificate_response(mut self, certificate_chain: String) -> E2eIdentityResult<Vec<Vec<u8>>> {
+        let order = self.valid_order.take().ok_or(E2eIdentityError::ImplementationError)?;
+        Ok(self.acme_x509_certificate_response(certificate_chain, order)?)
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    use crate::prelude::E2eIdentityError;
     use crate::{
-        prelude::{ClientId, E2eIdentityResult, MlsCentral, WireE2eIdentity},
+        prelude::{CertificateBundle, ClientId, E2eIdentityError, E2eIdentityResult, E2eiEnrollment, MlsCentral},
         test_utils::*,
     };
+    use itertools::Itertools;
     use serde_json::json;
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
+
+    pub const E2EI_DISPLAY_NAME: &str = "Alice Smith";
+    pub const E2EI_HANDLE: &str = "alice_wire";
+    pub const E2EI_CLIENT_ID: &str = "YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM:4959bc6ab12f2846@wire.com";
+    pub const E2EI_CLIENT_ID_URI: &str = "YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM/4959bc6ab12f2846@wire.com";
+    pub const E2EI_EXPIRY: u32 = 90;
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn e2e_identity_should_work(case: TestCase) {
         run_test_wo_clients(case.clone(), move |cc| {
             Box::pin(async move {
-                let result = e2ei_enrollment(case, cc, move |e, cc| Box::pin(async move { (e, cc) })).await;
-                assert!(result.is_ok());
+                let init = |cc: &MlsCentral| {
+                    cc.e2ei_new_enrollment(
+                        E2EI_CLIENT_ID.into(),
+                        E2EI_DISPLAY_NAME.to_string(),
+                        E2EI_HANDLE.to_string(),
+                        E2EI_EXPIRY,
+                        case.ciphersuite(),
+                    )
+                };
+                let (mut cc, enrollment, cert) = e2ei_enrollment(cc, Some(E2EI_CLIENT_ID_URI), init, move |e, cc| {
+                    Box::pin(async move { (e, cc) })
+                })
+                .await
+                .unwrap();
+                assert!(cc.e2ei_mls_init_only(enrollment, cert).await.is_ok());
+
+                // verify the created client can create a conversation
+                let id = conversation_id();
+                cc.new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                cc.encrypt_message(&id, "Hello e2e identity !").await.unwrap();
             })
         })
         .await
     }
 
     pub type RestoreFnResult<'a> =
-        std::pin::Pin<Box<dyn std::future::Future<Output = (WireE2eIdentity, MlsCentral)> + 'a>>;
+        std::pin::Pin<Box<dyn std::future::Future<Output = (E2eiEnrollment, MlsCentral)> + 'a>>;
 
     pub async fn e2ei_enrollment<'a>(
-        case: TestCase,
         cc: MlsCentral,
+        client_id: Option<&str>,
+        init: impl Fn(&MlsCentral) -> E2eIdentityResult<E2eiEnrollment>,
         // used to verify persisting the instance actually does restore it entirely
-        restore: impl Fn(WireE2eIdentity, MlsCentral) -> RestoreFnResult<'a> + 'a,
-    ) -> E2eIdentityResult<()> {
-        let display_name = "Alice Smith".to_string();
-        let domain = "wire.com";
-        let client_id: ClientId = format!("NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg:6c1866f567616f31@{domain}")
-            .as_str()
-            .into();
-        let handle = "alice_wire".to_string();
-        let expiry = 90;
+        restore: impl Fn(E2eiEnrollment, MlsCentral) -> RestoreFnResult<'a> + 'a,
+    ) -> E2eIdentityResult<(MlsCentral, E2eiEnrollment, String)> {
+        let mut enrollment = init(&cc)?;
 
-        let mut enrollment = cc.e2ei_new_enrollment(client_id, display_name, handle, expiry, case.ciphersuite())?;
+        let (display_name, handle) = (enrollment.display_name.clone(), &enrollment.handle.clone());
+
         let directory = json!({
             "newNonce": "https://example.com/acme/new-nonce",
             "newAccount": "https://example.com/acme/new-account",
@@ -461,6 +491,10 @@ pub mod tests {
 
         let _order_req = enrollment.new_order_request(previous_nonce.to_string())?;
 
+        let client_id = client_id
+            .map(|c| format!("{}{c}", wire_e2e_identity::prelude::E2eiClientId::URI_PREFIX))
+            .unwrap_or_else(|| cc.get_e2ei_client_id().to_uri());
+        let identifier_value = format!("{{\"name\":\"{display_name}\",\"domain\":\"wire.com\",\"client-id\":\"{client_id}\",\"handle\":\"im:wireapp={handle}\"}}");
         let order_resp = json!({
             "status": "pending",
             "expires": "2037-01-05T14:09:07.99Z",
@@ -469,7 +503,7 @@ pub mod tests {
             "identifiers": [
                 {
                   "type": "wireapp-id",
-                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg/6c1866f567616f31@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                  "value": identifier_value
                 }
             ],
             "authorizations": [
@@ -495,7 +529,7 @@ pub mod tests {
             "expires": "2016-01-02T14:09:30Z",
             "identifier": {
               "type": "wireapp-id",
-              "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg/6c1866f567616f31@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+              "value": identifier_value
             },
             "challenges": [
               {
@@ -510,7 +544,7 @@ pub mod tests {
                 "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
                 "status": "pending",
                 "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
-                "target": "https://wire.com/clients/6c1866f567616f31/access-token"
+                "target": "https://wire.com/clients/4959bc6ab12f2846/access-token"
               }
             ]
         });
@@ -556,7 +590,7 @@ pub mod tests {
           "identifiers": [
             {
               "type": "wireapp-id",
-              "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg/6c1866f567616f31@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+              "value": identifier_value
             }
           ],
           "authorizations": [
@@ -579,7 +613,7 @@ pub mod tests {
           "identifiers": [
             {
               "type": "wireapp-id",
-              "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg/6c1866f567616f31@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+              "value": identifier_value
             }
           ],
           "authorizations": [
@@ -592,36 +626,26 @@ pub mod tests {
         let finalize_resp = serde_json::to_vec(&finalize_resp)?;
         enrollment.finalize_response(finalize_resp)?;
 
-        let (mut enrollment, mut cc) = restore(enrollment, cc).await;
+        let (mut enrollment, cc) = restore(enrollment, cc).await;
 
         let _certificate_req = enrollment.certificate_request(previous_nonce.to_string())?;
 
-        let certificate_resp = r#"-----BEGIN CERTIFICATE-----
-MIICIjCCAcigAwIBAgIQKRapc1IDZvJc88zB+vlrNTAKBggqhkjOPQQDAjAuMQ0w
-CwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3aXJlIEludGVybWVkaWF0ZSBDQTAeFw0y
-MzA2MDYxMjAzMDlaFw0zMzA2MDMxMjAzMDlaMCkxETAPBgNVBAoTCHdpcmUuY29t
-MRQwEgYDVQQDEwtBbGljZSBTbWl0aDAqMAUGAytlcAMhACqExBb1vLgMNq8GkLgM
-R+W+dp0szvjYL2GybNkPKzoto4H7MIH4MA4GA1UdDwEB/wQEAwIHgDATBgNVHSUE
-DDAKBggrBgEFBQcDAjAdBgNVHQ4EFgQUaPHUDloFLv5o4j4J4EmvoYToqHcwHwYD
-VR0jBBgwFoAUlbTj2u59dFDGs1LVj0GrGKJUK/gwcgYDVR0RBGswaYYVaW06d2ly
-ZWFwcD1hbGljZV93aXJlhlBpbTp3aXJlYXBwPVl6QXpZalZoT1dRMFpqSXdOR0k1
-T1Rrek9HRTRPREptT1RjeE0yWm1PR00vNDk1OWJjNmFiMTJmMjg0NkB3aXJlLmNv
-bTAdBgwrBgEEAYKkZMYoQAEEDTALAgEGBAR3aXJlBAAwCgYIKoZIzj0EAwIDSAAw
-RQIhAIRaoCuyIAXtpAsUhZvJb7Qb+2EKsc9iIzHtsBU5MtVMAiAz2Tm4ojAolq4J
-ZjWPVSDz4AN1gd200EpS50cS/mLDqw==
------END CERTIFICATE-----
------BEGIN CERTIFICATE-----
-MIIBuTCCAV6gAwIBAgIQYiSIW2ebbC32Iq5YO0AyLDAKBggqhkjOPQQDAjAmMQ0w
-CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjMwNjA2MTIw
-MzA2WhcNMzMwNjAzMTIwMzA2WjAuMQ0wCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3
-aXJlIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEKu
-1Ekx95MKKr9FxUspwFtyErShqoPKZNlyfz8u8lmvi50FpwqUXem1EoOUOm7UHy5m
-HJO513uJY0Q/ecZUwAKjZjBkMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG
-AQH/AgEAMB0GA1UdDgQWBBSVtOPa7n10UMazUtWPQasYolQr+DAfBgNVHSMEGDAW
-gBSy9uS81ABjfHbkz42x/Gf160mt1jAKBggqhkjOPQQDAgNJADBGAiEAq/T83XSg
-7/GN+fUi79bzXI9oQdDuXqyhGnjIXtr2D8YCIQCuS1tZQm6lVcDZMWYQWLfv/b46
-GjWuPgx1fD4m+ar9Tw==
------END CERTIFICATE-----"#;
-        cc.e2ei_mls_init(enrollment, certificate_resp.to_string()).await
+        let cert_kp = enrollment.sign_sk.clone();
+        let client_id = ClientId::from(enrollment.client_id.as_str());
+        let cert = CertificateBundle::new(
+            enrollment.ciphersuite.signature_algorithm(),
+            handle,
+            &display_name,
+            Some(&client_id),
+            Some(cert_kp),
+        );
+
+        let cert_chain = cert
+            .certificate_chain
+            .into_iter()
+            .map(|c| pem::Pem::new("CERTIFICATE", c).to_string())
+            .join("");
+
+        Ok((cc, enrollment, cert_chain))
     }
 }

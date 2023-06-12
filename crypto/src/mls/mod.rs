@@ -1,5 +1,5 @@
 use crate::prelude::CiphersuiteName;
-use openmls::prelude::{Ciphersuite, KeyPackage, MlsMessageIn, MlsMessageInBody};
+use openmls::prelude::{Ciphersuite, MlsMessageIn, MlsMessageInBody};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize;
 
@@ -16,21 +16,16 @@ pub(crate) mod conversation;
 pub(crate) mod credential;
 pub(crate) mod external_commit;
 pub(crate) mod external_proposal;
+pub(crate) mod key_package;
 pub(crate) mod member;
 pub(crate) mod proposal;
+pub(crate) mod restore;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, derive_more::Deref, serde::Serialize, serde::Deserialize)]
 #[serde(transparent)]
 #[repr(transparent)]
 /// A wrapper for the OpenMLS Ciphersuite, so that we are able to provide a default value.
-pub struct MlsCiphersuite(Ciphersuite);
-
-impl MlsCiphersuite {
-    /// Number of variants wrapped by this newtype
-    /// We do it like this since we cannot apply `strum::EnumCount` on wrapped enum in openmls.
-    /// It's fine since we'll probably have to redefine Ciphersuites here when we'll move to post-quantum
-    pub(crate) const SIZE: usize = 8;
-}
+pub struct MlsCiphersuite(pub(crate) Ciphersuite);
 
 impl Default for MlsCiphersuite {
     fn default() -> Self {
@@ -321,39 +316,6 @@ impl MlsCentral {
         Ok(())
     }
 
-    /// Restore existing groups from the KeyStore.
-    async fn restore_groups(
-        backend: &MlsCryptoProvider,
-    ) -> CryptoResult<crate::group_store::GroupStore<MlsConversation>> {
-        use core_crypto_keystore::CryptoKeystoreMls as _;
-        let groups = backend.key_store().mls_groups_restore().await?;
-
-        let mut group_store = crate::group_store::GroupStore::default();
-
-        if groups.is_empty() {
-            return Ok(group_store);
-        }
-
-        for (group_id, (parent_id, state)) in groups.into_iter() {
-            let conversation = MlsConversation::from_serialized_state(state, parent_id)?;
-            if group_store.try_insert(group_id, conversation).is_err() {
-                break;
-            }
-        }
-
-        Ok(group_store)
-    }
-
-    /// [MlsCentral] is supposed to be a singleton. Knowing that, it does some optimizations by
-    /// keeping MLS groups in memory. Sometimes, especially on iOS, it is required to use extensions
-    /// to perform tasks in the background. Extensions are executed in another process so another
-    /// [MlsCentral] instance has to be used. This method has to be used to synchronize instances.
-    /// It simply fetches the MLS group from keystore in memory.
-    pub async fn restore_from_disk(&mut self) -> CryptoResult<()> {
-        self.mls_groups = Self::restore_groups(&self.mls_backend).await?;
-        Ok(())
-    }
-
     /// Sets the consumer callbacks (i.e authorization callbacks for CoreCrypto to perform authorization calls when needed)
     ///
     /// # Arguments
@@ -362,7 +324,7 @@ impl MlsCentral {
         self.callbacks = Some(callbacks);
     }
 
-    /// Returns the client's public signature key as a buffer.
+    /// Returns the client's most recent public signature key as a buffer.
     /// Used to upload a public key to the server in order to verify client's messages signature.
     ///
     /// NB: only works for [MlsCredentialType::Basic]. For [MlsCredentialType::X509] we have trust anchor
@@ -372,48 +334,15 @@ impl MlsCentral {
     /// * `ciphersuite` - a callback to be called to perform authorization
     pub fn client_public_key(&self, ciphersuite: MlsCiphersuite) -> CryptoResult<Vec<u8>> {
         let mls_client = self.mls_client()?;
-        let cb = mls_client.find_credential_bundle(ciphersuite, MlsCredentialType::Basic)?;
+        let cb = mls_client
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
+            .ok_or(CryptoError::ClientSignatureNotFound)?;
         Ok(cb.signature_key.to_public_vec())
     }
 
     /// Returns the client's id as a buffer
     pub fn client_id(&self) -> CryptoResult<ClientId> {
         Ok(self.mls_client()?.id().clone())
-    }
-
-    /// Returns `amount_requested` OpenMLS [openmls::key_packages::KeyPackage]s.
-    /// Will always return the requested amount as it will generate the necessary (lacking) amount on-the-fly
-    ///
-    /// Note: Keypackage pruning is performed as a first step
-    ///
-    /// # Arguments
-    /// * `amount_requested` - number of KeyPackages to request and fill the `KeyPackageBundle`
-    ///
-    /// # Return type
-    /// A vector of `KeyPackageBundle`
-    ///
-    /// # Errors
-    /// Errors can happen when accessing the KeyStore
-    pub async fn get_or_create_client_keypackages(
-        &self,
-        ciphersuite: MlsCiphersuite,
-        credential_type: MlsCredentialType,
-        amount_requested: usize,
-    ) -> CryptoResult<Vec<KeyPackage>> {
-        self.mls_client()?
-            .request_key_packages(amount_requested, ciphersuite, credential_type, &self.mls_backend)
-            .await
-    }
-
-    /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [MlsCiphersuite] and [MlsCredentialType]
-    pub async fn client_valid_key_packages_count(
-        &self,
-        ciphersuite: MlsCiphersuite,
-        credential_type: MlsCredentialType,
-    ) -> CryptoResult<usize> {
-        self.mls_client()?
-            .valid_keypackages_count(&self.mls_backend, ciphersuite, credential_type)
-            .await
     }
 
     /// Create a new empty conversation
@@ -611,10 +540,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let epoch = alice_central.conversation_epoch(&id).await.unwrap();
                         assert_eq!(epoch, 1);
                     })
@@ -725,133 +651,6 @@ pub mod tests {
         }
     }
 
-    pub mod persistence {
-        use super::*;
-        use std::collections::HashMap;
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        pub async fn can_persist_group_state(case: TestCase) {
-            run_tests(move |[store_path]| {
-                Box::pin(async move {
-                    let cid = match case.credential_type {
-                        MlsCredentialType::Basic => ClientIdentifier::Basic("potato".into()),
-                        MlsCredentialType::X509 => {
-                            let cert = CertificateBundle::rand(case.cfg.ciphersuite, "potato".into());
-                            ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite, cert)]))
-                        }
-                    };
-                    let configuration = MlsCentralConfiguration::try_new(
-                        store_path,
-                        "test".to_string(),
-                        None,
-                        vec![case.ciphersuite()],
-                        None,
-                    )
-                    .unwrap();
-
-                    let mut central = MlsCentral::try_new(configuration.clone()).await.unwrap();
-                    central.mls_init(cid.clone(), vec![case.ciphersuite()]).await.unwrap();
-                    let id = conversation_id();
-                    let _ = central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
-                        .await;
-
-                    central.close().await.unwrap();
-                    let mut central = MlsCentral::try_new(configuration).await.unwrap();
-                    central.mls_init(cid, vec![case.ciphersuite()]).await.unwrap();
-                    let _ = central.encrypt_message(&id, b"Test").await.unwrap();
-
-                    central.mls_backend.destroy_and_reset().await.unwrap();
-                })
-            })
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        pub async fn can_restore_group_from_db(case: TestCase) {
-            run_tests(move |[alice_path, bob_path]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-
-                    let (alice_cid, bob_cid) = match case.credential_type {
-                        MlsCredentialType::Basic => (
-                            ClientIdentifier::Basic("alice".into()),
-                            ClientIdentifier::Basic("bob".into()),
-                        ),
-                        MlsCredentialType::X509 => {
-                            let cert = CertificateBundle::rand(case.cfg.ciphersuite, "alice".into());
-                            let alice = ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite, cert)]));
-                            let cert = CertificateBundle::rand(case.cfg.ciphersuite, "bob".into());
-                            let bob = ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite, cert)]));
-                            (alice, bob)
-                        }
-                    };
-                    let alice_cfg = MlsCentralConfiguration::try_new(
-                        alice_path,
-                        "test".to_string(),
-                        None,
-                        vec![case.ciphersuite()],
-                        None,
-                    )
-                    .unwrap();
-                    let mut alice_central = MlsCentral::try_new(alice_cfg.clone()).await.unwrap();
-                    alice_central
-                        .mls_init(alice_cid.clone(), vec![case.ciphersuite()])
-                        .await
-                        .unwrap();
-
-                    let bob_cfg = MlsCentralConfiguration::try_new(
-                        bob_path,
-                        "test".to_string(),
-                        None,
-                        vec![case.ciphersuite()],
-                        None,
-                    )
-                    .unwrap();
-                    let mut bob_central = MlsCentral::try_new(bob_cfg).await.unwrap();
-                    bob_central.mls_init(bob_cid, vec![case.ciphersuite()]).await.unwrap();
-
-                    alice_central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    alice_central
-                        .invite(&id, &mut bob_central, case.custom_cfg())
-                        .await
-                        .unwrap();
-
-                    // Create another central which will be desynchronized at some point
-                    let mut alice_central_mirror = MlsCentral::try_new(alice_cfg).await.unwrap();
-                    alice_central_mirror
-                        .mls_init(alice_cid, vec![case.ciphersuite()])
-                        .await
-                        .unwrap();
-                    assert!(alice_central_mirror.try_talk_to(&id, &mut bob_central).await.is_ok());
-
-                    // alice original instance will update its key without synchronizing with its mirror
-                    let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
-                    alice_central.commit_accepted(&id).await.unwrap();
-                    // at this point using mirror instance is unsafe since it will erase the other
-                    // instance state in keystore...
-                    bob_central
-                        .decrypt_message(&id, commit.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    // so here we cannot test that mirror instance can talk to Bob because it would
-                    // mess up the test, but trust me, it does !
-
-                    // after restoring from disk, mirror instance got the right key material for
-                    // the current epoch hence can talk to Bob
-                    alice_central_mirror.restore_from_disk().await.unwrap();
-                    assert!(alice_central_mirror.try_talk_to(&id, &mut bob_central).await.is_ok());
-                })
-            })
-            .await
-        }
-    }
-
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn can_fetch_client_public_key(case: TestCase) {
@@ -893,7 +692,9 @@ pub mod tests {
                 let client_id = "alice".into();
                 let identifier = match case.credential_type {
                     MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
-                    MlsCredentialType::X509 => CertificateBundle::rand_identifier(&[case.ciphersuite()], client_id),
+                    MlsCredentialType::X509 => {
+                        CertificateBundle::rand_identifier(&[case.signature_scheme()], client_id)
+                    }
                 };
                 central.mls_init(identifier, vec![case.ciphersuite()]).await.unwrap();
                 assert!(central.mls_client.is_some());
