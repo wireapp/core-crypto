@@ -22,6 +22,7 @@ import com.wire.crypto.CiphersuiteName
 import com.wire.crypto.MlsCredentialType
 import com.wire.crypto.client.CoreCryptoCentral.Companion.DEFAULT_CIPHERSUITE
 import java.nio.file.Files
+import java.util.Base64
 import kotlin.test.*
 import kotlin.test.assertEquals
 
@@ -182,6 +183,15 @@ class MLSClientTest {
         val commit = bobClient.removeMember(conversationId, clientRemovalList).commit
 
         assertNull(aliceClient.decryptMessage(conversationId, commit).message)
+    }
+
+        @Test
+    fun givenGroupInfo_whenCallingJoinByExternalCommit_weCanCreateExternalCommit() {
+        val groupInfo = Base64.getDecoder().decode("AAEAATEAAAAAAAAAAZsb6Oy/eF28nnEZ5uU3b8sAbmluamFzLmRvZ2Zvb2Qud2lyZS5saW5rAAAAAAAAAAEg6mIm/G1SP0mluA/FtHhYanZSjkMhNGLXUx/jwbfvz4sgVAXP+OAFE8vZrnWGU7fKUakup75OqhZV/tZObQVoOsQ5AAMDAAAAAAUwLyBlsjGgMGAtsMDhjdjc6nGNnLPRf0pFNEj3bMaqeM8jRwABC3dpcmUtc2VydmVyQSYAAkD+QPwBASBiPv/6XnZP+HPZu7pCGifC5MWp6p4gZWnJ80NB2kEIaiCyuLpSh3zgvsfZUvMSORlj1j+vdn5GgUMTV6/rZlDMHAABQE5lODc3NzUxYi0xZWNlLTQzZGQtODFkOS0xMDVmY2EwNmM2YzI6MTM0NjY1MDI4M2Y3ZTcxOEBuaW5qYXMuZG9nZm9vZC53aXJlLmxpbmsCAAEIAAEAAgAHAAMCAAEMAAEAAgADAAQABQAHBAABAAIDAABAQMGLlBUDvohO7ofAXT5n2D1+XNy9im2rgBcR5xfIQMczdnIY+/CEhM8peIAFPU7zu3bdD6x5+s+k9xP7Y/0j5QMABCEgw4JeKD/Th9rLzjfNqztyJ8kLDU5uJ90LBDrPUHIxoDgg6y6+CIze7tA4RdL/d1Acr2iL0yTXIurAfdX8aUpGrboAAAAAQEC1YK8/an5Jr9+z4AtKBTnrv4k0o6gWNCDAemRrVG++6KPdx/kkN9XocX1ASI4et1fBp8AJOd3njlqnAPTJFsMI")
+        val aliceClient = createClient(ALICE1)
+        val commitBundle = aliceClient.joinByExternalCommit(groupInfo, MlsCredentialType.BASIC)
+
+        assertNotNull(commitBundle)
     }
 
     @Test
