@@ -31,6 +31,13 @@ impl MlsGroupInfoBundle {
 
 #[cfg(test)]
 impl MlsGroupInfoBundle {
+    pub fn get_group_info(self) -> openmls::prelude::group_info::VerifiableGroupInfo {
+        match self.get_payload().extract() {
+            openmls::prelude::MlsMessageInBody::GroupInfo(vgi) => vgi,
+            _ => panic!("This payload should contain a GroupInfo"),
+        }
+    }
+
     pub fn get_payload(mut self) -> openmls::prelude::MlsMessageIn {
         use tls_codec::Deserialize as _;
         match &mut self.payload {

@@ -530,15 +530,15 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let group_info = alice_central
+                        let commit_bundle = alice_central
                             .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
                             .await
-                            .unwrap()
-                            .group_info;
+                            .unwrap();
+                        let group_info = commit_bundle.group_info.get_group_info();
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_group_info(&case, &id, group_info.get_payload(), vec![&mut alice_central])
+                            .try_join_from_group_info(&case, &id, group_info, vec![&mut alice_central])
                             .await
                             .is_ok());
                     })
@@ -732,15 +732,15 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let group_info = alice_central
+                        let commit_bundle = alice_central
                             .remove_members_from_conversation(&id, &[bob_central.read_client_id()])
                             .await
-                            .unwrap()
-                            .group_info;
+                            .unwrap();
+                        let group_info = commit_bundle.group_info.get_group_info();
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_group_info(&case, &id, group_info.get_payload(), vec![&mut alice_central])
+                            .try_join_from_group_info(&case, &id, group_info, vec![&mut alice_central])
                             .await
                             .is_ok());
                         // because Bob has been removed from the group
@@ -774,7 +774,7 @@ pub mod tests {
                             .unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
-                            .try_join_from_group_info(&case, &id, gi.into(), vec![&mut alice_central, &mut bob_central])
+                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
                             .await
                             .unwrap();
 
@@ -1069,11 +1069,12 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let group_info = alice_central.update_keying_material(&id).await.unwrap().group_info;
+                        let commit_bundle = alice_central.update_keying_material(&id).await.unwrap();
+                        let group_info = commit_bundle.group_info.get_group_info();
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_group_info(&case, &id, group_info.get_payload(), vec![&mut alice_central])
+                            .try_join_from_group_info(&case, &id, group_info, vec![&mut alice_central])
                             .await
                             .is_ok());
                     })
@@ -1318,12 +1319,12 @@ pub mod tests {
                             .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package(&case).await))
                             .await
                             .unwrap();
-                        let MlsCommitBundle { group_info, .. } =
-                            alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
+                        let commit_bundle = alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
+                        let group_info = commit_bundle.group_info.get_group_info();
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
-                            .try_join_from_group_info(&case, &id, group_info.get_payload(), vec![&mut alice_central])
+                            .try_join_from_group_info(&case, &id, group_info, vec![&mut alice_central])
                             .await
                             .is_ok());
                     })

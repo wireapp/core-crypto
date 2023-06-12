@@ -823,7 +823,7 @@ impl CoreCrypto<'_> {
         custom_configuration: CustomConfiguration,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<ConversationInitBundle> {
-        let group_info = MlsMessageIn::tls_deserialize_bytes(group_info).map_err(MlsError::from)?;
+        let group_info = VerifiableGroupInfo::tls_deserialize_bytes(group_info).map_err(MlsError::from)?;
         future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central

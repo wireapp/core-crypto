@@ -24,11 +24,11 @@ use crate::{
 
 use crate::mls::MlsCiphersuite;
 use crate::prelude::{CertificateBundle, Client, MlsCredentialType};
+use crate::test_utils::MessageExt;
 use core_crypto_keystore::entities::{MlsCredential, MlsSignatureKeyPair};
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::{
-    KeyPackage, LeafNodeIndex, MlsMessageIn, MlsMessageOut, QueuedProposal, SignaturePublicKey, StagedCommit,
-};
+use openmls::prelude::group_info::VerifiableGroupInfo;
+use openmls::prelude::{KeyPackage, LeafNodeIndex, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Serialize;
 use wire_e2e_identity::prelude::WireIdentityReader;
@@ -124,7 +124,7 @@ impl MlsCentral {
         &mut self,
         case: &TestCase,
         id: &ConversationId,
-        group_info: MlsMessageIn,
+        group_info: VerifiableGroupInfo,
         others: Vec<&mut Self>,
     ) -> CryptoResult<()> {
         use tls_codec::Serialize as _;
@@ -160,7 +160,7 @@ impl MlsCentral {
         Ok(())
     }
 
-    pub async fn get_group_info(&mut self, id: &ConversationId) -> MlsMessageOut {
+    pub async fn get_group_info(&mut self, id: &ConversationId) -> VerifiableGroupInfo {
         let conversation_arc = self.get_conversation(id).await.unwrap();
         let mut conversation = conversation_arc.write().await;
         let group = &mut conversation.group;
@@ -173,9 +173,10 @@ impl MlsCentral {
             .find_credential_bundle(cs.into(), ct.into())
             .unwrap();
 
-        group
+        let gi = group
             .export_group_info(&self.mls_backend, &cb.signature_key, true)
-            .unwrap()
+            .unwrap();
+        gi.group_info().unwrap()
     }
 
     /// Finds the [SignaturePublicKey] of a [Client] within a [MlsGroup]
