@@ -182,7 +182,7 @@ impl<'a> crate::clients::EmulatedE2eIdentityClient for CoreCryptoFfiClient<'a> {
     async fn e2ei_new_enrollment(&mut self, ciphersuite: MlsCiphersuite) -> Result<()> {
         let display_name = "Alice Smith".to_string();
         let domain = "wire.com";
-        let client_id = format!("NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg:6c1866f567616f31@{domain}");
+        let client_id = format!("YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM:4959bc6ab12f2846@{domain}");
         let handle = "alice_wire".to_string();
         let expiry = 90;
         let ciphersuite = ciphersuite.into();
@@ -218,7 +218,7 @@ impl<'a> crate::clients::EmulatedE2eIdentityClient for CoreCryptoFfiClient<'a> {
             "identifiers": [
                 {
                   "type": "wireapp-id",
-                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg/6c1866f567616f31@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
                 }
             ],
             "authorizations": [
@@ -239,7 +239,7 @@ impl<'a> crate::clients::EmulatedE2eIdentityClient for CoreCryptoFfiClient<'a> {
             "expires": "2016-01-02T14:09:30Z",
             "identifier": {
               "type": "wireapp-id",
-              "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg/6c1866f567616f31@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+              "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
             },
             "challenges": [
               {
@@ -254,7 +254,7 @@ impl<'a> crate::clients::EmulatedE2eIdentityClient for CoreCryptoFfiClient<'a> {
                 "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
                 "status": "pending",
                 "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
-                "target": "https://wire.com/clients/6c1866f567616f31/access-token"
+                "target": "https://wire.com/clients/4959bc6ab12f2846/access-token"
               }
             ]
         });
@@ -294,7 +294,7 @@ impl<'a> crate::clients::EmulatedE2eIdentityClient for CoreCryptoFfiClient<'a> {
           "identifiers": [
             {
               "type": "wireapp-id",
-              "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg/6c1866f567616f31@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+              "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
             }
           ],
           "authorizations": [
@@ -315,7 +315,7 @@ impl<'a> crate::clients::EmulatedE2eIdentityClient for CoreCryptoFfiClient<'a> {
           "identifiers": [
             {
               "type": "wireapp-id",
-              "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=NjhlMzIxOWFjODRiNDAwYjk0ZGFhZDA2NzExNTEyNTg/6c1866f567616f31@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+              "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
             }
           ],
           "authorizations": [
@@ -356,7 +356,7 @@ gBQY+1rDw64QLm/weFQC1mo9y29ddTAKBggqhkjOPQQDAgNHADBEAiARvd7RBuuv
 OhUy7ncjd/nzoN5Qs0p6D+ujdSLDqLlNIAIgfkwAAgsQMDF3ClqVM/p9cmS95B0g
 CAdIObqPoNL5MJo=
 -----END CERTIFICATE-----"#;
-        self.cc.e2ei_mls_init(enrollment, certificate_resp.to_string())?;
+        self.cc.e2ei_mls_init_only(enrollment, certificate_resp.to_string())?;
         Ok(())
     }
 }

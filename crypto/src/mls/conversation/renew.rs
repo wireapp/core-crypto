@@ -1,10 +1,8 @@
-use openmls::prelude::{LeafNodeIndex, Proposal, QueuedProposal, Sender, StagedCommit};
+use openmls::prelude::{LeafNode, LeafNodeIndex, Proposal, QueuedProposal, Sender, StagedCommit};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::prelude::handshake::MlsProposalBundle;
-use crate::prelude::Client;
-use crate::{mls::MlsConversation, CryptoError, CryptoResult};
+use crate::prelude::{handshake::MlsProposalBundle, Client, CryptoError, CryptoResult, MlsConversation};
 
 /// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)
 /// in case another commit has been accepted by the backend instead of ours
@@ -18,12 +16,12 @@ impl Renew {
     /// NB: we do not deal with partial commit (commit which do not contain all pending proposals)
     /// because they cannot be created at the moment by core-crypto
     ///
-    /// * `self_kpr` - own client [KeyPackageRef] in current MLS group
+    /// * `self_index` - own client [KeyPackageRef] in current MLS group
     /// * `pending_proposals` - local pending proposals in group's proposal store
     /// * `pending_commit` - local pending commit which is now invalid
     /// * `valid_commit` - commit accepted by the backend which will now supersede our local pending commit
     pub(crate) fn renew<'a>(
-        self_kpr: Option<LeafNodeIndex>,
+        self_index: &LeafNodeIndex,
         pending_proposals: impl Iterator<Item = QueuedProposal> + 'a,
         pending_commit: Option<&'a StagedCommit>,
         valid_commit: &'a StagedCommit,
@@ -31,7 +29,7 @@ impl Renew {
         // indicates if we need to renew an update proposal.
         // true only if we have an empty pending commit or the valid commit does not contain one of our update proposal
         // otherwise, local orphan update proposal will be renewed regularly, without this flag
-        let mut update_self = false;
+        let mut needs_update = false;
 
         let renewed_pending_proposals = if let Some(pending_commit) = pending_commit {
             // present in pending commit but not in valid commit
@@ -42,10 +40,12 @@ impl Renew {
 
             // does the valid commit contains one of our update proposal ?
             let valid_commit_has_self_update_proposal = valid_commit.update_proposals().any(|p| match p.sender() {
-                Sender::Member(sender_kpr) => self_kpr.as_ref() == Some(sender_kpr),
+                Sender::Member(sender_index) => self_index == sender_index,
                 _ => false,
             });
-            update_self = empty_commit && !valid_commit_has_self_update_proposal;
+
+            // was the self client trying to do an update ?
+            needs_update = empty_commit && !valid_commit_has_self_update_proposal;
 
             // local proposals present in local pending commit but not in valid commit
             commit_proposals
@@ -58,7 +58,7 @@ impl Renew {
                 .filter_map(|p| Self::is_proposal_renewable(p, Some(valid_commit)))
                 .collect::<Vec<_>>()
         };
-        (renewed_pending_proposals, update_self)
+        (renewed_pending_proposals, needs_update)
     }
 
     /// A proposal has to be renewed if it is absent from supplied commit
@@ -98,24 +98,51 @@ impl MlsConversation {
         client: &Client,
         backend: &MlsCryptoProvider,
         proposals: impl Iterator<Item = QueuedProposal>,
-        update_self: bool,
+        needs_update: bool,
     ) -> CryptoResult<Vec<MlsProposalBundle>> {
-        let mut result = vec![];
+        let mut bundle = vec![];
         let is_external = |p: &QueuedProposal| matches!(p.sender(), Sender::External(_) | Sender::NewMemberProposal);
         let proposals = proposals.filter(|p| !is_external(p));
         for proposal in proposals {
             let msg = match proposal.proposal() {
                 Proposal::Add(add) => self.propose_add_member(client, backend, add.key_package()).await?,
                 Proposal::Remove(remove) => self.propose_remove_member(client, backend, remove.removed()).await?,
-                Proposal::Update(_) => self.propose_self_update(client, backend).await?,
+                Proposal::Update(update) => self.renew_update(client, backend, Some(update.leaf_node())).await?,
                 _ => return Err(CryptoError::ImplementationError),
             };
-            result.push(msg);
+            bundle.push(msg);
         }
-        if update_self {
-            result.push(self.propose_self_update(client, backend).await?);
+        if needs_update {
+            let proposal = self.renew_update(client, backend, None).await?;
+            bundle.push(proposal);
         }
-        Ok(result)
+        Ok(bundle)
+    }
+
+    /// Renews an update proposal by considering the explicit LeafNode supplied in the proposal
+    /// by applying it to the current own LeafNode.
+    /// At this point, we have already verified we are only operating on proposals created by self.
+    async fn renew_update(
+        &mut self,
+        client: &Client,
+        backend: &MlsCryptoProvider,
+        leaf_node: Option<&LeafNode>,
+    ) -> CryptoResult<MlsProposalBundle> {
+        let mut leaf_node = leaf_node
+            .or_else(|| self.group.own_leaf())
+            .cloned()
+            .ok_or(CryptoError::InternalMlsError)?;
+
+        let sc = self.signature_scheme();
+        let ct = self.own_credential_type()?;
+        let cb = client
+            .find_most_recent_credential_bundle(sc, ct)
+            .ok_or(CryptoError::MlsNotInitialized)?;
+
+        leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
+
+        self.propose_explicit_self_update(client, backend, Some(leaf_node))
+            .await
     }
 
     pub(crate) fn self_pending_proposals(&self) -> impl Iterator<Item = &QueuedProposal> {
@@ -148,10 +175,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central.new_proposal(&id, MlsProposal::Update).await.unwrap();
@@ -166,7 +190,7 @@ pub mod tests {
                             .await
                             .unwrap()
                             .proposals;
-                        // Alice should renew the proposal because its her's
+                        // Alice should renew the proposal because its hers
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
 
@@ -179,7 +203,7 @@ pub mod tests {
                             .await
                             .unwrap()
                             .proposals;
-                        // Alice should renew the proposal because its her's
+                        // Alice should renew the proposal because its hers
                         // It should also replace existing one
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
@@ -202,10 +226,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         alice_central.update_keying_material(&id).await.unwrap();
                         assert!(alice_central.pending_commit(&id).await.is_some());
@@ -240,10 +261,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         let proposal = alice_central
@@ -313,10 +331,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
                             .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
@@ -368,10 +383,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
@@ -382,7 +394,7 @@ pub mod tests {
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         let commit = bob_central
-                            .add_members_to_conversation(&id, &mut [charlie_central.rand_member().await])
+                            .add_members_to_conversation(&id, &mut [charlie_central.rand_member(&case).await])
                             .await
                             .unwrap()
                             .commit;
@@ -413,10 +425,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
@@ -431,7 +440,7 @@ pub mod tests {
                         assert!(alice_central.pending_commit(&id).await.is_some());
 
                         let commit = bob_central
-                            .add_members_to_conversation(&id, &mut [charlie_central.rand_member().await])
+                            .add_members_to_conversation(&id, &mut [charlie_central.rand_member(&case).await])
                             .await
                             .unwrap()
                             .commit;
@@ -462,10 +471,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
                             .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
@@ -514,10 +520,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // Alice proposes adding Charlie
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
@@ -572,14 +575,11 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // Alice commits adding Charlie
                         alice_central
-                            .add_members_to_conversation(&id, &mut [charlie_central.rand_member().await])
+                            .add_members_to_conversation(&id, &mut [charlie_central.rand_member(&case).await])
                             .await
                             .unwrap();
                         assert!(alice_central.pending_commit(&id).await.is_some());
@@ -617,10 +617,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
                             .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
@@ -629,13 +626,13 @@ pub mod tests {
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
-                            .new_proposal(&id, MlsProposal::Remove(charlie_central.read_client_id()))
+                            .new_proposal(&id, MlsProposal::Remove(charlie_central.get_client_id()))
                             .await
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         let commit = bob_central
-                            .remove_members_from_conversation(&id, &[charlie_central.read_client_id()])
+                            .remove_members_from_conversation(&id, &[charlie_central.get_client_id()])
                             .await
                             .unwrap()
                             .commit;
@@ -666,10 +663,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
                             .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
@@ -677,7 +671,7 @@ pub mod tests {
                             .unwrap();
 
                         let proposal = bob_central
-                            .new_proposal(&id, MlsProposal::Remove(charlie_central.read_client_id()))
+                            .new_proposal(&id, MlsProposal::Remove(charlie_central.get_client_id()))
                             .await
                             .unwrap()
                             .proposal;
@@ -716,10 +710,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
                             .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
@@ -739,14 +730,14 @@ pub mod tests {
                         // Alice wants to remove Charlie
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
-                            .new_proposal(&id, MlsProposal::Remove(charlie_central.read_client_id()))
+                            .new_proposal(&id, MlsProposal::Remove(charlie_central.get_client_id()))
                             .await
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
-                            .remove_members_from_conversation(&id, &[debbie_central.read_client_id()])
+                            .remove_members_from_conversation(&id, &[debbie_central.get_client_id()])
                             .await
                             .unwrap()
                             .commit;
@@ -777,10 +768,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
                             .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
@@ -799,14 +787,14 @@ pub mod tests {
 
                         // Alice wants to remove Charlie
                         alice_central
-                            .remove_members_from_conversation(&id, &[charlie_central.read_client_id()])
+                            .remove_members_from_conversation(&id, &[charlie_central.get_client_id()])
                             .await
                             .unwrap();
                         assert!(alice_central.pending_commit(&id).await.is_some());
 
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
-                            .remove_members_from_conversation(&id, &[debbie_central.read_client_id()])
+                            .remove_members_from_conversation(&id, &[debbie_central.get_client_id()])
                             .await
                             .unwrap()
                             .commit;
@@ -837,10 +825,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
                             .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
@@ -859,7 +844,7 @@ pub mod tests {
 
                         // Alice wants to remove Charlie
                         alice_central
-                            .new_proposal(&id, MlsProposal::Remove(charlie_central.read_client_id()))
+                            .new_proposal(&id, MlsProposal::Remove(charlie_central.get_client_id()))
                             .await
                             .unwrap();
                         alice_central.commit_pending_proposals(&id).await.unwrap();
@@ -868,7 +853,7 @@ pub mod tests {
 
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
-                            .remove_members_from_conversation(&id, &[debbie_central.read_client_id()])
+                            .remove_members_from_conversation(&id, &[debbie_central.get_client_id()])
                             .await
                             .unwrap()
                             .commit;

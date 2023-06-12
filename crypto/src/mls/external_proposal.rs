@@ -101,22 +101,38 @@ impl MlsCentral {
     /// # Errors
     /// Errors resulting from the creation of the proposal within OpenMls.
     /// Fails when `credential_type` is [MlsCredentialType::X509] and no Credential has been created
-    /// for it beforehand with [MlsCentral::e2ei_mls_init] or variants.
+    /// for it beforehand with [MlsCentral::e2ei_mls_init_only] or variants.
     pub async fn new_external_add_proposal(
-        &self,
+        &mut self,
         conversation_id: ConversationId,
         epoch: GroupEpoch,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<MlsMessageOut> {
-        let mls_client = self.mls_client()?;
-
         let group_id = GroupId::from_slice(&conversation_id[..]);
 
-        let cb = mls_client.find_credential_bundle(ciphersuite, credential_type)?;
+        let cb = self
+            .mls_client()?
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type);
+        let cb = match (cb, credential_type) {
+            (Some(cb), _) => cb,
+            (None, MlsCredentialType::Basic) => {
+                // If a Basic CredentialBundle does not exist, just create one instead of failing
+                self.mls_client
+                    .as_mut()
+                    .ok_or(CryptoError::MlsNotInitialized)?
+                    .init_basic_credential_bundle_if_missing(&self.mls_backend, ciphersuite.signature_algorithm())
+                    .await?;
 
-        let kp = mls_client
-            .generate_keypackage_from_credential_bundle(&self.mls_backend, cb, ciphersuite)
+                self.mls_client()?
+                    .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+                    .ok_or(CryptoError::ImplementationError)?
+            }
+            (None, MlsCredentialType::X509) => return Err(CryptoError::E2eiEnrollmentNotDone),
+        };
+        let kp = self
+            .mls_client()?
+            .generate_one_keypackage_from_credential_bundle(&self.mls_backend, ciphersuite, cb)
             .await?;
 
         let ext_proposal = JoinProposal::new(kp, group_id, epoch, &cb.signature_key).map_err(MlsError::from)?;

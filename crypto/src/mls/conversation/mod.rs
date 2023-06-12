@@ -30,7 +30,7 @@
 use std::collections::HashMap;
 
 use openmls::{group::MlsGroup, messages::Welcome, prelude::Credential};
-use openmls_traits::OpenMlsCryptoProvider;
+use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
 
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
@@ -90,7 +90,9 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
         let (cs, ct) = (configuration.ciphersuite, creator_credential_type);
-        let cb = author_client.get_or_create_credential_bundle(backend, cs, ct).await?;
+        let cb = author_client
+            .get_most_recent_or_create_credential_bundle(backend, cs.signature_algorithm(), ct)
+            .await?;
 
         let group = MlsGroup::new_with_group_id(
             backend,
@@ -179,12 +181,12 @@ impl MlsConversation {
     }
 
     /// Returns all members credentials from the group/conversation
-    pub fn members(&self) -> HashMap<MemberId, Vec<Credential>> {
+    pub fn members(&self) -> HashMap<MemberId, Credential> {
         self.group.members().fold(HashMap::new(), |mut acc, kp| {
             let credential = kp.credential;
             let client_id: ClientId = credential.identity().into();
             let member_id: MemberId = client_id.to_vec();
-            acc.entry(member_id).or_insert_with(Vec::new).push(credential);
+            acc.entry(member_id).or_insert(credential);
             acc
         })
     }
@@ -240,6 +242,10 @@ impl MlsConversation {
     pub(crate) fn ciphersuite(&self) -> MlsCiphersuite {
         self.configuration.ciphersuite
     }
+
+    pub(crate) fn signature_scheme(&self) -> SignatureScheme {
+        self.ciphersuite().signature_algorithm()
+    }
 }
 
 impl MlsCentral {
@@ -269,6 +275,13 @@ impl MlsCentral {
         } else {
             Ok(None)
         }
+    }
+
+    pub(crate) async fn get_all_conversations(
+        &mut self,
+    ) -> CryptoResult<Vec<crate::group_store::GroupStoreValue<MlsConversation>>> {
+        let keystore = self.mls_backend.borrow_keystore_mut();
+        self.mls_groups.get_fetch_all(keystore).await
     }
 
     /// Mark a conversation as child of another one
@@ -306,11 +319,9 @@ impl MlsCentral {
 pub mod tests {
     use wasm_bindgen_test::*;
 
+    use crate::prelude::ClientIdentifier;
     use crate::{
-        mls::{
-            conversation::handshake::MlsConversationCreationMessage, member::ConversationMember,
-            MlsCentralConfiguration,
-        },
+        mls::{conversation::handshake::MlsConversationCreationMessage, MlsCentralConfiguration},
         test_utils::*,
     };
 
@@ -362,7 +373,7 @@ pub mod tests {
                         .unwrap();
 
                     let MlsConversationCreationMessage { welcome, .. } = alice_central
-                        .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
+                        .add_members_to_conversation(&id, &mut [bob_central.rand_member(&case).await])
                         .await
                         .unwrap();
                     // before merging, commit is not applied
@@ -413,24 +424,33 @@ pub mod tests {
                     let uuid = uuid::Uuid::new_v4();
                     let name = uuid.hyphenated().to_string();
                     let path = tmp_db_file();
-                    let config = MlsCentralConfiguration::try_new(
-                        path.0,
-                        name.clone(),
-                        Some(name.as_str().into()),
-                        vec![case.ciphersuite()],
-                        None,
-                    )
-                    .unwrap();
-                    let central = MlsCentral::try_new(config).await.unwrap();
+                    let config =
+                        MlsCentralConfiguration::try_new(path.0, name.clone(), None, vec![case.ciphersuite()], None)
+                            .unwrap();
+                    let mut central = MlsCentral::try_new(config).await.unwrap();
+
+                    let client_id: ClientId = name.as_str().into();
+                    let identity = match case.credential_type {
+                        MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
+                        MlsCredentialType::X509 => {
+                            let cert = crate::prelude::CertificateBundle::rand(
+                                &client_id,
+                                case.cfg.ciphersuite.signature_algorithm(),
+                            );
+                            ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]))
+                        }
+                    };
+                    central.mls_init(identity, vec![case.cfg.ciphersuite]).await.unwrap();
+
                     bob_and_friends.push(central);
                 }
 
                 let number_of_friends = bob_and_friends.len();
 
-                let mut bob_and_friends_members: Vec<ConversationMember> = futures_util::future::join_all(
-                    bob_and_friends.iter().map(|c| async move { c.rand_member().await }),
-                )
-                .await;
+                let mut bob_and_friends_members = vec![];
+                for c in &bob_and_friends {
+                    bob_and_friends_members.push(c.rand_member(&case).await);
+                }
 
                 let MlsConversationCreationMessage { welcome, .. } = alice_central
                     .add_members_to_conversation(&id, &mut bob_and_friends_members)
@@ -483,7 +503,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     // has to be before the original key_package count because it creates one
-                    let bob = bob_central.rand_member().await;
+                    let bob = bob_central.rand_member(&case).await;
                     // Keep track of the whatever amount was initially generated
                     let original_kpb_count = bob_central
                         .mls_backend

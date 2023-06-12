@@ -68,8 +68,9 @@ pub mod prelude {
         e2e_identity::{
             error::{E2eIdentityError, E2eIdentityResult},
             identity::WireIdentity,
+            rotate::MlsRotateBundle,
             types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
-            WireE2eIdentity,
+            E2eiEnrollment,
         },
         error::*,
         mls::{

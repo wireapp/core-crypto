@@ -19,6 +19,7 @@ use openmls::{
 use mls_crypto_provider::MlsCryptoProvider;
 use tls_codec::Deserialize;
 
+use crate::mls::credential::ext::CredentialExt;
 use crate::{
     group_store::GroupStoreValue,
     mls::{client::Client, conversation::renew::Renew, ClientId, ConversationId, MlsCentral, MlsConversation},
@@ -71,7 +72,7 @@ impl MlsConversation {
         let msg_epoch = message.epoch();
 
         let credential = message.credential();
-        let identity = Self::extract_identity(credential)?;
+        let identity = credential.extract_identity()?;
 
         let sender_client_id = credential.identity().into();
 
@@ -118,14 +119,14 @@ impl MlsConversation {
                     .await
                     .map_err(MlsError::from)?;
 
-                let (proposals, update_self) = Renew::renew(
-                    Some(self.group.own_leaf_index()),
+                let (proposals_to_renew, needs_update) = Renew::renew(
+                    &self.group.own_leaf_index(),
                     pending_proposals.into_iter(),
                     pending_commit.as_ref(),
                     staged_commit.as_ref(),
                 );
                 let proposals = self
-                    .renew_proposals_for_current_epoch(client, backend, proposals.into_iter(), update_self)
+                    .renew_proposals_for_current_epoch(client, backend, proposals_to_renew.into_iter(), needs_update)
                     .await?;
 
                 MlsConversationDecryptMessage {
@@ -245,6 +246,8 @@ pub mod tests {
         CryptoError,
     };
     use openmls::prelude::KeyPackageRef;
+    use openmls::prelude::ProcessMessageError;
+    use openmls_traits::OpenMlsCryptoProvider;
     use std::time::Duration;
     use wasm_bindgen_test::*;
 
@@ -266,10 +269,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let MlsCommitBundle { commit, .. } = bob_central.update_keying_material(&id).await.unwrap();
                         let MlsConversationDecryptMessage { is_active, .. } = alice_central
@@ -296,13 +296,10 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let MlsCommitBundle { commit, .. } = bob_central
-                            .remove_members_from_conversation(&id, &[alice_central.read_client_id()])
+                            .remove_members_from_conversation(&id, &[alice_central.get_client_id()])
                             .await
                             .unwrap();
                         let MlsConversationDecryptMessage { is_active, .. } = alice_central
@@ -333,10 +330,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let epoch_before = alice_central.conversation_epoch(&id).await.unwrap();
 
@@ -373,14 +367,11 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // Alice creates a commit which will be superseded by Bob's one
-                        let charlie = charlie_central.rand_member().await;
-                        let debbie = debbie_central.rand_member().await;
+                        let charlie = charlie_central.rand_member(&case).await;
+                        let debbie = debbie_central.rand_member(&case).await;
                         alice_central
                             .add_members_to_conversation(&id, &mut [charlie.clone()])
                             .await
@@ -431,15 +422,12 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // Alice will create a commit to add Charlie
                         // Bob will create a commit which will be accepted first by DS so Alice will decrypt it
                         // Then Alice will renew the proposal in her pending commit
-                        let charlie = charlie_central.rand_member().await;
+                        let charlie = charlie_central.rand_member(&case).await;
 
                         let bob_commit = bob_central.update_keying_material(&id).await.unwrap().commit;
                         bob_central.commit_accepted(&id).await.unwrap();
@@ -534,10 +522,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // Bob will create a proposal to add Charlie
                         // Alice will decrypt this proposal
@@ -588,10 +573,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // Alice will create a proposal to add Charlie
                         // Bob will create a commit which Alice will decrypt
@@ -649,7 +631,7 @@ pub mod tests {
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get::<MemberId>(&charlie_central.read_client_id().into())
+                            .get::<MemberId>(&charlie_central.get_client_id().into())
                             .is_some());
 
                         // Bob also has Charlie in the group
@@ -658,7 +640,7 @@ pub mod tests {
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get::<MemberId>(&charlie_central.read_client_id().into())
+                            .get::<MemberId>(&charlie_central.get_client_id().into())
                             .is_some());
                         assert!(decrypted.has_epoch_changed);
                     })
@@ -673,17 +655,14 @@ pub mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
-                move |[mut alice_central, mut bob_central, charlie_central]| {
+                move |[mut alice_central, mut bob_central, mut charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // DS will create an external proposal to add Charlie
                         // But meanwhile Bob, before receiving the external proposal,
@@ -732,10 +711,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
 
@@ -761,17 +737,14 @@ pub mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "alice2"],
-                move |[mut alice_central, mut bob_central, alice2_central]| {
+                move |[mut alice_central, mut bob_central, mut alice2_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let ext_proposal = alice2_central
@@ -805,7 +778,7 @@ pub mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "alice2"],
-                move |[mut alice_central, mut bob_central, alice2_central]| {
+                move |[mut alice_central, mut bob_central, mut alice2_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
 
@@ -813,10 +786,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let message = alice2_central
@@ -851,7 +821,7 @@ pub mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "alice2"],
-                move |[mut alice_central, mut bob_central, alice2_central]| {
+                move |[mut alice_central, mut bob_central, mut alice2_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central.callbacks(Box::new(ValidationCallbacks {
@@ -863,10 +833,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let external_proposal = alice2_central
@@ -912,10 +879,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         let proposal = alice_central
@@ -956,10 +920,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Update)
@@ -996,10 +957,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let msg = b"Hello bob";
                         let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
@@ -1038,10 +996,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let msg = b"Hello bob";
                         let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
@@ -1069,10 +1024,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // encrypt a message in epoch 1
                         let msg = b"Hello bob";
@@ -1109,10 +1061,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // only Alice which change epoch without notifying Bob
                         let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
@@ -1155,10 +1104,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let out_of_order_tolerance = case.custom_cfg().out_of_order_tolerance;
                         let nb_messages = out_of_order_tolerance * 2;
@@ -1201,10 +1147,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let msg = b"Hello bob";
                         let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
@@ -1216,7 +1159,7 @@ pub mod tests {
                             .unwrap()
                             .sender_client_id
                             .unwrap();
-                        assert_eq!(sender_client_id, alice_central.read_client_id());
+                        assert_eq!(sender_client_id, alice_central.get_client_id());
                     })
                 },
             )
@@ -1243,10 +1186,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // Alice encrypts a message to Bob
                         let bob_message1 = alice_central.encrypt_message(&id, b"Hello Bob").await.unwrap();
@@ -1295,10 +1235,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // Alice generates a bunch of soon to be outdated messages
                         let old_proposal = alice_central
@@ -1344,17 +1281,13 @@ pub mod tests {
     }
 
     pub mod expired {
-        use crate::prelude::MlsCredentialType;
-        use openmls::prelude::ProcessMessageError;
-        use openmls_traits::OpenMlsCryptoProvider;
-
         use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         #[ignore]
         pub async fn should_fail_when_message_signed_by_expired_key_package(case: TestCase) {
-            if matches!(case.credential_type, MlsCredentialType::X509) {
+            if case.is_x509() {
                 run_test_with_client_ids(
                     case.clone(),
                     ["alice", "bob"],
@@ -1375,7 +1308,7 @@ pub mod tests {
                                 .map(|k| k.hash_ref(bob_central.mls_backend.crypto()).unwrap())
                                 .collect::<Vec<KeyPackageRef>>();
                             bob_client
-                                .prune_keypackages(&bob_kp_refs, &bob_central.mls_backend)
+                                .prune_keypackages(&bob_central.mls_backend, &bob_kp_refs)
                                 .await
                                 .unwrap();
                             let bob_nb_kps = bob_client
@@ -1392,10 +1325,7 @@ pub mod tests {
                             bob_client.set_keypackage_lifetime(Duration::from_secs(2));
 
                             // Now Bob will have shorter KeyPackages. Let's add Bob to the group before those expire
-                            alice_central
-                                .invite(&id, &mut bob_central, case.custom_cfg())
-                                .await
-                                .unwrap();
+                            alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                             // Now Bob will generate AND SIGN some messages with a signature key
                             // in his soon to expire KeyPackage

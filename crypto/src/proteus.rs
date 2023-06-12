@@ -999,7 +999,7 @@ mod tests {
         let client_id = "alice".into();
         let identifier = match case.credential_type {
             MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
-            MlsCredentialType::X509 => CertificateBundle::rand_identifier(&[case.ciphersuite()], client_id),
+            MlsCredentialType::X509 => CertificateBundle::rand_identifier(&[case.signature_scheme()], client_id),
         };
         cc.mls_init(identifier, vec![case.ciphersuite()]).await.unwrap();
         // expect MLS to work

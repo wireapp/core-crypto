@@ -163,13 +163,10 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         alice_central
-                            .remove_members_from_conversation(&id, &[bob_central.read_client_id()])
+                            .remove_members_from_conversation(&id, &[bob_central.get_client_id()])
                             .await
                             .unwrap();
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
@@ -196,7 +193,7 @@ pub mod tests {
                             .unwrap();
                         alice_central.new_proposal(&id, MlsProposal::Update).await.unwrap();
                         alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
+                            .add_members_to_conversation(&id, &mut [bob_central.rand_member(&case).await])
                             .await
                             .unwrap();
                         assert!(!alice_central.pending_proposals(&id).await.is_empty());
@@ -227,10 +224,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
@@ -241,7 +235,7 @@ pub mod tests {
                             .proposal_ref;
 
                         let remove_ref = alice_central
-                            .new_proposal(&id, MlsProposal::Remove(bob_central.read_client_id()))
+                            .new_proposal(&id, MlsProposal::Remove(bob_central.get_client_id()))
                             .await
                             .unwrap()
                             .proposal_ref;

@@ -8,8 +8,9 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
-use openmls::prelude::{KeyPackage, LeafNodeIndex, MlsMessageOut};
+use openmls::prelude::{KeyPackage, LeafNode, LeafNodeIndex, MlsMessageOut};
 
+use crate::mls::credential::CredentialBundle;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::prelude::{
@@ -60,32 +61,14 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
         key_package: &KeyPackage,
     ) -> CryptoResult<MlsProposalBundle> {
-        let cs = self.ciphersuite();
-        let ct = self.own_credential_type()?;
-        let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
+        let signer = &self
+            .find_current_credential_bundle(client)?
+            .ok_or(CryptoError::IdentityInitializationError)?
+            .signature_key;
+
         let proposal = self
             .group
             .propose_add_member(backend, signer, key_package)
-            .map_err(MlsError::from)
-            .map(MlsProposalBundle::from)?;
-        self.persist_group_when_changed(backend, false).await?;
-        Ok(proposal)
-    }
-
-    /// see [openmls::group::MlsGroup::propose_self_update]
-    #[cfg_attr(test, crate::durable)]
-    pub async fn propose_self_update(
-        &mut self,
-        client: &Client,
-        backend: &MlsCryptoProvider,
-    ) -> CryptoResult<MlsProposalBundle> {
-        let cs = self.ciphersuite();
-        let ct = self.own_credential_type()?;
-        let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
-        let proposal = self
-            .group
-            .propose_self_update(backend, signer, None)
-            .await
             .map_err(MlsError::from)
             .map(MlsProposalBundle::from)?;
         self.persist_group_when_changed(backend, false).await?;
@@ -100,15 +83,58 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
         member: LeafNodeIndex,
     ) -> CryptoResult<MlsProposalBundle> {
-        let cs = self.ciphersuite();
-        let ct = self.own_credential_type()?;
-        let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
+        let signer = &self
+            .find_current_credential_bundle(client)?
+            .ok_or(CryptoError::IdentityInitializationError)?
+            .signature_key;
         let proposal = self
             .group
             .propose_remove_member(backend, signer, member)
             .map_err(MlsError::from)
             .map_err(CryptoError::from)
             .map(MlsProposalBundle::from)?;
+        self.persist_group_when_changed(backend, false).await?;
+        Ok(proposal)
+    }
+
+    /// see [openmls::group::MlsGroup::propose_self_update]
+    #[cfg_attr(test, crate::durable)]
+    pub async fn propose_self_update(
+        &mut self,
+        client: &Client,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<MlsProposalBundle> {
+        self.propose_explicit_self_update(client, backend, None).await
+    }
+
+    /// see [openmls::group::MlsGroup::propose_self_update]
+    #[cfg_attr(test, crate::durable)]
+    pub async fn propose_explicit_self_update(
+        &mut self,
+        client: &Client,
+        backend: &MlsCryptoProvider,
+        leaf_node: Option<LeafNode>,
+    ) -> CryptoResult<MlsProposalBundle> {
+        let msg_signer = &self
+            .find_current_credential_bundle(client)?
+            .ok_or(CryptoError::IdentityInitializationError)?
+            .signature_key;
+
+        let proposal = if let Some(leaf_node) = leaf_node {
+            let leaf_node_signer = &self
+                .find_most_recent_credential_bundle(client)?
+                .ok_or(CryptoError::IdentityInitializationError)?
+                .signature_key;
+
+            self.group
+                .propose_explicit_self_update(backend, msg_signer, leaf_node, leaf_node_signer)
+                .await
+        } else {
+            self.group.propose_self_update(backend, msg_signer).await
+        }
+        .map_err(MlsError::from)
+        .map(MlsProposalBundle::from)?;
+
         self.persist_group_when_changed(backend, false).await?;
         Ok(proposal)
     }
@@ -180,7 +206,6 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsConversationCreationMessage> {
         let cs = self.ciphersuite();
-        let ct = self.own_credential_type()?;
 
         let keypackages = members
             .iter_mut()
@@ -188,7 +213,10 @@ impl MlsConversation {
             .filter_map(|(_, kps)| kps)
             .collect::<Vec<KeyPackage>>();
 
-        let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
+        let signer = &self
+            .find_most_recent_credential_bundle(client)?
+            .ok_or(CryptoError::IdentityInitializationError)?
+            .signature_key;
 
         let (commit, welcome, gi) = self
             .group
@@ -231,9 +259,10 @@ impl MlsConversation {
                 Ok(acc)
             })?;
 
-        let cs = self.ciphersuite();
-        let ct = self.own_credential_type()?;
-        let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
+        let signer = &self
+            .find_most_recent_credential_bundle(client)?
+            .ok_or(CryptoError::IdentityInitializationError)?
+            .signature_key;
 
         let (commit, welcome, gi) = self
             .group
@@ -260,11 +289,18 @@ impl MlsConversation {
         &mut self,
         client: &Client,
         backend: &MlsCryptoProvider,
+        cb: Option<&CredentialBundle>,
+        leaf_node: Option<LeafNode>,
     ) -> CryptoResult<MlsCommitBundle> {
-        let cs = self.ciphersuite();
-        let ct = self.own_credential_type()?;
-        let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
-        let (commit, welcome, group_info) = self.group.self_update(backend, signer).await.map_err(MlsError::from)?;
+        let cb = cb.ok_or(CryptoError::IdentityInitializationError).or_else(|_| {
+            self.find_most_recent_credential_bundle(client)?
+                .ok_or(CryptoError::IdentityInitializationError)
+        })?;
+        let (commit, welcome, group_info) = self
+            .group
+            .explicit_self_update(backend, &cb.signature_key, leaf_node)
+            .await
+            .map_err(MlsError::from)?;
 
         // We should always have ratchet tree extension turned on hence GroupInfo should always be present
         let group_info = group_info.ok_or(CryptoError::ImplementationError)?;
@@ -287,9 +323,10 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Option<MlsCommitBundle>> {
         if self.group.pending_proposals().count() > 0 {
-            let cs = self.ciphersuite();
-            let ct = self.own_credential_type()?;
-            let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
+            let signer = &self
+                .find_most_recent_credential_bundle(client)?
+                .ok_or(CryptoError::IdentityInitializationError)?
+                .signature_key;
 
             let (commit, welcome, gi) = self
                 .group
@@ -395,7 +432,7 @@ impl MlsCentral {
             .await?
             .write()
             .await
-            .update_keying_material(self.mls_client()?, &self.mls_backend)
+            .update_keying_material(self.mls_client()?, &self.mls_backend, None, None)
             .await
     }
 
@@ -449,7 +486,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         let MlsConversationCreationMessage { welcome, .. } = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
+                            .add_members_to_conversation(&id, &mut [bob_central.rand_member(&case).await])
                             .await
                             .unwrap();
 
@@ -500,7 +537,7 @@ pub mod tests {
                             .unwrap();
 
                         let welcome = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
+                            .add_members_to_conversation(&id, &mut [bob_central.rand_member(&case).await])
                             .await
                             .unwrap()
                             .welcome;
@@ -532,7 +569,7 @@ pub mod tests {
                             .unwrap();
 
                         let commit_bundle = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
+                            .add_members_to_conversation(&id, &mut [bob_central.rand_member(&case).await])
                             .await
                             .unwrap();
                         let group_info = commit_bundle.group_info.get_group_info();
@@ -565,10 +602,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
@@ -629,13 +663,10 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let MlsCommitBundle { commit, welcome, .. } = alice_central
-                            .remove_members_from_conversation(&id, &[bob_central.read_client_id()])
+                            .remove_members_from_conversation(&id, &[bob_central.get_client_id()])
                             .await
                             .unwrap();
                         assert!(welcome.is_none());
@@ -676,10 +707,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Add(guest_central.get_one_key_package(&case).await))
@@ -691,7 +719,7 @@ pub mod tests {
                             .unwrap();
 
                         let welcome = alice_central
-                            .remove_members_from_conversation(&id, &[bob_central.read_client_id()])
+                            .remove_members_from_conversation(&id, &[bob_central.get_client_id()])
                             .await
                             .unwrap()
                             .welcome;
@@ -728,13 +756,10 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let commit_bundle = alice_central
-                            .remove_members_from_conversation(&id, &[bob_central.read_client_id()])
+                            .remove_members_from_conversation(&id, &[bob_central.get_client_id()])
                             .await
                             .unwrap();
                         let group_info = commit_bundle.group_info.get_group_info();
@@ -769,10 +794,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let gi = alice_central.get_group_info(&id).await;
                         charlie_central
                             .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
@@ -781,7 +803,7 @@ pub mod tests {
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         let proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Remove(charlie_central.read_client_id()))
+                            .new_proposal(&id, MlsProposal::Remove(charlie_central.get_client_id()))
                             .await
                             .unwrap()
                             .proposal;
@@ -824,10 +846,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let bob_keys = bob_central
                             .get_conversation_unchecked(&id)
@@ -842,7 +861,7 @@ pub mod tests {
                         assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
                         let alice_key = alice_central
-                            .encryption_key_of(&id, alice_central.read_client_id())
+                            .encryption_key_of(&id, alice_central.get_client_id())
                             .await;
 
                         // proposing the key update for alice
@@ -906,10 +925,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let bob_keys = bob_central
                             .get_conversation_unchecked(&id)
@@ -926,7 +942,7 @@ pub mod tests {
                         assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
                         let alice_key = alice_central
-                            .encryption_key_of(&id, alice_central.read_client_id())
+                            .encryption_key_of(&id, alice_central.get_client_id())
                             .await;
 
                         // proposing adding charlie
@@ -1013,10 +1029,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Add(guest_central.get_one_key_package(&case).await))
@@ -1065,10 +1078,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let commit_bundle = alice_central.update_keying_material(&id).await.unwrap();
                         let group_info = commit_bundle.group_info.get_group_info();
@@ -1101,10 +1111,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let bob_keys = bob_central
                             .get_conversation_unchecked(&id)
@@ -1118,7 +1125,7 @@ pub mod tests {
                             .collect::<Vec<SignaturePublicKey>>();
                         assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
                         let alice_key = alice_central
-                            .encryption_key_of(&id, alice_central.read_client_id())
+                            .encryption_key_of(&id, alice_central.get_client_id())
                             .await;
 
                         let proposal = alice_central
@@ -1239,10 +1246,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let proposal = bob_central
                             .new_proposal(&id, MlsProposal::Add(charlie_central.get_one_key_package(&case).await))
                             .await
@@ -1352,10 +1356,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
 
@@ -1385,10 +1386,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let commit1 = alice_central.update_keying_material(&id).await.unwrap().commit;
                         alice_central.commit_accepted(&id).await.unwrap();
@@ -1430,10 +1428,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let _alice_commit = alice_central.update_keying_material(&id).await.unwrap().commit;
                         let bob_commit = bob_central.update_keying_material(&id).await.unwrap().commit;
@@ -1463,10 +1458,7 @@ pub mod tests {
                                 .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                                 .await
                                 .unwrap();
-                            alice_central
-                                .invite(&id, &mut bob_central, case.custom_cfg())
-                                .await
-                                .unwrap();
+                            alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                             let proposal1 = alice_central
                                 .new_proposal(&id, MlsProposal::Update)
@@ -1533,10 +1525,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite(&id, &mut bob_central, case.custom_cfg())
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let proposal = alice_central
                             .new_proposal(&id, MlsProposal::Update)

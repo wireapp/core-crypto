@@ -14,24 +14,39 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::prelude::{CryptoResult, MlsConversation};
+use core_crypto_keystore::entities::EntityFindParams;
+
 #[async_trait::async_trait(?Send)]
 pub(crate) trait GroupStoreEntity: std::fmt::Debug {
     type RawStoreValue: core_crypto_keystore::entities::Entity;
     type IdentityType;
 
+    fn id(&self) -> &[u8];
+
     async fn fetch_from_id(
         id: &[u8],
         identity: Option<Self::IdentityType>,
         keystore: &mut core_crypto_keystore::connection::KeystoreDatabaseConnection,
-    ) -> crate::CryptoResult<Option<Self>>
+    ) -> CryptoResult<Option<Self>>
+    where
+        Self: Sized;
+
+    async fn fetch_all(
+        keystore: &mut core_crypto_keystore::connection::KeystoreDatabaseConnection,
+    ) -> CryptoResult<Vec<Self>>
     where
         Self: Sized;
 }
 
 #[async_trait::async_trait(?Send)]
-impl GroupStoreEntity for crate::mls::conversation::MlsConversation {
+impl GroupStoreEntity for MlsConversation {
     type RawStoreValue = core_crypto_keystore::entities::PersistedMlsGroup;
     type IdentityType = ();
+
+    fn id(&self) -> &[u8] {
+        self.id().as_slice()
+    }
 
     async fn fetch_from_id(
         id: &[u8],
@@ -51,6 +66,22 @@ impl GroupStoreEntity for crate::mls::conversation::MlsConversation {
             None
         })
     }
+
+    async fn fetch_all(
+        keystore: &mut core_crypto_keystore::connection::KeystoreDatabaseConnection,
+    ) -> CryptoResult<Vec<Self>> {
+        use core_crypto_keystore::entities::EntityBase as _;
+
+        let all_conversations = Self::RawStoreValue::find_all(keystore, EntityFindParams::default());
+        Ok(all_conversations
+            .await?
+            .iter()
+            .filter_map(|c| {
+                let conversation = Self::from_serialized_state(c.state.clone(), c.parent_id.clone()).unwrap();
+                conversation.group.is_active().then_some(conversation)
+            })
+            .collect::<Vec<_>>())
+    }
 }
 
 #[cfg(feature = "proteus")]
@@ -58,6 +89,10 @@ impl GroupStoreEntity for crate::mls::conversation::MlsConversation {
 impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
     type RawStoreValue = core_crypto_keystore::entities::ProteusSession;
     type IdentityType = std::sync::Arc<proteus_wasm::keys::IdentityKeyPair>;
+
+    fn id(&self) -> &[u8] {
+        unreachable!()
+    }
 
     async fn fetch_from_id(
         id: &[u8],
@@ -80,6 +115,15 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
             identifier: store_value.id.clone(),
             session,
         }))
+    }
+
+    async fn fetch_all(
+        _keystore: &mut core_crypto_keystore::connection::KeystoreDatabaseConnection,
+    ) -> CryptoResult<Vec<Self>>
+    where
+        Self: Sized,
+    {
+        unreachable!()
     }
 }
 
@@ -178,6 +222,28 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         } else {
             Ok(None)
         }
+    }
+
+    pub(crate) async fn get_fetch_all(
+        &mut self,
+        keystore: &mut core_crypto_keystore::Connection,
+    ) -> CryptoResult<Vec<GroupStoreValue<V>>> {
+        let mut keystore_connection = keystore
+            .borrow_conn()
+            .await
+            .map_err(|_| crate::CryptoError::LockPoisonError)?;
+
+        let all = V::fetch_all(&mut keystore_connection)
+            .await?
+            .into_iter()
+            .map(|g| {
+                let id = g.id().to_vec();
+                let to_insert = std::sync::Arc::new(async_lock::RwLock::new(g));
+                self.insert_prepped(id, to_insert.clone());
+                to_insert
+            })
+            .collect::<Vec<_>>();
+        Ok(all)
     }
 
     fn insert_prepped(&mut self, k: Vec<u8>, prepped_entity: GroupStoreValue<V>) {
@@ -297,6 +363,10 @@ mod tests {
 
         type IdentityType = ();
 
+        fn id(&self) -> &[u8] {
+            unreachable!()
+        }
+
         async fn fetch_from_id(
             id: &[u8],
             _identity: Option<Self::IdentityType>,
@@ -304,6 +374,12 @@ mod tests {
         ) -> crate::CryptoResult<Option<Self>> {
             let id = std::str::from_utf8(id)?;
             Ok(Some(id.into()))
+        }
+
+        async fn fetch_all(
+            _keystore: &mut core_crypto_keystore::connection::KeystoreDatabaseConnection,
+        ) -> CryptoResult<Vec<Self>> {
+            unreachable!()
         }
     }
 

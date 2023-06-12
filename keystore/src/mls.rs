@@ -501,12 +501,13 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
                     .downcast()
                     .expect("There's an implementation issue in OpenMLS. This shouln't be happening.");
 
-                let kp = MlsSignatureKeyPair {
-                    pk: k.into(),
-                    keypair: data,
-                    credential_id: vec![], // FIXME: find a way to set the credential id
-                    signature_scheme: concrete_signature_keypair.signature_scheme() as u16,
-                };
+                let credential_id = vec![]; // FIXME: find a way to set the credential id
+                let kp = MlsSignatureKeyPair::new(
+                    concrete_signature_keypair.signature_scheme(),
+                    k.into(),
+                    data,
+                    credential_id,
+                );
                 self.save(kp).await?;
             }
             MlsEntityId::KeyPackage => {

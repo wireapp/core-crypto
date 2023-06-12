@@ -79,15 +79,33 @@ pub struct MlsCredential {
     pub credential: Vec<u8>,
 }
 
+#[async_trait::async_trait(?Send)]
+pub trait MlsCredentialExt: Entity {
+    async fn delete_by_credential(conn: &mut Self::ConnectionType, credential: Vec<u8>) -> CryptoKeystoreResult<()>;
+}
+
 /// Entity representing a persisted `SignatureKeyPair`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
 pub struct MlsSignatureKeyPair {
     pub signature_scheme: u16,
-    pub keypair: Vec<u8>,
     pub pk: Vec<u8>,
+    pub keypair: Vec<u8>,
     pub credential_id: Vec<u8>,
+    pub created_at: u64,
+}
+
+impl MlsSignatureKeyPair {
+    pub fn new(signature_scheme: SignatureScheme, pk: Vec<u8>, keypair: Vec<u8>, credential_id: Vec<u8>) -> Self {
+        Self {
+            signature_scheme: signature_scheme as u16,
+            pk,
+            keypair,
+            credential_id,
+            created_at: 0,
+        }
+    }
 }
 
 #[async_trait::async_trait(?Send)]

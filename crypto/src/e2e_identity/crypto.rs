@@ -4,7 +4,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::{crypto::OpenMlsCrypto, types::Ciphersuite, OpenMlsCryptoProvider};
 use wire_e2e_identity::prelude::JwsAlgorithm;
 
-impl super::WireE2eIdentity {
+impl super::E2eiEnrollment {
     /// Length for all signature keys since there's not method to retrieve it from openmls
     const SIGN_KEY_LENGTH: usize = 32;
 
@@ -23,7 +23,7 @@ impl super::WireE2eIdentity {
         if self.sign_sk.len() != Self::SIGN_KEY_LENGTH * 2 {
             return Err(E2eIdentityError::ImplementationError);
         }
-        Ok(self.sign_sk[..Self::SIGN_KEY_LENGTH].to_vec())
+        Ok(self.sign_sk.to_vec())
     }
 }
 

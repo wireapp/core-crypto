@@ -38,21 +38,55 @@ impl CertificateBundle {
         let identity = leaf.extract_identity().map_err(|_| CryptoError::InvalidIdentity)?;
         Ok(identity.client_id.as_bytes().into())
     }
+
+    /// Reads the 'Not Before' claim from the leaf certificate
+    pub fn get_created_at(&self) -> CryptoResult<u64> {
+        let leaf = self.certificate_chain.get(0).ok_or(CryptoError::InvalidIdentity)?;
+        leaf.extract_created_at().map_err(|_| CryptoError::InvalidIdentity)
+    }
 }
 
 #[cfg(test)]
 impl CertificateBundle {
     /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
-    pub fn rand(cs: crate::prelude::MlsCiphersuite, client_id: ClientId) -> CertificateBundle {
+    pub fn rand(client_id: &ClientId, sc: openmls::prelude::SignatureScheme) -> CertificateBundle {
         // here in our tests client_id is generally just "alice" or "bob"
         // so we will use it to augment handle & display_name
         // and not a real client_id, instead we'll generate a random one
-        let client_id = String::from_utf8(client_id.into()).unwrap();
         let handle = format!("{}_wire", client_id);
         let display_name = format!("{} Smith", client_id);
+        Self::new(sc, &handle, &display_name, None, None)
+    }
+
+    /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
+    pub fn new(
+        sc: openmls::prelude::SignatureScheme,
+        handle: &str,
+        display_name: &str,
+        client_id: Option<&ClientId>,
+        cert_kp: Option<Vec<u8>>,
+    ) -> CertificateBundle {
+        // here in our tests client_id is generally just "alice" or "bob"
+        // so we will use it to augment handle & display_name
+        // and not a real client_id, instead we'll generate a random one
+        let domain = "wire.com";
+        let (client_id, domain) = client_id
+            .and_then(|c| std::str::from_utf8(c.0.as_slice()).ok())
+            .map(|cid| (cid.to_string(), domain.to_string()))
+            .unwrap_or_else(|| {
+                wire_e2e_identity::prelude::WireIdentityBuilder::new_rand_client(Some(domain.to_string()))
+            });
         let (certificate_chain, sign_key) = wire_e2e_identity::prelude::WireIdentityBuilder {
-            handle,
-            display_name,
+            handle: handle.to_string(),
+            display_name: display_name.to_string(),
+            client_id,
+            domain,
+            options: Some(wire_e2e_identity::prelude::WireIdentityBuilderOptions::X509(
+                wire_e2e_identity::prelude::WireIdentityBuilderX509 {
+                    cert_kp,
+                    ..Default::default()
+                },
+            )),
             ..Default::default()
         }
         .build_x509_der();
@@ -60,19 +94,19 @@ impl CertificateBundle {
             certificate_chain,
             private_key: CertificatePrivateKey {
                 value: sign_key,
-                signature_scheme: cs.signature_algorithm(),
+                signature_scheme: sc,
             },
         }
     }
 
     pub fn rand_identifier(
-        ciphersuites: &[crate::prelude::MlsCiphersuite],
+        signature_schemes: &[openmls::prelude::SignatureScheme],
         client_id: ClientId,
     ) -> crate::prelude::ClientIdentifier {
         crate::prelude::ClientIdentifier::X509(
-            ciphersuites
+            signature_schemes
                 .iter()
-                .map(|&cs| (cs, Self::rand(cs, client_id.clone())))
+                .map(|sc| (*sc, Self::rand(&client_id, *sc)))
                 .collect::<std::collections::HashMap<_, _>>(),
         )
     }

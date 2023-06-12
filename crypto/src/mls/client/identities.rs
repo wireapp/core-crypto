@@ -1,59 +1,271 @@
-use crate::mls::credential::CredentialBundle;
-use crate::{mls::credential::typ::MlsCredentialType, prelude::MlsCiphersuite, CryptoResult};
+use crate::{
+    mls::credential::{typ::MlsCredentialType, CredentialBundle},
+    prelude::{Client, CryptoError, CryptoResult, MlsConversation},
+};
+use openmls::prelude::SignaturePublicKey;
+use openmls_traits::types::SignatureScheme;
 use std::collections::HashMap;
-use strum::EnumCount as _;
 
+/// In memory Map of a Client's identities: one per SignatureScheme.
+/// We need `indexmap::IndexSet` because each `CredentialBundle` has to be unique and insertion
+/// order matters in order to keep values sorted by time `created_at` so that we can identify most recent ones.
 #[derive(Debug, Clone)]
-pub(crate) struct ClientIdentities(HashMap<MlsCiphersuite, Vec<CredentialBundle>>);
+pub(crate) struct ClientIdentities(HashMap<SignatureScheme, indexmap::IndexSet<CredentialBundle>>);
 
 impl ClientIdentities {
-    /// Maximal number of distinct [Ciphersuite ; CredentialBundle] this struct can hold
-    pub(crate) const MAX_DISTINCT_SIZE: usize = MlsCiphersuite::SIZE * MlsCredentialType::COUNT;
-    /// Because some identities can be duplicated while we are rotating them
-    #[allow(dead_code)]
-    pub(crate) const MAX_SIZE: usize = Self::MAX_DISTINCT_SIZE * 2;
-
     pub(crate) fn new(capacity: usize) -> Self {
         Self(HashMap::with_capacity(capacity))
     }
 
-    pub(crate) fn find_credential_bundle(
+    pub(crate) fn find_credential_bundle_by_public_key(
         &self,
-        cs: MlsCiphersuite,
+        sc: SignatureScheme,
         ct: MlsCredentialType,
+        pk: &SignaturePublicKey,
     ) -> Option<&CredentialBundle> {
-        self.0.get(&cs)?.iter().find(|c| {
-            matches!(
-                (ct, &c.credential.credential_type()),
-                (MlsCredentialType::Basic, openmls::prelude::CredentialType::Basic)
-                    | (MlsCredentialType::X509, openmls::prelude::CredentialType::X509)
-            )
+        self.0.get(&sc)?.iter().find(|c| {
+            let ct_match = ct == c.credential.credential_type().into();
+            let pk_match = c.signature_key.public() == pk.as_slice();
+            ct_match && pk_match
         })
     }
 
-    pub(crate) fn push_credential_bundle(&mut self, cs: MlsCiphersuite, cb: CredentialBundle) -> CryptoResult<()> {
-        match self.0.get_mut(&cs) {
+    pub(crate) fn find_most_recent_credential_bundle(
+        &self,
+        sc: SignatureScheme,
+        ct: MlsCredentialType,
+    ) -> Option<&CredentialBundle> {
+        self.0
+            .get(&sc)?
+            .iter()
+            .filter(|c| ct == c.credential.credential_type().into())
+            .last()
+    }
+
+    /// Having `cb` requiring ownership kinda forces the caller to first persist it in the keystore and
+    /// only then store it in this in-memory map
+    pub(crate) fn push_credential_bundle(&mut self, sc: SignatureScheme, cb: CredentialBundle) -> CryptoResult<()> {
+        // this would mean we have messed something up and that we do no init this CredentialBundle from a keypair just inserted in the keystore
+        debug_assert_ne!(cb.created_at, 0);
+
+        match self.0.get_mut(&sc) {
             Some(cbs) => {
-                // TODO: review controls here since many CredentialBundle for the same Ciphersuite/CredentialType can coexist
-                cbs.push(cb);
+                let already_exists = !cbs.insert(cb);
+                if already_exists {
+                    return Err(CryptoError::ImplementationError);
+                }
             }
             None => {
-                self.0.insert(cs, vec![cb]);
+                self.0.insert(sc, indexmap::IndexSet::from([cb]));
             }
         }
         Ok(())
     }
 
-    pub(crate) fn iter(&self) -> impl Iterator<Item = (MlsCiphersuite, &CredentialBundle)> {
-        self.0.iter().flat_map(|(cs, cb)| cb.iter().map(|c| (*cs, c)))
+    pub(crate) fn remove_credential_bundles(&mut self, sign_pk_to_delete: &[Vec<u8>]) -> CryptoResult<()> {
+        let found = self.0.iter_mut().any(|(_, cbs)| {
+            let mut found = false;
+            cbs.retain(|c| {
+                let contains = sign_pk_to_delete.iter().any(|spk| &spk[..] == c.signature_key.public());
+                found = found || contains;
+                !contains
+            });
+            found
+        });
+        if !found {
+            return Err(CryptoError::CredentialNotFound);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = (SignatureScheme, &CredentialBundle)> {
+        self.0.iter().flat_map(|(sc, cb)| cb.iter().map(|c| (*sc, c)))
     }
 }
 
-// TODO: this class will really come into action when we'll have to deal with credential rotation (evict unused credentials, manage simultaneity).
-// Let's add a complete test suite when we'll have the whole picture
+impl MlsConversation {
+    pub(crate) fn find_current_credential_bundle<'a>(
+        &self,
+        client: &'a Client,
+    ) -> CryptoResult<Option<&'a CredentialBundle>> {
+        let own_leaf = self.group.own_leaf().ok_or(CryptoError::InternalMlsError)?;
+        let sc = self.ciphersuite().signature_algorithm();
+        let ct = self.own_credential_type()?;
+
+        Ok(client
+            .identities
+            .find_credential_bundle_by_public_key(sc, ct, own_leaf.signature_key()))
+    }
+
+    pub(crate) fn find_most_recent_credential_bundle<'a>(
+        &self,
+        client: &'a Client,
+    ) -> CryptoResult<Option<&'a CredentialBundle>> {
+        let sc = self.ciphersuite().signature_algorithm();
+        let ct = self.own_credential_type()?;
+
+        Ok(client.identities.find_most_recent_credential_bundle(sc, ct))
+    }
+}
+
+impl Client {
+    pub(crate) fn find_most_recent_credential_bundle(
+        &self,
+        sc: SignatureScheme,
+        ct: MlsCredentialType,
+    ) -> Option<&CredentialBundle> {
+        self.identities.find_most_recent_credential_bundle(sc, ct)
+    }
+}
+
 #[cfg(test)]
-mod tests {
-    // use wasm_bindgen_test::*;
-    // use crate::test_utils::*;
-    // wasm_bindgen_test_configure!(run_in_browser);
+pub mod tests {
+    use crate::{test_utils::*, CryptoError};
+    use openmls::prelude::SignaturePublicKey;
+    use rand::Rng;
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    pub mod find {
+        use super::*;
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_find_most_recent(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
+                Box::pin(async move {
+                    let old = central.new_credential_bundle(&case).await;
+
+                    // wait to make sure we're not in the same second
+                    async_std::task::sleep(core::time::Duration::from_secs(1)).await;
+
+                    let new = central.new_credential_bundle(&case).await;
+                    assert_ne!(old, new);
+
+                    let found = central
+                        .mls_client
+                        .as_ref()
+                        .unwrap()
+                        .identities
+                        .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+                        .unwrap();
+                    assert_eq!(found, &new);
+                })
+            })
+            .await
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_find_by_public_key(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
+                Box::pin(async move {
+                    const N: usize = 50;
+
+                    let r = rand::thread_rng().gen_range(0..N);
+                    let mut to_search = None;
+                    for i in 0..N {
+                        let cb = central.new_credential_bundle(&case).await;
+                        if i == r {
+                            to_search = Some(cb.clone());
+                        }
+                    }
+                    let to_search = to_search.unwrap();
+                    let pk = SignaturePublicKey::from(to_search.signature_key.public());
+                    let client = central.mls_client.as_ref().unwrap();
+                    let found = client
+                        .identities
+                        .find_credential_bundle_by_public_key(case.signature_scheme(), case.credential_type, &pk)
+                        .unwrap();
+                    assert_eq!(&to_search, found);
+                })
+            })
+            .await
+        }
+    }
+
+    pub mod push {
+        use super::*;
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_add_credential(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
+                Box::pin(async move {
+                    let prev_count = central.mls_client.as_ref().unwrap().identities.iter().count();
+
+                    // this calls 'push_credential_bundle' under the hood
+                    central.new_credential_bundle(&case).await;
+
+                    let next_count = central.mls_client.as_ref().unwrap().identities.iter().count();
+                    assert_eq!(next_count, prev_count + 1);
+                })
+            })
+            .await
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn pushing_duplicates_should_fail(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
+                Box::pin(async move {
+                    let cb = central.new_credential_bundle(&case).await;
+                    let client = central.mls_client.as_mut().unwrap();
+                    let push = client.identities.push_credential_bundle(case.signature_scheme(), cb);
+                    assert!(push.is_err());
+                })
+            })
+            .await
+        }
+    }
+
+    pub mod delete {
+        use super::*;
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_succeed(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
+                Box::pin(async move {
+                    const N: usize = 50;
+
+                    let mut cbs = vec![];
+
+                    for _ in 0..N {
+                        let cb = central.new_credential_bundle(&case).await;
+                        cbs.push(cb);
+                    }
+
+                    assert_eq!(central.mls_client.as_ref().unwrap().identities.iter().count(), N + 1);
+
+                    for cb in cbs {
+                        let pk = cb.signature_key.public();
+                        let client = central.mls_client.as_mut().unwrap();
+                        client.identities.remove_credential_bundles(&[pk.to_vec()]).unwrap();
+                    }
+                    assert_eq!(central.mls_client.as_ref().unwrap().identities.iter().count(), 1);
+                })
+            })
+            .await
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_fail_when_not_found(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
+                Box::pin(async move {
+                    let cb = central.new_credential_bundle(&case).await;
+
+                    use rand::prelude::SliceRandom as _;
+                    let mut pk = cb.signature_key.public().to_vec();
+                    pk.shuffle(&mut rand::thread_rng());
+                    let client = central.mls_client.as_mut().unwrap();
+                    let remove = client.identities.remove_credential_bundles(&[pk.to_vec()]);
+                    assert!(matches!(remove.unwrap_err(), CryptoError::CredentialNotFound));
+                })
+            })
+            .await
+        }
+    }
 }

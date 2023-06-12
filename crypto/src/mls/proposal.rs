@@ -203,15 +203,12 @@ pub mod proposal_tests {
                         .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central
-                        .invite(&id, &mut bob_central, case.custom_cfg())
-                        .await
-                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     let remove_proposal = alice_central
-                        .new_proposal(&id, MlsProposal::Remove(bob_central.read_client_id()))
+                        .new_proposal(&id, MlsProposal::Remove(bob_central.get_client_id()))
                         .await
                         .unwrap();
                     bob_central

@@ -339,7 +339,7 @@ gBQY+1rDw64QLm/weFQC1mo9y29ddTAKBggqhkjOPQQDAgNHADBEAiARvd7RBuuv
 OhUy7ncjd/nzoN5Qs0p6D+ujdSLDqLlNIAIgfkwAAgsQMDF3ClqVM/p9cmS95B0g
 CAdIObqPoNL5MJo=
 -----END CERTIFICATE-----""".trimIndent()
-        cc.e2eiMlsClient(enrollment, certificateChain)
+        cc.e2eiMlsInitOnly(enrollment, certificateChain)
     }
 
     @Test

@@ -4,7 +4,7 @@ use openmls::prelude::CredentialType;
 
 /// Lists all the supported Credential types. Could list in the future some types not supported by
 /// openmls such as Verifiable Presentation
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, strum::EnumCount)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum MlsCredentialType {
     /// Basic credential i.e. a KeyPair
@@ -20,6 +20,15 @@ impl From<CredentialType> for MlsCredentialType {
             CredentialType::Basic => MlsCredentialType::Basic,
             CredentialType::X509 => MlsCredentialType::X509,
             _ => unreachable!("Unknown credential type"),
+        }
+    }
+}
+
+impl From<MlsCredentialType> for CredentialType {
+    fn from(value: MlsCredentialType) -> Self {
+        match value {
+            MlsCredentialType::Basic => CredentialType::Basic,
+            MlsCredentialType::X509 => CredentialType::X509,
         }
     }
 }

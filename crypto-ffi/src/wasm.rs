@@ -393,6 +393,64 @@ impl From<MlsGroupInfoBundle> for GroupInfoBundle {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct RotateBundle {
+    commits: Vec<CommitBundle>,
+    new_key_packages: Vec<Vec<u8>>,
+    key_package_refs_to_remove: Vec<Vec<u8>>,
+}
+
+#[wasm_bindgen]
+impl RotateBundle {
+    #[wasm_bindgen(getter)]
+    pub fn commits(&self) -> js_sys::Array {
+        self.commits
+            .iter()
+            .cloned()
+            .map(JsValue::from)
+            .collect::<js_sys::Array>()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn new_key_packages(&self) -> Vec<Uint8Array> {
+        self.new_key_packages
+            .iter()
+            .cloned()
+            .map(|jsv| jsv.as_slice().into())
+            .collect()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn key_package_refs_to_remove(&self) -> Vec<Uint8Array> {
+        self.key_package_refs_to_remove
+            .iter()
+            .cloned()
+            .map(|jsv| jsv.as_slice().into())
+            .collect()
+    }
+}
+
+impl TryFrom<MlsRotateBundle> for RotateBundle {
+    type Error = CoreCryptoError;
+
+    fn try_from(msg: MlsRotateBundle) -> Result<Self, Self::Error> {
+        let (commits, new_key_packages, key_package_refs_to_remove) =
+            msg.to_bytes().map_err(CryptoError::from).map_err(Self::Error::from)?;
+
+        let commits = commits.into_iter().try_fold(vec![], |mut acc, c| {
+            acc.push(c.try_into()?);
+            WasmCryptoResult::Ok(acc)
+        })?;
+
+        Ok(Self {
+            commits,
+            new_key_packages,
+            key_package_refs_to_remove,
+        })
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ProposalBundle {
     proposal: Vec<u8>,
     proposal_ref: Vec<u8>,
@@ -1217,6 +1275,32 @@ impl CoreCrypto {
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(count.into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<usize>`]
+    ///
+    /// see [core_crypto::mls::MlsCentral::delete_keypackages]
+    #[allow(clippy::boxed_local)]
+    pub fn delete_keypackages(&self, refs: Box<[Uint8Array]>) -> Promise {
+        let this = self.inner.clone();
+
+        let refs = refs
+            .iter()
+            .map(|r| r.to_vec())
+            .map(|r| KeyPackageRef::from(r.as_slice()))
+            .collect::<Vec<_>>();
+
+        future_to_promise(
+            async move {
+                this.write()
+                    .await
+                    .delete_keypackages(&refs[..])
+                    .await
+                    .map_err(CoreCryptoError::from)?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )
@@ -2158,13 +2242,86 @@ impl CoreCrypto {
         )
     }
 
-    /// see [core_crypto::mls::MlsCentral::e2ei_mls_init]
-    pub fn e2ei_mls_init(&self, enrollment: WireE2eIdentity, certificate_chain: String) -> Promise {
+    /// Returns: [`WasmCryptoResult<WireE2eIdentity>`]
+    ///
+    /// see [core_crypto::mls::MlsCentral::e2ei_new_activation_enrollment]
+    pub fn e2ei_new_activation_enrollment(
+        &self,
+        display_name: String,
+        handle: String,
+        expiry_days: u32,
+        ciphersuite: Ciphersuite,
+    ) -> Promise {
+        let this = self.inner.clone();
+        let ciphersuite: CiphersuiteName = ciphersuite.into();
+        future_to_promise(
+            async move {
+                let this = this.read().await;
+                let enrollment = this
+                    .e2ei_new_activation_enrollment(display_name, handle, expiry_days, ciphersuite.into())
+                    .map(WireE2eIdentity)
+                    .map_err(|_| CryptoError::ImplementationError)
+                    .map_err(CoreCryptoError::from)?;
+
+                WasmCryptoResult::Ok(enrollment.into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<WireE2eIdentity>`]
+    ///
+    /// see [core_crypto::mls::MlsCentral::e2ei_new_rotate_enrollment]
+    pub fn e2ei_new_rotate_enrollment(
+        &self,
+        display_name: Option<String>,
+        handle: Option<String>,
+        expiry_days: u32,
+        ciphersuite: Ciphersuite,
+    ) -> Promise {
+        let this = self.inner.clone();
+        let ciphersuite: CiphersuiteName = ciphersuite.into();
+        future_to_promise(
+            async move {
+                let this = this.read().await;
+                let enrollment = this
+                    .e2ei_new_rotate_enrollment(display_name, handle, expiry_days, ciphersuite.into())
+                    .map(WireE2eIdentity)
+                    .map_err(|_| CryptoError::ImplementationError)
+                    .map_err(CoreCryptoError::from)?;
+
+                WasmCryptoResult::Ok(enrollment.into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// see [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
+    pub fn e2ei_mls_init_only(&self, enrollment: WireE2eIdentity, certificate_chain: String) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
                 let mut this = this.write().await;
-                this.e2ei_mls_init(enrollment.0, certificate_chain).await?;
+                this.e2ei_mls_init_only(enrollment.0, certificate_chain).await?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
+        )
+    }
+
+    /// see [core_crypto::mls::MlsCentral::e2ei_rotate_all]
+    pub fn e2ei_rotate_all(
+        &self,
+        enrollment: WireE2eIdentity,
+        certificate_chain: String,
+        new_key_packages_count: u32,
+    ) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                let mut this = this.write().await;
+                this.e2ei_rotate_all(enrollment.0, certificate_chain, new_key_packages_count as usize)
+                    .await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -2227,7 +2384,7 @@ impl CoreCrypto {
 #[derive(Debug)]
 #[wasm_bindgen(js_name = FfiWireE2EIdentity)]
 #[repr(transparent)]
-pub struct WireE2eIdentity(core_crypto::prelude::WireE2eIdentity);
+pub struct WireE2eIdentity(core_crypto::prelude::E2eiEnrollment);
 
 #[wasm_bindgen(js_class = FfiWireE2EIdentity)]
 impl WireE2eIdentity {

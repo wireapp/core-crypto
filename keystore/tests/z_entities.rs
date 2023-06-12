@@ -31,7 +31,7 @@ macro_rules! pat_to_bool {
 }
 
 macro_rules! test_for_entity {
-    ($test_name:ident, $entity:ident $(ignore_entity_count:$ignore_entity_count:literal)? $(ignore_update_assertion:$ignore_update_assertion:literal)?) => {
+    ($test_name:ident, $entity:ident $(ignore_entity_count:$ignore_entity_count:literal)? $(ignore_update:$ignore_update:literal)?) => {
         #[apply(all_storage_types)]
         #[wasm_bindgen_test]
         pub async fn $test_name(store: core_crypto_keystore::Connection) {
@@ -40,8 +40,10 @@ macro_rules! test_for_entity {
             let mut entity = crate::tests_impl::can_save_entity::<$entity>(&store).await;
 
             crate::tests_impl::can_find_entity::<$entity>(&store, &entity).await;
-            let ignore_update_assertion = pat_to_bool!($($ignore_update_assertion)?);
-            crate::tests_impl::can_update_entity::<$entity>(&store, &mut entity, ignore_update_assertion).await;
+            let ignore_update = pat_to_bool!($($ignore_update)?);
+            if !ignore_update {
+                crate::tests_impl::can_update_entity::<$entity>(&store, &mut entity).await;
+            }
             crate::tests_impl::can_remove_entity::<$entity>(&store, entity).await;
 
             let ignore = pat_to_bool!($($ignore_entity_count)?);
@@ -70,25 +72,23 @@ mod tests_impl {
         entity
     }
 
-    pub async fn can_find_entity<R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>>(
+    pub async fn can_find_entity<R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection> + 'static>(
         store: &CryptoKeystore,
         entity: &R,
     ) {
-        let entity2: R = store.find(entity.id_raw()).await.unwrap().unwrap();
+        let mut entity2: R = store.find(entity.id_raw()).await.unwrap().unwrap();
+        entity2.equalize();
         assert_eq!(*entity, entity2);
     }
 
     pub async fn can_update_entity<R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>>(
         store: &CryptoKeystore,
         entity: &mut R,
-        ignore_update_assertion: bool,
     ) {
         entity.random_update();
         store.save(entity.clone()).await.unwrap();
         let entity2: R = store.find(entity.id_raw()).await.unwrap().unwrap();
-        if !ignore_update_assertion {
-            assert_eq!(*entity, entity2);
-        }
+        assert_eq!(*entity, entity2);
     }
 
     pub async fn can_remove_entity<R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>>(
@@ -145,9 +145,9 @@ pub mod tests {
         if #[cfg(feature = "mls-keystore")] {
             test_for_entity!(test_persisted_mls_group, PersistedMlsGroup);
             test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
-            test_for_entity!(test_mls_credential, MlsCredential);
+            test_for_entity!(test_mls_credential, MlsCredential ignore_update:true);
             test_for_entity!(test_mls_keypackage, MlsKeyPackage);
-            test_for_entity!(test_mls_signature_keypair, MlsSignatureKeyPair);
+            test_for_entity!(test_mls_signature_keypair, MlsSignatureKeyPair ignore_update:true);
             test_for_entity!(test_mls_psk_bundle, MlsPskBundle);
             test_for_entity!(test_mls_encryption_keypair, MlsEncryptionKeyPair);
             test_for_entity!(test_mls_hpke_private_key, MlsHpkePrivateKey);
@@ -155,7 +155,7 @@ pub mod tests {
     }
     cfg_if::cfg_if! {
         if #[cfg(feature = "proteus-keystore")] {
-            test_for_entity!(test_proteus_identity, ProteusIdentity ignore_entity_count:true ignore_update_assertion:true);
+            test_for_entity!(test_proteus_identity, ProteusIdentity ignore_entity_count:true ignore_update:true);
             test_for_entity!(test_proteus_prekey, ProteusPrekey);
             test_for_entity!(test_proteus_session, ProteusSession);
         }
@@ -170,6 +170,8 @@ pub mod utils {
     pub trait EntityTestExt: core_crypto_keystore::entities::Entity {
         fn random() -> Self;
         fn random_update(&mut self);
+        /// Removes auto-generated fields from the entity
+        fn equalize(&mut self) {}
     }
 
     cfg_if::cfg_if! {
@@ -212,6 +214,7 @@ pub mod utils {
 
                 fn random_update(&mut self) {
                     let mut rng = rand::thread_rng();
+                    self.id = uuid::Uuid::new_v4().hyphenated().to_string().into();
                     self.credential = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut self.credential[..]);
                 }
@@ -232,7 +235,7 @@ pub mod utils {
 
                     Self {
                         signature_scheme: rand::random(),
-                        keypair, pk, credential_id
+                        keypair, pk, credential_id, created_at: 0,
                     }
                 }
 
@@ -244,6 +247,10 @@ pub mod utils {
 
                     self.credential_id = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut self.credential_id[..]);
+                }
+
+                fn equalize(&mut self) {
+                    self.created_at = 0;
                 }
             }
 

@@ -181,7 +181,7 @@ pub mod tests {
                     let MlsConversationCreationMessage {
                         welcome: bob_welcome, ..
                     } = alice_central
-                        .add_members_to_conversation(&id, &mut [bob_central.rand_member().await])
+                        .add_members_to_conversation(&id, &mut [bob_central.rand_member(&case).await])
                         .await
                         .unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
@@ -198,7 +198,7 @@ pub mod tests {
                         commit,
                         ..
                     } = alice_central
-                        .add_members_to_conversation(&id, &mut [charlie_central.rand_member().await])
+                        .add_members_to_conversation(&id, &mut [charlie_central.rand_member(&case).await])
                         .await
                         .unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
@@ -225,7 +225,7 @@ pub mod tests {
                     );
 
                     let proposal_bundle = alice_central
-                        .new_proposal(&id, MlsProposal::Remove(alice_central.read_client_id()))
+                        .new_proposal(&id, MlsProposal::Remove(alice_central.get_client_id()))
                         .await
                         .unwrap();
 

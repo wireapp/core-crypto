@@ -134,7 +134,7 @@ impl ConversationMember {
         let (cs, ct) = (case.ciphersuite(), case.credential_type);
         let client = Client::random_generate(case, backend, false).await?;
         let id = client.id();
-        client.generate_keypackage(backend, cs, ct).await?;
+        client.generate_one_keypackage(backend, cs, ct).await?;
 
         let member = Self {
             id: id.to_vec(),
@@ -156,11 +156,12 @@ impl ConversationMember {
                 let client_id = rand::random::<usize>();
                 let client_id = format!("{}:{client_id:x}@members.wire.com", user_uuid.hyphenated());
                 let client_id = client_id.as_bytes().into();
-                let credential = Client::new_basic_credential_bundle(&client_id, case.ciphersuite(), backend).unwrap();
+                let credential =
+                    Client::new_basic_credential_bundle(&client_id, case.signature_scheme(), backend).unwrap();
                 (credential, client_id)
             }
             crate::prelude::MlsCredentialType::X509 => {
-                let cert = crate::prelude::CertificateBundle::rand(case.ciphersuite(), "alice".into());
+                let cert = crate::prelude::CertificateBundle::rand(&"alice".into(), case.signature_scheme());
                 let client_id = cert.get_client_id().unwrap();
                 (Client::new_x509_credential_bundle(cert).unwrap(), client_id)
             }
@@ -215,7 +216,7 @@ pub mod tests {
         let mut member = ConversationMember::random_generate(&case, &backend).await.unwrap();
         let client_id = member.local_client.as_ref().map(|c| c.id().clone()).unwrap();
         let ret = (0..INITIAL_KEYING_MATERIAL_COUNT * 2).all(|_| {
-            let ckp = member.keypackages_for_all_clients(&case.ciphersuite().into());
+            let ckp = member.keypackages_for_all_clients(&case.ciphersuite());
             ckp[&client_id].is_some()
         });
 

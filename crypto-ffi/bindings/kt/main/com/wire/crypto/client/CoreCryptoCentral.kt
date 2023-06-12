@@ -50,8 +50,8 @@ class CoreCryptoCentral(private val rootDir: String, databaseKey: String) {
         return E2EIClientImpl(cc.e2eiNewEnrollment(clientId, displayName, handle, expiryDays, ciphersuite))
     }
 
-    fun e2eiMlsClient(enrollment: E2EIClient, certificateChain: String): MLSClient {
-        cc.e2eiMlsInit(enrollment.delegate, certificateChain)
+    fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: String): MLSClient {
+        cc.e2eiMlsInitOnly(enrollment.delegate, certificateChain)
         return MLSClientImpl(cc)
     }
 

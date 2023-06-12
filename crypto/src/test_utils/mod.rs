@@ -67,8 +67,11 @@ pub async fn run_test_with_client_ids<const N: usize>(
                 let identity = match case.credential_type {
                     MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
                     MlsCredentialType::X509 => {
-                        let cert = crate::prelude::CertificateBundle::rand(case.cfg.ciphersuite, client_id);
-                        ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite, cert)]))
+                        let cert = crate::prelude::CertificateBundle::rand(
+                            &client_id,
+                            case.cfg.ciphersuite.signature_algorithm(),
+                        );
+                        ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]))
                     }
                 };
                 central.mls_init(identity, vec![case.cfg.ciphersuite]).await.unwrap();

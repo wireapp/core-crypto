@@ -10,7 +10,7 @@
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::prelude::Client;
-use crate::{mls::ConversationId, mls::MlsCentral, CryptoResult, MlsError};
+use crate::{mls::ConversationId, mls::MlsCentral, CryptoError, CryptoResult, MlsError};
 
 use super::MlsConversation;
 
@@ -25,9 +25,10 @@ impl MlsConversation {
         message: impl AsRef<[u8]>,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<u8>> {
-        let cs = self.ciphersuite();
-        let ct = self.own_credential_type()?;
-        let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
+        let signer = &self
+            .find_current_credential_bundle(client)?
+            .ok_or(CryptoError::IdentityInitializationError)?
+            .signature_key;
         let encrypted = self
             .group
             .create_message(backend, signer, message.as_ref())
@@ -86,10 +87,7 @@ pub mod tests {
                         .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central
-                        .invite(&id, &mut bob_central, case.custom_cfg())
-                        .await
-                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                     let msg = b"Hello bob";
                     let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
@@ -121,10 +119,7 @@ pub mod tests {
                         .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central
-                        .invite(&id, &mut bob_central, case.custom_cfg())
-                        .await
-                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                     let msg = b"Hello bob";
                     let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();

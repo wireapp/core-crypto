@@ -145,6 +145,33 @@ impl From<MlsGroupInfoBundle> for GroupInfoBundle {
     }
 }
 
+#[derive(Debug)]
+pub struct RotateBundle {
+    pub commits: Vec<CommitBundle>,
+    pub new_key_packages: Vec<Vec<u8>>,
+    pub key_package_refs_to_remove: Vec<Vec<u8>>,
+}
+
+impl TryFrom<MlsRotateBundle> for RotateBundle {
+    type Error = CryptoError;
+
+    fn try_from(bundle: MlsRotateBundle) -> Result<Self, Self::Error> {
+        let (commits, new_key_packages, key_package_refs_to_remove) = bundle.to_bytes()?;
+        let commits_size = commits.len();
+        let commits = commits
+            .into_iter()
+            .try_fold(Vec::with_capacity(commits_size), |mut acc, c| {
+                acc.push(c.try_into()?);
+                CryptoResult::Ok(acc)
+            })?;
+        Ok(Self {
+            commits,
+            new_key_packages,
+            key_package_refs_to_remove,
+        })
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Invitee {
     pub id: ClientId,
@@ -556,6 +583,22 @@ impl CoreCrypto<'_> {
         )?;
 
         Ok(count.try_into().unwrap_or(0))
+    }
+
+    /// See [core_crypto::mls::MlsCentral::delete_keypackages]
+    pub fn delete_keypackages(&self, refs: Vec<Vec<u8>>) -> CryptoResult<()> {
+        let refs = refs
+            .into_iter()
+            .map(|r| KeyPackageRef::from_slice(&r))
+            .collect::<Vec<_>>();
+        future::block_on(
+            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
+                self.central
+                    .lock()
+                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .delete_keypackages(&refs[..]),
+            ),
+        )
     }
 
     /// See [core_crypto::mls::MlsCentral::new_conversation]
@@ -970,8 +1013,46 @@ impl CoreCrypto<'_> {
             .map_err(|_| CryptoError::ImplementationError)
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_mls_init]
-    pub fn e2ei_mls_init(
+    /// See [core_crypto::mls::MlsCentral::e2ei_new_activation_enrollment]
+    pub fn e2ei_new_activation_enrollment(
+        &self,
+        display_name: String,
+        handle: String,
+        expiry_days: u32,
+        ciphersuite: Ciphersuite,
+    ) -> CryptoResult<std::sync::Arc<WireE2eIdentity>> {
+        self.central
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .e2ei_new_activation_enrollment(display_name, handle, expiry_days, ciphersuite.into())
+            .map(std::sync::Mutex::new)
+            .map(std::sync::Arc::new)
+            .map(WireE2eIdentity)
+            .map(std::sync::Arc::new)
+            .map_err(|_| CryptoError::ImplementationError)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_new_rotate_enrollment]
+    pub fn e2ei_new_rotate_enrollment(
+        &self,
+        display_name: Option<String>,
+        handle: Option<String>,
+        expiry_days: u32,
+        ciphersuite: Ciphersuite,
+    ) -> CryptoResult<std::sync::Arc<WireE2eIdentity>> {
+        self.central
+            .lock()
+            .map_err(|_| CryptoError::LockPoisonError)?
+            .e2ei_new_rotate_enrollment(display_name, handle, expiry_days, ciphersuite.into())
+            .map(std::sync::Mutex::new)
+            .map(std::sync::Arc::new)
+            .map(WireE2eIdentity)
+            .map(std::sync::Arc::new)
+            .map_err(|_| CryptoError::ImplementationError)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
+    pub fn e2ei_mls_init_only(
         &self,
         enrollment: std::sync::Arc<WireE2eIdentity>,
         certificate_chain: String,
@@ -993,10 +1074,41 @@ impl CoreCrypto<'_> {
         let executor = self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?;
         future::block_on(
             executor.run(
-                cc.e2ei_mls_init(e2ei, certificate_chain)
+                cc.e2ei_mls_init_only(e2ei, certificate_chain)
                     .map_err(|_| CryptoError::ImplementationError),
             ),
         )
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_rotate_all]
+    pub fn e2ei_rotate_all(
+        &self,
+        enrollment: std::sync::Arc<WireE2eIdentity>,
+        certificate_chain: String,
+        new_key_packages_count: u32,
+    ) -> CryptoResult<RotateBundle> {
+        if std::sync::Arc::strong_count(&enrollment) > 1 {
+            unsafe {
+                // it is required because in order to pass the enrollment to Rust, uniffi lowers it by cloning the Arc
+                // hence here the Arc has a strong_count of 2. We decrement it manually then drop it with `try_unwrap`.
+                // We have to do this since this instance contains private keys that have to be zeroed once dropped.
+                std::sync::Arc::decrement_strong_count(std::sync::Arc::as_ptr(&enrollment));
+            }
+        }
+        let e2ei = std::sync::Arc::try_unwrap(enrollment).map_err(|_| CryptoError::LockPoisonError)?;
+        let e2ei = std::sync::Arc::try_unwrap(e2ei.0).map_err(|_| CryptoError::LockPoisonError)?;
+        let e2ei = e2ei.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
+
+        let mut cc = self.central.lock().map_err(|_| CryptoError::LockPoisonError)?;
+
+        let executor = self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?;
+        future::block_on(
+            executor.run(
+                cc.e2ei_rotate_all(e2ei, certificate_chain, new_key_packages_count as usize)
+                    .map_err(|_| CryptoError::ImplementationError),
+            ),
+        )?
+        .try_into()
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash]
@@ -1298,11 +1410,11 @@ impl CoreCrypto<'_> {
 }
 
 #[derive(Debug)]
-/// See [core_crypto::e2e_identity::WireE2eIdentity]
-pub struct WireE2eIdentity(std::sync::Arc<std::sync::Mutex<core_crypto::prelude::WireE2eIdentity>>);
+/// See [core_crypto::e2e_identity::E2eiEnrollment]
+pub struct WireE2eIdentity(std::sync::Arc<std::sync::Mutex<core_crypto::prelude::E2eiEnrollment>>);
 
 impl WireE2eIdentity {
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::directory_response]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::directory_response]
     pub fn directory_response(&self, directory: Vec<u8>) -> E2eIdentityResult<AcmeDirectory> {
         self.0
             .lock()
@@ -1311,7 +1423,7 @@ impl WireE2eIdentity {
             .map(AcmeDirectory::from)
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_account_request]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_account_request]
     pub fn new_account_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
         self.0
             .lock()
@@ -1319,7 +1431,7 @@ impl WireE2eIdentity {
             .new_account_request(previous_nonce)
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_account_response]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_account_response]
     pub fn new_account_response(&self, account: Vec<u8>) -> E2eIdentityResult<()> {
         self.0
             .lock()
@@ -1327,7 +1439,7 @@ impl WireE2eIdentity {
             .new_account_response(account)
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_order_request]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_order_request]
     #[allow(clippy::too_many_arguments)]
     pub fn new_order_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
         self.0
@@ -1336,7 +1448,7 @@ impl WireE2eIdentity {
             .new_order_request(previous_nonce)
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_order_response]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_order_response]
     pub fn new_order_response(&self, order: Vec<u8>) -> E2eIdentityResult<NewAcmeOrder> {
         Ok(self
             .0
@@ -1346,7 +1458,7 @@ impl WireE2eIdentity {
             .into())
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_authz_request]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_authz_request]
     pub fn new_authz_request(&self, url: String, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
         self.0
             .lock()
@@ -1354,7 +1466,7 @@ impl WireE2eIdentity {
             .new_authz_request(url, previous_nonce)
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_authz_response]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_authz_response]
     pub fn new_authz_response(&self, authz: Vec<u8>) -> E2eIdentityResult<NewAcmeAuthz> {
         Ok(self
             .0
@@ -1365,7 +1477,7 @@ impl WireE2eIdentity {
     }
 
     #[allow(clippy::too_many_arguments)]
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::create_dpop_token]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::create_dpop_token]
     pub fn create_dpop_token(&self, expiry_secs: u32, backend_nonce: String) -> E2eIdentityResult<String> {
         self.0
             .lock()
@@ -1373,7 +1485,7 @@ impl WireE2eIdentity {
             .create_dpop_token(expiry_secs, backend_nonce)
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_dpop_challenge_request]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_dpop_challenge_request]
     pub fn new_dpop_challenge_request(
         &self,
         access_token: String,
@@ -1385,7 +1497,7 @@ impl WireE2eIdentity {
             .new_dpop_challenge_request(access_token, previous_nonce)
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_oidc_challenge_request]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_request]
     pub fn new_oidc_challenge_request(&self, id_token: String, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
         self.0
             .lock()
@@ -1393,7 +1505,7 @@ impl WireE2eIdentity {
             .new_oidc_challenge_request(id_token, previous_nonce)
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::new_challenge_response]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_challenge_response]
     pub fn new_challenge_response(&self, challenge: Vec<u8>) -> E2eIdentityResult<()> {
         self.0
             .lock()
@@ -1401,7 +1513,7 @@ impl WireE2eIdentity {
             .new_challenge_response(challenge)
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::check_order_request]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::check_order_request]
     pub fn check_order_request(&self, order_url: String, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
         self.0
             .lock()
@@ -1409,7 +1521,7 @@ impl WireE2eIdentity {
             .check_order_request(order_url, previous_nonce)
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::check_order_response]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::check_order_response]
     pub fn check_order_response(&self, order: Vec<u8>) -> E2eIdentityResult<String> {
         self.0
             .lock()
@@ -1417,7 +1529,7 @@ impl WireE2eIdentity {
             .check_order_response(order)
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_request]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::finalize_request]
     pub fn finalize_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
         self.0
             .lock()
@@ -1425,7 +1537,7 @@ impl WireE2eIdentity {
             .finalize_request(previous_nonce)
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::finalize_response]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::finalize_response]
     pub fn finalize_response(&self, finalize: Vec<u8>) -> E2eIdentityResult<String> {
         self.0
             .lock()
@@ -1433,7 +1545,7 @@ impl WireE2eIdentity {
             .finalize_response(finalize)
     }
 
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::certificate_request]
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::certificate_request]
     pub fn certificate_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
         self.0
             .lock()

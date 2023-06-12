@@ -6,11 +6,11 @@ use super::error::{E2eIdentityError, E2eIdentityResult};
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct E2eiAcmeDirectory {
-    /// For fetching a new nonce used in [crate::prelude::WireE2eIdentity::new_account_request]
+    /// For fetching a new nonce used in [crate::prelude::E2eiEnrollment::new_account_request]
     pub new_nonce: String,
-    /// URL to call with [crate::prelude::WireE2eIdentity::new_account_request]
+    /// URL to call with [crate::prelude::E2eiEnrollment::new_account_request]
     pub new_account: String,
-    /// URL to call with [crate::prelude::WireE2eIdentity::new_order_request]
+    /// URL to call with [crate::prelude::E2eiEnrollment::new_order_request]
     pub new_order: String,
 }
 
@@ -43,7 +43,7 @@ impl TryFrom<&E2eiAcmeDirectory> for wire_e2e_identity::prelude::AcmeDirectory {
 pub struct E2eiNewAcmeOrder {
     /// Opaque raw json value
     pub delegate: super::Json,
-    /// Authorizations to create with [crate::prelude::WireE2eIdentity::new_authz_request]
+    /// Authorizations to create with [crate::prelude::E2eiEnrollment::new_authz_request]
     pub authorizations: Vec<String>,
 }
 

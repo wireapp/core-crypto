@@ -54,13 +54,15 @@ impl DatabaseConnection for WasmConnection {
             .add_object_store(
                 ObjectStore::new("mls_credentials")
                     .auto_increment(false)
-                    .add_index(Index::new("id", "id").unique(true)),
+                    .add_index(Index::new("id", "id"))
+                    .add_index(Index::new("credential", "credential").unique(true)),
             )
             .add_object_store(
                 ObjectStore::new("mls_signature_keypairs")
                     .auto_increment(false)
-                    .add_index(Index::new("mls_id", "mls_id").unique(true))
+                    .add_index(Index::new("mls_id", "mls_id"))
                     .add_index(Index::new("signature_scheme", "signature_scheme"))
+                    .add_index(Index::new("created_at", "created_at"))
                     .add_index(Index::new("pk", "pk").unique(true)),
             )
             .add_object_store(

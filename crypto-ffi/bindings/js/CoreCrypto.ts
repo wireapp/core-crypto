@@ -56,23 +56,23 @@ export class CoreCryptoError extends Error {
         return new Error(msg, ...params);
     }
 
-    static build(msg: string, ...params: any[]): CoreCryptoError|Error {
+    static build(msg: string, ...params: any[]): CoreCryptoError | Error {
         const parts = msg.split("\n\n");
         if (parts.length < 2) {
             const cause = new Error("CoreCrypto WASM FFI Error doesn't have enough elements to build a rich error");
-            return this.fallback(msg, { cause }, ...params);
+            return this.fallback(msg, {cause}, ...params);
         }
 
-        const [errMsg, richErrorJSON, ] = parts;
+        const [errMsg, richErrorJSON,] = parts;
         try {
             const richError: CoreCryptoRichError = JSON.parse(richErrorJSON);
             return new this(errMsg, richError, ...params);
-        } catch(cause) {
-            return this.fallback(msg, { cause }, ...params);
+        } catch (cause) {
+            return this.fallback(msg, {cause}, ...params);
         }
     }
 
-    static fromStdError(e: Error): CoreCryptoError|Error {
+    static fromStdError(e: Error): CoreCryptoError | Error {
         const opts = {
             // @ts-ignore
             cause: e.cause || undefined,
@@ -83,7 +83,7 @@ export class CoreCryptoError extends Error {
     }
 
     static async asyncMapErr<T>(p: Promise<T>): Promise<T> {
-        const mappedErrorPromise = p.catch((e: Error|CoreCryptoError) => {
+        const mappedErrorPromise = p.catch((e: Error | CoreCryptoError) => {
             if (e instanceof CoreCryptoError) {
                 throw e;
             } else {
@@ -327,6 +327,30 @@ export enum RatchetTreeType {
      * To define (not yet implemented)
      */
     ByRef = 0x03,
+}
+
+/**
+ * Result returned after rotating the Credential of the current client in all the local conversations
+ */
+export interface RotateBundle {
+    /**
+     * An Update commit for each conversation
+     *
+     * @readonly
+     */
+    commits: CommitBundle[];
+    /**
+     * Fresh KeyPackages with the new Credential
+     *
+     * @readonly
+     */
+    newKeyPackages: Uint8Array[];
+    /**
+     * All the now deprecated KeyPackages. Once deleted remotely, delete them locally with {@link CoreCrypto.deleteKeyPackages}
+     *
+     * @readonly
+     */
+    keyPackageRefsToRemove: Uint8Array[];
 }
 
 /**
@@ -656,7 +680,14 @@ export class CoreCrypto {
      * });
      * ````
      */
-    static async init({ databaseName, key, clientId, wasmFilePath, ciphersuites, entropySeed }: CoreCryptoParams): Promise<CoreCrypto> {
+    static async init({
+                          databaseName,
+                          key,
+                          clientId,
+                          wasmFilePath,
+                          ciphersuites,
+                          entropySeed
+                      }: CoreCryptoParams): Promise<CoreCrypto> {
         if (!this.#module) {
             const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
             const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
@@ -674,7 +705,13 @@ export class CoreCrypto {
      * Use this clientId to initialize MLS with {@link CoreCrypto.mlsInit}.
      * @param params - {@link CoreCryptoDeferredParams}
      */
-    static async deferredInit({ databaseName, key, ciphersuites, entropySeed, wasmFilePath }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
+    static async deferredInit({
+                                  databaseName,
+                                  key,
+                                  ciphersuites,
+                                  entropySeed,
+                                  wasmFilePath
+                              }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
         if (!this.#module) {
             const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
             const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
@@ -769,7 +806,7 @@ export class CoreCrypto {
                 ctx,
             );
             await this.#cc.set_callbacks(wasmCallbacks);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -795,12 +832,12 @@ export class CoreCrypto {
     }
 
     /**
-    * Marks a conversation as child of another one
-    * This will mostly affect the behavior of the callbacks (the parentConversationClients parameter will be filled)
-    *
-    * @param childId - conversation identifier of the child conversation
-    * @param parentId - conversation identifier of the parent conversation
-    */
+     * Marks a conversation as child of another one
+     * This will mostly affect the behavior of the callbacks (the parentConversationClients parameter will be filled)
+     *
+     * @param childId - conversation identifier of the child conversation
+     * @param parentId - conversation identifier of the parent conversation
+     */
     async markConversationAsChildOf(childId: ConversationId, parentId: ConversationId): Promise<void> {
         return await CoreCryptoError.asyncMapErr(this.#cc.mark_conversation_as_child_of(childId, parentId));
     }
@@ -855,7 +892,7 @@ export class CoreCrypto {
             );
             const ret = await CoreCryptoError.asyncMapErr(this.#cc.create_conversation(conversationId, creatorCredentialType, config));
             return ret;
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -896,7 +933,7 @@ export class CoreCrypto {
             };
 
             return ret;
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -928,7 +965,7 @@ export class CoreCrypto {
             const {keyRotationSpan, wirePolicy} = configuration || {};
             const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
             return await CoreCryptoError.asyncMapErr(this.#cc.process_welcome_message(welcomeMessage, config));
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -960,6 +997,16 @@ export class CoreCrypto {
      */
     async clientKeypackages(ciphersuite: Ciphersuite, credentialType: CredentialType, amountRequested: number): Promise<Array<Uint8Array>> {
         return await CoreCryptoError.asyncMapErr(this.#cc.client_keypackages(ciphersuite, credentialType, amountRequested));
+    }
+
+    /**
+     * Prunes local KeyPackages after making sure they also have been deleted on the backend side
+     * You should only use this after {@link CoreCrypto.e2eiRotateAll}
+     *
+     * @param refs - KeyPackage references to delete obtained from a {RotateBundle}
+     */
+    async deleteKeypackages(refs: Uint8Array[]): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.delete_keypackages(refs));
     }
 
     /**
@@ -1003,7 +1050,7 @@ export class CoreCrypto {
             };
 
             return ret;
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1044,7 +1091,7 @@ export class CoreCrypto {
             };
 
             return ret;
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1079,7 +1126,7 @@ export class CoreCrypto {
             };
 
             return ret;
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1116,7 +1163,7 @@ export class CoreCrypto {
                     payload: gi.payload
                 },
             };
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1214,7 +1261,7 @@ export class CoreCrypto {
             };
 
             return ret;
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1498,7 +1545,7 @@ export class CoreCrypto {
     static proteusFingerprintPrekeybundle(prekey: Uint8Array): string {
         try {
             return this.#module.CoreCrypto.proteus_fingerprint_prekeybundle(prekey);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1537,13 +1584,60 @@ export class CoreCrypto {
     }
 
     /**
-     * Parses the ACME server response from the endpoint fetching x509 certificates and uses it to initialize the MLS client with a certificate
+     * Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
+     * As a consequence, this method does not support changing the ClientId which should remain the same as the Basic one.
+     * Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
+     *
+     * @param displayName human readable name displayed in the application e.g. `Smith, Alice M (QA)`
+     * @param handle user handle e.g. `alice.smith.qa@example.com`
+     * @param expiryDays generated x509 certificate expiry
+     * @param ciphersuite - for generating signing key material
+     * @returns The new {@link WireE2eIdentity} object
+     */
+    async e2eiNewActivationEnrollment(displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<WireE2eIdentity> {
+        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_activation_enrollment(displayName, handle, expiryDays, ciphersuite));
+        return new WireE2eIdentity(e2ei);
+    }
+
+    /**
+     * Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)
+     * having to change/rotate their credential, either because the former one is expired or it
+     * has been revoked. As a consequence, this method does not support changing neither ClientId which
+     * should remain the same as the previous one. It lets you change the DisplayName or the handle
+     * if you need to. Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
+     *
+     * @param expiryDays generated x509 certificate expiry
+     * @param ciphersuite - for generating signing key material
+     * @param displayName human readable name displayed in the application e.g. `Smith, Alice M (QA)`
+     * @param handle user handle e.g. `alice.smith.qa@example.com`
+     * @returns The new {@link WireE2eIdentity} object
+     */
+    async e2eiNewRotateEnrollment(expiryDays: number, ciphersuite: Ciphersuite, displayName?: string, handle?: string,): Promise<WireE2eIdentity> {
+        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_rotate_enrollment(displayName, handle, expiryDays, ciphersuite));
+        return new WireE2eIdentity(e2ei);
+    }
+
+    /**
+     * Use this method to initialize end-to-end identity when a client signs up and the grace period is already expired ; that means he cannot initialize with a Basic credential
      *
      * @param enrollment - the enrollment instance used to fetch the certificates
      * @param certificateChain - the raw response from ACME server
      */
-    async e2eiMlsInit(enrollment: WireE2eIdentity, certificateChain: string): Promise<void> {
-        return await this.#cc.e2ei_mls_init(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain);
+    async e2eiMlsInitOnly(enrollment: WireE2eIdentity, certificateChain: string): Promise<void> {
+        return await this.#cc.e2ei_mls_init_only(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain);
+    }
+
+    /**
+     * Creates a commit in all local conversations for changing the credential. Requires first
+     * having enrolled a new X509 certificate with either {@link CoreCrypto.e2eiNewActivationEnrollment}
+     * or {@link CoreCrypto.e2eiNewRotateEnrollment}
+     *
+     * @param enrollment - the enrollment instance used to fetch the certificates
+     * @param certificateChain - the raw response from ACME server
+     * @param newKeyPackageCount - number of KeyPackages with new identity to generate
+     */
+    async e2eiRotateAll(enrollment: WireE2eIdentity, certificateChain: string, newKeyPackageCount: number): Promise<RotateBundle> {
+        return await this.#cc.e2ei_rotate_all(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain, newKeyPackageCount);
     }
 
     /**
@@ -1623,7 +1717,7 @@ export class WireE2eIdentity {
     directoryResponse(directory: JsonRawData): AcmeDirectory {
         try {
             return this.#e2ei.directory_response(directory);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1638,7 +1732,7 @@ export class WireE2eIdentity {
     newAccountRequest(previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.new_account_request(previousNonce);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1651,7 +1745,7 @@ export class WireE2eIdentity {
     newAccountResponse(account: JsonRawData): void {
         try {
             return this.#e2ei.new_account_response(account);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1665,7 +1759,7 @@ export class WireE2eIdentity {
     newOrderRequest(previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.new_order_request(previousNonce);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1679,7 +1773,7 @@ export class WireE2eIdentity {
     newOrderResponse(order: JsonRawData): NewAcmeOrder {
         try {
             return this.#e2ei.new_order_response(order);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1695,7 +1789,7 @@ export class WireE2eIdentity {
     newAuthzRequest(url: string, previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.new_authz_request(url, previousNonce);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1709,7 +1803,7 @@ export class WireE2eIdentity {
     newAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
         try {
             return this.#e2ei.new_authz_response(authz);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1728,7 +1822,7 @@ export class WireE2eIdentity {
     createDpopToken(expirySecs: number, backendNonce: string): Uint8Array {
         try {
             return this.#e2ei.create_dpop_token(expirySecs, backendNonce);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1743,7 +1837,7 @@ export class WireE2eIdentity {
     newDpopChallengeRequest(accessToken: string, previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.new_dpop_challenge_request(accessToken, previousNonce);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1758,7 +1852,7 @@ export class WireE2eIdentity {
     newOidcChallengeRequest(idToken: string, previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.new_oidc_challenge_request(idToken, previousNonce);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1772,7 +1866,7 @@ export class WireE2eIdentity {
     newChallengeResponse(challenge: JsonRawData): void {
         try {
             return this.#e2ei.new_challenge_response(challenge);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1787,7 +1881,7 @@ export class WireE2eIdentity {
     checkOrderRequest(orderUrl: string, previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.check_order_request(orderUrl, previousNonce);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1802,7 +1896,7 @@ export class WireE2eIdentity {
     checkOrderResponse(order: JsonRawData): string {
         try {
             return this.#e2ei.check_order_response(order);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1816,7 +1910,7 @@ export class WireE2eIdentity {
     finalizeRequest(previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.finalize_request(previousNonce);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1831,7 +1925,7 @@ export class WireE2eIdentity {
     finalizeResponse(finalize: JsonRawData): string {
         try {
             return this.#e2ei.finalize_response(finalize);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1845,7 +1939,7 @@ export class WireE2eIdentity {
     certificateRequest(previousNonce: string): JsonRawData {
         try {
             return this.#e2ei.certificate_request(previousNonce);
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }

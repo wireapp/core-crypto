@@ -29,6 +29,12 @@ extension CoreCryptoSwift.CommitBundle {
     }
 }
 
+extension CoreCryptoSwift.RotateBundle {
+    func convertTo() -> RotateBundle {
+        return RotateBundle(commits: self.commits, newKeyPackages: self.newKeyPackages, keyPackageRefsToRemove: self.keyPackageRefsToRemove)
+    }
+}
+
 extension CoreCryptoSwift.MemberAddedMessages {
     func convertTo() -> MemberAddedMessages {
         return MemberAddedMessages(commit: self.commit, welcome: self.welcome, groupInfo: self.groupInfo.convertTo())
@@ -461,6 +467,27 @@ private extension RatchetTreeType {
     }
 }
 
+/// Result returned after rotating the Credential of the current client in all the local conversations
+public struct RotateBundle: ConvertToInner {
+    /// An Update commit for each conversation
+    public var commits: [CommitBundle]
+    /// Fresh KeyPackages with the new Credential
+    public var newKeyPackages: [[UInt8]]
+    /// All the now deprecated KeyPackages. Once deleted remotely, delete them locally with ``CoreCrypto/deleteKeypackages``
+    public var keyPackageRefsToRemove: [[UInt8]]
+
+    public init(commits: [CommitBundle], newKeyPackages: [[UInt8]], keyPackageRefsToRemove: [[UInt8]]) {
+        self.commits = commits
+        self.newKeyPackages = newKeyPackages
+        self.keyPackageRefsToRemove = keyPackageRefsToRemove
+    }
+    typealias Inner = CoreCryptoSwift.RotateBundle
+
+    func convert() -> Inner {
+        return CoreCryptoSwift.RotateBundle(commits: self.commits, newKeyPackages: self.newKeyPackages, keyPackageRefsToRemove: self.keyPackageRefsToRemove)
+    }
+}
+
 /// A wrapper for the underlying ``CoreCrypto`` object.
 /// Intended to avoid API breakages due to possible changes in the internal framework used to generate it
 public class CoreCryptoWrapper {
@@ -542,6 +569,12 @@ public class CoreCryptoWrapper {
     /// - returns: The amount of valid, non-expired KeyPackages that are persisted in the backing storage
     public func clientValidKeypackagesCount(ciphersuite: UInt16) throws -> UInt64 {
         return try self.coreCrypto.clientValidKeypackagesCount(ciphersuite: ciphersuite)
+    }
+
+    /// Prunes local KeyPackages after making sure they also have been deleted on the backend side.
+    /// You should only use this after ``CoreCrypto/e2eiRotateAll``
+    public func deleteKeypackages(refs: [[UInt8]]) throws {
+        return try self.coreCrypto.deleteKeypackages(refs)
     }
 
     /// Creates a new conversation with the current client being the sole member
@@ -964,12 +997,49 @@ public class CoreCryptoWrapper {
         return try self.coreCrypto.e2eiNewEnrollment(clientId: clientId, displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
     }
 
-    /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it to initialize the MLS client with a certificate
+    /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
+    /// As a consequence, this method does not support changing the ClientId which should remain the same as the Basic one.
+    /// Once the enrollment is finished, use the instance in ``CoreCrypto/e2eiRotateAll`` to do the rotation.
+    ///
+    /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
+    /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
+    /// - parameter expiryDays: generated x509 certificate expiry
+    /// - parameter ciphersuite: For generating signing key material.
+    /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
+    public func e2eiNewActivationEnrollment(displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16) throws -> CoreCryptoSwift.WireE2eIdentity {
+        return try self.coreCrypto.e2eiNewActivationEnrollment(displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
+    }
+
+    /// Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)having to change/rotate
+    /// their credential, either because the former one is expired or it has been revoked. As a consequence, this method
+    /// does not support changing neither ClientId which should remain the same as the previous one. It lets you change
+    /// the DisplayName or the handle if you need to. Once the enrollment is finished, use the instance in ``CoreCrypto/e2eiRotateAll`` to do the rotation.
+    ///
+    /// - parameter expiryDays: generated x509 certificate expiry
+    /// - parameter ciphersuite: For generating signing key material.
+    /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
+    /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
+    /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
+    public func e2eiNewRotateEnrollment(expiryDays: UInt32, ciphersuite: UInt16, displayName: String? = nil, handle: String? = nil) throws -> CoreCryptoSwift.WireE2eIdentity {
+        return try self.coreCrypto.e2eiNewRotateEnrollment(expiryDays: expiryDays, ciphersuite: ciphersuite, displayName: displayName, handle: handle)
+    }
+
+    /// Use this method to initialize end-to-end identity when a client signs up and the grace period is already expired ; that means he cannot initialize with a Basic credential
     ///
     /// - parameter e2ei: the enrollment instance used to fetch the certificates
     /// - parameter certificateChain: the raw response from ACME server
-    public func e2eiMlsInit(enrollment: CoreCryptoSwift.WireE2eIdentity, certificateChain: String) throws {
-        return try self.coreCrypto.e2eiMlsInit(enrollment: enrollment, certificateChain: certificateChain)
+    public func e2eiMlsInitOnly(enrollment: CoreCryptoSwift.WireE2eIdentity, certificateChain: String) throws {
+        return try self.coreCrypto.e2eiMlsInitOnly(enrollment: enrollment, certificateChain: certificateChain)
+    }
+
+    /// Creates a commit in all local conversations for changing the credential. Requires first having enrolled a new
+    /// X509 certificate with either ``CoreCrypto/e2eiNewActivationEnrollment`` or ``CoreCrypto/e2eiNewRotateEnrollment``
+    ///
+    /// - parameter e2ei: the enrollment instance used to fetch the certificates
+    /// - parameter certificateChain: the raw response from ACME server
+    /// - parameter newKeyPackageCount: number of KeyPackages with new identity to generate
+    public func e2eiRotateAll(enrollment: CoreCryptoSwift.WireE2eIdentity, certificateChain: String, newKeyPackageCount: UInt32) throws -> RotateBundle {
+        return try self.coreCrypto.e2eiRotateAll(enrollment: enrollment, certificateChain: certificateChain, newKeyPackageCount: newKeyPackageCount)
     }
 
     /// Allows persisting an active enrollment (for example while redirecting the user during OAuth) in order to resume
