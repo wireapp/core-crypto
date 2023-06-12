@@ -78,6 +78,11 @@ package = "openssl-src"
 git = "https://github.com/wireapp/rust-jwt-simple"
 tag = "v0.11.4-pre.core-crypto-0.7.0"
 
+[patch.crates-io.tls_codec]
+version = "0.3.0-pre.3"
+git = "https://github.com/RustCrypto/formats.git"
+package = "tls_codec"
+ref = "2fcc4599"
 
 [profile.release]
 lto = true
