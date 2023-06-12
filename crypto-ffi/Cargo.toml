@@ -2,7 +2,7 @@
 name = "core-crypto-ffi"
 description = "Platform-specific bindings (Android, iOS, WASM) for CoreCrypto"
 repository = "https://github.com/wireapp/core-crypto"
-version = "1.0.0-pre.4"
+version = "1.0.0-pre.5"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
@@ -17,7 +17,7 @@ proteus = ["core-crypto/proteus", "core-crypto/cryptobox-migrate"]
 mobile = ["uniffi", "uniffi_macros", "uniffi_build", "uniffi_bindgen"]
 
 [dependencies]
-core-crypto = { version = "^1.0.0-pre.4", path = "../crypto" }
+core-crypto = { version = "^1.0.0-pre.5", path = "../crypto" }
 thiserror = "1.0"
 cfg-if = "1.0"
 futures-util = "0.3"

@@ -7,6 +7,19 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-pre.5] - 2023-06-12
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Backend sends raw GroupInfo, we were trying to deserialize it from a MlsMessage
+
+</details>
+
+* fix: `joinByExternalCommit` was expecting a `GroupInfo` wrapped in a MlsMessage
+
 ## [1.0.0-pre.4] - 2023-06-12
 
 <details>
