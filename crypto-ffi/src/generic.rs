@@ -285,7 +285,7 @@ pub struct CertificateConfiguration {
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     type Error = CryptoError;
     fn try_into(self) -> CryptoResult<MlsConversationConfiguration> {
-        let certificate_list = if self.certificate_list.len() > 0 {
+        let certificate_list = if !self.certificate_list.is_empty() {
             Some(self.certificate_list.into_iter().map(|c| c.into()).collect())
         } else {
             None
@@ -303,12 +303,12 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     }
 }
 
-impl Into<MlsCertificateConfiguration> for CertificateConfiguration {
-    fn into(self) -> MlsCertificateConfiguration {
+impl From<CertificateConfiguration> for MlsCertificateConfiguration {
+    fn from(val: CertificateConfiguration) -> Self {
         MlsCertificateConfiguration {
-            domain_name: self.domain_name,
-            client_id: self.client_id,
-            cert_chain: self.cert_chain,
+            domain_name: val.domain_name,
+            client_id: val.client_id,
+            cert_chain: val.cert_chain,
         }
     }
 }
