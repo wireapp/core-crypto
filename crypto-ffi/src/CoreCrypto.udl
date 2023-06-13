@@ -148,7 +148,7 @@ dictionary CertificateConfiguration {
 dictionary ConversationConfiguration {
     Ciphersuite ciphersuite;
     sequence<sequence<u8>> external_senders;
-    sequence<CertificateConfiguration>? certificate_list;
+    sequence<CertificateConfiguration> certificate_list;
     CustomConfiguration custom;
 };
 
