@@ -104,6 +104,7 @@ enum CryptoError {
     "InvalidIdentity",
     "IdentityInitializationError",
     "MessageEpochTooOld",
+    "InvalidPem",
 };
 
 dictionary DecryptedMessage {
