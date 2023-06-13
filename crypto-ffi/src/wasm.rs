@@ -672,7 +672,17 @@ impl Invitee {
 pub struct ConversationConfiguration {
     ciphersuite: Option<Ciphersuite>,
     external_senders: Vec<Vec<u8>>,
+    certificate_list: Vec<CertificateConfiguration>,
     custom: CustomConfiguration,
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+/// See [core_crypto::prelude::MlsCertificateConfiguration]
+pub struct CertificateConfiguration {
+    domain_name: String,
+    client_id: FfiClientId,
+    cert_chain: String,
 }
 
 #[wasm_bindgen]
@@ -682,6 +692,7 @@ impl ConversationConfiguration {
         ciphersuite: Option<Ciphersuite>,
         external_senders: Option<Vec<Uint8Array>>,
         key_rotation_span: Option<u32>,
+        certificate_list: Box<[CertificateConfiguration]>,
         wire_policy: Option<WirePolicy>,
     ) -> Self {
         let external_senders = external_senders
@@ -690,7 +701,20 @@ impl ConversationConfiguration {
         Self {
             ciphersuite,
             external_senders,
+            certificate_list,
             custom: CustomConfiguration::new(key_rotation_span, wire_policy),
+        }
+    }
+}
+
+#[wasm_bindgen]
+impl CertificateConfiguration {
+    #[wasm_bindgen(constructor)]
+    pub fn new(domain_name: String, client_id: FfiClientId, cert_chain: String) -> Self {
+        Self {
+            domain_name,
+            client_id,
+            cert_chain,
         }
     }
 }
@@ -698,8 +722,14 @@ impl ConversationConfiguration {
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     type Error = CoreCryptoError;
     fn try_into(mut self) -> WasmCryptoResult<MlsConversationConfiguration> {
+        let certificate_list = if self.certificate_list.len() > 0 {
+            Some(self.certificate_list.into_iter().map(|c| c.into()).collect())
+        } else {
+            None
+        };
         let mut cfg = MlsConversationConfiguration {
             custom: self.custom.into(),
+            certificate_list,
             ..Default::default()
         };
 
@@ -711,6 +741,16 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
         }
 
         Ok(cfg)
+    }
+}
+
+impl Into<MlsCertificateConfiguration> for CertificateConfiguration {
+    fn into(self) -> MlsCertificateConfiguration {
+        MlsCertificateConfiguration {
+            domain_name: self.domain_name,
+            client_id: self.client_id.into(),
+            cert_chain: self.cert_chain,
+        }
     }
 }
 

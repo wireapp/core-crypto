@@ -154,6 +154,9 @@ pub enum CryptoError {
     /// Message epoch is too old
     #[error("The epoch in which message was encrypted is older than {MAX_PAST_EPOCHS}")]
     MessageEpochTooOld,
+    /// Invalid PEM certificate in the conversation configuration
+    #[error("The PEM certificate string in the conversation configuration is invalid")]
+    InvalidPem,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

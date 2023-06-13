@@ -20,15 +20,30 @@
 //! when joining one by Welcome or external commit
 
 use openmls::prelude::{
-    Credential, ExternalSender, SenderRatchetConfiguration, SignaturePublicKey, WireFormatPolicy,
+    AnchorCredentialType, Certificate, Credential, ExternalSender, MlsCredentialType, PerDomainTrustAnchor,
+    PerDomainTrustAnchorsExtension, SenderRatchetConfiguration, SignaturePublicKey, WireFormatPolicy,
     PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{mls::MlsCiphersuite, CryptoResult};
+use crate::{
+    mls::{client::id::ClientId, MlsCiphersuite},
+    CryptoError, CryptoResult, MlsError,
+};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 2;
+
+/// A struct to simplify the type for the certificate roots configuration
+#[derive(Debug, Clone)]
+pub struct MlsCertificateConfiguration {
+    /// The domain name of the certificate chain
+    pub domain_name: String,
+    /// The client id
+    pub client_id: ClientId,
+    /// PEM encoded certificate chain
+    pub cert_chain: String,
+}
 
 /// The configuration parameters for a group/conversation
 #[derive(Debug, Clone, Default)]
@@ -39,6 +54,8 @@ pub struct MlsConversationConfiguration {
     pub external_senders: Vec<ExternalSender>,
     /// Implementation specific configuration
     pub custom: MlsCustomConfiguration,
+    /// List of tuples of domain name and trusted root certificates to be set as an extension to the group
+    pub certificate_list: Option<Vec<MlsCertificateConfiguration>>,
 }
 
 impl MlsConversationConfiguration {
@@ -49,6 +66,29 @@ impl MlsConversationConfiguration {
     /// Generates an `MlsGroupConfig` from this configuration
     #[inline(always)]
     pub fn as_openmls_default_configuration(&self) -> CryptoResult<openmls::group::MlsGroupConfig> {
+        let certificate_roots = if let Some(ref certificate_list) = self.certificate_list {
+            certificate_list.iter().cloned().try_fold(
+                PerDomainTrustAnchorsExtension::new(),
+                |mut acc, cert_config| -> Result<Vec<PerDomainTrustAnchor>, CryptoError> {
+                    let anchor = PerDomainTrustAnchor::new(
+                        cert_config.domain_name.into(),
+                        AnchorCredentialType::new(MlsCredentialType::X509(Certificate {
+                            identity: cert_config.client_id.as_slice().into(),
+                            cert_data: pem::parse_many(cert_config.cert_chain)
+                                .map_err(|_| CryptoError::InvalidPem)?
+                                .into_iter()
+                                .map(|p| p.contents().into())
+                                .collect(),
+                        }))
+                        .map_err(MlsError::from)?,
+                    );
+                    acc.push(anchor);
+                    Ok(acc)
+                },
+            )?
+        } else {
+            PerDomainTrustAnchorsExtension::default()
+        };
         Ok(openmls::group::MlsGroupConfig::builder()
             .wire_format_policy(self.custom.wire_policy.into())
             .max_past_epochs(MAX_PAST_EPOCHS)
@@ -59,6 +99,7 @@ impl MlsConversationConfiguration {
                 self.custom.maximum_forward_distance,
             ))
             .use_ratchet_tree_extension(true)
+            .trust_certificates(certificate_roots)
             .external_senders(self.external_senders.clone())
             .build())
     }

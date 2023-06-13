@@ -139,9 +139,16 @@ dictionary ConversationInitBundle {
     GroupInfoBundle group_info;
 };
 
+dictionary CertificateConfiguration {
+    ClientId client_id;
+    string domain_name;
+    string certificate_chain;
+};
+
 dictionary ConversationConfiguration {
     Ciphersuite ciphersuite;
     sequence<sequence<u8>> external_senders;
+    sequence<CertificateConfiguration>? certificate_list;
     CustomConfiguration custom;
 };
 

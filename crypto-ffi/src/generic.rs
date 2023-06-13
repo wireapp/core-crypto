@@ -270,21 +270,46 @@ impl Invitee {
 pub struct ConversationConfiguration {
     pub ciphersuite: Ciphersuite,
     pub external_senders: Vec<Vec<u8>>,
+    pub certificate_list: Vec<CertificateConfiguration>,
     pub custom: CustomConfiguration,
+}
+
+#[derive(Debug, Clone)]
+/// See [core_crypto::prelude::MlsCertificateConfiguration]
+pub struct CertificateConfiguration {
+    pub domain_name: String,
+    pub client_id: ClientId,
+    pub cert_chain: String,
 }
 
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     type Error = CryptoError;
     fn try_into(self) -> CryptoResult<MlsConversationConfiguration> {
+        let certificate_list = if self.certificate_list.len() > 0 {
+            Some(self.certificate_list.into_iter().map(|c| c.into()).collect())
+        } else {
+            None
+        };
         let mut cfg = MlsConversationConfiguration {
             custom: self.custom.into(),
             ciphersuite: self.ciphersuite.into(),
+            certificate_list,
             ..Default::default()
         };
 
         cfg.set_raw_external_senders(self.external_senders);
 
         Ok(cfg)
+    }
+}
+
+impl Into<MlsCertificateConfiguration> for CertificateConfiguration {
+    fn into(self) -> MlsCertificateConfiguration {
+        MlsCertificateConfiguration {
+            domain_name: self.domain_name,
+            client_id: self.client_id,
+            cert_chain: self.cert_chain,
+        }
     }
 }
 
