@@ -142,7 +142,7 @@ dictionary ConversationInitBundle {
 dictionary CertificateConfiguration {
     ClientId client_id;
     string domain_name;
-    string certificate_chain;
+    string cert_chain;
 };
 
 dictionary ConversationConfiguration {
