@@ -39,7 +39,7 @@ fn proposal_remove_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        let client_ids = add_clients(&mut central, &id, ciphersuite, *i);
+                        let (client_ids, ..) = add_clients(&mut central, &id, ciphersuite, *i);
                         (central, id, client_ids.first().unwrap().clone())
                     },
                     |(mut central, id, client_id)| async move {

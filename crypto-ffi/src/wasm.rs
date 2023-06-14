@@ -1580,25 +1580,6 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
-    ///
-    /// see [core_crypto::mls::MlsCentral::export_group_info]
-    pub fn export_group_info(&self, conversation_id: Box<[u8]>) -> Promise {
-        let this = self.inner.clone();
-        future_to_promise(
-            async move {
-                let state = this
-                    .write()
-                    .await
-                    .export_group_info(&conversation_id.to_vec())
-                    .await
-                    .map_err(CoreCryptoError::from)?;
-                WasmCryptoResult::Ok(Uint8Array::from(state.as_slice()).into())
-            }
-            .err_into(),
-        )
-    }
-
     #[allow(clippy::boxed_local)]
     /// Returns: [`WasmCryptoResult<ConversationInitBundle>`]
     ///

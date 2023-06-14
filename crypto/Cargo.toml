@@ -122,10 +122,6 @@ name = "proposal"
 harness = false
 
 [[bench]]
-name = "group_info"
-harness = false
-
-[[bench]]
 name = "commit"
 harness = false
 

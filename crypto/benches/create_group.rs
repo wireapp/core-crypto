@@ -2,9 +2,6 @@ use criterion::{
     async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion,
 };
 use futures_lite::future::block_on;
-use openmls::framing::MlsMessageInBody;
-
-use openmls::prelude::MlsMessageIn;
 
 use core_crypto::prelude::{
     ConversationMember, MlsConversationConfiguration, MlsConversationInitBundle, MlsCredentialType,
@@ -99,17 +96,10 @@ fn join_from_group_info_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        use openmls::prelude::TlsDeserializeTrait as _;
                         let (mut alice_central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        add_clients(&mut alice_central, &id, ciphersuite, *i);
-                        let gi = block_on(async { alice_central.export_group_info(&id).await.unwrap() });
-                        let gi = MlsMessageIn::tls_deserialize(&mut gi.as_slice()).unwrap();
-                        let gi = match gi.extract() {
-                            MlsMessageInBody::GroupInfo(vgi) => vgi,
-                            _ => panic!("oups"),
-                        };
+                        let (_, group_info) = add_clients(&mut alice_central, &id, ciphersuite, *i);
                         let (bob_central, ..) = new_central(ciphersuite, &credential, in_memory);
-                        (bob_central, gi)
+                        (bob_central, group_info)
                     },
                     |(mut central, group_info)| async move {
                         let MlsConversationInitBundle { conversation_id, .. } = black_box(

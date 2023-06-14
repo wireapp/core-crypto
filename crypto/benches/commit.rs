@@ -72,7 +72,7 @@ fn commit_remove_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        let client_ids = add_clients(&mut central, &id, ciphersuite, *i);
+                        let (client_ids, ..) = add_clients(&mut central, &id, ciphersuite, *i);
                         (central, id, client_ids)
                     },
                     |(mut central, id, client_ids)| async move {
@@ -101,7 +101,7 @@ fn commit_remove_n_clients_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        let client_ids = add_clients(&mut central, &id, ciphersuite, GROUP_MAX);
+                        let (client_ids, ..) = add_clients(&mut central, &id, ciphersuite, GROUP_MAX);
                         let to_remove = client_ids[..*i].to_vec();
                         (central, id, to_remove)
                     },

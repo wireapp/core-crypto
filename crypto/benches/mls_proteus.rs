@@ -147,7 +147,7 @@ fn remove_client_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        let client_ids = add_clients(&mut central, &id, ciphersuite, GROUP_MAX);
+                        let (client_ids, ..) = add_clients(&mut central, &id, ciphersuite, GROUP_MAX);
                         let to_remove = client_ids[..*i].to_vec();
                         (central, id, to_remove)
                     },

@@ -804,18 +804,6 @@ impl CoreCrypto<'_> {
         .map_err(MlsError::from)?)
     }
 
-    /// See [core_crypto::mls::MlsCentral::export_group_info]
-    pub fn export_group_info(&self, conversation_id: ConversationId) -> CryptoResult<Vec<u8>> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .export_group_info(&conversation_id),
-            ),
-        )
-    }
-
     /// See [core_crypto::mls::MlsCentral::join_by_external_commit]
     pub fn join_by_external_commit(
         &self,

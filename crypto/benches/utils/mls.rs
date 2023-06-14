@@ -4,11 +4,14 @@ use std::fmt::{Display, Formatter};
 use criterion::BenchmarkId;
 
 use futures_lite::future::block_on;
+use openmls::framing::MlsMessageInBody;
+use openmls::prelude::group_info::VerifiableGroupInfo;
 use openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, SignaturePublicKey};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::random::OpenMlsRand;
 use openmls_traits::types::Ciphersuite;
 use openmls_traits::OpenMlsCryptoProvider;
+use tls_codec::Deserialize;
 
 use core_crypto::prelude::MlsCredentialType;
 use core_crypto::{
@@ -183,7 +186,7 @@ pub fn add_clients(
     id: &ConversationId,
     ciphersuite: MlsCiphersuite,
     nb_clients: usize,
-) -> Vec<ClientId> {
+) -> (Vec<ClientId>, VerifiableGroupInfo) {
     block_on(async {
         let mut client_ids = vec![];
 
@@ -195,13 +198,19 @@ pub fn add_clients(
             })
             .collect::<Vec<_>>();
 
-        central
+        let commit_bundle = central
             .add_members_to_conversation(id, members.as_mut_slice())
             .await
             .unwrap();
 
+        let group_info = commit_bundle.group_info.payload.bytes();
+        let group_info = openmls::prelude::MlsMessageIn::tls_deserialize_bytes(&group_info[..]).unwrap();
+        let MlsMessageInBody::GroupInfo(group_info) = group_info.extract() else {
+            panic!("error")
+        };
+
         central.commit_accepted(id).await.unwrap();
-        client_ids
+        (client_ids, group_info)
     })
 }
 
