@@ -1172,16 +1172,6 @@ export class CoreCrypto {
     }
 
     /**
-     * Exports GroupInfo for use in external commits
-     *
-     * @param conversationId - MLS Conversation ID
-     * @returns TLS-serialized MLS GroupInfo
-     */
-    async exportGroupInfo(conversationId: ConversationId): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.export_group_info(conversationId));
-    }
-
-    /**
      * Allows to create an external commit to "apply" to join a group through its GroupInfo.
      *
      * If the Delivery Service accepts the external commit, you have to {@link CoreCrypto.mergePendingGroupFromExternalCommit}

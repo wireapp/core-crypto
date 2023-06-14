@@ -1,7 +1,7 @@
 use crate::prelude::CiphersuiteName;
 use openmls::prelude::{Ciphersuite, KeyPackage, MlsMessageIn, MlsMessageInBody};
 use openmls_traits::OpenMlsCryptoProvider;
-use tls_codec::{Deserialize, Serialize};
+use tls_codec::Deserialize;
 
 use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
 
@@ -522,40 +522,6 @@ impl MlsCentral {
         let mut cursor = std::io::Cursor::new(welcome);
         let welcome = MlsMessageIn::tls_deserialize(&mut cursor).map_err(MlsError::from)?;
         self.process_welcome_message(welcome, custom_cfg).await
-    }
-
-    /// Exports a TLS-serialized view of the current group state corresponding to the provided conversation ID.
-    ///
-    /// # Arguments
-    /// * `conversation` - the group/conversation id
-    /// * `message` - the encrypted message as a byte array
-    ///
-    /// # Return type
-    /// A TLS serialized byte array of the `GroupInfo`
-    ///
-    /// # Errors
-    /// If the conversation can't be found, an error will be returned. Other errors are originating
-    /// from OpenMls and serialization
-    pub async fn export_group_info(&mut self, conversation_id: &ConversationId) -> CryptoResult<Vec<u8>> {
-        let conversation = self.get_conversation(conversation_id).await?;
-        let conversation_lock = conversation.read().await;
-        let group = &conversation_lock.group;
-        let cs = group.ciphersuite();
-        // TODO: proper error
-        let ct = group
-            .own_leaf()
-            .ok_or(CryptoError::ImplementationError)?
-            .credential()
-            .credential_type();
-        let cb = self.mls_client()?.find_credential_bundle(cs.into(), ct.into())?;
-        let state = conversation
-            .read()
-            .await
-            .group
-            .export_group_info(&self.mls_backend, &cb.signature_key, true)
-            .map_err(MlsError::from)?;
-
-        Ok(state.tls_serialize_detached().map_err(MlsError::from)?)
     }
 
     /// Closes the connection with the local KeyStore
