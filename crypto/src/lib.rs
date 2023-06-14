@@ -78,9 +78,7 @@ pub mod prelude {
             client::*,
             config::MlsCentralConfiguration,
             conversation::{
-                config::{
-                    MlsCertificateConfiguration, MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy,
-                },
+                config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
                 decrypt::MlsConversationDecryptMessage,
                 group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
                 handshake::{MlsCommitBundle, MlsConversationCreationMessage, MlsProposalBundle},

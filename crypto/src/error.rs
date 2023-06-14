@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use wire_e2e_identity::prelude::RustyAcmeError;
+
 use crate::mls::conversation::config::MAX_PAST_EPOCHS;
 
 /// CoreCrypto errors
@@ -127,6 +129,9 @@ pub enum CryptoError {
     /// Proteus Error Wrapper
     #[error(transparent)]
     ProteusError(#[from] ProteusError),
+    /// RustyAcmeError wrapper
+    #[error(transparent)]
+    RustyAcmeError(#[from] RustyAcmeError),
     /// Cryptobox migration error wrapper
     #[error(transparent)]
     CryptoboxMigrationError(#[from] CryptoboxMigrationError),
@@ -157,6 +162,12 @@ pub enum CryptoError {
     /// Invalid PEM certificate in the conversation configuration
     #[error("The PEM certificate string in the conversation configuration is invalid")]
     InvalidPem,
+    /// Certificate chain is invalid
+    #[error("The provided certificate chain is invalid")]
+    CertificateDecodingError,
+    /// Incomplete x509 certificate chain
+    #[error("x509 certificate chain is incomplet")]
+    IncompleteCertificateChain,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

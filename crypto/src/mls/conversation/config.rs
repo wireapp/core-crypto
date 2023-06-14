@@ -20,30 +20,19 @@
 //! when joining one by Welcome or external commit
 
 use openmls::prelude::{
-    AnchorCredentialType, Certificate, Credential, ExternalSender, MlsCredentialType, PerDomainTrustAnchor,
-    PerDomainTrustAnchorsExtension, SenderRatchetConfiguration, SignaturePublicKey, WireFormatPolicy,
-    PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
+    Credential, CredentialType, ExternalSender, PerDomainTrustAnchor, PerDomainTrustAnchorsExtension,
+    SenderRatchetConfiguration, SignaturePublicKey, WireFormatPolicy, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
+    PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
 };
+use openmls_x509_credential::X509Ext;
 use serde::{Deserialize, Serialize};
+use wire_e2e_identity::prelude::WireIdentityReader;
+use x509_cert::der::Decode;
 
-use crate::{
-    mls::{client::id::ClientId, MlsCiphersuite},
-    CryptoError, CryptoResult, MlsError,
-};
+use crate::{mls::MlsCiphersuite, CryptoError, CryptoResult, MlsError};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 2;
-
-/// A struct to simplify the type for the certificate roots configuration
-#[derive(Debug, Clone)]
-pub struct MlsCertificateConfiguration {
-    /// The domain name of the certificate chain
-    pub domain_name: String,
-    /// The client id
-    pub client_id: ClientId,
-    /// PEM encoded certificate chain
-    pub cert_chain: String,
-}
 
 /// The configuration parameters for a group/conversation
 #[derive(Debug, Clone, Default)]
@@ -55,7 +44,7 @@ pub struct MlsConversationConfiguration {
     /// Implementation specific configuration
     pub custom: MlsCustomConfiguration,
     /// List of tuples of domain name and trusted root certificates to be set as an extension to the group
-    pub certificate_list: Option<Vec<MlsCertificateConfiguration>>,
+    pub certificate_list: Option<Vec<String>>,
 }
 
 impl MlsConversationConfiguration {
@@ -67,21 +56,27 @@ impl MlsConversationConfiguration {
     #[inline(always)]
     pub fn as_openmls_default_configuration(&self) -> CryptoResult<openmls::group::MlsGroupConfig> {
         let certificate_roots = if let Some(ref certificate_list) = self.certificate_list {
-            certificate_list.iter().cloned().try_fold(
+            certificate_list.iter().try_fold(
                 PerDomainTrustAnchorsExtension::new(),
-                |mut acc, cert_config| -> Result<Vec<PerDomainTrustAnchor>, CryptoError> {
-                    let anchor = PerDomainTrustAnchor::new(
-                        cert_config.domain_name.into(),
-                        AnchorCredentialType::new(MlsCredentialType::X509(Certificate {
-                            identity: cert_config.client_id.as_slice().into(),
-                            cert_data: pem::parse_many(cert_config.cert_chain)
-                                .map_err(|_| CryptoError::InvalidPem)?
-                                .into_iter()
-                                .map(|p| p.contents().into())
-                                .collect(),
-                        }))
-                        .map_err(MlsError::from)?,
-                    );
+                |mut acc, cert_chain| -> Result<Vec<PerDomainTrustAnchor>, CryptoError> {
+                    let cert_data: Vec<Vec<u8>> = pem::parse_many(cert_chain)
+                        .map_err(|_| CryptoError::InvalidPem)?
+                        .into_iter()
+                        .map(|p| p.contents().into())
+                        .collect();
+                    // at the moment we need only the root certificate
+                    let root_cert = cert_data
+                        .get(0)
+                        .map(|cert_data| -> Result<x509_cert::Certificate, CryptoError> {
+                            let cert = x509_cert::Certificate::from_der(&cert_data)
+                                .map_err(|_| CryptoError::CertificateDecodingError)?;
+                            cert.is_valid().map_err(MlsError::from)?;
+                            Ok(cert)
+                        })
+                        .ok_or(CryptoError::IncompleteCertificateChain)??;
+                    let identity = root_cert.extract_identity()?;
+                    let anchor = PerDomainTrustAnchor::new(identity.domain.into(), CredentialType::X509, cert_data)
+                        .map_err(MlsError::from)?;
                     acc.push(anchor);
                     Ok(acc)
                 },

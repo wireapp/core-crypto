@@ -672,17 +672,8 @@ impl Invitee {
 pub struct ConversationConfiguration {
     ciphersuite: Option<Ciphersuite>,
     external_senders: Vec<Vec<u8>>,
-    certificate_list: Vec<CertificateConfiguration>,
+    certificate_list: Option<Vec<String>>,
     custom: CustomConfiguration,
-}
-
-#[wasm_bindgen]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// See [core_crypto::prelude::MlsCertificateConfiguration]
-pub struct CertificateConfiguration {
-    domain_name: String,
-    client_id: FfiClientId,
-    cert_chain: String,
 }
 
 #[wasm_bindgen]
@@ -692,7 +683,7 @@ impl ConversationConfiguration {
         ciphersuite: Option<Ciphersuite>,
         external_senders: Option<Vec<Uint8Array>>,
         key_rotation_span: Option<u32>,
-        certificate_list: Box<[CertificateConfiguration]>,
+        certificate_list: Option<Vec<String>>,
         wire_policy: Option<WirePolicy>,
     ) -> Self {
         let external_senders = external_senders
@@ -722,14 +713,9 @@ impl CertificateConfiguration {
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     type Error = CoreCryptoError;
     fn try_into(mut self) -> WasmCryptoResult<MlsConversationConfiguration> {
-        let certificate_list = if self.certificate_list.len() > 0 {
-            Some(self.certificate_list.into_iter().map(|c| c.into()).collect())
-        } else {
-            None
-        };
         let mut cfg = MlsConversationConfiguration {
             custom: self.custom.into(),
-            certificate_list,
+            certificate_list: self.certificate_list,
             ..Default::default()
         };
 
