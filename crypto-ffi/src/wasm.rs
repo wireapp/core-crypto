@@ -683,9 +683,11 @@ impl ConversationConfiguration {
         ciphersuite: Option<Ciphersuite>,
         external_senders: Option<Vec<Uint8Array>>,
         key_rotation_span: Option<u32>,
-        certificate_list: Option<Vec<String>>,
+        certificate_list: Option<Box<[js_sys::JsString]>>,
         wire_policy: Option<WirePolicy>,
     ) -> Self {
+        let certificate_list: Option<Vec<String>> =
+            certificate_list.map(|list| list.iter().map(String::from).collect());
         let external_senders = external_senders
             .map(|exs| exs.iter().cloned().map(|jsv| jsv.to_vec()).collect())
             .unwrap_or_default();
