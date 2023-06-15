@@ -304,6 +304,7 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
+    use openmls::prelude::ExtensionType;
     use wasm_bindgen_test::*;
 
     use crate::{
@@ -341,6 +342,46 @@ pub mod tests {
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                 let alice_can_send_message = alice_central.encrypt_message(&id, b"me").await;
                 assert!(alice_can_send_message.is_ok());
+            })
+        })
+        .await;
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn conversation_should_have_trust_extension(case: TestCase) {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+            Box::pin(async move {
+                if matches!(case.credential_type, MlsCredentialType::Basic) {
+                    return;
+                }
+                let id = conversation_id();
+                alice_central
+                    .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
+                assert_eq!(
+                    alice_central
+                        .get_conversation_unchecked(&id)
+                        .await
+                        .group
+                        .group_id()
+                        .as_slice(),
+                    id
+                );
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
+                let alice_can_send_message = alice_central.encrypt_message(&id, b"me").await;
+                assert!(alice_can_send_message.is_ok());
+                // extension should be present
+                assert!(alice_central
+                    .get_conversation_unchecked(&id)
+                    .await
+                    .group
+                    .export_group_context()
+                    .extensions()
+                    .iter()
+                    .any(|e| e.extension_type() == ExtensionType::PerDomainTrustAnchor));
             })
         })
         .await;
