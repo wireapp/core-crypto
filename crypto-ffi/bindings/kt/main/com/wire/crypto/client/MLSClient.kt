@@ -38,20 +38,20 @@ typealias MLSKeyPackage = ByteArray
 open class GroupInfoBundle(
     var encryptionType: MlsGroupInfoEncryptionType,
     var ratchetTreeType: MlsRatchetTreeType,
-    var payload: ByteArray
+    var payload: ByteArray,
 )
 
 open class CommitBundle(
     val commit: ByteArray,
     val welcome: ByteArray?,
-    val groupInfoBundle: GroupInfoBundle
+    val groupInfoBundle: GroupInfoBundle,
 )
 
 class DecryptedMessageBundle(
     val message: ByteArray?,
     val commitDelay: Long?,
     val senderClientId: ClientId?,
-    val hasEpochChanged: Boolean
+    val hasEpochChanged: Boolean,
 )
 
 interface MLSClient {
@@ -74,7 +74,7 @@ interface MLSClient {
         groupId: MLSGroupId,
         epoch: ULong,
         ciphersuite: Ciphersuite,
-        credentialType: MlsCredentialType
+        credentialType: MlsCredentialType,
     ): HandshakeMessage
 
     fun joinByExternalCommit(groupInfo: ByteArray, credentialType: MlsCredentialType): CommitBundle
@@ -86,7 +86,8 @@ interface MLSClient {
     fun createConversation(
         groupId: MLSGroupId,
         creatorCredentialType: MlsCredentialType,
-        externalSenders: List<Ed22519Key> = emptyList()
+        externalSenders: List<Ed22519Key> = emptyList(),
+        certificateList: List<String>?,
     )
 
     fun wipeConversation(groupId: MLSGroupId)
@@ -107,12 +108,12 @@ interface MLSClient {
 
     fun addMember(
         groupId: MLSGroupId,
-        members: List<Pair<ClientId, MLSKeyPackage>>
+        members: List<Pair<ClientId, MLSKeyPackage>>,
     ): CommitBundle?
 
     fun removeMember(
         groupId: MLSGroupId,
-        members: List<ClientId>
+        members: List<ClientId>,
     ): CommitBundle
 
     fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
@@ -158,7 +159,7 @@ class MLSClientImpl(
         groupId: MLSGroupId,
         epoch: ULong,
         ciphersuite: Ciphersuite,
-        credentialType: MlsCredentialType
+        credentialType: MlsCredentialType,
     ): HandshakeMessage {
         return cc.newExternalAddProposal(
             conversationId = groupId.toUByteList(),
@@ -172,7 +173,7 @@ class MLSClientImpl(
         return cc.joinByExternalCommit(
             groupInfo.toUByteList(),
             defaultGroupConfiguration,
-            credentialType
+            credentialType,
         ).toCommitBundle()
     }
 
@@ -190,7 +191,7 @@ class MLSClientImpl(
             DEFAULT_CIPHERSUITE,
             externalSenders.map { it.toUByteList() },
             certificateList,
-            defaultGroupConfiguration
+            defaultGroupConfiguration,
         )
 
         val groupIdAsBytes = groupId.toUByteList()
@@ -233,7 +234,7 @@ class MLSClientImpl(
 
     override fun addMember(
         groupId: MLSGroupId,
-        members: List<Pair<ClientId, MLSKeyPackage>>
+        members: List<Pair<ClientId, MLSKeyPackage>>,
     ): CommitBundle? {
         if (members.isEmpty()) {
             return null
@@ -248,7 +249,7 @@ class MLSClientImpl(
 
     override fun removeMember(
         groupId: MLSGroupId,
-        members: List<ClientId>
+        members: List<ClientId>,
     ): CommitBundle {
         val clientIds = members.map { it.toUByteList() }
         return cc.removeClientsFromConversation(groupId.toUByteList(), clientIds).toCommitBundle()
@@ -275,33 +276,32 @@ class MLSClientImpl(
         fun MemberAddedMessages.toCommitBundle() = CommitBundle(
             commit.toByteArray(),
             welcome.toByteArray(),
-            groupInfo.toGroupInfoBundle()
+            groupInfo.toGroupInfoBundle(),
         )
 
         fun com.wire.crypto.CommitBundle.toCommitBundle() = CommitBundle(
             commit.toByteArray(),
             welcome?.toByteArray(),
-            groupInfo.toGroupInfoBundle()
+            groupInfo.toGroupInfoBundle(),
         )
 
         fun ConversationInitBundle.toCommitBundle() = CommitBundle(
             commit.toByteArray(),
             null,
-            groupInfo.toGroupInfoBundle()
+            groupInfo.toGroupInfoBundle(),
         )
 
         fun com.wire.crypto.GroupInfoBundle.toGroupInfoBundle() = GroupInfoBundle(
             encryptionType,
             ratchetTreeType,
-            payload.toByteArray()
+            payload.toByteArray(),
         )
 
         fun DecryptedMessage.toDecryptedMessageBundle() = DecryptedMessageBundle(
             message?.toByteArray(),
             commitDelay?.toLong(),
             senderClientId?.toByteArray()?.let { String(it) },
-            hasEpochChanged
+            hasEpochChanged,
         )
     }
-
 }
