@@ -153,6 +153,11 @@ export interface ConversationConfiguration {
      */
     externalSenders?: Uint8Array[];
     /**
+     * List of certificate chains in PEM format to set as context extension of the group.
+     * Used for credential verification when messages are decrypted
+     */
+    certificateList?: String[];
+    /**
      * Implementation specific configuration
      */
     custom?: CustomConfiguration;

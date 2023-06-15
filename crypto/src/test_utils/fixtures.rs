@@ -87,6 +87,9 @@ pub struct TestCase {
 
 impl TestCase {
     pub fn new(credential_type: MlsCredentialType, cs: openmls::prelude::Ciphersuite) -> Self {
+        if matches!(credential_type, MlsCredentialType::X509) {
+            return Self::default_x509(cs);
+        }
         Self {
             credential_type,
             cfg: MlsConversationConfiguration {
@@ -108,10 +111,21 @@ impl TestCase {
         self.cfg.custom.clone()
     }
 
-    pub fn default_x509() -> Self {
+    pub fn default_x509(cs: openmls::prelude::Ciphersuite) -> Self {
+        let certs = crate::mls::credential::x509::CertificateBundle::rand(cs.into(), "alice".into());
+        let pem_chain: Vec<_> = certs
+            .certificate_chain
+            .into_iter()
+            .map(|cert| pem::Pem::new("CERTIFICATE", cert))
+            .collect();
+        let certificate_list = pem::encode_many(&pem_chain);
         Self {
             credential_type: MlsCredentialType::X509,
-            cfg: MlsConversationConfiguration::default(),
+            cfg: MlsConversationConfiguration {
+                ciphersuite: cs.into(),
+                certificate_list: Some(vec![certificate_list]),
+                ..Default::default()
+            },
         }
     }
 }
