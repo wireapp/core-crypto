@@ -185,10 +185,11 @@ class MLSClientImpl(
         cc.clearPendingGroupFromExternalCommit(groupId.toUByteList())
     }
 
-    override fun createConversation(groupId: MLSGroupId, creatorCredentialType: MlsCredentialType, externalSenders: List<Ed22519Key>) {
+    override fun createConversation(groupId: MLSGroupId, creatorCredentialType: MlsCredentialType, externalSenders: List<Ed22519Key>, certificateList: List<String>?) {
         val conf = ConversationConfiguration(
             DEFAULT_CIPHERSUITE,
             externalSenders.map { it.toUByteList() },
+            certificateList,
             defaultGroupConfiguration
         )
 
