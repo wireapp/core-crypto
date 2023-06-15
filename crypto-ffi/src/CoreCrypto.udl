@@ -105,6 +105,9 @@ enum CryptoError {
     "IdentityInitializationError",
     "MessageEpochTooOld",
     "InvalidPem",
+    "RustyAcmeError",
+    "CertificateDecodingError",
+    "IncompleteCertificateChain",
 };
 
 dictionary DecryptedMessage {
@@ -140,16 +143,10 @@ dictionary ConversationInitBundle {
     GroupInfoBundle group_info;
 };
 
-dictionary CertificateConfiguration {
-    ClientId client_id;
-    string domain_name;
-    string cert_chain;
-};
-
 dictionary ConversationConfiguration {
     Ciphersuite ciphersuite;
     sequence<sequence<u8>> external_senders;
-    sequence<CertificateConfiguration> certificate_list;
+    sequence<string>? certificate_list;
     CustomConfiguration custom;
 };
 

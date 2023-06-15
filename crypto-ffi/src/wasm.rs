@@ -698,18 +698,6 @@ impl ConversationConfiguration {
     }
 }
 
-#[wasm_bindgen]
-impl CertificateConfiguration {
-    #[wasm_bindgen(constructor)]
-    pub fn new(domain_name: String, client_id: FfiClientId, cert_chain: String) -> Self {
-        Self {
-            domain_name,
-            client_id,
-            cert_chain,
-        }
-    }
-}
-
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
     type Error = CoreCryptoError;
     fn try_into(mut self) -> WasmCryptoResult<MlsConversationConfiguration> {
@@ -727,16 +715,6 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
         }
 
         Ok(cfg)
-    }
-}
-
-impl Into<MlsCertificateConfiguration> for CertificateConfiguration {
-    fn into(self) -> MlsCertificateConfiguration {
-        MlsCertificateConfiguration {
-            domain_name: self.domain_name,
-            client_id: self.client_id.into(),
-            cert_chain: self.cert_chain,
-        }
     }
 }
 

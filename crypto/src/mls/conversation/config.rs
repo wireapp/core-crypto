@@ -68,7 +68,7 @@ impl MlsConversationConfiguration {
                     let root_cert = cert_data
                         .get(0)
                         .map(|cert_data| -> Result<x509_cert::Certificate, CryptoError> {
-                            let cert = x509_cert::Certificate::from_der(&cert_data)
+                            let cert = x509_cert::Certificate::from_der(cert_data)
                                 .map_err(|_| CryptoError::CertificateDecodingError)?;
                             cert.is_valid().map_err(MlsError::from)?;
                             Ok(cert)
