@@ -94,6 +94,7 @@ impl MlsCentral {
         let serialized_cfg = serde_json::to_vec(&custom_cfg).map_err(MlsError::MlsKeystoreSerializationError)?;
 
         let configuration = MlsConversationConfiguration {
+            ciphersuite: cs,
             custom: custom_cfg,
             ..Default::default()
         };
@@ -157,6 +158,7 @@ impl MlsCentral {
         // Restore the custom configuration and build a conversation from it
         let custom_cfg = serde_json::from_slice(&cfg).map_err(MlsError::MlsKeystoreSerializationError)?;
         let configuration = MlsConversationConfiguration {
+            ciphersuite: mls_group.ciphersuite().into(),
             custom: custom_cfg,
             ..Default::default()
         };

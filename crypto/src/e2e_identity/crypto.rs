@@ -34,7 +34,8 @@ impl TryFrom<MlsCiphersuite> for JwsAlgorithm {
         let cs = openmls_traits::types::Ciphersuite::from(cs);
         Ok(match cs {
             Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-            | Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 => JwsAlgorithm::Ed25519,
+            | Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
+            | Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519 => JwsAlgorithm::Ed25519,
             Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 => JwsAlgorithm::P256,
             Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => JwsAlgorithm::P384,
             Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448

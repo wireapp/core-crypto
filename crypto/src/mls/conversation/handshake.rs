@@ -179,14 +179,15 @@ impl MlsConversation {
         members: &mut [ConversationMember],
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsConversationCreationMessage> {
+        let cs = self.ciphersuite();
+        let ct = self.own_credential_type()?;
+
         let keypackages = members
             .iter_mut()
-            .flat_map(|member| member.keypackages_for_all_clients())
+            .flat_map(|member| member.keypackages_for_all_clients(&cs))
             .filter_map(|(_, kps)| kps)
             .collect::<Vec<KeyPackage>>();
 
-        let cs = self.ciphersuite();
-        let ct = self.own_credential_type()?;
         let signer = &client.find_credential_bundle(cs, ct)?.signature_key;
 
         let (commit, welcome, gi) = self

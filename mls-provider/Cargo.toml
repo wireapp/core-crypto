@@ -39,7 +39,7 @@ thiserror = "1.0"
 
 [dependencies.hpke]
 version = "0.10"
-features = ["x25519", "p256", "p384", "serde_impls"]
+features = ["x25519", "p256", "p384", "xyber768d00", "serde_impls"]
 
 [target.'cfg(not(target_os = "ios"))'.dependencies]
 core-crypto-keystore = { version = "^1.0.0-pre.5", path = "../keystore" }

@@ -60,6 +60,9 @@ impl MlsConversationConfiguration {
             ))
             .use_ratchet_tree_extension(true)
             .external_senders(self.external_senders.clone())
+            .crypto_config(openmls::prelude::CryptoConfig::with_default_version(
+                self.ciphersuite.into(),
+            ))
             .build())
     }
 
