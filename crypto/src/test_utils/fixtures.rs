@@ -65,6 +65,16 @@ pub use rstest_reuse::{self, *};
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
     */
+    #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
+    case::basic_cs_pq(TestCase::new(
+        crate::prelude::MlsCredentialType::Basic,
+        openmls::prelude::Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519
+    )),
+    // #[cfg(feature = "test-all-cipher")]
+    // case::cert_cs_pq(TestCase::new(
+    //     crate::prelude::MlsCredentialType::X509,
+    //     openmls::prelude::Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519
+    // )),
     case::pure_ciphertext(TestCase {
         credential_type: crate::prelude::MlsCredentialType::Basic,
         cfg: $crate::prelude::MlsConversationConfiguration {
@@ -101,7 +111,7 @@ impl TestCase {
     }
 
     pub fn signature_scheme(&self) -> SignatureScheme {
-        openmls::prelude::Ciphersuite::from(self.ciphersuite()).signature_algorithm()
+        self.cfg.ciphersuite.signature_algorithm()
     }
 
     pub fn custom_cfg(&self) -> MlsCustomConfiguration {

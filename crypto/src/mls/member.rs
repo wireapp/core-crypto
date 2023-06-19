@@ -22,7 +22,10 @@ use openmls::prelude::{KeyPackage, KeyPackageIn};
 use tls_codec::Deserialize;
 
 use crate::{
-    mls::client::{id::ClientId, Client},
+    mls::{
+        client::{id::ClientId, Client},
+        MlsCiphersuite,
+    },
     CryptoResult, MlsError,
 };
 
@@ -77,10 +80,21 @@ impl ConversationMember {
 
     /// Returns the KeyPackages from all clients, poping the last added KeyPackage from each client
     /// from the local state as a result
-    pub fn keypackages_for_all_clients(&mut self) -> HashMap<&ClientId, Option<KeyPackage>> {
+    pub fn keypackages_for_all_clients(
+        &mut self,
+        ciphersuite: &MlsCiphersuite,
+    ) -> HashMap<&ClientId, Option<KeyPackage>> {
         self.clients
             .iter_mut()
-            .map(|(client, client_kps)| (client, client_kps.pop()))
+            .map(|(client, client_kps)| {
+                (
+                    client,
+                    client_kps
+                        .iter()
+                        .position(|kp| kp.ciphersuite() == ciphersuite.0)
+                        .map(|pos| client_kps.remove(pos)),
+                )
+            })
             .collect()
     }
 
@@ -201,7 +215,7 @@ pub mod tests {
         let mut member = ConversationMember::random_generate(&case, &backend).await.unwrap();
         let client_id = member.local_client.as_ref().map(|c| c.id().clone()).unwrap();
         let ret = (0..INITIAL_KEYING_MATERIAL_COUNT * 2).all(|_| {
-            let ckp = member.keypackages_for_all_clients();
+            let ckp = member.keypackages_for_all_clients(&case.ciphersuite().into());
             ckp[&client_id].is_some()
         });
 

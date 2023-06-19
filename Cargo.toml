@@ -42,26 +42,30 @@ branch = "otak/2.0-error-codes"
 [patch.crates-io.openmls]
 package = "openmls"
 git = "https://github.com/wireapp/openmls"
-tag = "v0.20.1-pre.core-crypto-1.0.0"
+# tag = "v0.20.1-pre.core-crypto-1.0.0"
+branch = "feat/pq-ciphersuite"
 
 [patch.crates-io.openmls_traits]
 package = "openmls_traits"
 git = "https://github.com/wireapp/openmls"
- tag = "v0.20.1-pre.core-crypto-1.0.0"
+ # tag = "v0.20.1-pre.core-crypto-1.0.0"
+ branch = "feat/pq-ciphersuite"
 
 [patch.crates-io.openmls_basic_credential]
 package = "openmls_basic_credential"
 git = "https://github.com/wireapp/openmls"
-tag = "v0.20.1-pre.core-crypto-1.0.0"
+# tag = "v0.20.1-pre.core-crypto-1.0.0"
+branch = "feat/pq-ciphersuite"
 
 [patch.crates-io.openmls_x509_credential]
 package = "openmls_x509_credential"
 git = "https://github.com/wireapp/openmls"
-tag = "v0.20.1-pre.core-crypto-1.0.0"
+# tag = "v0.20.1-pre.core-crypto-1.0.0"
+branch = "feat/pq-ciphersuite"
 
 [patch.crates-io.hpke]
-git = "https://github.com/rozbb/rust-hpke.git"
-rev = "2867b0ae90a36f27e2c312fe741f268ad558abbd"
+git = "https://github.com/otak/rust-hpke.git"
+branch = "xyber768d00"
 
 [patch.crates-io.wire-e2e-identity]
 git = "https://github.com/wireapp/rusty-jwt-tools"

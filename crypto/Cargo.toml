@@ -12,11 +12,12 @@ name = "core_crypto"
 crate-type = ["lib", "cdylib"]
 
 [features]
-default = ["proteus", "cryptobox-migrate"]
+default = ["proteus", "cryptobox-migrate", "test-pq-cipher"]
 proteus = ["dep:proteus-wasm", "dep:proteus-traits", "core-crypto-keystore/proteus-keystore"]
 cryptobox-migrate = ["proteus", "proteus-wasm?/cryptobox-identity", "dep:async-fs", "dep:futures-lite", "dep:rexie", "dep:base64"]
 # for test/bench all ciphersuites
-test-all-cipher = []
+test-all-cipher = ["test-pq-cipher"]
+test-pq-cipher = []
 # execute benches with also real db to better see overhead
 bench-in-db = []
 

@@ -14,7 +14,7 @@ mod utils;
 
 fn mls_cases() -> Vec<(MlsCiphersuite, Option<CertificateBundle>, bool, &'static str)> {
     // Ciphersuite 3 is the closest to proteus one
-    const CIPHERSUITE: MlsTestCase = MlsTestCase::Basic_Ciphersuite3;
+    const CIPHERSUITE: MlsTestCase = MlsTestCase::Basic_Ciphersuite1;
     let (_, ciphersuite, credential) = CIPHERSUITE.get();
     let in_memory = (ciphersuite, credential.clone(), true, "MLS/mem");
     let in_db = (ciphersuite, credential, false, "MLS/db");

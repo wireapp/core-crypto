@@ -41,35 +41,29 @@ impl Client {
     /// # Errors
     /// KeyStore and OpenMls errors
     pub async fn generate_keypackages(&self, backend: &MlsCryptoProvider) -> CryptoResult<Vec<KeyPackage>> {
-        use futures_util::{StreamExt as _, TryStreamExt as _};
-        futures_util::stream::iter(self.identities.iter())
-            .map(Ok::<_, CryptoError>)
-            .try_fold(
-                Vec::with_capacity(ClientIdentities::MAX_DISTINCT_SIZE),
-                |mut acc, (cs, cred)| async move {
-                    let keypackage = KeyPackage::builder()
-                        .key_package_lifetime(Lifetime::new(self.keypackage_lifetime.as_secs()))
-                        .build(
-                            CryptoConfig {
-                                ciphersuite: cs.into(),
-                                version: openmls::versions::ProtocolVersion::default(),
-                            },
-                            backend,
-                            &cred.signature_key,
-                            CredentialWithKey {
-                                credential: cred.credential.clone(),
-                                signature_key: cred.signature_key.public().into(),
-                            },
-                        )
-                        .await
-                        .map_err(MlsError::from)?;
+        let mut acc = Vec::with_capacity(ClientIdentities::MAX_DISTINCT_SIZE);
+        for (cs, cred) in self.identities.iter() {
+            let keypackage = KeyPackage::builder()
+                .key_package_lifetime(Lifetime::new(self.keypackage_lifetime.as_secs()))
+                .build(
+                    CryptoConfig {
+                        ciphersuite: cs.into(),
+                        version: openmls::versions::ProtocolVersion::default(),
+                    },
+                    backend,
+                    &cred.signature_key,
+                    CredentialWithKey {
+                        credential: cred.credential.clone(),
+                        signature_key: cred.signature_key.public().into(),
+                    },
+                )
+                .await
+                .map_err(MlsError::from)?;
 
-                    acc.push(keypackage);
+            acc.push(keypackage);
+        }
 
-                    Ok(acc)
-                },
-            )
-            .await
+        Ok(acc)
     }
 
     /// Generates a single new keypackage
@@ -142,6 +136,14 @@ impl Client {
         self.prune_keypackages(&[], backend).await?;
         use core_crypto_keystore::CryptoKeystoreMls as _;
 
+        let Some(ct) = self
+            .identities
+            .iter()
+            .find_map(|(cs, ct)| if cs == ciphersuite { Some(ct) } else { None })
+        else {
+            return Err(CryptoError::InvalidIdentity);
+        };
+
         let mut existing_kps = backend
             .key_store()
             .mls_fetch_keypackages::<KeyPackage>(count as u32)
@@ -158,19 +160,22 @@ impl Client {
             // let nb_kpb = to_generate * self.identities.count();
 
             let nb_kpb = to_generate;
+            let mut kps = Vec::with_capacity(nb_kpb);
 
-            use futures_util::{StreamExt as _, TryStreamExt as _};
-            futures_util::stream::iter(0..nb_kpb)
-                .map(Ok::<_, CryptoError>)
-                .try_fold(Vec::with_capacity(nb_kpb), |mut acc, _| async move {
-                    let mut kpb = self.generate_keypackages(backend).await?;
-                    acc.append(&mut kpb);
-                    Ok(acc)
-                })
-                .await?
+            for _ in 0..nb_kpb {
+                kps.push(
+                    self.generate_keypackage(backend, ciphersuite, ct.credential.credential_type().into())
+                        .await?,
+                );
+            }
+
+            kps
         } else {
             vec![]
         };
+
+        existing_kps.reverse();
+
         kps.append(&mut existing_kps);
         Ok(kps)
     }

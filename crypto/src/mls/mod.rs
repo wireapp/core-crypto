@@ -29,7 +29,7 @@ impl MlsCiphersuite {
     /// Number of variants wrapped by this newtype
     /// We do it like this since we cannot apply `strum::EnumCount` on wrapped enum in openmls.
     /// It's fine since we'll probably have to redefine Ciphersuites here when we'll move to post-quantum
-    pub(crate) const SIZE: usize = 7;
+    pub(crate) const SIZE: usize = 8;
 }
 
 impl Default for MlsCiphersuite {
@@ -488,13 +488,15 @@ impl MlsCentral {
         welcome: MlsMessageIn,
         custom_cfg: MlsCustomConfiguration,
     ) -> CryptoResult<ConversationId> {
-        let configuration = MlsConversationConfiguration {
-            custom: custom_cfg,
-            ..Default::default()
-        };
         let welcome = match welcome.extract() {
             MlsMessageInBody::Welcome(welcome) => welcome,
             _ => return Err(CryptoError::ImplementationError),
+        };
+        let cs = welcome.ciphersuite().into();
+        let configuration = MlsConversationConfiguration {
+            ciphersuite: cs,
+            custom: custom_cfg,
+            ..Default::default()
         };
         let conversation = MlsConversation::from_welcome_message(welcome, configuration, &self.mls_backend).await?;
         let conversation_id = conversation.id.clone();

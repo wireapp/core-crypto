@@ -331,7 +331,7 @@ pub mod tests {
                     .unwrap();
 
             // Give time to the certificate to expire
-            async_std::task::sleep(core::time::Duration::from_secs(4)).await;
+            async_std::task::sleep(core::time::Duration::from_secs(6)).await;
 
             assert!(matches!(
                 alice_central.try_talk_to(&id, &mut bob_central).await.unwrap_err(),

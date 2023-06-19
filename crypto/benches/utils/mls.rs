@@ -26,19 +26,20 @@ use mls_crypto_provider::MlsCryptoProvider;
 #[derive(Copy, Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum MlsTestCase {
-    #[cfg(feature = "test-all-cipher")]
     Basic_Ciphersuite1,
     #[cfg(feature = "test-all-cipher")]
     Basic_Ciphersuite2,
+    #[cfg(feature = "test-all-cipher")]
     Basic_Ciphersuite3,
     #[cfg(feature = "test-all-cipher")]
     Basic_Ciphersuite7,
+    #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
+    Basic_PostQuantum,
 }
 
 impl MlsTestCase {
     pub fn get(&self) -> (Self, MlsCiphersuite, Option<CertificateBundle>) {
         match self {
-            #[cfg(feature = "test-all-cipher")]
             MlsTestCase::Basic_Ciphersuite1 => (
                 self.clone(),
                 Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.into(),
@@ -50,6 +51,7 @@ impl MlsTestCase {
                 Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256.into(),
                 None,
             ),
+            #[cfg(feature = "test-all-cipher")]
             MlsTestCase::Basic_Ciphersuite3 => (
                 *self,
                 Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519.into(),
@@ -61,18 +63,26 @@ impl MlsTestCase {
                 Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384.into(),
                 None,
             ),
+            #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
+            MlsTestCase::Basic_PostQuantum => (
+                self.clone(),
+                Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519.into(),
+                None,
+            ),
         }
     }
 
     pub fn values() -> impl Iterator<Item = (Self, MlsCiphersuite, Option<CertificateBundle>, bool)> {
         [
-            #[cfg(feature = "test-all-cipher")]
             MlsTestCase::Basic_Ciphersuite1,
             #[cfg(feature = "test-all-cipher")]
             MlsTestCase::Basic_Ciphersuite2,
+            #[cfg(feature = "test-all-cipher")]
             MlsTestCase::Basic_Ciphersuite3,
             #[cfg(feature = "test-all-cipher")]
             MlsTestCase::Basic_Ciphersuite7,
+            #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
+            MlsTestCase::Basic_PostQuantum,
         ]
         .into_iter()
         .map(|v| v.get())
@@ -93,20 +103,24 @@ impl MlsTestCase {
 
     pub const fn ciphersuite_name(&self, in_memory: bool) -> &'static str {
         match (self, in_memory) {
-            #[cfg(feature = "test-all-cipher")]
             (MlsTestCase::Basic_Ciphersuite1, true) => "cs1/mem",
             #[cfg(feature = "test-all-cipher")]
             (MlsTestCase::Basic_Ciphersuite2, true) => "cs2/mem",
+            #[cfg(feature = "test-all-cipher")]
             (MlsTestCase::Basic_Ciphersuite3, true) => "cs3/mem",
             #[cfg(feature = "test-all-cipher")]
             (MlsTestCase::Basic_Ciphersuite7, true) => "cs7/mem",
-            #[cfg(feature = "test-all-cipher")]
             (MlsTestCase::Basic_Ciphersuite1, false) => "cs1/db",
             #[cfg(feature = "test-all-cipher")]
             (MlsTestCase::Basic_Ciphersuite2, false) => "cs2/db",
+            #[cfg(feature = "test-all-cipher")]
             (MlsTestCase::Basic_Ciphersuite3, false) => "cs3/db",
             #[cfg(feature = "test-all-cipher")]
             (MlsTestCase::Basic_Ciphersuite7, false) => "cs7/db",
+            #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
+            (MlsTestCase::Basic_PostQuantum, true) => "pq/mem",
+            #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
+            (MlsTestCase::Basic_PostQuantum, false) => "pq/db",
         }
     }
 }
@@ -114,13 +128,15 @@ impl MlsTestCase {
 impl Display for MlsTestCase {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            #[cfg(feature = "test-all-cipher")]
             MlsTestCase::Basic_Ciphersuite1 => write!(f, "cs1"),
             #[cfg(feature = "test-all-cipher")]
             MlsTestCase::Basic_Ciphersuite2 => write!(f, "cs2"),
+            #[cfg(feature = "test-all-cipher")]
             MlsTestCase::Basic_Ciphersuite3 => write!(f, "cs3"),
             #[cfg(feature = "test-all-cipher")]
             MlsTestCase::Basic_Ciphersuite7 => write!(f, "cs7"),
+            #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
+            MlsTestCase::Basic_PostQuantum => write!(f, "pq"),
         }
     }
 }
