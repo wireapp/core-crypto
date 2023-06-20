@@ -3,22 +3,21 @@ use std::fmt::{Display, Formatter};
 
 use criterion::BenchmarkId;
 
-use futures_lite::future::block_on;
-use openmls::framing::MlsMessageInBody;
-use openmls::prelude::group_info::VerifiableGroupInfo;
-use openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, SignaturePublicKey};
+use openmls::{
+    framing::MlsMessageInBody,
+    prelude::{
+        group_info::VerifiableGroupInfo, Credential, CredentialWithKey, CryptoConfig, KeyPackage, SignaturePublicKey,
+    },
+};
 use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::random::OpenMlsRand;
-use openmls_traits::types::Ciphersuite;
-use openmls_traits::OpenMlsCryptoProvider;
+use openmls_traits::{random::OpenMlsRand, types::Ciphersuite, OpenMlsCryptoProvider};
 use tls_codec::Deserialize;
 
-use core_crypto::prelude::MlsCredentialType;
 use core_crypto::{
     mls::{MlsCentral, MlsCiphersuite},
     prelude::{
         CertificateBundle, ClientId, ConversationId, ConversationMember, MlsCentralConfiguration,
-        MlsConversationConfiguration, MlsCustomConfiguration,
+        MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
     },
 };
 use mls_crypto_provider::MlsCryptoProvider;
@@ -41,16 +40,14 @@ impl MlsTestCase {
     pub fn get(&self) -> (Self, MlsCiphersuite, Option<CertificateBundle>) {
         match self {
             MlsTestCase::Basic_Ciphersuite1 => (
-                self.clone(),
+                *self,
                 Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.into(),
                 None,
             ),
             #[cfg(feature = "test-all-cipher")]
-            MlsTestCase::Basic_Ciphersuite2 => (
-                self.clone(),
-                Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256.into(),
-                None,
-            ),
+            MlsTestCase::Basic_Ciphersuite2 => {
+                (*self, Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256.into(), None)
+            }
             #[cfg(feature = "test-all-cipher")]
             MlsTestCase::Basic_Ciphersuite3 => (
                 *self,
@@ -58,14 +55,12 @@ impl MlsTestCase {
                 None,
             ),
             #[cfg(feature = "test-all-cipher")]
-            MlsTestCase::Basic_Ciphersuite7 => (
-                self.clone(),
-                Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384.into(),
-                None,
-            ),
+            MlsTestCase::Basic_Ciphersuite7 => {
+                (*self, Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384.into(), None)
+            }
             #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
             MlsTestCase::Basic_PostQuantum => (
-                self.clone(),
+                *self,
                 Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519.into(),
                 None,
             ),
@@ -141,33 +136,32 @@ impl Display for MlsTestCase {
     }
 }
 
-pub fn setup_mls(
+pub async fn setup_mls(
     ciphersuite: MlsCiphersuite,
-    credential: &Option<CertificateBundle>,
+    credential: Option<&CertificateBundle>,
     in_memory: bool,
 ) -> (MlsCentral, ConversationId) {
-    let (mut central, _) = new_central(ciphersuite, credential, in_memory);
+    let (mut central, _) = new_central(ciphersuite, credential, in_memory).await;
     let id = conversation_id();
-    block_on(async {
-        central
-            .new_conversation(
-                id.clone(),
-                MlsCredentialType::Basic,
-                MlsConversationConfiguration {
-                    ciphersuite,
-                    ..Default::default()
-                },
-            )
-            .await
-            .unwrap()
-    });
+    central
+        .new_conversation(
+            id.clone(),
+            MlsCredentialType::Basic,
+            MlsConversationConfiguration {
+                ciphersuite,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
     (central, id)
 }
 
-pub fn new_central(
+pub async fn new_central(
     ciphersuite: MlsCiphersuite,
     // TODO: always None for the moment. Need to update the benches with some realistic certificates
-    _credential: &Option<CertificateBundle>,
+    _credential: Option<&CertificateBundle>,
     in_memory: bool,
 ) -> (MlsCentral, tempfile::TempDir) {
     let (path, tmp_file) = tmp_db_file();
@@ -177,9 +171,9 @@ pub fn new_central(
     let cfg =
         MlsCentralConfiguration::try_new(path, secret, Some(client_id.as_bytes().into()), ciphersuites, None).unwrap();
     let central = if in_memory {
-        block_on(async { MlsCentral::try_new_in_memory(cfg).await.unwrap() })
+        MlsCentral::try_new_in_memory(cfg).await.unwrap()
     } else {
-        block_on(async { MlsCentral::try_new(cfg).await.unwrap() })
+        MlsCentral::try_new(cfg).await.unwrap()
     };
     (central, tmp_file)
 }
@@ -197,37 +191,34 @@ pub fn conversation_id() -> ConversationId {
     ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()))
 }
 
-pub fn add_clients(
+pub async fn add_clients(
     central: &mut MlsCentral,
     id: &ConversationId,
     ciphersuite: MlsCiphersuite,
     nb_clients: usize,
 ) -> (Vec<ClientId>, VerifiableGroupInfo) {
-    block_on(async {
-        let mut client_ids = vec![];
+    let mut client_ids = vec![];
 
-        let mut members = (0..nb_clients)
-            .map(|_| {
-                let member = block_on(async { rand_member(ciphersuite).await });
-                client_ids.push(member.id().as_slice().into());
-                member
-            })
-            .collect::<Vec<_>>();
+    let mut members = vec![];
+    for _ in 0..nb_clients {
+        let member = rand_member(ciphersuite).await;
+        client_ids.push(member.id().as_slice().into());
+        members.push(member)
+    }
 
-        let commit_bundle = central
-            .add_members_to_conversation(id, members.as_mut_slice())
-            .await
-            .unwrap();
+    let commit_bundle = central
+        .add_members_to_conversation(id, members.as_mut_slice())
+        .await
+        .unwrap();
 
-        let group_info = commit_bundle.group_info.payload.bytes();
-        let group_info = openmls::prelude::MlsMessageIn::tls_deserialize_bytes(&group_info[..]).unwrap();
-        let MlsMessageInBody::GroupInfo(group_info) = group_info.extract() else {
+    let group_info = commit_bundle.group_info.payload.bytes();
+    let group_info = openmls::prelude::MlsMessageIn::tls_deserialize_bytes(&group_info[..]).unwrap();
+    let MlsMessageInBody::GroupInfo(group_info) = group_info.extract() else {
             panic!("error")
         };
 
-        central.commit_accepted(id).await.unwrap();
-        (client_ids, group_info)
-    })
+    central.commit_accepted(id).await.unwrap();
+    (client_ids, group_info)
 }
 
 pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, ClientId) {
@@ -235,11 +226,12 @@ pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, Clien
         .sample_string(&mut rand::thread_rng(), 16)
         .as_bytes()
         .to_vec();
-    let backend = block_on(async { MlsCryptoProvider::try_new_in_memory("secret").await.unwrap() });
+    let backend = MlsCryptoProvider::try_new_in_memory("secret").await.unwrap();
     let cs: Ciphersuite = ciphersuite.into();
 
-    let mut rng = &mut *backend.rand().borrow_rand().unwrap();
-    let signer = SignatureKeyPair::new(ciphersuite.signature_algorithm(), &mut rng).unwrap();
+    let mut rng = backend.rand().borrow_rand().unwrap();
+    let signer = SignatureKeyPair::new(ciphersuite.signature_algorithm(), &mut *rng).unwrap();
+    drop(rng);
 
     let cred = Credential::new_basic(client_id.clone());
     let signature_key = SignaturePublicKey::from(signer.public());
@@ -261,20 +253,18 @@ pub async fn rand_member(ciphersuite: MlsCiphersuite) -> ConversationMember {
     ConversationMember::new(client_id, kp)
 }
 
-pub fn invite(from: &mut MlsCentral, other: &mut MlsCentral, id: &ConversationId, ciphersuite: MlsCiphersuite) {
-    block_on(async {
-        let other_kps = other.get_or_create_client_keypackages(ciphersuite, 1).await.unwrap();
-        let other_kp = other_kps.first().unwrap().clone();
-        let other_member = ConversationMember::new(other.client_id().unwrap(), other_kp);
-        let welcome = from
-            .add_members_to_conversation(id, &mut [other_member])
-            .await
-            .unwrap()
-            .welcome;
-        other
-            .process_welcome_message(welcome.into(), MlsCustomConfiguration::default())
-            .await
-            .unwrap();
-        from.commit_accepted(id).await.unwrap();
-    })
+pub async fn invite(from: &mut MlsCentral, other: &mut MlsCentral, id: &ConversationId, ciphersuite: MlsCiphersuite) {
+    let other_kps = other.get_or_create_client_keypackages(ciphersuite, 1).await.unwrap();
+    let other_kp = other_kps.first().unwrap().clone();
+    let other_member = ConversationMember::new(other.client_id().unwrap(), other_kp);
+    let welcome = from
+        .add_members_to_conversation(id, &mut [other_member])
+        .await
+        .unwrap()
+        .welcome;
+    other
+        .process_welcome_message(welcome.into(), MlsCustomConfiguration::default())
+        .await
+        .unwrap();
+    from.commit_accepted(id).await.unwrap();
 }

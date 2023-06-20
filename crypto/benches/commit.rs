@@ -1,7 +1,9 @@
-use criterion::{async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, Criterion};
-use futures_lite::future::block_on;
+use criterion::{
+    async_executor::AsyncStdExecutor as FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize,
+    Criterion,
+};
 
-use core_crypto::prelude::{ConversationMember, MlsProposal};
+use core_crypto::prelude::MlsProposal;
 
 use crate::utils::*;
 
@@ -15,17 +17,19 @@ fn commit_add_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        add_clients(&mut central, &id, ciphersuite, *i);
-                        let member = block_on(async { rand_member(ciphersuite).await });
-                        (central, id, member)
+                        async_std::task::block_on(async {
+                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            add_clients(&mut central, &id, ciphersuite, *i).await;
+                            let member = rand_member(ciphersuite).await;
+                            (central, id, member)
+                        })
                     },
                     |(mut central, id, member)| async move {
                         black_box(central.add_members_to_conversation(&id, &mut [member]).await.unwrap());
                         central.commit_accepted(&id).await.unwrap();
                         black_box(());
                     },
-                    BatchSize::SmallInput,
+                    BatchSize::LargeInput,
                 )
             });
         }
@@ -40,11 +44,14 @@ fn commit_add_n_clients_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        let members = (0..*i)
-                            .map(|_| block_on(async { rand_member(ciphersuite).await }))
-                            .collect::<Vec<ConversationMember>>();
-                        (central, id, members)
+                        async_std::task::block_on(async {
+                            let (central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            let mut members = Vec::new();
+                            for _ in 0..*i {
+                                members.push(rand_member(ciphersuite).await);
+                            }
+                            (central, id, members)
+                        })
                     },
                     |(mut central, id, mut members)| async move {
                         black_box(
@@ -71,9 +78,11 @@ fn commit_remove_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        let (client_ids, ..) = add_clients(&mut central, &id, ciphersuite, *i);
-                        (central, id, client_ids)
+                        async_std::task::block_on(async {
+                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            let (client_ids, ..) = add_clients(&mut central, &id, ciphersuite, *i).await;
+                            (central, id, client_ids)
+                        })
                     },
                     |(mut central, id, client_ids)| async move {
                         black_box(
@@ -100,10 +109,12 @@ fn commit_remove_n_clients_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        let (client_ids, ..) = add_clients(&mut central, &id, ciphersuite, GROUP_MAX);
-                        let to_remove = client_ids[..*i].to_vec();
-                        (central, id, to_remove)
+                        async_std::task::block_on(async {
+                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            let (client_ids, ..) = add_clients(&mut central, &id, ciphersuite, GROUP_MAX).await;
+                            let to_remove = client_ids[..*i].to_vec();
+                            (central, id, to_remove)
+                        })
                     },
                     |(mut central, id, client_ids)| async move {
                         black_box(
@@ -130,9 +141,11 @@ fn commit_update_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        add_clients(&mut central, &id, ciphersuite, *i);
-                        (central, id)
+                        async_std::task::block_on(async {
+                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            add_clients(&mut central, &id, ciphersuite, *i).await;
+                            (central, id)
+                        })
                     },
                     |(mut central, id)| async move {
                         black_box(central.update_keying_material(&id).await.unwrap());
@@ -154,15 +167,17 @@ fn commit_pending_proposals_bench_var_n_proposals(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        add_clients(&mut central, &id, ciphersuite, GROUP_MAX);
-                        block_on(async {
+                        async_std::task::block_on(async {
+                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            add_clients(&mut central, &id, ciphersuite, GROUP_MAX).await;
+
                             for _ in 0..*i {
                                 let (kp, ..) = rand_key_package(ciphersuite).await;
                                 central.new_proposal(&id, MlsProposal::Add(kp)).await.unwrap();
                             }
-                        });
-                        (central, id)
+
+                            (central, id)
+                        })
                     },
                     |(mut central, id)| async move {
                         black_box(central.commit_pending_proposals(&id).await.unwrap());
@@ -184,15 +199,15 @@ fn commit_pending_proposals_bench_var_group_size(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        add_clients(&mut central, &id, ciphersuite, *i);
-                        block_on(async {
+                        async_std::task::block_on(async {
+                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            add_clients(&mut central, &id, ciphersuite, *i).await;
                             for _ in 0..PENDING_MAX {
                                 let (kp, ..) = rand_key_package(ciphersuite).await;
                                 central.new_proposal(&id, MlsProposal::Add(kp)).await.unwrap();
                             }
-                        });
-                        (central, id)
+                            (central, id)
+                        })
                     },
                     |(mut central, id)| async move {
                         black_box(central.commit_pending_proposals(&id).await.unwrap());

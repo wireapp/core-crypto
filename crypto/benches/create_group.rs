@@ -1,7 +1,7 @@
 use criterion::{
-    async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion,
+    async_executor::AsyncStdExecutor as FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize,
+    BenchmarkId, Criterion,
 };
-use futures_lite::future::block_on;
 
 use core_crypto::prelude::{
     ConversationMember, MlsConversationConfiguration, MlsConversationInitBundle, MlsCredentialType,
@@ -22,13 +22,15 @@ fn create_group_bench(c: &mut Criterion) {
             |b, ciphersuite| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (central, ..) = new_central(*ciphersuite, &credential, in_memory);
-                        let id = conversation_id();
-                        let cfg = MlsConversationConfiguration {
-                            ciphersuite: *ciphersuite,
-                            ..Default::default()
-                        };
-                        (central, id, cfg)
+                        async_std::task::block_on(async {
+                            let (central, ..) = new_central(*ciphersuite, credential.as_ref(), in_memory).await;
+                            let id = conversation_id();
+                            let cfg = MlsConversationConfiguration {
+                                ciphersuite: *ciphersuite,
+                                ..Default::default()
+                            };
+                            (central, id, cfg)
+                        })
                     },
                     |(mut central, id, cfg)| async move {
                         central
@@ -52,26 +54,24 @@ fn join_from_welcome_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut alice_central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        add_clients(&mut alice_central, &id, ciphersuite, *i);
+                        async_std::task::block_on(async {
+                            let (mut alice_central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            add_clients(&mut alice_central, &id, ciphersuite, *i).await;
 
-                        let (bob_central, ..) = new_central(ciphersuite, &credential, in_memory);
-                        let bob_kpbs = block_on(async {
-                            bob_central
+                            let (bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;
+                            let bob_kpbs = bob_central
                                 .get_or_create_client_keypackages(ciphersuite, 1)
                                 .await
-                                .unwrap()
-                        });
-                        let bob_kp = bob_kpbs.first().unwrap().clone();
-                        let bob_member = ConversationMember::new(bob_central.client_id().unwrap(), bob_kp);
-                        let welcome = block_on(async {
-                            alice_central
+                                .unwrap();
+                            let bob_kp = bob_kpbs.first().unwrap().clone();
+                            let bob_member = ConversationMember::new(bob_central.client_id().unwrap(), bob_kp);
+                            let welcome = alice_central
                                 .add_members_to_conversation(&id, &mut [bob_member])
                                 .await
                                 .unwrap()
-                                .welcome
-                        });
-                        (bob_central, welcome)
+                                .welcome;
+                            (bob_central, welcome)
+                        })
                     },
                     |(mut central, welcome)| async move {
                         black_box(
@@ -96,10 +96,12 @@ fn join_from_group_info_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut alice_central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        let (_, group_info) = add_clients(&mut alice_central, &id, ciphersuite, *i);
-                        let (bob_central, ..) = new_central(ciphersuite, &credential, in_memory);
-                        (bob_central, group_info)
+                        async_std::task::block_on(async {
+                            let (mut alice_central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            let (_, group_info) = add_clients(&mut alice_central, &id, ciphersuite, *i).await;
+                            let (bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;
+                            (bob_central, group_info)
+                        })
                     },
                     |(mut central, group_info)| async move {
                         let MlsConversationInitBundle { conversation_id, .. } = black_box(
