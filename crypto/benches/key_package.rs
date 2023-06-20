@@ -1,5 +1,7 @@
-use criterion::{async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, Criterion};
-use futures_lite::future::block_on;
+use criterion::{
+    async_executor::AsyncStdExecutor as FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize,
+    Criterion,
+};
 
 use crate::utils::*;
 
@@ -12,7 +14,7 @@ fn generate_key_package_bench(c: &mut Criterion) {
         for i in (GROUP_RANGE).step_by(GROUP_STEP) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
-                    || setup_mls(ciphersuite, &credential, in_memory),
+                    || async_std::task::block_on(setup_mls(ciphersuite, credential.as_ref(), in_memory)),
                     |(central, _)| async move {
                         black_box(central.get_or_create_client_keypackages(ciphersuite, *i).await.unwrap());
                     },
@@ -31,11 +33,12 @@ fn count_key_packages_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (central, ..) = setup_mls(ciphersuite, &credential, in_memory);
-                        block_on(async {
+                        async_std::task::block_on(async {
+                            let (central, ..) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+
                             central.get_or_create_client_keypackages(ciphersuite, *i).await.unwrap();
-                        });
-                        central
+                            central
+                        })
                     },
                     |central| async move {
                         black_box(central.client_valid_key_packages_count(ciphersuite).await.unwrap());

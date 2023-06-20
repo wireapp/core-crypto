@@ -8,7 +8,7 @@ pub use mls::*;
 pub use proteus_bench::*;
 
 // number of criterion sample
-pub const SAMPLE_SIZE: usize = 50;
+pub const SAMPLE_SIZE: usize = 10;
 
 // number of clients in a group
 pub const GROUP_RANGE: std::ops::Range<usize> = GROUP_MIN..GROUP_MAX;

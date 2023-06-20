@@ -2,9 +2,10 @@ use crate::utils::*;
 use core_crypto::mls::MlsCiphersuite;
 use core_crypto::prelude::CertificateBundle;
 use criterion::{
-    async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion,
+    async_executor::AsyncStdExecutor as FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize,
+    BenchmarkId, Criterion,
 };
-use futures_lite::future::block_on;
+
 use proteus::keys;
 use proteus::keys::{PreKey, PreKeyBundle};
 use rand::distributions::{Alphanumeric, DistString};
@@ -43,10 +44,12 @@ fn encrypt_message_bench(c: &mut Criterion) {
             group.bench_with_input(BenchmarkId::new(bench_name, i), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        add_clients(&mut central, &id, ciphersuite, *i);
-                        let text = Alphanumeric.sample_string(&mut rand::thread_rng(), MSG_MAX);
-                        (central, id, text)
+                        async_std::task::block_on(async {
+                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            add_clients(&mut central, &id, ciphersuite, *i).await;
+                            let text = Alphanumeric.sample_string(&mut rand::thread_rng(), MSG_MAX);
+                            (central, id, text)
+                        })
                     },
                     |(mut central, id, text)| async move {
                         black_box(central.encrypt_message(&id, text).await.unwrap());
@@ -60,17 +63,17 @@ fn encrypt_message_bench(c: &mut Criterion) {
             group.bench_with_input(BenchmarkId::new(bench_name, i), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, keystore) = setup_proteus(in_memory);
-                        let session_material = (0..*i)
-                            .map(|_| (session_id(), new_prekey().serialise().unwrap()))
-                            .collect::<Vec<(String, Vec<u8>)>>();
-                        for (session_id, key) in &session_material {
-                            block_on(async {
+                        async_std::task::block_on(async {
+                            let (mut central, keystore) = setup_proteus(in_memory).await;
+                            let session_material = (0..*i)
+                                .map(|_| (session_id(), new_prekey().serialise().unwrap()))
+                                .collect::<Vec<(String, Vec<u8>)>>();
+                            for (session_id, key) in &session_material {
                                 central.session_from_prekey(session_id, key).await.unwrap();
-                            });
-                        }
-                        let text = Alphanumeric.sample_string(&mut rand::thread_rng(), MSG_MAX);
-                        (central, keystore, session_material, text)
+                            }
+                            let text = Alphanumeric.sample_string(&mut rand::thread_rng(), MSG_MAX);
+                            (central, keystore, session_material, text)
+                        })
                     },
                     |(mut central, mut keystore, session_material, text)| async move {
                         for (session_id, _) in session_material {
@@ -98,10 +101,12 @@ fn add_client_bench(c: &mut Criterion) {
             group.bench_with_input(BenchmarkId::new(bench_name, i), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        add_clients(&mut central, &id, ciphersuite, *i);
-                        let member = block_on(async { rand_member(ciphersuite).await });
-                        (central, id, member)
+                        async_std::task::block_on(async {
+                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            add_clients(&mut central, &id, ciphersuite, *i).await;
+                            let member = rand_member(ciphersuite).await;
+                            (central, id, member)
+                        })
                     },
                     |(mut central, id, member)| async move {
                         black_box(central.add_members_to_conversation(&id, &mut [member]).await.unwrap());
@@ -119,11 +124,13 @@ fn add_client_bench(c: &mut Criterion) {
             group.bench_with_input(BenchmarkId::new(bench_name, i), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (central, keystore) = setup_proteus(in_memory);
-                        let session_material = (0..*i)
-                            .map(|_| (session_id(), new_prekey().serialise().unwrap()))
-                            .collect::<Vec<(String, Vec<u8>)>>();
-                        (central, keystore, session_material)
+                        async_std::task::block_on(async {
+                            let (central, keystore) = setup_proteus(in_memory).await;
+                            let session_material = (0..*i)
+                                .map(|_| (session_id(), new_prekey().serialise().unwrap()))
+                                .collect::<Vec<(String, Vec<u8>)>>();
+                            (central, keystore, session_material)
+                        })
                     },
                     |(mut central, _keystore, session_material)| async move {
                         for (session_id, key) in session_material {
@@ -146,10 +153,12 @@ fn remove_client_bench(c: &mut Criterion) {
             group.bench_with_input(BenchmarkId::new(bench_name, i), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        let (client_ids, ..) = add_clients(&mut central, &id, ciphersuite, GROUP_MAX);
-                        let to_remove = client_ids[..*i].to_vec();
-                        (central, id, to_remove)
+                        async_std::task::block_on(async {
+                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            let (client_ids, ..) = add_clients(&mut central, &id, ciphersuite, GROUP_MAX).await;
+                            let to_remove = client_ids[..*i].to_vec();
+                            (central, id, to_remove)
+                        })
                     },
                     |(mut central, id, client_ids)| async move {
                         black_box(
@@ -172,16 +181,16 @@ fn remove_client_bench(c: &mut Criterion) {
             group.bench_with_input(BenchmarkId::new(bench_name, i), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, keystore) = setup_proteus(in_memory);
-                        let session_material = (0..*i)
-                            .map(|_| (session_id(), new_prekey().serialise().unwrap()))
-                            .collect::<Vec<(String, Vec<u8>)>>();
-                        for (session_id, key) in &session_material {
-                            block_on(async {
+                        async_std::task::block_on(async {
+                            let (mut central, keystore) = setup_proteus(in_memory).await;
+                            let session_material = (0..*i)
+                                .map(|_| (session_id(), new_prekey().serialise().unwrap()))
+                                .collect::<Vec<(String, Vec<u8>)>>();
+                            for (session_id, key) in &session_material {
                                 central.session_from_prekey(session_id, key).await.unwrap();
-                            });
-                        }
-                        (central, keystore, session_material)
+                            }
+                            (central, keystore, session_material)
+                        })
                     },
                     |(mut central, keystore, session_material)| async move {
                         for (session_id, _) in session_material {
@@ -205,9 +214,11 @@ fn update_client_bench(c: &mut Criterion) {
             group.bench_with_input(BenchmarkId::new(bench_name, i), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, id) = setup_mls(ciphersuite, &credential, in_memory);
-                        add_clients(&mut central, &id, ciphersuite, *i);
-                        (central, id)
+                        async_std::task::block_on(async {
+                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            add_clients(&mut central, &id, ciphersuite, *i).await;
+                            (central, id)
+                        })
                     },
                     |(mut central, id)| async move {
                         black_box(central.update_keying_material(&id).await.unwrap());
@@ -225,24 +236,22 @@ fn update_client_bench(c: &mut Criterion) {
             group.bench_with_input(BenchmarkId::new(bench_name, i), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
-                        let (mut central, keystore) = setup_proteus(in_memory);
-                        let session_material = (0..*i)
-                            .map(|_| (session_id(), new_prekey().serialise().unwrap()))
-                            .collect::<Vec<(String, Vec<u8>)>>();
-                        for (session_id, key) in &session_material {
-                            block_on(async {
+                        async_std::task::block_on(async {
+                            let (mut central, keystore) = setup_proteus(in_memory).await;
+                            let session_material = (0..*i)
+                                .map(|_| (session_id(), new_prekey().serialise().unwrap()))
+                                .collect::<Vec<(String, Vec<u8>)>>();
+                            for (session_id, key) in &session_material {
                                 central.session_from_prekey(session_id, key).await.unwrap();
-                            });
-                        }
-                        let new_pkb = black_box(
-                            PreKeyBundle::new(
+                            }
+                            let new_pkb = PreKeyBundle::new(
                                 keys::IdentityKeyPair::new().public_key,
                                 &PreKey::new(keys::PreKeyId::new(2)),
                             )
                             .serialise()
-                            .unwrap(),
-                        );
-                        (central, keystore, new_pkb, session_material)
+                            .unwrap();
+                            (central, keystore, new_pkb, session_material)
+                        })
                     },
                     |(mut central, keystore, new_pkb, session_material)| async move {
                         for (session_id, _) in session_material {
