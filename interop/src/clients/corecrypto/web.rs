@@ -45,10 +45,11 @@ impl CoreCryptoWebClient {
             .execute_async(
                 r#"
 const [clientConfig, callback] = arguments;
-const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
+const { CoreCrypto, Ciphersuite, CredentialType } = await import("./corecrypto.js");
 window.CoreCrypto = CoreCrypto;
 window.cc = await window.CoreCrypto.init(clientConfig);
 window.ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+window.credentialType = CredentialType.Basic;
 callback();"#,
                 vec![client_config],
             )
@@ -138,7 +139,7 @@ impl EmulatedMlsClient for CoreCryptoWebClient {
             .execute_async(
                 r#"
 const [ciphersuite, callback] = arguments;
-window.cc.clientKeypackages(ciphersuite, 1).then(([kp]) => callback(kp));"#,
+window.cc.clientKeypackages(ciphersuite, window.credentialType, 1).then(([kp]) => callback(kp));"#,
                 vec![serde_json::json!(ciphersuite)],
             )
             .await

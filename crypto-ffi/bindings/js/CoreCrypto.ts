@@ -943,21 +943,23 @@ export class CoreCrypto {
     /**
      *
      * @param ciphersuite - of the KeyPackages to count
+     * @param credentialType - of the KeyPackages to count
      * @returns The amount of valid, non-expired KeyPackages that are persisted in the backing storage
      */
-    async clientValidKeypackagesCount(ciphersuite: Ciphersuite): Promise<number> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.client_valid_keypackages_count(ciphersuite));
+    async clientValidKeypackagesCount(ciphersuite: Ciphersuite, credentialType: CredentialType): Promise<number> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.client_valid_keypackages_count(ciphersuite, credentialType));
     }
 
     /**
      * Fetches a requested amount of keypackages
      *
      * @param ciphersuite - of the KeyPackages to generate
+     * @param credentialType - of the KeyPackages to generate
      * @param amountRequested - The amount of keypackages requested
      * @returns An array of length `amountRequested` containing TLS-serialized KeyPackages
      */
-    async clientKeypackages(ciphersuite: Ciphersuite, amountRequested: number): Promise<Array<Uint8Array>> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.client_keypackages(ciphersuite, amountRequested));
+    async clientKeypackages(ciphersuite: Ciphersuite, credentialType: CredentialType, amountRequested: number): Promise<Array<Uint8Array>> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.client_keypackages(ciphersuite, credentialType, amountRequested));
     }
 
     /**

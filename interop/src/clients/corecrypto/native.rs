@@ -90,7 +90,10 @@ impl EmulatedClient for CoreCryptoNativeClient {
 impl EmulatedMlsClient for CoreCryptoNativeClient {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
         let ciphersuite = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
-        let kps = self.cc.get_or_create_client_keypackages(ciphersuite.into(), 1).await?;
+        let kps = self
+            .cc
+            .get_or_create_client_keypackages(ciphersuite.into(), MlsCredentialType::Basic, 1)
+            .await?;
         Ok(kps[0].tls_serialize_detached()?)
     }
 

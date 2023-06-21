@@ -1379,7 +1379,11 @@ pub mod tests {
                                 .await
                                 .unwrap();
                             let bob_nb_kps = bob_client
-                                .valid_keypackages_count(&bob_central.mls_backend, case.ciphersuite())
+                                .valid_keypackages_count(
+                                    &bob_central.mls_backend,
+                                    case.ciphersuite(),
+                                    case.credential_type,
+                                )
                                 .await
                                 .unwrap();
                             // Alright Bob does not have any KeyPackage

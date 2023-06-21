@@ -130,6 +130,7 @@ impl Client {
         &self,
         count: usize,
         ciphersuite: MlsCiphersuite,
+        credential_type: MlsCredentialType,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<KeyPackage>> {
         // Auto-prune expired keypackages on request
@@ -139,7 +140,13 @@ impl Client {
         let Some(ct) = self
             .identities
             .iter()
-            .find_map(|(cs, ct)| if cs == ciphersuite { Some(ct) } else { None })
+            .find_map(|(cs, cb)| {
+                if cs == ciphersuite && MlsCredentialType::from(cb.credential.credential_type()) == credential_type {
+                    Some(cb)
+                } else {
+                    None
+                }
+            })
         else {
             return Err(CryptoError::InvalidIdentity);
         };
@@ -185,6 +192,7 @@ impl Client {
         &self,
         backend: &MlsCryptoProvider,
         ciphersuite: MlsCiphersuite,
+        credential_type: MlsCredentialType,
     ) -> CryptoResult<usize> {
         use core_crypto_keystore::entities::EntityBase as _;
         let keystore = backend.key_store();
@@ -198,7 +206,7 @@ impl Client {
             // TODO: do this filtering in SQL when the schema is updated
             .filter(|kp| {
                 kp.as_ref()
-                    .map(|b| b.ciphersuite() == ciphersuite.0)
+                    .map(|b| b.ciphersuite() == ciphersuite.0 && MlsCredentialType::from(b.leaf_node().credential().credential_type()) == credential_type)
                     .unwrap_or_default()
             })
             .try_fold(0usize, |mut valid_count, kp| {
@@ -306,7 +314,7 @@ pub mod tests {
         let mut prev_kps: Option<Vec<KeyPackage>> = None;
         for _ in 0..50 {
             let kps = client
-                .request_key_packages(COUNT, case.ciphersuite(), &backend)
+                .request_key_packages(COUNT, case.ciphersuite(), case.credential_type, &backend)
                 .await
                 .unwrap();
             assert_eq!(kps.len(), COUNT);
@@ -337,11 +345,11 @@ pub mod tests {
 
         // Generate `UNEXPIRED_COUNT` kpbs that are with default 3 months expiration. We *should* keep them for the duration of the test
         let unexpired_kpbs = client
-            .request_key_packages(UNEXPIRED_COUNT, case.ciphersuite(), &backend)
+            .request_key_packages(UNEXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
             .await
             .unwrap();
         let len = client
-            .valid_keypackages_count(&backend, case.ciphersuite())
+            .valid_keypackages_count(&backend, case.ciphersuite(), case.credential_type)
             .await
             .unwrap();
         assert_eq!(len, unexpired_kpbs.len());
@@ -352,7 +360,7 @@ pub mod tests {
 
         // Generate new keypackages that are normally partially expired 2s after they're requested
         let partially_expired_kpbs = client
-            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), &backend)
+            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
             .await
             .unwrap();
         assert_eq!(partially_expired_kpbs.len(), EXPIRED_COUNT);
@@ -363,11 +371,11 @@ pub mod tests {
         // Request the same number of keypackages. The automatic lifetime-based expiration should take
         // place and remove old expired keypackages and generate fresh ones instead
         let fresh_kpbs = client
-            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), &backend)
+            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
             .await
             .unwrap();
         let len = client
-            .valid_keypackages_count(&backend, case.ciphersuite())
+            .valid_keypackages_count(&backend, case.ciphersuite(), case.credential_type)
             .await
             .unwrap();
         assert_eq!(len, fresh_kpbs.len());

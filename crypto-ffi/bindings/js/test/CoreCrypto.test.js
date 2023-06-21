@@ -79,22 +79,26 @@ test("init", async () => {
 test("can use groupInfo enums", async () => {
   const [ctx, page] = await initBrowser();
 
-  const [GroupInfoEncryptionType, RatchetTreeType] = await page.evaluate(async () => {
+  const [GroupInfoEncryptionType, RatchetTreeType, CredentialType] = await page.evaluate(async () => {
     const { CoreCrypto, Ciphersuite, CredentialType, GroupInfoEncryptionType, RatchetTreeType } = await import ("./corecrypto.js");
 
     window.GroupInfoEncryptionType = GroupInfoEncryptionType;
     window.RatchetTreeType = RatchetTreeType;
     window.CoreCrypto = CoreCrypto;
     window.Ciphersuite = Ciphersuite;
-    window.CredentialType = CredentialType.Basic;
+    window.CredentialType = CredentialType;
 
-    return [GroupInfoEncryptionType, RatchetTreeType];
+    return [GroupInfoEncryptionType, RatchetTreeType, CredentialType];
   });
 
   expect(GroupInfoEncryptionType.Plaintext).toBe(0x01);
   expect(GroupInfoEncryptionType.JweEncrypted).toBe(0x02);
   expect(await page.evaluate(() => window.GroupInfoEncryptionType.Plaintext)).toBe(0x01);
   expect(await page.evaluate(() => window.GroupInfoEncryptionType.JweEncrypted)).toBe(0x02);
+  expect(CredentialType.Basic).toBe(0x01);
+  expect(CredentialType.X509).toBe(0x02);
+  expect(await page.evaluate(() => window.CredentialType.Basic)).toBe(0x01);
+  expect(await page.evaluate(() => window.CredentialType.X509)).toBe(0x02);
   expect(RatchetTreeType.Full).toBe(0x01);
   expect(RatchetTreeType.Delta).toBe(0x02);
   expect(RatchetTreeType.ByRef).toBe(0x03);
@@ -121,12 +125,12 @@ test("can use groupInfo enums", async () => {
     const cc = await window.CoreCrypto.init(client1Config);
     const cc2 = await window.CoreCrypto.init(client2Config);
 
-    const [kp] = await cc2.clientKeypackages(ciphersuite, 1);
+    const [kp] = await cc2.clientKeypackages(ciphersuite, window.CredentialType.Basic, 1);
 
     const encoder = new TextEncoder();
     const conversationId = encoder.encode("testConversation");
 
-    await cc.createConversation(conversationId, window.CredentialType);
+    await cc.createConversation(conversationId, window.CredentialType.Basic);
 
     const { groupInfo: groupInfo } = await cc.addClientsToConversation(conversationId, [
       { id: encoder.encode(client2Config.clientId), kp },
@@ -256,7 +260,7 @@ test("externally generated clients", async () => {
       clientId: "bob",
     });
 
-    const [bobKp, ] = await bob.clientKeypackages(ciphersuite, 1);
+    const [bobKp, ] = await bob.clientKeypackages(ciphersuite, credentialType, 1);
 
     const conversationId = encoder.encode("testConversation");
 
@@ -348,9 +352,10 @@ test("get client keypackages", async () => {
   const [ctx, page] = await initBrowser();
 
   const kpNumber = await page.evaluate(async () => {
-    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite, CredentialType } = await import("./corecrypto.js");
 
     const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+    const credentialType = CredentialType.Basic;
     const cc = await CoreCrypto.init({
       databaseName: "get client keypackages",
       key: "test",
@@ -358,7 +363,7 @@ test("get client keypackages", async () => {
       ciphersuites: [ciphersuite],
     });
 
-    const kps = await cc.clientKeypackages(ciphersuite, 20);
+    const kps = await cc.clientKeypackages(ciphersuite, credentialType, 20);
     const len = kps.length;
 
     await cc.wipe();
@@ -420,9 +425,10 @@ test("roundtrip message", async () => {
   const clientId2 = "test2";
 
   let kp = await page2.evaluate(async (clientId) => {
-    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite, CredentialType } = await import("./corecrypto.js");
 
     const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+    const credentialType = CredentialType.Basic;
     const config = {
         databaseName: "roundtrip message test 2",
         key: "test2",
@@ -432,7 +438,7 @@ test("roundtrip message", async () => {
 
     const cc2 = await CoreCrypto.init(config);
 
-    const [kp] = await cc2.clientKeypackages(ciphersuite, 1);
+    const [kp] = await cc2.clientKeypackages(ciphersuite, credentialType, 1);
     await cc2.close();
     return kp;
   }, clientId2);
@@ -564,7 +570,7 @@ test("callbacks default to false when not async", async () => {
     await cc.registerCallbacks(callbacks);
 
     const cc2 = await CoreCrypto.init(client2Config);
-    const [cc2Kp] = await cc2.clientKeypackages(ciphersuite, 1);
+    const [cc2Kp] = await cc2.clientKeypackages(ciphersuite, credentialType, 1);
 
     const encoder = new TextEncoder();
 
@@ -657,7 +663,7 @@ test("ext commits|proposals & callbacks", async () => {
     await cc.registerCallbacks(callbacks);
 
     const cc2 = await CoreCrypto.init(client2Config);
-    const [cc2Kp] = await cc2.clientKeypackages(ciphersuite, 1);
+    const [cc2Kp] = await cc2.clientKeypackages(ciphersuite, credentialType, 1);
 
     const ccExternalProposal = await CoreCrypto.init(clientExtProposalConfig);
     const ccExternalCommit = await CoreCrypto.init(clientExtCommitConfig);

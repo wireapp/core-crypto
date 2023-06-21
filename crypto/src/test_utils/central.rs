@@ -15,20 +15,21 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
+    mls::MlsCiphersuite,
     prelude::{
-        ClientId, ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral, MlsConversation,
-        MlsConversationDecryptMessage, MlsConversationInitBundle, MlsCustomConfiguration, MlsError,
+        CertificateBundle, Client, ClientId, ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral,
+        MlsConversation, MlsConversationDecryptMessage, MlsConversationInitBundle, MlsCredentialType,
+        MlsCustomConfiguration, MlsError,
     },
-    test_utils::TestCase,
+    test_utils::{MessageExt, TestCase},
 };
 
-use crate::mls::MlsCiphersuite;
-use crate::prelude::{CertificateBundle, Client, MlsCredentialType};
-use crate::test_utils::MessageExt;
 use core_crypto_keystore::entities::{MlsCredential, MlsSignatureKeyPair};
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::group_info::VerifiableGroupInfo;
-use openmls::prelude::{KeyPackage, LeafNodeIndex, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit};
+use openmls::prelude::{
+    group_info::VerifiableGroupInfo, KeyPackage, LeafNodeIndex, MlsMessageIn, QueuedProposal, SignaturePublicKey,
+    StagedCommit,
+};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Serialize;
 use wire_e2e_identity::prelude::WireIdentityReader;
@@ -36,7 +37,7 @@ use wire_e2e_identity::prelude::WireIdentityReader;
 impl MlsCentral {
     pub async fn get_one_key_package(&self, case: &TestCase) -> KeyPackage {
         let kps = self
-            .get_or_create_client_keypackages(case.ciphersuite(), 1)
+            .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 1)
             .await
             .unwrap();
         kps.first().unwrap().clone()

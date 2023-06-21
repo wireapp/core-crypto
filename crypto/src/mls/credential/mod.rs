@@ -307,9 +307,12 @@ pub mod tests {
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_expired(case: TestCase) {
         if matches!(case.credential_type, MlsCredentialType::X509) {
-            let in_2_secs = now() + core::time::Duration::from_secs(2);
+            let expiration_time = core::time::Duration::from_secs(14);
+            let start = fluvio_wasm_timer::Instant::now();
+            let expiration = now() + expiration_time;
+
             let (certificate_chain, sign_key) = WireIdentityBuilder {
-                not_after: in_2_secs,
+                not_after: expiration,
                 ..Default::default()
             }
             .build_x509_der();
@@ -330,8 +333,11 @@ pub mod tests {
                     .await
                     .unwrap();
 
+            let elapsed = start.elapsed();
             // Give time to the certificate to expire
-            async_std::task::sleep(core::time::Duration::from_secs(6)).await;
+            if expiration_time > elapsed {
+                async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
+            }
 
             assert!(matches!(
                 alice_central.try_talk_to(&id, &mut bob_central).await.unwrap_err(),

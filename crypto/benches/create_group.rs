@@ -60,7 +60,7 @@ fn join_from_welcome_bench(c: &mut Criterion) {
 
                             let (bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;
                             let bob_kpbs = bob_central
-                                .get_or_create_client_keypackages(ciphersuite, 1)
+                                .get_or_create_client_keypackages(ciphersuite, MlsCredentialType::Basic, 1)
                                 .await
                                 .unwrap();
                             let bob_kp = bob_kpbs.first().unwrap().clone();

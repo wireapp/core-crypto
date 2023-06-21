@@ -188,10 +188,10 @@ interface CoreCrypto {
     sequence<u8> client_public_key(Ciphersuite ciphersuite);
 
     [Throws=CryptoError]
-    sequence<sequence<u8>> client_keypackages(Ciphersuite ciphersuite, u32 amount_requested);
+    sequence<sequence<u8>> client_keypackages(Ciphersuite ciphersuite, MlsCredentialType credential_type, u32 amount_requested);
 
     [Throws=CryptoError]
-    u64 client_valid_keypackages_count(Ciphersuite ciphersuite);
+    u64 client_valid_keypackages_count(Ciphersuite ciphersuite, MlsCredentialType credential_type);
 
     [Throws=CryptoError]
     void create_conversation(ConversationId conversation_id, MlsCredentialType creator_credential_type, ConversationConfiguration config);

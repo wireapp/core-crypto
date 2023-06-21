@@ -238,17 +238,18 @@ impl Client {
             .await?;
 
         if provision {
-            use futures_util::{StreamExt as _, TryStreamExt as _};
-
-            futures_util::stream::iter(ciphersuites)
-                .map(Ok::<_, CryptoError>)
-                .try_for_each(|cs| async {
+            for cs in ciphersuites {
+                for (_, cb) in client.identities.iter().filter(|(id_cs, _)| id_cs == cs) {
                     client
-                        .request_key_packages(INITIAL_KEYING_MATERIAL_COUNT, *cs, backend)
+                        .request_key_packages(
+                            INITIAL_KEYING_MATERIAL_COUNT,
+                            *cs,
+                            cb.credential.credential_type().into(),
+                            backend,
+                        )
                         .await?;
-                    Ok(())
-                })
-                .await?;
+                }
+            }
         }
 
         Ok(client)

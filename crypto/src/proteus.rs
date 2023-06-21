@@ -1004,7 +1004,7 @@ mod tests {
         cc.mls_init(identifier, vec![case.ciphersuite()]).await.unwrap();
         // expect MLS to work
         assert_eq!(
-            cc.get_or_create_client_keypackages(case.ciphersuite(), 2)
+            cc.get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 2)
                 .await
                 .unwrap()
                 .len(),

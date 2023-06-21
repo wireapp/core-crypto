@@ -18,7 +18,7 @@ use color_eyre::eyre::Result;
 use core_crypto::prelude::MlsCiphersuite;
 use serde_json::json;
 
-use core_crypto_ffi::{CiphersuiteName, CoreCrypto, CustomConfiguration, Invitee};
+use core_crypto_ffi::{CiphersuiteName, CoreCrypto, CustomConfiguration, Invitee, MlsCredentialType};
 
 use crate::clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient};
 
@@ -89,7 +89,8 @@ impl<'a> EmulatedClient for CoreCryptoFfiClient<'a> {
 impl<'a> EmulatedMlsClient for CoreCryptoFfiClient<'a> {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
         let ciphersuite = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
-        let mut kps = self.cc.client_keypackages(ciphersuite, 1)?;
+        let credential_type = MlsCredentialType::Basic;
+        let mut kps = self.cc.client_keypackages(ciphersuite, credential_type, 1)?;
         Ok(kps.remove(0))
     }
 
