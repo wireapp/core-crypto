@@ -39,20 +39,20 @@ typealias MLSKeyPackage = ByteArray
 open class GroupInfoBundle(
     var encryptionType: MlsGroupInfoEncryptionType,
     var ratchetTreeType: MlsRatchetTreeType,
-    var payload: ByteArray
+    var payload: ByteArray,
 )
 
 open class CommitBundle(
     val commit: ByteArray,
     val welcome: ByteArray?,
-    val groupInfoBundle: GroupInfoBundle
+    val groupInfoBundle: GroupInfoBundle,
 )
 
 class DecryptedMessageBundle(
     val message: ByteArray?,
     val commitDelay: Long?,
     val senderClientId: ClientId?,
-    val hasEpochChanged: Boolean
+    val hasEpochChanged: Boolean,
 )
 
 interface MLSClient {
@@ -75,7 +75,7 @@ interface MLSClient {
         groupId: MLSGroupId,
         epoch: ULong,
         ciphersuite: Ciphersuite,
-        credentialType: MlsCredentialType
+        credentialType: MlsCredentialType,
     ): HandshakeMessage
 
     suspend fun joinByExternalCommit(groupInfo: ByteArray, credentialType: MlsCredentialType): CommitBundle
@@ -87,7 +87,8 @@ interface MLSClient {
     suspend fun createConversation(
         groupId: MLSGroupId,
         creatorCredentialType: MlsCredentialType,
-        externalSenders: List<Ed22519Key> = emptyList()
+        externalSenders: List<Ed22519Key> = emptyList(),
+        perDomainTrustAnchors: List<PerDomainTrustAnchor> = emptyList(),
     )
 
     suspend fun wipeConversation(groupId: MLSGroupId)
@@ -97,6 +98,12 @@ interface MLSClient {
     suspend fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage
 
     suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle
+
+    suspend fun updateTrustAnchorsFromConversation(
+        groupId: MLSGroupId,
+        removeDomainNames: List<String>,
+        addTrustAnchors: List<PerDomainTrustAnchor>,
+    ): CommitBundle?
 
     suspend fun commitAccepted(groupId: MLSGroupId)
 
@@ -108,12 +115,12 @@ interface MLSClient {
 
     suspend fun addMember(
         groupId: MLSGroupId,
-        members: List<Pair<ClientId, MLSKeyPackage>>
+        members: List<Pair<ClientId, MLSKeyPackage>>,
     ): CommitBundle?
 
     suspend fun removeMember(
         groupId: MLSGroupId,
-        members: List<ClientId>
+        members: List<ClientId>,
     ): CommitBundle
 
     suspend fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
@@ -159,7 +166,7 @@ class MLSClientImpl(
         groupId: MLSGroupId,
         epoch: ULong,
         ciphersuite: Ciphersuite,
-        credentialType: MlsCredentialType
+        credentialType: MlsCredentialType,
     ): HandshakeMessage {
         return cc.newExternalAddProposal(
             conversationId = groupId.toUByteList(),
@@ -173,7 +180,7 @@ class MLSClientImpl(
         return cc.joinByExternalCommit(
             groupInfo.toUByteList(),
             defaultGroupConfiguration,
-            credentialType
+            credentialType,
         ).toCommitBundle()
     }
 
@@ -186,11 +193,12 @@ class MLSClientImpl(
         cc.clearPendingGroupFromExternalCommit(groupId.toUByteList())
     }
 
-    override suspend fun createConversation(groupId: MLSGroupId, creatorCredentialType: MlsCredentialType, externalSenders: List<Ed22519Key>) {
+    override suspend fun createConversation(groupId: MLSGroupId, creatorCredentialType: MlsCredentialType, externalSenders: List<Ed22519Key>, perDomainTrustAnchors: List<PerDomainTrustAnchor>) {
         val conf = ConversationConfiguration(
             DEFAULT_CIPHERSUITE,
             externalSenders,
-            defaultGroupConfiguration
+            defaultGroupConfiguration,
+            perDomainTrustAnchors,
         )
 
         val groupIdAsBytes = groupId.toUByteList()
@@ -209,6 +217,15 @@ class MLSClientImpl(
     override suspend fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage {
         val applicationMessage = cc.encryptMessage(groupId.toUByteList(), message.toUByteList())
         return applicationMessage.toByteArray()
+    }
+
+    override suspend fun updateTrustAnchorsFromConversation(
+        groupId: MLSGroupId,
+        removeDomainNames: List<String>,
+        addTrustAnchors: List<PerDomainTrustAnchor>,
+    ): CommitBundle? {
+        val result = cc.updateTrustAnchorsFromConversation(groupId.toUByteList(), removeDomainNames, addTrustAnchors)
+        return result.toCommitBundle()
     }
 
     override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle {
@@ -233,7 +250,7 @@ class MLSClientImpl(
 
     override suspend fun addMember(
         groupId: MLSGroupId,
-        members: List<Pair<ClientId, MLSKeyPackage>>
+        members: List<Pair<ClientId, MLSKeyPackage>>,
     ): CommitBundle? {
         if (members.isEmpty()) {
             return null
@@ -248,7 +265,7 @@ class MLSClientImpl(
 
     override suspend fun removeMember(
         groupId: MLSGroupId,
-        members: List<ClientId>
+        members: List<ClientId>,
     ): CommitBundle {
         val clientIds = members.map { it.encodeToByteArray().toUByteList() }
         return cc.removeClientsFromConversation(groupId.toUByteList(), clientIds).toCommitBundle()
@@ -275,33 +292,32 @@ class MLSClientImpl(
         fun MemberAddedMessages.toCommitBundle() = CommitBundle(
             commit,
             welcome,
-            groupInfo.toGroupInfoBundle()
+            groupInfo.toGroupInfoBundle(),
         )
 
         fun com.wire.crypto.CommitBundle.toCommitBundle() = CommitBundle(
             commit,
             welcome,
-            groupInfo.toGroupInfoBundle()
+            groupInfo.toGroupInfoBundle(),
         )
 
         fun ConversationInitBundle.toCommitBundle() = CommitBundle(
             commit,
             null,
-            groupInfo.toGroupInfoBundle()
+            groupInfo.toGroupInfoBundle(),
         )
 
         fun com.wire.crypto.GroupInfoBundle.toGroupInfoBundle() = GroupInfoBundle(
             encryptionType,
             ratchetTreeType,
-            payload
+            payload,
         )
 
         fun DecryptedMessage.toDecryptedMessageBundle() = DecryptedMessageBundle(
             message,
             commitDelay?.toLong(),
             senderClientId?.let { String(it.toByteArray()) },
-            hasEpochChanged
+            hasEpochChanged,
         )
     }
-
 }

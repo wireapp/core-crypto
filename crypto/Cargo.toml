@@ -44,6 +44,9 @@ schnellru = "0.2"
 zeroize = "1.5"
 wire-e2e-identity = { version = "0.4", default-features = false }
 indexmap = "2"
+x509-cert = "0.2"
+pem = "2.0"
+oid-registry = "0.6"
 
 [dependencies.proteus-wasm]
 version = "2.1"
@@ -93,7 +96,12 @@ proteus-traits = "2.0"
 async-trait = "0.1"
 wire-e2e-identity = { version = "0.4", features = ["identity-builder"] }
 fluvio-wasm-timer = "0.2"
-pem = "2"
+time = { version = "0.3", features = ["wasm-bindgen"] }
+
+[dev-dependencies.rcgen]
+git = "https://github.com/wireapp/rcgen"
+tag = "v1.2.2-pre.core-crypto-0.7.0"
+version = "=0.9.2"
 
 [dev-dependencies.core-crypto-keystore]
 version = "^1.0.0-rc.1"

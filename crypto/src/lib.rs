@@ -86,7 +86,7 @@ pub mod prelude {
                 handshake::{MlsCommitBundle, MlsConversationCreationMessage, MlsProposalBundle},
                 *,
             },
-            credential::{typ::MlsCredentialType, x509::CertificateBundle},
+            credential::{trust_anchor::PerDomainTrustAnchor, typ::MlsCredentialType, x509::CertificateBundle},
             external_commit::MlsConversationInitBundle,
             member::{ConversationMember, MemberId},
             proposal::{MlsProposal, MlsProposalRef},

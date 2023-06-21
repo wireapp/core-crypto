@@ -390,9 +390,9 @@ impl MlsCentral {
     /// * `clients` - list of client ids to be removed from the group
     ///
     /// # Return type
-    /// An optional message will be returned on successful call.
-    /// The value will be `None` only if the group can't be found locally (no error will be returned
-    /// in this case).
+    /// An struct containing a welcome(optional, will be present only if there's pending add
+    /// proposals in the store), a message with the commit to fan out to other clients and
+    /// the group info will be returned on successful call.
     ///
     /// # Errors
     /// If the authorisation callback is set, an error can be caused when the authorization fails. Other errors are KeyStore and OpenMls errors.
@@ -421,8 +421,9 @@ impl MlsCentral {
     /// * `conversation_id` - the group/conversation id
     ///
     /// # Return type
-    /// A tuple containing the message with the commit this call generated and an optional welcome
-    /// message that will be present if there were pending add proposals to be commited
+    /// An struct containing a welcome(optional, will be present only if there's pending add
+    /// proposals in the store), a message with the commit to fan out to other clients and
+    /// the group info will be returned on successful call.
     ///
     /// # Errors
     /// If the conversation can't be found, an error will be returned. Other errors are originating

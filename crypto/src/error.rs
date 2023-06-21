@@ -180,6 +180,31 @@ pub enum CryptoError {
         "You tried to join with an external commit but did not merge it yet. We will reapply this message for you when you merge your external commit"
     )]
     UnmergedPendingGroup,
+    /// see [`x509_cert::der::Error`]
+    #[error(transparent)]
+    X509CertDerError(#[from] x509_cert::der::Error),
+    /// see [`pem::PemError`]
+    #[error(transparent)]
+    PemError(#[from] pem::PemError),
+    /// Domain name not found in the certificate
+    #[error("Could not find domain name in the certificate")]
+    DomainNameNotFound,
+    /// The provided domain name and the one found in the certificate don't match
+    #[error("The provided domain name and the one found in the certificate don't match")]
+    DomainNamesDontMatch,
+    /// A trust anchor with the provided domain name already exists in the group's context
+    /// extensions
+    #[error("A trust anchor with the provided domain name already exists in the group's context extensions")]
+    DuplicateDomainName,
+    /// The certificate chain is invalid or not complete
+    #[error("The certificate chain is invalid or not complete")]
+    InvalidCertificateChain,
+    /// Emtpy trust anchor update
+    #[error("The update anchors parameters can't be empty")]
+    EmptyTrustAnchorUdpate,
+    /// Adding a certificate chain already in the group's context
+    #[error("The certificate chain is already in the group's context")]
+    DuplicateCertificateChain,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]
@@ -291,6 +316,11 @@ pub enum MlsError {
     #[error(transparent)]
     MlsDeleteKeyPackageError(
         #[from] openmls::key_packages::errors::KeyPackageDeleteError<core_crypto_keystore::CryptoKeystoreError>,
+    ),
+    /// OpenMLS update extensions error
+    #[error(transparent)]
+    MlsUpdateExtensionsError(
+        #[from] openmls::prelude::UpdateExtensionsError<core_crypto_keystore::CryptoKeystoreError>,
     ),
 }
 

@@ -27,6 +27,7 @@ use crate::{
 pub mod central;
 pub mod fixtures;
 pub mod message;
+pub mod x509;
 // Cannot name it `proteus` because then it conflicts with proteus the crate :(
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
