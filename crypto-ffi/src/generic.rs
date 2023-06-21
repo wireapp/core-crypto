@@ -516,13 +516,18 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::get_or_create_client_keypackages]
-    pub fn client_keypackages(&self, ciphersuite: Ciphersuite, amount_requested: u32) -> CryptoResult<Vec<Vec<u8>>> {
+    pub fn client_keypackages(
+        &self,
+        ciphersuite: Ciphersuite,
+        credential_type: MlsCredentialType,
+        amount_requested: u32,
+    ) -> CryptoResult<Vec<Vec<u8>>> {
         let kps = future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .get_or_create_client_keypackages(ciphersuite.into(), amount_requested as usize),
+                    .get_or_create_client_keypackages(ciphersuite.into(), credential_type, amount_requested as usize),
             ),
         )?;
 
@@ -536,13 +541,17 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::client_valid_key_packages_count]
-    pub fn client_valid_keypackages_count(&self, ciphersuite: Ciphersuite) -> CryptoResult<u64> {
+    pub fn client_valid_keypackages_count(
+        &self,
+        ciphersuite: Ciphersuite,
+        credential_type: MlsCredentialType,
+    ) -> CryptoResult<u64> {
         let count = future::block_on(
             self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
                 self.central
                     .lock()
                     .map_err(|_| CryptoError::LockPoisonError)?
-                    .client_valid_key_packages_count(ciphersuite.into()),
+                    .client_valid_key_packages_count(ciphersuite.into(), credential_type),
             ),
         )?;
 

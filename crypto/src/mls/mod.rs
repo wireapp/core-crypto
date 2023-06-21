@@ -397,17 +397,22 @@ impl MlsCentral {
     pub async fn get_or_create_client_keypackages(
         &self,
         ciphersuite: MlsCiphersuite,
+        credential_type: MlsCredentialType,
         amount_requested: usize,
     ) -> CryptoResult<Vec<KeyPackage>> {
         self.mls_client()?
-            .request_key_packages(amount_requested, ciphersuite, &self.mls_backend)
+            .request_key_packages(amount_requested, ciphersuite, credential_type, &self.mls_backend)
             .await
     }
 
-    /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [MlsCiphersuite]
-    pub async fn client_valid_key_packages_count(&self, ciphersuite: MlsCiphersuite) -> CryptoResult<usize> {
+    /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [MlsCiphersuite] and [MlsCredentialType]
+    pub async fn client_valid_key_packages_count(
+        &self,
+        ciphersuite: MlsCiphersuite,
+        credential_type: MlsCredentialType,
+    ) -> CryptoResult<usize> {
         self.mls_client()?
-            .valid_keypackages_count(&self.mls_backend, ciphersuite)
+            .valid_keypackages_count(&self.mls_backend, ciphersuite, credential_type)
             .await
     }
 
@@ -895,7 +900,7 @@ pub mod tests {
                 // expect mls_client to work
                 assert_eq!(
                     central
-                        .get_or_create_client_keypackages(case.ciphersuite(), 2)
+                        .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 2)
                         .await
                         .unwrap()
                         .len(),

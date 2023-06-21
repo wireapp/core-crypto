@@ -1160,7 +1160,12 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<js_sys::Array<js_sys::Uint8Array>>`]
     ///
     /// see [core_crypto::mls::MlsCentral::client_keypackages]
-    pub fn client_keypackages(&self, ciphersuite: Ciphersuite, amount_requested: u32) -> Promise {
+    pub fn client_keypackages(
+        &self,
+        ciphersuite: Ciphersuite,
+        credential_type: CredentialType,
+        amount_requested: u32,
+    ) -> Promise {
         let this = self.inner.clone();
         let ciphersuite: CiphersuiteName = ciphersuite.into();
         future_to_promise(
@@ -1168,7 +1173,11 @@ impl CoreCrypto {
                 let kps = this
                     .write()
                     .await
-                    .get_or_create_client_keypackages(ciphersuite.into(), amount_requested as usize)
+                    .get_or_create_client_keypackages(
+                        ciphersuite.into(),
+                        credential_type.into(),
+                        amount_requested as usize,
+                    )
                     .await?
                     .into_iter()
                     .map(|kpb| {
@@ -1195,7 +1204,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<usize>`]
     ///
     /// see [core_crypto::mls::MlsCentral::client_valid_keypackages_count]
-    pub fn client_valid_keypackages_count(&self, ciphersuite: Ciphersuite) -> Promise {
+    pub fn client_valid_keypackages_count(&self, ciphersuite: Ciphersuite, credential_type: CredentialType) -> Promise {
         let this = self.inner.clone();
         let ciphersuite: CiphersuiteName = ciphersuite.into();
 
@@ -1204,7 +1213,7 @@ impl CoreCrypto {
                 let count = this
                     .read()
                     .await
-                    .client_valid_key_packages_count(ciphersuite.into())
+                    .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(count.into())

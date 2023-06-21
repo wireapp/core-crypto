@@ -214,8 +214,8 @@ pub async fn add_clients(
     let group_info = commit_bundle.group_info.payload.bytes();
     let group_info = openmls::prelude::MlsMessageIn::tls_deserialize_bytes(&group_info[..]).unwrap();
     let MlsMessageInBody::GroupInfo(group_info) = group_info.extract() else {
-            panic!("error")
-        };
+        panic!("error")
+    };
 
     central.commit_accepted(id).await.unwrap();
     (client_ids, group_info)
@@ -254,7 +254,10 @@ pub async fn rand_member(ciphersuite: MlsCiphersuite) -> ConversationMember {
 }
 
 pub async fn invite(from: &mut MlsCentral, other: &mut MlsCentral, id: &ConversationId, ciphersuite: MlsCiphersuite) {
-    let other_kps = other.get_or_create_client_keypackages(ciphersuite, 1).await.unwrap();
+    let other_kps = other
+        .get_or_create_client_keypackages(ciphersuite, MlsCredentialType::Basic, 1)
+        .await
+        .unwrap();
     let other_kp = other_kps.first().unwrap().clone();
     let other_member = ConversationMember::new(other.client_id().unwrap(), other_kp);
     let welcome = from

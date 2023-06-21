@@ -60,9 +60,9 @@ interface MLSClient {
 
     fun getPublicKey(ciphersuite: Ciphersuite): ByteArray
 
-    fun generateKeyPackages(ciphersuite: Ciphersuite, amount: Int): List<ByteArray>
+    fun generateKeyPackages(ciphersuite: Ciphersuite, credentialType: MlsCredentialType, amount: Int): List<ByteArray>
 
-    fun validKeyPackageCount(ciphersuite: Ciphersuite): ULong
+    fun validKeyPackageCount(ciphersuite: Ciphersuite, credentialType: MlsCredentialType): ULong
 
     fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle
 
@@ -134,12 +134,12 @@ class MLSClientImpl(
         return cc.clientPublicKey(ciphersuite).toUByteArray().asByteArray()
     }
 
-    override fun generateKeyPackages(ciphersuite: Ciphersuite, amount: Int): List<ByteArray> {
-        return cc.clientKeypackages(ciphersuite, amount.toUInt()).map { it.toUByteArray().asByteArray() }
+    override fun generateKeyPackages(ciphersuite: Ciphersuite, credentialType: MlsCredentialType, amount: Int): List<ByteArray> {
+        return cc.clientKeypackages(ciphersuite, credentialType, amount.toUInt()).map { it.toUByteArray().asByteArray() }
     }
 
-    override fun validKeyPackageCount(ciphersuite: Ciphersuite): ULong {
-        return cc.clientValidKeypackagesCount(ciphersuite)
+    override fun validKeyPackageCount(ciphersuite: Ciphersuite, credentialType: MlsCredentialType): ULong {
+        return cc.clientValidKeypackagesCount(ciphersuite, credentialType)
     }
 
     override fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
