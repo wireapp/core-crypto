@@ -137,25 +137,15 @@ args = ["build", "--target", "aarch64-apple-ios-sim", "--features", "mobile", "-
 condition = { platforms = ["mac"] }
 dependencies = ["ios-device", "ios-simulator-x86", "ios-simulator-arm"]
 
-[tasks.ios-test-sim-build]
+[tasks.ios-create-xcframework]
 condition = { platforms = ["mac"] }
 script = '''
     cd bindings/swift
 
-    swift build
-'''
-dependencies = ["create-swift-package"]
-
-[tasks.create-swift-package]
-condition = { platforms = ["mac"] }
-script = '''
-    cd bindings/swift
-
-    lipo -create -output ./lib/libcore_crypto_ffi.a \
-        ../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a \
-        ../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a
+    ./build-xcframework.sh
 '''
 dependencies = ["ios"]
+
 
 ################################### Android ###################################
 

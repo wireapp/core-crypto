@@ -61,9 +61,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: |
           cd crypto-ffi
-          cargo make create-swift-package
-          cd bindings/swift
-          swift build
+          cargo make ios
 
   check-wasm:
     runs-on: ubuntu-latest

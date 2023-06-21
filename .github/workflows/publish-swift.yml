@@ -29,26 +29,11 @@ jobs:
           targets: "aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim"
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
-
-      - name: Build and Publish Swift package
-        env:
-          GIT_SSH_COMMAND: "ssh -i /Users/runner/.ssh/id_rsa -o UserKnownHostsFile=/Users/runner/.ssh/known_hosts"
+      - name: Build xcframework
         run: |
-          export SEMANTIC_VERSION=$(echo $GITHUB_REF_NAME | sed 's/^v\(.*\)/\1/')
-          mkdir -p /Users/runner/.ssh
-          echo "${{ secrets.SSH_DEPLOY_KEY }}" > /Users/runner/.ssh/id_rsa
-          chmod 600 /Users/runner/.ssh/id_rsa
           cd crypto-ffi
-          ssh-keyscan -H github.com > /Users/runner/.ssh/known_hosts
-          cargo make create-swift-package
-          cd ../../
-          git clone git@github.com:wireapp/core-crypto-swift.git
-          cd core-crypto-swift
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          cp -r ../core-crypto/crypto-ffi/bindings/swift/* ./
-          git add .
-          git commit -m "chore: release of core-crypto $GITHUB_REF_NAME"
-          git tag $SEMANTIC_VERSION
-          git push origin main
-          git push origin $SEMANTIC_VERSION
+          cargo make create-ios-xcframework
+      - name: Upload xcframework
+        uses: softprops/action-gh-release@v1
+        with:
+            files: crypto-ffi/bindings/swift/WireCoreCrypto.xcframework.zip
