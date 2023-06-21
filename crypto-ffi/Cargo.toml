@@ -25,7 +25,7 @@ async-trait = "0.1"
 tls_codec = { workspace = true }
 
 # UniFFI - Android + iOS bindings - Runtime support
-uniffi = { version = "0.23", optional = true }
+uniffi = { version = "0.24", optional = true }
 uniffi_macros = { version = "0.23", optional = true }
 
 # see https://github.com/RustCrypto/hashes/issues/404
