@@ -17,7 +17,7 @@ exclude = [
 resolver = "2"
 
 [workspace.dependencies]
-tls_codec = "0.3.0-pre.3"
+tls_codec = "0.3.0-pre.4"
 
 [patch.crates-io.schnellru]
 git = "https://github.com/otak/schnellru"
@@ -43,25 +43,25 @@ branch = "otak/2.0-error-codes"
 package = "openmls"
 git = "https://github.com/wireapp/openmls"
 # tag = "v0.20.1-pre.core-crypto-1.0.0"
-branch = "feat/pq-ciphersuite"
+branch = "feat/d20"
 
 [patch.crates-io.openmls_traits]
 package = "openmls_traits"
 git = "https://github.com/wireapp/openmls"
  # tag = "v0.20.1-pre.core-crypto-1.0.0"
- branch = "feat/pq-ciphersuite"
+ branch = "feat/d20"
 
 [patch.crates-io.openmls_basic_credential]
 package = "openmls_basic_credential"
 git = "https://github.com/wireapp/openmls"
 # tag = "v0.20.1-pre.core-crypto-1.0.0"
-branch = "feat/pq-ciphersuite"
+branch = "feat/d20"
 
 [patch.crates-io.openmls_x509_credential]
 package = "openmls_x509_credential"
 git = "https://github.com/wireapp/openmls"
 # tag = "v0.20.1-pre.core-crypto-1.0.0"
-branch = "feat/pq-ciphersuite"
+branch = "feat/d20"
 
 [patch.crates-io.hpke]
 git = "https://github.com/otak/rust-hpke.git"
@@ -82,11 +82,11 @@ package = "openssl-src"
 git = "https://github.com/wireapp/rust-jwt-simple"
 tag = "v0.11.4-pre.core-crypto-0.7.0"
 
-[patch.crates-io.tls_codec]
-version = "0.3.0-pre.3"
-git = "https://github.com/RustCrypto/formats.git"
-package = "tls_codec"
-ref = "2fcc4599"
+# [patch.crates-io.tls_codec]
+# version = "0.3.0-pre.4"
+# git = "https://github.com/RustCrypto/formats.git"
+# package = "tls_codec"
+# ref = "2fcc4599"
 
 [profile.release]
 lto = true
