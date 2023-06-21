@@ -19,12 +19,14 @@
 //! Either use [MlsConversationConfiguration] when creating a conversation or [MlsCustomConfiguration]
 //! when joining one by Welcome or external commit
 
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
     Credential, ExternalSender, SenderRatchetConfiguration, SignaturePublicKey, WireFormatPolicy,
     PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
 };
 use serde::{Deserialize, Serialize};
 
+use crate::mls::credential::trust_anchor::PerDomainTrustAnchor;
 use crate::prelude::{CryptoResult, MlsCiphersuite};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
@@ -39,6 +41,8 @@ pub struct MlsConversationConfiguration {
     pub external_senders: Vec<ExternalSender>,
     /// Implementation specific configuration
     pub custom: MlsCustomConfiguration,
+    /// Domain trust anchors to set in the conversation's extensions
+    pub per_domain_trust_anchors: Vec<PerDomainTrustAnchor>,
 }
 
 impl MlsConversationConfiguration {
@@ -48,7 +52,17 @@ impl MlsConversationConfiguration {
 
     /// Generates an `MlsGroupConfig` from this configuration
     #[inline(always)]
-    pub fn as_openmls_default_configuration(&self) -> CryptoResult<openmls::group::MlsGroupConfig> {
+    pub fn as_openmls_default_configuration(
+        &self,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<openmls::group::MlsGroupConfig> {
+        let trust_certificates = self.per_domain_trust_anchors.clone().into_iter().try_fold(
+            vec![],
+            |mut acc, c| -> CryptoResult<Vec<_>> {
+                acc.push(c.try_as_checked_openmls_trust_anchor(backend, None)?);
+                Ok(acc)
+            },
+        )?;
         Ok(openmls::group::MlsGroupConfig::builder()
             .wire_format_policy(self.custom.wire_policy.into())
             .max_past_epochs(MAX_PAST_EPOCHS)
@@ -59,6 +73,7 @@ impl MlsConversationConfiguration {
                 self.custom.maximum_forward_distance,
             ))
             .use_ratchet_tree_extension(true)
+            .trust_certificates(trust_certificates)
             .external_senders(self.external_senders.clone())
             .crypto_config(openmls::prelude::CryptoConfig::with_default_version(
                 self.ciphersuite.into(),

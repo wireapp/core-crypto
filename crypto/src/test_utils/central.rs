@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
-    mls::credential::{ext::CredentialExt, CredentialBundle},
+    mls::credential::{ext::CredentialExt, trust_anchor::PerDomainTrustAnchor, CredentialBundle},
     prelude::{
         CertificateBundle, Client, ClientId, ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral,
         MlsCiphersuite, MlsConversation, MlsConversationDecryptMessage, MlsConversationInitBundle, MlsCredentialType,
@@ -24,7 +24,7 @@ use crate::{
     test_utils::{MessageExt, TestCase},
 };
 use openmls::prelude::{
-    group_info::VerifiableGroupInfo, Credential, HpkePublicKey, KeyPackage, LeafNodeIndex, MlsMessageIn,
+    group_info::VerifiableGroupInfo, Credential, HpkePublicKey, KeyPackage, LeafNodeIndex, MlsMessageIn, MlsMessageOut,
     QueuedProposal, SignaturePublicKey, StagedCommit,
 };
 use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
@@ -473,6 +473,20 @@ impl MlsCentral {
             assert_eq!(decr_identity.domain, identity.domain);
         }
     }
+
+    pub async fn add_per_domain_trust_anchor_unchecked(
+        &mut self,
+        id: &ConversationId,
+        trust_anchor: PerDomainTrustAnchor,
+    ) -> MlsMessageOut {
+        self.get_conversation(id)
+            .await
+            .unwrap()
+            .write()
+            .await
+            .add_per_domain_trust_anchor_unchecked(trust_anchor, self.mls_client().unwrap(), &self.mls_backend)
+            .await
+    }
 }
 
 impl MlsConversation {
@@ -485,6 +499,42 @@ impl MlsConversation {
 
     pub fn encryption_keys(&self) -> impl Iterator<Item = Vec<u8>> + '_ {
         self.group.members().map(|m| m.encryption_key)
+    }
+
+    pub fn extensions(&self) -> &openmls::prelude::Extensions {
+        self.group.export_group_context().extensions()
+    }
+
+    pub fn per_domain_trust_anchors(&self) -> Vec<PerDomainTrustAnchor> {
+        self.extensions()
+            .per_domain_trust_anchors()
+            .unwrap()
+            .iter()
+            .map(|a| PerDomainTrustAnchor::try_from(a).unwrap())
+            .collect()
+    }
+
+    pub async fn add_per_domain_trust_anchor_unchecked(
+        &mut self,
+        trust_anchor: PerDomainTrustAnchor,
+        client: &Client,
+        backend: &MlsCryptoProvider,
+    ) -> MlsMessageOut {
+        let context = self.group.export_group_context();
+        let mut extensions = context.extensions().clone();
+        let mls_trust_anchor = trust_anchor.into_mls_unchecked();
+        extensions.add_or_replace(openmls::prelude::Extension::PerDomainTrustAnchor(vec![
+            mls_trust_anchor,
+        ]));
+        let cs = self.ciphersuite();
+        let ct = self.own_credential_type().unwrap();
+        let signer = &client
+            .find_most_recent_credential_bundle(cs.signature_algorithm(), ct)
+            .unwrap()
+            .signature_key;
+        let (commit, _, _) = self.group.update_extensions(backend, signer, extensions).await.unwrap();
+        self.persist_group_when_changed(backend, false).await.unwrap();
+        commit
     }
 }
 

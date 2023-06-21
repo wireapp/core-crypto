@@ -183,7 +183,7 @@ public struct ProteusAutoPrekeyBundle: ConvertToInner {
 public struct ConversationConfiguration: ConvertToInner {
     typealias Inner = CoreCryptoSwift.ConversationConfiguration
     func convert() -> Inner {
-        return CoreCryptoSwift.ConversationConfiguration(ciphersuite: self.ciphersuite, externalSenders: self.externalSenders, custom: self.custom.convert())
+        return CoreCryptoSwift.ConversationConfiguration(ciphersuite: self.ciphersuite, externalSenders: self.externalSenders, custom: self.custom.convert(), self.perDomainTrustAnchor.convert())
     }
 
     /// Conversation ciphersuite
@@ -192,11 +192,32 @@ public struct ConversationConfiguration: ConvertToInner {
     public var externalSenders: [[UInt8]]
     /// Implementation specific configuration
     public var custom: CustomConfiguration
+    /// Trust anchors to be added in the group's context extensions
+    public var perDomainTrustAnchor: PerDomainTrustAnchor
 
-    public init(ciphersuite: UInt16, externalSenders: [[UInt8]], custom: CustomConfiguration) {
+    public init(ciphersuite: UInt16, externalSenders: [[UInt8]], custom: CustomConfiguration, perDomainTrustAnchor: PerDomainTrustAnchor) {
         self.ciphersuite = ciphersuite
         self.externalSenders = externalSenders
         self.custom = custom
+        self.perDomainTrustAnchor = perDomainTrustAnchor
+    }
+}
+
+/// A wrapper containing the configuration for trust anchors to be added in the group's context extensions
+public struct PerDomainTrustAnchor: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.PerDomainTrustAnchor
+    func convert() -> Inner {
+        return CoreCryptoSwift.PerDomainTrustAnchor(domain_name: self.domainName, intermediate_certificate_chain: self.intermediateCertificateChain)
+    }
+
+    /// Domain name in which the trust anchor belongs to
+    public var domainName: String
+    /// PEM encoded certificate chain
+    public var intermediateCertificateChain: String
+
+    public init(domainName: String, intermediateCertificateChain: String) {
+        self.domainName = domainName
+        self.intermediateCertificateChain = intermediateCertificateChain
     }
 }
 
@@ -713,6 +734,19 @@ public class CoreCryptoWrapper {
     /// - returns: an encrypted TLS serialized message.
     public func encryptMessage(conversationId: ConversationId, message: [UInt8]) async throws -> [UInt8] {
         return try await self.coreCrypto.encryptMessage(conversationId: conversationId, message: message)
+    }
+
+    /// Updates the trust anchors for a conversation
+    ///
+    /// - parameter conversationId - The ID of the conversation
+    /// - parameter removeDomainNames - Domains to remove from the trust anchors
+    /// - parameter addTrustAnchors - New trust anchors to add to the conversation
+    ///
+    /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
+    public func updateTrustAnchorsFromConversation(conversationId: ConversationId, removeDomainNames: [string], addTrustAnchors: [PerDomainTrustAnchor]) async throws -> CommitBundle {
+        return try await self.coreCrypto.update_trust_anchors_from_conversation(conversationId: conversationId, removeDomainNames: removeDomainNames, addTrustAnchors: addTrustAnchors.map({ (anchor) -> CoreCryptoSwift.PerDomainTrustAnchor in
+            return anchor.convert()
+        })).convertTo()
     }
 
     /// Creates a new add proposal within a group

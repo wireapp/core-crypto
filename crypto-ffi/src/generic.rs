@@ -297,6 +297,14 @@ pub struct ConversationConfiguration {
     pub ciphersuite: Ciphersuite,
     pub external_senders: Vec<Vec<u8>>,
     pub custom: CustomConfiguration,
+    pub per_domain_trust_anchors: Vec<PerDomainTrustAnchor>,
+}
+
+#[derive(Debug, Clone)]
+/// See [core_crypto::prelude::PerDomainTrustAnchor]
+pub struct PerDomainTrustAnchor {
+    pub domain_name: String,
+    pub intermediate_certificate_chain: String,
 }
 
 impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
@@ -310,7 +318,18 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
 
         cfg.set_raw_external_senders(self.external_senders);
 
+        cfg.per_domain_trust_anchors = self.per_domain_trust_anchors.into_iter().map(|a| a.into()).collect();
+
         Ok(cfg)
+    }
+}
+
+impl From<PerDomainTrustAnchor> for core_crypto::prelude::PerDomainTrustAnchor {
+    fn from(cfg: PerDomainTrustAnchor) -> Self {
+        Self {
+            domain_name: cfg.domain_name,
+            intermediate_certificate_chain: cfg.intermediate_certificate_chain,
+        }
     }
 }
 
@@ -697,6 +716,25 @@ impl CoreCrypto {
             .await
             .encrypt_message(&conversation_id, message)
             .await
+    }
+
+    /// See [core_crypto::mls::MlsCentral::update_trust_anchors_from_conversation]
+    pub async fn update_trust_anchors_from_conversation(
+        &self,
+        id: ConversationId,
+        remove_domain_names: Vec<String>,
+        add_trust_anchors: Vec<PerDomainTrustAnchor>,
+    ) -> CryptoResult<CommitBundle> {
+        self.central
+            .lock()
+            .await
+            .update_trust_anchors_from_conversation(
+                &id,
+                remove_domain_names,
+                add_trust_anchors.into_iter().map(|a| a.into()).collect(),
+            )
+            .await?
+            .try_into()
     }
 
     /// See [core_crypto::mls::MlsCentral::conversation_exists]

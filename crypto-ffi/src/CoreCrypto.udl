@@ -67,6 +67,12 @@ dictionary ConversationConfiguration {
     Ciphersuite ciphersuite;
     sequence<bytes> external_senders;
     CustomConfiguration custom;
+    sequence<PerDomainTrustAnchor> per_domain_trust_anchors;
+};
+
+dictionary PerDomainTrustAnchor {
+    string domain_name;
+    string intermediate_certificate_chain;
 };
 
 dictionary CustomConfiguration {
@@ -179,6 +185,14 @@ enum CryptoError {
     "ClearingPendingCommitError",
     "SelfCommitIgnored",
     "UnmergedPendingGroup",
+    "X509CertDerError",
+    "PemError",
+    "DomainNameNotFound",
+    "DomainNamesDontMatch",
+    "DuplicateDomainName",
+    "InvalidCertificateChain",
+    "EmptyTrustAnchorUdpate",
+    "DuplicateCertificateChain",
 };
 
 enum MlsWirePolicy {
