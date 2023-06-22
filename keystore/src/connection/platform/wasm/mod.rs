@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{connection::DatabaseConnection, CryptoKeystoreResult};
+use crate::{
+    connection::{DatabaseConnection, DatabaseConnectionRequirements},
+    CryptoKeystoreResult,
+};
 use rexie::{Index, ObjectStore};
 
 pub mod storage;
@@ -36,7 +39,10 @@ impl WasmConnection {
     }
 }
 
-#[async_trait::async_trait(?Send)]
+impl DatabaseConnectionRequirements for WasmConnection {}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl DatabaseConnection for WasmConnection {
     async fn open(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
         let name = name.to_string();

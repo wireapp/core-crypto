@@ -23,26 +23,15 @@ pub fn version() -> String {
     VERSION.to_string()
 }
 
-impl crate::UniffiCustomTypeConverter for ClientId {
+impl crate::UniffiCustomTypeConverter for crate::ClientId {
     type Builtin = Vec<u8>;
 
     fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
-        Ok(val.into())
+        Ok(Self(core_crypto::prelude::ClientId::from(val)))
     }
 
     fn from_custom(obj: Self) -> Self::Builtin {
-        obj.to_vec()
-    }
-}
-
-impl crate::UniffiCustomTypeConverter for ConversationId {
-    type Builtin = Vec<u8>;
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
-        Ok(val.to_vec())
-    }
-
-    fn from_custom(obj: Self) -> Self::Builtin {
-        obj
+        obj.0.to_vec()
     }
 }
 

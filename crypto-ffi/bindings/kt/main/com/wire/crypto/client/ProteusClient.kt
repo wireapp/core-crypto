@@ -31,29 +31,29 @@ data class PreKey(
 
 interface ProteusClient {
 
-    fun getIdentity(): ByteArray
+    suspend fun getIdentity(): ByteArray
 
-    fun getLocalFingerprint(): ByteArray
+    suspend fun getLocalFingerprint(): ByteArray
 
-    fun getRemoteFingerprint(sessionId: SessionId): ByteArray
+    suspend fun getRemoteFingerprint(sessionId: SessionId): ByteArray
 
-    fun newPreKeys(from: Int, count: Int): ArrayList<PreKey>
+    suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKey>
 
-    fun newLastPreKey(): PreKey
+    suspend fun newLastPreKey(): PreKey
 
-    fun doesSessionExist(sessionId: SessionId): Boolean
+    suspend fun doesSessionExist(sessionId: SessionId): Boolean
 
-    fun createSession(preKeyCrypto: PreKey, sessionId: SessionId)
+    suspend fun createSession(preKeyCrypto: PreKey, sessionId: SessionId)
 
-    fun deleteSession(sessionId: SessionId)
+    suspend fun deleteSession(sessionId: SessionId)
 
-    fun decrypt(message: ByteArray, sessionId: SessionId): ByteArray
+    suspend fun decrypt(message: ByteArray, sessionId: SessionId): ByteArray
 
-    fun encrypt(message: ByteArray, sessionId: SessionId): ByteArray
+    suspend fun encrypt(message: ByteArray, sessionId: SessionId): ByteArray
 
-    fun encryptBatched(message: ByteArray, sessionIds: List<SessionId>): Map<SessionId, ByteArray>
+    suspend fun encryptBatched(message: ByteArray, sessionIds: List<SessionId>): Map<SessionId, ByteArray>
 
-    fun encryptWithPreKey(
+    suspend fun encryptWithPreKey(
         message: ByteArray,
         preKey: PreKey,
         sessionId: SessionId
@@ -61,52 +61,20 @@ interface ProteusClient {
 }
 
 @Suppress("TooManyFunctions")
-class ProteusClientImpl constructor(
-    private val coreCrypto: CoreCrypto,
-    val rootDir: String
-) : ProteusClient {
-
-    init {
-        wrapException {
-            migrateFromCryptoBoxIfNecessary(coreCrypto)
-            coreCrypto.proteusInit()
-        }
-    }
-
-    private fun cryptoBoxFilesExists(): Boolean =
-        CRYPTO_BOX_FILES.any {
-            File(rootDir).resolve(it).exists()
-        }
-
-    private fun deleteCryptoBoxFiles(): Boolean =
-        CRYPTO_BOX_FILES.fold(true) { acc, file ->
-            acc && File(rootDir).resolve(file).deleteRecursively()
-        }
-
-    private fun migrateFromCryptoBoxIfNecessary(coreCrypto: CoreCrypto) {
-        if (cryptoBoxFilesExists(File(rootDir))) {
-            migrateFromCryptoBox(coreCrypto)
-        }
-    }
-
-    private fun migrateFromCryptoBox(coreCrypto: CoreCrypto) {
-        coreCrypto.proteusCryptoboxMigrate(rootDir)
-        deleteCryptoBoxFiles()
-    }
-
-    override fun getIdentity(): ByteArray {
+class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto): ProteusClient {
+    override suspend fun getIdentity(): ByteArray {
         return ByteArray(0)
     }
 
-    override fun getLocalFingerprint(): ByteArray {
+    override suspend fun getLocalFingerprint(): ByteArray {
         return wrapException { coreCrypto.proteusFingerprint().toByteArray() }
     }
 
-    override fun getRemoteFingerprint(sessionId: SessionId): ByteArray {
+    override suspend fun getRemoteFingerprint(sessionId: SessionId): ByteArray {
         return wrapException { coreCrypto.proteusFingerprintRemote(sessionId).toByteArray() }
     }
 
-    override fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
+    override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
         return wrapException {
             from.until(from + count).map {
                 toPreKey(it.toUShort(), toByteArray(coreCrypto.proteusNewPrekey(it.toUShort())))
@@ -114,27 +82,27 @@ class ProteusClientImpl constructor(
         }
     }
 
-    override fun newLastPreKey(): PreKey {
+    override suspend fun newLastPreKey(): PreKey {
         return wrapException { toPreKey(coreCrypto.proteusLastResortPrekeyId(), toByteArray(coreCrypto.proteusLastResortPrekey())) }
     }
 
-    override fun doesSessionExist(sessionId: SessionId): Boolean {
+    override suspend fun doesSessionExist(sessionId: SessionId): Boolean {
         return wrapException {
             coreCrypto.proteusSessionExists(sessionId)
         }
     }
 
-    override fun createSession(preKeyCrypto: PreKey, sessionId: SessionId) {
+    override suspend fun createSession(preKeyCrypto: PreKey, sessionId: SessionId) {
         wrapException { coreCrypto.proteusSessionFromPrekey(sessionId, toUByteList(preKeyCrypto.data)) }
     }
 
-    override fun deleteSession(sessionId: SessionId) {
+    override suspend fun deleteSession(sessionId: SessionId) {
         wrapException {
             coreCrypto.proteusSessionDelete(sessionId)
         }
     }
 
-    override fun decrypt(message: ByteArray, sessionId: SessionId): ByteArray {
+    override suspend fun decrypt(message: ByteArray, sessionId: SessionId): ByteArray {
         val sessionExists = doesSessionExist(sessionId)
 
         return wrapException {
@@ -150,7 +118,7 @@ class ProteusClientImpl constructor(
         }
     }
 
-    override fun encrypt(message: ByteArray, sessionId: SessionId): ByteArray {
+    override suspend fun encrypt(message: ByteArray, sessionId: SessionId): ByteArray {
         return wrapException {
             val encryptedMessage = toByteArray(coreCrypto.proteusEncrypt(sessionId, toUByteList(message)))
             coreCrypto.proteusSessionSave(sessionId)
@@ -158,7 +126,7 @@ class ProteusClientImpl constructor(
         }
     }
 
-    override fun encryptBatched(message: ByteArray, sessionIds: List<SessionId>): Map<SessionId, ByteArray> {
+    override suspend fun encryptBatched(message: ByteArray, sessionIds: List<SessionId>): Map<SessionId, ByteArray> {
         return wrapException {
             coreCrypto.proteusEncryptBatched(sessionIds.map { it }, toUByteList((message))).mapNotNull { entry ->
                     entry.key to toByteArray(entry.value)
@@ -166,7 +134,7 @@ class ProteusClientImpl constructor(
             }.toMap()
         }
 
-    override fun encryptWithPreKey(
+    override suspend fun encryptWithPreKey(
         message: ByteArray,
         preKey: PreKey,
         sessionId: SessionId
@@ -180,7 +148,7 @@ class ProteusClientImpl constructor(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun <T> wrapException(b: () -> T): T {
+    private suspend fun <T> wrapException(b: suspend () -> T): T {
         try {
             return b()
         } catch (e: CryptoException) {
@@ -207,5 +175,29 @@ class ProteusClientImpl constructor(
             }
 
         private val CRYPTO_BOX_FILES = listOf("identities", "prekeys", "sessions", "version")
+
+        private fun deleteCryptoBoxFiles(rootDir: String): Boolean =
+            CRYPTO_BOX_FILES.fold(true) { acc, file ->
+                acc && File(rootDir).resolve(file).deleteRecursively()
+            }
+
+        private suspend fun migrateFromCryptoBoxIfNecessary(coreCrypto: CoreCrypto, rootDir: String) {
+            if (cryptoBoxFilesExists(File(rootDir))) {
+                coreCrypto.proteusCryptoboxMigrate(rootDir)
+                deleteCryptoBoxFiles(rootDir)
+            }
+        }
+
+        suspend operator fun invoke(coreCrypto: CoreCrypto, rootDir: String): ProteusClientImpl {
+            try {
+                migrateFromCryptoBoxIfNecessary(coreCrypto, rootDir)
+                coreCrypto.proteusInit()
+                return ProteusClientImpl(coreCrypto)
+            } catch (e: CryptoException) {
+                throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e.cause)
+            } catch (e: Exception) {
+                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+            }
+        }
     }
 }

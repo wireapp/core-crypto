@@ -17,6 +17,7 @@
 #![cfg_attr(target_family = "wasm", allow(dead_code, unused_imports))]
 
 use color_eyre::eyre::{eyre, Result};
+use core_crypto::prelude::CiphersuiteName;
 use tls_codec::Serialize;
 
 #[cfg(not(target_family = "wasm"))]
@@ -34,6 +35,8 @@ const TEST_SERVER_URI: &str = const_format::concatcp!("http://localhost:", TEST_
 const MLS_MAIN_CLIENTID: &[u8] = b"test_main";
 const MLS_CONVERSATION_ID: &[u8] = b"test_conversation";
 const ROUNDTRIP_MSG_AMOUNT: usize = 100;
+
+const CIPHERSUITE_IN_USE: CiphersuiteName = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 
 // TODO: Add support for Android emulator
 // TODO: Add support for iOS emulator when on macOS
@@ -101,6 +104,7 @@ fn run_test() -> Result<()> {
         run_proteus_test(&chrome_driver_addr).await?;
 
         // FIXME: See comment on the function itself
+        #[cfg(feature = "e2ei")]
         run_e2e_identity_test(&chrome_driver_addr).await?;
 
         chrome_webdriver.kill().await?;
@@ -117,6 +121,9 @@ fn run_test() -> Result<()> {
 #[cfg(not(target_family = "wasm"))]
 async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     use core_crypto::prelude::*;
+    use rand::distributions::DistString;
+
+    log::info!("Using ciphersuite {}", CIPHERSUITE_IN_USE);
 
     let spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
 
@@ -129,7 +136,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
         clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).await?,
     ));
 
-    let ciphersuites = vec![MlsCiphersuite::default()];
+    let ciphersuites = vec![CIPHERSUITE_IN_USE.into()];
     let configuration = MlsCentralConfiguration::try_new(
         "whatever".into(),
         "test".into(),
@@ -140,8 +147,12 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     let mut master_client = MlsCentral::try_new_in_memory(configuration).await?;
 
     let conversation_id = MLS_CONVERSATION_ID.to_vec();
+    let config = MlsConversationConfiguration {
+        ciphersuite: CIPHERSUITE_IN_USE.into(),
+        ..Default::default()
+    };
     master_client
-        .new_conversation(conversation_id.clone(), MlsCredentialType::Basic, Default::default())
+        .new_conversation(conversation_id.clone(), MlsCredentialType::Basic, config)
         .await?;
 
     spinner.success("[MLS] Step 0: Initializing clients [OK]");
@@ -183,16 +194,20 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     );
 
     let mut prng = rand::thread_rng();
-    let mut message = [0u8; 128];
-    for i in 0..ROUNDTRIP_MSG_AMOUNT {
-        use rand::RngCore as _;
+    let mut message;
+    for i in 1..=ROUNDTRIP_MSG_AMOUNT {
+        message = rand::distributions::Alphanumeric.sample_string(&mut prng, 16);
 
-        prng.fill_bytes(&mut message);
+        log::info!(
+            "Master client [{}] >>> {}",
+            hex::encode(master_client.client_id()?.as_slice()),
+            message
+        );
 
         let mut message_to_decrypt = master_client.encrypt_message(&conversation_id, &message).await?;
 
         for c in clients.iter_mut() {
-            let decrypted_message = c
+            let decrypted_message_raw = c
                 .decrypt_message(&conversation_id, &message_to_decrypt)
                 .await?
                 .ok_or_else(|| {
@@ -202,6 +217,15 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
                     )
                 })?;
 
+            let decrypted_message = String::from_utf8(decrypted_message_raw)?;
+
+            log::info!(
+                "{} [{}] <<< {}",
+                c.client_name(),
+                hex::encode(c.client_id()),
+                decrypted_message
+            );
+
             assert_eq!(
                 decrypted_message,
                 message,
@@ -209,16 +233,22 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
                 c.client_type()
             );
 
-            message_to_decrypt = c.encrypt_message(&conversation_id, &decrypted_message).await?;
+            message_to_decrypt = c
+                .encrypt_message(&conversation_id, decrypted_message.as_bytes())
+                .await?;
         }
 
-        let decrypted_master = master_client
+        let decrypted_master_raw = master_client
             .decrypt_message(&conversation_id, message_to_decrypt)
             .await?
             .app_msg
             .ok_or_else(|| eyre!("[MLS] No message recieved on master client"))?;
 
+        let decrypted_master = String::from_utf8(decrypted_master_raw)?;
+
         assert_eq!(decrypted_master, message);
+
+        // tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 
         spinner.update(format!(
             "[MLS] Step 3: Roundtripping messages... [{i}/{ROUNDTRIP_MSG_AMOUNT}]"
@@ -372,7 +402,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
     Ok(())
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(all(not(target_family = "wasm"), feature = "e2ei"))]
 // TODO: melt this into the EmulatedClient constructor
 // FIXME: This is meaningless and is more akin to a unit test.
 // - We should test that heterogenous clients can communicate (classic credential clients + x509 clients, on different platforms)

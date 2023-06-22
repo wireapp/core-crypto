@@ -112,7 +112,8 @@ impl proteus_traits::ProteusErrorCode for DummyError {
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl proteus_traits::PreKeyStore for PrekeyStore {
     type Error = DummyError;
 

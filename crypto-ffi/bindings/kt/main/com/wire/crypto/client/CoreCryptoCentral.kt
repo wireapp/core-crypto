@@ -1,46 +1,35 @@
 package com.wire.crypto.client
 
 import com.wire.crypto.*
-import com.wire.crypto.ClientId
 import java.io.File
 
 typealias EnrollmentHandle = ByteArray
 
 private class Callbacks : CoreCryptoCallbacks {
 
-    override fun authorize(conversationId: List<UByte>, clientId: List<UByte>): Boolean = true
+    override fun authorize(conversationId: ByteArray, clientId: List<UByte>): Boolean = true
 
     override fun userAuthorize(
-        conversationId: ConversationId,
-        externalClientId: ClientId,
-        existingClients: List<ClientId>
+        conversationId: ByteArray,
+        externalClientId: List<UByte>,
+        existingClients: List<List<UByte>>
     ): Boolean = true
 
     override fun clientIsExistingGroupUser(
-        conversationId: ConversationId,
-        clientId: ClientId,
-        existingClients: List<ClientId>,
-        parentConversationClients: List<ClientId>?
+        conversationId: ByteArray,
+        clientId: List<UByte>,
+        existingClients: List<List<UByte>>,
+        parentConversationClients: List<List<UByte>>?
     ): Boolean = true
 }
 
 @Suppress("TooManyFunctions")
-class CoreCryptoCentral(private val rootDir: String, databaseKey: String) {
+class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private val rootDir: String) {
+    suspend fun proteusClient(): ProteusClient = ProteusClientImpl(cc, rootDir)
 
-    private val path: String = "$rootDir/$KEYSTORE_NAME"
-    private val cc: CoreCrypto
+    suspend fun mlsClient(clientId: String): MLSClient = MLSClientImpl(cc).apply { mlsInit(clientId) }
 
-    init {
-        File(rootDir).mkdirs()
-        cc = CoreCrypto.deferredInit(path, databaseKey, DEFAULT_CIPHERSUITES)
-        cc.setCallbacks(Callbacks())
-    }
-
-    fun proteusClient(): ProteusClient = ProteusClientImpl(cc, rootDir)
-
-    fun mlsClient(clientId: String): MLSClient = MLSClientImpl(cc).apply { mlsInit(clientId) }
-
-    fun e2eiNewEnrollment(
+    suspend fun e2eiNewEnrollment(
         clientId: String,
         displayName: String,
         handle: String,
@@ -50,18 +39,18 @@ class CoreCryptoCentral(private val rootDir: String, databaseKey: String) {
         return E2EIClientImpl(cc.e2eiNewEnrollment(clientId, displayName, handle, expiryDays, ciphersuite))
     }
 
-    fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: String): MLSClient {
+    suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: String): MLSClient {
         cc.e2eiMlsInitOnly(enrollment.delegate, certificateChain)
         return MLSClientImpl(cc)
     }
 
     @OptIn(ExperimentalUnsignedTypes::class)
-    fun e2eiEnrollmentStash(enrollment: E2EIClient): EnrollmentHandle {
+    suspend fun e2eiEnrollmentStash(enrollment: E2EIClient): EnrollmentHandle {
         return cc.e2eiEnrollmentStash(enrollment.delegate).toUByteArray().asByteArray()
     }
 
     @OptIn(ExperimentalUnsignedTypes::class)
-    fun e2eiEnrollmentStashPop(handle: EnrollmentHandle): E2EIClient {
+    suspend fun e2eiEnrollmentStashPop(handle: EnrollmentHandle): E2EIClient {
         return E2EIClientImpl(cc.e2eiEnrollmentStashPop(handle.asUByteArray().asList()))
     }
 
@@ -70,6 +59,14 @@ class CoreCryptoCentral(private val rootDir: String, databaseKey: String) {
         fun CiphersuiteName.lower() = (ordinal + 1).toUShort()
         val DEFAULT_CIPHERSUITE = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
         val DEFAULT_CIPHERSUITES = listOf(DEFAULT_CIPHERSUITE)
+
+        suspend operator fun invoke(rootDir: String, databaseKey: String): CoreCryptoCentral {
+            val path: String = "$rootDir/$KEYSTORE_NAME"
+            File(rootDir).mkdirs()
+            val cc = coreCryptoDeferredInit(path, databaseKey, DEFAULT_CIPHERSUITES)
+            cc.setCallbacks(Callbacks())
+            return CoreCryptoCentral(cc, rootDir)
+        }
     }
 }
 

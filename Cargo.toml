@@ -37,31 +37,31 @@ branch = "otak/fix-1.0.3"
 [patch.crates-io.proteus-traits]
 package = "proteus-traits"
 git = "https://github.com/wireapp/proteus"
-branch = "otak/2.0-error-codes"
+branch = "otak/2.0-ec-send-sync"
 
 [patch.crates-io.openmls]
 package = "openmls"
 git = "https://github.com/wireapp/openmls"
-#tag = "v0.20.2-pre.core-crypto-1.0.0"
- branch = "feat/d20"
+# tag = "v0.20.2-pre.core-crypto-1.0.0"
+branch = "feat/send-sync-keystore"
 
 [patch.crates-io.openmls_traits]
 package = "openmls_traits"
 git = "https://github.com/wireapp/openmls"
-#tag = "v0.20.2-pre.core-crypto-1.0.0"
- branch = "feat/d20"
+# tag = "v0.20.2-pre.core-crypto-1.0.0"
+branch = "feat/send-sync-keystore"
 
 [patch.crates-io.openmls_basic_credential]
 package = "openmls_basic_credential"
 git = "https://github.com/wireapp/openmls"
-#tag = "v0.20.2-pre.core-crypto-1.0.0"
- branch = "feat/d20"
+# tag = "v0.20.2-pre.core-crypto-1.0.0"
+branch = "feat/send-sync-keystore"
 
 [patch.crates-io.openmls_x509_credential]
 package = "openmls_x509_credential"
 git = "https://github.com/wireapp/openmls"
-#tag = "v0.20.2-pre.core-crypto-1.0.0"
- branch = "feat/d20"
+# tag = "v0.20.2-pre.core-crypto-1.0.0"
+branch = "feat/send-sync-keystore"
 
 [patch.crates-io.hpke]
 git = "https://github.com/wireapp/rust-hpke.git"

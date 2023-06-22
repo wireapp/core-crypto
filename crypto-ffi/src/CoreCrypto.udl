@@ -1,39 +1,106 @@
 [Custom]
-typedef sequence<u8> ConversationId;
-
-[Custom]
-typedef sequence<u8> MemberId;
-
-[Custom]
 typedef sequence<u8> ClientId;
 
+[Custom]
+typedef u16 Ciphersuite;
+
+[Custom]
+typedef sequence<u16> Ciphersuites;
+
 dictionary MemberAddedMessages {
-    sequence<u8> commit;
-    sequence<u8> welcome;
+    bytes commit;
+    bytes welcome;
     GroupInfoBundle group_info;
 };
 
 dictionary CommitBundle {
-    sequence<u8>? welcome;
-    sequence<u8> commit;
+    bytes? welcome;
+    bytes commit;
     GroupInfoBundle group_info;
-};
-
-dictionary RotateBundle {
-    sequence<CommitBundle> commits;
-    sequence<sequence<u8>> new_key_packages;
-    sequence<sequence<u8>> key_package_refs_to_remove;
 };
 
 dictionary ProteusAutoPrekeyBundle {
     u16 id;
-    sequence<u8> pkb;
+    bytes pkb;
 };
 
 dictionary GroupInfoBundle {
     MlsGroupInfoEncryptionType encryption_type;
     MlsRatchetTreeType ratchet_tree_type;
-    sequence<u8> payload;
+    bytes payload;
+};
+
+dictionary DecryptedMessage {
+    bytes? message;
+    sequence<ProposalBundle> proposals;
+    boolean is_active;
+    u64? commit_delay;
+    ClientId? sender_client_id;
+    boolean has_epoch_changed;
+    WireIdentity? identity;
+};
+
+dictionary WireIdentity {
+    string client_id;
+    string handle;
+    string display_name;
+    string domain;
+};
+
+dictionary Invitee {
+    ClientId id;
+    bytes kp;
+};
+
+dictionary ProposalBundle {
+    bytes proposal;
+    bytes proposal_ref;
+};
+
+dictionary ConversationInitBundle {
+    bytes conversation_id;
+    bytes commit;
+    GroupInfoBundle group_info;
+};
+
+dictionary ConversationConfiguration {
+    Ciphersuite ciphersuite;
+    sequence<bytes> external_senders;
+    CustomConfiguration custom;
+};
+
+dictionary CustomConfiguration {
+    duration? key_rotation_span;
+    MlsWirePolicy? wire_policy;
+};
+
+dictionary AcmeDirectory {
+    string new_nonce;
+    string new_account;
+    string new_order;
+};
+
+dictionary NewAcmeOrder {
+    bytes delegate;
+    sequence<string> authorizations;
+};
+
+dictionary NewAcmeAuthz {
+    string identifier;
+    AcmeChallenge? wire_dpop_challenge;
+    AcmeChallenge? wire_oidc_challenge;
+};
+
+dictionary AcmeChallenge {
+    bytes delegate;
+    string url;
+    string target;
+};
+
+dictionary RotateBundle {
+    sequence<CommitBundle> commits;
+    sequence<bytes> new_key_packages;
+    sequence<bytes> key_package_refs_to_remove;
 };
 
 enum MlsGroupInfoEncryptionType {
@@ -46,12 +113,6 @@ enum MlsRatchetTreeType {
     "Delta",
     "ByRef",
 };
-
-[Custom]
-typedef u16 Ciphersuite;
-
-[Custom]
-typedef sequence<u16> Ciphersuites;
 
 enum CiphersuiteName {
     "MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519",
@@ -119,251 +180,9 @@ enum CryptoError {
     "SelfCommitIgnored",
 };
 
-dictionary DecryptedMessage {
-    sequence<u8>? message;
-    sequence<ProposalBundle> proposals;
-    boolean is_active;
-    u64? commit_delay;
-    ClientId? sender_client_id;
-    boolean has_epoch_changed;
-    WireIdentity? identity;
-};
-
-dictionary WireIdentity {
-    string client_id;
-    string handle;
-    string display_name;
-    string domain;
-};
-
-dictionary Invitee {
-    ClientId id;
-    sequence<u8> kp;
-};
-
-dictionary ProposalBundle {
-    sequence<u8> proposal;
-    sequence<u8> proposal_ref;
-};
-
-dictionary ConversationInitBundle {
-    sequence<u8> conversation_id;
-    sequence<u8> commit;
-    GroupInfoBundle group_info;
-};
-
-dictionary ConversationConfiguration {
-    Ciphersuite ciphersuite;
-    sequence<sequence<u8>> external_senders;
-    CustomConfiguration custom;
-};
-
-dictionary CustomConfiguration {
-    duration? key_rotation_span;
-    MlsWirePolicy? wire_policy;
-};
-
 enum MlsWirePolicy {
     "Plaintext",
     "Ciphertext",
-};
-
-callback interface CoreCryptoCallbacks {
-    boolean authorize([ByRef] ConversationId conversation_id, [ByRef] ClientId client_id);
-    boolean user_authorize([ByRef] ConversationId conversation_id, [ByRef] ClientId external_client_id, [ByRef] sequence<ClientId> existing_clients);
-    boolean client_is_existing_group_user([ByRef] ConversationId conversation_id, [ByRef] ClientId client_id, [ByRef] sequence<ClientId> existing_clients, [ByRef] sequence<ClientId>? parent_conversation_clients);
-};
-
-interface CoreCrypto {
-    [Throws=CryptoError, Name=new]
-    constructor([ByRef] string path, [ByRef] string key, [ByRef] ClientId client_id, [ByRef] Ciphersuites ciphersuites);
-
-    [Throws=CryptoError, Name=deferred_init]
-    constructor([ByRef] string path, [ByRef] string key, [ByRef] Ciphersuites ciphersuites);
-
-    [Throws=CryptoError]
-    void mls_init([ByRef] ClientId client_id, [ByRef] Ciphersuites ciphersuites);
-
-    [Throws=CryptoError]
-    sequence<ClientId> mls_generate_keypairs([ByRef] Ciphersuites ciphersuites);
-
-    [Throws=CryptoError]
-    void mls_init_with_client_id([ByRef] ClientId client_id, sequence<ClientId> signature_public_keys, [ByRef] Ciphersuites ciphersuites);
-
-    [Throws=CryptoError]
-    void restore_from_disk();
-
-    [Throws=CryptoError]
-    void set_callbacks(CoreCryptoCallbacks callbacks);
-
-    [Throws=CryptoError]
-    sequence<u8> client_public_key(Ciphersuite ciphersuite);
-
-    [Throws=CryptoError]
-    sequence<sequence<u8>> client_keypackages(Ciphersuite ciphersuite, MlsCredentialType credential_type, u32 amount_requested);
-
-    [Throws=CryptoError]
-    u64 client_valid_keypackages_count(Ciphersuite ciphersuite, MlsCredentialType credential_type);
-
-    [Throws=CryptoError]
-    void delete_keypackages(sequence<sequence<u8>> refs);
-
-    [Throws=CryptoError]
-    void create_conversation(ConversationId conversation_id, MlsCredentialType creator_credential_type, ConversationConfiguration config);
-
-    [Throws=CryptoError]
-    u64 conversation_epoch(ConversationId conversation_id);
-
-    boolean conversation_exists(ConversationId conversation_id);
-
-    [Throws=CryptoError]
-    ConversationId process_welcome_message([ByRef] sequence<u8> welcome_message, CustomConfiguration custom_configuration);
-
-    [Throws=CryptoError]
-    MemberAddedMessages add_clients_to_conversation(ConversationId conversation_id, sequence<Invitee> clients);
-
-    [Throws=CryptoError]
-    CommitBundle remove_clients_from_conversation(ConversationId conversation_id, sequence<ClientId> clients);
-
-    [Throws=CryptoError]
-    void mark_conversation_as_child_of(ConversationId child_id, ConversationId parent_id);
-
-    [Throws=CryptoError]
-    CommitBundle update_keying_material(ConversationId conversation_id);
-
-    [Throws=CryptoError]
-    CommitBundle? commit_pending_proposals(ConversationId conversation_id);
-
-    [Throws=CryptoError]
-    void wipe_conversation(ConversationId conversation_id);
-
-    [Throws=CryptoError]
-    DecryptedMessage decrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> payload);
-
-    [Throws=CryptoError]
-    sequence<u8> encrypt_message(ConversationId conversation_id, [ByRef] sequence<u8> message);
-
-    [Throws=CryptoError]
-    ProposalBundle new_add_proposal(ConversationId conversation_id, sequence<u8> key_package);
-
-    [Throws=CryptoError]
-    ProposalBundle new_update_proposal(ConversationId conversation_id);
-
-    [Throws=CryptoError]
-    ProposalBundle new_remove_proposal(ConversationId conversation_id, ClientId client_id);
-
-    [Throws=CryptoError]
-    sequence<u8> new_external_add_proposal(ConversationId conversation_id, u64 epoch, Ciphersuite ciphersuite, MlsCredentialType credential_type);
-
-    [Throws=CryptoError]
-    ConversationInitBundle join_by_external_commit(sequence<u8> group_info, CustomConfiguration custom_configuration, MlsCredentialType credential_type);
-
-    [Throws=CryptoError]
-    void merge_pending_group_from_external_commit(ConversationId conversation_id);
-
-    [Throws=CryptoError]
-    void clear_pending_group_from_external_commit(ConversationId conversation_id);
-
-    [Throws=CryptoError]
-    sequence<u8> export_secret_key(ConversationId conversation_id, u32 key_length);
-
-    [Throws=CryptoError]
-    sequence<ClientId> get_client_ids(ConversationId conversation_id);
-
-    [Throws=CryptoError]
-    sequence<u8> random_bytes(u32 length);
-
-    [Throws=CryptoError]
-    void reseed_rng(sequence<u8> seed);
-
-    [Throws=CryptoError]
-    void commit_accepted(ConversationId conversation_id);
-
-    [Throws=CryptoError]
-    void clear_pending_proposal(ConversationId conversation_id, sequence<u8> proposal_ref);
-
-    [Throws=CryptoError]
-    void clear_pending_commit(ConversationId conversation_id);
-
-    [Throws=CryptoError]
-    void proteus_init();
-
-    [Throws=CryptoError]
-    void proteus_session_from_prekey([ByRef] string session_id, [ByRef] sequence<u8> prekey);
-
-    [Throws=CryptoError]
-    sequence<u8> proteus_session_from_message([ByRef] string session_id, [ByRef] sequence<u8> envelope);
-
-    [Throws=CryptoError]
-    void proteus_session_save([ByRef] string session_id);
-
-    [Throws=CryptoError]
-    void proteus_session_delete([ByRef] string session_id);
-
-    [Throws=CryptoError]
-    boolean proteus_session_exists([ByRef] string session_id);
-
-    [Throws=CryptoError]
-    sequence<u8> proteus_decrypt([ByRef] string session_id, [ByRef] sequence<u8> ciphertext);
-
-    [Throws=CryptoError]
-    sequence<u8> proteus_encrypt([ByRef] string session_id, [ByRef] sequence<u8> plaintext);
-
-    [Throws=CryptoError]
-    record<DOMString, sequence<u8>> proteus_encrypt_batched(sequence<string> session_id, [ByRef] sequence<u8> plaintext);
-
-    [Throws=CryptoError]
-    sequence<u8> proteus_new_prekey(u16 prekey_id);
-
-    [Throws=CryptoError]
-    ProteusAutoPrekeyBundle proteus_new_prekey_auto();
-
-    [Throws=CryptoError]
-    sequence<u8> proteus_last_resort_prekey();
-
-    [Throws=CryptoError]
-    u16 proteus_last_resort_prekey_id();
-
-    [Throws=CryptoError]
-    string proteus_fingerprint();
-
-    [Throws=CryptoError]
-    string proteus_fingerprint_local([ByRef] string session_id);
-
-    [Throws=CryptoError]
-    string proteus_fingerprint_remote([ByRef] string session_id);
-
-    [Throws=CryptoError]
-    string proteus_fingerprint_prekeybundle([ByRef] sequence<u8> prekey);
-
-    [Throws=CryptoError]
-    void proteus_cryptobox_migrate([ByRef] string path);
-
-    u32 proteus_last_error_code();
-
-    [Throws=CryptoError]
-    WireE2eIdentity e2ei_new_enrollment(string client_id, string display_name, string handle, u32 expiry_days, Ciphersuite ciphersuite);
-
-    [Throws=CryptoError]
-    WireE2eIdentity e2ei_new_activation_enrollment(string display_name, string handle, u32 expiry_days, Ciphersuite ciphersuite);
-
-    [Throws=CryptoError]
-    WireE2eIdentity e2ei_new_rotate_enrollment(string? display_name, string? handle, u32 expiry_days, Ciphersuite ciphersuite);
-
-    [Throws=CryptoError]
-    void e2ei_mls_init_only(WireE2eIdentity enrollment, string certificate_chain);
-
-    [Throws=CryptoError]
-    RotateBundle e2ei_rotate_all(WireE2eIdentity enrollment, string certificate_chain, u32 new_key_packages_count);
-
-    [Throws=CryptoError]
-    sequence<u8> e2ei_enrollment_stash(WireE2eIdentity enrollment);
-
-    [Throws=CryptoError]
-    WireE2eIdentity e2ei_enrollment_stash_pop(sequence<u8> handle);
-
-    [Throws=CryptoError]
-    boolean e2ei_is_degraded(ConversationId conversation_id);
 };
 
 [Error]
@@ -380,78 +199,10 @@ enum E2eIdentityError {
     "LockPoisonError",
 };
 
-dictionary AcmeDirectory {
-    string new_nonce;
-    string new_account;
-    string new_order;
-};
-
-dictionary NewAcmeOrder {
-    sequence<u8> delegate;
-    sequence<string> authorizations;
-};
-
-dictionary NewAcmeAuthz {
-    string identifier;
-    AcmeChallenge? wire_dpop_challenge;
-    AcmeChallenge? wire_oidc_challenge;
-};
-
-dictionary AcmeChallenge {
-    sequence<u8> delegate;
-    string url;
-    string target;
-};
-
-interface WireE2eIdentity {
-
-    [Throws=E2eIdentityError]
-    AcmeDirectory directory_response(sequence<u8> directory);
-
-    [Throws=E2eIdentityError]
-    sequence<u8> new_account_request(string previous_nonce);
-
-    [Throws=E2eIdentityError]
-    void new_account_response(sequence<u8> account);
-
-    [Throws=E2eIdentityError]
-    sequence<u8> new_order_request(string previous_nonce);
-
-    [Throws=E2eIdentityError]
-    NewAcmeOrder new_order_response(sequence<u8> order);
-
-    [Throws=E2eIdentityError]
-    sequence<u8> new_authz_request(string url, string previous_nonce);
-
-    [Throws=E2eIdentityError]
-    NewAcmeAuthz new_authz_response(sequence<u8> authz);
-
-    [Throws=E2eIdentityError]
-    string create_dpop_token(u32 expiry_secs, string backend_nonce);
-
-    [Throws=E2eIdentityError]
-    sequence<u8> new_dpop_challenge_request(string access_token, string previous_nonce);
-
-    [Throws=E2eIdentityError]
-    sequence<u8> new_oidc_challenge_request(string id_token, string previous_nonce);
-
-    [Throws=E2eIdentityError]
-    void new_challenge_response(sequence<u8> challenge);
-
-    [Throws=E2eIdentityError]
-    sequence<u8> check_order_request(string order_url, string previous_nonce);
-
-    [Throws=E2eIdentityError]
-    string check_order_response(sequence<u8> order);
-
-    [Throws=E2eIdentityError]
-    sequence<u8> finalize_request(string previous_nonce);
-
-    [Throws=E2eIdentityError]
-    string finalize_response(sequence<u8> finalize);
-
-    [Throws=E2eIdentityError]
-    sequence<u8> certificate_request(string previous_nonce);
+callback interface CoreCryptoCallbacks {
+    boolean authorize([ByRef] bytes conversation_id, [ByRef] ClientId client_id);
+    boolean user_authorize([ByRef] bytes conversation_id, [ByRef] ClientId external_client_id, [ByRef] sequence<ClientId> existing_clients);
+    boolean client_is_existing_group_user([ByRef] bytes conversation_id, [ByRef] ClientId client_id, [ByRef] sequence<ClientId> existing_clients, [ByRef] sequence<ClientId>? parent_conversation_clients);
 };
 
 namespace CoreCrypto {

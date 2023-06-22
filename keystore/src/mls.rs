@@ -29,7 +29,8 @@ use crate::{
 };
 
 /// An interface for the specialized queries in the KeyStore
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait CryptoKeystoreMls: Sized {
     /// Binds a signature keypair to the given credential within the keystore
     ///
@@ -164,7 +165,8 @@ pub trait CryptoKeystoreMls: Sized {
     async fn pop_e2ei_enrollment(&self, id: &[u8]) -> CryptoKeystoreResult<Vec<u8>>;
 }
 
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl CryptoKeystoreMls for crate::connection::Connection {
     async fn mls_bind_signature_keypair_to_credential(
         &self,
@@ -474,11 +476,12 @@ pub fn ser<T: MlsEntity>(value: &T) -> Result<Vec<u8>, CryptoKeystoreError> {
     Ok(postcard::to_stdvec(value)?)
 }
 
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connection {
     type Error = CryptoKeystoreError;
 
-    async fn store<V: MlsEntity>(&self, k: &[u8], v: &V) -> Result<(), Self::Error>
+    async fn store<V: MlsEntity + Sync>(&self, k: &[u8], v: &V) -> Result<(), Self::Error>
     where
         Self: Sized,
     {
