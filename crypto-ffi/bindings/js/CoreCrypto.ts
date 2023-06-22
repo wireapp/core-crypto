@@ -131,7 +131,7 @@ export enum Ciphersuite {
     /**
      *  x25519Kyber768Draft00 Hybrid KEM | AES-GCM 128 | SHA2-256 | Ed25519
      */
-    MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519 = 0xF000,
+    MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519 = 0xF031,
 }
 
 export enum CredentialType {
