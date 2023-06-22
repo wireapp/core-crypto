@@ -15,9 +15,11 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient};
+use crate::CIPHERSUITE_IN_USE;
 use color_eyre::eyre::Result;
-use core_crypto::prelude::{CiphersuiteName, MlsCiphersuite};
+use core_crypto::prelude::{KeyPackage, KeyPackageIn, MlsCiphersuite};
 use std::net::SocketAddr;
+use tls_codec::Deserialize;
 
 #[derive(Debug)]
 pub struct CoreCryptoWebClient {
@@ -31,7 +33,7 @@ impl CoreCryptoWebClient {
     pub async fn new(driver_addr: &SocketAddr) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
         let client_id_str = client_id.as_hyphenated().to_string();
-        let ciphersuite = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u8;
+        let ciphersuite = CIPHERSUITE_IN_USE as u16;
         let client_config = serde_json::json!({
             "databaseName": format!("db-{client_id_str}"),
             "key": "test",
@@ -66,7 +68,7 @@ callback();"#,
     pub async fn new_deferred(driver_addr: &SocketAddr) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
         let client_id_str = client_id.as_hyphenated().to_string();
-        let ciphersuite = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u8;
+        let ciphersuite = CIPHERSUITE_IN_USE as u16;
         let client_config = serde_json::json!({
             "databaseName": format!("db-{client_id_str}"),
             "key": "test",
@@ -132,8 +134,9 @@ impl EmulatedClient for CoreCryptoWebClient {
 #[async_trait::async_trait(?Send)]
 impl EmulatedMlsClient for CoreCryptoWebClient {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
-        let ciphersuite = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u8;
-        Ok(self
+        let ciphersuite = CIPHERSUITE_IN_USE as u16;
+        let start = std::time::Instant::now();
+        let kp_raw = self
             .browser
             .execute_async(
                 r#"
@@ -142,7 +145,19 @@ window.cc.clientKeypackages(ciphersuite, window.credentialType, 1).then(([kp]) =
                 vec![serde_json::json!(ciphersuite)],
             )
             .await
-            .and_then(|value| Ok(serde_json::from_value(value)?))?)
+            .and_then(|value| Ok(serde_json::from_value(value)?))?;
+
+        let kp: KeyPackage = KeyPackageIn::tls_deserialize_bytes(&kp_raw)?.into();
+
+        log::info!(
+            "KP Init Key [took {}ms]: Client {} [{}] - {}",
+            start.elapsed().as_millis(),
+            self.client_name(),
+            hex::encode(&self.client_id),
+            hex::encode(kp.hpke_init_key()),
+        );
+
+        Ok(kp_raw)
     }
 
     async fn add_client(&mut self, conversation_id: &[u8], client_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {

@@ -14,25 +14,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use core_crypto::prelude::{
+    ClientIdentifier, ConversationMember, EntropySeed, KeyPackageIn, KeyPackageRef, MlsCentral,
+    MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle, MlsConversationConfiguration,
+    MlsConversationCreationMessage, MlsConversationDecryptMessage, MlsConversationInitBundle, MlsCryptoProvider,
+    MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposal, MlsProposalBundle, MlsRotateBundle, VerifiableGroupInfo,
+};
+use core_crypto::{CryptoResult, MlsError};
 use std::collections::HashMap;
-use tls_codec::Deserialize;
-use tls_codec::Serialize;
+use tls_codec::{Deserialize, Serialize};
 
-use futures_lite::future;
-use futures_util::TryFutureExt;
-
-use core_crypto::prelude::*;
 pub use core_crypto::prelude::{
-    CiphersuiteName, ClientId, ConversationId, CryptoError, E2eIdentityError, E2eIdentityResult, MemberId,
-    MlsCredentialType, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType, MlsWirePolicy,
+    CiphersuiteName, ConversationId, CryptoError, E2eIdentityError, E2eIdentityResult, MemberId, MlsCredentialType,
+    MlsGroupInfoEncryptionType, MlsRatchetTreeType, MlsWirePolicy,
 };
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "mobile")] {
-        mod uniffi_support;
-        pub use self::uniffi_support::*;
-    }
-}
+mod uniffi_support;
+pub use self::uniffi_support::*;
+
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
+pub struct ClientId(core_crypto::prelude::ClientId);
 
 #[derive(Debug, Clone)]
 pub struct Ciphersuite(CiphersuiteName);
@@ -79,7 +80,6 @@ impl<'a> From<&'a Ciphersuites> for Vec<MlsCiphersuite> {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ProteusAutoPrekeyBundle {
     pub id: u16,
@@ -128,7 +128,6 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct GroupInfoBundle {
     pub encryption_type: MlsGroupInfoEncryptionType,
     pub ratchet_tree_type: MlsRatchetTreeType,
@@ -195,7 +194,7 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
 
 #[derive(Debug)]
 pub struct ConversationInitBundle {
-    pub conversation_id: ConversationId,
+    pub conversation_id: Vec<u8>,
     pub commit: Vec<u8>,
     pub group_info: GroupInfoBundle,
 }
@@ -241,7 +240,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             proposals,
             is_active: from.is_active,
             commit_delay: from.delay,
-            sender_client_id: from.sender_client_id,
+            sender_client_id: from.sender_client_id.map(ClientId),
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.map(Into::into),
         })
@@ -282,7 +281,7 @@ impl Invitee {
                     if let Some(member) = acc.get_mut(&c.id) {
                         member.add_keypackage(c.kp, backend)?;
                     } else {
-                        acc.insert(c.id.clone(), ConversationMember::new_raw(c.id, c.kp, backend)?);
+                        acc.insert(c.id.clone(), ConversationMember::new_raw(c.id.0, c.kp, backend)?);
                     }
                     Ok(acc)
                 },
@@ -335,178 +334,169 @@ impl From<CustomConfiguration> for MlsCustomConfiguration {
 #[derive(Debug)]
 struct CoreCryptoCallbacksWrapper(Box<dyn CoreCryptoCallbacks>);
 
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl core_crypto::prelude::CoreCryptoCallbacks for CoreCryptoCallbacksWrapper {
-    async fn authorize(&self, conversation_id: ConversationId, client_id: ClientId) -> bool {
-        self.0.authorize(conversation_id, client_id)
+    async fn authorize(&self, conversation_id: Vec<u8>, client_id: core_crypto::prelude::ClientId) -> bool {
+        self.0.authorize(conversation_id, ClientId(client_id))
     }
     async fn user_authorize(
         &self,
-        conversation_id: ConversationId,
-        external_client_id: ClientId,
-        existing_clients: Vec<ClientId>,
+        conversation_id: Vec<u8>,
+        external_client_id: core_crypto::prelude::ClientId,
+        existing_clients: Vec<core_crypto::prelude::ClientId>,
     ) -> bool {
-        self.0
-            .user_authorize(conversation_id, external_client_id, existing_clients)
+        self.0.user_authorize(
+            conversation_id,
+            ClientId(external_client_id),
+            existing_clients.into_iter().map(ClientId).collect(),
+        )
     }
     async fn client_is_existing_group_user(
         &self,
-        conversation_id: ConversationId,
-        client_id: ClientId,
-        existing_clients: Vec<ClientId>,
-        parent_conversation_clients: Option<Vec<ClientId>>,
+        conversation_id: Vec<u8>,
+        client_id: core_crypto::prelude::ClientId,
+        existing_clients: Vec<core_crypto::prelude::ClientId>,
+        parent_conversation_clients: Option<Vec<core_crypto::prelude::ClientId>>,
     ) -> bool {
         self.0.client_is_existing_group_user(
             conversation_id,
-            client_id,
-            existing_clients,
-            parent_conversation_clients,
+            ClientId(client_id),
+            existing_clients.into_iter().map(ClientId).collect(),
+            parent_conversation_clients.map(|pccs| pccs.into_iter().map(ClientId).collect()),
         )
     }
 }
 
 /// This only exists to create a sync interface to our internal async callback interface
+// TODO: Remove this once UniFFI supports async callbacks
 pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
-    fn authorize(&self, conversation_id: ConversationId, client_id: ClientId) -> bool;
+    fn authorize(&self, conversation_id: Vec<u8>, client_id: ClientId) -> bool;
     fn user_authorize(
         &self,
-        conversation_id: ConversationId,
+        conversation_id: Vec<u8>,
         external_client_id: ClientId,
         existing_clients: Vec<ClientId>,
     ) -> bool;
     fn client_is_existing_group_user(
         &self,
-        conversation_id: ConversationId,
+        conversation_id: Vec<u8>,
         client_id: ClientId,
         existing_clients: Vec<ClientId>,
         parent_conversation_clients: Option<Vec<ClientId>>,
     ) -> bool;
 }
 
-#[derive(Debug)]
-pub struct CoreCrypto<'a> {
-    central: std::sync::Arc<std::sync::Mutex<core_crypto::CoreCrypto>>,
-    executor: std::sync::Arc<std::sync::Mutex<async_executor::Executor<'a>>>,
+#[derive(Debug, uniffi::Object)]
+pub struct CoreCrypto {
+    central: async_lock::Mutex<core_crypto::CoreCrypto>,
     proteus_last_error_code: std::sync::atomic::AtomicU32,
 }
 
+#[uniffi::export]
+/// See [core_crypto::mls::MlsCentral::try_new]
+pub async fn core_crypto_new(
+    path: String,
+    key: String,
+    client_id: ClientId,
+    ciphersuites: Ciphersuites,
+) -> CryptoResult<std::sync::Arc<CoreCrypto>> {
+    let configuration =
+        MlsCentralConfiguration::try_new(path, key, Some(client_id.0.clone()), (&ciphersuites).into(), None)?;
+
+    let central = MlsCentral::try_new(configuration).await?;
+    let central = core_crypto::CoreCrypto::from(central).into();
+    Ok(CoreCrypto {
+        central,
+        proteus_last_error_code: std::sync::atomic::AtomicU32::new(0),
+    }
+    .into())
+}
+
+#[uniffi::export]
+/// Similar to [CoreCrypto::new] but defers MLS initialization. It can be initialized later
+/// with [CoreCrypto::mls_init].
+pub async fn core_crypto_deferred_init(
+    path: String,
+    key: String,
+    ciphersuites: Ciphersuites,
+) -> CryptoResult<std::sync::Arc<CoreCrypto>> {
+    let configuration = MlsCentralConfiguration::try_new(path, key, None, (&ciphersuites).into(), None)?;
+
+    let central = MlsCentral::try_new(configuration).await?;
+    let central = core_crypto::CoreCrypto::from(central).into();
+    Ok(CoreCrypto {
+        central,
+        proteus_last_error_code: std::sync::atomic::AtomicU32::new(0),
+    }
+    .into())
+}
+
 #[allow(dead_code, unused_variables)]
-impl CoreCrypto<'_> {
-    /// See [core_crypto::mls::MlsCentral::try_new]
-    pub fn new<'s>(
-        path: &'s str,
-        key: &'s str,
-        client_id: &'s ClientId,
-        ciphersuites: &'s Ciphersuites,
-    ) -> CryptoResult<Self> {
-        let executor = async_executor::Executor::new();
-        let configuration = MlsCentralConfiguration::try_new(
-            path.into(),
-            key.into(),
-            Some(client_id.clone()),
-            ciphersuites.into(),
-            None,
-        )?;
-
-        let central = future::block_on(executor.run(MlsCentral::try_new(configuration)))?;
-        let central = std::sync::Arc::new(core_crypto::CoreCrypto::from(central).into());
-        Ok(Self {
-            central,
-            executor: std::sync::Arc::new(executor.into()),
-            proteus_last_error_code: std::sync::atomic::AtomicU32::new(0),
-        })
-    }
-
-    /// Similar to [CoreCrypto::new] but defers MLS initialization. It can be initialized later
-    /// with [CoreCrypto::mls_init].
-    pub fn deferred_init<'s>(path: &'s str, key: &'s str, ciphersuites: &'s Ciphersuites) -> CryptoResult<Self> {
-        let executor = async_executor::Executor::new();
-        let configuration = MlsCentralConfiguration::try_new(path.into(), key.into(), None, ciphersuites.into(), None)?;
-
-        let central = future::block_on(executor.run(MlsCentral::try_new(configuration)))?;
-        let central = std::sync::Arc::new(core_crypto::CoreCrypto::from(central).into());
-        Ok(Self {
-            central,
-            executor: std::sync::Arc::new(executor.into()),
-            proteus_last_error_code: std::sync::atomic::AtomicU32::new(0),
-        })
-    }
-
+#[uniffi::export]
+impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::mls_init]
-    pub fn mls_init(&self, client_id: &ClientId, ciphersuites: &Ciphersuites) -> CryptoResult<()> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .mls_init(ClientIdentifier::Basic(client_id.clone()), ciphersuites.into()),
-            ),
-        )
+    pub async fn mls_init(&self, client_id: ClientId, ciphersuites: Ciphersuites) -> CryptoResult<()> {
+        self.central
+            .lock()
+            .await
+            .mls_init(ClientIdentifier::Basic(client_id.0), (&ciphersuites).into())
+            .await
     }
 
     /// See [core_crypto::mls::MlsCentral::mls_generate_keypairs]
-    pub fn mls_generate_keypairs(&self, ciphersuites: &Ciphersuites) -> CryptoResult<Vec<ClientId>> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .mls_generate_keypairs(ciphersuites.into()),
-            ),
-        )
+    pub async fn mls_generate_keypairs(&self, ciphersuites: Ciphersuites) -> CryptoResult<Vec<ClientId>> {
+        self.central
+            .lock()
+            .await
+            .mls_generate_keypairs((&ciphersuites).into())
+            .await
+            .map(|cids| cids.into_iter().map(ClientId).collect())
     }
 
     /// See [core_crypto::mls::MlsCentral::mls_init_with_client_id]
-    pub fn mls_init_with_client_id(
+    pub async fn mls_init_with_client_id(
         &self,
-        client_id: &ClientId,
+        client_id: ClientId,
         tmp_client_ids: Vec<ClientId>,
-        ciphersuites: &Ciphersuites,
+        ciphersuites: Ciphersuites,
     ) -> CryptoResult<()> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .mls_init_with_client_id(client_id.clone(), tmp_client_ids, ciphersuites.into()),
-            ),
-        )
+        self.central
+            .lock()
+            .await
+            .mls_init_with_client_id(
+                client_id.0,
+                tmp_client_ids.into_iter().map(|cid| cid.0).collect(),
+                (&ciphersuites).into(),
+            )
+            .await
     }
 
     /// See [core_crypto::mls::MlsCentral::restore_from_disk]
-    pub fn restore_from_disk(&self) -> CryptoResult<()> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .restore_from_disk(),
-            ),
-        )?;
-        future::block_on(self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run({
-            cfg_if::cfg_if! {
-                if #[cfg(feature = "proteus")] {
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?.proteus_reload_sessions().map_err(|e|{
-                        let errcode = e.proteus_error_code();
-                        if errcode > 0 {
-                            self.proteus_last_error_code.store(errcode, std::sync::atomic::Ordering::SeqCst);
-                        }
-                        e
-                    })
-                } else {
-                    future::ready(Ok(()))
-                }
+    pub async fn restore_from_disk(&self) -> CryptoResult<()> {
+        let mut central = self.central.lock().await;
+
+        central.restore_from_disk().await?;
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "proteus")] {
+                central.proteus_reload_sessions().await.map_err(|e|{
+                    let errcode = e.proteus_error_code();
+                    if errcode > 0 {
+                        self.proteus_last_error_code.store(errcode, std::sync::atomic::Ordering::SeqCst);
+                    }
+                    e
+                })?;
             }
-        }))
+        }
+
+        Ok(())
     }
 
     /// See [core_crypto::mls::MlsCentral::close]
-    pub fn close(self) -> CryptoResult<()> {
-        if let Ok(central_lock) = std::sync::Arc::try_unwrap(self.central) {
-            let central = central_lock.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
-            future::block_on(central.take().close())?;
+    pub async fn unload(self: std::sync::Arc<Self>) -> CryptoResult<()> {
+        if let Some(cc) = std::sync::Arc::into_inner(self) {
+            let central = cc.central.into_inner();
+            central.take().close().await?;
             Ok(())
         } else {
             Err(CryptoError::LockPoisonError)
@@ -514,49 +504,43 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::wipe]
-    pub fn wipe(self) -> CryptoResult<()> {
-        if let Ok(central_lock) = std::sync::Arc::try_unwrap(self.central) {
-            let central = central_lock.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
-            future::block_on(central.take().wipe())?;
+    pub async fn wipe(self: std::sync::Arc<Self>) -> CryptoResult<()> {
+        if let Some(cc) = std::sync::Arc::into_inner(self) {
+            let central = cc.central.into_inner();
+            central.take().wipe().await?;
             Ok(())
         } else {
             Err(CryptoError::LockPoisonError)
         }
     }
 
-    #[cfg(feature = "mobile")]
     /// See [core_crypto::mls::MlsCentral::callbacks]
-    pub fn set_callbacks(&self, callbacks: Box<dyn CoreCryptoCallbacks>) -> CryptoResult<()> {
+    pub async fn set_callbacks(&self, callbacks: Box<dyn CoreCryptoCallbacks>) -> CryptoResult<()> {
         self.central
             .lock()
-            .map_err(|_| CryptoError::LockPoisonError)?
+            .await
             .callbacks(Box::new(CoreCryptoCallbacksWrapper(callbacks)));
         Ok(())
     }
 
     /// See [core_crypto::mls::MlsCentral::client_public_key]
-    pub fn client_public_key(&self, ciphersuite: Ciphersuite) -> CryptoResult<Vec<u8>> {
-        self.central
-            .lock()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .client_public_key(ciphersuite.into())
+    pub async fn client_public_key(&self, ciphersuite: Ciphersuite) -> CryptoResult<Vec<u8>> {
+        self.central.lock().await.client_public_key(ciphersuite.into())
     }
 
     /// See [core_crypto::mls::MlsCentral::get_or_create_client_keypackages]
-    pub fn client_keypackages(
+    pub async fn client_keypackages(
         &self,
         ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
         amount_requested: u32,
     ) -> CryptoResult<Vec<Vec<u8>>> {
-        let kps = future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .get_or_create_client_keypackages(ciphersuite.into(), credential_type, amount_requested as usize),
-            ),
-        )?;
+        let kps = self
+            .central
+            .lock()
+            .await
+            .get_or_create_client_keypackages(ciphersuite.into(), credential_type, amount_requested as usize)
+            .await?;
 
         kps.into_iter()
             .map(|kp| {
@@ -568,192 +552,138 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::client_valid_key_packages_count]
-    pub fn client_valid_keypackages_count(
+    pub async fn client_valid_keypackages_count(
         &self,
         ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<u64> {
-        let count = future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .client_valid_key_packages_count(ciphersuite.into(), credential_type),
-            ),
-        )?;
+        let count = self
+            .central
+            .lock()
+            .await
+            .client_valid_key_packages_count(ciphersuite.into(), credential_type)
+            .await?;
 
         Ok(count.try_into().unwrap_or(0))
     }
 
     /// See [core_crypto::mls::MlsCentral::delete_keypackages]
-    pub fn delete_keypackages(&self, refs: Vec<Vec<u8>>) -> CryptoResult<()> {
+    pub async fn delete_keypackages(&self, refs: Vec<Vec<u8>>) -> CryptoResult<()> {
         let refs = refs
             .into_iter()
             .map(|r| KeyPackageRef::from_slice(&r))
             .collect::<Vec<_>>();
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .delete_keypackages(&refs[..]),
-            ),
-        )
+
+        self.central.lock().await.delete_keypackages(&refs[..]).await
     }
 
     /// See [core_crypto::mls::MlsCentral::new_conversation]
-    pub fn create_conversation(
+    pub async fn create_conversation(
         &self,
-        conversation_id: ConversationId,
+        conversation_id: Vec<u8>,
         creator_credential_type: MlsCredentialType,
         config: ConversationConfiguration,
     ) -> CryptoResult<()> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .new_conversation(conversation_id, creator_credential_type, config.try_into()?),
-            ),
-        )
+        self.central
+            .lock()
+            .await
+            .new_conversation(conversation_id, creator_credential_type, config.try_into()?)
+            .await
     }
 
     /// See [core_crypto::mls::MlsCentral::conversation_epoch]
-    pub fn conversation_epoch(&self, conversation_id: ConversationId) -> CryptoResult<u64> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .conversation_epoch(&conversation_id),
-            ),
-        )
+    pub async fn conversation_epoch(&self, conversation_id: Vec<u8>) -> CryptoResult<u64> {
+        self.central.lock().await.conversation_epoch(&conversation_id).await
     }
 
     /// See [core_crypto::mls::MlsCentral::process_raw_welcome_message]
-    pub fn process_welcome_message(
+    pub async fn process_welcome_message(
         &self,
-        welcome_message: &[u8],
+        welcome_message: Vec<u8>,
         custom_configuration: CustomConfiguration,
-    ) -> CryptoResult<ConversationId> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .process_raw_welcome_message(welcome_message.into(), custom_configuration.into()),
-            ),
-        )
+    ) -> CryptoResult<Vec<u8>> {
+        self.central
+            .lock()
+            .await
+            .process_raw_welcome_message(welcome_message, custom_configuration.into())
+            .await
     }
 
     /// See [core_crypto::mls::MlsCentral::add_members_to_conversation]
-    pub fn add_clients_to_conversation(
+    pub async fn add_clients_to_conversation(
         &self,
-        conversation_id: ConversationId,
+        conversation_id: Vec<u8>,
         clients: Vec<Invitee>,
     ) -> CryptoResult<MemberAddedMessages> {
-        let mut members = Invitee::group_to_conversation_member(
-            clients,
-            self.central
-                .lock()
-                .map_err(|_| CryptoError::LockPoisonError)?
-                .provider(),
-        )?;
+        let mut members = Invitee::group_to_conversation_member(clients, self.central.lock().await.provider())?;
 
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .add_members_to_conversation(&conversation_id, &mut members),
-            ),
-        )?
-        .try_into()
+        self.central
+            .lock()
+            .await
+            .add_members_to_conversation(&conversation_id, &mut members)
+            .await?
+            .try_into()
     }
 
     /// See [core_crypto::mls::MlsCentral::remove_members_from_conversation]
-    pub fn remove_clients_from_conversation(
+    pub async fn remove_clients_from_conversation(
         &self,
-        conversation_id: ConversationId,
+        conversation_id: Vec<u8>,
         clients: Vec<ClientId>,
     ) -> CryptoResult<CommitBundle> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .remove_members_from_conversation(&conversation_id, &clients),
-            ),
-        )?
-        .try_into()
+        let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.0).collect();
+        self.central
+            .lock()
+            .await
+            .remove_members_from_conversation(&conversation_id, &clients)
+            .await?
+            .try_into()
     }
 
     /// See [core_crypto::mls::MlsCentral::mark_conversation_as_child_of]
-    pub fn mark_conversation_as_child_of(
-        &self,
-        child_id: ConversationId,
-        parent_id: ConversationId,
-    ) -> CryptoResult<()> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .mark_conversation_as_child_of(&child_id, &parent_id),
-            ),
-        )
+    pub async fn mark_conversation_as_child_of(&self, child_id: Vec<u8>, parent_id: Vec<u8>) -> CryptoResult<()> {
+        self.central
+            .lock()
+            .await
+            .mark_conversation_as_child_of(&child_id, &parent_id)
+            .await
     }
 
     /// See [core_crypto::mls::MlsCentral::update_keying_material]
-    pub fn update_keying_material(&self, conversation_id: ConversationId) -> CryptoResult<CommitBundle> {
-        future::block_on({
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .update_keying_material(&conversation_id),
-            )
-        })?
-        .try_into()
+    pub async fn update_keying_material(&self, conversation_id: Vec<u8>) -> CryptoResult<CommitBundle> {
+        self.central
+            .lock()
+            .await
+            .update_keying_material(&conversation_id)
+            .await?
+            .try_into()
     }
 
     /// See [core_crypto::mls::MlsCentral::commit_pending_proposals]
-    pub fn commit_pending_proposals(&self, conversation_id: ConversationId) -> CryptoResult<Option<CommitBundle>> {
-        future::block_on({
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .commit_pending_proposals(&conversation_id),
-            )
-        })
-        .transpose()
-        .map(|r| r.and_then(|b| b.try_into()))
-        .transpose()
+    pub async fn commit_pending_proposals(&self, conversation_id: Vec<u8>) -> CryptoResult<Option<CommitBundle>> {
+        self.central
+            .lock()
+            .await
+            .commit_pending_proposals(&conversation_id)
+            .await
+            .transpose()
+            .map(|r| r.and_then(|b| b.try_into()))
+            .transpose()
     }
 
     /// see [core_crypto::mls::MlsCentral::wipe_conversation]
-    pub fn wipe_conversation(&self, conversation_id: ConversationId) -> CryptoResult<()> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .wipe_conversation(&conversation_id),
-            ),
-        )
+    pub async fn wipe_conversation(&self, conversation_id: Vec<u8>) -> CryptoResult<()> {
+        self.central.lock().await.wipe_conversation(&conversation_id).await
     }
 
     /// See [core_crypto::mls::MlsCentral::decrypt_message]
-    pub fn decrypt_message(&self, conversation_id: ConversationId, payload: &[u8]) -> CryptoResult<DecryptedMessage> {
-        let raw_decrypted_message = future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .decrypt_message(&conversation_id, payload),
-            ),
-        )?;
+    pub async fn decrypt_message(&self, conversation_id: Vec<u8>, payload: Vec<u8>) -> CryptoResult<DecryptedMessage> {
+        let raw_decrypted_message = self
+            .central
+            .lock()
+            .await
+            .decrypt_message(&conversation_id, payload)
+            .await?;
 
         let decrypted_message: DecryptedMessage = raw_decrypted_message.try_into()?;
 
@@ -761,234 +691,172 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::encrypt_message]
-    pub fn encrypt_message(&self, conversation_id: ConversationId, message: &[u8]) -> CryptoResult<Vec<u8>> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .encrypt_message(&conversation_id, message),
-            ),
-        )
+    pub async fn encrypt_message(&self, conversation_id: Vec<u8>, message: Vec<u8>) -> CryptoResult<Vec<u8>> {
+        self.central
+            .lock()
+            .await
+            .encrypt_message(&conversation_id, message)
+            .await
     }
 
     /// See [core_crypto::mls::MlsCentral::conversation_exists]
-    pub fn conversation_exists(&self, conversation_id: ConversationId) -> bool {
-        let mut central = self.central.lock().map_err(|_| CryptoError::LockPoisonError).ok();
-        let mut executor = self.executor.lock().map_err(|_| CryptoError::LockPoisonError).ok();
-
-        if let Some(mut central) = central.take() {
-            if let Some(executor) = executor.take() {
-                future::block_on(executor.run(central.conversation_exists(&conversation_id)))
-            } else {
-                false
-            }
-        } else {
-            false
-        }
+    pub async fn conversation_exists(&self, conversation_id: Vec<u8>) -> bool {
+        self.central.lock().await.conversation_exists(&conversation_id).await
     }
 
     /// See [core_crypto::mls::MlsCentral::new_proposal]
-    pub fn new_add_proposal(
+    pub async fn new_add_proposal(
         &self,
-        conversation_id: ConversationId,
+        conversation_id: Vec<u8>,
         keypackage: Vec<u8>,
     ) -> CryptoResult<ProposalBundle> {
         let kp = KeyPackageIn::tls_deserialize_bytes(keypackage).map_err(MlsError::from)?;
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .new_proposal(&conversation_id, MlsProposal::Add(kp.into())),
-            ),
-        )?
-        .try_into()
+        self.central
+            .lock()
+            .await
+            .new_proposal(&conversation_id, MlsProposal::Add(kp.into()))
+            .await?
+            .try_into()
     }
 
     /// See [core_crypto::mls::MlsCentral::new_proposal]
-    pub fn new_update_proposal(&self, conversation_id: ConversationId) -> CryptoResult<ProposalBundle> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .new_proposal(&conversation_id, MlsProposal::Update),
-            ),
-        )?
-        .try_into()
+    pub async fn new_update_proposal(&self, conversation_id: Vec<u8>) -> CryptoResult<ProposalBundle> {
+        self.central
+            .lock()
+            .await
+            .new_proposal(&conversation_id, MlsProposal::Update)
+            .await?
+            .try_into()
     }
 
     /// See [core_crypto::mls::MlsCentral::new_proposal]
-    pub fn new_remove_proposal(
+    pub async fn new_remove_proposal(
         &self,
-        conversation_id: ConversationId,
+        conversation_id: Vec<u8>,
         client_id: ClientId,
     ) -> CryptoResult<ProposalBundle> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .new_proposal(&conversation_id, MlsProposal::Remove(client_id)),
-            ),
-        )?
-        .try_into()
+        self.central
+            .lock()
+            .await
+            .new_proposal(&conversation_id, MlsProposal::Remove(client_id.0))
+            .await?
+            .try_into()
     }
 
     /// See [core_crypto::mls::MlsCentral::new_external_add_proposal]
-    pub fn new_external_add_proposal(
+    pub async fn new_external_add_proposal(
         &self,
-        conversation_id: ConversationId,
+        conversation_id: Vec<u8>,
         epoch: u64,
         ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<Vec<u8>> {
-        Ok(future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .new_external_add_proposal(conversation_id, epoch.into(), ciphersuite.into(), credential_type),
-            ),
-        )?
-        .to_bytes()
-        .map_err(MlsError::from)?)
+        Ok(self
+            .central
+            .lock()
+            .await
+            .new_external_add_proposal(conversation_id, epoch.into(), ciphersuite.into(), credential_type)
+            .await?
+            .to_bytes()
+            .map_err(MlsError::from)?)
     }
 
     /// See [core_crypto::mls::MlsCentral::join_by_external_commit]
-    pub fn join_by_external_commit(
+    pub async fn join_by_external_commit(
         &self,
         group_info: Vec<u8>,
         custom_configuration: CustomConfiguration,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<ConversationInitBundle> {
         let group_info = VerifiableGroupInfo::tls_deserialize_bytes(group_info).map_err(MlsError::from)?;
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .join_by_external_commit(group_info, custom_configuration.into(), credential_type),
-            ),
-        )?
-        .try_into()
+        self.central
+            .lock()
+            .await
+            .join_by_external_commit(group_info, custom_configuration.into(), credential_type)
+            .await?
+            .try_into()
     }
 
     /// See [core_crypto::mls::MlsCentral::merge_pending_group_from_external_commit]
-    pub fn merge_pending_group_from_external_commit(&self, conversation_id: ConversationId) -> CryptoResult<()> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .merge_pending_group_from_external_commit(&conversation_id),
-            ),
-        )?;
+    pub async fn merge_pending_group_from_external_commit(&self, conversation_id: Vec<u8>) -> CryptoResult<()> {
+        self.central
+            .lock()
+            .await
+            .merge_pending_group_from_external_commit(&conversation_id)
+            .await?;
 
         Ok(())
     }
 
     /// See [core_crypto::mls::MlsCentral::clear_pending_group_from_external_commit]
-    pub fn clear_pending_group_from_external_commit(&self, conversation_id: ConversationId) -> CryptoResult<()> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .clear_pending_group_from_external_commit(&conversation_id),
-            ),
-        )?;
+    pub async fn clear_pending_group_from_external_commit(&self, conversation_id: Vec<u8>) -> CryptoResult<()> {
+        self.central
+            .lock()
+            .await
+            .clear_pending_group_from_external_commit(&conversation_id)
+            .await?;
 
         Ok(())
     }
 
     /// See [core_crypto::mls::MlsCentral::random_bytes]
-    pub fn random_bytes(&self, len: u32) -> CryptoResult<Vec<u8>> {
-        self.central
-            .lock()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .random_bytes(len.try_into()?)
+    pub async fn random_bytes(&self, len: u32) -> CryptoResult<Vec<u8>> {
+        self.central.lock().await.random_bytes(len.try_into()?)
     }
 
     /// see [MlsCryptoProvider::reseed]
-    pub fn reseed_rng(&self, seed: Vec<u8>) -> CryptoResult<()> {
+    pub async fn reseed_rng(&self, seed: Vec<u8>) -> CryptoResult<()> {
         let seed = EntropySeed::try_from_slice(&seed)?;
-        self.central
-            .lock()
-            .map_err(|_| CryptoError::LockPoisonError)?
-            .provider_mut()
-            .reseed(Some(seed));
+        self.central.lock().await.provider_mut().reseed(Some(seed));
 
         Ok(())
     }
 
     /// See [core_crypto::mls::MlsCentral::commit_accepted]
-    pub fn commit_accepted(&self, conversation_id: ConversationId) -> CryptoResult<()> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .commit_accepted(&conversation_id),
-            ),
-        )
+    pub async fn commit_accepted(&self, conversation_id: Vec<u8>) -> CryptoResult<()> {
+        self.central.lock().await.commit_accepted(&conversation_id).await
     }
 
     /// See [core_crypto::mls::MlsCentral::clear_pending_proposal]
-    pub fn clear_pending_proposal(&self, conversation_id: ConversationId, proposal_ref: Vec<u8>) -> CryptoResult<()> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .clear_pending_proposal(&conversation_id, proposal_ref),
-            ),
-        )
+    pub async fn clear_pending_proposal(&self, conversation_id: Vec<u8>, proposal_ref: Vec<u8>) -> CryptoResult<()> {
+        self.central
+            .lock()
+            .await
+            .clear_pending_proposal(&conversation_id, proposal_ref)
+            .await
     }
 
     /// See [core_crypto::mls::MlsCentral::clear_pending_commit]
-    pub fn clear_pending_commit(&self, conversation_id: ConversationId) -> CryptoResult<()> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .clear_pending_commit(&conversation_id),
-            ),
-        )
+    pub async fn clear_pending_commit(&self, conversation_id: Vec<u8>) -> CryptoResult<()> {
+        self.central.lock().await.clear_pending_commit(&conversation_id).await
     }
 
     /// See [core_crypto::mls::MlsCentral::get_client_ids]
-    pub fn get_client_ids(&self, conversation_id: ConversationId) -> CryptoResult<Vec<ClientId>> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .get_client_ids(&conversation_id),
-            ),
-        )
+    pub async fn get_client_ids(&self, conversation_id: Vec<u8>) -> CryptoResult<Vec<ClientId>> {
+        self.central
+            .lock()
+            .await
+            .get_client_ids(&conversation_id)
+            .await
+            .map(|cids| cids.into_iter().map(ClientId).collect())
     }
 
     /// See [core_crypto::mls::MlsCentral::export_secret_key]
-    pub fn export_secret_key(&self, conversation_id: ConversationId, key_length: u32) -> CryptoResult<Vec<u8>> {
-        future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .export_secret_key(&conversation_id, key_length as usize),
-            ),
-        )
+    pub async fn export_secret_key(&self, conversation_id: Vec<u8>, key_length: u32) -> CryptoResult<Vec<u8>> {
+        self.central
+            .lock()
+            .await
+            .export_secret_key(&conversation_id, key_length as usize)
+            .await
     }
 }
 
 // End-to-end identity methods
 #[allow(dead_code, unused_variables)]
-impl CoreCrypto<'_> {
+#[uniffi::export]
+impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_new_enrollment]
-    pub fn e2ei_new_enrollment(
+    pub async fn e2ei_new_enrollment(
         &self,
         client_id: String,
         display_name: String,
@@ -998,7 +866,7 @@ impl CoreCrypto<'_> {
     ) -> CryptoResult<std::sync::Arc<WireE2eIdentity>> {
         self.central
             .lock()
-            .map_err(|_| CryptoError::LockPoisonError)?
+            .await
             .e2ei_new_enrollment(
                 client_id.into_bytes().into(),
                 display_name,
@@ -1006,7 +874,7 @@ impl CoreCrypto<'_> {
                 expiry_days,
                 ciphersuite.into(),
             )
-            .map(std::sync::Mutex::new)
+            .map(async_lock::Mutex::new)
             .map(std::sync::Arc::new)
             .map(WireE2eIdentity)
             .map(std::sync::Arc::new)
@@ -1014,7 +882,7 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_new_activation_enrollment]
-    pub fn e2ei_new_activation_enrollment(
+    pub async fn e2ei_new_activation_enrollment(
         &self,
         display_name: String,
         handle: String,
@@ -1023,9 +891,9 @@ impl CoreCrypto<'_> {
     ) -> CryptoResult<std::sync::Arc<WireE2eIdentity>> {
         self.central
             .lock()
-            .map_err(|_| CryptoError::LockPoisonError)?
+            .await
             .e2ei_new_activation_enrollment(display_name, handle, expiry_days, ciphersuite.into())
-            .map(std::sync::Mutex::new)
+            .map(async_lock::Mutex::new)
             .map(std::sync::Arc::new)
             .map(WireE2eIdentity)
             .map(std::sync::Arc::new)
@@ -1033,7 +901,7 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_new_rotate_enrollment]
-    pub fn e2ei_new_rotate_enrollment(
+    pub async fn e2ei_new_rotate_enrollment(
         &self,
         display_name: Option<String>,
         handle: Option<String>,
@@ -1042,9 +910,9 @@ impl CoreCrypto<'_> {
     ) -> CryptoResult<std::sync::Arc<WireE2eIdentity>> {
         self.central
             .lock()
-            .map_err(|_| CryptoError::LockPoisonError)?
+            .await
             .e2ei_new_rotate_enrollment(display_name, handle, expiry_days, ciphersuite.into())
-            .map(std::sync::Mutex::new)
+            .map(async_lock::Mutex::new)
             .map(std::sync::Arc::new)
             .map(WireE2eIdentity)
             .map(std::sync::Arc::new)
@@ -1052,7 +920,7 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
-    pub fn e2ei_mls_init_only(
+    pub async fn e2ei_mls_init_only(
         &self,
         enrollment: std::sync::Arc<WireE2eIdentity>,
         certificate_chain: String,
@@ -1065,23 +933,21 @@ impl CoreCrypto<'_> {
                 std::sync::Arc::decrement_strong_count(std::sync::Arc::as_ptr(&enrollment));
             }
         }
-        let e2ei = std::sync::Arc::try_unwrap(enrollment).map_err(|_| CryptoError::LockPoisonError)?;
-        let e2ei = std::sync::Arc::try_unwrap(e2ei.0).map_err(|_| CryptoError::LockPoisonError)?;
-        let e2ei = e2ei.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
+        let e2ei = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
+        let e2ei = std::sync::Arc::into_inner(e2ei.0)
+            .ok_or_else(|| CryptoError::LockPoisonError)?
+            .into_inner();
 
-        let mut cc = self.central.lock().map_err(|_| CryptoError::LockPoisonError)?;
-
-        let executor = self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?;
-        future::block_on(
-            executor.run(
-                cc.e2ei_mls_init_only(e2ei, certificate_chain)
-                    .map_err(|_| CryptoError::ImplementationError),
-            ),
-        )
+        self.central
+            .lock()
+            .await
+            .e2ei_mls_init_only(e2ei, certificate_chain)
+            .await
+            .map_err(|_| CryptoError::ImplementationError)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_rotate_all]
-    pub fn e2ei_rotate_all(
+    pub async fn e2ei_rotate_all(
         &self,
         enrollment: std::sync::Arc<WireE2eIdentity>,
         certificate_chain: String,
@@ -1095,46 +961,43 @@ impl CoreCrypto<'_> {
                 std::sync::Arc::decrement_strong_count(std::sync::Arc::as_ptr(&enrollment));
             }
         }
-        let e2ei = std::sync::Arc::try_unwrap(enrollment).map_err(|_| CryptoError::LockPoisonError)?;
-        let e2ei = std::sync::Arc::try_unwrap(e2ei.0).map_err(|_| CryptoError::LockPoisonError)?;
-        let e2ei = e2ei.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
+        let e2ei = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
+        let e2ei = std::sync::Arc::into_inner(e2ei.0)
+            .ok_or_else(|| CryptoError::LockPoisonError)?
+            .into_inner();
 
-        let mut cc = self.central.lock().map_err(|_| CryptoError::LockPoisonError)?;
-
-        let executor = self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?;
-        future::block_on(
-            executor.run(
-                cc.e2ei_rotate_all(e2ei, certificate_chain, new_key_packages_count as usize)
-                    .map_err(|_| CryptoError::ImplementationError),
-            ),
-        )?
-        .try_into()
+        self.central
+            .lock()
+            .await
+            .e2ei_rotate_all(e2ei, certificate_chain, new_key_packages_count as usize)
+            .await
+            .map_err(|_| CryptoError::ImplementationError)?
+            .try_into()
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash]
-    pub fn e2ei_enrollment_stash(&self, enrollment: std::sync::Arc<WireE2eIdentity>) -> CryptoResult<Vec<u8>> {
-        let enrollment = std::sync::Arc::try_unwrap(enrollment).map_err(|_| CryptoError::LockPoisonError)?;
-        let enrollment = std::sync::Arc::try_unwrap(enrollment.0).map_err(|_| CryptoError::LockPoisonError)?;
-        let enrollment = enrollment.into_inner().map_err(|_| CryptoError::LockPoisonError)?;
+    pub async fn e2ei_enrollment_stash(&self, enrollment: std::sync::Arc<WireE2eIdentity>) -> CryptoResult<Vec<u8>> {
+        let enrollment = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
+        let enrollment = std::sync::Arc::into_inner(enrollment.0)
+            .ok_or_else(|| CryptoError::LockPoisonError)?
+            .into_inner();
 
-        let cc = self.central.lock().map_err(|_| CryptoError::LockPoisonError)?;
-        let executor = self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?;
-
-        future::block_on(
-            executor.run(
-                cc.e2ei_enrollment_stash(enrollment)
-                    .map_err(|_| CryptoError::ImplementationError),
-            ),
-        )
+        self.central
+            .lock()
+            .await
+            .e2ei_enrollment_stash(enrollment)
+            .await
+            .map_err(|_| CryptoError::ImplementationError)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash_pop]
-    pub fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CryptoResult<std::sync::Arc<WireE2eIdentity>> {
-        let cc = self.central.lock().map_err(|_| CryptoError::LockPoisonError)?;
-        let executor = self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?;
-
-        future::block_on(executor.run(cc.e2ei_enrollment_stash_pop(handle)))
-            .map(std::sync::Mutex::new)
+    pub async fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CryptoResult<std::sync::Arc<WireE2eIdentity>> {
+        self.central
+            .lock()
+            .await
+            .e2ei_enrollment_stash_pop(handle)
+            .await
+            .map(async_lock::Mutex::new)
             .map(std::sync::Arc::new)
             .map(WireE2eIdentity)
             .map(std::sync::Arc::new)
@@ -1142,62 +1005,47 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_is_degraded]
-    pub fn e2ei_is_degraded(&self, conversation_id: ConversationId) -> CryptoResult<bool> {
-        let is_degraded = future::block_on(
-            self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                self.central
-                    .lock()
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .e2ei_is_degraded(&conversation_id),
-            ),
-        )?;
+    pub async fn e2ei_is_degraded(&self, conversation_id: Vec<u8>) -> CryptoResult<bool> {
+        let is_degraded = self.central.lock().await.e2ei_is_degraded(&conversation_id).await?;
         Ok(is_degraded)
     }
 }
 
 #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-impl CoreCrypto<'_> {
+#[uniffi::export]
+impl CoreCrypto {
     /// See [core_crypto::proteus::ProteusCentral::try_new]
-    pub fn proteus_init(&self) -> CryptoResult<()> {
+    pub async fn proteus_init(&self) -> CryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
-            future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_init(),
-                ),
-            )
+            self.central
+                .lock()
+                .await
+                .proteus_init()
+                .await
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::session_from_prekey]
-    pub fn proteus_session_from_prekey(&self, session_id: &str, prekey: &[u8]) -> CryptoResult<()> {
+    pub async fn proteus_session_from_prekey(&self, session_id: String, prekey: Vec<u8>) -> CryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
-            let _ = future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_session_from_prekey(session_id, prekey),
-                ),
-            )?;
+            let _ = self.central
+                .lock()
+                .await
+                .proteus_session_from_prekey(&session_id, &prekey)
+                .await?;
 
             CryptoResult::Ok(())
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::session_from_message]
-    pub fn proteus_session_from_message(&self, session_id: &str, envelope: &[u8]) -> CryptoResult<Vec<u8>> {
+    pub async fn proteus_session_from_message(&self, session_id: String, envelope: Vec<u8>) -> CryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
-            let (_, payload) = future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_session_from_message(session_id, envelope),
-                ),
-            )?;
+            let (_, payload) = self.central
+                .lock()
+                .await
+                .proteus_session_from_message(&session_id, &envelope)
+                .await?;
 
             CryptoResult::Ok(payload)
         }}
@@ -1205,133 +1053,107 @@ impl CoreCrypto<'_> {
 
     /// See [core_crypto::proteus::ProteusCentral::session_save]
     /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
-    pub fn proteus_session_save(&self, session_id: &str) -> CryptoResult<()> {
+    pub async fn proteus_session_save(&self, session_id: String) -> CryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
-            future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_session_save(session_id),
-                ),
-            )
+            self.central
+                .lock()
+                .await
+                .proteus_session_save(&session_id)
+                .await
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::session_delete]
-    pub fn proteus_session_delete(&self, session_id: &str) -> CryptoResult<()> {
+    pub async fn proteus_session_delete(&self, session_id: String) -> CryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
-            future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_session_delete(session_id),
-                ),
-            )
+            self.central
+                .lock()
+                .await
+                .proteus_session_delete(&session_id)
+                .await
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::session_exists]
-    pub fn proteus_session_exists(&self, session_id: &str) -> CryptoResult<bool> {
+    pub async fn proteus_session_exists(&self, session_id: String) -> CryptoResult<bool> {
         proteus_impl! { self.proteus_last_error_code => {
-            future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_session_exists(session_id)
-                )
-            )
+            self.central
+                .lock()
+                .await
+                .proteus_session_exists(&session_id)
+                .await
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::decrypt]
-    pub fn proteus_decrypt(&self, session_id: &str, ciphertext: &[u8]) -> CryptoResult<Vec<u8>> {
+    pub async fn proteus_decrypt(&self, session_id: String, ciphertext: Vec<u8>) -> CryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
-            future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_decrypt(session_id, ciphertext),
-                ),
-            )
+            self.central
+                .lock()
+                .await
+                .proteus_decrypt(&session_id, &ciphertext)
+                .await
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::encrypt]
-    pub fn proteus_encrypt(&self, session_id: &str, plaintext: &[u8]) -> CryptoResult<Vec<u8>> {
+    pub async fn proteus_encrypt(&self, session_id: String, plaintext: Vec<u8>) -> CryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
-            future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_encrypt(session_id, plaintext)
-                ),
-            )
+            self.central
+                .lock()
+                .await
+                .proteus_encrypt(&session_id, &plaintext)
+                .await
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::encrypt_batched]
-    pub fn proteus_encrypt_batched(
+    pub async fn proteus_encrypt_batched(
         &self,
         sessions: Vec<String>,
-        plaintext: &[u8],
+        plaintext: Vec<u8>,
     ) -> CryptoResult<std::collections::HashMap<String, Vec<u8>>> {
         proteus_impl! { self.proteus_last_error_code => {
-            future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_encrypt_batched(sessions.as_slice(), plaintext)
-                )
-            )
+            self.central
+                .lock()
+                .await
+                .proteus_encrypt_batched(sessions.as_slice(), &plaintext)
+                .await
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::new_prekey]
-    pub fn proteus_new_prekey(&self, prekey_id: u16) -> CryptoResult<Vec<u8>> {
+    pub async fn proteus_new_prekey(&self, prekey_id: u16) -> CryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
-            future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_new_prekey(prekey_id),
-                ),
-            )
+            self.central
+                .lock()
+                .await
+                .proteus_new_prekey(prekey_id)
+                .await
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::new_prekey_auto]
-    pub fn proteus_new_prekey_auto(&self) -> CryptoResult<ProteusAutoPrekeyBundle> {
+    pub async fn proteus_new_prekey_auto(&self) -> CryptoResult<ProteusAutoPrekeyBundle> {
         proteus_impl! { self.proteus_last_error_code => {
-            let (id, pkb) = future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_new_prekey_auto(),
-                ),
-            )?;
+            let (id, pkb) = self.central
+                .lock()
+                .await
+                .proteus_new_prekey_auto()
+                .await?;
+
             CryptoResult::Ok(ProteusAutoPrekeyBundle { id, pkb })
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::last_resort_prekey]
-    pub fn proteus_last_resort_prekey(&self) -> CryptoResult<Vec<u8>> {
+    pub async fn proteus_last_resort_prekey(&self) -> CryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
-            future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_last_resort_prekey(),
-                ),
-            )
+            self.central
+                .lock()
+                .await
+                .proteus_last_resort_prekey()
+                .await
         }}
     }
 
@@ -1341,62 +1163,51 @@ impl CoreCrypto<'_> {
     }
 
     /// See [core_crypto::proteus::ProteusCentral::fingerprint]
-    pub fn proteus_fingerprint(&self) -> CryptoResult<String> {
+    pub async fn proteus_fingerprint(&self) -> CryptoResult<String> {
         proteus_impl! { self.proteus_last_error_code => {
             self.central
                 .lock()
-                .map_err(|_| CryptoError::LockPoisonError)?
+                .await
                 .proteus_fingerprint()
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::fingerprint_local]
-    pub fn proteus_fingerprint_local(&self, session_id: &str) -> CryptoResult<String> {
+    pub async fn proteus_fingerprint_local(&self, session_id: String) -> CryptoResult<String> {
         proteus_impl! { self.proteus_last_error_code => {
-            future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_fingerprint_local(session_id)
-                )
-            )
+            self.central
+                .lock()
+                .await
+                .proteus_fingerprint_local(&session_id)
+                .await
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::fingerprint_remote]
-    pub fn proteus_fingerprint_remote(&self, session_id: &str) -> CryptoResult<String> {
+    pub async fn proteus_fingerprint_remote(&self, session_id: String) -> CryptoResult<String> {
         proteus_impl! { self.proteus_last_error_code => {
-            future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_fingerprint_remote(session_id)
-                )
-            )
+            self.central
+                .lock()
+                .await
+                .proteus_fingerprint_remote(&session_id)
+                .await
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle]
     /// NOTE: uniffi doesn't support associated functions, so we have to have the self here
-    pub fn proteus_fingerprint_prekeybundle(&self, prekey: &[u8]) -> CryptoResult<String> {
-        proteus_impl! { self.proteus_last_error_code => {
-            core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(prekey)
-        }}
+    pub fn proteus_fingerprint_prekeybundle(&self, prekey: Vec<u8>) -> CryptoResult<String> {
+        proteus_impl!({ core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(&prekey) })
     }
 
     /// See [core_crypto::proteus::ProteusCentral::cryptobox_migrate]
-    pub fn proteus_cryptobox_migrate(&self, path: &str) -> CryptoResult<()> {
+    pub async fn proteus_cryptobox_migrate(&self, path: String) -> CryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
-            future::block_on(
-                self.executor.lock().map_err(|_| CryptoError::LockPoisonError)?.run(
-                    self.central
-                        .lock()
-                        .map_err(|_| CryptoError::LockPoisonError)?
-                        .proteus_cryptobox_migrate(path)
-                ),
-            )
+            self.central
+                .lock()
+                .await
+                .proteus_cryptobox_migrate(&path)
+                .await
         }}
     }
 
@@ -1409,148 +1220,107 @@ impl CoreCrypto<'_> {
     }
 }
 
-#[derive(Debug)]
-/// See [core_crypto::e2e_identity::E2eiEnrollment]
-pub struct WireE2eIdentity(std::sync::Arc<std::sync::Mutex<core_crypto::prelude::E2eiEnrollment>>);
+#[derive(Debug, uniffi::Object)]
+/// See [core_crypto::e2e_identity::WireE2eIdentity]
+pub struct WireE2eIdentity(std::sync::Arc<async_lock::Mutex<core_crypto::prelude::E2eiEnrollment>>);
 
+#[uniffi::export]
 impl WireE2eIdentity {
     /// See [core_crypto::e2e_identity::E2eiEnrollment::directory_response]
-    pub fn directory_response(&self, directory: Vec<u8>) -> E2eIdentityResult<AcmeDirectory> {
+    pub async fn directory_response(&self, directory: Vec<u8>) -> E2eIdentityResult<AcmeDirectory> {
         self.0
             .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .await
             .directory_response(directory)
             .map(AcmeDirectory::from)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_account_request]
-    pub fn new_account_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
-        self.0
-            .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .new_account_request(previous_nonce)
+    pub async fn new_account_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
+        self.0.lock().await.new_account_request(previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_account_response]
-    pub fn new_account_response(&self, account: Vec<u8>) -> E2eIdentityResult<()> {
-        self.0
-            .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .new_account_response(account)
+    pub async fn new_account_response(&self, account: Vec<u8>) -> E2eIdentityResult<()> {
+        self.0.lock().await.new_account_response(account)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_order_request]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_order_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
-        self.0
-            .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .new_order_request(previous_nonce)
+    pub async fn new_order_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
+        self.0.lock().await.new_order_request(previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_order_response]
-    pub fn new_order_response(&self, order: Vec<u8>) -> E2eIdentityResult<NewAcmeOrder> {
-        Ok(self
-            .0
-            .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .new_order_response(order)?
-            .into())
+    pub async fn new_order_response(&self, order: Vec<u8>) -> E2eIdentityResult<NewAcmeOrder> {
+        Ok(self.0.lock().await.new_order_response(order)?.into())
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_authz_request]
-    pub fn new_authz_request(&self, url: String, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
-        self.0
-            .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .new_authz_request(url, previous_nonce)
+    pub async fn new_authz_request(&self, url: String, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
+        self.0.lock().await.new_authz_request(url, previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_authz_response]
-    pub fn new_authz_response(&self, authz: Vec<u8>) -> E2eIdentityResult<NewAcmeAuthz> {
-        Ok(self
-            .0
-            .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .new_authz_response(authz)?
-            .into())
+    pub async fn new_authz_response(&self, authz: Vec<u8>) -> E2eIdentityResult<NewAcmeAuthz> {
+        Ok(self.0.lock().await.new_authz_response(authz)?.into())
     }
 
     #[allow(clippy::too_many_arguments)]
     /// See [core_crypto::e2e_identity::E2eiEnrollment::create_dpop_token]
-    pub fn create_dpop_token(&self, expiry_secs: u32, backend_nonce: String) -> E2eIdentityResult<String> {
-        self.0
-            .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .create_dpop_token(expiry_secs, backend_nonce)
+    pub async fn create_dpop_token(&self, expiry_secs: u32, backend_nonce: String) -> E2eIdentityResult<String> {
+        self.0.lock().await.create_dpop_token(expiry_secs, backend_nonce)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_dpop_challenge_request]
-    pub fn new_dpop_challenge_request(
+    pub async fn new_dpop_challenge_request(
         &self,
         access_token: String,
         previous_nonce: String,
     ) -> E2eIdentityResult<Vec<u8>> {
         self.0
             .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
+            .await
             .new_dpop_challenge_request(access_token, previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_request]
-    pub fn new_oidc_challenge_request(&self, id_token: String, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
-        self.0
-            .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .new_oidc_challenge_request(id_token, previous_nonce)
+    pub async fn new_oidc_challenge_request(
+        &self,
+        id_token: String,
+        previous_nonce: String,
+    ) -> E2eIdentityResult<Vec<u8>> {
+        self.0.lock().await.new_oidc_challenge_request(id_token, previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_challenge_response]
-    pub fn new_challenge_response(&self, challenge: Vec<u8>) -> E2eIdentityResult<()> {
-        self.0
-            .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .new_challenge_response(challenge)
+    pub async fn new_challenge_response(&self, challenge: Vec<u8>) -> E2eIdentityResult<()> {
+        self.0.lock().await.new_challenge_response(challenge)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::check_order_request]
-    pub fn check_order_request(&self, order_url: String, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
-        self.0
-            .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .check_order_request(order_url, previous_nonce)
+    pub async fn check_order_request(&self, order_url: String, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
+        self.0.lock().await.check_order_request(order_url, previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::check_order_response]
-    pub fn check_order_response(&self, order: Vec<u8>) -> E2eIdentityResult<String> {
-        self.0
-            .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .check_order_response(order)
+    pub async fn check_order_response(&self, order: Vec<u8>) -> E2eIdentityResult<String> {
+        self.0.lock().await.check_order_response(order)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::finalize_request]
-    pub fn finalize_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
-        self.0
-            .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .finalize_request(previous_nonce)
+    pub async fn finalize_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
+        self.0.lock().await.finalize_request(previous_nonce)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::finalize_response]
-    pub fn finalize_response(&self, finalize: Vec<u8>) -> E2eIdentityResult<String> {
-        self.0
-            .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .finalize_response(finalize)
+    pub async fn finalize_response(&self, finalize: Vec<u8>) -> E2eIdentityResult<String> {
+        self.0.lock().await.finalize_response(finalize)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::certificate_request]
-    pub fn certificate_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
-        self.0
-            .lock()
-            .map_err(|_| E2eIdentityError::LockPoisonError)?
-            .certificate_request(previous_nonce)
+    pub async fn certificate_request(&self, previous_nonce: String) -> E2eIdentityResult<Vec<u8>> {
+        self.0.lock().await.certificate_request(previous_nonce)
     }
 }
 

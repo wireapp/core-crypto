@@ -29,7 +29,8 @@ pub struct PersistedMlsGroup {
     pub parent_id: Option<Vec<u8>>,
 }
 
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait PersistedMlsGroupExt: Entity {
     fn parent_id(&self) -> Option<&[u8]>;
 
@@ -79,7 +80,8 @@ pub struct MlsCredential {
     pub credential: Vec<u8>,
 }
 
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait MlsCredentialExt: Entity {
     async fn delete_by_credential(conn: &mut Self::ConnectionType, credential: Vec<u8>) -> CryptoKeystoreResult<()>;
 }
@@ -108,7 +110,8 @@ impl MlsSignatureKeyPair {
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait MlsSignatureKeyPairExt: Entity {
     async fn keypair_for_signature_scheme(
         conn: &mut Self::ConnectionType,

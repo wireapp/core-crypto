@@ -154,7 +154,8 @@ impl Default for ValidationCallbacks {
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl CoreCryptoCallbacks for ValidationCallbacks {
     async fn authorize(&self, _conversation_id: ConversationId, _client_id: ClientId) -> bool {
         self.authorize

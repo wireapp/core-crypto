@@ -116,6 +116,7 @@ public enum CiphersuiteName: ConvertToInner {
     case mls256Dhkemp521Aes256gcmSha512P521
     case mls256Dhkemx448Chacha20poly1305Sha512Ed448
     case mls256Dhkemp384Aes256gcmSha384P384
+    case mls128X25519kyber768draft00Aes128gcmSha256Ed25519
 }
 
 private extension CiphersuiteName {
@@ -135,7 +136,10 @@ private extension CiphersuiteName {
             return CoreCryptoSwift.CiphersuiteName.mls256Dhkemx448Chacha20poly1305Sha512Ed448
         case .mls256Dhkemp384Aes256gcmSha384P384:
             return CoreCryptoSwift.CiphersuiteName.mls256Dhkemp384Aes256gcmSha384P384
+        case .mls128X25519kyber768draft00Aes128gcmSha256Ed25519:
+            return CoreCryptoSwift.CiphersuiteName.mls128X25519kyber768draft00Aes128gcmSha256Ed25519
         }
+
     }
 }
 
@@ -502,30 +506,30 @@ public class CoreCryptoWrapper {
     /// 1. ``clientId`` should stay consistent as it will be verified against the stored signature & identity to validate the persisted credential
     /// 2. ``key`` should be appropriately stored in a secure location (i.e. WebCrypto private key storage)
     ///
-    public init(path: String, key: String, clientId: ClientId, ciphersuites: Array<UInt16>) throws {
-        self.coreCrypto = try CoreCrypto(path: path, key: key, clientId: clientId, ciphersuites: ciphersuites)
+    public init(path: String, key: String, clientId: ClientId, ciphersuites: Array<UInt16>) async throws {
+        self.coreCrypto = try await CoreCrypto(path: path, key: key, clientId: clientId, ciphersuites: ciphersuites)
     }
 
     /// Almost identical to ```CoreCrypto/init``` but allows a 2 phase initialization of MLS.First, calling this will
     /// set up the keystore and will allow generating proteus prekeys.Then, those keys can be traded for a clientId.
     /// Use this clientId to initialize MLS with ```CoreCrypto/mlsInit```.
-    public static func deferredInit(path: String, key: String, ciphersuites: Array<UInt16>) throws -> CoreCrypto {
-        try CoreCrypto.deferredInit(path: path, key: key, ciphersuites: ciphersuites)
+    public static func deferredInit(path: String, key: String, ciphersuites: Array<UInt16>) async throws -> CoreCrypto {
+        await try CoreCrypto.deferredInit(path: path, key: key, ciphersuites: ciphersuites)
     }
 
     /// Use this after ```CoreCrypto/deferredInit``` when you have a clientId. It initializes MLS.
     ///
     /// - parameter clientId: client identifier
-    public func mlsInit(clientId: ClientId, ciphersuites: Array<UInt16>) throws {
-        try self.coreCrypto.mlsInit(clientId: clientId, ciphersuites: ciphersuites)
+    public func mlsInit(clientId: ClientId, ciphersuites: Array<UInt16>) async throws {
+        await try self.coreCrypto.mlsInit(clientId: clientId, ciphersuites: ciphersuites)
     }
 
     /// Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID.
     /// This method is designed to be used in conjunction with ```CoreCrypto/mlsInitWithClientId``` and represents the first step in this process
     ///
     /// - returns: the TLS-serialized identity key (i.e. the signature keypair's public key)
-    public func mlsGenerateKeypairs(ciphersuites: Array<UInt16>) throws -> [[UInt8]] {
-        try self.coreCrypto.mlsGenerateKeypairs(ciphersuites: ciphersuites)
+    public func mlsGenerateKeypairs(ciphersuites: Array<UInt16>) async throws -> [[UInt8]] {
+        await try self.coreCrypto.mlsGenerateKeypairs(ciphersuites: ciphersuites)
     }
 
     /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
@@ -534,8 +538,8 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter clientId: The newly allocated Client ID from the MLS Authentication Service
     /// - parameter signaturePublicKey: The public key you obtained at step 1, for authentication purposes
-    public func mlsInitWithClientId(clientId: ClientId, signaturePublicKeys: [[UInt8]], ciphersuites: Array<UInt16>) throws {
-        try self.coreCrypto.mlsInitWithClientId(clientId: clientId, signaturePublicKeys: signaturePublicKeys, ciphersuites: ciphersuites)
+    public func mlsInitWithClientId(clientId: ClientId, signaturePublicKeys: [[UInt8]], ciphersuites: Array<UInt16>) async throws {
+        await try self.coreCrypto.mlsInitWithClientId(clientId: clientId, signaturePublicKeys: signaturePublicKeys, ciphersuites: ciphersuites)
     }
 
     /// `CoreCrypto` is supposed to be a singleton. Knowing that, it does some optimizations by
@@ -543,38 +547,38 @@ public class CoreCryptoWrapper {
     /// to perform tasks in the background. Extensions are executed in another process so another
     /// `CoreCrypto` instance has to be used. This method has to be used to synchronize instances.
     /// It simply fetches the MLS group from keystore in memory.
-    public func restoreFromDisk() throws {
-        return try self.coreCrypto.restoreFromDisk()
+    public func restoreFromDisk() async throws {
+        return try await self.coreCrypto.restoreFromDisk()
     }
 
     /// Sets the callback interface, required by some operations from `CoreCrypto`
     ///
     /// - parameter callbacks: the object that implements the ``CoreCryptoCallbacks`` interface
-    public func setCallbacks(callbacks: CoreCryptoCallbacks) throws {
-        try self.coreCrypto.setCallbacks(callbacks: callbacks)
+    public func setCallbacks(callbacks: CoreCryptoCallbacks) async throws {
+        try await self.coreCrypto.setCallbacks(callbacks: callbacks)
     }
 
     /// - returns: The client's public key
-    public func clientPublicKey(ciphersuite: UInt16) throws -> [UInt8] {
-        return try self.coreCrypto.clientPublicKey(ciphersuite: ciphersuite)
+    public func clientPublicKey(ciphersuite: UInt16) async throws -> [UInt8] {
+        return try await self.coreCrypto.clientPublicKey(ciphersuite: ciphersuite)
     }
 
     /// Fetches a requested amount of keypackages
     /// - parameter amountRequested: The amount of keypackages requested
     /// - returns: An array of length `amountRequested` containing TLS-serialized KeyPackages
-    public func clientKeypackages(ciphersuite: UInt16, amountRequested: UInt32) throws -> [[UInt8]] {
-        return try self.coreCrypto.clientKeypackages(ciphersuite: ciphersuite, amountRequested: amountRequested)
+    public func clientKeypackages(ciphersuite: UInt16, amountRequested: UInt32) async throws -> [[UInt8]] {
+        return try await self.coreCrypto.clientKeypackages(ciphersuite: ciphersuite, amountRequested: amountRequested)
     }
 
     /// - returns: The amount of valid, non-expired KeyPackages that are persisted in the backing storage
-    public func clientValidKeypackagesCount(ciphersuite: UInt16) throws -> UInt64 {
-        return try self.coreCrypto.clientValidKeypackagesCount(ciphersuite: ciphersuite)
+    public func clientValidKeypackagesCount(ciphersuite: UInt16) async throws -> UInt64 {
+        return try await self.coreCrypto.clientValidKeypackagesCount(ciphersuite: ciphersuite)
     }
 
     /// Prunes local KeyPackages after making sure they also have been deleted on the backend side.
     /// You should only use this after ``CoreCrypto/e2eiRotateAll``
-    public func deleteKeypackages(refs: [[UInt8]]) throws {
-        return try self.coreCrypto.deleteKeypackages(refs)
+    public func deleteKeypackages(refs: [[UInt8]]) async throws {
+        return try await self.coreCrypto.deleteKeypackages(refs)
     }
 
     /// Creates a new conversation with the current client being the sole member
@@ -582,30 +586,30 @@ public class CoreCryptoWrapper {
     /// - parameter conversationId: conversation identifier
     /// - parameter creatorCredentialType: kind of credential the creator wants to create the group with
     /// - parameter config: the configuration for the conversation to be created
-    public func createConversation(conversationId: ConversationId, creatorCredentialType: MlsCredentialType, config: ConversationConfiguration) throws {
-        try self.coreCrypto.createConversation(conversationId: conversationId, creatorCredentialType: creatorCredentialType.convert(), config: config.convert())
+    public func createConversation(conversationId: ConversationId, creatorCredentialType: MlsCredentialType, config: ConversationConfiguration) async throws {
+        try await self.coreCrypto.createConversation(conversationId: conversationId, creatorCredentialType: creatorCredentialType.convert(), config: config.convert())
     }
 
     /// Checks if the Client is member of a given conversation and if the MLS Group is loaded up
     /// - parameter conversationId: conversation identifier
     /// - returns: Whether the given conversation ID exists
-    public func conversationExists(conversationId: ConversationId) -> Bool {
-        return self.coreCrypto.conversationExists(conversationId: conversationId)
+    public func conversationExists(conversationId: ConversationId) async -> Bool {
+        return await self.coreCrypto.conversationExists(conversationId: conversationId)
     }
 
     /// Returns the epoch of a given conversation id
     /// - parameter conversationId: conversation identifier
     /// - returns: the current epoch of the conversation
-    public func conversationEpoch(conversationId: ConversationId) throws -> UInt64 {
-        return try self.coreCrypto.conversationEpoch(conversationId: conversationId)
+    public func conversationEpoch(conversationId: ConversationId) async throws -> UInt64 {
+        return try await self.coreCrypto.conversationEpoch(conversationId: conversationId)
     }
 
     /// Ingest a TLS-serialized MLS welcome message to join a an existing MLS group
     /// - parameter welcomeMessage: - TLS-serialized MLS Welcome message
     /// - parameter config: - configuration of the MLS group
     /// - returns: The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages
-    public func processWelcomeMessage(welcomeMessage: [UInt8], configuration: CustomConfiguration) throws -> ConversationId {
-        return try self.coreCrypto.processWelcomeMessage(welcomeMessage: welcomeMessage, customConfiguration: configuration.convert())
+    public func processWelcomeMessage(welcomeMessage: [UInt8], configuration: CustomConfiguration) async throws -> ConversationId {
+        return try await self.coreCrypto.processWelcomeMessage(welcomeMessage: welcomeMessage, customConfiguration: configuration.convert())
     }
 
     /// Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation
@@ -621,8 +625,8 @@ public class CoreCryptoWrapper {
     /// - parameter conversationId: conversation identifier
     /// - parameter clients: Array of ``Invitee`` (which are Client ID / KeyPackage pairs)
     /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
-    public func addClientsToConversation(conversationId: ConversationId, clients: [Invitee]) throws -> MemberAddedMessages {
-        return try self.coreCrypto.addClientsToConversation(conversationId: conversationId, clients: clients.map({ (invitee) -> CoreCryptoSwift.Invitee in
+    public func addClientsToConversation(conversationId: ConversationId, clients: [Invitee]) async throws -> MemberAddedMessages {
+        return try await self.coreCrypto.addClientsToConversation(conversationId: conversationId, clients: clients.map({ (invitee) -> CoreCryptoSwift.Invitee in
             return invitee.convert()
         })).convertTo()
     }
@@ -641,8 +645,8 @@ public class CoreCryptoWrapper {
     /// - parameter conversationId: conversation identifier
     /// - parameter clients: Array of Client IDs to remove.
     /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
-    public func removeClientsFromConversation(conversationId: ConversationId, clients: [ClientId]) throws -> CommitBundle {
-        return try self.coreCrypto.removeClientsFromConversation(conversationId: conversationId, clients: clients).convertTo()
+    public func removeClientsFromConversation(conversationId: ConversationId, clients: [ClientId]) async throws -> CommitBundle {
+        return try await self.coreCrypto.removeClientsFromConversation(conversationId: conversationId, clients: clients).convertTo()
     }
 
     /// Marks a conversation as child of another one
@@ -650,8 +654,8 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter childId: conversation identifier of the child conversation
     /// - parameter parentId: conversation identifier of the parent conversation
-    public func markConversationAsChildOf(childId: ConversationId, parentId: ConversationId) throws {
-        try self.coreCrypto.markConversationAsChildOf(childId: childId, parentId: parentId)
+    public func markConversationAsChildOf(childId: ConversationId, parentId: ConversationId) async throws {
+        try await self.coreCrypto.markConversationAsChildOf(childId: childId, parentId: parentId)
     }
 
     /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited.
@@ -666,8 +670,8 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter conversationId: conversation identifier
     /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
-    public func updateKeyingMaterial(conversationId: ConversationId) throws -> CommitBundle {
-        try self.coreCrypto.updateKeyingMaterial(conversationId: conversationId).convertTo()
+    public func updateKeyingMaterial(conversationId: ConversationId) async throws -> CommitBundle {
+        try await self.coreCrypto.updateKeyingMaterial(conversationId: conversationId).convertTo()
     }
 
     /// Commits all pending proposals of the group
@@ -682,15 +686,15 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter conversationId: conversation identifier
     /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
-    public func commitPendingProposals(conversationId: ConversationId) throws -> CommitBundle? {
-        try self.coreCrypto.commitPendingProposals(conversationId:conversationId)?.convertTo()
+    public func commitPendingProposals(conversationId: ConversationId) async throws -> CommitBundle? {
+        try await self.coreCrypto.commitPendingProposals(conversationId:conversationId)?.convertTo()
     }
 
     /// Destroys a group locally
     ///
     /// - parameter conversationId: conversation identifier
-    public func wipeConversation(conversationId: ConversationId) throws {
-        try self.coreCrypto.wipeConversation(conversationId: conversationId)
+    public func wipeConversation(conversationId: ConversationId) async throws {
+        try await self.coreCrypto.wipeConversation(conversationId: conversationId)
     }
 
     /// Deserializes a TLS-serialized message, then deciphers it
@@ -698,8 +702,8 @@ public class CoreCryptoWrapper {
     /// - parameter conversationId: conversation identifier
     /// - parameter payload: the encrypted message as a byte array
     /// - returns an object of the type ``DecryptedMessage``
-    public func decryptMessage(conversationId: ConversationId, payload: [UInt8]) throws -> DecryptedMessage {
-        return try self.coreCrypto.decryptMessage(conversationId: conversationId, payload: payload).convertTo()
+    public func decryptMessage(conversationId: ConversationId, payload: [UInt8]) async throws -> DecryptedMessage {
+        return try await self.coreCrypto.decryptMessage(conversationId: conversationId, payload: payload).convertTo()
     }
 
     /// Encrypts a raw payload then serializes it to the TLS wire format
@@ -707,8 +711,8 @@ public class CoreCryptoWrapper {
     /// - parameter conversationId: conversation identifier
     /// - parameter message: the message as a byte array
     /// - returns: an encrypted TLS serialized message.
-    public func encryptMessage(conversationId: ConversationId, message: [UInt8]) throws -> [UInt8] {
-        return try self.coreCrypto.encryptMessage(conversationId: conversationId, message: message)
+    public func encryptMessage(conversationId: ConversationId, message: [UInt8]) async throws -> [UInt8] {
+        return try await self.coreCrypto.encryptMessage(conversationId: conversationId, message: message)
     }
 
     /// Creates a new add proposal within a group
@@ -716,8 +720,8 @@ public class CoreCryptoWrapper {
     /// - parameter conversationId: conversation identifier
     /// - parameter keyPackage: the owner's `KeyPackage` to be added to the group
     /// - returns: a message (to be fanned out) will be returned with the proposal that was created
-    public func newAddProposal(conversationId: ConversationId, keyPackage: [UInt8]) throws -> ProposalBundle {
-        return try self.coreCrypto.newAddProposal(conversationId: conversationId, keyPackage: keyPackage).convertTo()
+    public func newAddProposal(conversationId: ConversationId, keyPackage: [UInt8]) async throws -> ProposalBundle {
+        return try await self.coreCrypto.newAddProposal(conversationId: conversationId, keyPackage: keyPackage).convertTo()
     }
 
     /// Creates a new update proposal within a group. It will replace the sender's `LeafNode` in the
@@ -725,8 +729,8 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter conversationId: conversation identifier
     /// - returns: a message (to be fanned out) will be returned with the proposal that was created
-    public func newUpdateProposal(conversationId: ConversationId) throws -> ProposalBundle {
-        return try self.coreCrypto.newUpdateProposal(conversationId: conversationId).convertTo()
+    public func newUpdateProposal(conversationId: ConversationId) async throws -> ProposalBundle {
+        return try await self.coreCrypto.newUpdateProposal(conversationId: conversationId).convertTo()
     }
 
     /// Creates a new remove proposal within a group
@@ -734,8 +738,8 @@ public class CoreCryptoWrapper {
     /// - parameter conversationId: conversation identifier
     /// - parameter clientId: client id to be removed from the group
     /// - returns: a message (to be fanned out) will be returned with the proposal that was created
-    public func newRemoveProposal(conversationId: ConversationId, clientId: ClientId) throws -> ProposalBundle {
-        return try self.coreCrypto.newRemoveProposal(conversationId: conversationId, clientId: clientId).convertTo()
+    public func newRemoveProposal(conversationId: ConversationId, clientId: ClientId) async throws -> ProposalBundle {
+        return try await self.coreCrypto.newRemoveProposal(conversationId: conversationId, clientId: clientId).convertTo()
     }
 
     /// Crafts a new external Add proposal. Enables a client outside a group to request addition to this group.
@@ -744,8 +748,8 @@ public class CoreCryptoWrapper {
     /// - parameter conversationId: conversation identifier
     /// - parameter epoch: the current epoch of the group
     /// - returns: a message with the proposal to be add a new client
-    public func newExternalAddProposal(conversationId: ConversationId, epoch: UInt64, ciphersuite: UInt16, credentialType: MlsCredentialType) throws -> [UInt8] {
-        return try self.coreCrypto.newExternalAddProposal(conversationId: conversationId, epoch: epoch, ciphersuite: ciphersuite, credentialType: credentialType.convert())
+    public func newExternalAddProposal(conversationId: ConversationId, epoch: UInt64, ciphersuite: UInt16, credentialType: MlsCredentialType) async throws -> [UInt8] {
+        return try await self.coreCrypto.newExternalAddProposal(conversationId: conversationId, epoch: epoch, ciphersuite: ciphersuite, credentialType: credentialType.convert())
     }
 
     /// Issues an external commit and stores the group in a temporary table. This method is
@@ -761,16 +765,16 @@ public class CoreCryptoWrapper {
     /// - parameter groupInfo: a TLS encoded `GroupInfo` fetched from the Delivery Service
     /// - parameter config: - configuration of the MLS group
     /// - returns: an object of type `ConversationInitBundle`
-    public func joinByExternalCommit(groupInfo: [UInt8], configuration: CustomConfiguration, credentialType: MlsCredentialType) throws -> ConversationInitBundle {
-        try self.coreCrypto.joinByExternalCommit(groupInfo: groupInfo, customConfiguration: configuration.convert(), credentialType: credentialType.convert()).convertTo()
+    public func joinByExternalCommit(groupInfo: [UInt8], configuration: CustomConfiguration, credentialType: MlsCredentialType) async throws -> ConversationInitBundle {
+        try await self.coreCrypto.joinByExternalCommit(groupInfo: groupInfo, customConfiguration: configuration.convert(), credentialType: credentialType.convert()).convertTo()
     }
 
     /// This merges the commit generated by ``CoreCryptoWrapper/joinByExternalCommit``, persists the group permanently and
     /// deletes the temporary one. After merging, the group should be fully functional.
     ///
     /// - parameter conversationId: conversation identifier
-    public func mergePendingGroupFromExternalCommit(conversationId: ConversationId) throws {
-        try self.coreCrypto.mergePendingGroupFromExternalCommit(conversationId: conversationId)
+    public func mergePendingGroupFromExternalCommit(conversationId: ConversationId) async throws {
+        try await self.coreCrypto.mergePendingGroupFromExternalCommit(conversationId: conversationId)
     }
 
     /// In case the external commit generated by ``CoreCryptoWrapper/joinByExternalCommit`` is rejected by the Delivery Service,
@@ -778,8 +782,8 @@ public class CoreCryptoWrapper {
     /// order not to waste space
     ///
     /// - parameter conversationId: conversation identifier
-    public func clearPendingGroupFromExternalCommit(conversationId: ConversationId) throws {
-        try self.coreCrypto.clearPendingGroupFromExternalCommit(conversationId: conversationId)
+    public func clearPendingGroupFromExternalCommit(conversationId: ConversationId) async throws {
+        try await self.coreCrypto.clearPendingGroupFromExternalCommit(conversationId: conversationId)
     }
 
     /// Derives a new key from the group
@@ -788,29 +792,29 @@ public class CoreCryptoWrapper {
     /// - parameter keyLength: the length of the key to be derived. If the value is higher than the
     /// bounds of `u16` or the context hash * 255, an error will be thrown
     /// - returns a byte array representing the derived key
-    public func exportSecretKey(conversationId: ConversationId, keyLength: UInt32) throws -> [UInt8] {
-        try self.coreCrypto.exportSecretKey(conversationId: conversationId, keyLength: keyLength)
+    public func exportSecretKey(conversationId: ConversationId, keyLength: UInt32) async throws -> [UInt8] {
+        try await self.coreCrypto.exportSecretKey(conversationId: conversationId, keyLength: keyLength)
     }
 
     /// Returns all clients from group's members
     ///
     /// - parameter conversationId: conversation identifier
     /// - returns a list of `ClientId` objects
-    public func getClientIds(conversationId: ConversationId) throws -> [ClientId] {
-        try self.coreCrypto.getClientIds(conversationId: conversationId)
+    public func getClientIds(conversationId: ConversationId) async throws -> [ClientId] {
+        try await self.coreCrypto.getClientIds(conversationId: conversationId)
     }
 
     /// Allows ``CoreCrypto`` to act as a CSPRNG provider
     /// - parameter length: The number of bytes to be returned in the `Uint8` array
     /// - returns: A ``Uint8`` array buffer that contains ``length`` cryptographically-secure random bytes
-    public func randomBytes(length: UInt32) throws -> [UInt8] {
-        try self.coreCrypto.randomBytes(length: length)
+    public func randomBytes(length: UInt32) async throws -> [UInt8] {
+        try await self.coreCrypto.randomBytes(length: length)
     }
 
     /// Allows to reseed ``CoreCrypto``'s internal CSPRNG with a new seed.
     /// - parameter seed: **exactly 32** bytes buffer seed
-    public func reseedRng(seed: [UInt8]) throws {
-        try self.coreCrypto.reseedRng(seed: seed)
+    public func reseedRng(seed: [UInt8]) async throws {
+        try await self.coreCrypto.reseedRng(seed: seed)
     }
 
     /// The commit we created has been accepted by the Delivery Service. Hence it is guaranteed
@@ -819,8 +823,8 @@ public class CoreCryptoWrapper {
     /// in the keystore. The previous can be discarded to respect Forward Secrecy.
     ///
     /// - parameter conversationId: conversation identifier
-    public func commitAccepted(conversationId: ConversationId) throws {
-        try self.coreCrypto.commitAccepted(conversationId: conversationId)
+    public func commitAccepted(conversationId: ConversationId) async throws {
+        try await self.coreCrypto.commitAccepted(conversationId: conversationId)
     }
 
     /// Allows to remove a pending (uncommitted) proposal. Use this when backend rejects the proposal
@@ -832,8 +836,8 @@ public class CoreCryptoWrapper {
     /// - parameter conversation_id - the group/conversation id
     /// - parameter proposal_ref - unique proposal identifier which is present in MlsProposalBundle and
     /// returned from all operation creating a proposal
-    public func clearPendingProposal(conversationId: ConversationId, proposalRef: [UInt8]) throws {
-        try self.coreCrypto.clearPendingProposal(conversationId: conversationId, proposalRef: proposalRef)
+    public func clearPendingProposal(conversationId: ConversationId, proposalRef: [UInt8]) async throws {
+        try await self.coreCrypto.clearPendingProposal(conversationId: conversationId, proposalRef: proposalRef)
     }
 
     /// Allows to remove a pending commit. Use this when backend rejects the commit
@@ -845,51 +849,51 @@ public class CoreCryptoWrapper {
     /// in [MlsCentral::decrypt_message]
     ///
     /// - parameter conversation_id - the group/conversation id
-    public func clearPendingCommit(conversationId: ConversationId) throws {
-        try self.coreCrypto.clearPendingCommit(conversationId: conversationId)
+    public func clearPendingCommit(conversationId: ConversationId) async throws {
+        try await self.coreCrypto.clearPendingCommit(conversationId: conversationId)
     }
 
     /// Initializes the proteus client
-    public func proteusInit() throws {
-        try self.coreCrypto.proteusInit()
+    public func proteusInit() async throws {
+        try await self.coreCrypto.proteusInit()
     }
 
     /// Create a Proteus session using a prekey
     ///
     /// - parameter sessionId: ID of the Proteus session
     /// - parameter prekey: CBOR-encoded Proteus prekey of the other client
-    public func proteusSessionFromPrekey(sessionId: String, prekey: [UInt8]) throws {
-        try self.coreCrypto.proteusSessionFromPrekey(sessionId: sessionId, prekey: prekey)
+    public func proteusSessionFromPrekey(sessionId: String, prekey: [UInt8]) async throws {
+        try await self.coreCrypto.proteusSessionFromPrekey(sessionId: sessionId, prekey: prekey)
     }
 
     /// Create a Proteus session from a handshake message
     ///
     /// - parameter sessionId: ID of the Proteus session
     /// - parameter envelope: CBOR-encoded Proteus message
-    public func proteusSessionFromMessage(sessionId: String, envelope: [UInt8]) throws -> [UInt8]{
-        return try self.coreCrypto.proteusSessionFromMessage(sessionId: sessionId, envelope: envelope)
+    public func proteusSessionFromMessage(sessionId: String, envelope: [UInt8]) async throws -> [UInt8]{
+        return try await self.coreCrypto.proteusSessionFromMessage(sessionId: sessionId, envelope: envelope)
     }
 
     /// Locally persists a session to the keystore
     ///
     /// - parameter sessionId: ID of the Proteus session
-    public func proteusSessionSave(sessionId: String) throws {
-        try self.coreCrypto.proteusSessionSave(sessionId: sessionId)
+    public func proteusSessionSave(sessionId: String) async throws {
+        try await self.coreCrypto.proteusSessionSave(sessionId: sessionId)
     }
 
     /// Deletes a session
     /// Note: this also deletes the persisted data within the keystore
     ///
     /// - parameter sessionId: ID of the Proteus session
-    public func proteusSessionDelete(sessionId: String) throws {
-        try self.coreCrypto.proteusSessionDelete(sessionId: sessionId)
+    public func proteusSessionDelete(sessionId: String) async throws {
+        try await self.coreCrypto.proteusSessionDelete(sessionId: sessionId)
     }
 
     /// Checks if a session exists
     ///
     /// - parameter sessionId: ID of the Proteus session
-    public func proteusSessionExists(sessionId: String) throws -> Bool {
-        try self.coreCrypto.proteusSessionExists(sessionId: sessionId)
+    public func proteusSessionExists(sessionId: String) async throws -> Bool {
+        try await self.coreCrypto.proteusSessionExists(sessionId: sessionId)
     }
 
     /// Decrypt an incoming message for an existing Proteus session
@@ -897,8 +901,8 @@ public class CoreCryptoWrapper {
     /// - parameter sessionId: ID of the Proteus session
     /// - parameter ciphertext: CBOR encoded, encrypted proteus message
     /// - returns: The decrypted payload contained within the message
-    public func proteusDecrypt(sessionId: String, ciphertext: [UInt8]) throws -> [UInt8] {
-        try self.coreCrypto.proteusDecrypt(sessionId: sessionId, ciphertext: ciphertext)
+    public func proteusDecrypt(sessionId: String, ciphertext: [UInt8]) async throws -> [UInt8] {
+        try await self.coreCrypto.proteusDecrypt(sessionId: sessionId, ciphertext: ciphertext)
     }
 
     /// Encrypt a message for a given Proteus session
@@ -906,8 +910,8 @@ public class CoreCryptoWrapper {
     /// - parameter sessionId: ID of the Proteus session
     /// - parameter plaintext: payload to encrypt
     /// - returns: The CBOR-serialized encrypted message
-    public func proteusEncrypt(sessionId: String, plaintext: [UInt8]) throws -> [UInt8] {
-        try self.coreCrypto.proteusEncrypt(sessionId: sessionId, plaintext: plaintext)
+    public func proteusEncrypt(sessionId: String, plaintext: [UInt8]) async throws -> [UInt8] {
+        try await self.coreCrypto.proteusEncrypt(sessionId: sessionId, plaintext: plaintext)
     }
 
     /// Batch encryption for proteus messages
@@ -916,28 +920,28 @@ public class CoreCryptoWrapper {
     /// - parameter sessions: List of Proteus session IDs to encrypt the message for
     /// - parameter plaintext: payload to encrypt
     /// - returns: A map indexed by each session ID and the corresponding CBOR-serialized encrypted message for this session
-    public func proteusEncryptBatched(sessions: [String], plaintext: [UInt8]) throws -> [String: [UInt8]] {
-        try self.coreCrypto.proteusEncryptBatched(sessionId: sessions, plaintext: plaintext)
+    public func proteusEncryptBatched(sessions: [String], plaintext: [UInt8]) async throws -> [String: [UInt8]] {
+        try await self.coreCrypto.proteusEncryptBatched(sessionId: sessions, plaintext: plaintext)
     }
 
     /// Creates a new prekey with the requested ID.
     ///
     /// - parameter prekeyId: ID of the PreKey to generate
     /// - returns: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
-    public func proteusNewPrekey(prekeyId: UInt16) throws -> [UInt8] {
-        try self.coreCrypto.proteusNewPrekey(prekeyId: prekeyId)
+    public func proteusNewPrekey(prekeyId: UInt16) async throws -> [UInt8] {
+        try await self.coreCrypto.proteusNewPrekey(prekeyId: prekeyId)
     }
 
     /// Creates a new prekey with an automatically incremented ID.
     ///
     /// - returns: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
-    public func proteusNewPrekeyAuto() throws -> ProteusAutoPrekeyBundle {
-        try self.coreCrypto.proteusNewPrekeyAuto().convertTo()
+    public func proteusNewPrekeyAuto() async throws -> ProteusAutoPrekeyBundle {
+        try await self.coreCrypto.proteusNewPrekeyAuto().convertTo()
     }
 
     /// - returns: A CBOR-serialized verison of the PreKeyBundle associated to the last resort prekey ID
-    public func proteusLastResortPrekey() throws -> [UInt8] {
-        try self.coreCrypto.proteusLastResortPrekey()
+    public func proteusLastResortPrekey() async throws -> [UInt8] {
+        try await self.coreCrypto.proteusLastResortPrekey()
     }
 
     /// - returns: The ID of the Proteus last resort PreKey
@@ -945,43 +949,51 @@ public class CoreCryptoWrapper {
         try self.coreCrypto.proteusLastResortPrekeyId()
     }
 
+    /// Note: When called, this resets the last error code to 0
+    ///
+    /// - returns: The last-occured Proteus error code.
+    public func proteusLastErrorCode() -> UInt32 {
+        try self.coreCrypto.proteusLastErrorCode()
+    }
+
+
     /// Proteus public key fingerprint
     /// It's basically the public key encoded as an hex string
     ///
     /// - returns: Hex-encoded public key string
-    public func proteusFingerprint() throws -> String {
-        try self.coreCrypto.proteusFingerprint()
+    public func proteusFingerprint() async throws -> String {
+        try await self.coreCrypto.proteusFingerprint()
     }
 
     /// Proteus session local fingerprint
     ///
     /// - parameter sessionId: ID of the Proteus session
     /// - returns: Hex-encoded public key string
-    public func proteusFingerprintLocal(sessionId: String) throws -> String {
-        try self.coreCrypto.proteusFingerprintLocal(sessionId: sessionId)
+    public func proteusFingerprintLocal(sessionId: String) async throws -> String {
+        try await self.coreCrypto.proteusFingerprintLocal(sessionId: sessionId)
     }
 
     /// Proteus session remote fingerprint
     ///
     /// - parameter sessionId: ID of the Proteus session
     /// - returns: Hex-encoded public key string
-    public func proteusFingerprintRemote(sessionId: String) throws -> String {
-        try self.coreCrypto.proteusFingerprintRemote(sessionId: sessionId)
+    public func proteusFingerprintRemote(sessionId: String) async throws -> String {
+        try await self.coreCrypto.proteusFingerprintRemote(sessionId: sessionId)
     }
 
     /// Hex-encoded fingerprint of the given prekey
     ///
     /// - parameter prekey: the prekey bundle to get the fingerprint from
     /// - returns: Hex-encoded public key string
-    public func proteusFingerprintPrekeybundle(prekey: [UInt8]) throws -> String {
-        try self.coreCrypto.proteusFingerprintPrekeybundle(prekey: prekey)
+    public func proteusFingerprintPrekeybundle(prekey: [UInt8]) async throws -> String {
+        try await self.coreCrypto.proteusFingerprintPrekeybundle(prekey: prekey)
     }
 
     /// Imports all the data stored by Cryptobox into the CoreCrypto keystore
     ///
     /// - parameter path: Path to the folder where Cryptobox things are stored
-    public func proteusCryptoboxMigrate(path: String) throws {
-        try self.coreCrypto.proteusCryptoboxMigrate(path: path)
+    public func proteusCryptoboxMigrate(path: String) async throws {
+        try await self.coreCrypto.proteusCryptoboxMigrate(path: path)
     }
 
     /// Creates an enrollment instance with private key material you can use in order to fetch
@@ -993,8 +1005,8 @@ public class CoreCryptoWrapper {
     /// - parameter expiryDays: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material.
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func e2eiNewEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16) throws -> CoreCryptoSwift.WireE2eIdentity {
-        return try self.coreCrypto.e2eiNewEnrollment(clientId: clientId, displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
+    public func e2eiNewEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16) async throws -> CoreCryptoSwift.WireE2eIdentity {
+        return try await self.coreCrypto.e2eiNewEnrollment(clientId: clientId, displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
     }
 
     /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
@@ -1006,8 +1018,8 @@ public class CoreCryptoWrapper {
     /// - parameter expiryDays: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material.
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func e2eiNewActivationEnrollment(displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16) throws -> CoreCryptoSwift.WireE2eIdentity {
-        return try self.coreCrypto.e2eiNewActivationEnrollment(displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
+    public func e2eiNewActivationEnrollment(displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16) async throws -> CoreCryptoSwift.WireE2eIdentity {
+        return try await self.coreCrypto.e2eiNewActivationEnrollment(displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
     }
 
     /// Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)having to change/rotate
@@ -1020,16 +1032,16 @@ public class CoreCryptoWrapper {
     /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func e2eiNewRotateEnrollment(expiryDays: UInt32, ciphersuite: UInt16, displayName: String? = nil, handle: String? = nil) throws -> CoreCryptoSwift.WireE2eIdentity {
-        return try self.coreCrypto.e2eiNewRotateEnrollment(expiryDays: expiryDays, ciphersuite: ciphersuite, displayName: displayName, handle: handle)
+    public func e2eiNewRotateEnrollment(expiryDays: UInt32, ciphersuite: UInt16, displayName: String? = nil, handle: String? = nil) async throws -> CoreCryptoSwift.WireE2eIdentity {
+        return try await self.coreCrypto.e2eiNewRotateEnrollment(expiryDays: expiryDays, ciphersuite: ciphersuite, displayName: displayName, handle: handle)
     }
 
     /// Use this method to initialize end-to-end identity when a client signs up and the grace period is already expired ; that means he cannot initialize with a Basic credential
     ///
     /// - parameter e2ei: the enrollment instance used to fetch the certificates
     /// - parameter certificateChain: the raw response from ACME server
-    public func e2eiMlsInitOnly(enrollment: CoreCryptoSwift.WireE2eIdentity, certificateChain: String) throws {
-        return try self.coreCrypto.e2eiMlsInitOnly(enrollment: enrollment, certificateChain: certificateChain)
+    public func e2eiMlsInitOnly(enrollment: CoreCryptoSwift.WireE2eIdentity, certificateChain: String) async throws {
+        return try await self.coreCrypto.e2eiMlsInitOnly(enrollment: enrollment, certificateChain: certificateChain)
     }
 
     /// Creates a commit in all local conversations for changing the credential. Requires first having enrolled a new
@@ -1038,8 +1050,8 @@ public class CoreCryptoWrapper {
     /// - parameter e2ei: the enrollment instance used to fetch the certificates
     /// - parameter certificateChain: the raw response from ACME server
     /// - parameter newKeyPackageCount: number of KeyPackages with new identity to generate
-    public func e2eiRotateAll(enrollment: CoreCryptoSwift.WireE2eIdentity, certificateChain: String, newKeyPackageCount: UInt32) throws -> RotateBundle {
-        return try self.coreCrypto.e2eiRotateAll(enrollment: enrollment, certificateChain: certificateChain, newKeyPackageCount: newKeyPackageCount)
+    public func e2eiRotateAll(enrollment: CoreCryptoSwift.WireE2eIdentity, certificateChain: String, newKeyPackageCount: UInt32) async throws -> RotateBundle {
+        return try await self.coreCrypto.e2eiRotateAll(enrollment: enrollment, certificateChain: certificateChain, newKeyPackageCount: newKeyPackageCount)
     }
 
     /// Allows persisting an active enrollment (for example while redirecting the user during OAuth) in order to resume
@@ -1047,16 +1059,16 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter e2ei: the enrollment instance to persist
     /// - returns: a handle to fetch the enrollment later with [MlsCentral::e2eiEnrollmentStashPop]
-    public func e2eiEnrollmentStash(enrollment: CoreCryptoSwift.WireE2eIdentity) throws -> [UInt8] {
-        return try self.coreCrypto.e2eiEnrollmentStash(enrollment: enrollment)
+    public func e2eiEnrollmentStash(enrollment: CoreCryptoSwift.WireE2eIdentity) async throws -> [UInt8] {
+        return try await self.coreCrypto.e2eiEnrollmentStash(enrollment: enrollment)
     }
 
     /// Fetches the persisted enrollment and deletes it from the keystore
     ///
     /// - parameter handle: returned by [MlsCentral::e2eiEnrollmentStash]
     /// - returns: the persisted enrollment instance
-    public func e2eiEnrollmentStashPop(handle: [UInt8]) throws -> CoreCryptoSwift.WireE2eIdentity {
-        return try self.coreCrypto.e2eiEnrollmentStashPop(handle: handle)
+    public func e2eiEnrollmentStashPop(handle: [UInt8]) async throws -> CoreCryptoSwift.WireE2eIdentity {
+        return try await self.coreCrypto.e2eiEnrollmentStashPop(handle: handle)
     }
 
     /// Indicates when to mark a conversation as degraded i.e. when not all its members have a X509.
@@ -1064,8 +1076,8 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter conversationId: the Group's ID
     /// - returns: true if all the members have valid X509 credentials
-    public func e2eiIsDegraded(conversationId: ConversationId) throws -> Bool {
-        return try self.coreCrypto.e2eiIsDegraded(conversationId: conversationId)
+    public func e2eiIsDegraded(conversationId: ConversationId) async throws -> Bool {
+        return try await self.coreCrypto.e2eiIsDegraded(conversationId: conversationId)
     }
 
     /// - returns: The CoreCrypto version

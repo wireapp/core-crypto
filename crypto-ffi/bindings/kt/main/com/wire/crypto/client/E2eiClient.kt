@@ -68,22 +68,22 @@ data class NewAcmeAuthz(
 @Suppress("TooManyFunctions")
 interface E2EIClient {
     val delegate: WireE2eIdentity
-    fun directoryResponse(directory: JsonRawData): AcmeDirectory
-    fun newAccountRequest(previousNonce: String): JsonRawData
-    fun accountResponse(account: JsonRawData)
-    fun newOrderRequest(previousNonce: String): JsonRawData
-    fun newOrderResponse(order: JsonRawData): NewAcmeOrder
-    fun newAuthzRequest(url: String, previousNonce: String): JsonRawData
-    fun authzResponse(authz: JsonRawData): NewAcmeAuthz
-    fun createDpopToken(backendNonce: String): DpopToken
-    fun newDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData
-    fun newOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData
-    fun challengeResponse(challenge: JsonRawData)
-    fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData
-    fun checkOrderResponse(order: JsonRawData): String
-    fun finalizeRequest(previousNonce: String): JsonRawData
-    fun finalizeResponse(finalize: JsonRawData): String
-    fun certificateRequest(previousNonce: String): JsonRawData
+    suspend fun directoryResponse(directory: JsonRawData): AcmeDirectory
+    suspend fun newAccountRequest(previousNonce: String): JsonRawData
+    suspend fun accountResponse(account: JsonRawData)
+    suspend fun newOrderRequest(previousNonce: String): JsonRawData
+    suspend fun newOrderResponse(order: JsonRawData): NewAcmeOrder
+    suspend fun newAuthzRequest(url: String, previousNonce: String): JsonRawData
+    suspend fun authzResponse(authz: JsonRawData): NewAcmeAuthz
+    suspend fun createDpopToken(backendNonce: String): DpopToken
+    suspend fun newDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData
+    suspend fun newOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData
+    suspend fun challengeResponse(challenge: JsonRawData)
+    suspend fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData
+    suspend fun checkOrderResponse(order: JsonRawData): String
+    suspend fun finalizeRequest(previousNonce: String): JsonRawData
+    suspend fun finalizeResponse(finalize: JsonRawData): String
+    suspend fun certificateRequest(previousNonce: String): JsonRawData
 }
 
 @Suppress("TooManyFunctions")
@@ -92,52 +92,52 @@ class E2EIClientImpl(override val delegate: WireE2eIdentity) : E2EIClient {
 
     private val defaultDPoPTokenExpiry: UInt = 30U
 
-    override fun directoryResponse(directory: JsonRawData) =
+    override suspend fun directoryResponse(directory: JsonRawData) =
         delegate.directoryResponse(directory.toUByteList()).toAcmeDirectory()
 
-    override fun newAccountRequest(previousNonce: String) =
+    override suspend fun newAccountRequest(previousNonce: String) =
         delegate.newAccountRequest(previousNonce).toByteArray()
 
-    override fun accountResponse(account: JsonRawData) =
+    override suspend fun accountResponse(account: JsonRawData) =
         delegate.newAccountResponse(account.toUByteList())
 
-    override fun newOrderRequest(previousNonce: String) =
+    override suspend fun newOrderRequest(previousNonce: String) =
         delegate.newOrderRequest(previousNonce).toByteArray()
 
-    override fun newOrderResponse(order: JsonRawData) =
+    override suspend fun newOrderResponse(order: JsonRawData) =
         delegate.newOrderResponse(order.toUByteList()).toNewAcmeOrder()
 
-    override fun newAuthzRequest(url: String, previousNonce: String) =
+    override suspend fun newAuthzRequest(url: String, previousNonce: String) =
         delegate.newAuthzRequest(url, previousNonce).toByteArray()
 
-    override fun authzResponse(authz: JsonRawData) =
+    override suspend fun authzResponse(authz: JsonRawData) =
         delegate.newAuthzResponse(authz.toUByteList()).toNewAcmeAuthz()
 
-    override fun createDpopToken(backendNonce: String) =
+    override suspend fun createDpopToken(backendNonce: String) =
         delegate.createDpopToken(expirySecs = defaultDPoPTokenExpiry, backendNonce)
 
-    override fun newDpopChallengeRequest(accessToken: String, previousNonce: String) =
+    override suspend fun newDpopChallengeRequest(accessToken: String, previousNonce: String) =
         delegate.newDpopChallengeRequest(accessToken, previousNonce).toByteArray()
 
-    override fun newOidcChallengeRequest(idToken: String, previousNonce: String) =
+    override suspend fun newOidcChallengeRequest(idToken: String, previousNonce: String) =
         delegate.newOidcChallengeRequest(idToken, previousNonce).toByteArray()
 
-    override fun challengeResponse(challenge: JsonRawData) =
+    override suspend fun challengeResponse(challenge: JsonRawData) =
         delegate.newChallengeResponse(challenge.toUByteList())
 
-    override fun checkOrderRequest(orderUrl: String, previousNonce: String) =
+    override suspend fun checkOrderRequest(orderUrl: String, previousNonce: String) =
         delegate.checkOrderRequest(orderUrl, previousNonce).toByteArray()
 
-    override fun checkOrderResponse(order: JsonRawData) =
+    override suspend fun checkOrderResponse(order: JsonRawData) =
         delegate.checkOrderResponse(order.toUByteList())
 
-    override fun finalizeRequest(previousNonce: String) =
+    override suspend fun finalizeRequest(previousNonce: String) =
         delegate.finalizeRequest(previousNonce).toByteArray()
 
-    override fun finalizeResponse(finalize: JsonRawData) =
+    override suspend fun finalizeResponse(finalize: JsonRawData) =
         delegate.finalizeResponse(finalize.toUByteList())
 
-    override fun certificateRequest(previousNonce: String) =
+    override suspend fun certificateRequest(previousNonce: String) =
         delegate.certificateRequest(previousNonce).toByteArray()
 
     companion object {

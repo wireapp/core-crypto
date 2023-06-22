@@ -17,7 +17,8 @@
 use crate::prelude::{CryptoResult, MlsConversation};
 use core_crypto_keystore::entities::EntityFindParams;
 
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub(crate) trait GroupStoreEntity: std::fmt::Debug {
     type RawStoreValue: core_crypto_keystore::entities::Entity;
     type IdentityType;
@@ -39,7 +40,8 @@ pub(crate) trait GroupStoreEntity: std::fmt::Debug {
         Self: Sized;
 }
 
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl GroupStoreEntity for MlsConversation {
     type RawStoreValue = core_crypto_keystore::entities::PersistedMlsGroup;
     type IdentityType = ();
@@ -85,7 +87,8 @@ impl GroupStoreEntity for MlsConversation {
 }
 
 #[cfg(feature = "proteus")]
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
     type RawStoreValue = core_crypto_keystore::entities::ProteusSession;
     type IdentityType = std::sync::Arc<proteus_wasm::keys::IdentityKeyPair>;
@@ -357,7 +360,8 @@ mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    #[async_trait::async_trait(?Send)]
+    #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+    #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
     impl GroupStoreEntity for DummyValue {
         type RawStoreValue = DummyStoreValue;
 

@@ -5,7 +5,9 @@ edition = "2021"
 license = "GPL-3.0-only"
 
 [features]
-default = ["proteus"]
+default = []
+# default = ["proteus", "e2ei"]
+e2ei = []
 proteus = [
     "dep:cryptobox",
     "dep:proteus",
@@ -54,7 +56,7 @@ version = "2.0"
 features = ["hazmat"]
 optional = true
 git = "https://github.com/wireapp/proteus"
-branch = "otak/2.0-error-codes"
+branch = "otak/2.0-ec-send-sync"
 
 
 

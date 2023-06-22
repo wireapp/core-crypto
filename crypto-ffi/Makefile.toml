@@ -1,5 +1,6 @@
 [env]
 ANDROID_NDK_PREFER_VERSION = "25.2"
+LIBRARY_EXTENSION = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "so", mapping = {"linux" = "so", "macos" = "dylib", "windows" = "dll", "openbsd" = "so" } }
 
 [tasks.clean]
 command = "cargo"
@@ -13,6 +14,10 @@ dependencies = ["clean"]
 [tasks.check]
 command = "cargo"
 args = ["check"]
+
+[tasks.release-build]
+command = "cargo"
+args = ["build", "--release"]
 
 ##################################### DOCS ####################################
 
@@ -111,27 +116,61 @@ dependencies = ["wasm-build"]
 command = "npm"
 args = ["run", "build"]
 
+##################################### FFI #####################################
+
+[tasks.ffi-swift]
+dependencies = ["release-build"]
+command = "cargo"
+args = [
+    "run",
+    "--features", "uniffi/cli",
+    "--bin", "uniffi-bindgen",
+    "generate",
+    "--language", "swift",
+    "--out-dir", "./bindings/swift/WireCoreCrypto/WireCoreCrypto",
+    "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
+]
+
+[tasks.ffi-kotlin]
+dependencies = ["release-build"]
+command = "cargo"
+args = [
+    "run",
+    "--features", "uniffi/cli",
+    "--bin", "uniffi-bindgen",
+    "generate",
+    "--language", "kotlin",
+    "--out-dir", "./bindings/kt/main",
+    "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
+]
+
+[tasks.ffi]
+dependencies = ["ffi-swift", "ffi-kotlin"]
+
 ##################################### iOS #####################################
 
 [tasks.ios-env]
 plugin = "detect-release"
 
 [tasks.ios-device]
+dependencies = ["ffi-swift"]
 condition = { platforms = ["mac"] }
 command = "cargo"
-args = ["build", "--target", "aarch64-apple-ios", "--features", "mobile", "--release"]
+args = ["build", "--target", "aarch64-apple-ios", "--release"]
 
 [tasks.ios-simulator-x86]
+dependencies = ["ffi-swift"]
 condition = { platforms = ["mac"] }
 command = "cargo"
-args = ["build", "--target", "x86_64-apple-ios", "--features", "mobile", "--release"]
+args = ["build", "--target", "x86_64-apple-ios", "--release"]
 
 [tasks.ios-simulator-arm]
+dependencies = ["ffi-swift"]
 # override CFLAGS to fix ring compilation
 env = { "CRATE_CC_NO_DEFAULTS" = 1, "TARGET_CFLAGS" = { script = ["echo \"--target=arm64-apple-ios14.0.0-simulator -mios-simulator-version-min=14.0 -isysroot `xcrun --show-sdk-path --sdk iphonesimulator`\""] } }
 condition = { platforms = ["mac"] }
 command = "cargo"
-args = ["build", "--target", "aarch64-apple-ios-sim", "--features", "mobile", "--release"]
+args = ["build", "--target", "aarch64-apple-ios-sim", "--release"]
 
 [tasks.ios]
 condition = { platforms = ["mac"] }
@@ -154,23 +193,23 @@ plugin = "android-env"
 
 [tasks.android-armv7]
 command = "cargo"
-args = ["build", "--target", "armv7-linux-androideabi", "--features", "mobile", "--release", "${@}"]
-dependencies = ["android-env"]
+args = ["build", "--target", "armv7-linux-androideabi", "--release", "${@}"]
+dependencies = ["ffi-kotlin", "android-env"]
 
 [tasks.android-armv8]
 command = "cargo"
-args = ["build", "--target", "aarch64-linux-android", "--features", "mobile", "--release", "${@}"]
-dependencies = ["android-env"]
+args = ["build", "--target", "aarch64-linux-android", "--release", "${@}"]
+dependencies = ["ffi-kotlin", "android-env"]
 
 [tasks.android-x86]
 command = "cargo"
-args = ["build", "--target", "x86_64-linux-android", "--features", "mobile", "--release", "${@}"]
-dependencies = ["android-env"]
+args = ["build", "--target", "x86_64-linux-android", "--release", "${@}"]
+dependencies = ["ffi-kotlin", "android-env"]
 
 [tasks.android-i686]
 command = "cargo"
-args = ["build", "--target", "i686-linux-android", "--features", "mobile", "--release", "${@}"]
-dependencies = ["android-env"]
+args = ["build", "--target", "i686-linux-android", "--release", "${@}"]
+dependencies = ["ffi-kotlin", "android-env"]
 
 [tasks.android]
 dependencies = ["android-armv7", "android-armv8", "android-x86", "android-i686"]
@@ -185,7 +224,7 @@ map_put ${handle} "x86_64-linux-android" "x86_64"
 map_put ${handle} "aarch64-linux-android" "arm64-v8a"
 map_put ${handle} "armv7-linux-androideabi" "armeabi-v7a"
 keys = map_keys ${handle}
-libname = set "libcore_crypto_ffi.so"
+libname = set "libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 for rust_target in ${keys}
     android_target = map_get ${handle} ${rust_target}
     println -c bright_blue "cp rust-${rust_target}/${libname} -> android-jniLibs/${android_target}/${libname}"
@@ -207,17 +246,20 @@ cp ${from} ${to}
 
 [tasks.jvm-x86-darwin]
 command = "cargo"
-args = ["build", "--target", "x86_64-apple-darwin", "--features", "mobile", "--release", "${@}"]
+args = ["build", "--target", "x86_64-apple-darwin", "--release", "${@}"]
+dependencies = ["ffi-kotlin"]
 condition = { platforms = ["mac"] }
 
 [tasks.jvm-aarch64-darwin]
 command = "cargo"
-args = ["build", "--target", "aarch64-apple-darwin", "--features", "mobile", "--release", "${@}"]
+args = ["build", "--target", "aarch64-apple-darwin", "--release", "${@}"]
+dependencies = ["ffi-kotlin"]
 condition = { platforms = ["mac"] }
 
 [tasks.jvm-x86-linux]
 command = "cargo"
-args = ["build", "--target", "x86_64-unknown-linux-gnu", "--features", "mobile", "--release", "${@}"]
+args = ["build", "--target", "x86_64-unknown-linux-gnu", "--release", "${@}"]
+dependencies = ["ffi-kotlin"]
 condition = { platforms = ["linux"] }
 
 [tasks.jvm]
@@ -289,12 +331,17 @@ fn autodetect_android_env
         return ${NDK_HOME}
     else
         platform = os_family
+        sdk_folder = set "Sdk"
+
         if eq ${platform} "windows"
-            platform_dir = set "${get_home_dir}/AppData/Local"
+            platform_dir = get_home_dir
+            platform_dir = set "${platform_dir}/AppData/Local"
         elseif eq ${platform} "linux"
             platform_dir = get_home_dir
         elseif eq ${platform} "mac"
-            platform_dir = set "${get_home_dir}/Library"
+            platform_dir = get_home_dir
+            platform_dir = set "${platform_dir}/Library"
+            sdk_folder = set "sdk"
         else
             trigger_error "Unsupported host platform"
         end
@@ -303,10 +350,12 @@ fn autodetect_android_env
         prefer_minor_version = array_pop ${preferred_hwnd}
         prefer_major_version = array_pop ${preferred_hwnd}
         print -c bright_blue "NDK Preferred version is ${prefer_major_version}.${prefer_minor_version}.xxxx\n"
+        print -c bright_blue "Platform home dir is ${platform_dir}\n"
         release ${preferred_hwnd}
 
-        ndk_versions_hwnd = glob_array "${platform_dir}/Android/Sdk/ndk/*"
+        ndk_versions_hwnd = glob_array "${platform_dir}/Android/${sdk_folder}/ndk/*"
         for path in ${ndk_versions_hwnd}
+            print -c bright_blue "Found NDK path: $path"
             ndk_latest_version_path = set ${path}
 
             split_path_hwnd = split ${path} "/"

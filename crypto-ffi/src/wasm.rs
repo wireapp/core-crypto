@@ -126,7 +126,7 @@ pub type WasmCryptoResult<T> = Result<T, CoreCryptoError>;
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, strum::FromRepr)]
 #[repr(u16)]
-/// see [core_crypto::prelude::CiphersuiteName]
+// see [core_crypto::prelude::CiphersuiteName]
 pub enum Ciphersuite {
     /// DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
     MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 = 0x0001,
@@ -1027,7 +1027,7 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::MlsCentral::mls_init]
-    pub async fn mls_init(&self, client_id: FfiClientId, ciphersuites: Box<[u16]>) -> Promise {
+    pub fn mls_init(&self, client_id: FfiClientId, ciphersuites: Box<[u16]>) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
@@ -1972,7 +1972,7 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::proteus::ProteusCentral::encrypt]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub async fn proteus_encrypt(&self, session_id: String, plaintext: Box<[u8]>) -> Promise {
+    pub fn proteus_encrypt(&self, session_id: String, plaintext: Box<[u8]>) -> Promise {
         let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
 
@@ -2013,7 +2013,7 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::proteus::ProteusCentral::new_prekey]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub async fn proteus_new_prekey(&self, prekey_id: u16) -> Promise {
+    pub fn proteus_new_prekey(&self, prekey_id: u16) -> Promise {
         let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
 
@@ -2031,7 +2031,7 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::proteus::ProteusCentral::new_prekey]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub async fn proteus_new_prekey_auto(&self) -> Promise {
+    pub fn proteus_new_prekey_auto(&self) -> Promise {
         let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
         future_to_promise(

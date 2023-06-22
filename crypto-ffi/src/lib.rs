@@ -18,15 +18,8 @@ macro_rules! proteus_impl {
     ($errcode_dest:expr => $body:block or throw $err_type:ty) => {{
         cfg_if::cfg_if! {
             if #[cfg(feature = "proteus")] {
-                cfg_if::cfg_if! {
-                    if #[cfg(target_family = "wasm")] {
-                        #[allow(clippy::redundant_closure_call)]
-                        let result = (async move { $body }).await;
-                    } else {
-                        #[allow(clippy::redundant_closure_call)]
-                        let result = (|| { $body })();
-                    }
-                }
+                #[allow(clippy::redundant_closure_call)]
+                let result = (async move { $body }).await;
 
                 if let Err(e) = &result {
                     let errcode = e.proteus_error_code();
@@ -75,8 +68,7 @@ cfg_if::cfg_if! {
         mod generic;
         pub use self::generic::*;
 
-        #[cfg(feature = "mobile")]
-        uniffi_macros::include_scaffolding!("CoreCrypto");
+        uniffi::include_scaffolding!("CoreCrypto");
     }
 }
 

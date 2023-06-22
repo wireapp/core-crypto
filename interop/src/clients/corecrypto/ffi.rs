@@ -33,7 +33,7 @@ pub struct CoreCryptoFfiClient<'a> {
 impl<'a> CoreCryptoFfiClient<'a> {
     pub async fn new() -> Result<CoreCryptoFfiClient<'a>> {
         let client_id = uuid::Uuid::new_v4();
-        let ciphersuite = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+        let ciphersuite = CiphersuiteName::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519;
         let cc = CoreCrypto::new(
             "path",
             "key",
@@ -51,7 +51,7 @@ impl<'a> CoreCryptoFfiClient<'a> {
 
     pub async fn new_deferred() -> Result<CoreCryptoFfiClient<'a>> {
         let client_id = uuid::Uuid::new_v4();
-        let ciphersuite = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+        let ciphersuite = CiphersuiteName::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519;
         let cc = CoreCrypto::deferred_init("path", "key", vec![ciphersuite], None)?;
         Ok(Self {
             cc,
@@ -88,16 +88,21 @@ impl<'a> EmulatedClient for CoreCryptoFfiClient<'a> {
 #[async_trait::async_trait(?Send)]
 impl<'a> EmulatedMlsClient for CoreCryptoFfiClient<'a> {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
-        let ciphersuite = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+        let ciphersuite = CiphersuiteName::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519;
         let credential_type = MlsCredentialType::Basic;
-        let mut kps = self.cc.client_keypackages(ciphersuite, credential_type, 1)?;
-        Ok(kps.remove(0))
+        let kp = self
+            .cc
+            .client_keypackages(ciphersuite, credential_type, 1)
+            .await?
+            .pop()
+            .unwrap();
+        Ok(kp)
     }
 
     async fn add_client(&mut self, conversation_id: &[u8], client_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
         if !self.cc.conversation_exists(conversation_id.to_vec()) {
             let cfg = core_crypto_ffi::ConversationConfiguration {
-                ciphersuite: Some(CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519),
+                ciphersuite: Some(CiphersuiteName::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519),
                 external_senders: vec![],
                 custom: CustomConfiguration {
                     key_rotation_span: None,

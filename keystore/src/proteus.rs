@@ -16,12 +16,14 @@
 
 use crate::{connection::Connection, entities::ProteusPrekey, CryptoKeystoreError, CryptoKeystoreResult};
 
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait CryptoKeystoreProteus {
     async fn proteus_store_prekey(&self, id: u16, prekey: &[u8]) -> CryptoKeystoreResult<()>;
 }
 
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl CryptoKeystoreProteus for Connection {
     async fn proteus_store_prekey(&self, id: u16, prekey: &[u8]) -> CryptoKeystoreResult<()> {
         let entity = ProteusPrekey::from_raw(id, prekey.to_vec());
@@ -30,7 +32,8 @@ impl CryptoKeystoreProteus for Connection {
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl proteus_traits::PreKeyStore for Connection {
     type Error = CryptoKeystoreError;
 
