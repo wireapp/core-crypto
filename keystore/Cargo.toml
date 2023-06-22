@@ -114,7 +114,7 @@ git = "https://github.com/wireapp/proteus"
 branch = "otak/2.0-error-codes"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
-version = "0.4"
+version = "0.5"
 features = ["async_futures", "html_reports"]
 
 [package.metadata.wasm-pack.profile.release]
