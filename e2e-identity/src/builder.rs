@@ -1,12 +1,13 @@
 #![allow(dead_code)]
 
 use jwt_simple::prelude::*;
+pub use time::OffsetDateTime;
+use x509_cert::der::EncodePem;
+
 use rusty_jwt_tools::prelude::*;
 
 // re-export for convenience
 use crate::RustyE2eIdentity;
-pub use time::OffsetDateTime;
-use x509_cert::der::EncodePem;
 
 /// Builds a verifiable proof of identity.
 /// From the built artifact, you can use [rusty_acme::prelude::WireIdentityReader] to extract
@@ -32,9 +33,9 @@ pub enum WireIdentityBuilderOptions {
 #[derive(Debug)]
 pub struct WireIdentityBuilderX509 {
     pub ca_not_after: OffsetDateTime,
-    pub ca_kp: Option<(rcgen::KeyPair, Vec<u8>)>,
+    pub ca_kp: Option<Vec<u8>>,
     pub provisioner_name: String,
-    pub cert_kp: Option<(rcgen::KeyPair, Vec<u8>)>,
+    pub cert_kp: Option<Vec<u8>>,
 }
 
 impl Clone for WireIdentityBuilderX509 {
@@ -145,12 +146,10 @@ impl WireIdentityBuilder {
     }
 
     fn get_ca_kp(&self) -> (rcgen::KeyPair, Vec<u8>) {
-        if let Some(WireIdentityBuilderOptions::X509(WireIdentityBuilderX509 {
-            ca_kp: Some((ca_kp, sk)),
-            ..
-        })) = self.options.as_ref()
+        if let Some(WireIdentityBuilderOptions::X509(WireIdentityBuilderX509 { ca_kp: Some(ca_kp), .. })) =
+            self.options.as_ref()
         {
-            (rcgen::KeyPair::from_der(&ca_kp.serialize_der()).unwrap(), sk.clone())
+            self.parse_keypair(ca_kp)
         } else {
             self.new_key_pair()
         }
@@ -158,14 +157,27 @@ impl WireIdentityBuilder {
 
     fn get_cert_kp(&self) -> (rcgen::KeyPair, Vec<u8>) {
         if let Some(WireIdentityBuilderOptions::X509(WireIdentityBuilderX509 {
-            cert_kp: Some((cert_kp, sk)),
-            ..
+            cert_kp: Some(cert_kp), ..
         })) = self.options.as_ref()
         {
-            (rcgen::KeyPair::from_der(&cert_kp.serialize_der()).unwrap(), sk.clone())
+            self.parse_keypair(cert_kp)
         } else {
             self.new_key_pair()
         }
+    }
+
+    fn parse_keypair(&self, kp: &[u8]) -> (rcgen::KeyPair, Vec<u8>) {
+        const DER_HEADER_SK_LEN: usize = 16;
+        let (kp, sk) = match self.alg {
+            SignAlgorithm::Ed25519 => {
+                let kp = Ed25519KeyPair::from_bytes(kp).unwrap();
+                // `to_der()` is the only way to get the private key
+                let sk = kp.key_pair().to_der()[DER_HEADER_SK_LEN..].to_vec();
+                let kp = rcgen::KeyPair::from_der(&kp.to_der()).unwrap();
+                (kp, sk)
+            }
+        };
+        (kp, sk)
     }
 
     pub fn build_x509(self) -> (x509_cert::PkiPath, Vec<u8>) {
@@ -268,10 +280,11 @@ impl RustyE2eIdentity {
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
+    use wasm_bindgen_test::*;
+
     use rusty_acme::prelude::WireIdentityReader as _;
 
-    use wasm_bindgen_test::*;
+    use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
