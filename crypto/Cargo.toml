@@ -24,7 +24,7 @@ bench-in-db = []
 [dependencies]
 thiserror = "1.0"
 derive_more = { version = "0.99", features = ["from", "into", "deref"] }
-strum = { version = "0.24", features = ["derive"] }
+strum = { version = "0.25", features = ["derive"] }
 cfg-if = "1.0"
 hex = "0.4"
 futures-util = "0.3"
@@ -105,7 +105,7 @@ cryptobox = { git = "https://github.com/wireapp/cryptobox", tag = "v1.0.3" }
 proteus = { git = "https://github.com/wireapp//proteus", branch = "otak/fix-1.0.3" }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
-version = "0.4"
+version = "0.5"
 features = ["async_std", "html_reports"]
 
 [dev-dependencies.core-crypto-attributes]
