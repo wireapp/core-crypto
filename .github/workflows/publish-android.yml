@@ -52,6 +52,9 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: kotlin
-          arguments: "android:publishMavenPublicationToGithubRepository"
+          arguments: "android:publishToSonatype closeAndReleaseSonatypeStagingRepository"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.SONATYPE_PASSWORD }}
+          ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.SONATYPE_USERNAME }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.PGP_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.PGP_PASSPHRASE }}

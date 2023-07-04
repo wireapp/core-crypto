@@ -1,7 +1,10 @@
+import java.util.*
+
 plugins {
     id("com.android.library")
     id("kotlin-android")
     id("maven-publish")
+    id("signing")
 }
 
 android {
@@ -112,7 +115,7 @@ afterEvaluate {
             create<MavenPublication>("maven") {
                 groupId = "com.wire"
                 artifactId = "core-crypto-android"
-                version = "1.0.0-pre.6"
+                version = project.properties["coreCryptoVersion"] as String
                 from(components["release"])
                 pom {
                     name.set("core-crypto-android")
@@ -126,6 +129,24 @@ afterEvaluate {
                             url.set("https://github.com/wireapp/core-crypto/blob/main/LICENSE")
                         }
                     }
+                    developers {
+                        developer {
+                            name.set("Jacob Persson")
+                            email.set("jacob.persson@wire.com")
+                        }
+                        developer {
+                            name.set("Beltram Maldant")
+                            email.set("beltram.maldant@wire.com")
+                        }
+                        developer {
+                            name.set("Mathieu Amiot")
+                            email.set("mathieu.amiot@wire.com")
+                        }
+                        developer {
+                            name.set("Augusto César Dias")
+                            email.set("augusto.c.dias@wire.com")
+                        }
+                    }
                     scm {
                         connection.set("scm:git:github.com/wireapp/core-crypto.git")
                         developerConnection.set("scm:git:ssh://github.com/wireapp/core-crypto.git")
@@ -135,4 +156,30 @@ afterEvaluate {
             }
         }
     }
+
+    signing {
+        val signingKey: String? = project.getLocalProperty("signingKey")
+        val signingPassword: String? = project.getLocalProperty("signingPassword")
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign(publishing.publications["maven"])
+    }
+}
+
+fun <T> Project.getLocalProperty(propertyName: String): T? {
+    return getLocalProperty(propertyName, this)
+}
+
+/**
+ * Util to obtain property declared on `$projectRoot/local.properties` file or default
+ */
+@Suppress("UNCHECKED_CAST")
+fun <T> getLocalProperty(propertyName: String, project: Project): T? {
+    val localProperties = Properties().apply {
+        val localPropertiesFile = project.rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            load(localPropertiesFile.inputStream())
+        }
+    }
+
+    return localProperties.get(propertyName) as? T
 }
