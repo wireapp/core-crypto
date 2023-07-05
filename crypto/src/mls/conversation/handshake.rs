@@ -1345,36 +1345,6 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_prevent_commit_duplicates(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-
-                        let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
-
-                        let _decrypt_once = bob_central
-                            .decrypt_message(&id, &commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        // fails when we try to decrypt a commit for current epoch
-                        let decrypt_twice = bob_central.decrypt_message(&id, &commit.to_bytes().unwrap()).await;
-                        assert!(matches!(decrypt_twice.unwrap_err(), CryptoError::WrongEpoch));
-                    })
-                },
-            )
-            .await;
-        }
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn should_prevent_out_of_order_commits(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
@@ -1389,25 +1359,21 @@ pub mod tests {
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let commit1 = alice_central.update_keying_material(&id).await.unwrap().commit;
+                        let commit1 = commit1.to_bytes().unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
                         let commit2 = alice_central.update_keying_material(&id).await.unwrap().commit;
+                        let commit2 = commit2.to_bytes().unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
 
                         // fails when a commit is skipped
-                        let out_of_order = bob_central.decrypt_message(&id, &commit2.to_bytes().unwrap()).await;
+                        let out_of_order = bob_central.decrypt_message(&id, &commit2).await;
                         assert!(matches!(out_of_order.unwrap_err(), CryptoError::WrongEpoch));
                         // works in the right order though
-                        assert!(bob_central
-                            .decrypt_message(&id, &commit1.to_bytes().unwrap())
-                            .await
-                            .is_ok());
-                        assert!(bob_central
-                            .decrypt_message(&id, &commit2.to_bytes().unwrap())
-                            .await
-                            .is_ok());
+                        assert!(bob_central.decrypt_message(&id, &commit1).await.is_ok());
+                        assert!(bob_central.decrypt_message(&id, &commit2).await.is_ok());
 
                         // and then fails again when trying to decrypt a commit with an epoch in the past
-                        let past_commit = bob_central.decrypt_message(&id, &commit2.to_bytes().unwrap()).await;
+                        let past_commit = bob_central.decrypt_message(&id, &commit1).await;
                         assert!(matches!(past_commit.unwrap_err(), CryptoError::WrongEpoch));
                     })
                 },
@@ -1485,7 +1451,7 @@ pub mod tests {
                                     .decrypt_message(&id, proposal2.to_bytes().unwrap())
                                     .await
                                     .unwrap_err(),
-                                CryptoError::GenerationOutOfBound
+                                CryptoError::DuplicateMessage
                             ));
                             bob_central
                                 .get_conversation_unchecked(&id)
