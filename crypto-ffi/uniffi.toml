@@ -1,3 +1,7 @@
+[bindings.kotlin-native]
+package_name = "com.wire.crypto"
+cdylib_name = "core_crypto_ffi"
+
 [bindings.kotlin]
 package_name = "com.wire.crypto"
 cdylib_name = "core_crypto_ffi"
