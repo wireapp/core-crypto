@@ -19,10 +19,12 @@ use openmls::{
 use mls_crypto_provider::MlsCryptoProvider;
 use tls_codec::Deserialize;
 
-use crate::mls::credential::ext::CredentialExt;
 use crate::{
     group_store::GroupStoreValue,
-    mls::{client::Client, conversation::renew::Renew, ClientId, ConversationId, MlsCentral, MlsConversation},
+    mls::{
+        client::Client, conversation::renew::Renew, credential::ext::CredentialExt, ClientId, ConversationId,
+        MlsCentral, MlsConversation,
+    },
     prelude::{MlsProposalBundle, WireIdentity},
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };
@@ -166,8 +168,12 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
         msg_in: MlsMessageIn,
     ) -> CryptoResult<ProcessedMessage> {
+        let mut is_duplicate = false;
         let protocol_message = match msg_in.extract() {
-            MlsMessageInBody::PublicMessage(m) => ProtocolMessage::PublicMessage(m),
+            MlsMessageInBody::PublicMessage(m) => {
+                is_duplicate = self.is_duplicate_message(backend, &m)?;
+                ProtocolMessage::PublicMessage(m)
+            }
             MlsMessageInBody::PrivateMessage(m) => ProtocolMessage::PrivateMessage(m),
             _ => {
                 return Err(CryptoError::MlsError(
@@ -175,14 +181,21 @@ impl MlsConversation {
                 ))
             }
         };
-        self.group
+        let processed_msg = self
+            .group
             .process_message(backend, protocol_message)
             .await
             .map_err(|e| match e {
                 ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
                     MessageDecryptionError::GenerationOutOfBound,
-                )) => CryptoError::GenerationOutOfBound,
-                ProcessMessageError::ValidationError(ValidationError::WrongEpoch) => CryptoError::WrongEpoch,
+                )) => CryptoError::DuplicateMessage,
+                ProcessMessageError::ValidationError(ValidationError::WrongEpoch) => {
+                    if is_duplicate {
+                        CryptoError::DuplicateMessage
+                    } else {
+                        CryptoError::WrongEpoch
+                    }
+                }
                 ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
                     MessageDecryptionError::AeadError,
                 )) => CryptoError::DecryptionError,
@@ -190,7 +203,11 @@ impl MlsConversation {
                     MessageDecryptionError::SecretTreeError(SecretTreeError::TooDistantInThePast),
                 )) => CryptoError::MessageEpochTooOld,
                 _ => CryptoError::from(MlsError::from(e)),
-            })
+            })?;
+        if is_duplicate {
+            return Err(CryptoError::DuplicateMessage);
+        }
+        Ok(processed_msg)
     }
 }
 
@@ -245,8 +262,7 @@ pub mod tests {
         test_utils::{ValidationCallbacks, *},
         CryptoError,
     };
-    use openmls::prelude::KeyPackageRef;
-    use openmls::prelude::ProcessMessageError;
+    use openmls::prelude::{KeyPackageRef, ProcessMessageError};
     use openmls_traits::OpenMlsCryptoProvider;
     use std::time::Duration;
     use wasm_bindgen_test::*;
@@ -982,35 +998,6 @@ pub mod tests {
             .await
         }
 
-        // Ensures decrypting an application message is durable
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        pub async fn cannot_decrypt_app_message_twice(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-
-                        let msg = b"Hello bob";
-                        let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
-                        assert_ne!(&msg[..], &encrypted[..]);
-                        let decrypt_once = bob_central.decrypt_message(&id, encrypted.clone()).await;
-                        assert!(decrypt_once.is_ok());
-                        let decrypt_twice = bob_central.decrypt_message(&id, encrypted).await;
-                        assert!(matches!(decrypt_twice.unwrap_err(), CryptoError::GenerationOutOfBound))
-                    })
-                },
-            )
-            .await
-        }
-
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn cannot_decrypt_app_message_after_rejoining(case: TestCase) {
@@ -1125,7 +1112,7 @@ pub mod tests {
                                 let decrypted = decrypt.unwrap().app_msg.unwrap();
                                 assert_eq!(decrypted, original.as_bytes());
                             } else {
-                                assert!(matches!(decrypt.unwrap_err(), CryptoError::GenerationOutOfBound))
+                                assert!(matches!(decrypt.unwrap_err(), CryptoError::DuplicateMessage))
                             }
                         }
                     })

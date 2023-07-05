@@ -94,7 +94,7 @@ enum CryptoError {
     "UnauthorizedExternalAddProposal",
     "UnauthorizedExternalCommit",
     "InvalidHashReference",
-    "GenerationOutOfBound",
+    "DuplicateMessage",
     "WrongEpoch",
     "DecryptionError",
     "HexDecodeError",

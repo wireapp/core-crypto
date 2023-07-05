@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::prelude::MlsCredentialType;
 use crate::prelude::{MlsCiphersuite, MlsConversationConfiguration, MlsCustomConfiguration};
+use crate::prelude::{MlsCredentialType, MlsWirePolicy};
 use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
@@ -127,6 +127,10 @@ impl TestCase {
 
     pub fn is_basic(&self) -> bool {
         matches!(self.credential_type, MlsCredentialType::Basic)
+    }
+
+    pub fn is_pure_ciphertext(&self) -> bool {
+        matches!(self.cfg.custom.wire_policy, MlsWirePolicy::Ciphertext)
     }
 }
 
