@@ -13,6 +13,7 @@ buildscript {
 plugins {
     kotlin("multiplatform") version "1.8.0"
     id("maven-publish")
+    id("com.vanniktech.maven.publish") version "0.25.3"
 }
 
 kotlin {

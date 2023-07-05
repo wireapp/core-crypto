@@ -12,9 +12,6 @@ repositories {
     mavenCentral()
 }
 
-group = "com.wire"
-version = "0.8.0-multiplatform"
-
 val generatedDir = projectDir.resolve("generated")
 val crateDir = projectDir.resolve("../../../")
 val crateTargetDir = projectDir.resolve("../../../../target")
