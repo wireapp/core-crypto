@@ -7,11 +7,22 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-pre.5] - 2023-07-06
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-pre.6" unreleased=true}}
+</details>
+
+* feat!: PostQuantum Ciphersuite support ! Using [Xyber768](https://www.ietf.org/archive/id/draft-westerbaan-cfrg-hpke-xyber768d00-02.html) for Key Exchange.
+* feat! Credential rotation support (for E2E Identity). It allows to change the local client Credential in a MLS group, replacing it with a X509 Certificate one.
+* feat!: remove `export_group_info()` method that wasn't used
+
 ## [1.0.0-pre.5] - 2023-06-12
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-pre.5" unreleased=true}}
+{{git-cliff tag="v1.0.0-pre.5"}}
 </details>
 
 * fix: `joinByExternalCommit` was expecting a `GroupInfo` wrapped in a MlsMessage
