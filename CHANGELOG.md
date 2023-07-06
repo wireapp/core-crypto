@@ -7,6 +7,72 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-pre.5] - 2023-07-06
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Wrong HPQ ciphersuite identifier
+- Address review & de-flakify cert expiration test
+- Target correct branches
+- PQ support for FFI
+- Benches modification
+
+### Features
+
+- [**breaking**] Credential rotation
+- PostQuantum Ciphersuite
+- [**breaking**] Remove `export_group_info()`
+
+
+### Bug Fixes
+
+- Backend sends raw GroupInfo, we were trying to deserialize it from a MlsMessage
+
+
+### Bug Fixes
+
+- Pin a version of openmls with a fix in tls_codec related to variable length encoding
+
+### Testing
+
+- Fix external commit test was not merging the external commit
+
+
+### Bug Fixes
+
+- Typo in build xcframework task
+
+
+### Features
+
+- CoreCrypto draft-20 upgrade
+- Generate XCFramework when releasing for Swift ([#330](https://github.com/wireapp/core-crypto/issues/330))
+
+
+### Features
+
+- Add `e2ei_is_degraded` to flag a conversation as degraded when at least 1 member is not using a e2ei certificate
+
+
+### Bug Fixes
+
+- Usize to u64 conversion error on Android in `client_valid_keypackages_count`. Whatever the reason this applies a default meaningful value
+- [**breaking**] Creating a MLS group does not consume an existing KeyPackage anymore, instead it always generates a new local one. Also, explicitly ask for the credential type of the creator before creating a new MLS group.
+- Mobile FFI was failing when initializing MLS client due to a Arc being incremented one too many times. Also add the E2EI API in the Kotlin wrapper and a test for it
+
+### Features
+
+- [**breaking**] Hide everywhere `Vec<Ciphersuite>` appears in the public API since it seems to fail for obscure reasons on aarch64 Android devices. Undo when we have a better understanding of the root cause of this
+
+</details>
+
+* feat!: PostQuantum Ciphersuite support ! Using [Xyber768](https://www.ietf.org/archive/id/draft-westerbaan-cfrg-hpke-xyber768d00-02.html) for Key Exchange.
+* feat! Credential rotation support (for E2E Identity)
+* feat!: remove `export_group_info()` method that wasn't used
+
 ## [1.0.0-pre.5] - 2023-06-12
 
 <details>
