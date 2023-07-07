@@ -1,9 +1,9 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("multiplatform") version "1.8.0"
+    kotlin("multiplatform") version "1.8.22"
+    id("com.vanniktech.maven.publish") version "0.25.3"
     id("com.android.library")
-    id("maven-publish")
     id("kotlinx-atomicfu")
 }
 
@@ -103,6 +103,7 @@ kotlin {
     val nativeTargets = listOf(
         iosX64(),
         iosArm64(),
+        iosSimulatorArm64(),
         macosX64(),
         macosArm64()
     )
@@ -151,7 +152,7 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 kotlin.srcDir(projectDir.resolve("externals"))
-                implementation(npm("@wireapp/core-crypto", "0.7.0-rc.4", generateExternals = false))
+                implementation(npm("@wireapp/core-crypto", "1.0.0-pre.5", generateExternals = false))
             }
         }
         val nativeMain = sourceSets.maybeCreate("nativeMain").apply {
@@ -187,35 +188,5 @@ android {
     }
     sourceSets {
         getByName("main").jniLibs.srcDirs(buildDir.resolve("androidMain").resolve("main").resolve("jniLibs"))
-    }
-}
-
-publishing {
-    repositories {
-        maven {
-            name = "GitHub"
-            url = uri("https://maven.pkg.github.com/wireapp/core-crypto")
-            credentials {
-                username =
-                    project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
-                password =
-                    project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
-            }
-        }
-    }
-}
-
-// Workaround for https://youtrack.jetbrains.com/issue/KT-51970
-afterEvaluate {
-    afterEvaluate {
-        tasks.configureEach {
-            if (
-                name.startsWith("compile")
-                && name.endsWith("KotlinMetadata")
-            ) {
-                println("disabling $name")
-                enabled = false
-            }
-        }
     }
 }
