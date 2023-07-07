@@ -1,5 +1,5 @@
 const path = require("path");
-const abs = path.resolve("../../node_modules/@wireapp/core-crypto/platforms/web/assets/core_crypto_ffi-2bc82439.wasm")
+const abs = path.resolve("../../node_modules/@wireapp/core-crypto/platforms/web/assets/core_crypto_ffi-32b81580.wasm")
 
 config.files.push({
     pattern: abs,
@@ -9,4 +9,4 @@ config.files.push({
     nocache: false,
 });
 
-config.proxies["/assets/core_crypto_ffi-2bc82439.wasm"] = `/absolute${abs}`
+config.proxies["/assets/core_crypto_ffi-32b81580.wasm"] = `/absolute${abs}`

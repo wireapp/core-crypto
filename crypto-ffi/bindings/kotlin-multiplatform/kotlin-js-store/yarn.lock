@@ -253,10 +253,10 @@
   resolved "https://registry.yarnpkg.com/@webpack-cli/serve/-/serve-1.7.0.tgz#e1993689ac42d2b16e9194376cfb6753f6254db1"
   integrity sha512-oxnCNGj88fL+xzV+dacXs44HcDwf1ovs3AuEzvP7mqXw7fQntqIhQ1BRmynh4qEKQSSSRSWVyXRjmTbZIX9V2Q==
 
-"@wireapp/core-crypto@0.7.0-rc.4":
-  version "0.7.0-rc.4"
-  resolved "https://registry.yarnpkg.com/@wireapp/core-crypto/-/core-crypto-0.7.0-rc.4.tgz#1d9e3da827c255e6e7233b7aee017e35b12d2d75"
-  integrity sha512-ucKhlrjpALbJ0M85GfsV0/fNlvFAMHPQh/ssVUt/jmHVykrz+JuiKxqSIuvL1pvAc6LmHetV9mtnfLtuygFgOw==
+"@wireapp/core-crypto@1.0.0-pre.5":
+  version "1.0.0-pre.5"
+  resolved "https://registry.yarnpkg.com/@wireapp/core-crypto/-/core-crypto-1.0.0-pre.5.tgz#7fc5586353d3a49bcdafcfde12417b1fcbf1ffbc"
+  integrity sha512-A68tZYKWT3ZfzArPk2FGdivD5VYRPClzPjvNib4CcflDfnEux8FET9ERXz/xOWzJvdkE2KpVkdNXaC3bFrwYaw==
 
 "@xtuc/ieee754@^1.2.0":
   version "1.2.0"
