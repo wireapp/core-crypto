@@ -1,9 +1,7 @@
 package com.wire.crypto.client
 
+import com.wire.crypto.*
 import com.wire.crypto.ClientId
-import com.wire.crypto.ConversationId
-import com.wire.crypto.CoreCrypto
-import com.wire.crypto.CoreCryptoCallbacks
 
 private class Callbacks: CoreCryptoCallbacks {
     override fun authorize(conversationId: ConversationId, clientId: ClientId): Boolean {
@@ -34,7 +32,7 @@ actual class CoreCryptoCentral constructor(private val rootDir: String, database
     private val coreCrypto: CoreCrypto
 
     init {
-        coreCrypto = CoreCrypto.deferredInit(path, databaseKey, null)
+        coreCrypto = CoreCrypto.deferredInit(path, databaseKey, DEFAULT_CIPHERSUITES)
         coreCrypto.setCallbacks(Callbacks())
     }
 
@@ -43,11 +41,14 @@ actual class CoreCryptoCentral constructor(private val rootDir: String, database
     }
 
     actual suspend fun mlsClient(clientId: String): MLSClient {
-        coreCrypto.mlsInit(clientId.toUByteList())
+        coreCrypto.mlsInit(clientId.toUByteList(), DEFAULT_CIPHERSUITES)
         return MLSClientImpl(coreCrypto)
     }
 
-    companion object {
+    actual companion object {
         const val KEYSTORE_NAME = "keystore"
+        fun CiphersuiteName.lower() = (ordinal + 1).toUShort()
+        actual val DEFAULT_CIPHERSUITE = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
+        val DEFAULT_CIPHERSUITES = listOf(DEFAULT_CIPHERSUITE)
     }
 }

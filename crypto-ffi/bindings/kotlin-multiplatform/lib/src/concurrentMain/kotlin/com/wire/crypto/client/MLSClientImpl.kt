@@ -1,6 +1,7 @@
 package com.wire.crypto.client
 
 import com.wire.crypto.*
+import com.wire.crypto.client.CoreCryptoCentral.Companion.DEFAULT_CIPHERSUITE
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -12,18 +13,17 @@ class MLSClientImpl constructor(
 ) : MLSClient {
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration, MlsWirePolicy.PLAINTEXT)
-    private val defaultCiphersuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
 
-    override suspend fun getPublicKey(): ByteArray {
-        return coreCrypto.clientPublicKey().toUByteArray().asByteArray()
+    override suspend fun getPublicKey(ciphersuite: Ciphersuite): ByteArray {
+        return coreCrypto.clientPublicKey(ciphersuite).toUByteArray().asByteArray()
     }
 
-    override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
-        return coreCrypto.clientKeypackages(amount.toUInt()).map { it.toUByteArray().asByteArray() }
+    override suspend fun generateKeyPackages(ciphersuite: Ciphersuite, amount: Int): List<ByteArray> {
+        return coreCrypto.clientKeypackages(ciphersuite, amount.toUInt()).map { it.toUByteArray().asByteArray() }
     }
 
-    override suspend fun validKeyPackageCount(): ULong {
-        return coreCrypto.clientValidKeypackagesCount()
+    override suspend fun validKeyPackageCount(ciphersuite: Ciphersuite): ULong {
+        return coreCrypto.clientValidKeypackagesCount(ciphersuite)
     }
 
     override suspend fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
@@ -38,18 +38,29 @@ class MLSClientImpl constructor(
         return coreCrypto.conversationEpoch(groupId.toUByteList())
     }
 
-    override suspend fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage {
+    override suspend fun joinConversation(
+        groupId: MLSGroupId,
+        epoch: ULong,
+        ciphersuite: Ciphersuite,
+        credentialType: CredentialType
+    ): HandshakeMessage {
         return coreCrypto.newExternalAddProposal(
             conversationId = groupId.toUByteList(),
-            epoch = epoch
+            epoch = epoch,
+            ciphersuite = ciphersuite,
+            credentialType = toCredentialType(credentialType)
         ).toByteArray()
     }
 
-    override suspend fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle {
+    override suspend fun joinByExternalCommit(
+        groupInfo: ByteArray,
+        credentialType: CredentialType
+    ): CommitBundle {
         return toCommitBundle(
             coreCrypto.joinByExternalCommit(
-                publicGroupState.toUByteList(),
-                defaultGroupConfiguration)
+                groupInfo.toUByteList(),
+                defaultGroupConfiguration,
+                toCredentialType(credentialType))
         )
     }
 
@@ -64,16 +75,17 @@ class MLSClientImpl constructor(
 
     override suspend fun createConversation(
         groupId: MLSGroupId,
+        creatorCredentialType: CredentialType,
         externalSenders: List<Ed22519Key>
     ) {
         val conf = ConversationConfiguration(
-            defaultCiphersuiteName,
+            DEFAULT_CIPHERSUITE,
             externalSenders.map { it.toUByteList() },
             defaultGroupConfiguration
         )
 
         val groupIdAsBytes = groupId.toUByteList()
-        coreCrypto.createConversation(groupIdAsBytes, conf)
+        coreCrypto.createConversation(groupIdAsBytes, toCredentialType(creatorCredentialType), conf)
     }
 
     override suspend fun wipeConversation(groupId: MLSGroupId) {
@@ -146,22 +158,22 @@ class MLSClientImpl constructor(
         fun toCommitBundle(value: com.wire.crypto.MemberAddedMessages) = CommitBundle(
             value.commit.toByteArray(),
             value.welcome.toByteArray(),
-            toPublicGroupStateBundle(value.publicGroupState)
+            toGroupInfo(value.groupInfo)
         )
 
         fun toCommitBundle(value: com.wire.crypto.CommitBundle) = CommitBundle(
             value.commit.toByteArray(),
             value.welcome?.toByteArray(),
-            toPublicGroupStateBundle(value.publicGroupState)
+            toGroupInfo(value.groupInfo)
         )
 
         fun toCommitBundle(value: com.wire.crypto.ConversationInitBundle) = CommitBundle(
             value.commit.toByteArray(),
             null,
-            toPublicGroupStateBundle(value.publicGroupState)
+            toGroupInfo(value.groupInfo)
         )
 
-        fun toPublicGroupStateBundle(value: com.wire.crypto.PublicGroupStateBundle) = PublicGroupStateBundle(
+        fun toGroupInfo(value: com.wire.crypto.GroupInfoBundle) = GroupInfoBundle(
             toEncryptionType(value.encryptionType),
             toRatchetTreeType(value.ratchetTreeType),
             value.payload.toByteArray()
@@ -174,10 +186,10 @@ class MLSClientImpl constructor(
             value.hasEpochChanged
         )
 
-        fun toEncryptionType(encryptionType: MlsPublicGroupStateEncryptionType) =
+        fun toEncryptionType(encryptionType: MlsGroupInfoEncryptionType) =
             when (encryptionType) {
-                MlsPublicGroupStateEncryptionType.PLAINTEXT -> PublicGroupStateEncryptionType.PLAINTEXT
-                MlsPublicGroupStateEncryptionType.JWE_ENCRYPTED -> PublicGroupStateEncryptionType.JWE_ENCRYPTED
+                MlsGroupInfoEncryptionType.PLAINTEXT -> GroupInfoEncryptionType.PLAINTEXT
+                MlsGroupInfoEncryptionType.JWE_ENCRYPTED -> GroupInfoEncryptionType.JWE_ENCRYPTED
             }
 
         fun toRatchetTreeType(ratchetTreeType: MlsRatchetTreeType) =
@@ -185,6 +197,12 @@ class MLSClientImpl constructor(
                 MlsRatchetTreeType.FULL -> RatchetTreeType.FULL
                 MlsRatchetTreeType.DELTA -> RatchetTreeType.DELTA
                 MlsRatchetTreeType.BY_REF -> RatchetTreeType.BY_REF
+            }
+
+        fun toCredentialType(credentialType: CredentialType) =
+            when (credentialType) {
+                CredentialType.X509 -> MlsCredentialType.X509
+                CredentialType.BASIC -> MlsCredentialType.BASIC
             }
     }
 

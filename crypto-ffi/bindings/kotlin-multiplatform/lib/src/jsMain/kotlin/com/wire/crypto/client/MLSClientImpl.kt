@@ -1,34 +1,38 @@
 package com.wire.crypto.client
 
 import externals.*
-import externals.PublicGroupStateBundle
+import externals.Ciphersuite as CoreCryptoCiphersuite
+import externals.GroupInfoBundle as CoreCryptoGroupInfoBundle
 import externals.CommitBundle as CoreCryptoCommitBundle
 import externals.RatchetTreeType as CoreCryptoRatchetTreeType
-import externals.PublicGroupStateEncryptionType as CoreCryptoPublicGroupStateEncryptionType
+import externals.GroupInfoEncryptionType as CoreCryptoGroupInfoEncryptionType
+import externals.CredentialType as CoreCryptoCredentialType
 import kotlinx.coroutines.await
 import org.khronos.webgl.Uint8Array
 
 typealias ConversationId = Uint8Array
 typealias CoreCryptoClientId = Uint8Array
 
-class ExternalAddProposalArgs(
+class ExternalAddProposalArgsImpl(
     override var conversationId: ConversationId,
-    override var epoch: Number
-) : ExternalProposalArgs
+    override var epoch: Number,
+    override var ciphersuite: externals.Ciphersuite,
+    override var credentialType: externals.CredentialType
+) : ExternalAddProposalArgs
 
 class InviteeArgs(override var id: CoreCryptoClientId, override var kp: Uint8Array) : Invitee
 
 @Suppress("TooManyFunctions")
 class MLSClientImpl(private val coreCrypto: CoreCrypto): MLSClient {
 
-    override suspend fun getPublicKey(): ByteArray =
-        coreCrypto.clientPublicKey().await().toByteArray()
+    override suspend fun getPublicKey(ciphersuite: Ciphersuite): ByteArray =
+        coreCrypto.clientPublicKey(toCiphersuite(ciphersuite)).await().toByteArray()
 
-    override suspend fun generateKeyPackages(amount: Int): List<ByteArray> =
-        coreCrypto.clientKeypackages(amount).await().map { it.toByteArray() }
+    override suspend fun generateKeyPackages(ciphersuite: Ciphersuite, amount: Int): List<ByteArray> =
+        coreCrypto.clientKeypackages(toCiphersuite(ciphersuite), amount).await().map { it.toByteArray() }
 
-    override suspend fun validKeyPackageCount(): ULong =
-        coreCrypto.clientValidKeypackagesCount().await().toLong().toULong()
+    override suspend fun validKeyPackageCount(ciphersuite: Ciphersuite): ULong =
+        coreCrypto.clientValidKeypackagesCount(toCiphersuite(ciphersuite)).await().toLong().toULong()
 
     override suspend fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle =
         toCommitBundle(coreCrypto.updateKeyingMaterial(groupId.toUint8Array()).await())
@@ -39,16 +43,27 @@ class MLSClientImpl(private val coreCrypto: CoreCrypto): MLSClient {
     override suspend fun conversationEpoch(groupId: MLSGroupId): ULong =
         coreCrypto.conversationEpoch(groupId.toUint8Array()).await().toLong().toULong()
 
-    override suspend fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage =
+    override suspend fun joinConversation(
+        groupId: MLSGroupId,
+        epoch: ULong,
+        ciphersuite: Ciphersuite,
+        credentialType: CredentialType
+    ): HandshakeMessage =
         coreCrypto.newExternalProposal(
-            ExternalProposalType.Add, ExternalAddProposalArgs(
+            ExternalProposalType.Add,
+            ExternalAddProposalArgsImpl(
                 groupId.toUint8Array(),
-                epoch.toLong()
+                epoch.toLong(),
+                toCiphersuite(ciphersuite),
+                toCredentialType(credentialType)
             )
         ).await().toByteArray()
 
-    override suspend fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle =
-        toCommitBundle(coreCrypto.joinByExternalCommit(publicGroupState.toUint8Array()).await())
+    override suspend fun joinByExternalCommit(
+        groupInfo: ByteArray,
+        credentialType: CredentialType
+    ): CommitBundle =
+        toCommitBundle(coreCrypto.joinByExternalCommit(groupInfo.toUint8Array(), toCredentialType(credentialType)).await())
 
     override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) =
         coreCrypto.mergePendingGroupFromExternalCommit(groupId.toUint8Array()).await()
@@ -56,10 +71,17 @@ class MLSClientImpl(private val coreCrypto: CoreCrypto): MLSClient {
     override suspend fun clearPendingGroupExternalCommit(groupId: MLSGroupId) =
         coreCrypto.clearPendingGroupFromExternalCommit(groupId.toUint8Array()).await()
 
-    override suspend fun createConversation(groupId: MLSGroupId, externalSenders: List<Ed22519Key>) {
-        coreCrypto.createConversation(groupId.toUint8Array(), object : ConversationConfiguration {
-            override var ciphersuite: Ciphersuite?
-                get() = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+    override suspend fun createConversation(
+        groupId: MLSGroupId,
+        creatorCredentialType: CredentialType,
+        externalSenders: List<Ed22519Key>
+    ) {
+        coreCrypto.createConversation(
+            groupId.toUint8Array(),
+            toCredentialType(creatorCredentialType),
+            object : ConversationConfiguration {
+            override var ciphersuite: externals.Ciphersuite?
+                get() = externals.Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 set(_) {}
             override var externalSenders: Array<Uint8Array>?
                 get() = externalSenders.map { it.toUint8Array() }.toTypedArray()
@@ -125,22 +147,22 @@ class MLSClientImpl(private val coreCrypto: CoreCrypto): MLSClient {
         fun toCommitBundle(value: MemberAddedMessages) = CommitBundle(
             value.commit.toByteArray(),
             value.welcome.toByteArray(),
-            toPublicGroupStateBundle(value.publicGroupState)
+            toPublicGroupStateBundle(value.groupInfo)
         )
 
         fun toCommitBundle(value: CoreCryptoCommitBundle) = CommitBundle(
             value.commit.toByteArray(),
             value.welcome?.toByteArray(),
-            toPublicGroupStateBundle(value.publicGroupState)
+            toPublicGroupStateBundle(value.groupInfo)
         )
 
         fun toCommitBundle(value: ConversationInitBundle) = CommitBundle(
             value.commit.toByteArray(),
             null,
-            toPublicGroupStateBundle(value.publicGroupState)
+            toPublicGroupStateBundle(value.groupInfo)
         )
 
-        fun toPublicGroupStateBundle(value: PublicGroupStateBundle) = PublicGroupStateBundle(
+        fun toPublicGroupStateBundle(value: CoreCryptoGroupInfoBundle) = GroupInfoBundle(
             toEncryptionType(value.encryptionType),
             ratchetTreeType(value.ratchetTreeType),
             value.payload.toByteArray()
@@ -153,10 +175,10 @@ class MLSClientImpl(private val coreCrypto: CoreCrypto): MLSClient {
             value.hasEpochChanged
         )
 
-        fun toEncryptionType(encryptionType: CoreCryptoPublicGroupStateEncryptionType) =
+        fun toEncryptionType(encryptionType: CoreCryptoGroupInfoEncryptionType) =
             when (encryptionType) {
-                CoreCryptoPublicGroupStateEncryptionType.Plaintext -> PublicGroupStateEncryptionType.PLAINTEXT
-                CoreCryptoPublicGroupStateEncryptionType.JweEncrypted -> PublicGroupStateEncryptionType.JWE_ENCRYPTED
+                CoreCryptoGroupInfoEncryptionType.Plaintext -> GroupInfoEncryptionType.PLAINTEXT
+                CoreCryptoGroupInfoEncryptionType.JweEncrypted -> GroupInfoEncryptionType.JWE_ENCRYPTED
             }
 
         fun ratchetTreeType(ratchetTreeType: CoreCryptoRatchetTreeType) =
@@ -164,6 +186,24 @@ class MLSClientImpl(private val coreCrypto: CoreCrypto): MLSClient {
                 CoreCryptoRatchetTreeType.Full -> RatchetTreeType.FULL
                 CoreCryptoRatchetTreeType.Delta -> RatchetTreeType.DELTA
                 CoreCryptoRatchetTreeType.ByRef -> RatchetTreeType.BY_REF
+            }
+
+        fun toCredentialType(credentialType: CredentialType) =
+            when (credentialType) {
+                CredentialType.X509 -> CoreCryptoCredentialType.X509
+                CredentialType.BASIC -> CoreCryptoCredentialType.Basic
+            }
+
+        fun toCiphersuite(ciphersuite: Ciphersuite) =
+            when (ciphersuite.toUInt()) {
+                1u -> CoreCryptoCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                2u -> CoreCryptoCiphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+                3u -> CoreCryptoCiphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
+                4u -> CoreCryptoCiphersuite.MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
+                5u -> CoreCryptoCiphersuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
+                6u -> CoreCryptoCiphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448
+                7u -> CoreCryptoCiphersuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+                else -> throw RuntimeException("Unknown ciphersuite")
             }
     }
 }

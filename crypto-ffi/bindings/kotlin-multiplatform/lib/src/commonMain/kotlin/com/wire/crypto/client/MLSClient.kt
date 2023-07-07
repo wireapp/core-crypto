@@ -27,8 +27,9 @@ typealias HandshakeMessage = ByteArray
 typealias ApplicationMessage = ByteArray
 typealias PlainMessage = ByteArray
 typealias MLSKeyPackage = ByteArray
+typealias Ciphersuite = UShort
 
-enum class PublicGroupStateEncryptionType {
+enum class GroupInfoEncryptionType {
     PLAINTEXT,JWE_ENCRYPTED;
 }
 
@@ -36,8 +37,12 @@ enum class RatchetTreeType {
     FULL,DELTA,BY_REF;
 }
 
-open class PublicGroupStateBundle(
-    var encryptionType: PublicGroupStateEncryptionType,
+enum class CredentialType {
+    BASIC,X509;
+}
+
+open class GroupInfoBundle(
+    var encryptionType: GroupInfoEncryptionType,
     var ratchetTreeType: RatchetTreeType,
     var payload: ByteArray
 )
@@ -45,7 +50,7 @@ open class PublicGroupStateBundle(
 open class CommitBundle(
     val commit: ByteArray,
     val welcome: ByteArray?,
-    val publicGroupStateBundle: PublicGroupStateBundle
+    val groupInfoBundle: GroupInfoBundle
 )
 
 class DecryptedMessageBundle(
@@ -56,11 +61,11 @@ class DecryptedMessageBundle(
 )
 
 interface MLSClient {
-    suspend fun getPublicKey(): ByteArray
+    suspend fun getPublicKey(ciphersuite: Ciphersuite): ByteArray
 
-    suspend fun generateKeyPackages(amount: Int): List<ByteArray>
+    suspend fun generateKeyPackages(ciphersuite: Ciphersuite, amount: Int): List<ByteArray>
 
-    suspend fun validKeyPackageCount(): ULong
+    suspend fun validKeyPackageCount(ciphersuite: Ciphersuite): ULong
 
     suspend fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle
 
@@ -68,8 +73,8 @@ interface MLSClient {
 
     suspend fun conversationEpoch(groupId: MLSGroupId): ULong
 
-    suspend fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage
-    suspend fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle
+    suspend fun joinConversation(groupId: MLSGroupId, epoch: ULong, ciphersuite: Ciphersuite, credentialType: CredentialType): HandshakeMessage
+    suspend fun joinByExternalCommit(groupInfo: ByteArray, credentialType: CredentialType): CommitBundle
 
     suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId)
 
@@ -77,6 +82,7 @@ interface MLSClient {
 
     suspend fun createConversation(
         groupId: MLSGroupId,
+        creatorCredentialType: CredentialType,
         externalSenders: List<Ed22519Key> = emptyList()
     )
 

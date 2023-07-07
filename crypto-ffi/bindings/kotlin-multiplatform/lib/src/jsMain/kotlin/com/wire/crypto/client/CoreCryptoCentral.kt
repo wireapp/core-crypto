@@ -1,5 +1,6 @@
 package com.wire.crypto.client
 
+import com.wire.crypto.client.Ciphersuite
 import externals.*
 import org.khronos.webgl.Uint8Array
 import kotlin.js.Promise
@@ -18,7 +19,11 @@ private class Callbacks: CoreCryptoCallbacks {
 
 }
 
-private class DeferredParams(override var databaseName: String, override var key: String) : CoreCryptoDeferredParams
+private class DeferredParams(
+    override var databaseName: String,
+    override var key: String,
+    override var ciphersuites: Array<externals.Ciphersuite>
+) : CoreCryptoDeferredParams
 
 actual class CoreCryptoCentral {
 
@@ -28,7 +33,8 @@ actual class CoreCryptoCentral {
         coreCrypto = CoreCrypto.deferredInit(
             DeferredParams(
                 databaseName,
-                databaseKey
+                databaseKey,
+                DEFAULT_CIPHERSUITES.toTypedArray()
             )
         ).await()
         coreCrypto.registerCallbacks(Callbacks()).await()
@@ -40,8 +46,13 @@ actual class CoreCryptoCentral {
     }
 
     actual suspend fun mlsClient(clientId: String): MLSClient {
-//        coreCrypto.proteusInit().await()
-        coreCrypto.mlsInit(clientId.encodeToByteArray().toUint8Array()).await()
+        coreCrypto.mlsInit(clientId.encodeToByteArray().toUint8Array(), DEFAULT_CIPHERSUITES.toTypedArray()).await()
         return MLSClientImpl(coreCrypto)
+    }
+
+    actual companion object {
+        actual val DEFAULT_CIPHERSUITE: Ciphersuite = 1.toUShort()
+        val DEFAULT_ENUM_CIPHERSUITE = externals.Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        val DEFAULT_CIPHERSUITES = listOf(DEFAULT_ENUM_CIPHERSUITE)
     }
 }
