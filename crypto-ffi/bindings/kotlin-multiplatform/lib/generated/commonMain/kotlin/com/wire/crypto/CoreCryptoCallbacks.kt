@@ -122,7 +122,7 @@ object ForeignCallbackTypeCoreCryptoCallbacks {
 object FfiConverterTypeCoreCryptoCallbacks: FfiConverterCallbackInterface<CoreCryptoCallbacks>() {
     override fun register(lib: UniFFILib) {
         rustCall() { status ->
-            lib.ffi_CoreCrypto_3d4a_CoreCryptoCallbacks_init_callback(ForeignCallbackTypeCoreCryptoCallbacks.toForeignCallback(), status)
+            lib.ffi_CoreCrypto_fbd8_CoreCryptoCallbacks_init_callback(ForeignCallbackTypeCoreCryptoCallbacks.toForeignCallback(), status)
         }
     }
 }

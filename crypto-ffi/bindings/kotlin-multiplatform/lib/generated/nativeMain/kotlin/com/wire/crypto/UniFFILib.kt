@@ -8,584 +8,598 @@ actual object UniFFILib {
         
     }
 
-    actual fun ffi_CoreCrypto_3d4a_CoreCrypto_object_free(`ptr`: Pointer,
+    actual fun ffi_CoreCrypto_fbd8_CoreCrypto_object_free(`ptr`: Pointer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.ffi_CoreCrypto_3d4a_CoreCrypto_object_free(`ptr`,
+        requireNotNull(com.wire.crypto.cinterop.ffi_CoreCrypto_fbd8_CoreCrypto_object_free(`ptr`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_new(`path`: RustBuffer,`key`: RustBuffer,`clientId`: RustBuffer,`entropySeed`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_new(`path`: RustBuffer,`key`: RustBuffer,`clientId`: RustBuffer,`ciphersuites`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Pointer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_new(`path`,`key`,`clientId`,`entropySeed`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_new(`path`,`key`,`clientId`,`ciphersuites`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_deferred_init(`path`: RustBuffer,`key`: RustBuffer,`entropySeed`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_deferred_init(`path`: RustBuffer,`key`: RustBuffer,`ciphersuites`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Pointer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_deferred_init(`path`,`key`,`entropySeed`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_deferred_init(`path`,`key`,`ciphersuites`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_mls_init(`ptr`: Pointer,`clientId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_mls_init(`ptr`: Pointer,`clientId`: RustBuffer,`ciphersuites`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_mls_init(`ptr`,`clientId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_mls_init(`ptr`,`clientId`,`ciphersuites`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_mls_generate_keypair(`ptr`: Pointer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_mls_generate_keypairs(`ptr`: Pointer,`ciphersuites`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_mls_generate_keypair(`ptr`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_mls_generate_keypairs(`ptr`,`ciphersuites`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_mls_init_with_client_id(`ptr`: Pointer,`clientId`: RustBuffer,`signaturePublicKey`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_mls_init_with_client_id(`ptr`: Pointer,`clientId`: RustBuffer,`signaturePublicKeys`: RustBuffer,`ciphersuites`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_mls_init_with_client_id(`ptr`,`clientId`,`signaturePublicKey`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_mls_init_with_client_id(`ptr`,`clientId`,`signaturePublicKeys`,`ciphersuites`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_restore_from_disk(`ptr`: Pointer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_restore_from_disk(`ptr`: Pointer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_restore_from_disk(`ptr`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_restore_from_disk(`ptr`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_set_callbacks(`ptr`: Pointer,`callbacks`: ULong,
+    actual fun CoreCrypto_fbd8_CoreCrypto_set_callbacks(`ptr`: Pointer,`callbacks`: ULong,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_set_callbacks(`ptr`,`callbacks`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_set_callbacks(`ptr`,`callbacks`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_client_public_key(`ptr`: Pointer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_client_public_key(`ptr`: Pointer,`ciphersuite`: UShort,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_client_public_key(`ptr`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_client_public_key(`ptr`,`ciphersuite`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_client_keypackages(`ptr`: Pointer,`amountRequested`: UInt,
+    actual fun CoreCrypto_fbd8_CoreCrypto_client_keypackages(`ptr`: Pointer,`ciphersuite`: UShort,`amountRequested`: UInt,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_client_keypackages(`ptr`,`amountRequested`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_client_keypackages(`ptr`,`ciphersuite`,`amountRequested`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_client_valid_keypackages_count(`ptr`: Pointer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_client_valid_keypackages_count(`ptr`: Pointer,`ciphersuite`: UShort,
     _uniffi_out_err: RustCallStatus
     ): ULong =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_client_valid_keypackages_count(`ptr`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_client_valid_keypackages_count(`ptr`,`ciphersuite`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_create_conversation(`ptr`: Pointer,`conversationId`: RustBuffer,`config`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_create_conversation(`ptr`: Pointer,`conversationId`: RustBuffer,`creatorCredentialType`: RustBuffer,`config`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_create_conversation(`ptr`,`conversationId`,`config`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_create_conversation(`ptr`,`conversationId`,`creatorCredentialType`,`config`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_conversation_epoch(`ptr`: Pointer,`conversationId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_conversation_epoch(`ptr`: Pointer,`conversationId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): ULong =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_conversation_epoch(`ptr`,`conversationId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_conversation_epoch(`ptr`,`conversationId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_conversation_exists(`ptr`: Pointer,`conversationId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_conversation_exists(`ptr`: Pointer,`conversationId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Byte =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_conversation_exists(`ptr`,`conversationId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_conversation_exists(`ptr`,`conversationId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_process_welcome_message(`ptr`: Pointer,`welcomeMessage`: RustBuffer,`customConfiguration`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_process_welcome_message(`ptr`: Pointer,`welcomeMessage`: RustBuffer,`customConfiguration`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_process_welcome_message(`ptr`,`welcomeMessage`,`customConfiguration`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_process_welcome_message(`ptr`,`welcomeMessage`,`customConfiguration`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer,`clients`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_add_clients_to_conversation(`ptr`: Pointer,`conversationId`: RustBuffer,`clients`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_add_clients_to_conversation(`ptr`,`conversationId`,`clients`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_add_clients_to_conversation(`ptr`,`conversationId`,`clients`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer,`clients`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_remove_clients_from_conversation(`ptr`: Pointer,`conversationId`: RustBuffer,`clients`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_remove_clients_from_conversation(`ptr`,`conversationId`,`clients`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_remove_clients_from_conversation(`ptr`,`conversationId`,`clients`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_mark_conversation_as_child_of(`ptr`: Pointer,`childId`: RustBuffer,`parentId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_mark_conversation_as_child_of(`ptr`: Pointer,`childId`: RustBuffer,`parentId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_mark_conversation_as_child_of(`ptr`,`childId`,`parentId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_mark_conversation_as_child_of(`ptr`,`childId`,`parentId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_update_keying_material(`ptr`: Pointer,`conversationId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_update_keying_material(`ptr`,`conversationId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_update_keying_material(`ptr`,`conversationId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_commit_pending_proposals(`ptr`: Pointer,`conversationId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_commit_pending_proposals(`ptr`: Pointer,`conversationId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_commit_pending_proposals(`ptr`,`conversationId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_commit_pending_proposals(`ptr`,`conversationId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_wipe_conversation(`ptr`: Pointer,`conversationId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_wipe_conversation(`ptr`: Pointer,`conversationId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_wipe_conversation(`ptr`,`conversationId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_wipe_conversation(`ptr`,`conversationId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_decrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer,`payload`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_decrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer,`payload`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_decrypt_message(`ptr`,`conversationId`,`payload`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_decrypt_message(`ptr`,`conversationId`,`payload`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_encrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer,`message`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_encrypt_message(`ptr`: Pointer,`conversationId`: RustBuffer,`message`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_encrypt_message(`ptr`,`conversationId`,`message`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_encrypt_message(`ptr`,`conversationId`,`message`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_new_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer,`keyPackage`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_new_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer,`keyPackage`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_new_add_proposal(`ptr`,`conversationId`,`keyPackage`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_new_add_proposal(`ptr`,`conversationId`,`keyPackage`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_new_update_proposal(`ptr`: Pointer,`conversationId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_new_update_proposal(`ptr`: Pointer,`conversationId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_new_update_proposal(`ptr`,`conversationId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_new_update_proposal(`ptr`,`conversationId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_new_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer,`clientId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_new_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer,`clientId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_new_remove_proposal(`ptr`,`conversationId`,`clientId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_new_remove_proposal(`ptr`,`conversationId`,`clientId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_new_external_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer,`epoch`: ULong,
+    actual fun CoreCrypto_fbd8_CoreCrypto_new_external_add_proposal(`ptr`: Pointer,`conversationId`: RustBuffer,`epoch`: ULong,`ciphersuite`: UShort,`credentialType`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_new_external_add_proposal(`ptr`,`conversationId`,`epoch`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_new_external_add_proposal(`ptr`,`conversationId`,`epoch`,`ciphersuite`,`credentialType`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_new_external_remove_proposal(`ptr`: Pointer,`conversationId`: RustBuffer,`epoch`: ULong,`keyPackageRef`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_join_by_external_commit(`ptr`: Pointer,`groupInfo`: RustBuffer,`customConfiguration`: RustBuffer,`credentialType`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_new_external_remove_proposal(`ptr`,`conversationId`,`epoch`,`keyPackageRef`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_join_by_external_commit(`ptr`,`groupInfo`,`customConfiguration`,`credentialType`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_join_by_external_commit(`ptr`: Pointer,`publicGroupState`: RustBuffer,`customConfiguration`: RustBuffer,
-    _uniffi_out_err: RustCallStatus
-    ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_join_by_external_commit(`ptr`,`publicGroupState`,`customConfiguration`,
-    _uniffi_out_err
-        ))
-
-    actual fun CoreCrypto_3d4a_CoreCrypto_merge_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_merge_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_merge_pending_group_from_external_commit(`ptr`,`conversationId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_merge_pending_group_from_external_commit(`ptr`,`conversationId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_clear_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_clear_pending_group_from_external_commit(`ptr`: Pointer,`conversationId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_clear_pending_group_from_external_commit(`ptr`,`conversationId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_clear_pending_group_from_external_commit(`ptr`,`conversationId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_export_group_state(`ptr`: Pointer,`conversationId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_export_group_info(`ptr`: Pointer,`conversationId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_export_group_state(`ptr`,`conversationId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_export_group_info(`ptr`,`conversationId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_export_secret_key(`ptr`: Pointer,`conversationId`: RustBuffer,`keyLength`: UInt,
+    actual fun CoreCrypto_fbd8_CoreCrypto_export_secret_key(`ptr`: Pointer,`conversationId`: RustBuffer,`keyLength`: UInt,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_export_secret_key(`ptr`,`conversationId`,`keyLength`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_export_secret_key(`ptr`,`conversationId`,`keyLength`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_get_client_ids(`ptr`: Pointer,`conversationId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_get_client_ids(`ptr`: Pointer,`conversationId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_get_client_ids(`ptr`,`conversationId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_get_client_ids(`ptr`,`conversationId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_random_bytes(`ptr`: Pointer,`length`: UInt,
+    actual fun CoreCrypto_fbd8_CoreCrypto_random_bytes(`ptr`: Pointer,`length`: UInt,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_random_bytes(`ptr`,`length`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_random_bytes(`ptr`,`length`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_reseed_rng(`ptr`: Pointer,`seed`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_reseed_rng(`ptr`: Pointer,`seed`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_reseed_rng(`ptr`,`seed`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_reseed_rng(`ptr`,`seed`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_commit_accepted(`ptr`: Pointer,`conversationId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_commit_accepted(`ptr`: Pointer,`conversationId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_commit_accepted(`ptr`,`conversationId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_commit_accepted(`ptr`,`conversationId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_clear_pending_proposal(`ptr`: Pointer,`conversationId`: RustBuffer,`proposalRef`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_clear_pending_proposal(`ptr`: Pointer,`conversationId`: RustBuffer,`proposalRef`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_clear_pending_proposal(`ptr`,`conversationId`,`proposalRef`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_clear_pending_proposal(`ptr`,`conversationId`,`proposalRef`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_clear_pending_commit(`ptr`: Pointer,`conversationId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_clear_pending_commit(`ptr`: Pointer,`conversationId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_clear_pending_commit(`ptr`,`conversationId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_clear_pending_commit(`ptr`,`conversationId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_init(`ptr`: Pointer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_init(`ptr`: Pointer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_init(`ptr`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_init(`ptr`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_session_from_prekey(`ptr`: Pointer,`sessionId`: RustBuffer,`prekey`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_session_from_prekey(`ptr`: Pointer,`sessionId`: RustBuffer,`prekey`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_session_from_prekey(`ptr`,`sessionId`,`prekey`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_session_from_prekey(`ptr`,`sessionId`,`prekey`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_session_from_message(`ptr`: Pointer,`sessionId`: RustBuffer,`envelope`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_session_from_message(`ptr`: Pointer,`sessionId`: RustBuffer,`envelope`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_session_from_message(`ptr`,`sessionId`,`envelope`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_session_from_message(`ptr`,`sessionId`,`envelope`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_session_save(`ptr`: Pointer,`sessionId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_session_save(`ptr`: Pointer,`sessionId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_session_save(`ptr`,`sessionId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_session_save(`ptr`,`sessionId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_session_delete(`ptr`: Pointer,`sessionId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_session_delete(`ptr`: Pointer,`sessionId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_session_delete(`ptr`,`sessionId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_session_delete(`ptr`,`sessionId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_session_exists(`ptr`: Pointer,`sessionId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_session_exists(`ptr`: Pointer,`sessionId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Byte =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_session_exists(`ptr`,`sessionId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_session_exists(`ptr`,`sessionId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_decrypt(`ptr`: Pointer,`sessionId`: RustBuffer,`ciphertext`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_decrypt(`ptr`: Pointer,`sessionId`: RustBuffer,`ciphertext`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_decrypt(`ptr`,`sessionId`,`ciphertext`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_decrypt(`ptr`,`sessionId`,`ciphertext`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_encrypt(`ptr`: Pointer,`sessionId`: RustBuffer,`plaintext`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_encrypt(`ptr`: Pointer,`sessionId`: RustBuffer,`plaintext`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_encrypt(`ptr`,`sessionId`,`plaintext`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_encrypt(`ptr`,`sessionId`,`plaintext`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_encrypt_batched(`ptr`: Pointer,`sessionId`: RustBuffer,`plaintext`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_encrypt_batched(`ptr`: Pointer,`sessionId`: RustBuffer,`plaintext`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_encrypt_batched(`ptr`,`sessionId`,`plaintext`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_encrypt_batched(`ptr`,`sessionId`,`plaintext`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_new_prekey(`ptr`: Pointer,`prekeyId`: UShort,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_new_prekey(`ptr`: Pointer,`prekeyId`: UShort,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_new_prekey(`ptr`,`prekeyId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_new_prekey(`ptr`,`prekeyId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_new_prekey_auto(`ptr`: Pointer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_new_prekey_auto(`ptr`: Pointer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_new_prekey_auto(`ptr`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_new_prekey_auto(`ptr`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_last_resort_prekey(`ptr`: Pointer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_last_resort_prekey(`ptr`: Pointer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_last_resort_prekey(`ptr`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_last_resort_prekey(`ptr`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_last_resort_prekey_id(`ptr`: Pointer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_last_resort_prekey_id(`ptr`: Pointer,
     _uniffi_out_err: RustCallStatus
     ): UShort =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_last_resort_prekey_id(`ptr`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_last_resort_prekey_id(`ptr`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_fingerprint(`ptr`: Pointer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_fingerprint(`ptr`: Pointer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_fingerprint(`ptr`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_fingerprint(`ptr`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_fingerprint_local(`ptr`: Pointer,`sessionId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_fingerprint_local(`ptr`: Pointer,`sessionId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_fingerprint_local(`ptr`,`sessionId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_fingerprint_local(`ptr`,`sessionId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_fingerprint_remote(`ptr`: Pointer,`sessionId`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_fingerprint_remote(`ptr`: Pointer,`sessionId`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_fingerprint_remote(`ptr`,`sessionId`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_fingerprint_remote(`ptr`,`sessionId`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_fingerprint_prekeybundle(`ptr`: Pointer,`prekey`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_fingerprint_prekeybundle(`ptr`: Pointer,`prekey`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_fingerprint_prekeybundle(`ptr`,`prekey`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_fingerprint_prekeybundle(`ptr`,`prekey`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_cryptobox_migrate(`ptr`: Pointer,`path`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_cryptobox_migrate(`ptr`: Pointer,`path`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_cryptobox_migrate(`ptr`,`path`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_cryptobox_migrate(`ptr`,`path`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_CoreCrypto_new_acme_enrollment(`ptr`: Pointer,`clientId`: RustBuffer,`displayName`: RustBuffer,`handle`: RustBuffer,`expiryDays`: UInt,`ciphersuite`: RustBuffer,
-    _uniffi_out_err: RustCallStatus
-    ): Pointer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_new_acme_enrollment(`ptr`,`clientId`,`displayName`,`handle`,`expiryDays`,`ciphersuite`,
-    _uniffi_out_err
-        ))
-
-    actual fun CoreCrypto_3d4a_CoreCrypto_e2ei_mls_init(`ptr`: Pointer,`e2ei`: Pointer,`certificateChain`: RustBuffer,
-    _uniffi_out_err: RustCallStatus
-    ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_e2ei_mls_init(`ptr`,`e2ei`,`certificateChain`,
-    _uniffi_out_err
-        ))
-
-    actual fun CoreCrypto_3d4a_CoreCrypto_proteus_last_error_code(`ptr`: Pointer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_proteus_last_error_code(`ptr`: Pointer,
     _uniffi_out_err: RustCallStatus
     ): UInt =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_CoreCrypto_proteus_last_error_code(`ptr`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_proteus_last_error_code(`ptr`,
     _uniffi_out_err
         ))
 
-    actual fun ffi_CoreCrypto_3d4a_WireE2eIdentity_object_free(`ptr`: Pointer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_e2ei_new_enrollment(`ptr`: Pointer,`clientId`: RustBuffer,`displayName`: RustBuffer,`handle`: RustBuffer,`expiryDays`: UInt,`ciphersuite`: UShort,
+    _uniffi_out_err: RustCallStatus
+    ): Pointer =
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_e2ei_new_enrollment(`ptr`,`clientId`,`displayName`,`handle`,`expiryDays`,`ciphersuite`,
+    _uniffi_out_err
+        ))
+
+    actual fun CoreCrypto_fbd8_CoreCrypto_e2ei_mls_init(`ptr`: Pointer,`enrollment`: Pointer,`certificateChain`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.ffi_CoreCrypto_3d4a_WireE2eIdentity_object_free(`ptr`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_e2ei_mls_init(`ptr`,`enrollment`,`certificateChain`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_directory_response(`ptr`: Pointer,`directory`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_e2ei_enrollment_stash(`ptr`: Pointer,`enrollment`: Pointer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_directory_response(`ptr`,`directory`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_e2ei_enrollment_stash(`ptr`,`enrollment`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_new_account_request(`ptr`: Pointer,`previousNonce`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_e2ei_enrollment_stash_pop(`ptr`: Pointer,`handle`: RustBuffer,
     _uniffi_out_err: RustCallStatus
-    ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_new_account_request(`ptr`,`previousNonce`,
+    ): Pointer =
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_e2ei_enrollment_stash_pop(`ptr`,`handle`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_new_account_response(`ptr`: Pointer,`account`: RustBuffer,
+    actual fun CoreCrypto_fbd8_CoreCrypto_e2ei_is_degraded(`ptr`: Pointer,`conversationId`: RustBuffer,
+    _uniffi_out_err: RustCallStatus
+    ): Byte =
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_CoreCrypto_e2ei_is_degraded(`ptr`,`conversationId`,
+    _uniffi_out_err
+        ))
+
+    actual fun ffi_CoreCrypto_fbd8_WireE2eIdentity_object_free(`ptr`: Pointer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_new_account_response(`ptr`,`account`,
+        requireNotNull(com.wire.crypto.cinterop.ffi_CoreCrypto_fbd8_WireE2eIdentity_object_free(`ptr`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_new_order_request(`ptr`: Pointer,`previousNonce`: RustBuffer,
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_directory_response(`ptr`: Pointer,`directory`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_new_order_request(`ptr`,`previousNonce`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_directory_response(`ptr`,`directory`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_new_order_response(`ptr`: Pointer,`order`: RustBuffer,
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_new_account_request(`ptr`: Pointer,`previousNonce`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_new_order_response(`ptr`,`order`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_new_account_request(`ptr`,`previousNonce`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_new_authz_request(`ptr`: Pointer,`url`: RustBuffer,`previousNonce`: RustBuffer,
-    _uniffi_out_err: RustCallStatus
-    ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_new_authz_request(`ptr`,`url`,`previousNonce`,
-    _uniffi_out_err
-        ))
-
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_new_authz_response(`ptr`: Pointer,`authz`: RustBuffer,
-    _uniffi_out_err: RustCallStatus
-    ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_new_authz_response(`ptr`,`authz`,
-    _uniffi_out_err
-        ))
-
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_create_dpop_token(`ptr`: Pointer,`accessTokenUrl`: RustBuffer,`expirySecs`: UInt,`backendNonce`: RustBuffer,
-    _uniffi_out_err: RustCallStatus
-    ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_create_dpop_token(`ptr`,`accessTokenUrl`,`expirySecs`,`backendNonce`,
-    _uniffi_out_err
-        ))
-
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_new_dpop_challenge_request(`ptr`: Pointer,`accessToken`: RustBuffer,`previousNonce`: RustBuffer,
-    _uniffi_out_err: RustCallStatus
-    ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_new_dpop_challenge_request(`ptr`,`accessToken`,`previousNonce`,
-    _uniffi_out_err
-        ))
-
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_new_oidc_challenge_request(`ptr`: Pointer,`idToken`: RustBuffer,`previousNonce`: RustBuffer,
-    _uniffi_out_err: RustCallStatus
-    ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_new_oidc_challenge_request(`ptr`,`idToken`,`previousNonce`,
-    _uniffi_out_err
-        ))
-
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_new_challenge_response(`ptr`: Pointer,`challenge`: RustBuffer,
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_new_account_response(`ptr`: Pointer,`account`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_new_challenge_response(`ptr`,`challenge`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_new_account_response(`ptr`,`account`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_check_order_request(`ptr`: Pointer,`orderUrl`: RustBuffer,`previousNonce`: RustBuffer,
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_new_order_request(`ptr`: Pointer,`previousNonce`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_check_order_request(`ptr`,`orderUrl`,`previousNonce`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_new_order_request(`ptr`,`previousNonce`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_check_order_response(`ptr`: Pointer,`order`: RustBuffer,
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_new_order_response(`ptr`: Pointer,`order`: RustBuffer,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer =
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_new_order_response(`ptr`,`order`,
+    _uniffi_out_err
+        ))
+
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_new_authz_request(`ptr`: Pointer,`url`: RustBuffer,`previousNonce`: RustBuffer,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer =
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_new_authz_request(`ptr`,`url`,`previousNonce`,
+    _uniffi_out_err
+        ))
+
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_new_authz_response(`ptr`: Pointer,`authz`: RustBuffer,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer =
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_new_authz_response(`ptr`,`authz`,
+    _uniffi_out_err
+        ))
+
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_create_dpop_token(`ptr`: Pointer,`expirySecs`: UInt,`backendNonce`: RustBuffer,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer =
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_create_dpop_token(`ptr`,`expirySecs`,`backendNonce`,
+    _uniffi_out_err
+        ))
+
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_new_dpop_challenge_request(`ptr`: Pointer,`accessToken`: RustBuffer,`previousNonce`: RustBuffer,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer =
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_new_dpop_challenge_request(`ptr`,`accessToken`,`previousNonce`,
+    _uniffi_out_err
+        ))
+
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_new_oidc_challenge_request(`ptr`: Pointer,`idToken`: RustBuffer,`previousNonce`: RustBuffer,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer =
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_new_oidc_challenge_request(`ptr`,`idToken`,`previousNonce`,
+    _uniffi_out_err
+        ))
+
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_new_challenge_response(`ptr`: Pointer,`challenge`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_check_order_response(`ptr`,`order`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_new_challenge_response(`ptr`,`challenge`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_finalize_request(`ptr`: Pointer,`previousNonce`: RustBuffer,
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_check_order_request(`ptr`: Pointer,`orderUrl`: RustBuffer,`previousNonce`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_finalize_request(`ptr`,`previousNonce`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_check_order_request(`ptr`,`orderUrl`,`previousNonce`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_finalize_response(`ptr`: Pointer,`finalize`: RustBuffer,
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_check_order_response(`ptr`: Pointer,`order`: RustBuffer,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer =
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_check_order_response(`ptr`,`order`,
+    _uniffi_out_err
+        ))
+
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_finalize_request(`ptr`: Pointer,`previousNonce`: RustBuffer,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer =
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_finalize_request(`ptr`,`previousNonce`,
+    _uniffi_out_err
+        ))
+
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_finalize_response(`ptr`: Pointer,`finalize`: RustBuffer,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer =
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_finalize_response(`ptr`,`finalize`,
+    _uniffi_out_err
+        ))
+
+    actual fun CoreCrypto_fbd8_WireE2eIdentity_certificate_request(`ptr`: Pointer,`previousNonce`: RustBuffer,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer =
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_WireE2eIdentity_certificate_request(`ptr`,`previousNonce`,
+    _uniffi_out_err
+        ))
+
+    actual fun ffi_CoreCrypto_fbd8_CoreCryptoCallbacks_init_callback(`callbackStub`: ForeignCallback,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_finalize_response(`ptr`,`finalize`,
+        requireNotNull(com.wire.crypto.cinterop.ffi_CoreCrypto_fbd8_CoreCryptoCallbacks_init_callback(`callbackStub`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_WireE2eIdentity_certificate_request(`ptr`: Pointer,`previousNonce`: RustBuffer,
+    actual fun CoreCrypto_fbd8_version(
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_WireE2eIdentity_certificate_request(`ptr`,`previousNonce`,
+        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_fbd8_version(
     _uniffi_out_err
         ))
 
-    actual fun ffi_CoreCrypto_3d4a_CoreCryptoCallbacks_init_callback(`callbackStub`: ForeignCallback,
+    actual fun ffi_CoreCrypto_fbd8_rustbuffer_alloc(`size`: Int,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer =
+        requireNotNull(com.wire.crypto.cinterop.ffi_CoreCrypto_fbd8_rustbuffer_alloc(`size`,
+    _uniffi_out_err
+        ))
+
+    actual fun ffi_CoreCrypto_fbd8_rustbuffer_from_bytes(`bytes`: ForeignBytes,
+    _uniffi_out_err: RustCallStatus
+    ): RustBuffer =
+        requireNotNull(com.wire.crypto.cinterop.ffi_CoreCrypto_fbd8_rustbuffer_from_bytes(`bytes`,
+    _uniffi_out_err
+        ))
+
+    actual fun ffi_CoreCrypto_fbd8_rustbuffer_free(`buf`: RustBuffer,
     _uniffi_out_err: RustCallStatus
     ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.ffi_CoreCrypto_3d4a_CoreCryptoCallbacks_init_callback(`callbackStub`,
+        requireNotNull(com.wire.crypto.cinterop.ffi_CoreCrypto_fbd8_rustbuffer_free(`buf`,
     _uniffi_out_err
         ))
 
-    actual fun CoreCrypto_3d4a_version(
+    actual fun ffi_CoreCrypto_fbd8_rustbuffer_reserve(`buf`: RustBuffer,`additional`: Int,
     _uniffi_out_err: RustCallStatus
     ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.CoreCrypto_3d4a_version(
-    _uniffi_out_err
-        ))
-
-    actual fun ffi_CoreCrypto_3d4a_rustbuffer_alloc(`size`: Int,
-    _uniffi_out_err: RustCallStatus
-    ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.ffi_CoreCrypto_3d4a_rustbuffer_alloc(`size`,
-    _uniffi_out_err
-        ))
-
-    actual fun ffi_CoreCrypto_3d4a_rustbuffer_from_bytes(`bytes`: ForeignBytes,
-    _uniffi_out_err: RustCallStatus
-    ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.ffi_CoreCrypto_3d4a_rustbuffer_from_bytes(`bytes`,
-    _uniffi_out_err
-        ))
-
-    actual fun ffi_CoreCrypto_3d4a_rustbuffer_free(`buf`: RustBuffer,
-    _uniffi_out_err: RustCallStatus
-    ): Unit =
-        requireNotNull(com.wire.crypto.cinterop.ffi_CoreCrypto_3d4a_rustbuffer_free(`buf`,
-    _uniffi_out_err
-        ))
-
-    actual fun ffi_CoreCrypto_3d4a_rustbuffer_reserve(`buf`: RustBuffer,`additional`: Int,
-    _uniffi_out_err: RustCallStatus
-    ): RustBuffer =
-        requireNotNull(com.wire.crypto.cinterop.ffi_CoreCrypto_3d4a_rustbuffer_reserve(`buf`,`additional`,
+        requireNotNull(com.wire.crypto.cinterop.ffi_CoreCrypto_fbd8_rustbuffer_reserve(`buf`,`additional`,
     _uniffi_out_err
         ))
 
