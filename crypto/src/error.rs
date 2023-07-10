@@ -164,6 +164,17 @@ pub enum CryptoError {
     /// We already decrypted this message once
     #[error("We already decrypted this message once")]
     DuplicateMessage,
+    /// Happens when a client creates a commit, sends it to the DS which accepts it but then client
+    /// clears this pending commit and creates another commit. This is triggered when the client
+    /// tries to decrypt the original commit. This means something is very wrong in the client's
+    /// code and has to be fixed immediately
+    #[error("Happens when a client creates a commit, sends it to the DS which accepts it but then client \
+    clears this pending commit and creates another commit. This is triggered when the client tries to decrypt the original commit.\
+    This means something is very wrong in the client's code and has to be fixed immediately")]
+    ClearingPendingCommitError,
+    /// Tried to decrypt a commit created by self which is likely to have been replayed by the DS
+    #[error("Tried to decrypt a commit created by self which is likely to have been replayed by the DS")]
+    SelfCommitIgnored,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

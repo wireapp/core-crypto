@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
-    mls::credential::CredentialBundle,
+    mls::credential::{ext::CredentialExt, CredentialBundle},
     prelude::{
         CertificateBundle, Client, ClientId, ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral,
         MlsCiphersuite, MlsConversation, MlsConversationDecryptMessage, MlsConversationInitBundle, MlsCredentialType,
@@ -24,11 +24,11 @@ use crate::{
     test_utils::{MessageExt, TestCase},
 };
 use openmls::prelude::{
-    group_info::VerifiableGroupInfo, HpkePublicKey, KeyPackage, LeafNodeIndex, MlsMessageIn, QueuedProposal,
-    SignaturePublicKey, StagedCommit,
+    group_info::VerifiableGroupInfo, Credential, HpkePublicKey, KeyPackage, LeafNodeIndex, MlsMessageIn,
+    QueuedProposal, SignaturePublicKey, StagedCommit,
 };
 use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
-use tls_codec::Serialize;
+use tls_codec::{Deserialize, Serialize};
 
 use core_crypto_keystore::entities::{
     EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
@@ -302,34 +302,6 @@ impl MlsCentral {
         self.mls_client.as_ref().unwrap().id().clone()
     }
 
-    pub fn get_e2ei_client_id(&self) -> wire_e2e_identity::prelude::E2eiClientId {
-        let cid = self.mls_client.as_ref().unwrap().id().clone();
-        let cid = std::str::from_utf8(&cid.0).unwrap();
-        wire_e2e_identity::prelude::E2eiClientId::try_from_qualified(cid).unwrap()
-    }
-
-    pub fn verify_sender_identity(&self, case: &TestCase, decrypted: &MlsConversationDecryptMessage) {
-        let mls_client = self.mls_client.as_ref().unwrap();
-        let (sc, ct) = (case.signature_scheme(), case.credential_type);
-        let cb = mls_client.find_most_recent_credential_bundle(sc, ct).unwrap();
-        let sender_credential = cb.credential();
-
-        if let openmls::prelude::MlsCredentialType::X509(openmls::prelude::Certificate {
-            identity: dup_client_id,
-            cert_data: cert_chain,
-        }) = &sender_credential.mls_credential()
-        {
-            let leaf: Vec<u8> = cert_chain.get(0).map(|c| c.clone().into()).unwrap();
-            let identity = leaf.as_slice().extract_identity().unwrap();
-            let decr_identity = decrypted.identity.as_ref().unwrap();
-            assert_eq!(decr_identity.client_id, identity.client_id);
-            assert_eq!(decr_identity.client_id.as_bytes(), dup_client_id.as_slice());
-            assert_eq!(decr_identity.handle, identity.handle);
-            assert_eq!(decr_identity.display_name, identity.display_name);
-            assert_eq!(decr_identity.domain, identity.domain);
-        }
-    }
-
     pub async fn new_credential_bundle(&mut self, case: &TestCase) -> CredentialBundle {
         let client = self.mls_client.as_mut().unwrap();
 
@@ -431,6 +403,75 @@ impl MlsCentral {
 
     pub async fn count_credentials_in_keystore(&self) -> usize {
         self.mls_backend.key_store().count::<MlsCredential>().await.unwrap()
+    }
+
+    pub async fn rotate_credential(&mut self, case: &TestCase, handle: &str, display_name: &str) -> CredentialBundle {
+        let cid = &self.get_client_id();
+        let new_cert = CertificateBundle::new(case.signature_scheme(), handle, display_name, Some(cid), None);
+        let client = self.mls_client.as_mut().unwrap();
+        client
+            .save_new_x509_credential_bundle(&self.mls_backend, case.signature_scheme(), new_cert)
+            .await
+            .unwrap()
+    }
+
+    pub fn get_e2ei_client_id(&self) -> wire_e2e_identity::prelude::E2eiClientId {
+        let cid = self.mls_client.as_ref().unwrap().id().clone();
+        let cid = std::str::from_utf8(&cid.0).unwrap();
+        wire_e2e_identity::prelude::E2eiClientId::try_from_qualified(cid).unwrap()
+    }
+
+    pub async fn verify_local_credential_rotated(
+        &mut self,
+        id: &ConversationId,
+        new_handle: &str,
+        new_display_name: &str,
+    ) {
+        let cid = &self.get_client_id();
+        let group_identities = self.get_user_identities(id, &[cid]).await.unwrap();
+        let group_identity = group_identities.first().unwrap();
+        assert_eq!(&group_identity.client_id.as_bytes(), &cid.0);
+        assert_eq!(group_identity.display_name, new_display_name);
+        assert_eq!(group_identity.handle, new_handle);
+
+        let cb = self
+            .find_most_recent_credential_bundle_for_conversation(id)
+            .await
+            .unwrap()
+            .clone();
+        let local_identity = cb.credential().extract_identity().unwrap().unwrap();
+        assert_eq!(&local_identity.client_id.as_bytes(), &cid.0);
+        assert_eq!(local_identity.display_name, new_display_name);
+        assert_eq!(local_identity.handle, new_handle);
+
+        let credential = self.find_credential_from_keystore(&cb).await.unwrap();
+        let credential = Credential::tls_deserialize_bytes(credential.credential.as_slice()).unwrap();
+        assert_eq!(credential.identity(), &cid.0);
+        let keystore_identity = credential.extract_identity().unwrap().unwrap();
+        assert_eq!(keystore_identity.display_name, new_display_name);
+        assert_eq!(keystore_identity.handle, new_handle);
+    }
+
+    pub fn verify_sender_identity(&self, case: &TestCase, decrypted: &MlsConversationDecryptMessage) {
+        let mls_client = self.mls_client.as_ref().unwrap();
+        let (sc, ct) = (case.signature_scheme(), case.credential_type);
+        let cb = mls_client.find_most_recent_credential_bundle(sc, ct).unwrap();
+        let sender_credential = cb.credential();
+
+        if let openmls::prelude::MlsCredentialType::X509(openmls::prelude::Certificate {
+            identity: dup_client_id,
+            cert_data: cert_chain,
+        }) = &sender_credential.mls_credential()
+        {
+            let leaf: Vec<u8> = cert_chain.get(0).map(|c| c.clone().into()).unwrap();
+            let identity = leaf.as_slice().extract_identity().unwrap();
+            let decr_identity = decrypted.identity.as_ref().unwrap();
+            assert_eq!(decr_identity.client_id, identity.client_id);
+            assert_eq!(decr_identity.client_id.as_bytes(), dup_client_id.as_slice());
+            assert_eq!(decr_identity.handle, identity.handle);
+            assert_eq!(decr_identity.display_name, identity.display_name);
+            assert_eq!(decr_identity.domain, identity.domain);
+        }
     }
 }
 

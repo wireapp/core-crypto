@@ -69,6 +69,12 @@ impl MlsConversation {
     ) -> CryptoResult<MlsConversationDecryptMessage> {
         let msg_in = openmls::framing::MlsMessageIn::tls_deserialize_bytes(message.as_ref()).map_err(MlsError::from)?;
 
+        // handles the crooked case where we receive our own commits.
+        // Since this would result in an error in openmls, we handle it here
+        if let Some(ct) = self.maybe_self_member_commit(&msg_in)? {
+            return self.handle_self_member_commit(backend, ct).await;
+        }
+
         let message = self.parse_message(backend, msg_in).await?;
 
         let msg_epoch = message.epoch();

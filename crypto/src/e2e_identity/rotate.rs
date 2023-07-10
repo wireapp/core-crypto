@@ -207,7 +207,7 @@ impl MlsCentral {
     }
 
     #[cfg(test)]
-    async fn e2ei_rotate(
+    pub(crate) async fn e2ei_rotate(
         &mut self,
         id: &crate::prelude::ConversationId,
         cb: &CredentialBundle,
@@ -239,13 +239,12 @@ impl MlsConversation {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use openmls::prelude::Credential;
     use tls_codec::Deserialize;
 
     use crate::{
         e2e_identity::tests::*,
         mls::credential::ext::CredentialExt,
-        prelude::{key_package::INITIAL_KEYING_MATERIAL_COUNT, CertificateBundle, ConversationId, MlsCentral},
+        prelude::{key_package::INITIAL_KEYING_MATERIAL_COUNT, MlsCentral},
         test_utils::*,
     };
 
@@ -343,7 +342,9 @@ pub mod tests {
                             alice_central.verify_sender_identity(&case, &decrypted);
 
                             alice_central.commit_accepted(id).await.unwrap();
-                            verify_local_credential_rotated(id, &mut alice_central, new_handle, new_display_name).await;
+                            alice_central
+                                .verify_local_credential_rotated(id, new_handle, new_display_name)
+                                .await;
                         }
 
                         // Verify that all the new KeyPackages contain the new identity
@@ -485,7 +486,9 @@ pub mod tests {
                     async_std::task::sleep(core::time::Duration::from_secs(1)).await;
 
                     let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
-                    let cb = rotate_credential(&case, &mut alice_central, new_handle, new_display_name).await;
+                    let cb = alice_central
+                        .rotate_credential(&case, new_handle, new_display_name)
+                        .await;
 
                     alice_central.e2ei_update_all(&cb).await.unwrap();
                     alice_central.commit_accepted(&id).await.unwrap();
@@ -573,7 +576,9 @@ pub mod tests {
                             // Alice creates a new Credential, updating her handle/display_name
                             let alice_cid = &alice_central.get_client_id();
                             let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
-                            let cb = rotate_credential(&case, &mut alice_central, new_handle, new_display_name).await;
+                            let cb = alice_central
+                                .rotate_credential(&case, new_handle, new_display_name)
+                                .await;
 
                             // Verify old identity is still there in the MLS group
                             let alice_old_identies =
@@ -595,7 +600,8 @@ pub mod tests {
 
                             // Finally, Alice merges her commit and verifies her new identity gets applied
                             alice_central.commit_accepted(&id).await.unwrap();
-                            verify_local_credential_rotated(&id, &mut alice_central, new_handle, new_display_name)
+                            alice_central
+                                .verify_local_credential_rotated(&id, new_handle, new_display_name)
                                 .await;
                         })
                     },
@@ -604,11 +610,9 @@ pub mod tests {
             }
         }
 
-        // #[apply(all_cred_cipher)]
-        // #[wasm_bindgen_test]
-        #[async_std::test]
-        pub async fn rotate_should_be_renewable_when_commit_denied(/*case: TestCase*/) {
-            let case = TestCase::default_x509();
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn rotate_should_be_renewable_when_commit_denied(case: TestCase) {
             if case.is_x509() {
                 run_test_with_client_ids(
                     case.clone(),
@@ -628,7 +632,9 @@ pub mod tests {
 
                             // Alice creates a new Credential, updating her handle/display_name
                             let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
-                            let cb = rotate_credential(&case, &mut alice_central, new_handle, new_display_name).await;
+                            let cb = alice_central
+                                .rotate_credential(&case, new_handle, new_display_name)
+                                .await;
 
                             // Alice issues an Update commit to replace her current identity
                             let _rotate_commit = alice_central.e2ei_rotate(&id, &cb).await.unwrap();
@@ -657,7 +663,8 @@ pub mod tests {
 
                             // Finally, Alice merges her commit and verifies her new identity gets applied
                             alice_central.commit_accepted(&id).await.unwrap();
-                            verify_local_credential_rotated(&id, &mut alice_central, new_handle, new_display_name)
+                            alice_central
+                                .verify_local_credential_rotated(&id, new_handle, new_display_name)
                                 .await;
 
                             // Bob verifies that now Alice is represented with her new identity
@@ -672,51 +679,5 @@ pub mod tests {
                 .await
             }
         }
-    }
-
-    async fn rotate_credential(
-        case: &TestCase,
-        cc: &mut MlsCentral,
-        handle: &str,
-        display_name: &str,
-    ) -> CredentialBundle {
-        let cid = &cc.get_client_id();
-        let new_cert = CertificateBundle::new(case.signature_scheme(), handle, display_name, Some(cid), None);
-        let client = cc.mls_client.as_mut().unwrap();
-        client
-            .save_new_x509_credential_bundle(&cc.mls_backend, case.signature_scheme(), new_cert)
-            .await
-            .unwrap()
-    }
-
-    async fn verify_local_credential_rotated(
-        id: &ConversationId,
-        cc: &mut MlsCentral,
-        new_handle: &str,
-        new_display_name: &str,
-    ) {
-        let cid = &cc.get_client_id();
-        let group_identities = cc.get_user_identities(id, &[cid]).await.unwrap();
-        let group_identity = group_identities.first().unwrap();
-        assert_eq!(&group_identity.client_id.as_bytes(), &cid.0);
-        assert_eq!(group_identity.display_name, new_display_name);
-        assert_eq!(group_identity.handle, new_handle);
-
-        let cb = cc
-            .find_most_recent_credential_bundle_for_conversation(id)
-            .await
-            .unwrap()
-            .clone();
-        let local_identity = cb.credential().extract_identity().unwrap().unwrap();
-        assert_eq!(&local_identity.client_id.as_bytes(), &cid.0);
-        assert_eq!(local_identity.display_name, new_display_name);
-        assert_eq!(local_identity.handle, new_handle);
-
-        let credential = cc.find_credential_from_keystore(&cb).await.unwrap();
-        let credential = Credential::tls_deserialize_bytes(credential.credential.as_slice()).unwrap();
-        assert_eq!(credential.identity(), &cid.0);
-        let keystore_identity = credential.extract_identity().unwrap().unwrap();
-        assert_eq!(keystore_identity.display_name, new_display_name);
-        assert_eq!(keystore_identity.handle, new_handle);
     }
 }

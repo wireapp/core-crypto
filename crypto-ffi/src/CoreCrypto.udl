@@ -115,6 +115,8 @@ enum CryptoError {
     "E2eiEnrollmentNotDone",
     "CredentialNotFound",
     "InternalMlsError",
+    "ClearingPendingCommitError",
+    "SelfCommitIgnored",
 };
 
 dictionary DecryptedMessage {
