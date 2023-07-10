@@ -340,14 +340,14 @@ pub mod tests {
                 async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
             }
 
-            assert!(matches!(
-                alice_central.try_talk_to(&id, &mut bob_central).await.unwrap_err(),
+            match alice_central.try_talk_to(&id, &mut bob_central).await.unwrap_err() {
                 CryptoError::MlsError(MlsError::MlsMessageError(
                     openmls::prelude::ProcessMessageError::CryptoError(
-                        openmls::prelude::CryptoError::InvalidCertificate
-                    )
-                ))
-            ));
+                        openmls::prelude::CryptoError::ExpiredCertificate,
+                    ),
+                )) => {}
+                e => panic!("Unexpected error: {e:?}"),
+            }
         }
     }
 
@@ -373,12 +373,10 @@ pub mod tests {
 
             let bob_identifier = CertificateBundle::rand_identifier(&[case.signature_scheme()], "bob".into());
 
-            assert!(matches!(
-                try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err(),
-                CryptoError::MlsError(MlsError::MlsCryptoError(
-                    openmls::prelude::CryptoError::InvalidCertificate
-                ))
-            ));
+            match try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err() {
+                CryptoError::MlsError(MlsError::MlsCryptoError(openmls::prelude::CryptoError::ExpiredCertificate)) => {}
+                e => panic!("Unexpected error: {e:?}"),
+            }
         }
     }
 
