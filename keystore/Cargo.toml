@@ -71,9 +71,6 @@ features = [
 ]
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.refinery]
-git = "https://github.com/OtaK/refinery.git"
-branch = "chore/update-deps"
-package = "refinery"
 version = "0.8"
 default-features = false
 features = ["rusqlite"]

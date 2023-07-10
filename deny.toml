@@ -64,16 +64,12 @@ license-files = [{ path = "LICENSE", hash = 0x001c7e6c }]
 
 [sources]
 allow-git = [
-    # TODO: Remove when the dependency update matches
-    "https://github.com/OtaK/refinery",
-    # Needed for rusqlite
+    # ? Needed for our interop runner.
+    "https://github.com/otak/fantoccini",
+    # ? Needed for rusqlite
     "https://github.com/alexcrichton/openssl-src-rs",
-    # Used in a devdep within wiree2eidentity
+    # ? Used in a devdep within wiree2eidentity
     "https://github.com/briansmith/ring",
-]
-private = [
-    # TODO: remove when no longer required
-    "https://github.com/otak",
 ]
 
 [sources.allow-org]
