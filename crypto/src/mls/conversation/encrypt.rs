@@ -8,6 +8,7 @@
 //! | 1+ pend. Proposal | ❌              | ❌              |
 
 use mls_crypto_provider::MlsCryptoProvider;
+use openmls::prelude::MlsMessageOutBody;
 
 use crate::prelude::Client;
 use crate::{mls::ConversationId, mls::MlsCentral, CryptoError, CryptoResult, MlsError};
@@ -32,8 +33,13 @@ impl MlsConversation {
         let encrypted = self
             .group
             .create_message(backend, signer, message.as_ref())
-            .map_err(MlsError::from)
-            .and_then(|m| m.to_bytes().map_err(MlsError::from))?;
+            .map_err(MlsError::from)?;
+
+        // make sure all application messages are encrypted
+        debug_assert!(matches!(encrypted.body, MlsMessageOutBody::PrivateMessage(_)));
+
+        let encrypted = encrypted.to_bytes().map_err(MlsError::from)?;
+
         self.persist_group_when_changed(backend, false).await?;
         Ok(encrypted)
     }

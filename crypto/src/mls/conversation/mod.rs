@@ -54,6 +54,7 @@ pub(crate) mod group_info;
 pub mod handshake;
 pub mod merge;
 mod renew;
+mod self_commit;
 pub(crate) mod welcome;
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
