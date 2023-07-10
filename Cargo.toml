@@ -20,11 +20,11 @@ resolver = "2"
 tls_codec = "0.3.0-pre.4"
 
 [patch.crates-io.schnellru]
-git = "https://github.com/otak/schnellru"
+git = "https://github.com/wireapp/schnellru"
 branch = "feat/try-insert"
 
 [patch.crates-io.rexie]
-git = "https://github.com/otak/rexie"
+git = "https://github.com/wireapp/rexie"
 branch = "feat/api-expansion"
 
 [patch.'https://github.com/wireapp/proteus'.proteus]
@@ -64,7 +64,7 @@ git = "https://github.com/wireapp/openmls"
 branch = "feat/d20"
 
 [patch.crates-io.hpke]
-git = "https://github.com/otak/rust-hpke.git"
+git = "https://github.com/wireapp/rust-hpke.git"
 branch = "xyber768d00"
 
 [patch.crates-io.wire-e2e-identity]
@@ -90,7 +90,7 @@ tag = "v0.11.4-pre.core-crypto-0.7.0"
 
 [profile.release]
 lto = true
-# strip = true
+strip = true
 codegen-units = 1
 opt-level = "s"
 # panic = "abort"
