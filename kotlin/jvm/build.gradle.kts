@@ -4,14 +4,12 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent.*
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("java-library")
-    id("maven-publish")
-    id("signing")
+    id("com.vanniktech.maven.publish") version "0.25.3"
 }
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
-    withSourcesJar()
 }
 
 val generatedDir = buildDir.resolve("generated").resolve("uniffi")
@@ -93,52 +91,4 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
-}
-
-publishing {
-    repositories {
-        maven {
-            name = "GitHub"
-            url = uri("https://maven.pkg.github.com/wireapp/core-crypto")
-            credentials {
-                username =
-                        project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
-                password =
-                        project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
-            }
-        }
-    }
-}
-
-afterEvaluate {
-    publishing {
-        publications {
-            create<MavenPublication>("maven") {
-                groupId = "com.wire"
-                artifactId = "core-crypto-jvm"
-                version = "1.0.0-pre.6"
-
-                from(components["java"])
-
-                pom {
-                    name.set("core-crypto-jvm")
-                    description.set(
-                            "MLS/Proteus multiplexer abstraction with encrypted persistent storage in Rust"
-                    )
-                    url.set("https://github.com/wireapp/core-crypto")
-                    licenses {
-                        license {
-                            name.set("GPL-3.0")
-                            url.set("https://github.com/wireapp/core-crypto/blob/main/LICENSE")
-                        }
-                    }
-                    scm {
-                        connection.set("scm:git:github.com/wireapp/core-crypto.git")
-                        developerConnection.set("scm:git:ssh://github.com/wireapp/core-crypto.git")
-                        url.set("https://github.com/wireapp/core-crypto")
-                    }
-                }
-            }
-        }
-    }
 }

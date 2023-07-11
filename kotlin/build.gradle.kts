@@ -4,26 +4,13 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:7.0.4")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.10")
+        classpath("com.android.tools.build:gradle:7.3.1")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.10")
     }
 }
 
-plugins { id("maven-publish") }
-
-publishing {
-    repositories {
-        maven {
-            name = "GitHub"
-            url = uri("https://maven.pkg.github.com/wireapp/core-crypto")
-            credentials {
-                username =
-                        project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
-                password =
-                        project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
-            }
-        }
-    }
+plugins {
+    id("com.vanniktech.maven.publish") version "0.25.3"
 }
 
 allprojects {
