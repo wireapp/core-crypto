@@ -90,9 +90,12 @@ tag = "v0.11.4-pre.core-crypto-0.7.0"
 
 [profile.release]
 lto = true
-strip = true
 codegen-units = 1
 opt-level = "s"
+# ! Important: Do NOT enable stripping.
+# ! This will cause the FFI to stop working because UniFFI stores the Rust <-> cdylib mapping
+# ! in the `.strtab` section of the executable. Stripping this causes everything to stop functioning.
+strip = false
 # panic = "abort"
 
 # [profile.dev.package.backtrace]
