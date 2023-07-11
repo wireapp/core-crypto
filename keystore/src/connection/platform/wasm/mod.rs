@@ -68,7 +68,6 @@ impl DatabaseConnection for WasmConnection {
                     .auto_increment(false)
                     .add_index(Index::new("mls_id", "mls_id"))
                     .add_index(Index::new("signature_scheme", "signature_scheme"))
-                    .add_index(Index::new("created_at", "created_at"))
                     .add_index(Index::new("pk", "pk").unique(true)),
             )
             .add_object_store(
@@ -80,6 +79,11 @@ impl DatabaseConnection for WasmConnection {
                 ObjectStore::new("mls_encryption_keypairs")
                     .auto_increment(false)
                     .add_index(Index::new("pk", "pk").unique(true)),
+            )
+            .add_object_store(
+                ObjectStore::new("mls_epoch_encryption_keypairs")
+                    .auto_increment(false)
+                    .add_index(Index::new("id", "id").unique(true)),
             )
             .add_object_store(
                 ObjectStore::new("mls_psk_bundles")

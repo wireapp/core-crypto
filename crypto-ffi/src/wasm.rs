@@ -1659,7 +1659,7 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::new_proposal]
+    /// see [core_crypto::mls::MlsCentral::new_add_proposal]
     pub fn new_add_proposal(&self, conversation_id: Box<[u8]>, keypackage: Box<[u8]>) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
@@ -1672,7 +1672,7 @@ impl CoreCrypto {
                 let proposal: ProposalBundle = this
                     .write()
                     .await
-                    .new_proposal(&conversation_id.to_vec(), MlsProposal::Add(kp.into()))
+                    .new_add_proposal(&conversation_id.to_vec(), kp.into())
                     .await
                     .map_err(CoreCryptoError::from)?
                     .try_into()?;
@@ -1685,7 +1685,7 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::new_proposal]
+    /// see [core_crypto::mls::MlsCentral::new_update_proposal]
     pub fn new_update_proposal(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
@@ -1693,7 +1693,7 @@ impl CoreCrypto {
                 let proposal: ProposalBundle = this
                     .write()
                     .await
-                    .new_proposal(&conversation_id.to_vec(), MlsProposal::Update)
+                    .new_update_proposal(&conversation_id.to_vec())
                     .await?
                     .try_into()?;
 
@@ -1705,7 +1705,7 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::new_proposal]
+    /// see [core_crypto::mls::MlsCentral::new_remove_proposal]
     pub fn new_remove_proposal(&self, conversation_id: Box<[u8]>, client_id: FfiClientId) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
@@ -1713,7 +1713,7 @@ impl CoreCrypto {
                 let proposal: ProposalBundle = this
                     .write()
                     .await
-                    .new_proposal(&conversation_id.to_vec(), MlsProposal::Remove(client_id.into()))
+                    .new_remove_proposal(&conversation_id.to_vec(), client_id.into())
                     .await
                     .map_err(CoreCryptoError::from)?
                     .try_into()?;

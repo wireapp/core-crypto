@@ -103,10 +103,6 @@ fn run_test() -> Result<()> {
         #[cfg(feature = "proteus")]
         run_proteus_test(&chrome_driver_addr).await?;
 
-        // FIXME: See comment on the function itself
-        #[cfg(feature = "e2ei")]
-        run_e2e_identity_test(&chrome_driver_addr).await?;
-
         chrome_webdriver.kill().await?;
         http_server_hwnd.abort();
         Ok(())
@@ -396,36 +392,6 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
     spinner.success(format!(
         "[Proteus] Step 3: Roundtripping {ROUNDTRIP_MSG_AMOUNT} messages... [OK]"
     ));
-
-    Ok(())
-}
-
-#[cfg(all(not(target_family = "wasm"), feature = "e2ei"))]
-// TODO: melt this into the EmulatedClient constructor
-// FIXME: This is meaningless and is more akin to a unit test.
-// - We should test that heterogenous clients can communicate (classic credential clients + x509 clients, on different platforms)
-// - This whole EmulatedE2eIdentityClient thing makes little sense
-#[allow(dead_code)]
-async fn run_e2e_identity_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
-    let spinner = util::RunningProcess::new("[E2EI] Step 0: Perform ACME enrollment", true);
-
-    let mut clients: Vec<Box<dyn clients::EmulatedE2eIdentityClient>> = vec![];
-    clients.push(Box::new(
-        clients::corecrypto::native::CoreCryptoNativeClient::new_deferred().await?,
-    ));
-    // clients.push(Box::new(
-    //     clients::corecrypto::ffi::CoreCryptoFfiClient::new_deferred().await?,
-    // ));
-    clients.push(Box::new(
-        clients::corecrypto::web::CoreCryptoWebClient::new_deferred(chrome_driver_addr).await?,
-    ));
-
-    /*
-    use core_crypto::prelude::*;
-    for c in clients.iter_mut() {
-        c.e2ei_new_enrollment(MlsCiphersuite::default()).await?;
-    }*/
-    spinner.success("[E2EI] Step 0: Perform ACME enrollment [OK]");
 
     Ok(())
 }

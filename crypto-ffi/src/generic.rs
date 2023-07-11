@@ -18,7 +18,7 @@ use core_crypto::prelude::{
     ClientIdentifier, ConversationMember, EntropySeed, KeyPackageIn, KeyPackageRef, MlsCentral,
     MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle, MlsConversationConfiguration,
     MlsConversationCreationMessage, MlsConversationDecryptMessage, MlsConversationInitBundle, MlsCryptoProvider,
-    MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposal, MlsProposalBundle, MlsRotateBundle, VerifiableGroupInfo,
+    MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle, MlsRotateBundle, VerifiableGroupInfo,
 };
 use core_crypto::{CryptoResult, MlsError};
 use std::collections::HashMap;
@@ -742,7 +742,7 @@ impl CoreCrypto {
         self.central.lock().await.conversation_exists(&conversation_id).await
     }
 
-    /// See [core_crypto::mls::MlsCentral::new_proposal]
+    /// See [core_crypto::mls::MlsCentral::new_add_proposal]
     pub async fn new_add_proposal(
         &self,
         conversation_id: Vec<u8>,
@@ -752,22 +752,22 @@ impl CoreCrypto {
         self.central
             .lock()
             .await
-            .new_proposal(&conversation_id, MlsProposal::Add(kp.into()))
+            .new_add_proposal(&conversation_id, kp.into())
             .await?
             .try_into()
     }
 
-    /// See [core_crypto::mls::MlsCentral::new_proposal]
+    /// See [core_crypto::mls::MlsCentral::new_update_proposal]
     pub async fn new_update_proposal(&self, conversation_id: Vec<u8>) -> CryptoResult<ProposalBundle> {
         self.central
             .lock()
             .await
-            .new_proposal(&conversation_id, MlsProposal::Update)
+            .new_update_proposal(&conversation_id)
             .await?
             .try_into()
     }
 
-    /// See [core_crypto::mls::MlsCentral::new_proposal]
+    /// See [core_crypto::mls::MlsCentral::new_remove_proposal]
     pub async fn new_remove_proposal(
         &self,
         conversation_id: Vec<u8>,
@@ -776,7 +776,7 @@ impl CoreCrypto {
         self.central
             .lock()
             .await
-            .new_proposal(&conversation_id, MlsProposal::Remove(client_id.0))
+            .new_remove_proposal(&conversation_id, client_id.0)
             .await?
             .try_into()
     }

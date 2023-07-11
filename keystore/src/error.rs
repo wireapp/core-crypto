@@ -25,6 +25,8 @@ pub enum MissingKeyErrorKind {
     MlsHpkePrivateKey,
     #[error("MLS EncryptionKeyPair")]
     MlsEncryptionKeyPair,
+    #[error("MLS Epoch EncryptionKeyPair")]
+    MlsEpochEncryptionKeyPair,
     #[error("MLS PreSharedKeyBundle")]
     MlsPskBundle,
     #[error("MLS CredentialBundle")]

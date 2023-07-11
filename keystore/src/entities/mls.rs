@@ -147,6 +147,15 @@ pub struct MlsEncryptionKeyPair {
     pub pk: Vec<u8>,
 }
 
+/// Entity representing a list of [MlsEncryptionKeyPair]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[zeroize(drop)]
+#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+pub struct MlsEpochEncryptionKeyPair {
+    pub id: Vec<u8>,
+    pub keypairs: Vec<u8>,
+}
+
 /// Entity representing a persisted `SignatureKeyPair`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]

@@ -363,6 +363,7 @@ impl MlsCentral {
     /// # Errors
     /// If the authorisation callback is set, an error can be caused when the authorization fails.
     /// Other errors are KeyStore and OpenMls errors:
+    #[cfg_attr(test, crate::idempotent)]
     pub async fn add_members_to_conversation(
         &mut self,
         id: &ConversationId,
@@ -396,6 +397,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// If the authorisation callback is set, an error can be caused when the authorization fails. Other errors are KeyStore and OpenMls errors.
+    #[cfg_attr(test, crate::idempotent)]
     pub async fn remove_members_from_conversation(
         &mut self,
         id: &ConversationId,
@@ -428,6 +430,7 @@ impl MlsCentral {
     /// # Errors
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
+    #[cfg_attr(test, crate::idempotent)]
     pub async fn update_keying_material(&mut self, id: &ConversationId) -> CryptoResult<MlsCommitBundle> {
         self.get_conversation(id)
             .await?
@@ -447,6 +450,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// Errors can be originating from the KeyStore and OpenMls
+    #[cfg_attr(test, crate::idempotent)]
     pub async fn commit_pending_proposals(&mut self, id: &ConversationId) -> CryptoResult<Option<MlsCommitBundle>> {
         self.get_conversation(id)
             .await?
@@ -461,7 +465,7 @@ impl MlsCentral {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{mls::proposal::MlsProposal, test_utils::*};
+    use crate::test_utils::*;
     use itertools::Itertools;
     use openmls::prelude::SignaturePublicKey;
 
@@ -607,11 +611,7 @@ pub mod tests {
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        let proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Add(charlie_kp))
-                            .await
-                            .unwrap()
-                            .proposal;
+                        let proposal = alice_central.new_add_proposal(&id, charlie_kp).await.unwrap().proposal;
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         bob_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
@@ -711,7 +711,7 @@ pub mod tests {
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Add(guest_central.get_one_key_package(&case).await))
+                            .new_add_proposal(&id, guest_central.get_one_key_package(&case).await)
                             .await
                             .unwrap();
                         bob_central
@@ -804,7 +804,7 @@ pub mod tests {
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         let proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Remove(charlie_central.get_client_id()))
+                            .new_remove_proposal(&id, charlie_central.get_client_id())
                             .await
                             .unwrap()
                             .proposal;
@@ -836,7 +836,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_update_keying_material_conversation_group(case: TestCase) {
+        pub async fn should_succeed(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -848,6 +848,8 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+
+                        let init_count = alice_central.count_entities().await;
 
                         let bob_keys = bob_central
                             .get_conversation_unchecked(&id)
@@ -907,6 +909,11 @@ pub mod tests {
 
                         // ensuring both can encrypt messages
                         assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
+
+                        // make sure inline update commit + merge does not leak anything
+                        // that's obvious since no new encryption keypair is created in this case
+                        let final_count = alice_central.count_entities().await;
+                        assert_eq!(init_count, final_count);
                     })
                 },
             )
@@ -915,7 +922,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_update_keying_material_group_pending_commit(case: TestCase) {
+        pub async fn should_create_welcome_for_pending_add_proposals(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -948,10 +955,7 @@ pub mod tests {
 
                         // proposing adding charlie
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
-                        let add_charlie_proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Add(charlie_kp))
-                            .await
-                            .unwrap();
+                        let add_charlie_proposal = alice_central.new_add_proposal(&id, charlie_kp).await.unwrap();
 
                         // receiving the proposal on Bob's side
                         bob_central
@@ -1033,7 +1037,7 @@ pub mod tests {
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Add(guest_central.get_one_key_package(&case).await))
+                            .new_add_proposal(&id, guest_central.get_one_key_package(&case).await)
                             .await
                             .unwrap()
                             .proposal;
@@ -1129,11 +1133,7 @@ pub mod tests {
                             .encryption_key_of(&id, alice_central.get_client_id())
                             .await;
 
-                        let proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Update)
-                            .await
-                            .unwrap()
-                            .proposal;
+                        let proposal = alice_central.new_update_proposal(&id).await.unwrap().proposal;
                         bob_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
@@ -1196,7 +1196,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package(&case).await))
+                            .new_add_proposal(&id, bob_central.get_one_key_package(&case).await)
                             .await
                             .unwrap();
                         assert!(!alice_central.pending_proposals(&id).await.is_empty());
@@ -1249,7 +1249,7 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let proposal = bob_central
-                            .new_proposal(&id, MlsProposal::Add(charlie_central.get_one_key_package(&case).await))
+                            .new_add_proposal(&id, charlie_central.get_one_key_package(&case).await)
                             .await
                             .unwrap();
                         assert!(!bob_central.pending_proposals(&id).await.is_empty());
@@ -1290,7 +1290,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package(&case).await))
+                            .new_add_proposal(&id, bob_central.get_one_key_package(&case).await)
                             .await
                             .unwrap();
                         let MlsCommitBundle { welcome, .. } =
@@ -1322,7 +1322,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .new_proposal(&id, MlsProposal::Add(bob_central.get_one_key_package(&case).await))
+                            .new_add_proposal(&id, bob_central.get_one_key_package(&case).await)
                             .await
                             .unwrap();
                         let commit_bundle = alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
@@ -1427,11 +1427,7 @@ pub mod tests {
                                 .unwrap();
                             alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
-                            let proposal1 = alice_central
-                                .new_proposal(&id, MlsProposal::Update)
-                                .await
-                                .unwrap()
-                                .proposal;
+                            let proposal1 = alice_central.new_update_proposal(&id).await.unwrap().proposal;
                             let proposal2 = proposal1.clone();
                             alice_central
                                 .get_conversation_unchecked(&id)
@@ -1494,11 +1490,7 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
-                        let proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Update)
-                            .await
-                            .unwrap()
-                            .proposal;
+                        let proposal = alice_central.new_update_proposal(&id).await.unwrap().proposal;
 
                         bob_central
                             .decrypt_message(&id, &proposal.to_bytes().unwrap())

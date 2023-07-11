@@ -15,7 +15,6 @@ pub(crate) mod conversation;
 pub(crate) mod credential;
 pub(crate) mod external_commit;
 pub(crate) mod external_proposal;
-pub(crate) mod key_package;
 pub(crate) mod member;
 pub(crate) mod proposal;
 pub(crate) mod restore;
@@ -244,6 +243,7 @@ impl MlsCentral {
     /// This method is designed to be used in conjunction with [MlsCentral::mls_init_with_client_id] and represents the first step in this process.
     ///
     /// This returns the TLS-serialized identity keys (i.e. the signature keypair's public key)
+    #[cfg_attr(test, crate::dispotent)]
     pub async fn mls_generate_keypairs(&self, ciphersuites: Vec<MlsCiphersuite>) -> CryptoResult<Vec<ClientId>> {
         if self.mls_client.is_some() {
             // prevents wrong usage of the method instead of silently hiding the mistake
@@ -256,6 +256,7 @@ impl MlsCentral {
     /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
     ///
     /// Important: This is designed to be called after [MlsCentral::mls_generate_keypairs]
+    #[cfg_attr(test, crate::dispotent)]
     pub async fn mls_init_with_client_id(
         &mut self,
         client_id: ClientId,
@@ -314,6 +315,7 @@ impl MlsCentral {
     /// # Errors
     /// Errors can happen from the KeyStore or from OpenMls for ex if no [openmls::key_packages::KeyPackage] can
     /// be found in the KeyStore
+    #[cfg_attr(test, crate::dispotent)]
     pub async fn new_conversation(
         &mut self,
         id: ConversationId,
@@ -353,6 +355,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// If the conversation can't be found
+    #[cfg_attr(test, crate::idempotent)]
     pub async fn conversation_epoch(&mut self, id: &ConversationId) -> CryptoResult<u64> {
         Ok(self
             .mls_groups
@@ -576,41 +579,6 @@ pub mod tests {
                 assert!(matches!(repeat_create.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
             })
         })
-        .await;
-    }
-
-    #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
-    pub async fn process_welcome_should_fail_when_already_exists(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    let bob = bob_central.rand_member(&case).await;
-                    let welcome = alice_central
-                        .add_members_to_conversation(&id, &mut [bob])
-                        .await
-                        .unwrap()
-                        .welcome;
-
-                    // Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
-                    bob_central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    let join_welcome = bob_central
-                        .process_welcome_message(welcome.into(), case.custom_cfg())
-                        .await;
-                    assert!(matches!(join_welcome.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
-                })
-            },
-        )
         .await;
     }
 

@@ -15,15 +15,13 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::{
-    key_store::{MlsEntity, MlsEntityId},
-    types::SignatureScheme,
-};
+use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
+use crate::entities::MlsEpochEncryptionKeyPair;
 use crate::{
     entities::{
-        E2eiEnrollment, EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage,
-        MlsPskBundle, MlsSignatureKeyPair, MlsSignatureKeyPairExt, PersistedMlsGroup, PersistedMlsPendingGroup,
+        E2eiEnrollment, EntityFindParams, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsPskBundle,
+        MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup,
     },
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
@@ -32,30 +30,6 @@ use crate::{
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait CryptoKeystoreMls: Sized {
-    /// Binds a signature keypair to the given credential within the keystore
-    ///
-    /// # Arguments
-    /// * `public_key` - The Signature key public key
-    /// * `credential_id` - The id of the credential we want to associate it with
-    async fn mls_bind_signature_keypair_to_credential(
-        &self,
-        public_key: &[u8],
-        credential_id: &[u8],
-    ) -> CryptoKeystoreResult<()>;
-
-    async fn mls_keypair_for_signature_scheme(
-        &self,
-        credential_id: &[u8],
-        signature_scheme: SignatureScheme,
-    ) -> CryptoKeystoreResult<Option<MlsSignatureKeyPair>>;
-
-    /// Counts how many KeyPackages are stored
-    ///
-    /// # Errors
-    /// Any common error that can happen during a database connection. IoError being a common error
-    /// for example.
-    async fn mls_keypackagebundle_count(&self) -> CryptoKeystoreResult<usize>;
-
     /// Fetches Keypackages
     ///
     /// # Arguments
@@ -65,13 +39,6 @@ pub trait CryptoKeystoreMls: Sized {
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
     async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>>;
-
-    /// Fetches a singles keypackage
-    ///
-    /// # Errors
-    /// Any common error that can happen during a database connection. IoError being a common error
-    /// for example.
-    async fn mls_get_keypackage<V: MlsEntity>(&self) -> CryptoKeystoreResult<V>;
 
     /// Checks if the given MLS group id exists in the keystore
     /// Note: in case of any error, this will return false
@@ -168,39 +135,6 @@ pub trait CryptoKeystoreMls: Sized {
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl CryptoKeystoreMls for crate::connection::Connection {
-    async fn mls_bind_signature_keypair_to_credential(
-        &self,
-        public_key: &[u8],
-        credential_id: &[u8],
-    ) -> CryptoKeystoreResult<()> {
-        let Some(mut keypair) = self.find::<MlsSignatureKeyPair>(public_key).await? else {
-            return Err(CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsSignatureKeyPair));
-        };
-
-        let Some(credential) = self.find::<MlsCredential>(credential_id).await? else {
-            return Err(CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsCredential));
-        };
-
-        keypair.credential_id = credential.id.clone();
-        self.save(keypair).await?;
-
-        Ok(())
-    }
-
-    async fn mls_keypair_for_signature_scheme(
-        &self,
-        credential_id: &[u8],
-        signature_scheme: SignatureScheme,
-    ) -> CryptoKeystoreResult<Option<MlsSignatureKeyPair>> {
-        let mut db = self.conn.lock().await;
-
-        Ok(MlsSignatureKeyPair::keypair_for_signature_scheme(&mut db, credential_id, signature_scheme).await?)
-    }
-
-    async fn mls_keypackagebundle_count(&self) -> CryptoKeystoreResult<usize> {
-        self.count::<MlsKeyPackage>().await
-    }
-
     #[cfg(target_family = "wasm")]
     async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
         use crate::{connection::storage::WasmStorageWrapper, entities::Entity};
@@ -256,54 +190,6 @@ impl CryptoKeystoreMls for crate::connection::Connection {
             .collect())
     }
 
-    #[cfg(target_family = "wasm")]
-    async fn mls_get_keypackage<V: MlsEntity>(&self) -> CryptoKeystoreResult<V> {
-        use crate::{connection::storage::WasmStorageWrapper, entities::Entity};
-        let conn = self.conn.lock_arc().await;
-        let cipher = conn.storage().cipher.clone();
-        let storage = &conn.storage().storage;
-
-        let raw_kp: MlsKeyPackage = match storage {
-            WasmStorageWrapper::Persistent(rexie) => {
-                let transaction = rexie.transaction(&["mls_keypackages"], rexie::TransactionMode::ReadOnly)?;
-                let store = transaction.store("mls_keypackages")?;
-
-                let items_fut = store.get_all(None, Some(1), None, Some(rexie::Direction::Next));
-
-                let items = items_fut.await?;
-
-                if items.is_empty() {
-                    return Err(CryptoKeystoreError::OutOfKeyPackageBundles);
-                }
-
-                let (_, js_kp) = items[0].clone();
-                let mut kp: MlsKeyPackage = serde_wasm_bindgen::from_value(js_kp)?;
-                kp.decrypt(&cipher)?;
-
-                drop(items);
-
-                transaction.commit().await?;
-
-                Ok(kp)
-            }
-            WasmStorageWrapper::InMemory(map) => {
-                if let Some(collection) = map.get("mls_keypackages") {
-                    if let Some((_, js_kp)) = collection.iter().next() {
-                        let mut entity: MlsKeyPackage = serde_wasm_bindgen::from_value(js_kp.clone())?;
-                        entity.decrypt(&cipher)?;
-                        Ok(entity)
-                    } else {
-                        Err(CryptoKeystoreError::OutOfKeyPackageBundles)
-                    }
-                } else {
-                    Err(CryptoKeystoreError::OutOfKeyPackageBundles)
-                }
-            }
-        }?;
-
-        Ok(deser(&raw_kp.keypackage)?)
-    }
-
     #[cfg(not(target_family = "wasm"))]
     async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
         let mut db = self.conn.lock().await;
@@ -348,34 +234,6 @@ impl CryptoKeystoreMls for crate::connection::Connection {
             .into_iter()
             .filter_map(|kpb| postcard::from_bytes(&kpb.keypackage).ok())
             .collect())
-    }
-
-    #[cfg(not(target_family = "wasm"))]
-    async fn mls_get_keypackage<V: MlsEntity>(&self) -> CryptoKeystoreResult<V> {
-        if self.mls_keypackagebundle_count().await? == 0 {
-            return Err(CryptoKeystoreError::OutOfKeyPackageBundles);
-        }
-
-        let db = self.conn.lock().await;
-        let rowid: i64 = db.query_row(
-            "SELECT rowid FROM mls_keypackages ORDER BY rowid ASC LIMIT 1",
-            [],
-            |r| r.get(0),
-        )?;
-
-        let mut blob = db.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_keypackages",
-            "keypackage",
-            rowid,
-            true,
-        )?;
-        use std::io::Read as _;
-        let mut buf = Vec::with_capacity(blob.len());
-        blob.read_to_end(&mut buf)?;
-        blob.close()?;
-
-        Ok(postcard::from_bytes(&buf)?)
     }
 
     async fn mls_group_persist(
@@ -535,6 +393,13 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
                 let kp = MlsEncryptionKeyPair { pk: k.into(), sk: data };
                 self.save(kp).await?;
             }
+            MlsEntityId::EpochEncryptionKeyPair => {
+                let kp = MlsEpochEncryptionKeyPair {
+                    id: k.into(),
+                    keypairs: data,
+                };
+                self.save(kp).await?;
+            }
         }
 
         Ok(())
@@ -573,6 +438,10 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
                 let kp: MlsEncryptionKeyPair = self.find(k).await.ok().flatten()?;
                 deser(&kp.sk).ok()
             }
+            MlsEntityId::EpochEncryptionKeyPair => {
+                let kp: MlsEpochEncryptionKeyPair = self.find(k).await.ok().flatten()?;
+                deser(&kp.keypairs).ok()
+            }
         }
     }
 
@@ -588,6 +457,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
             MlsEntityId::KeyPackage => self.remove::<MlsKeyPackage, _>(k).await?,
             MlsEntityId::PskBundle => self.remove::<MlsPskBundle, _>(k).await?,
             MlsEntityId::EncryptionKeyPair => self.remove::<MlsEncryptionKeyPair, _>(k).await?,
+            MlsEntityId::EpochEncryptionKeyPair => self.remove::<MlsEpochEncryptionKeyPair, _>(k).await?,
         }
 
         Ok(())

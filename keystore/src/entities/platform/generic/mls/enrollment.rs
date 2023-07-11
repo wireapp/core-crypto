@@ -113,8 +113,8 @@ impl EntityBase for E2eiEnrollment {
         }
     }
 
-    async fn count(_conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        Err(CryptoKeystoreError::ImplementationError)
+    async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
+        Ok(conn.query_row("SELECT COUNT(*) FROM e2ei_enrollment", [], |r| r.get(0))?)
     }
 
     async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {

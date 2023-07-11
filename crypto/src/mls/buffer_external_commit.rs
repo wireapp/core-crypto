@@ -84,7 +84,7 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{prelude::MlsProposal, test_utils::*, CryptoError};
+    use crate::{test_utils::*, CryptoError};
     use core_crypto_keystore::entities::MlsPendingMessage;
     use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
@@ -128,7 +128,7 @@ pub mod tests {
                     // ...then Alice generates new messages for this epoch
                     let app_msg = alice_central.encrypt_message(&id, b"Hello Bob !").await.unwrap();
                     let proposal = alice_central
-                        .new_proposal(&id, MlsProposal::Update)
+                        .new_update_proposal(&id)
                         .await
                         .unwrap()
                         .proposal;

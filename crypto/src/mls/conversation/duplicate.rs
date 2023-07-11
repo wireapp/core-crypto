@@ -44,7 +44,7 @@ impl MlsConversation {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{prelude::MlsProposal, test_utils::*, CryptoError};
+    use crate::{test_utils::*, CryptoError};
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -164,11 +164,7 @@ pub mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
-                    let proposal = alice_central
-                        .new_proposal(&id, MlsProposal::Update)
-                        .await
-                        .unwrap()
-                        .proposal;
+                    let proposal = alice_central.new_update_proposal(&id).await.unwrap().proposal;
 
                     // decrypt once ... ok
                     bob_central

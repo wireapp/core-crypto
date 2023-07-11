@@ -11,7 +11,9 @@
 //! | 1+ pend. Proposal | ❌              | ✅              |
 //!
 
+use core_crypto_keystore::entities::MlsEncryptionKeyPair;
 use openmls::prelude::MlsGroupStateError;
+use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -26,8 +28,19 @@ impl MlsConversation {
     /// see [MlsCentral::commit_accepted]
     #[cfg_attr(test, crate::durable)]
     pub async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+        // openmls stores here all the encryption keypairs used for update proposals..
+        let previous_own_leaf_nodes = self.group.own_leaf_nodes.clone();
+
         self.group.merge_pending_commit(backend).await.map_err(MlsError::from)?;
-        self.persist_group_when_changed(backend, false).await
+        self.persist_group_when_changed(backend, false).await?;
+
+        // ..so if there's any, we clear them after the commit is merged
+        for oln in &previous_own_leaf_nodes {
+            let ek = oln.encryption_key().as_slice();
+            let _ = backend.key_store().remove::<MlsEncryptionKeyPair, _>(ek).await;
+        }
+
+        Ok(())
     }
 
     /// see [MlsCentral::clear_pending_proposal]
@@ -38,7 +51,8 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<()> {
         self.group
-            .remove_pending_proposal(proposal_ref.clone().into_inner())
+            .remove_pending_proposal(backend.key_store(), &proposal_ref)
+            .await
             .map_err(|e| match e {
                 MlsGroupStateError::PendingProposalNotFound => CryptoError::PendingProposalNotFound(proposal_ref),
                 _ => CryptoError::from(MlsError::from(e)),
@@ -126,6 +140,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// When the conversation is not found or there is no pending commit
+    #[cfg_attr(test, crate::idempotent)]
     pub async fn clear_pending_commit(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
         self.get_conversation(conversation_id)
             .await?
@@ -141,7 +156,7 @@ pub mod tests {
     use openmls::prelude::Proposal;
     use wasm_bindgen_test::*;
 
-    use crate::{prelude::MlsProposal, test_utils::*};
+    use crate::test_utils::*;
 
     use super::*;
 
@@ -191,7 +206,7 @@ pub mod tests {
                             .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.new_proposal(&id, MlsProposal::Update).await.unwrap();
+                        alice_central.new_update_proposal(&id).await.unwrap();
                         alice_central
                             .add_members_to_conversation(&id, &mut [bob_central.rand_member(&case).await])
                             .await
@@ -204,6 +219,36 @@ pub mod tests {
                     })
                 },
             )
+            .await
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_clean_associated_key_material(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+
+                    let initial_count = alice_central.count_entities().await;
+
+                    alice_central.new_update_proposal(&id).await.unwrap();
+                    let post_proposal_count = alice_central.count_entities().await;
+                    assert_eq!(
+                        post_proposal_count.encryption_keypair,
+                        initial_count.encryption_keypair + 1
+                    );
+
+                    alice_central.commit_pending_proposals(&id).await.unwrap();
+                    alice_central.commit_accepted(&id).await.unwrap();
+
+                    let final_count = alice_central.count_entities().await;
+                    assert_eq!(initial_count, final_count);
+                })
+            })
             .await
         }
     }
@@ -229,22 +274,18 @@ pub mod tests {
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         let add_ref = alice_central
-                            .new_proposal(&id, MlsProposal::Add(charlie_kp))
+                            .new_add_proposal(&id, charlie_kp)
                             .await
                             .unwrap()
                             .proposal_ref;
 
                         let remove_ref = alice_central
-                            .new_proposal(&id, MlsProposal::Remove(bob_central.get_client_id()))
+                            .new_remove_proposal(&id, bob_central.get_client_id())
                             .await
                             .unwrap()
                             .proposal_ref;
 
-                        let update_ref = alice_central
-                            .new_proposal(&id, MlsProposal::Update)
-                            .await
-                            .unwrap()
-                            .proposal_ref;
+                        let update_ref = alice_central.new_update_proposal(&id).await.unwrap().proposal_ref;
 
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 3);
                         alice_central.clear_pending_proposal(&id, add_ref.into()).await.unwrap();
@@ -316,6 +357,35 @@ pub mod tests {
             })
             .await
         }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_clean_associated_key_material(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    cc.new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    assert!(cc.pending_proposals(&id).await.is_empty());
+
+                    let init = cc.count_entities().await;
+
+                    let proposal_ref = cc.new_update_proposal(&id).await.unwrap().proposal_ref;
+                    assert_eq!(cc.pending_proposals(&id).await.len(), 1);
+
+                    cc.clear_pending_proposal(&id, proposal_ref.into()).await.unwrap();
+                    assert!(cc.pending_proposals(&id).await.is_empty());
+
+                    // This whole flow should be idempotent.
+                    // Here we verify that we are indeed deleting the `EncryptionKeyPair` created
+                    // for the Update proposal
+                    let after_clear_proposal = cc.count_entities().await;
+                    assert_eq!(init, after_clear_proposal);
+                })
+            })
+            .await
+        }
     }
 
     pub mod clear_pending_commit {
@@ -368,6 +438,35 @@ pub mod tests {
                     assert!(alice_central.pending_commit(&id).await.is_none());
                     let clear = alice_central.clear_pending_commit(&id).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::PendingCommitNotFound))
+                })
+            })
+            .await
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_clean_associated_key_material(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    cc.new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    assert!(cc.pending_commit(&id).await.is_none());
+
+                    let init = cc.count_entities().await;
+
+                    cc.update_keying_material(&id).await.unwrap();
+                    assert!(cc.pending_commit(&id).await.is_some());
+
+                    cc.clear_pending_commit(&id).await.unwrap();
+                    assert!(cc.pending_commit(&id).await.is_none());
+
+                    // This whole flow should be idempotent.
+                    // Here we verify that we are indeed deleting the `EncryptionKeyPair` created
+                    // for the Update commit
+                    let after_clear_commit = cc.count_entities().await;
+                    assert_eq!(init, after_clear_commit);
                 })
             })
             .await

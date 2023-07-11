@@ -3,8 +3,6 @@ use criterion::{
     Criterion,
 };
 
-use core_crypto::prelude::MlsProposal;
-
 use crate::utils::*;
 
 #[path = "utils/mod.rs"]
@@ -25,7 +23,7 @@ fn proposal_add_bench(c: &mut Criterion) {
                         })
                     },
                     |(mut central, id, kp)| async move {
-                        black_box(central.new_proposal(&id, MlsProposal::Add(kp)).await.unwrap());
+                        black_box(central.new_add_proposal(&id, kp).await.unwrap());
                     },
                     BatchSize::SmallInput,
                 )
@@ -49,7 +47,7 @@ fn proposal_remove_bench(c: &mut Criterion) {
                         })
                     },
                     |(mut central, id, client_id)| async move {
-                        black_box(central.new_proposal(&id, MlsProposal::Remove(client_id)).await.unwrap());
+                        black_box(central.new_remove_proposal(&id, client_id).await.unwrap());
                     },
                     BatchSize::SmallInput,
                 )
@@ -73,7 +71,7 @@ fn proposal_update_bench(c: &mut Criterion) {
                         })
                     },
                     |(mut central, id)| async move {
-                        black_box(central.new_proposal(&id, MlsProposal::Update).await.unwrap());
+                        black_box(central.new_update_proposal(&id).await.unwrap());
                     },
                     BatchSize::SmallInput,
                 )

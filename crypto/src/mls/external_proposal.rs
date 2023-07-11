@@ -102,6 +102,7 @@ impl MlsCentral {
     /// Errors resulting from the creation of the proposal within OpenMls.
     /// Fails when `credential_type` is [MlsCredentialType::X509] and no Credential has been created
     /// for it beforehand with [MlsCentral::e2ei_mls_init_only] or variants.
+    #[cfg_attr(test, crate::dispotent)]
     pub async fn new_external_add_proposal(
         &mut self,
         conversation_id: ConversationId,
@@ -141,7 +142,7 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{prelude::handshake::MlsCommitBundle, test_utils::*};

@@ -58,6 +58,7 @@ impl MlsCentral {
     /// # Errors
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
+    #[cfg_attr(test, crate::idempotent)]
     pub async fn encrypt_message(
         &mut self,
         conversation: &ConversationId,
