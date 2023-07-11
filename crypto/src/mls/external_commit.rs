@@ -17,6 +17,7 @@
 use openmls::prelude::{group_info::VerifiableGroupInfo, MlsGroup, MlsMessageOut, Proposal, Sender, StagedCommit};
 use openmls_traits::OpenMlsCryptoProvider;
 
+use core_crypto_keystore::entities::PersistedMlsPendingGroup;
 use core_crypto_keystore::CryptoKeystoreMls;
 use tls_codec::Serialize;
 
@@ -147,9 +148,6 @@ impl MlsCentral {
 
         let mut mls_group = core_crypto_keystore::deser::<MlsGroup>(&group)?;
 
-        // let group_id = GroupId::from_slice(&id);
-        // let mut mls_group = MlsGroup::load(&group_id, &self.mls_backend).await.ok_or(CryptoError::ImplementationError)?;
-
         // Merge it aka bring the MLS group to life and make it usable
         mls_group
             .merge_pending_commit(&self.mls_backend)
@@ -185,6 +183,16 @@ impl MlsCentral {
     /// Errors resulting from the KeyStore calls
     pub async fn clear_pending_group_from_external_commit(&mut self, id: &ConversationId) -> CryptoResult<()> {
         Ok(self.mls_backend.key_store().mls_pending_groups_delete(id).await?)
+    }
+
+    pub(crate) async fn pending_group_exists(&self, id: &ConversationId) -> bool {
+        self.mls_backend
+            .borrow_keystore()
+            .find::<PersistedMlsPendingGroup>(id.as_slice())
+            .await
+            .ok()
+            .flatten()
+            .is_some()
     }
 }
 
@@ -373,7 +381,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn join_by_external_commit_should_fail_when_bad_epoch(case: TestCase) {
+    pub async fn should_fail_when_bad_epoch(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -413,7 +421,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn existing_clients_can_join_by_external_commit(case: TestCase) {
+    pub async fn existing_clients_can_join(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -443,7 +451,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn join_by_external_commit_should_fail_when_no_pending_external_commit(case: TestCase) {
+    pub async fn should_fail_when_no_pending_external_commit(case: TestCase) {
         run_test_with_central(case.clone(), move |[mut central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -463,7 +471,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn join_by_external_commit_should_return_valid_group_info(case: TestCase) {
+    pub async fn should_return_valid_group_info(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "charlie"],
@@ -540,7 +548,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn join_by_external_commit_should_fail_when_sender_user_not_in_group(case: TestCase) {
+    pub async fn should_fail_when_sender_user_not_in_group(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -580,7 +588,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn join_by_external_commit_should_fail_when_sender_lacks_role(case: TestCase) {
+    pub async fn should_fail_when_sender_lacks_role(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -652,6 +660,81 @@ pub mod tests {
                             MissingKeyErrorKind::MlsPendingGroup
                         ))
                     ))
+                })
+            },
+        )
+        .await
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn new_with_inflight_join_should_fail_when_already_exists(case: TestCase) {
+        run_test_with_client_ids(
+            case.clone(),
+            ["alice", "bob"],
+            move |[mut alice_central, mut bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    let gi = alice_central.get_group_info(&id).await;
+
+                    // Bob to join a conversation but while the server processes its request he
+                    // creates a conversation with the id of the conversation he's trying to join
+                    bob_central
+                        .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
+                        .await
+                        .unwrap();
+                    // erroneous call
+                    let conflict_join = bob_central
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .await;
+                    assert!(matches!(conflict_join.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
+                })
+            },
+        )
+        .await
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn new_with_inflight_welcome_should_fail_when_already_exists(case: TestCase) {
+        run_test_with_client_ids(
+            case.clone(),
+            ["alice", "bob"],
+            move |[mut alice_central, mut bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    let gi = alice_central.get_group_info(&id).await;
+
+                    // While Bob tries to join a conversation via external commit he's also invited
+                    // to a conversation with the same id through a Welcome message
+                    bob_central
+                        .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
+                        .await
+                        .unwrap();
+
+                    let bob = bob_central.rand_member(&case).await;
+                    let welcome = alice_central
+                        .add_members_to_conversation(&id, &mut [bob])
+                        .await
+                        .unwrap()
+                        .welcome;
+
+                    // erroneous call
+                    let conflict_welcome = bob_central
+                        .process_welcome_message(welcome.into(), case.custom_cfg())
+                        .await;
+
+                    assert!(
+                        matches!(conflict_welcome.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id)
+                    );
                 })
             },
         )

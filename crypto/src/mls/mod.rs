@@ -1,16 +1,14 @@
-use crate::prelude::CiphersuiteName;
-use openmls::prelude::{Ciphersuite, MlsMessageIn, MlsMessageInBody};
 use openmls_traits::OpenMlsCryptoProvider;
-use tls_codec::Deserialize;
 
 use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
 
 use crate::prelude::{
     identifier::ClientIdentifier, Client, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult,
-    MlsCentralConfiguration, MlsConversation, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
+    MlsCentralConfiguration, MlsCiphersuite, MlsConversation, MlsConversationConfiguration, MlsCredentialType,
     MlsError,
 };
 
+pub(crate) mod ciphersuite;
 pub(crate) mod client;
 pub(crate) mod conversation;
 pub(crate) mod credential;
@@ -20,46 +18,6 @@ pub(crate) mod key_package;
 pub(crate) mod member;
 pub(crate) mod proposal;
 pub(crate) mod restore;
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, derive_more::Deref, serde::Serialize, serde::Deserialize)]
-#[serde(transparent)]
-#[repr(transparent)]
-/// A wrapper for the OpenMLS Ciphersuite, so that we are able to provide a default value.
-pub struct MlsCiphersuite(pub(crate) Ciphersuite);
-
-impl Default for MlsCiphersuite {
-    fn default() -> Self {
-        Self(Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
-    }
-}
-
-impl From<Ciphersuite> for MlsCiphersuite {
-    fn from(value: Ciphersuite) -> Self {
-        Self(value)
-    }
-}
-
-impl From<MlsCiphersuite> for Ciphersuite {
-    fn from(ciphersuite: MlsCiphersuite) -> Self {
-        ciphersuite.0
-    }
-}
-
-impl From<MlsCiphersuite> for u16 {
-    fn from(cs: MlsCiphersuite) -> Self {
-        (&cs.0).into()
-    }
-}
-
-impl TryFrom<u16> for MlsCiphersuite {
-    type Error = CryptoError;
-
-    fn try_from(c: u16) -> CryptoResult<Self> {
-        Ok(CiphersuiteName::try_from(c)
-            .map_err(|_| CryptoError::ImplementationError)?
-            .into())
-    }
-}
 
 // Prevents direct instantiation of [MlsCentralConfiguration]
 pub(crate) mod config {
@@ -81,7 +39,7 @@ pub(crate) mod config {
         pub external_entropy: Option<EntropySeed>,
         /// All supported ciphersuites
         /// TODO: pending wire-server API supports selecting a ciphersuite only the first item of this array will be used.
-        pub ciphersuites: Vec<MlsCiphersuite>,
+        pub ciphersuites: Vec<ciphersuite::MlsCiphersuite>,
     }
 
     impl MlsCentralConfiguration {
@@ -109,8 +67,7 @@ pub(crate) mod config {
         ///
         /// This should work:
         /// ```
-        /// use core_crypto::{prelude::MlsCentralConfiguration, CryptoError};
-        /// use core_crypto::mls::MlsCiphersuite;
+        /// use core_crypto::prelude::{MlsCentralConfiguration, CryptoError, MlsCiphersuite};
         ///
         /// let result = MlsCentralConfiguration::try_new(
         ///     "/tmp/crypto".to_string(),
@@ -362,6 +319,10 @@ impl MlsCentral {
         creator_credential_type: MlsCredentialType,
         config: MlsConversationConfiguration,
     ) -> CryptoResult<()> {
+        if self.conversation_exists(&id).await || self.pending_group_exists(&id).await {
+            return Err(CryptoError::ConversationAlreadyExists(id));
+        }
+
         let mls_client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
         let conversation = MlsConversation::create(
             id.clone(),
@@ -402,62 +363,6 @@ impl MlsCentral {
             .group
             .epoch()
             .as_u64())
-    }
-
-    /// Create a conversation from a received MLS Welcome message
-    ///
-    /// # Arguments
-    /// * `welcome` - a `Welcome` message received as a result of a commit adding new members to a group
-    /// * `configuration` - configuration of the group/conversation
-    ///
-    /// # Return type
-    /// This function will return the conversation/group id
-    ///
-    /// # Errors
-    /// Errors can be originating from the KeyStore of from OpenMls:
-    /// * if no [openmls::key_packages::KeyPackage] can be read from the KeyStore
-    /// * if the message can't be decrypted
-    pub async fn process_welcome_message(
-        &mut self,
-        welcome: MlsMessageIn,
-        custom_cfg: MlsCustomConfiguration,
-    ) -> CryptoResult<ConversationId> {
-        let welcome = match welcome.extract() {
-            MlsMessageInBody::Welcome(welcome) => welcome,
-            _ => return Err(CryptoError::ImplementationError),
-        };
-        let cs = welcome.ciphersuite().into();
-        let configuration = MlsConversationConfiguration {
-            ciphersuite: cs,
-            custom: custom_cfg,
-            ..Default::default()
-        };
-        let conversation = MlsConversation::from_welcome_message(welcome, configuration, &self.mls_backend).await?;
-        let conversation_id = conversation.id.clone();
-        self.mls_groups.insert(conversation_id.clone(), conversation);
-
-        Ok(conversation_id)
-    }
-
-    /// Create a conversation from a TLS serialized MLS Welcome message. The `MlsConversationConfiguration` used in this function will be the default implementation.
-    ///
-    /// # Arguments
-    /// * `welcome` - a TLS serialized welcome message
-    /// * `configuration` - configuration of the MLS conversation fetched from the Delivery Service
-    ///
-    /// # Return type
-    /// This function will return the conversation/group id
-    ///
-    /// # Errors
-    /// see [MlsCentral::process_welcome_message]
-    pub async fn process_raw_welcome_message(
-        &mut self,
-        welcome: Vec<u8>,
-        custom_cfg: MlsCustomConfiguration,
-    ) -> CryptoResult<ConversationId> {
-        let mut cursor = std::io::Cursor::new(welcome);
-        let welcome = MlsMessageIn::tls_deserialize(&mut cursor).map_err(MlsError::from)?;
-        self.process_welcome_message(welcome, custom_cfg).await
     }
 
     /// Closes the connection with the local KeyStore
@@ -649,6 +554,63 @@ pub mod tests {
             })
             .await
         }
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn create_conversation_should_fail_when_already_exists(case: TestCase) {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+
+                let create = alice_central
+                    .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                    .await;
+                assert!(create.is_ok());
+
+                // creating a conversation should first verify that the conversation does not already exist ; only then create it
+                let repeat_create = alice_central
+                    .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                    .await;
+                assert!(matches!(repeat_create.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
+            })
+        })
+        .await;
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn process_welcome_should_fail_when_already_exists(case: TestCase) {
+        run_test_with_client_ids(
+            case.clone(),
+            ["alice", "bob"],
+            move |[mut alice_central, mut bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    let bob = bob_central.rand_member(&case).await;
+                    let welcome = alice_central
+                        .add_members_to_conversation(&id, &mut [bob])
+                        .await
+                        .unwrap()
+                        .welcome;
+
+                    // Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
+                    bob_central
+                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    let join_welcome = bob_central
+                        .process_welcome_message(welcome.into(), case.custom_cfg())
+                        .await;
+                    assert!(matches!(join_welcome.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
+                })
+            },
+        )
+        .await;
     }
 
     #[apply(all_cred_cipher)]

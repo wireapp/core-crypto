@@ -1,13 +1,14 @@
 use crate::utils::*;
-use core_crypto::mls::MlsCiphersuite;
-use core_crypto::prelude::CertificateBundle;
+use core_crypto::prelude::{CertificateBundle, MlsCiphersuite};
 use criterion::{
     async_executor::AsyncStdExecutor as FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize,
     BenchmarkId, Criterion,
 };
 
-use proteus::keys;
-use proteus::keys::{PreKey, PreKeyBundle};
+use proteus::{
+    keys,
+    keys::{PreKey, PreKeyBundle},
+};
 use rand::distributions::{Alphanumeric, DistString};
 
 #[path = "utils/mod.rs"]

@@ -13,12 +13,9 @@ use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{random::OpenMlsRand, types::Ciphersuite, OpenMlsCryptoProvider};
 use tls_codec::Deserialize;
 
-use core_crypto::{
-    mls::{MlsCentral, MlsCiphersuite},
-    prelude::{
-        CertificateBundle, ClientId, ConversationId, ConversationMember, MlsCentralConfiguration,
-        MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
-    },
+use core_crypto::prelude::{
+    CertificateBundle, ClientId, ConversationId, ConversationMember, MlsCentral, MlsCentralConfiguration,
+    MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
 };
 use mls_crypto_provider::MlsCryptoProvider;
 

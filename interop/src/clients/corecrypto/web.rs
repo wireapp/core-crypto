@@ -16,8 +16,7 @@
 
 use crate::clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient};
 use color_eyre::eyre::Result;
-use core_crypto::mls::MlsCiphersuite;
-use core_crypto::prelude::CiphersuiteName;
+use core_crypto::prelude::{CiphersuiteName, MlsCiphersuite};
 use std::net::SocketAddr;
 
 #[derive(Debug)]

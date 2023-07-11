@@ -22,6 +22,9 @@ pub enum CryptoError {
     /// This error is emitted when the requested conversation couldn't be found in our store
     #[error("Couldn't find conversation")]
     ConversationNotFound(crate::prelude::ConversationId),
+    /// This error is emitted when the requested conversation already exists with the given if
+    #[error("Conversation already exists")]
+    ConversationAlreadyExists(crate::prelude::ConversationId),
     /// This error is emitted when the requested client couldn't be found in MLS group
     #[error("Couldn't find client")]
     ClientNotFound(crate::prelude::ClientId),
