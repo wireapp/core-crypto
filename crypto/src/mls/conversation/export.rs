@@ -54,6 +54,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// OpenMls secret generation error or conversation not found
+    #[cfg_attr(test, crate::idempotent)]
     pub async fn export_secret_key(
         &mut self,
         conversation_id: &ConversationId,
@@ -73,6 +74,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// if the conversation can't be found
+    #[cfg_attr(test, crate::idempotent)]
     pub async fn get_client_ids(&mut self, conversation_id: &ConversationId) -> CryptoResult<Vec<ClientId>> {
         Ok(self
             .get_conversation(conversation_id)

@@ -118,6 +118,7 @@ pub mod tests {
                             1,
                             &backend,
                             e.ciphersuite,
+                            None,
                         )
                         .unwrap();
                         (enrollment, cc)

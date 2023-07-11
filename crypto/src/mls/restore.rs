@@ -9,6 +9,7 @@ impl MlsCentral {
     /// to perform tasks in the background. Extensions are executed in another process so another
     /// [MlsCentral] instance has to be used. This method has to be used to synchronize instances.
     /// It simply fetches the MLS group from keystore in memory.
+    #[cfg_attr(test, crate::idempotent)]
     pub async fn restore_from_disk(&mut self) -> CryptoResult<()> {
         self.mls_groups = Self::restore_groups(&self.mls_backend).await?;
         Ok(())
@@ -79,7 +80,9 @@ pub mod tests {
                     .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
                     .await;
 
+                central.mls_groups.remove(id.as_slice()).unwrap();
                 central.close().await.unwrap();
+
                 let mut central = MlsCentral::try_new(configuration).await.unwrap();
                 central.mls_init(cid, vec![case.ciphersuite()]).await.unwrap();
                 let _ = central.encrypt_message(&id, b"Test").await.unwrap();

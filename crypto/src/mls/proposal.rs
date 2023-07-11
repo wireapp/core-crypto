@@ -84,6 +84,32 @@ impl MlsProposal {
 }
 
 impl MlsCentral {
+    /// Creates a new Add proposal
+    #[cfg_attr(test, crate::idempotent)]
+    pub async fn new_add_proposal(
+        &mut self,
+        id: &ConversationId,
+        key_package: KeyPackage,
+    ) -> CryptoResult<MlsProposalBundle> {
+        self.new_proposal(id, MlsProposal::Add(key_package)).await
+    }
+
+    /// Creates a new Add proposal
+    #[cfg_attr(test, crate::idempotent)]
+    pub async fn new_remove_proposal(
+        &mut self,
+        id: &ConversationId,
+        client_id: ClientId,
+    ) -> CryptoResult<MlsProposalBundle> {
+        self.new_proposal(id, MlsProposal::Remove(client_id)).await
+    }
+
+    /// Creates a new Add proposal
+    #[cfg_attr(test, crate::dispotent)]
+    pub async fn new_update_proposal(&mut self, id: &ConversationId) -> CryptoResult<MlsProposalBundle> {
+        self.new_proposal(id, MlsProposal::Update).await
+    }
+
     /// Creates a new proposal within a group
     ///
     /// # Arguments
@@ -96,12 +122,8 @@ impl MlsCentral {
     /// # Errors
     /// If the conversation is not found, an error will be returned. Errors from OpenMls can be
     /// returned as well, when for example there's a commit pending to be merged
-    pub async fn new_proposal(
-        &mut self,
-        conversation: &ConversationId,
-        proposal: MlsProposal,
-    ) -> CryptoResult<MlsProposalBundle> {
-        let conversation = self.get_conversation(conversation).await?;
+    async fn new_proposal(&mut self, id: &ConversationId, proposal: MlsProposal) -> CryptoResult<MlsProposalBundle> {
+        let conversation = self.get_conversation(id).await?;
         let client = self.mls_client()?;
         proposal
             .create(client, &self.mls_backend, conversation.write().await)
@@ -110,12 +132,10 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-pub mod proposal_tests {
+pub mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{prelude::handshake::MlsCommitBundle, prelude::*, test_utils::*};
-
-    use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -136,7 +156,7 @@ pub mod proposal_tests {
                             .await
                             .unwrap();
                         let bob_kp = bob_central.get_one_key_package(&case).await;
-                        alice_central.new_proposal(&id, MlsProposal::Add(bob_kp)).await.unwrap();
+                        alice_central.new_add_proposal(&id, bob_kp).await.unwrap();
                         let MlsCommitBundle { welcome, .. } =
                             alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
@@ -174,7 +194,7 @@ pub mod proposal_tests {
                         .encryption_keys()
                         .find_or_first(|_| true)
                         .unwrap();
-                    central.new_proposal(&id, MlsProposal::Update).await.unwrap();
+                    central.new_update_proposal(&id).await.unwrap();
                     central.commit_pending_proposals(&id).await.unwrap();
                     central.commit_accepted(&id).await.unwrap();
                     let after = central
@@ -208,7 +228,7 @@ pub mod proposal_tests {
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     let remove_proposal = alice_central
-                        .new_proposal(&id, MlsProposal::Remove(bob_central.get_client_id()))
+                        .new_remove_proposal(&id, bob_central.get_client_id())
                         .await
                         .unwrap();
                     bob_central
@@ -244,9 +264,7 @@ pub mod proposal_tests {
                         .await
                         .unwrap();
 
-                    let remove_proposal = alice_central
-                        .new_proposal(&id, MlsProposal::Remove(b"unknown"[..].into()))
-                        .await;
+                    let remove_proposal = alice_central.new_remove_proposal(&id, b"unknown"[..].into()).await;
                     assert!(matches!(
                         remove_proposal.unwrap_err(),
                         CryptoError::ClientNotFound(client_id) if client_id == b"unknown"[..].into()
@@ -255,38 +273,5 @@ pub mod proposal_tests {
             })
             .await
         }
-    }
-
-    #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
-    pub async fn should_fail_when_unknown_conversation(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    let bob_kp = bob_central.get_one_key_package(&case).await;
-                    let add_proposal = alice_central.new_proposal(&id, MlsProposal::Add(bob_kp)).await;
-                    assert!(matches!(
-                        add_proposal.unwrap_err(),
-                        CryptoError::ConversationNotFound(conv_id) if conv_id == id
-                    ));
-                    let update_proposal = alice_central.new_proposal(&id, MlsProposal::Update).await;
-                    assert!(matches!(
-                        update_proposal.unwrap_err(),
-                        CryptoError::ConversationNotFound(conv_id) if conv_id == id
-                    ));
-                    let remove_proposal = alice_central
-                        .new_proposal(&id, MlsProposal::Remove(b"any"[..].into()))
-                        .await;
-                    assert!(matches!(
-                        remove_proposal.unwrap_err(),
-                        CryptoError::ConversationNotFound(conv_id) if conv_id == id
-                    ));
-                })
-            },
-        )
-        .await
     }
 }

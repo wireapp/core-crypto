@@ -17,6 +17,7 @@
 pub mod credential;
 pub mod encryption_keypair;
 pub mod enrollment;
+pub mod epoch_encryption_keypair;
 pub mod group;
 pub mod hpke_private_key;
 pub mod keypackage;

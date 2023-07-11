@@ -1,6 +1,11 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
+use proc_macro2::Ident;
+use syn::{punctuated::Punctuated, token::Comma, Attribute, Block, FnArg, ItemFn, ReturnType, Visibility};
+
+mod durable;
+mod idempotent;
 
 /// Will drop current MLS group in memory and replace it with the one in the keystore.
 /// This simulates an application crash. Once restarted, everything has to be loaded from the
@@ -18,46 +23,56 @@ use proc_macro::TokenStream;
 /// * do not require this method to be durable
 #[proc_macro_attribute]
 pub fn durable(_args: TokenStream, item: TokenStream) -> TokenStream {
-    const ASYNC_ERROR_MSG: &str = "Since a durable method requires persistence in the keystore, it has to be async";
+    durable::durable(item)
+}
 
-    let ast = match syn::parse2::<syn::ItemFn>(item.clone().into()) {
-        Ok(ast) => ast,
-        Err(e) => return compile_error(item, e),
-    };
-    if ast.sig.asyncness.is_none() {
-        return compile_error(item, syn::Error::new_spanned(ast, ASYNC_ERROR_MSG));
-    }
+/// !!! Not literally idempotent !!!
+/// Marker for methods on 'MlsCentral' which leave the number of entities in the keystore even.
+/// They can create/destroy some but always compensate.
+/// So they are not idempotent, they cannot be safely replayed and they might leave the keystore in
+/// a different state.
+#[proc_macro_attribute]
+pub fn idempotent(_args: TokenStream, item: TokenStream) -> TokenStream {
+    idempotent::idempotent(item)
+}
 
-    let doc_attributes = ast
-        .attrs
+/// Neologism to mean the opposite of idempotent. Methods of 'MlsCentral' marked with this have to
+/// insert/delete an entity in the keystore and change the number of entities persisted.
+#[proc_macro_attribute]
+pub fn dispotent(_args: TokenStream, item: TokenStream) -> TokenStream {
+    idempotent::dispotent(item)
+}
+
+pub(crate) fn doc_attributes(ast: &ItemFn) -> Vec<Attribute> {
+    ast.attrs
         .iter()
         .filter(|attr| attr.path().is_ident("doc"))
         .cloned()
-        .collect::<Vec<syn::Attribute>>();
+        .collect::<Vec<syn::Attribute>>()
+}
 
+pub(crate) fn compile_error(mut item: TokenStream, err: syn::Error) -> TokenStream {
+    let compile_err = TokenStream::from(err.to_compile_error());
+    item.extend(compile_err);
+    item
+}
+
+#[allow(clippy::type_complexity)]
+pub(crate) fn items(
+    ast: &ItemFn,
+) -> (
+    &ReturnType,
+    &Ident,
+    &Punctuated<FnArg, Comma>,
+    &Box<Block>,
+    &Vec<Attribute>,
+    &Visibility,
+) {
     let ret = &ast.sig.output;
     let name = &ast.sig.ident;
     let inputs = &ast.sig.inputs;
     let body = &ast.block;
     let attrs = &ast.attrs;
     let vis = &ast.vis;
-
-    let result: proc_macro2::TokenStream = quote::quote! {
-        #(#doc_attributes)*
-        #(#attrs)*
-        #vis async fn #name(#inputs) #ret {
-            let _result = #body;
-            #[cfg(test)] {
-                self.drop_and_restore(backend).await;
-            }
-            _result
-        }
-    };
-    result.into()
-}
-
-fn compile_error(mut item: TokenStream, err: syn::Error) -> TokenStream {
-    let compile_err = TokenStream::from(err.to_compile_error());
-    item.extend(compile_err);
-    item
+    (ret, name, inputs, body, attrs, vis)
 }

@@ -141,6 +141,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// Errors resulting from OpenMls, the KeyStore calls and deserialization
+    #[cfg_attr(test, crate::dispotent)]
     pub async fn merge_pending_group_from_external_commit(
         &mut self,
         id: &ConversationId,
@@ -191,6 +192,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// Errors resulting from the KeyStore calls
+    #[cfg_attr(test, crate::dispotent)]
     pub async fn clear_pending_group_from_external_commit(&mut self, id: &ConversationId) -> CryptoResult<()> {
         Ok(self.mls_backend.key_store().mls_pending_groups_delete(id).await?)
     }
@@ -650,6 +652,8 @@ pub mod tests {
                         .await
                         .unwrap();
 
+                    let initial_count = alice_central.count_entities().await;
+
                     // export Alice group info
                     let group_info = alice_central.get_group_info(&id).await;
 
@@ -661,6 +665,9 @@ pub mod tests {
 
                     // But for some reason, Bob wants to abort joining the group
                     bob_central.clear_pending_group_from_external_commit(&id).await.unwrap();
+
+                    let final_count = alice_central.count_entities().await;
+                    assert_eq!(initial_count, final_count);
 
                     // Hence trying to merge the pending should fail
                     let result = bob_central.merge_pending_group_from_external_commit(&id).await;

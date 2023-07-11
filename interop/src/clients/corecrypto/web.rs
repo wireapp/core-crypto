@@ -14,10 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient};
-use crate::CIPHERSUITE_IN_USE;
+use crate::{
+    clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
+    CIPHERSUITE_IN_USE,
+};
 use color_eyre::eyre::Result;
-use core_crypto::prelude::{KeyPackage, KeyPackageIn, MlsCiphersuite};
+use core_crypto::prelude::{KeyPackage, KeyPackageIn};
 use std::net::SocketAddr;
 use tls_codec::Deserialize;
 
@@ -352,13 +354,5 @@ window.cc.proteusDecrypt(sessionId, ciphertextBuffer).then(callback);"#,
             .as_str()
             .unwrap()
             .into())
-    }
-}
-
-#[async_trait::async_trait(?Send)]
-impl crate::clients::EmulatedE2eIdentityClient for CoreCryptoWebClient {
-    async fn e2ei_new_enrollment(&mut self, _ciphersuite: MlsCiphersuite) -> Result<()> {
-        let script = include_str!("e2ei.js");
-        Ok(self.browser.execute_async(script, vec![]).await.map(|_| ())?)
     }
 }

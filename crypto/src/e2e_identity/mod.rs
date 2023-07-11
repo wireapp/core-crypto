@@ -4,6 +4,7 @@ use wire_e2e_identity::prelude::RustyE2eIdentity;
 use error::*;
 use mls_crypto_provider::MlsCryptoProvider;
 
+use crate::e2e_identity::crypto::E2eiSignatureKeypair;
 use crate::{
     mls::credential::x509::CertificatePrivateKey,
     prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCentral, MlsCiphersuite},
@@ -43,6 +44,7 @@ impl MlsCentral {
             expiry_days,
             &self.mls_backend,
             ciphersuite,
+            None,
         )
     }
 
@@ -112,9 +114,14 @@ impl E2eiEnrollment {
         expiry_days: u32,
         backend: &MlsCryptoProvider,
         ciphersuite: MlsCiphersuite,
+        sign_keypair: Option<E2eiSignatureKeypair>,
     ) -> E2eIdentityResult<Self> {
         let alg = ciphersuite.try_into()?;
-        let sign_sk = Self::new_sign_key(ciphersuite, backend)?;
+        let sign_sk = if let Some(kp) = sign_keypair {
+            kp.0
+        } else {
+            Self::new_sign_key(ciphersuite, backend)?.0
+        };
         let client_id = std::str::from_utf8(&client_id[..])?.to_string();
         let expiry = core::time::Duration::from_secs(u64::from(expiry_days) * 24 * 3600);
         Ok(Self {

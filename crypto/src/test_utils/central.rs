@@ -45,7 +45,7 @@ impl MlsCentral {
         kps.first().unwrap().clone()
     }
 
-    pub async fn key_package_count(&self, cs: MlsCiphersuite, ct: Option<MlsCredentialType>) -> usize {
+    pub async fn count_key_package(&self, cs: MlsCiphersuite, ct: Option<MlsCredentialType>) -> usize {
         self.mls_backend
             .key_store()
             .find_all::<MlsKeyPackage>(EntityFindParams::default())
@@ -69,13 +69,13 @@ impl MlsCentral {
         let client = self.mls_client.as_ref().unwrap();
         let id = client.id();
 
-        client
+        let kp = client
             .generate_one_keypackage(&self.mls_backend, case.ciphersuite(), ct)
             .await
             .unwrap();
 
-        let clients =
-            std::collections::HashMap::from([(id.clone(), client.find_keypackages(&self.mls_backend).await.unwrap())]);
+        let clients = std::collections::HashMap::from([(id.clone(), vec![kp])]);
+
         ConversationMember {
             id: id.to_vec(),
             clients,

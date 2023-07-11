@@ -29,7 +29,7 @@
 use rstest_reuse;
 
 #[cfg(test)]
-pub use core_crypto_attributes::durable;
+pub use core_crypto_attributes::{dispotent, durable, idempotent};
 
 pub use self::error::*;
 

@@ -45,6 +45,8 @@ use crate::{
 
 mod commit_delay;
 pub mod config;
+#[cfg(test)]
+mod db_count;
 pub mod decrypt;
 mod duplicate;
 #[cfg(test)]
@@ -57,6 +59,7 @@ pub mod merge;
 mod renew;
 mod self_commit;
 pub(crate) mod welcome;
+mod wipe;
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 pub type ConversationId = Vec<u8>;
@@ -266,6 +269,7 @@ impl MlsCentral {
 
     /// Mark a conversation as child of another one
     /// This will affect the behavior of callbacks in particular
+    #[cfg_attr(test, crate::idempotent)]
     pub async fn mark_conversation_as_child_of(
         &mut self,
         child_id: &ConversationId,
@@ -278,19 +282,6 @@ impl MlsCentral {
             .mark_as_child_of(parent_id, &self.mls_backend)
             .await?;
 
-        Ok(())
-    }
-
-    /// Destroys a group locally
-    ///
-    /// # Errors
-    /// KeyStore errors, such as IO
-    pub async fn wipe_conversation(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
-        if !self.conversation_exists(conversation_id).await {
-            return Err(CryptoError::ConversationNotFound(conversation_id.clone()));
-        }
-        self.mls_backend.key_store().mls_group_delete(conversation_id).await?;
-        let _ = self.mls_groups.remove(conversation_id);
         Ok(())
     }
 }
@@ -469,93 +460,5 @@ pub mod tests {
             })
         })
         .await;
-    }
-
-    #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
-    pub async fn conversation_from_welcome_prunes_local_keypackage(case: TestCase) {
-        use core_crypto_keystore::CryptoKeystoreMls as _;
-        use openmls_traits::OpenMlsCryptoProvider as _;
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    // has to be before the original key_package count because it creates one
-                    let bob = bob_central.rand_member(&case).await;
-                    // Keep track of the whatever amount was initially generated
-                    let original_kpb_count = bob_central
-                        .mls_backend
-                        .key_store()
-                        .mls_keypackagebundle_count()
-                        .await
-                        .unwrap();
-
-                    // Create a conversation from alice, where she invites bob
-                    alice_central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-
-                    let MlsConversationCreationMessage { welcome, .. } = alice_central
-                        .add_members_to_conversation(&id, &mut [bob])
-                        .await
-                        .unwrap();
-
-                    // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
-                    bob_central
-                        .process_welcome_message(welcome.into(), case.custom_cfg())
-                        .await
-                        .unwrap();
-
-                    // Ensure we're left with 1 less keypackage bundle in the store, because it was consumed with the OpenMLS Welcome message
-                    let new_kpb_count = bob_central
-                        .mls_backend
-                        .key_store()
-                        .mls_keypackagebundle_count()
-                        .await
-                        .unwrap();
-                    assert_eq!(new_kpb_count, original_kpb_count - 1);
-                })
-            },
-        )
-        .await;
-    }
-
-    pub mod wipe_group {
-        use super::*;
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        pub async fn can_wipe_group(case: TestCase) {
-            run_test_with_central(case.clone(), move |[mut central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    assert!(central.get_conversation_unchecked(&id).await.group.is_active());
-
-                    central.wipe_conversation(&id).await.unwrap();
-                    assert!(!central.conversation_exists(&id).await);
-                })
-            })
-            .await;
-        }
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        pub async fn cannot_wipe_group_inexistent(case: TestCase) {
-            run_test_with_central(case.clone(), move |[mut central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    let err = central.wipe_conversation(&id).await.unwrap_err();
-                    assert!(matches!(err, CryptoError::ConversationNotFound(conv_id) if conv_id == id));
-                })
-            })
-            .await;
-        }
     }
 }

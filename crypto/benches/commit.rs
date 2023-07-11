@@ -3,8 +3,6 @@ use criterion::{
     Criterion,
 };
 
-use core_crypto::prelude::MlsProposal;
-
 use crate::utils::*;
 
 #[path = "utils/mod.rs"]
@@ -173,7 +171,7 @@ fn commit_pending_proposals_bench_var_n_proposals(c: &mut Criterion) {
 
                             for _ in 0..*i {
                                 let (kp, ..) = rand_key_package(ciphersuite).await;
-                                central.new_proposal(&id, MlsProposal::Add(kp)).await.unwrap();
+                                central.new_add_proposal(&id, kp).await.unwrap();
                             }
 
                             (central, id)
@@ -204,7 +202,7 @@ fn commit_pending_proposals_bench_var_group_size(c: &mut Criterion) {
                             add_clients(&mut central, &id, ciphersuite, *i).await;
                             for _ in 0..PENDING_MAX {
                                 let (kp, ..) = rand_key_package(ciphersuite).await;
-                                central.new_proposal(&id, MlsProposal::Add(kp)).await.unwrap();
+                                central.new_add_proposal(&id, kp).await.unwrap();
                             }
                             (central, id)
                         })

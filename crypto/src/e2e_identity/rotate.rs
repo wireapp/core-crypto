@@ -7,6 +7,7 @@ use crate::{
     },
     MlsError,
 };
+use core_crypto_keystore::entities::MlsKeyPackage;
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{KeyPackage, KeyPackageRef, MlsCredentialType as OpenMlsCredential};
@@ -74,6 +75,7 @@ impl MlsCentral {
             expiry_days,
             &self.mls_backend,
             ciphersuite,
+            None,
         )
     }
 
@@ -111,6 +113,7 @@ impl MlsCentral {
             expiry_days,
             &self.mls_backend,
             ciphersuite,
+            None,
         )
     }
 
@@ -160,13 +163,8 @@ impl MlsCentral {
     }
 
     async fn find_key_packages_to_remove(&self, cb: &CredentialBundle) -> CryptoResult<Vec<KeyPackageRef>> {
-        let nb_kp = self.mls_backend.key_store().mls_keypackagebundle_count().await.unwrap();
-        let kps: Vec<KeyPackage> = self
-            .mls_backend
-            .key_store()
-            .mls_fetch_keypackages(nb_kp as u32)
-            .await
-            .unwrap();
+        let nb_kp = self.mls_backend.key_store().count::<MlsKeyPackage>().await?;
+        let kps: Vec<KeyPackage> = self.mls_backend.key_store().mls_fetch_keypackages(nb_kp as u32).await?;
 
         let mut kp_refs = vec![];
 
@@ -283,7 +281,16 @@ pub mod tests {
                             ids.push(id)
                         }
 
-                        assert_eq!(alice_central.count_credentials_in_keystore().await, 1);
+                        // Count the key material before the rotation to compare it later
+                        let before_rotate = alice_central.count_entities().await;
+                        assert_eq!(before_rotate.key_package, INITIAL_KEYING_MATERIAL_COUNT);
+
+                        assert_eq!(before_rotate.hpke_private_key, INITIAL_KEYING_MATERIAL_COUNT);
+
+                        // 1 is created per new KeyPackage
+                        assert_eq!(before_rotate.encryption_keypair, INITIAL_KEYING_MATERIAL_COUNT);
+
+                        assert_eq!(before_rotate.credential, 1);
                         let old_credential = alice_central
                             .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
                             .await
@@ -313,28 +320,17 @@ pub mod tests {
                                 .await
                                 .unwrap();
 
-                        // Count the key material before the rotation to compare it later
-                        let nb_kp_before_rotate = alice_central.key_package_count(case.ciphersuite(), None).await;
-                        assert_eq!(nb_kp_before_rotate, INITIAL_KEYING_MATERIAL_COUNT);
-
-                        let nb_hpke_sk_before_rotate = alice_central.count_hpke_private_key().await;
-                        assert_eq!(nb_hpke_sk_before_rotate, INITIAL_KEYING_MATERIAL_COUNT);
-
-                        let nb_encryption_kp_before_rotate = alice_central.count_encryption_keypairs().await;
-                        // 1 is created per new KeyPackage and 1 per new conversation
-                        assert_eq!(nb_encryption_kp_before_rotate, INITIAL_KEYING_MATERIAL_COUNT + N);
-
                         let rotate_bundle = alice_central
                             .e2ei_rotate_all(enrollment, cert, NB_KEY_PACKAGE)
                             .await
                             .unwrap();
 
-                        let nb_kp_after_rotate = alice_central.key_package_count(case.ciphersuite(), None).await;
+                        let after_rotate = alice_central.count_entities().await;
                         // verify we have indeed created the right amount of new X509 KeyPackages
-                        assert_eq!(nb_kp_after_rotate - nb_kp_before_rotate, NB_KEY_PACKAGE);
+                        assert_eq!(after_rotate.key_package - before_rotate.key_package, NB_KEY_PACKAGE);
 
                         // and a new Credential has been persisted in the keystore
-                        assert_eq!(alice_central.count_credentials_in_keystore().await, 2);
+                        assert_eq!(after_rotate.credential - before_rotate.credential, 1);
 
                         for (n, commit) in rotate_bundle.commits.into_iter().enumerate() {
                             let id = ids.get(n).unwrap();
@@ -375,17 +371,14 @@ pub mod tests {
                             .is_some());
 
                         // we also have generated the right amount of private encryption keys
-                        let nb_hpke_sk = alice_central.count_hpke_private_key().await;
-                        assert_eq!(nb_hpke_sk - nb_hpke_sk_before_rotate, NB_KEY_PACKAGE);
-
-                        // and the right amount of encryption keypairs
-                        let nb_encryption_kp_after_rotate = alice_central.count_encryption_keypairs().await;
-
-                        // 1 has been created per new KeyPackage created and 1 for the update commit in the rotation
+                        let before_delete = alice_central.count_entities().await;
                         assert_eq!(
-                            nb_encryption_kp_after_rotate - nb_encryption_kp_before_rotate,
-                            NB_KEY_PACKAGE + N
+                            before_delete.hpke_private_key - before_rotate.hpke_private_key,
+                            NB_KEY_PACKAGE
                         );
+
+                        // 1 has been created per new KeyPackage created in the rotation
+                        assert_eq!(before_delete.key_package - before_rotate.key_package, NB_KEY_PACKAGE);
 
                         // and the signature keypair is still present
                         assert!(alice_central
@@ -402,12 +395,12 @@ pub mod tests {
 
                         // Alice should just have the number of X509 KeyPackages she requested
                         let nb_x509_kp = alice_central
-                            .key_package_count(case.ciphersuite(), Some(MlsCredentialType::X509))
+                            .count_key_package(case.ciphersuite(), Some(MlsCredentialType::X509))
                             .await;
                         assert_eq!(nb_x509_kp, NB_KEY_PACKAGE);
                         // in both cases, Alice should not anymore have any Basic KeyPackage
                         let nb_basic_kp = alice_central
-                            .key_package_count(case.ciphersuite(), Some(MlsCredentialType::Basic))
+                            .count_key_package(case.ciphersuite(), Some(MlsCredentialType::Basic))
                             .await;
                         assert_eq!(nb_basic_kp, 0);
 
@@ -424,27 +417,20 @@ pub mod tests {
                             .await
                             .is_none());
 
-                        // Also, all the previous SignatureKeyPair should be pruned from the keystore
-                        assert!(alice_central
-                            .find_signature_keypair_from_keystore(old_credential.signature_key.public())
-                            .await
-                            .is_none());
-
                         // Also the old Credential has been removed from the keystore
-                        assert_eq!(alice_central.count_credentials_in_keystore().await, 1);
+                        let after_delete = alice_central.count_entities().await;
+                        assert_eq!(after_delete.credential, 1);
                         assert!(alice_central
                             .find_credential_from_keystore(&old_credential)
                             .await
                             .is_none());
 
                         // and all her Private HPKE keys...
-                        let nb_hpke_sk = alice_central.count_hpke_private_key().await;
-                        assert_eq!(nb_hpke_sk, NB_KEY_PACKAGE);
+                        assert_eq!(after_delete.hpke_private_key, NB_KEY_PACKAGE);
 
                         // ...and encryption keypairs
-                        let nb_encryption_kp = alice_central.count_encryption_keypairs().await;
                         assert_eq!(
-                            nb_encryption_kp_after_rotate - nb_encryption_kp,
+                            after_rotate.encryption_keypair - after_delete.encryption_keypair,
                             INITIAL_KEYING_MATERIAL_COUNT
                         );
 
@@ -576,6 +562,8 @@ pub mod tests {
 
                             alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
+                            let init_count = alice_central.count_entities().await;
+
                             // Alice creates a new Credential, updating her handle/display_name
                             let alice_cid = &alice_central.get_client_id();
                             let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
@@ -584,9 +572,9 @@ pub mod tests {
                                 .await;
 
                             // Verify old identity is still there in the MLS group
-                            let alice_old_identies =
+                            let alice_old_identities =
                                 alice_central.get_user_identities(&id, &[alice_cid]).await.unwrap();
-                            let alice_old_identity = alice_old_identies.first().unwrap();
+                            let alice_old_identity = alice_old_identities.first().unwrap();
                             assert_ne!(alice_old_identity.display_name, new_display_name);
                             assert_ne!(alice_old_identity.handle, new_handle);
 
@@ -606,6 +594,14 @@ pub mod tests {
                             alice_central
                                 .verify_local_credential_rotated(&id, new_handle, new_display_name)
                                 .await;
+
+                            let final_count = alice_central.count_entities().await;
+                            assert_eq!(init_count.encryption_keypair, final_count.encryption_keypair);
+                            assert_eq!(
+                                init_count.epoch_encryption_keypair,
+                                final_count.epoch_encryption_keypair
+                            );
+                            assert_eq!(init_count.key_package, final_count.key_package);
                         })
                     },
                 )
@@ -629,6 +625,8 @@ pub mod tests {
                                 .unwrap();
 
                             alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+
+                            let init_count = alice_central.count_entities().await;
 
                             // In this case Alice will try to rotate her credential but her commit will be denied
                             // by the backend (because another commit from Bob had precedence)
@@ -662,7 +660,6 @@ pub mod tests {
                                 .unwrap();
 
                             let rotate_commit = alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
-                            alice_central.commit_accepted(&id).await.unwrap();
 
                             // Finally, Alice merges her commit and verifies her new identity gets applied
                             alice_central.commit_accepted(&id).await.unwrap();
@@ -676,6 +673,14 @@ pub mod tests {
                                 .await
                                 .unwrap();
                             alice_central.verify_sender_identity(&case, &decrypted);
+
+                            let final_count = alice_central.count_entities().await;
+                            assert_eq!(init_count.encryption_keypair, final_count.encryption_keypair);
+                            // TODO: there is no efficient way to clean a credential when alice merges her pending commit.
+                            // One option would be to fetch all conversations and see if Alice is never represented with the said Credential
+                            // but let's be honest this is not very efficient.
+                            // The other option would be to get rid of having an implicit KeyPackage for the creator of a conversation
+                            // assert_eq!(init_count.credential, final_count.credential);
                         })
                     },
                 )

@@ -164,6 +164,14 @@ pub enum CryptoError {
     /// We already decrypted this message once
     #[error("We already decrypted this message once")]
     DuplicateMessage,
+    /// This method leaks entities whereas it's not supposed to
+    #[cfg(test)]
+    #[error("This method leaks entities whereas it's not supposed to")]
+    LeakEntities,
+    /// This method does not create new entities whereas it's supposed to
+    #[cfg(test)]
+    #[error("This method does not create new entities whereas it's supposed to")]
+    NoEntityCreated,
     /// Happens when a client creates a commit, sends it to the DS which accepts it but then client
     /// clears this pending commit and creates another commit. This is triggered when the client
     /// tries to decrypt the original commit. This means something is very wrong in the client's

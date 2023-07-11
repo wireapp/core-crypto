@@ -39,13 +39,13 @@ impl Renew {
             let empty_commit = commit_proposals.is_empty();
 
             // does the valid commit contains one of our update proposal ?
-            let valid_commit_has_self_update_proposal = valid_commit.update_proposals().any(|p| match p.sender() {
+            let valid_commit_has_own_update_proposal = valid_commit.update_proposals().any(|p| match p.sender() {
                 Sender::Member(sender_index) => self_index == sender_index,
                 _ => false,
             });
 
-            // was the self client trying to do an update ?
-            needs_update = empty_commit && !valid_commit_has_self_update_proposal;
+            // do we need to renew the update or has it already been committed
+            needs_update = !valid_commit_has_own_update_proposal && empty_commit;
 
             // local proposals present in local pending commit but not in valid commit
             commit_proposals
@@ -146,10 +146,9 @@ impl MlsConversation {
     }
 
     pub(crate) fn self_pending_proposals(&self) -> impl Iterator<Item = &QueuedProposal> {
-        self.group.pending_proposals().filter(|&p| match p.sender() {
-            Sender::Member(sender_kpr) => self.group.own_leaf_index() == *sender_kpr,
-            _ => false,
-        })
+        self.group
+            .pending_proposals()
+            .filter(|&p| matches!(p.sender(), Sender::Member(i) if i == &self.group.own_leaf_index()))
     }
 }
 
@@ -157,7 +156,7 @@ impl MlsConversation {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{prelude::MlsProposal, test_utils::*};
+    use crate::test_utils::*;
 
     mod update {
         use super::*;
@@ -178,7 +177,7 @@ pub mod tests {
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        alice_central.new_proposal(&id, MlsProposal::Update).await.unwrap();
+                        alice_central.new_update_proposal(&id).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Bob hasn't Alice's proposal but creates a commit
@@ -264,11 +263,7 @@ pub mod tests {
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        let proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Update)
-                            .await
-                            .unwrap()
-                            .proposal;
+                        let proposal = alice_central.new_update_proposal(&id).await.unwrap().proposal;
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Bob has Alice's update proposal
@@ -291,11 +286,7 @@ pub mod tests {
                         assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
 
                         // Same if proposal is also in pending commit
-                        let proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Update)
-                            .await
-                            .unwrap()
-                            .proposal;
+                        let proposal = alice_central.new_update_proposal(&id).await.unwrap().proposal;
                         alice_central.commit_pending_proposals(&id).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         assert!(alice_central.pending_commit(&id).await.is_some());
@@ -338,11 +329,7 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let proposal = bob_central
-                            .new_proposal(&id, MlsProposal::Update)
-                            .await
-                            .unwrap()
-                            .proposal;
+                        let proposal = bob_central.new_update_proposal(&id).await.unwrap().proposal;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
@@ -387,10 +374,7 @@ pub mod tests {
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        alice_central
-                            .new_proposal(&id, MlsProposal::Add(charlie_kp))
-                            .await
-                            .unwrap();
+                        alice_central.new_add_proposal(&id, charlie_kp).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         let commit = bob_central
@@ -429,10 +413,7 @@ pub mod tests {
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        alice_central
-                            .new_proposal(&id, MlsProposal::Add(charlie_kp))
-                            .await
-                            .unwrap();
+                        alice_central.new_add_proposal(&id, charlie_kp).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Here Alice also creates a commit
@@ -480,11 +461,7 @@ pub mod tests {
 
                         // Bob will propose adding Debbie
                         let debbie_kp = debbie_central.get_one_key_package(&case).await;
-                        let proposal = bob_central
-                            .new_proposal(&id, MlsProposal::Add(debbie_kp))
-                            .await
-                            .unwrap()
-                            .proposal;
+                        let proposal = bob_central.new_add_proposal(&id, debbie_kp).await.unwrap().proposal;
                         alice_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
@@ -525,10 +502,7 @@ pub mod tests {
                         // Alice proposes adding Charlie
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        alice_central
-                            .new_proposal(&id, MlsProposal::Add(charlie_kp))
-                            .await
-                            .unwrap();
+                        alice_central.new_add_proposal(&id, charlie_kp).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // But meanwhile Bob will create a commit without Alice's proposal
@@ -626,7 +600,7 @@ pub mod tests {
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
-                            .new_proposal(&id, MlsProposal::Remove(charlie_central.get_client_id()))
+                            .new_remove_proposal(&id, charlie_central.get_client_id())
                             .await
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
@@ -671,7 +645,7 @@ pub mod tests {
                             .unwrap();
 
                         let proposal = bob_central
-                            .new_proposal(&id, MlsProposal::Remove(charlie_central.get_client_id()))
+                            .new_remove_proposal(&id, charlie_central.get_client_id())
                             .await
                             .unwrap()
                             .proposal;
@@ -730,7 +704,7 @@ pub mod tests {
                         // Alice wants to remove Charlie
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
-                            .new_proposal(&id, MlsProposal::Remove(charlie_central.get_client_id()))
+                            .new_remove_proposal(&id, charlie_central.get_client_id())
                             .await
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
@@ -844,7 +818,7 @@ pub mod tests {
 
                         // Alice wants to remove Charlie
                         alice_central
-                            .new_proposal(&id, MlsProposal::Remove(charlie_central.get_client_id()))
+                            .new_remove_proposal(&id, charlie_central.get_client_id())
                             .await
                             .unwrap();
                         alice_central.commit_pending_proposals(&id).await.unwrap();

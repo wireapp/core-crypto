@@ -24,6 +24,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::{HashMap, HashSet};
 use tls_codec::Serialize;
 
+use crate::prelude::MlsCentral;
 use core_crypto_keystore::entities::{
     EntityBase, EntityFindParams, MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsHpkePrivateKey,
     MlsKeyPackage, MlsSignatureKeyPair,
@@ -326,11 +327,62 @@ impl Client {
     }
 }
 
+impl MlsCentral {
+    /// Returns `amount_requested` OpenMLS [openmls::key_packages::KeyPackage]s.
+    /// Will always return the requested amount as it will generate the necessary (lacking) amount on-the-fly
+    ///
+    /// Note: Keypackage pruning is performed as a first step
+    ///
+    /// # Arguments
+    /// * `amount_requested` - number of KeyPackages to request and fill the `KeyPackageBundle`
+    ///
+    /// # Return type
+    /// A vector of `KeyPackageBundle`
+    ///
+    /// # Errors
+    /// Errors can happen when accessing the KeyStore
+    pub async fn get_or_create_client_keypackages(
+        &self,
+        ciphersuite: MlsCiphersuite,
+        credential_type: MlsCredentialType,
+        amount_requested: usize,
+    ) -> CryptoResult<Vec<KeyPackage>> {
+        self.mls_client()?
+            .request_key_packages(amount_requested, ciphersuite, credential_type, &self.mls_backend)
+            .await
+    }
+
+    /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [MlsCiphersuite] and [MlsCredentialType]
+    #[cfg_attr(test, crate::idempotent)]
+    pub async fn client_valid_key_packages_count(
+        &self,
+        ciphersuite: MlsCiphersuite,
+        credential_type: MlsCredentialType,
+    ) -> CryptoResult<usize> {
+        self.mls_client()?
+            .valid_keypackages_count(&self.mls_backend, ciphersuite, credential_type)
+            .await
+    }
+
+    /// Prunes local KeyPackages after making sure they also have been deleted on the backend side
+    /// You should only use this after [MlsCentral::e2ei_rotate_all]
+    #[cfg_attr(test, crate::dispotent)]
+    pub async fn delete_keypackages(&mut self, refs: &[KeyPackageRef]) -> CryptoResult<()> {
+        if refs.is_empty() {
+            return Err(CryptoError::ImplementationError);
+        }
+        let client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
+        client.prune_keypackages_and_credential(&self.mls_backend, refs).await
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use openmls::prelude::{KeyPackage, KeyPackageRef};
+    use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
 
+    use crate::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
     use mls_crypto_provider::MlsCryptoProvider;
 
     use super::Client;
@@ -359,44 +411,84 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn client_generates_correct_number_of_kpbs(case: TestCase) {
-        use openmls_traits::OpenMlsCryptoProvider as _;
-        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        let client = Client::random_generate(&case, &backend, false).await.unwrap();
+    pub async fn generates_correct_number_of_kpbs(case: TestCase) {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
+            Box::pin(async move {
+                const N: usize = 50;
+                const COUNT: usize = 124;
 
-        const COUNT: usize = 124;
+                let init = cc.count_entities().await;
+                assert_eq!(init.key_package, INITIAL_KEYING_MATERIAL_COUNT);
+                assert_eq!(init.encryption_keypair, INITIAL_KEYING_MATERIAL_COUNT);
+                assert_eq!(init.hpke_private_key, INITIAL_KEYING_MATERIAL_COUNT);
+                assert_eq!(init.credential, 1);
+                assert_eq!(init.signature_keypair, 1);
 
-        let mut prev_kps: Option<Vec<KeyPackage>> = None;
-        for _ in 0..50 {
-            let kps = client
-                .request_key_packages(COUNT, case.ciphersuite(), case.credential_type, &backend)
-                .await
-                .unwrap();
-            assert_eq!(kps.len(), COUNT);
+                // since 'delete_keypackages' will evict all Credentials unlinked to a KeyPackage, each iteration
+                // generates 1 extra KeyPackage in order for this Credential no to be evicted and next iteration sto succeed.
+                let mut pinned_kp = None;
 
-            let kpbs_refs: Vec<KeyPackageRef> = kps.iter().map(|kp| kp.hash_ref(backend.crypto()).unwrap()).collect();
+                let mut prev_kps: Option<Vec<KeyPackage>> = None;
+                for _ in 0..N {
+                    let mut kps = cc
+                        .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, COUNT + 1)
+                        .await
+                        .unwrap();
 
-            if let Some(pkpbs) = prev_kps.replace(kps) {
-                let crypto = backend.crypto();
-                let pkpbs_refs: Vec<KeyPackageRef> =
-                    pkpbs.into_iter().map(|kpb| kpb.hash_ref(crypto).unwrap()).collect();
+                    // this will always be the same, first KeyPackage
+                    pinned_kp = Some(kps.pop().unwrap());
 
-                let has_duplicates = kpbs_refs.iter().any(|href| pkpbs_refs.contains(href));
-                // Make sure we have no previous keypackages found (that were pruned) in our new batch of KPs
-                assert!(!has_duplicates);
-            }
-            client.prune_keypackages(&backend, &kpbs_refs).await.unwrap();
-        }
-        let count = client
-            .valid_keypackages_count(&backend, case.ciphersuite(), case.credential_type)
-            .await
-            .unwrap();
-        assert_eq!(count, 0);
+                    assert_eq!(kps.len(), COUNT);
+                    let after_creation = cc.count_entities().await;
+                    assert_eq!(after_creation.key_package, COUNT + 1);
+                    assert_eq!(after_creation.encryption_keypair, COUNT + 1);
+                    assert_eq!(after_creation.hpke_private_key, COUNT + 1);
+                    assert_eq!(after_creation.credential, 1);
+
+                    let kpbs_refs = kps
+                        .iter()
+                        .map(|kp| kp.hash_ref(cc.mls_backend.crypto()).unwrap())
+                        .collect::<Vec<KeyPackageRef>>();
+
+                    if let Some(pkpbs) = prev_kps.replace(kps) {
+                        let pkpbs_refs = pkpbs
+                            .into_iter()
+                            .map(|kpb| kpb.hash_ref(cc.mls_backend.crypto()).unwrap())
+                            .collect::<Vec<KeyPackageRef>>();
+
+                        let has_duplicates = kpbs_refs.iter().any(|href| pkpbs_refs.contains(href));
+                        // Make sure we have no previous keypackages found (that were pruned) in our new batch of KPs
+                        assert!(!has_duplicates);
+                    }
+                    cc.delete_keypackages(&kpbs_refs).await.unwrap();
+                }
+
+                let count = cc
+                    .client_valid_key_packages_count(case.ciphersuite(), case.credential_type)
+                    .await
+                    .unwrap();
+                assert_eq!(count, 1);
+
+                let pinned_kpr = pinned_kp.unwrap().hash_ref(cc.mls_backend.crypto()).unwrap();
+                cc.delete_keypackages(&[pinned_kpr]).await.unwrap();
+                let count = cc
+                    .client_valid_key_packages_count(case.ciphersuite(), case.credential_type)
+                    .await
+                    .unwrap();
+                assert_eq!(count, 0);
+                let after_delete = cc.count_entities().await;
+                assert_eq!(after_delete.key_package, 0);
+                assert_eq!(after_delete.encryption_keypair, 0);
+                assert_eq!(after_delete.hpke_private_key, 0);
+                assert_eq!(after_delete.credential, 0);
+            })
+        })
+        .await
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn client_automatically_prunes_lifetime_expired_keypackages(case: TestCase) {
+    pub async fn automatically_prunes_lifetime_expired_keypackages(case: TestCase) {
         const UNEXPIRED_COUNT: usize = 125;
         const EXPIRED_COUNT: usize = 200;
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();

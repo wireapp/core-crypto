@@ -185,19 +185,16 @@ impl ConversationMember {
 
 #[cfg(test)]
 pub mod tests {
-    use wasm_bindgen_test::wasm_bindgen_test;
-
-    use mls_crypto_provider::MlsCryptoProvider;
-
+    use super::ConversationMember;
     use crate::{
         prelude::{key_package::INITIAL_KEYING_MATERIAL_COUNT, ClientId},
         test_utils::*,
     };
+    use mls_crypto_provider::MlsCryptoProvider;
     use openmls::prelude::{CryptoConfig, KeyPackage};
+    use wasm_bindgen_test::*;
 
-    use super::ConversationMember;
-
-    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+    wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]

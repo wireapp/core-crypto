@@ -269,7 +269,7 @@ impl MlsCentral {
 pub mod tests {
     use super::*;
     use crate::{
-        prelude::{handshake::MlsCommitBundle, MemberId, MlsProposal, MlsWirePolicy},
+        prelude::{handshake::MlsCommitBundle, MemberId, MlsWirePolicy},
         test_utils::{ValidationCallbacks, *},
         CryptoError,
     };
@@ -557,10 +557,7 @@ pub mod tests {
                         // Alice will decrypt the commit but musn't renew the proposal to add Charlie
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
 
-                        let add_charlie_proposal = bob_central
-                            .new_proposal(&id, MlsProposal::Add(charlie_kp))
-                            .await
-                            .unwrap();
+                        let add_charlie_proposal = bob_central.new_add_proposal(&id, charlie_kp).await.unwrap();
                         alice_central
                             .decrypt_message(&id, add_charlie_proposal.proposal.to_bytes().unwrap())
                             .await
@@ -611,10 +608,7 @@ pub mod tests {
 
                         // Alice propose to add Charlie
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
-                        alice_central
-                            .new_proposal(&id, MlsProposal::Add(charlie_kp))
-                            .await
-                            .unwrap();
+                        alice_central.new_add_proposal(&id, charlie_kp).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // But first she receives Bob commit
@@ -909,11 +903,7 @@ pub mod tests {
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
-                        let proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Add(charlie_kp))
-                            .await
-                            .unwrap()
-                            .proposal;
+                        let proposal = alice_central.new_add_proposal(&id, charlie_kp).await.unwrap().proposal;
 
                         let decrypted = bob_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
@@ -949,11 +939,7 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
-                        let proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Update)
-                            .await
-                            .unwrap()
-                            .proposal;
+                        let proposal = alice_central.new_update_proposal(&id).await.unwrap().proposal;
 
                         let sender_client_id = bob_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
@@ -1237,7 +1223,7 @@ pub mod tests {
 
                         // Alice generates a bunch of soon to be outdated messages
                         let old_proposal = alice_central
-                            .new_proposal(&id, MlsProposal::Update)
+                            .new_update_proposal(&id)
                             .await
                             .unwrap()
                             .proposal
@@ -1330,7 +1316,7 @@ pub mod tests {
                             let msg = b"Hello alice";
                             let expired_app_msg = bob_central.encrypt_message(&id, msg).await.unwrap();
                             let expired_proposal = bob_central
-                                .new_proposal(&id, MlsProposal::Update)
+                                .new_update_proposal(&id)
                                 .await
                                 .unwrap()
                                 .proposal
