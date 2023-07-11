@@ -29,7 +29,7 @@
 
 use std::collections::HashMap;
 
-use openmls::{group::MlsGroup, messages::Welcome, prelude::Credential};
+use openmls::{group::MlsGroup, prelude::Credential};
 use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
 
 use core_crypto_keystore::CryptoKeystoreMls;
@@ -38,9 +38,8 @@ use mls_crypto_provider::MlsCryptoProvider;
 use config::MlsConversationConfiguration;
 
 use crate::{
-    mls::{client::Client, member::MemberId, ClientId, MlsCentral, MlsCiphersuite},
-    prelude::MlsCredentialType,
-    CryptoError, CryptoResult, MlsError,
+    mls::{client::Client, member::MemberId, ClientId, MlsCentral},
+    prelude::{CryptoError, CryptoResult, MlsCiphersuite, MlsCredentialType, MlsError},
 };
 
 mod commit_delay;
@@ -55,6 +54,7 @@ pub(crate) mod group_info;
 pub mod handshake;
 pub mod merge;
 mod renew;
+pub(crate) mod welcome;
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 pub type ConversationId = Vec<u8>;
@@ -115,28 +115,6 @@ impl MlsConversation {
         conversation.persist_group_when_changed(backend, true).await?;
 
         Ok(conversation)
-    }
-
-    // ? Do we need to provide the ratchet_tree to the MlsGroup? Does everything crumble down if we can't actually get it?
-    /// Create the MLS conversation from an MLS Welcome message
-    ///
-    /// # Arguments
-    /// * `welcome` - welcome message to create the group from
-    /// * `config` - group configuration
-    /// * `backend` - the KeyStore to persist the group
-    ///
-    /// # Errors
-    /// Errors can happen from OpenMls or from the KeyStore
-    pub async fn from_welcome_message(
-        welcome: Welcome,
-        configuration: MlsConversationConfiguration,
-        backend: &MlsCryptoProvider,
-    ) -> CryptoResult<Self> {
-        let mls_group_config = configuration.as_openmls_default_configuration()?;
-        let group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None)
-            .await
-            .map_err(MlsError::from)?;
-        Self::from_mls_group(group, configuration, backend).await
     }
 
     /// Internal API: create a group from an existing conversation. For example by external commit

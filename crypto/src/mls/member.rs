@@ -22,11 +22,8 @@ use openmls::prelude::{KeyPackage, KeyPackageIn};
 use tls_codec::Deserialize;
 
 use crate::{
-    mls::{
-        client::{id::ClientId, Client},
-        MlsCiphersuite,
-    },
-    CryptoResult, MlsError,
+    mls::client::{id::ClientId, Client},
+    prelude::{CryptoResult, MlsCiphersuite, MlsError},
 };
 
 /// Type definition for the identifier of a client in a conversation (aka Member)

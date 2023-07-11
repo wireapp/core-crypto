@@ -25,7 +25,7 @@ use openmls::prelude::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{mls::MlsCiphersuite, CryptoResult};
+use crate::prelude::{CryptoResult, MlsCiphersuite};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 2;

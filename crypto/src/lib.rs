@@ -74,6 +74,7 @@ pub mod prelude {
         },
         error::*,
         mls::{
+            ciphersuite::MlsCiphersuite,
             client::id::ClientId,
             client::identifier::ClientIdentifier,
             client::*,
@@ -89,7 +90,7 @@ pub mod prelude {
             external_commit::MlsConversationInitBundle,
             member::{ConversationMember, MemberId},
             proposal::{MlsProposal, MlsProposalRef},
-            MlsCentral, MlsCiphersuite,
+            MlsCentral,
         },
         CoreCrypto, CoreCryptoCallbacks,
     };
