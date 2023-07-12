@@ -156,13 +156,13 @@ plugin = "detect-release"
 dependencies = ["ffi-swift"]
 condition = { platforms = ["mac"] }
 command = "cargo"
-args = ["build", "--target", "aarch64-apple-ios", "--release"]
+args = ["rustc", "--target", "aarch64-apple-ios", "--release", "--", "-C", "strip=symbols"]
 
 [tasks.ios-simulator-x86]
 dependencies = ["ffi-swift"]
 condition = { platforms = ["mac"] }
 command = "cargo"
-args = ["build", "--target", "x86_64-apple-ios", "--release"]
+args = ["rustc", "--target", "x86_64-apple-ios", "--release", "--", "-C", "strip=symbols"]
 
 [tasks.ios-simulator-arm]
 dependencies = ["ffi-swift"]
@@ -170,7 +170,7 @@ dependencies = ["ffi-swift"]
 env = { "CRATE_CC_NO_DEFAULTS" = 1, "TARGET_CFLAGS" = { script = ["echo \"--target=arm64-apple-ios14.0.0-simulator -mios-simulator-version-min=14.0 -isysroot `xcrun --show-sdk-path --sdk iphonesimulator`\""] } }
 condition = { platforms = ["mac"] }
 command = "cargo"
-args = ["build", "--target", "aarch64-apple-ios-sim", "--release"]
+args = ["rustc", "--target", "aarch64-apple-ios-sim", "--release", "--", "-C", "strip=symbols"]
 
 [tasks.ios]
 condition = { platforms = ["mac"] }
@@ -193,22 +193,22 @@ plugin = "android-env"
 
 [tasks.android-armv7]
 command = "cargo"
-args = ["build", "--target", "armv7-linux-androideabi", "--release", "${@}"]
+args = ["rustc", "--target", "armv7-linux-androideabi", "--release", "--", "-C", "strip=symbols"]
 dependencies = ["ffi-kotlin", "android-env"]
 
 [tasks.android-armv8]
 command = "cargo"
-args = ["build", "--target", "aarch64-linux-android", "--release", "${@}"]
+args = ["rustc", "--target", "aarch64-linux-android", "--release", "--", "-C", "strip=symbols"]
 dependencies = ["ffi-kotlin", "android-env"]
 
 [tasks.android-x86]
 command = "cargo"
-args = ["build", "--target", "x86_64-linux-android", "--release", "${@}"]
+args = ["rustc", "--target", "x86_64-linux-android", "--release", "--", "-C", "strip=symbols"]
 dependencies = ["ffi-kotlin", "android-env"]
 
 [tasks.android-i686]
 command = "cargo"
-args = ["build", "--target", "i686-linux-android", "--release", "${@}"]
+args = ["rustc", "--target", "i686-linux-android", "--release", "--", "-C", "strip=symbols"]
 dependencies = ["ffi-kotlin", "android-env"]
 
 [tasks.android]
@@ -246,19 +246,19 @@ cp ${from} ${to}
 
 [tasks.jvm-x86-darwin]
 command = "cargo"
-args = ["build", "--target", "x86_64-apple-darwin", "--release", "${@}"]
+args = ["rustc", "--target", "x86_64-apple-darwin", "--release", "--", "-C", "strip=symbols"]
 dependencies = ["ffi-kotlin"]
 condition = { platforms = ["mac"] }
 
 [tasks.jvm-aarch64-darwin]
 command = "cargo"
-args = ["build", "--target", "aarch64-apple-darwin", "--release", "${@}"]
+args = ["rustc", "--target", "aarch64-apple-darwin", "--release", "--", "-C", "strip=symbols"]
 dependencies = ["ffi-kotlin"]
 condition = { platforms = ["mac"] }
 
 [tasks.jvm-x86-linux]
 command = "cargo"
-args = ["build", "--target", "x86_64-unknown-linux-gnu", "--release", "${@}"]
+args = ["rustc", "--target", "x86_64-unknown-linux-gnu", "--release", "--", "-C", "strip=symbols"]
 dependencies = ["ffi-kotlin"]
 condition = { platforms = ["linux"] }
 
