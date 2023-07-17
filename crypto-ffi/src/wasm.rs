@@ -91,7 +91,7 @@ impl CoreCryptoError {
 impl std::fmt::Display for CoreCryptoError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let rich_error = CoreCryptoJsRichError::from(self);
-        let rich_error_json = serde_json::to_string(&rich_error).map_err(|_| std::fmt::Error::default())?;
+        let rich_error_json = serde_json::to_string(&rich_error).map_err(|_| std::fmt::Error)?;
         write!(f, "{}\n\n{rich_error_json}", self.0)
     }
 }
