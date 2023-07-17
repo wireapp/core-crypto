@@ -98,7 +98,7 @@ fn bump_npm_version(bump_version: BumpLevel, dry_run: bool) -> Result<()> {
 }
 
 fn bump_gradle_version(file: &str, bump_version: BumpLevel, dry_run: bool) -> Result<()> {
-    const SEARCH_STR: &str = "version = \"";
+    const SEARCH_STR: &str = "VERSION_NAME=";
 
     let mut gradle_build_file = std::fs::read_to_string(file)?;
 
@@ -106,10 +106,10 @@ fn bump_gradle_version(file: &str, bump_version: BumpLevel, dry_run: bool) -> Re
         .find(SEARCH_STR)
         .map(|idx| idx + SEARCH_STR.len())
         .and_then(|idx| gradle_build_file[idx..]
-            .find('"')
+            .find('\n')
             .map(move |end_idx| (idx, end_idx + idx))
         ) else {
-            return Err(eyre!("Could not find version in ./kotlin/android/build.gradle.kts"));
+            return Err(eyre!("Could not find version in {}", file));
         };
 
     let semver_version = semver::Version::parse(&gradle_build_file[start_idx..end_idx])?;
@@ -127,12 +127,7 @@ fn bump_gradle_version(file: &str, bump_version: BumpLevel, dry_run: bool) -> Re
 }
 
 fn bump_gradle_versions(bump_version: BumpLevel, dry_run: bool) -> Result<()> {
-    let files = ["./kotlin/android/build.gradle.kts", "./kotlin/jvm/build.gradle.kts"];
-
-    for file in files {
-        bump_gradle_version(file, bump_version, dry_run)?;
-    }
-
+    bump_gradle_version("./kotlin/gradle.properties", bump_version, dry_run)?;
     Ok(())
 }
 
