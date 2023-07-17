@@ -7,11 +7,23 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
-## [1.0.0-pre.5] - 2023-07-06
+## [1.0.0-pre.7] - 2023-07-17
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-pre.6" unreleased=true}}
+{{git-cliff tag="v1.0.0-pre.7" unreleased=true}}
+</details>
+
+* **[BREAKING]** We now detect duplicate messages from previous epochs, as such the `GenerationOutOfBound` error is now named `DuplicateMessage`.
+* **[BREAKING]** We now throw errors when consumers try to create or join a group via Welcome message BUT the group already exists within our store. This is to prevent accidental group erasure in case of duplicate notifications from the DS. Note that the API does not change with this but presents a breaking behavior change.
+* We pinned some private forks under the @wireapp GitHub org to secure our software supply chain.
+
+
+## [1.0.0-pre.6] - 2023-07-06
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-pre.6"}}
 </details>
 
 * feat!: PostQuantum Ciphersuite support ! Using [Xyber768](https://www.ietf.org/archive/id/draft-westerbaan-cfrg-hpke-xyber768d00-02.html) for Key Exchange.
