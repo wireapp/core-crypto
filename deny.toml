@@ -67,7 +67,7 @@ allow-git = [
     # ? Needed fork for PQ crypto
     "https://github.com/bwesterb/argyle-kyber",
     # ? Needed for our interop runner.
-    "https://github.com/otak/fantoccini",
+    # "https://github.com/otak/fantoccini",
     # ? Needed for rusqlite
     "https://github.com/alexcrichton/openssl-src-rs",
     # ? Used in a devdep within wiree2eidentity
