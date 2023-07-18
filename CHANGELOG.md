@@ -7,6 +7,19 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-pre.8] - 2023-07-18
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Use correct env var for maven central credentials ([#355](https://github.com/wireapp/core-crypto/issues/355))
+
+</details>
+
+* This is a release that contains nothing new. This is to fix the previous Kotlin release that was not correctly built & released.
+
 ## [1.0.0-pre.7] - 2023-07-17
 
 <details>
@@ -14,6 +27,7 @@ Platform support legends:
 
 ### Bug Fixes
 
+- Make clippy happy
 - Xtask release fix for kotlin sonatype publishing
 - Disable stripping to allow FFI to build
 - Incorrect error value in tests

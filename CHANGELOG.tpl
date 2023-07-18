@@ -7,11 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-pre.8] - 2023-07-18
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-pre.8" unreleased=true}}
+</details>
+
+* This is a release that contains nothing new. This is to fix the previous Kotlin release that was not correctly built & released.
+
 ## [1.0.0-pre.7] - 2023-07-17
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-pre.7" unreleased=true}}
+{{git-cliff tag="v1.0.0-pre.7"}}
 </details>
 
 * **[BREAKING]** We now detect duplicate messages from previous epochs, as such the `GenerationOutOfBound` error is now named `DuplicateMessage`.
