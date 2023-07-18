@@ -64,6 +64,8 @@ license-files = [{ path = "LICENSE", hash = 0x001c7e6c }]
 
 [sources]
 allow-git = [
+    # ? Needed fork for PQ crypto
+    "https://github.com/bwesterb/argyle-kyber",
     # ? Needed for our interop runner.
     "https://github.com/otak/fantoccini",
     # ? Needed for rusqlite
