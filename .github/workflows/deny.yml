@@ -16,4 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: EmbarkStudios/cargo-deny-action@v1
+      - uses: taiki-e/install-action@cargo-deny
+      - name: "Check Licenses / Supply Chain"
+        run: |
+          echo "`$(cargo deny --all-features check)`" >> $GITHUB_STEP_SUMMARY
+      - name: "Build a dependency licenses inventory and post it to Summary"
+        run: |
+          cargo deny --all-features list --layout crate --format json | jq -r 'to_entries[] | "* \(.key)", "    * \(.value.licenses[])"' >> $GITHUB_STEP_SUMMARY
