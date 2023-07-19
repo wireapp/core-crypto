@@ -175,6 +175,11 @@ pub enum CryptoError {
     /// Tried to decrypt a commit created by self which is likely to have been replayed by the DS
     #[error("Tried to decrypt a commit created by self which is likely to have been replayed by the DS")]
     SelfCommitIgnored,
+    /// You tried to join with an external commit but did not merge it yet. We will reapply this message for you when you merge your external commit
+    #[error(
+        "You tried to join with an external commit but did not merge it yet. We will reapply this message for you when you merge your external commit"
+    )]
+    UnmergedPendingGroup,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

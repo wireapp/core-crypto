@@ -61,21 +61,19 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn decrypt_message(
         &mut self,
-        message: impl AsRef<[u8]>,
+        message: MlsMessageIn,
         parent_conversation: Option<GroupStoreValue<MlsConversation>>,
         client: &Client,
         backend: &MlsCryptoProvider,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
-        let msg_in = openmls::framing::MlsMessageIn::tls_deserialize_bytes(message.as_ref()).map_err(MlsError::from)?;
-
         // handles the crooked case where we receive our own commits.
         // Since this would result in an error in openmls, we handle it here
-        if let Some(ct) = self.maybe_self_member_commit(&msg_in)? {
+        if let Some(ct) = self.maybe_self_member_commit(&message)? {
             return self.handle_self_member_commit(backend, ct).await;
         }
 
-        let message = self.parse_message(backend, msg_in).await?;
+        let message = self.parse_message(backend, message).await?;
 
         let msg_epoch = message.epoch();
 
@@ -235,17 +233,20 @@ impl MlsCentral {
     /// from OpenMls and the KeyStore
     pub async fn decrypt_message(
         &mut self,
-        conversation_id: &ConversationId,
+        id: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
-        let parent_conversation = self.get_parent_conversation(conversation_id).await?;
-        let decrypt_message = self
-            .get_conversation(conversation_id)
-            .await?
+        let msg = MlsMessageIn::tls_deserialize_bytes(message.as_ref()).map_err(MlsError::from)?;
+        let Ok(conversation) = self.get_conversation(id).await else {
+            return self.handle_when_group_is_pending(id, message).await;
+        };
+        // let conversation = self.get_conversation(id).await?;
+        let parent_conversation = self.get_parent_conversation(&conversation).await?;
+        let decrypt_message = conversation
             .write()
             .await
             .decrypt_message(
-                message.as_ref(),
+                msg,
                 parent_conversation,
                 self.mls_client()?,
                 &self.mls_backend,
@@ -254,7 +255,7 @@ impl MlsCentral {
             .await?;
 
         if !decrypt_message.is_active {
-            self.wipe_conversation(conversation_id).await?;
+            self.wipe_conversation(id).await?;
         }
         Ok(decrypt_message)
     }

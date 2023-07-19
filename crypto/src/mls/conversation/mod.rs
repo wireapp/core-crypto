@@ -37,6 +37,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use config::MlsConversationConfiguration;
 
+use crate::group_store::GroupStoreValue;
 use crate::{
     mls::{client::Client, member::MemberId, ClientId, MlsCentral},
     prelude::{CryptoError, CryptoResult, MlsCiphersuite, MlsCredentialType, MlsError},
@@ -242,9 +243,8 @@ impl MlsCentral {
 
     pub(crate) async fn get_parent_conversation(
         &mut self,
-        id: &ConversationId,
+        conversation: &GroupStoreValue<MlsConversation>,
     ) -> CryptoResult<Option<crate::group_store::GroupStoreValue<MlsConversation>>> {
-        let conversation = self.get_conversation(id).await?;
         let conversation_lock = conversation.read().await;
         if let Some(parent_id) = conversation_lock.parent_id.as_ref() {
             Ok(Some(

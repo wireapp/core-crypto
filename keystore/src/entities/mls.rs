@@ -71,6 +71,15 @@ pub struct PersistedMlsPendingGroup {
     pub custom_configuration: Vec<u8>,
 }
 
+/// Entity representing a buffered message
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[zeroize(drop)]
+#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+pub struct MlsPendingMessage {
+    pub id: Vec<u8>,
+    pub message: Vec<u8>,
+}
+
 /// Entity representing a persisted `Credential`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]

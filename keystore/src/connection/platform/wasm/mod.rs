@@ -102,6 +102,11 @@ impl DatabaseConnection for WasmConnection {
                     .add_index(Index::new("id", "id").unique(true)),
             )
             .add_object_store(
+                ObjectStore::new("mls_pending_messages")
+                    .auto_increment(false)
+                    .add_index(Index::new("id", "id")),
+            )
+            .add_object_store(
                 ObjectStore::new("e2ei_enrollment")
                     .auto_increment(false)
                     .add_index(Index::new("id", "id").unique(true)),

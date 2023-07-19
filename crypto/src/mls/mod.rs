@@ -8,6 +8,7 @@ use crate::prelude::{
     MlsError,
 };
 
+pub(crate) mod buffer_external_commit;
 pub(crate) mod ciphersuite;
 pub(crate) mod client;
 pub(crate) mod conversation;
