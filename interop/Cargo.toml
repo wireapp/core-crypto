@@ -5,8 +5,7 @@ edition = "2021"
 license = "GPL-3.0-only"
 
 [features]
-default = []
-# default = ["proteus", "e2ei"]
+default = ["proteus", "e2ei"]
 e2ei = []
 proteus = [
     "dep:cryptobox",
