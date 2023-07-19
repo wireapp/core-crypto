@@ -178,6 +178,7 @@ enum CryptoError {
     "InternalMlsError",
     "ClearingPendingCommitError",
     "SelfCommitIgnored",
+    "UnmergedPendingGroup",
 };
 
 enum MlsWirePolicy {

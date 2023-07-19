@@ -20,5 +20,6 @@ pub mod enrollment;
 pub mod group;
 pub mod hpke_private_key;
 pub mod keypackage;
+pub mod pending_message;
 pub mod psk_bundle;
 pub mod signature_keypair;

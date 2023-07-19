@@ -31,7 +31,7 @@ macro_rules! pat_to_bool {
 }
 
 macro_rules! test_for_entity {
-    ($test_name:ident, $entity:ident $(ignore_entity_count:$ignore_entity_count:literal)? $(ignore_update:$ignore_update:literal)?) => {
+    ($test_name:ident, $entity:ident $(ignore_entity_count:$ignore_entity_count:literal)? $(ignore_update:$ignore_update:literal)? $(ignore_find_many:$ignore_find_many:literal)?) => {
         #[apply(all_storage_types)]
         #[wasm_bindgen_test]
         pub async fn $test_name(store: core_crypto_keystore::Connection) {
@@ -41,14 +41,20 @@ macro_rules! test_for_entity {
 
             crate::tests_impl::can_find_entity::<$entity>(&store, &entity).await;
             let ignore_update = pat_to_bool!($($ignore_update)?);
+
+            // TODO: entities which do not support update tend not to have a primary key constraint.
+            // This can cause complications with the "default" remove implementation which does not support deleting many entities.
+            // We should have an automated way to test this here
+
             if !ignore_update {
                 crate::tests_impl::can_update_entity::<$entity>(&store, &mut entity).await;
             }
             crate::tests_impl::can_remove_entity::<$entity>(&store, entity).await;
 
-            let ignore = pat_to_bool!($($ignore_entity_count)?);
-            crate::tests_impl::can_list_entities_with_find_many::<$entity>(&store, ignore).await;
-            crate::tests_impl::can_list_entities_with_find_all::<$entity>(&store, ignore).await;
+            let ignore_count = pat_to_bool!($($ignore_entity_count)?);
+            let ignore_find_many = pat_to_bool!($($ignore_find_many)?);
+            crate::tests_impl::can_list_entities_with_find_many::<$entity>(&store, ignore_count, ignore_find_many).await;
+            crate::tests_impl::can_list_entities_with_find_all::<$entity>(&store, ignore_count).await;
 
             store.wipe().await.unwrap();
         }
@@ -105,6 +111,7 @@ mod tests_impl {
     >(
         store: &CryptoKeystore,
         ignore_entity_count: bool,
+        ignore_find_many: bool,
     ) {
         let mut ids: Vec<Vec<u8>> = vec![];
         for _ in 0..ENTITY_COUNT {
@@ -113,9 +120,11 @@ mod tests_impl {
             store.save(entity).await.unwrap();
         }
 
-        let entities = store.find_many::<R, _>(&ids).await.unwrap();
-        if !ignore_entity_count {
-            assert_eq!(entities.len(), ENTITY_COUNT);
+        if !ignore_find_many {
+            let entities = store.find_many::<R, _>(&ids).await.unwrap();
+            if !ignore_entity_count {
+                assert_eq!(entities.len(), ENTITY_COUNT);
+            }
         }
     }
 
@@ -145,6 +154,7 @@ pub mod tests {
         if #[cfg(feature = "mls-keystore")] {
             test_for_entity!(test_persisted_mls_group, PersistedMlsGroup);
             test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
+            test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_update:true ignore_find_many:true);
             test_for_entity!(test_mls_credential, MlsCredential ignore_update:true);
             test_for_entity!(test_mls_keypackage, MlsKeyPackage);
             test_for_entity!(test_mls_signature_keypair, MlsSignatureKeyPair ignore_update:true);
@@ -373,6 +383,30 @@ pub mod utils {
                     let mut rng = rand::thread_rng();
                     self.state = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut self.state[..]);
+                }
+            }
+
+            impl EntityTestExt for core_crypto_keystore::entities::MlsPendingMessage {
+                fn random() -> Self {
+                    use rand::Rng as _;
+                    let mut rng = rand::thread_rng();
+
+                    let uuid = uuid::Uuid::new_v4();
+                    let id: [u8; 16] = uuid.into_bytes();
+
+                    let mut message = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut message[..]);
+
+                    Self {
+                        id: id.into(),
+                        message,
+                    }
+                }
+
+                fn random_update(&mut self) {
+                    let mut rng = rand::thread_rng();
+                    self.message = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut self.message[..]);
                 }
             }
         }

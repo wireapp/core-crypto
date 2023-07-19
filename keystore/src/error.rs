@@ -33,6 +33,8 @@ pub enum MissingKeyErrorKind {
     MlsGroup,
     #[error("MLS Persisted Pending Group")]
     MlsPendingGroup,
+    #[error("MLS Pending Messages")]
+    MlsPendingMessages,
     #[error("End-to-end identity enrollment")]
     E2eiEnrollment,
     #[cfg(feature = "proteus-keystore")]
