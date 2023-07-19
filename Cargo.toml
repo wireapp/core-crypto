@@ -65,7 +65,7 @@ branch = "feat/send-sync-keystore"
 
 [patch.crates-io.hpke]
 git = "https://github.com/wireapp/rust-hpke.git"
-branch = "xyber768d00"
+branch = "wire/unstable-pq-xyber"
 
 [patch.crates-io.wire-e2e-identity]
 git = "https://github.com/wireapp/rusty-jwt-tools"
