@@ -20,7 +20,9 @@ use serde_json::json;
 
 use core_crypto_ffi::{CiphersuiteName, CoreCrypto, CustomConfiguration, Invitee, MlsCredentialType};
 
-use crate::clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient};
+use crate::clients::{
+    EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient, CIPHERSUITE_IN_USE,
+};
 
 #[derive(Debug)]
 pub struct CoreCryptoFfiClient<'a> {
@@ -33,7 +35,7 @@ pub struct CoreCryptoFfiClient<'a> {
 impl<'a> CoreCryptoFfiClient<'a> {
     pub async fn new() -> Result<CoreCryptoFfiClient<'a>> {
         let client_id = uuid::Uuid::new_v4();
-        let ciphersuite = CiphersuiteName::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519;
+        let ciphersuite = CIPHERSUITE_IN_USE.into();
         let cc = CoreCrypto::new(
             "path",
             "key",
@@ -51,7 +53,7 @@ impl<'a> CoreCryptoFfiClient<'a> {
 
     pub async fn new_deferred() -> Result<CoreCryptoFfiClient<'a>> {
         let client_id = uuid::Uuid::new_v4();
-        let ciphersuite = CiphersuiteName::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519;
+        let ciphersuite = CIPHERSUITE_IN_USE.into();
         let cc = CoreCrypto::deferred_init("path", "key", vec![ciphersuite], None)?;
         Ok(Self {
             cc,
@@ -88,7 +90,7 @@ impl<'a> EmulatedClient for CoreCryptoFfiClient<'a> {
 #[async_trait::async_trait(?Send)]
 impl<'a> EmulatedMlsClient for CoreCryptoFfiClient<'a> {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
-        let ciphersuite = CiphersuiteName::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519;
+        let ciphersuite = CIPHERSUITE_IN_USE.into();
         let credential_type = MlsCredentialType::Basic;
         let kp = self
             .cc
@@ -102,7 +104,7 @@ impl<'a> EmulatedMlsClient for CoreCryptoFfiClient<'a> {
     async fn add_client(&mut self, conversation_id: &[u8], client_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
         if !self.cc.conversation_exists(conversation_id.to_vec()) {
             let cfg = core_crypto_ffi::ConversationConfiguration {
-                ciphersuite: Some(CiphersuiteName::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519),
+                ciphersuite: Some(CIPHERSUITE_IN_USE.into()),
                 external_senders: vec![],
                 custom: CustomConfiguration {
                     key_rotation_span: None,

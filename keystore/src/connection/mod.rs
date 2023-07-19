@@ -43,8 +43,10 @@ use std::sync::Arc;
 pub const MAX_BLOB_LEN: usize = 1_000_000_000;
 
 #[cfg(not(target_family = "wasm"))]
+// ? Because of UniFFI async requirements, we need our keystore to be Send as well now
 pub trait DatabaseConnectionRequirements: Sized + Send {}
 #[cfg(target_family = "wasm")]
+// ? On the other hand, things cannot be Send on WASM because of platform restrictions (all things are copied across the FFI)
 pub trait DatabaseConnectionRequirements: Sized {}
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]

@@ -28,26 +28,6 @@ fn main() {
             println!("cargo:rustc-cfg=android");
 
             uniffi::generate_scaffolding(UDL_FILE).unwrap();
-
-            // uniffi::generate_bindings(
-            //     UDL_FILE.into(),
-            //     None,
-            //     vec![uniffi::TargetLanguage::Kotlin],
-            //     Some("./bindings/kt/main".into()),
-            //     None,
-            //     false,
-            // )
-            // .unwrap();
-
-            // uniffi::generate_bindings(
-            //     UDL_FILE.into(),
-            //     None,
-            //     vec![uniffi::TargetLanguage::Swift],
-            //     Some("./bindings/swift/WireCoreCrypto/WireCoreCrypto".into()),
-            //     None,
-            //     false,
-            // )
-            // .unwrap();
         }
     }
 }

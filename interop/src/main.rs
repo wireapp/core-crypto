@@ -248,8 +248,6 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
 
         assert_eq!(decrypted_master, message);
 
-        // tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-
         spinner.update(format!(
             "[MLS] Step 3: Roundtripping messages... [{i}/{ROUNDTRIP_MSG_AMOUNT}]"
         ));
