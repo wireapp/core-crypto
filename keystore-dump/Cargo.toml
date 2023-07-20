@@ -1,0 +1,36 @@
+[package]
+name = "keystore-dump"
+description = "Dumps a keystore to JSON on stdout"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+color-eyre = "0.6"
+
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+core-crypto-keystore = { path = "../keystore", features = ["serde"] }
+core-crypto = { path = "../crypto" }
+
+clap = { version = "4", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+serde_json = "1"
+serde = "1"
+postcard = { version = "1.0", default-features = false, features = ["use-std"] }
+hex = "0.4"
+serde-transcode = "1"
+
+openmls = { version = "1", features = ["crypto-subtle"] }
+openmls_traits = "0.2"
+openmls_basic_credential = "0.2"
+openmls_x509_credential = "0.2"
+tls_codec = { workspace = true }
+
+chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies.proteus-wasm]
+version = "2.1"
+features = ["hazmat", "serde"]
+git = "https://github.com/wireapp/proteus"
+branch = "2.x"

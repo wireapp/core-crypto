@@ -4,12 +4,12 @@ members = [
     "crypto-ffi",
     "crypto-attributes",
     "keystore",
+    "keystore-dump",
     "mls-provider",
     "interop"
 ]
 exclude = [
     "xtask",
-    "extras/anycrypto",
     "extras/core-ds",
     "extras/wasm-browser-run",
     "extras/wasm-browser-test-runner"

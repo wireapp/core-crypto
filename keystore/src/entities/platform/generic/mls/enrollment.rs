@@ -37,10 +37,31 @@ impl EntityBase for E2eiEnrollment {
     }
 
     async fn find_all(
-        _conn: &mut Self::ConnectionType,
-        _params: EntityFindParams,
+        conn: &mut Self::ConnectionType,
+        params: EntityFindParams,
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        Err(CryptoKeystoreError::ImplementationError)
+        let transaction = conn.transaction()?;
+        let query: String = format!("SELECT rowid, id FROM e2ei_enrollment {}", params.to_sql());
+
+        let mut stmt = transaction.prepare_cached(&query)?;
+        let mut rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        let entities = rows.try_fold(Vec::new(), |mut acc, row_res| {
+            use std::io::Read as _;
+            let (rowid, id) = row_res?;
+
+            let mut blob =
+                transaction.blob_open(rusqlite::DatabaseName::Main, "e2ei_enrollment", "content", rowid, false)?;
+
+            let mut content = vec![];
+            blob.read_to_end(&mut content)?;
+            blob.close()?;
+
+            acc.push(Self { id, content });
+
+            crate::CryptoKeystoreResult::Ok(acc)
+        })?;
+
+        Ok(entities)
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {

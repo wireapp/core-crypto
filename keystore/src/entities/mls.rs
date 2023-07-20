@@ -22,7 +22,10 @@ use zeroize::Zeroize;
 /// Entity representing a persisted `MlsGroup`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
-#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(target_family = "wasm", feature = "serde"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct PersistedMlsGroup {
     pub id: Vec<u8>,
     pub state: Vec<u8>,
@@ -63,7 +66,10 @@ pub trait PersistedMlsGroupExt: Entity {
 /// Entity representing a temporarily persisted `MlsGroup`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
-#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(target_family = "wasm", feature = "serde"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct PersistedMlsPendingGroup {
     pub id: Vec<u8>,
     pub state: Vec<u8>,
@@ -74,7 +80,10 @@ pub struct PersistedMlsPendingGroup {
 /// Entity representing a buffered message
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
-#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(target_family = "wasm", feature = "serde"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct MlsPendingMessage {
     pub id: Vec<u8>,
     pub message: Vec<u8>,
@@ -83,7 +92,10 @@ pub struct MlsPendingMessage {
 /// Entity representing a persisted `Credential`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
-#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(target_family = "wasm", feature = "serde"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct MlsCredential {
     pub id: Vec<u8>,
     pub credential: Vec<u8>,
@@ -98,7 +110,10 @@ pub trait MlsCredentialExt: Entity {
 /// Entity representing a persisted `SignatureKeyPair`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
-#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(target_family = "wasm", feature = "serde"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct MlsSignatureKeyPair {
     pub signature_scheme: u16,
     pub pk: Vec<u8>,
@@ -132,7 +147,10 @@ pub trait MlsSignatureKeyPairExt: Entity {
 /// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
-#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(target_family = "wasm", feature = "serde"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct MlsHpkePrivateKey {
     pub sk: Vec<u8>,
     pub pk: Vec<u8>,
@@ -141,7 +159,10 @@ pub struct MlsHpkePrivateKey {
 /// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
-#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(target_family = "wasm", feature = "serde"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct MlsEncryptionKeyPair {
     pub sk: Vec<u8>,
     pub pk: Vec<u8>,
@@ -159,7 +180,10 @@ pub struct MlsEpochEncryptionKeyPair {
 /// Entity representing a persisted `SignatureKeyPair`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
-#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(target_family = "wasm", feature = "serde"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct MlsPskBundle {
     pub psk_id: Vec<u8>,
     pub psk: Vec<u8>,
@@ -168,7 +192,10 @@ pub struct MlsPskBundle {
 /// Entity representing a persisted `KeyPackage`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
-#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(target_family = "wasm", feature = "serde"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct MlsKeyPackage {
     pub keypackage_ref: Vec<u8>,
     pub keypackage: Vec<u8>,
@@ -178,7 +205,10 @@ pub struct MlsKeyPackage {
 /// context switches and the memory it lives in is about to be erased
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
-#[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    any(target_family = "wasm", feature = "serde"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct E2eiEnrollment {
     pub id: Vec<u8>,
     pub content: Vec<u8>,

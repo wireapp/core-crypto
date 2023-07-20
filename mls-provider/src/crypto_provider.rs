@@ -22,7 +22,7 @@ use tls_codec::SecretVLBytes;
 
 #[derive(Debug)]
 pub struct RustCrypto {
-    rng: RwLock<rand_chacha::ChaCha20Rng>,
+    pub(crate) rng: RwLock<rand_chacha::ChaCha20Rng>,
 }
 
 impl Default for RustCrypto {
