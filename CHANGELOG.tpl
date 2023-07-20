@@ -7,11 +7,45 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.1] - 2023-07-20
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.1" unreleased=true}}
+</details>
+
+* **[BREAKING]** With this release, CoreCrypto is now [RFC9420](https://www.rfc-editor.org/rfc/rfc9420.txt) compliant.
+    * This will cause Draft-20 clients to be unable to process keypackages emitted by RFC clients; But the opposite isn't true as RFC clients will ignore the extraneous `Capabilities` Draft-20 clients emit.
+* **[BREAKING]** With our update to UniFFI 0.24, the FFI & bindings have significant breaking changes
+    * Most if not all APIs are now `async` and will use the platform's executor thanks to UniFFI's integration with them. In terms of platforms, the consequences are the following:
+        * Kotlin: Almost all APIs are now `suspend`
+        * Swift: Almost all APIs are now `async`
+        * TypeScript: A couple more APIs are now `async` compared to before
+    * Some other things might have changed - the callbacks ABI has changed but this change should not affect users of our bindings as we try to erase those minute differences by wrapping everything in a stable API
+* **[BREAKING]** CoreCrypto now handles self-commits sent by the backend and decrypted by the client.
+    * In a particular case, when the backend replays a commit, the client is not to blame.
+        * In that case, `decryptMessage` will return a `SelfCommitIgnored` which you should catch and ignore. It means you are likely to already have merged this commit.
+* **[BREAKING]** CoreCrypto now handles duplicate application or handshake messages.
+    * When such a case happens, `decryptMessage` will return a `DuplicateMessage` error encapsulating a `GenerationOutOfBound` error. The latter variant also has been removed.
+* **[BREAKING]** To mitigate unordered messages when joining with an external commit, incoming messages are now buffered until you merge the external commit with `mergePendingGroupFromExternalCommit`.
+    * At that point they are replayed and their result return in the method return type ; hence make sure to read and handle it!
+    * Note that for messages arriving during the external commit merge window, `decryptMessage` will return a `UnmergedPendingGroup` error which means the edge case has been identified and the message will be reapplied later; so feel free to catch and ignore this error.
+* *[SEMI-BREAKING]* CoreCrypto now prevents overwriting an existing conversation when creating a new conversation, joining one with a Welcome or joining with an external commit.
+    * This is within an effort to harden our data storage policies and to provide better feedback to API consumers as to what is actually happening.
+    * This change also is a breaking behavior change - But you should not be abusing the existing mechanic anyway to replace conversations as this was an unintended bug
+* Our CI is now building the Swift bindings with Xcode 14.3.1
+* We managed to reduce the size of our libraries by stripping them afterwards
+* *[EXPERIMENTAL]* This version of CoreCrypto is the first to ship with a Proteus compatibility layer that uses the same cryptographic primitives as the MLS counterparts
+    * This yields in practice performance gains between 20% and 900% depending on the type of operation
+    * Again, as this is an experimental change, things *might* break.
+
+
+
 ## [1.0.0-pre.8] - 2023-07-18
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-pre.8" unreleased=true}}
+{{git-cliff tag="v1.0.0-pre.8"}}
 </details>
 
 * This is a release that contains nothing new. This is to fix the previous Kotlin release that was not correctly built & released.
@@ -834,5 +868,3 @@ This release contains the following features:
 * Fixed iOS-specific WAL behavior to preserve backgrounding capabilities
     * See the comment at `https://wireapp.github.io/core-crypto/src/core_crypto_keystore/connection/platform/generic/mod.rs#99` for more details
 * Fix for migrations being incorrectly defined
-
-
