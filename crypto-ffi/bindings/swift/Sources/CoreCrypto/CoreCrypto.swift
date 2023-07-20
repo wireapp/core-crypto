@@ -773,7 +773,7 @@ public class CoreCryptoWrapper {
     /// deletes the temporary one. After merging, the group should be fully functional.
     ///
     /// - parameter conversationId: conversation identifier
-    public func mergePendingGroupFromExternalCommit(conversationId: ConversationId) async throws {
+    public func mergePendingGroupFromExternalCommit(conversationId: ConversationId) async throws -> [DecryptedMessage]? {
         try await self.coreCrypto.mergePendingGroupFromExternalCommit(conversationId: conversationId)
     }
 

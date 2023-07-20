@@ -60,7 +60,7 @@ export class CoreCryptoError extends Error {
         const parts = msg.split("\n\n");
         if (parts.length < 2) {
             const cause = new Error("CoreCrypto WASM FFI Error doesn't have enough elements to build a rich error");
-            return this.fallback(msg, {cause}, ...params);
+            return this.fallback(msg, { cause }, ...params);
         }
 
         const [errMsg, richErrorJSON,] = parts;
@@ -68,7 +68,7 @@ export class CoreCryptoError extends Error {
             const richError: CoreCryptoRichError = JSON.parse(richErrorJSON);
             return new this(errMsg, richError, ...params);
         } catch (cause) {
-            return this.fallback(msg, {cause}, ...params);
+            return this.fallback(msg, { cause }, ...params);
         }
     }
 
@@ -681,15 +681,15 @@ export class CoreCrypto {
      * ````
      */
     static async init({
-                          databaseName,
-                          key,
-                          clientId,
-                          wasmFilePath,
-                          ciphersuites,
-                          entropySeed
-                      }: CoreCryptoParams): Promise<CoreCrypto> {
+        databaseName,
+        key,
+        clientId,
+        wasmFilePath,
+        ciphersuites,
+        entropySeed
+    }: CoreCryptoParams): Promise<CoreCrypto> {
         if (!this.#module) {
-            const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
+            const wasmImportArgs = wasmFilePath ? { importHook: () => wasmFilePath } : undefined;
             const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
             this.#module = exports;
         }
@@ -706,14 +706,14 @@ export class CoreCrypto {
      * @param params - {@link CoreCryptoDeferredParams}
      */
     static async deferredInit({
-                                  databaseName,
-                                  key,
-                                  ciphersuites,
-                                  entropySeed,
-                                  wasmFilePath
-                              }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
+        databaseName,
+        key,
+        ciphersuites,
+        entropySeed,
+        wasmFilePath
+    }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
         if (!this.#module) {
-            const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
+            const wasmImportArgs = wasmFilePath ? { importHook: () => wasmFilePath } : undefined;
             const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
             this.#module = exports;
         }
@@ -884,7 +884,7 @@ export class CoreCrypto {
         configuration: ConversationConfiguration = {}
     ) {
         try {
-            const {ciphersuite, externalSenders, custom = {}} = configuration || {};
+            const { ciphersuite, externalSenders, custom = {} } = configuration || {};
             const config = new CoreCrypto.#module.ConversationConfiguration(
                 ciphersuite,
                 externalSenders,
@@ -962,7 +962,7 @@ export class CoreCrypto {
      */
     async processWelcomeMessage(welcomeMessage: Uint8Array, configuration: CustomConfiguration = {}): Promise<ConversationId> {
         try {
-            const {keyRotationSpan, wirePolicy} = configuration || {};
+            const { keyRotationSpan, wirePolicy } = configuration || {};
             const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
             return await CoreCryptoError.asyncMapErr(this.#cc.process_welcome_message(welcomeMessage, config));
         } catch (e) {
@@ -1244,7 +1244,7 @@ export class CoreCrypto {
      */
     async joinByExternalCommit(groupInfo: Uint8Array, credentialType: CredentialType, configuration: CustomConfiguration = {}): Promise<ConversationInitBundle> {
         try {
-            const {keyRotationSpan, wirePolicy} = configuration || {};
+            const { keyRotationSpan, wirePolicy } = configuration || {};
             const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
             const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await CoreCryptoError.asyncMapErr(this.#cc.join_by_external_commit(groupInfo, config, credentialType));
 
@@ -1272,7 +1272,7 @@ export class CoreCrypto {
      *
      * @param conversationId - The ID of the conversation
      */
-    async mergePendingGroupFromExternalCommit(conversationId: ConversationId): Promise<void> {
+    async mergePendingGroupFromExternalCommit(conversationId: ConversationId): Promise<DecryptedMessage[] | undefined> {
         return await CoreCryptoError.asyncMapErr(this.#cc.merge_pending_group_from_external_commit(conversationId));
     }
 

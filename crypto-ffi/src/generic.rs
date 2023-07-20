@@ -778,14 +778,26 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::merge_pending_group_from_external_commit]
-    pub async fn merge_pending_group_from_external_commit(&self, conversation_id: Vec<u8>) -> CryptoResult<()> {
-        self.central
+    pub async fn merge_pending_group_from_external_commit(
+        &self,
+        conversation_id: Vec<u8>,
+    ) -> CryptoResult<Option<Vec<DecryptedMessage>>> {
+        if let Some(decrypted_messages) = self
+            .central
             .lock()
             .await
             .merge_pending_group_from_external_commit(&conversation_id)
-            .await?;
+            .await?
+        {
+            return Ok(Some(
+                decrypted_messages
+                    .into_iter()
+                    .map(DecryptedMessage::try_from)
+                    .collect::<CryptoResult<Vec<_>>>()?,
+            ));
+        }
 
-        Ok(())
+        Ok(None)
     }
 
     /// See [core_crypto::mls::MlsCentral::clear_pending_group_from_external_commit]

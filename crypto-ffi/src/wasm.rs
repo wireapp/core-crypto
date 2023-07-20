@@ -1720,11 +1720,21 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                this.write()
+                if let Some(decrypted_messages) = this
+                    .write()
                     .await
                     .merge_pending_group_from_external_commit(&conversation_id)
                     .await
-                    .map_err(CoreCryptoError::from)?;
+                    .map_err(CoreCryptoError::from)?
+                {
+                    let messages = decrypted_messages
+                        .into_iter()
+                        .map(DecryptedMessage::try_from)
+                        .collect::<WasmCryptoResult<Vec<_>>>()?;
+
+                    return WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&messages)?);
+                }
+
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
