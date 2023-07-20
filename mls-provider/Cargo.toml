@@ -51,7 +51,7 @@ core-crypto-keystore = { version = "^1.0.0-pre.8", path = "../keystore", feature
 wasm-bindgen-test = "0.3"
 uuid = { version = "1.0", features = ["v4", "js"] }
 openmls = { version = "1", default-features = false }
-rstest = "0.17"
+rstest = "0.18"
 rstest_reuse = "0.5"
 async-std = { version = "1.12", features = ["attributes"] }
 cfg-if = "1.0"
