@@ -80,7 +80,7 @@ interface MLSClient {
 
     suspend fun joinByExternalCommit(groupInfo: ByteArray, credentialType: MlsCredentialType): CommitBundle
 
-    suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId)
+    suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId): List<DecryptedMessage>?
 
     suspend fun clearPendingGroupExternalCommit(groupId: MLSGroupId)
 
@@ -177,9 +177,9 @@ class MLSClientImpl(
         ).toCommitBundle()
     }
 
-    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
+    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId): List<DecryptedMessage>? {
         val groupIdAsBytes = groupId.toUByteList()
-        cc.mergePendingGroupFromExternalCommit(groupIdAsBytes)
+        return cc.mergePendingGroupFromExternalCommit(groupIdAsBytes)
     }
 
     override suspend fun clearPendingGroupExternalCommit(groupId: MLSGroupId) {
