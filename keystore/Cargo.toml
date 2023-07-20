@@ -100,7 +100,7 @@ getrandom = { version = "0.2", features = ["js"] }
 openmls = { version = "1", default-features = false, features = ["crypto-subtle"] }
 mls-crypto-provider = { path = "../mls-provider" }
 rstest = "0.17"
-rstest_reuse = "0.5"
+rstest_reuse = "0.6"
 async-std = { version = "1.12", features = ["attributes"] }
 futures-lite = "1.12"
 core-crypto-keystore = { path = ".", features = ["idb-regression-test", "log-queries"] }
