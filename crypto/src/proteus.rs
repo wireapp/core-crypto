@@ -301,7 +301,6 @@ impl ProteusCentral {
     /// Initializes the [ProteusCentral]
     pub async fn try_new(keystore: &CryptoKeystore) -> CryptoResult<Self> {
         let proteus_identity: Arc<IdentityKeyPair> = Arc::new(Self::load_or_create_identity(keystore).await?);
-
         let proteus_sessions = Self::restore_sessions(keystore, &proteus_identity).await?;
 
         Ok(Self {
@@ -335,8 +334,7 @@ impl ProteusCentral {
     /// Internal function to create and save a new Proteus Identity
     async fn create_identity(keystore: &CryptoKeystore) -> CryptoResult<IdentityKeyPair> {
         let kp = IdentityKeyPair::new();
-        let pk_fingerprint = kp.public_key.public_key.fingerprint();
-        let pk = hex::decode(pk_fingerprint)?;
+        let pk = kp.public_key.public_key.as_slice().to_vec();
 
         let ks_identity = ProteusIdentity {
             sk: kp.secret_key.to_keypair_bytes().into(),
@@ -850,8 +848,7 @@ impl ProteusCentral {
 
                 let kp = proteus_wasm::keys::IdentityKeyPair::deserialise(&kp_cbor).map_err(ProteusError::from)?;
 
-                let pk_fingerprint = kp.public_key.public_key.fingerprint();
-                let pk = hex::decode(pk_fingerprint)?;
+                let pk = kp.public_key.public_key.as_slice().to_vec();
 
                 let ks_identity = ProteusIdentity {
                     sk: kp.secret_key.to_keypair_bytes().into(),

@@ -24,6 +24,9 @@ mod error;
 pub use error::{MlsProviderError, MlsProviderResult};
 
 pub use crypto_provider::RustCrypto;
+pub mod reexports {
+    pub use rand_core;
+}
 
 /// 32-byte raw entropy seed
 pub type RawEntropySeed = <rand_chacha::ChaCha20Rng as rand::SeedableRng>::Seed;

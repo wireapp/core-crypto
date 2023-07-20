@@ -26,7 +26,8 @@ proteus-keystore = ["dep:proteus-traits"]
 ios-wal-compat = ["dep:security-framework", "dep:security-framework-sys", "dep:core-foundation"]
 idb-regression-test = []
 log-queries = ["dep:log", "rusqlite/trace"]
-dummy-entity = ["dep:serde"]
+serde = ["dep:serde"]
+dummy-entity = ["serde"]
 
 [dependencies]
 thiserror = "1.0"
