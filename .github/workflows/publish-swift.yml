@@ -20,7 +20,7 @@ env:
 jobs:
   publish-swift:
     if: github.repository == 'wireapp/core-crypto'
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - uses: maxim-lobanov/setup-xcode@v1
         with:
