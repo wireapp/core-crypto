@@ -334,8 +334,14 @@ args = [
 dependencies = ["ffi-kotlin"]
 condition = { platforms = ["linux"] }
 
+[tasks.jvm-darwin]
+dependencies = ["jvm-aarch64-darwin", "jvm-x86-darwin"]
+
+[tasks.jvm-linux]
+dependencies = ["jvm-x86-linux"]
+
 [tasks.jvm]
-dependencies = ["jvm-aarch64-darwin", "jvm-x86-darwin", "jvm-x86-linux"]
+dependencies = ["jvm-darwin", "jvm-linux"]
 
 #################################### Mobile ###################################
 [tasks.mobile]

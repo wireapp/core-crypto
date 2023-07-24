@@ -34,7 +34,7 @@ jobs:
       - name: Build Artifacts
         run: |
           cd crypto-ffi
-          cargo make jvm
+          cargo make jvm-linux
       - name: Upload x86_64-unknown-linux-gnu artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -56,7 +56,7 @@ jobs:
       - name: Build Artifacts
         run: |
           cd crypto-ffi
-          cargo make jvm
+          cargo make jvm-darwin
       - name: Upload x86_64-apple-darwin artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -80,6 +80,12 @@ jobs:
         with:
           java-version: "11"
           distribution: "adopt"
+      - name: Setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Build Artifacts
+        run: |
+          cd crypto-ffi
+          cargo make ffi-kotlin
       - name: Gradle Setup
         uses: gradle/gradle-build-action@v2
       - name: Validate Gradle wrapper
