@@ -51,7 +51,7 @@ anyhow = "1.0"
 tokio = { version = "1.5", features = ["macros"], default_features = false }
 lazy_static = "1.4"
 portpicker = "0.1"
-pem = "2.0"
+pem = "3.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 rusty-acme = { version = "0.4.5", path = "../acme" }
