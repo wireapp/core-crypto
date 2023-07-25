@@ -7,11 +7,21 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.2] - 2023-07-25
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.2" unreleased=true}}
+</details>
+
+* Added support for x509 certificate roots and policies in MLS GroupContext through a TrustAnchor GroupContextExtension #346
+* Fixed a CI issue that prevented Swift and JVM package publication
+
 ## [1.0.0-rc.1] - 2023-07-20
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.1" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.1"}}
 </details>
 
 * **[BREAKING]** With this release, CoreCrypto is now [RFC9420](https://www.rfc-editor.org/rfc/rfc9420.txt) compliant.

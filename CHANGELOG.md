@@ -7,6 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.2] - 2023-07-25
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Features
+
+- Include certificate roots and certificate policy in GroupContext - WPB-1188
+
+</details>
+
+* Added support for x509 certificate roots and policies in MLS GroupContext through a TrustAnchor GroupContextExtension #346
+* Fixed a CI issue that prevented Swift and JVM package publication
+
 ## [1.0.0-rc.1] - 2023-07-20
 
 <details>
@@ -33,6 +47,7 @@ Platform support legends:
 
 ### Miscellaneous Tasks
 
+- Release v1.0.0-rc.1
 - Build swift bindings with xcode 14.3.1 ([#342](https://github.com/wireapp/core-crypto/issues/342))
 - Update HPQ hpke to bump dalek
 - Stop shipping kotlin UniFFI bindings [WPB-1180]
