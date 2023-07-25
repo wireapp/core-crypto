@@ -45,7 +45,7 @@ zeroize = "1.5"
 wire-e2e-identity = { version = "0.4", default-features = false }
 indexmap = "2"
 x509-cert = "0.2"
-pem = "2.0"
+pem = "3.0"
 oid-registry = "0.6"
 
 [dependencies.proteus-wasm]
