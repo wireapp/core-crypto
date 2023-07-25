@@ -2337,6 +2337,7 @@ impl CoreCrypto {
     /// see [core_crypto::mls::MlsCentral::e2ei_new_activation_enrollment]
     pub fn e2ei_new_activation_enrollment(
         &self,
+        client_id: String,
         display_name: String,
         handle: String,
         expiry_days: u32,
@@ -2348,7 +2349,13 @@ impl CoreCrypto {
             async move {
                 let this = this.read().await;
                 let enrollment = this
-                    .e2ei_new_activation_enrollment(display_name, handle, expiry_days, ciphersuite.into())
+                    .e2ei_new_activation_enrollment(
+                        client_id.into_bytes().into(),
+                        display_name,
+                        handle,
+                        expiry_days,
+                        ciphersuite.into(),
+                    )
                     .map(WireE2eIdentity)
                     .map_err(|_| CryptoError::ImplementationError)
                     .map_err(CoreCryptoError::from)?;
@@ -2364,6 +2371,7 @@ impl CoreCrypto {
     /// see [core_crypto::mls::MlsCentral::e2ei_new_rotate_enrollment]
     pub fn e2ei_new_rotate_enrollment(
         &self,
+        client_id: String,
         display_name: Option<String>,
         handle: Option<String>,
         expiry_days: u32,
@@ -2375,7 +2383,13 @@ impl CoreCrypto {
             async move {
                 let this = this.read().await;
                 let enrollment = this
-                    .e2ei_new_rotate_enrollment(display_name, handle, expiry_days, ciphersuite.into())
+                    .e2ei_new_rotate_enrollment(
+                        client_id.into_bytes().into(),
+                        display_name,
+                        handle,
+                        expiry_days,
+                        ciphersuite.into(),
+                    )
                     .map(WireE2eIdentity)
                     .map_err(|_| CryptoError::ImplementationError)
                     .map_err(CoreCryptoError::from)?;

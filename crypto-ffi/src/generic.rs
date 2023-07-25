@@ -934,6 +934,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_new_activation_enrollment]
     pub async fn e2ei_new_activation_enrollment(
         &self,
+        client_id: String,
         display_name: String,
         handle: String,
         expiry_days: u32,
@@ -942,7 +943,13 @@ impl CoreCrypto {
         self.central
             .lock()
             .await
-            .e2ei_new_activation_enrollment(display_name, handle, expiry_days, ciphersuite.into())
+            .e2ei_new_activation_enrollment(
+                client_id.into_bytes().into(),
+                display_name,
+                handle,
+                expiry_days,
+                ciphersuite.into(),
+            )
             .map(async_lock::Mutex::new)
             .map(std::sync::Arc::new)
             .map(WireE2eIdentity)
@@ -953,6 +960,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_new_rotate_enrollment]
     pub async fn e2ei_new_rotate_enrollment(
         &self,
+        client_id: String,
         display_name: Option<String>,
         handle: Option<String>,
         expiry_days: u32,
@@ -961,7 +969,13 @@ impl CoreCrypto {
         self.central
             .lock()
             .await
-            .e2ei_new_rotate_enrollment(display_name, handle, expiry_days, ciphersuite.into())
+            .e2ei_new_rotate_enrollment(
+                client_id.into_bytes().into(),
+                display_name,
+                handle,
+                expiry_days,
+                ciphersuite.into(),
+            )
             .map(async_lock::Mutex::new)
             .map(std::sync::Arc::new)
             .map(WireE2eIdentity)
