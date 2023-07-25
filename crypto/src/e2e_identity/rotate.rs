@@ -1,3 +1,4 @@
+use crate::prelude::ClientId;
 use crate::{
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
     prelude::{
@@ -53,13 +54,13 @@ impl MlsCentral {
     /// the rotation.
     pub fn e2ei_new_activation_enrollment(
         &self,
+        client_id: ClientId,
         display_name: String,
         handle: String,
         expiry_days: u32,
         ciphersuite: MlsCiphersuite,
     ) -> E2eIdentityResult<E2eiEnrollment> {
         let client = self.mls_client()?;
-        let client_id = client.id();
 
         // look for existing credential of type basic. If there isn't, then this method has been misused
         client
@@ -67,7 +68,7 @@ impl MlsCentral {
             .ok_or(E2eIdentityError::ImplementationError)?;
 
         E2eiEnrollment::try_new(
-            client_id.clone(),
+            client_id,
             display_name,
             handle,
             expiry_days,
@@ -83,13 +84,13 @@ impl MlsCentral {
     /// if you need to. Once the enrollment is finished, use the instance in [MlsCentral::e2ei_rotate_all] to do the rotation.
     pub fn e2ei_new_rotate_enrollment(
         &self,
+        client_id: ClientId,
         display_name: Option<String>,
         handle: Option<String>,
         expiry_days: u32,
         ciphersuite: MlsCiphersuite,
     ) -> E2eIdentityResult<E2eiEnrollment> {
         let client = self.mls_client()?;
-        let client_id = client.id();
 
         // look for existing credential of type x509. If there isn't, then this method has been misused
         let cb = client
@@ -104,7 +105,7 @@ impl MlsCentral {
         let handle = handle.unwrap_or(existing_identity.handle);
 
         E2eiEnrollment::try_new(
-            client_id.clone(),
+            client_id,
             display_name,
             handle,
             expiry_days,
@@ -293,12 +294,14 @@ pub mod tests {
 
                         let init = |cc: &MlsCentral| match case.credential_type {
                             MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
+                                cc.get_client_id(),
                                 new_display_name.to_string(),
                                 new_handle.to_string(),
                                 E2EI_EXPIRY,
                                 case.ciphersuite(),
                             ),
                             MlsCredentialType::X509 => cc.e2ei_new_rotate_enrollment(
+                                cc.get_client_id(),
                                 Some(new_display_name.to_string()),
                                 Some(new_handle.to_string()),
                                 E2EI_EXPIRY,

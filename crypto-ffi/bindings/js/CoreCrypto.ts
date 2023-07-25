@@ -1647,35 +1647,35 @@ export class CoreCrypto {
 
     /**
      * Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
-     * As a consequence, this method does not support changing the ClientId which should remain the same as the Basic one.
      * Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
      *
+     * @param clientId client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
      * @param displayName human readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
      * @returns The new {@link WireE2eIdentity} object
      */
-    async e2eiNewActivationEnrollment(displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<WireE2eIdentity> {
-        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_activation_enrollment(displayName, handle, expiryDays, ciphersuite));
+    async e2eiNewActivationEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<WireE2eIdentity> {
+        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_activation_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
         return new WireE2eIdentity(e2ei);
     }
 
     /**
      * Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)
      * having to change/rotate their credential, either because the former one is expired or it
-     * has been revoked. As a consequence, this method does not support changing neither ClientId which
-     * should remain the same as the previous one. It lets you change the DisplayName or the handle
+     * has been revoked. It lets you change the DisplayName or the handle
      * if you need to. Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
      *
+     * @param clientId client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
      * @param expiryDays generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
      * @param displayName human readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle user handle e.g. `alice.smith.qa@example.com`
      * @returns The new {@link WireE2eIdentity} object
      */
-    async e2eiNewRotateEnrollment(expiryDays: number, ciphersuite: Ciphersuite, displayName?: string, handle?: string,): Promise<WireE2eIdentity> {
-        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_rotate_enrollment(displayName, handle, expiryDays, ciphersuite));
+    async e2eiNewRotateEnrollment(clientId: string, expiryDays: number, ciphersuite: Ciphersuite, displayName?: string, handle?: string,): Promise<WireE2eIdentity> {
+        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_rotate_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
         return new WireE2eIdentity(e2ei);
     }
 

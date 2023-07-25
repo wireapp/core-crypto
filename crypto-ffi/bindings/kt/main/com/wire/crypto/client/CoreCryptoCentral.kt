@@ -39,6 +39,26 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
         return E2EIClientImpl(cc.e2eiNewEnrollment(clientId, displayName, handle, expiryDays, ciphersuite))
     }
 
+    suspend fun e2eiNewActivationEnrollment(
+        clientId: String,
+        displayName: String,
+        handle: String,
+        expiryDays: UInt,
+        ciphersuite: Ciphersuite,
+    ): E2EIClient {
+        return E2EIClientImpl(cc.e2eiNewActivationEnrollment(clientId, displayName, handle, expiryDays, ciphersuite))
+    }
+
+    suspend fun e2eiNewRotateEnrollment(
+        clientId: String,
+        expiryDays: UInt,
+        ciphersuite: Ciphersuite,
+        displayName: String? = null,
+        handle: String? = null,
+    ): E2EIClient {
+        return E2EIClientImpl(cc.e2eiNewRotateEnrollment(clientId, displayName, handle, expiryDays, ciphersuite))
+    }
+
     suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: String): MLSClient {
         cc.e2eiMlsInitOnly(enrollment.delegate, certificateChain)
         return MLSClientImpl(cc)

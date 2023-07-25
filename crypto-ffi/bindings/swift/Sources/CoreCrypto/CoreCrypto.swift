@@ -1044,30 +1044,30 @@ public class CoreCryptoWrapper {
     }
 
     /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
-    /// As a consequence, this method does not support changing the ClientId which should remain the same as the Basic one.
     /// Once the enrollment is finished, use the instance in ``CoreCrypto/e2eiRotateAll`` to do the rotation.
     ///
+    /// - parameter clientId: client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
     /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
     /// - parameter expiryDays: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material.
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func e2eiNewActivationEnrollment(displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16) async throws -> CoreCryptoSwift.WireE2eIdentity {
-        return try await self.coreCrypto.e2eiNewActivationEnrollment(displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
+    public func e2eiNewActivationEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16) async throws -> CoreCryptoSwift.WireE2eIdentity {
+        return try await self.coreCrypto.e2eiNewActivationEnrollment(clientId: clientId, displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
     }
 
     /// Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)having to change/rotate
-    /// their credential, either because the former one is expired or it has been revoked. As a consequence, this method
-    /// does not support changing neither ClientId which should remain the same as the previous one. It lets you change
+    /// their credential, either because the former one is expired or it has been revoked. It lets you change
     /// the DisplayName or the handle if you need to. Once the enrollment is finished, use the instance in ``CoreCrypto/e2eiRotateAll`` to do the rotation.
     ///
+    /// - parameter clientId: client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
     /// - parameter expiryDays: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material.
     /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func e2eiNewRotateEnrollment(expiryDays: UInt32, ciphersuite: UInt16, displayName: String? = nil, handle: String? = nil) async throws -> CoreCryptoSwift.WireE2eIdentity {
-        return try await self.coreCrypto.e2eiNewRotateEnrollment(expiryDays: expiryDays, ciphersuite: ciphersuite, displayName: displayName, handle: handle)
+    public func e2eiNewRotateEnrollment(clientId: String, expiryDays: UInt32, ciphersuite: UInt16, displayName: String? = nil, handle: String? = nil) async throws -> CoreCryptoSwift.WireE2eIdentity {
+        return try await self.coreCrypto.e2eiNewRotateEnrollment(clientId: clientId, expiryDays: expiryDays, ciphersuite: ciphersuite, displayName: displayName, handle: handle)
     }
 
     /// Use this method to initialize end-to-end identity when a client signs up and the grace period is already expired ; that means he cannot initialize with a Basic credential
