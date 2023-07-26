@@ -125,7 +125,7 @@ interface MLSClient {
 
     suspend fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
 
-    suspend fun e2eiIsDegraded(groupId: MLSGroupId): Boolean
+    suspend fun e2eiConversationState(groupId: MLSGroupId): E2eiConversationState
 
     suspend fun e2eiIsEnabled(ciphersuite: Ciphersuite): Boolean
 }
@@ -277,8 +277,8 @@ class MLSClientImpl(
         return cc.exportSecretKey(groupId.toUByteList(), keyLength).toByteArray()
     }
 
-    override suspend fun e2eiIsDegraded(groupId: MLSGroupId): Boolean {
-        return cc.e2eiIsDegraded(groupId.toUByteList())
+    override suspend fun e2eiConversationState(groupId: MLSGroupId): E2eiConversationState {
+        return cc.e2eiConversationState(groupId.toUByteList())
     }
 
     override suspend fun e2eiIsEnabled(ciphersuite: Ciphersuite): Boolean {

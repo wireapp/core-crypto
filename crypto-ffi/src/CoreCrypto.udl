@@ -214,6 +214,12 @@ enum E2eIdentityError {
     "LockPoisonError",
 };
 
+enum E2eiConversationState {
+    "Verified",
+    "Degraded",
+    "NotEnabled",
+};
+
 callback interface CoreCryptoCallbacks {
     boolean authorize([ByRef] bytes conversation_id, [ByRef] ClientId client_id);
     boolean user_authorize([ByRef] bytes conversation_id, [ByRef] ClientId external_client_id, [ByRef] sequence<ClientId> existing_clients);

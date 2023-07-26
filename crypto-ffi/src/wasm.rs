@@ -2468,19 +2468,19 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<bool>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::e2ei_is_degraded]
-    pub fn e2ei_is_degraded(&self, conversation_id: Box<[u8]>) -> Promise {
+    /// see [core_crypto::mls::MlsCentral::e2ei_conversation_state]
+    pub fn e2ei_conversation_state(&self, conversation_id: Box<[u8]>) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                WasmCryptoResult::Ok(
-                    this.write()
-                        .await
-                        .e2ei_is_degraded(&conversation_id.into())
-                        .await
-                        .map_err(CoreCryptoError::from)?
-                        .into(),
-                )
+                let state: E2eiConversationState = this
+                    .write()
+                    .await
+                    .e2ei_conversation_state(&conversation_id.into())
+                    .await
+                    .map_err(CoreCryptoError::from)?
+                    .into();
+                WasmCryptoResult::Ok((state as u8).into())
             }
             .err_into(),
         )
@@ -2847,6 +2847,28 @@ impl From<AcmeChallenge> for core_crypto::prelude::E2eiAcmeChallenge {
             delegate: chall.delegate,
             url: chall.url,
             target: chall.target,
+        }
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[repr(u8)]
+/// see [core_crypto::prelude::E2eiConversationState]
+pub enum E2eiConversationState {
+    Verified = 1,
+    /// Some clients are either still Basic or their certificate is expired
+    Degraded = 2,
+    /// All clients are still Basic. If all client have expired certificates, [E2eiConversationState::Degraded] is returned.
+    NotEnabled = 3,
+}
+
+impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState {
+    fn from(state: core_crypto::prelude::E2eiConversationState) -> Self {
+        match state {
+            core_crypto::prelude::E2eiConversationState::Verified => Self::Verified,
+            core_crypto::prelude::E2eiConversationState::Degraded => Self::Degraded,
+            core_crypto::prelude::E2eiConversationState::NotEnabled => Self::NotEnabled,
         }
     }
 }
