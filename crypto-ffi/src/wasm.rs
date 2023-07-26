@@ -2424,9 +2424,11 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let mut this = this.write().await;
-                this.e2ei_rotate_all(enrollment.0, certificate_chain, new_key_packages_count as usize)
-                    .await?;
-                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+                let rotate_bundle: RotateBundle = this
+                    .e2ei_rotate_all(enrollment.0, certificate_chain, new_key_packages_count as usize)
+                    .await?
+                    .try_into()?;
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&rotate_bundle)?)
             }
             .err_into(),
         )
