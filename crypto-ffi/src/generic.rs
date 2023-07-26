@@ -25,8 +25,8 @@ use std::collections::HashMap;
 use tls_codec::{Deserialize, Serialize};
 
 pub use core_crypto::prelude::{
-    CiphersuiteName, ConversationId, CryptoError, E2eIdentityError, E2eIdentityResult, MemberId, MlsCredentialType,
-    MlsGroupInfoEncryptionType, MlsRatchetTreeType, MlsWirePolicy,
+    CiphersuiteName, ConversationId, CryptoError, E2eIdentityError, E2eIdentityResult, E2eiConversationState, MemberId,
+    MlsCredentialType, MlsGroupInfoEncryptionType, MlsRatchetTreeType, MlsWirePolicy,
 };
 
 mod uniffi_support;
@@ -1068,10 +1068,13 @@ impl CoreCrypto {
             .map_err(|_| CryptoError::ImplementationError)
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_is_degraded]
-    pub async fn e2ei_is_degraded(&self, conversation_id: Vec<u8>) -> CryptoResult<bool> {
-        let is_degraded = self.central.lock().await.e2ei_is_degraded(&conversation_id).await?;
-        Ok(is_degraded)
+    /// See [core_crypto::mls::MlsCentral::e2ei_conversation_state]
+    pub async fn e2ei_conversation_state(&self, conversation_id: Vec<u8>) -> CryptoResult<E2eiConversationState> {
+        self.central
+            .lock()
+            .await
+            .e2ei_conversation_state(&conversation_id)
+            .await
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_is_enabled]

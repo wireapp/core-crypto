@@ -382,7 +382,7 @@ pub mod tests {
     }
 
     /// In order to be WASM-compatible
-    fn now() -> wire_e2e_identity::prelude::OffsetDateTime {
+    pub fn now() -> wire_e2e_identity::prelude::OffsetDateTime {
         let now = fluvio_wasm_timer::SystemTime::now();
         let now_since_epoch = now.duration_since(fluvio_wasm_timer::UNIX_EPOCH).unwrap().as_secs() as i64;
         wire_e2e_identity::prelude::OffsetDateTime::from_unix_timestamp(now_since_epoch).unwrap()

@@ -11,12 +11,12 @@ use crate::{
 };
 
 mod crypto;
-pub(crate) mod degraded;
 pub mod enabled;
 pub mod error;
 pub(crate) mod identity;
 pub(crate) mod rotate;
 pub(crate) mod stash;
+pub(crate) mod state;
 pub mod types;
 
 type Json = Vec<u8>;

@@ -1,7 +1,10 @@
 use crate::prelude::{CryptoError, CryptoResult, MlsCredentialType, WireIdentity};
 use openmls::prelude::{Credential, CredentialType};
+use x509_cert::der::Decode;
+use x509_cert::Certificate;
 
 pub(crate) trait CredentialExt {
+    fn parse_leaf_cert(&self) -> CryptoResult<Option<Certificate>>;
     fn get_type(&self) -> CryptoResult<MlsCredentialType>;
     fn extract_identity(&self) -> CryptoResult<Option<WireIdentity>>;
     fn extract_public_key(&self) -> CryptoResult<Option<Vec<u8>>>;
@@ -9,6 +12,17 @@ pub(crate) trait CredentialExt {
 }
 
 impl CredentialExt for Credential {
+    fn parse_leaf_cert(&self) -> CryptoResult<Option<Certificate>> {
+        match self.mls_credential() {
+            openmls::prelude::MlsCredentialType::X509(openmls::prelude::Certificate { cert_data, .. }) => {
+                let leaf = cert_data.get(0).ok_or(CryptoError::InvalidIdentity)?;
+                let leaf = Certificate::from_der(leaf.as_slice())?;
+                Ok(Some(leaf))
+            }
+            _ => Ok(None),
+        }
+    }
+
     fn get_type(&self) -> CryptoResult<MlsCredentialType> {
         match self.credential_type() {
             CredentialType::Basic => Ok(MlsCredentialType::Basic),

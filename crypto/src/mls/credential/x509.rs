@@ -49,7 +49,7 @@ impl CertificateBundle {
 #[cfg(test)]
 impl CertificateBundle {
     /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
-    pub fn rand(client_id: &ClientId, sc: openmls::prelude::SignatureScheme) -> CertificateBundle {
+    pub fn rand(client_id: &ClientId, sc: openmls::prelude::SignatureScheme) -> Self {
         // here in our tests client_id is generally just "alice" or "bob"
         // so we will use it to augment handle & display_name
         // and not a real client_id, instead we'll generate a random one
@@ -65,7 +65,7 @@ impl CertificateBundle {
         display_name: &str,
         client_id: Option<&ClientId>,
         cert_kp: Option<Vec<u8>>,
-    ) -> CertificateBundle {
+    ) -> Self {
         // here in our tests client_id is generally just "alice" or "bob"
         // so we will use it to augment handle & display_name
         // and not a real client_id, instead we'll generate a random one
@@ -76,7 +76,7 @@ impl CertificateBundle {
             .unwrap_or_else(|| {
                 wire_e2e_identity::prelude::WireIdentityBuilder::new_rand_client(Some(domain.to_string()))
             });
-        let (certificate_chain, sign_key) = wire_e2e_identity::prelude::WireIdentityBuilder {
+        let builder = wire_e2e_identity::prelude::WireIdentityBuilder {
             handle: handle.to_string(),
             display_name: display_name.to_string(),
             client_id,
@@ -88,8 +88,15 @@ impl CertificateBundle {
                 },
             )),
             ..Default::default()
-        }
-        .build_x509_der();
+        };
+        Self::new_from_builder(sc, builder)
+    }
+
+    pub fn new_from_builder(
+        sc: openmls::prelude::SignatureScheme,
+        builder: wire_e2e_identity::prelude::WireIdentityBuilder,
+    ) -> Self {
+        let (certificate_chain, sign_key) = builder.build_x509_der();
         Self {
             certificate_chain,
             private_key: CertificatePrivateKey {

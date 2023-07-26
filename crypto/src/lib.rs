@@ -69,6 +69,7 @@ pub mod prelude {
             error::{E2eIdentityError, E2eIdentityResult},
             identity::WireIdentity,
             rotate::MlsRotateBundle,
+            state::E2eiConversationState,
             types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
             E2eiEnrollment,
         },
