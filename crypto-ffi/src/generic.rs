@@ -1073,6 +1073,12 @@ impl CoreCrypto {
         let is_degraded = self.central.lock().await.e2ei_is_degraded(&conversation_id).await?;
         Ok(is_degraded)
     }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_is_enabled]
+    pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CryptoResult<bool> {
+        let sc = MlsCiphersuite::from(ciphersuite).signature_algorithm();
+        self.central.lock().await.e2ei_is_enabled(sc)
+    }
 }
 
 #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]

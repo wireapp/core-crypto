@@ -1114,6 +1114,14 @@ public class CoreCryptoWrapper {
         return try await self.coreCrypto.e2eiIsDegraded(conversationId: conversationId)
     }
 
+    /// Returns true when end-to-end-identity is enabled for the given Ciphersuite
+    ///
+    /// - parameter ciphersuite: of the credential to check
+    /// - returns: true end-to-end identity is enabled for the given ciphersuite
+    public func e2eiIsEnabled(ciphersuite: UInt16) async throws -> Bool {
+        return try await self.coreCrypto.e2eiIsEnabled(ciphersuite: ciphersuite)
+    }
+
     /// - returns: The CoreCrypto version
     public static func version() -> String {
         return CoreCryptoSwift.version()
