@@ -1736,6 +1736,16 @@ export class CoreCrypto {
     }
 
     /**
+     * Returns true when end-to-end-identity is enabled for the given Ciphersuite
+     *
+     * @param ciphersuite of the credential to check
+     * @returns true end-to-end identity is enabled for the given ciphersuite
+     */
+    async e2eiIsEnabled(ciphersuite: Ciphersuite): Promise<boolean> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.e2ei_is_enabled(ciphersuite));
+    }
+
+    /**
      * Returns the current version of {@link CoreCrypto}
      *
      * @returns The `core-crypto-ffi` version as defined in its `Cargo.toml` file

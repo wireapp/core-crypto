@@ -2485,6 +2485,26 @@ impl CoreCrypto {
             .err_into(),
         )
     }
+
+    /// Returns [`WasmCryptoResult<bool>`]
+    ///
+    /// see [core_crypto::mls::MlsCentral::e2ei_is_enabled]
+    pub fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> Promise {
+        let sc = MlsCiphersuite::from(ciphersuite).signature_algorithm();
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                let is_enabled = this
+                    .write()
+                    .await
+                    .e2ei_is_enabled(sc)
+                    .map_err(CoreCryptoError::from)?
+                    .into();
+                WasmCryptoResult::Ok(is_enabled)
+            }
+            .err_into(),
+        )
+    }
 }
 
 #[derive(Debug)]
