@@ -24,6 +24,8 @@ pub enum WasmBrowserRunError {
     WebDriverError(#[from] WebdriverError),
     #[error(transparent)]
     ShellError(#[from] xshell::Error),
+    #[error(transparent)]
+    UrlParseError(#[from] url::ParseError),
     #[error("The WebDriver context hasn't been initialized. Please call WebDriverContext::webdriver_init() first!")]
     WebDriverContextNotInitialized,
     #[error(
@@ -85,6 +87,8 @@ pub enum WebdriverError {
     NewSessionError(#[from] fantoccini::error::NewSessionError),
     #[error("The session handshake didn't contain a `webSocketUrl` meaning that this WebDriver implementation doesn't support WebDriver BiDi protocol.")]
     NoWebDriverBidiSupport,
+    #[error("The download URL for the WebDriver cannot be parsed")]
+    NoDownloadUrlFound,
     #[error(transparent)]
     WebsocketError(#[from] tokio_tungstenite::tungstenite::Error),
 }

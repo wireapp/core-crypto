@@ -16,6 +16,106 @@
 
 use crate::error::*;
 
+const CHROMEDRIVER_RELEASE_ENDPOINT: &str =
+    "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json";
+
+#[derive(Debug, serde::Deserialize, PartialEq, Eq, Hash)]
+#[repr(u8)]
+enum ChromeDriverReleaseDetailsChannel {
+    Stable,
+    Beta,
+    Dev,
+    Canary,
+}
+
+#[derive(Debug, serde::Deserialize, PartialEq, Eq)]
+#[repr(u8)]
+enum ChromeDriverReleaseDetailsChannelInfoPlatform {
+    #[serde(rename = "linux64")]
+    LinuxX64,
+    #[serde(rename = "mac-arm64")]
+    MacArm64,
+    #[serde(rename = "mac-x64")]
+    MacX64,
+    #[serde(rename = "win32")]
+    Win32,
+    #[serde(rename = "win64")]
+    Win64,
+}
+
+impl ChromeDriverReleaseDetailsChannelInfoPlatform {
+    pub fn detect() -> WasmBrowserRunResult<Self> {
+        let is_aarch64 = std::env::consts::ARCH == "aarch64";
+        let is_32_bits = cfg!(target_pointer_width = "32");
+        let os = std::env::consts::OS;
+        Ok(match os {
+            "macos" => {
+                if is_aarch64 {
+                    Self::MacArm64
+                } else {
+                    Self::MacX64
+                }
+            }
+            "linux" => {
+                if is_32_bits || is_aarch64 {
+                    return Err(WasmBrowserRunError::UnsupportedPlatform);
+                }
+                Self::LinuxX64
+            }
+            "windows" => {
+                if is_32_bits {
+                    Self::Win32
+                } else {
+                    Self::Win64
+                }
+            }
+            _ => return Err(WasmBrowserRunError::UnsupportedPlatform),
+        })
+    }
+
+    pub fn to_filename(&self) -> String {
+        format!(
+            "chromedriver-{}",
+            match self {
+                Self::LinuxX64 => "linux64",
+                Self::MacArm64 => "mac-arm64",
+                Self::MacX64 => "mac-x64",
+                Self::Win32 => "win32",
+                Self::Win64 => "win64",
+            }
+        )
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct ChromeDriverReleaseDetailsChannelInfoDownload {
+    platform: ChromeDriverReleaseDetailsChannelInfoPlatform,
+    url: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[allow(dead_code)]
+struct ChromeDriverReleaseDetailsChannelInfoDownloads {
+    chrome: Vec<ChromeDriverReleaseDetailsChannelInfoDownload>,
+    chromedriver: Vec<ChromeDriverReleaseDetailsChannelInfoDownload>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[allow(dead_code)]
+struct ChromeDriverReleaseDetailsChannelInfo {
+    channel: ChromeDriverReleaseDetailsChannel,
+    version: String,
+    revision: String,
+    downloads: ChromeDriverReleaseDetailsChannelInfoDownloads,
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[allow(dead_code)]
+struct ChromeDriverReleaseDetails {
+    timestamp: chrono::DateTime<chrono::Utc>,
+    channels: std::collections::HashMap<ChromeDriverReleaseDetailsChannel, ChromeDriverReleaseDetailsChannelInfo>,
+}
+
 #[derive(Debug, serde::Deserialize)]
 struct GithubResponseLatestReleaseAsset {
     name: String,
@@ -38,11 +138,7 @@ pub enum WebdriverKind {
 }
 
 impl WebdriverKind {
-    const CHROMIUM_MAJOR_VERSION: &str = "114";
-    const CHROME_RELEASE_URL: &str = const_format::concatcp!(
-        "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_",
-        WebdriverKind::CHROMIUM_MAJOR_VERSION
-    );
+    const CHROMIUM_MAJOR_VERSION: &str = "115";
 
     const EDGE_RELEASE_URL: &str = const_format::concatcp!(
         "https://msedgedriver.azureedge.net/LATEST_RELEASE_",
@@ -66,16 +162,6 @@ impl WebdriverKind {
         let os = std::env::consts::OS;
 
         Ok(match self {
-            WebdriverKind::Chrome => {
-                let (os_filename, ext) = match os {
-                    "linux" => ("linux", "64"),
-                    "macos" => ("mac", if is_aarch64 { "_arm64" } else { "64" }),
-                    "windows" => ("win", "32"),
-                    _ => return Err(WasmBrowserRunError::UnsupportedPlatform),
-                };
-
-                format!("chromedriver_{os_filename}{ext}.zip")
-            }
             WebdriverKind::Gecko => {
                 let (os_filename, ext) = match os {
                     "macos" if !is_32_bits && is_aarch64 => ("macos-aarch", "64"),
@@ -102,14 +188,20 @@ impl WebdriverKind {
 
                 format!("edgedriver_{os_filename}{ext}.zip")
             }
-            WebdriverKind::Safari => "".to_string(),
+            WebdriverKind::Chrome | WebdriverKind::Safari => "".to_string(),
         })
     }
 
     async fn download_url(&self) -> WasmBrowserRunResult<(String, String)> {
         let mut geckodriver_response = None;
+        let mut chromedriver_response = None;
         let latest_version = match self {
-            WebdriverKind::Chrome => reqwest::get(Self::CHROME_RELEASE_URL).await?.text().await?,
+            WebdriverKind::Chrome => {
+                let cd_response: ChromeDriverReleaseDetails =
+                    reqwest::get(CHROMEDRIVER_RELEASE_ENDPOINT).await?.json().await?;
+                chromedriver_response = Some(cd_response);
+                "".to_string()
+            }
             WebdriverKind::Gecko => {
                 let gh_response: GithubResponseLatestRelease =
                     reqwest::get(Self::GECKO_RELEASE_URL).await?.json().await?;
@@ -121,26 +213,40 @@ impl WebdriverKind {
             WebdriverKind::Safari => "".to_string(),
         };
 
-        let download_filename = self.as_download_filename(&latest_version)?;
+        let mut download_filename = self.as_download_filename(&latest_version)?;
 
         let download_url = match self {
             WebdriverKind::Chrome => {
-                format!("https://chromedriver.storage.googleapis.com/{latest_version}/{download_filename}")
-            }
-            WebdriverKind::Gecko => {
-                let gh_response = geckodriver_response.take().unwrap();
-
-                if let Some(url) = gh_response
-                    .assets
+                let platform = ChromeDriverReleaseDetailsChannelInfoPlatform::detect()?;
+                let channel = chromedriver_response
+                    .take()
+                    .unwrap()
+                    .channels
+                    .remove(&ChromeDriverReleaseDetailsChannel::Stable)
+                    .unwrap();
+                let download_url = channel
+                    .downloads
+                    .chromedriver
                     .into_iter()
-                    .find(|asset| asset.name == download_filename)
-                    .map(|asset| asset.url)
-                {
-                    url
-                } else {
-                    return Err(WasmBrowserRunError::UnsupportedPlatform);
-                }
+                    .find_map(|rd| (rd.platform == platform).then_some(rd.url))
+                    .ok_or_else(|| WasmBrowserRunError::UnsupportedPlatform)?;
+
+                let url_parsed = url::Url::parse(&download_url)?;
+                download_filename = url_parsed
+                    .path_segments()
+                    .and_then(|iter| iter.last())
+                    .ok_or_else(|| WebdriverError::NoDownloadUrlFound)?
+                    .into();
+
+                download_url
             }
+            WebdriverKind::Gecko => geckodriver_response
+                .take()
+                .unwrap()
+                .assets
+                .into_iter()
+                .find_map(|asset| (asset.name == download_filename).then_some(asset.url))
+                .ok_or_else(|| WasmBrowserRunError::UnsupportedPlatform)?,
             WebdriverKind::Edge => {
                 format!("https://msedgedriver.azureedge.net/{latest_version}/{download_filename}")
             }
@@ -251,19 +357,36 @@ impl WebdriverKind {
         //     drop(file);
         // }
 
-        match tempfile_path.extension().unwrap().to_str().unwrap() {
-            "zip" => xshell::cmd!(sh, "unzip -o {tempfile_path} -d {wd_dir}")
-                .ignore_stdout()
-                .ignore_stderr()
-                .run()?,
-            "tar.gz" => xshell::cmd!(sh, "tar -xzf {tempfile_path} {wd_dir}")
-                .ignore_stdout()
-                .ignore_stderr()
-                .run()?,
+        let mut cleanup_folder = None;
+
+        let command = match tempfile_path.extension().unwrap().to_str().unwrap() {
+            "zip" => {
+                if matches!(self, WebdriverKind::Chrome) {
+                    let platform = ChromeDriverReleaseDetailsChannelInfoPlatform::detect()?;
+                    let subfolder = platform.to_filename();
+                    cleanup_folder = Some(subfolder.clone());
+                    xshell::cmd!(sh, "unzip -o {tempfile_path} ''{subfolder}/*'' -d {wd_dir}")
+                } else {
+                    xshell::cmd!(sh, "unzip -o {tempfile_path} -d {wd_dir}")
+                }
+            }
+            "tar.gz" => xshell::cmd!(sh, "tar -xzf {tempfile_path} {wd_dir}"),
             _ => unreachable!("Unlikely branch encountered. No handling of this kind of file."),
+        };
+
+        command.ignore_stdout().ignore_stderr().run()?;
+
+        if let Some(cleanup_folder) = cleanup_folder.take() {
+            let mut rmdir_target = wd_dir.to_path_buf();
+            rmdir_target.push(cleanup_folder);
+
+            let mut exe_path_target = rmdir_target.clone();
+            exe_path_target.push(exe_name);
+
+            tokio::fs::rename(exe_path_target, exe_path).await?;
+            tokio::fs::remove_dir_all(rmdir_target).await?;
         }
 
-        // tokio::fs::rename(tempfile_path, exe_path).await?;
         drop(tempfile_path);
 
         Ok(())
