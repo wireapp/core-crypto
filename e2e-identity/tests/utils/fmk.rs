@@ -358,6 +358,7 @@ impl<'a> E2eTest<'a> {
 
         self.display_step("DPoP challenge is valid");
         let mut resp = self.client.execute(req).await?;
+
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();
         resp.expect_status_ok()

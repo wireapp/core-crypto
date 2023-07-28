@@ -100,7 +100,7 @@ pub struct StepCaImage {
 
 impl StepCaImage {
     const NAME: &'static str = "quay.io/wire/smallstep-acme";
-    const TAG: &'static str = "0.0.42-test.85";
+    const TAG: &'static str = "0.0.42-test.89";
     const CA_NAME: &'static str = "wire";
     pub const ACME_PROVISIONER: &'static str = "wire";
     pub const PORT: u16 = 9000;
