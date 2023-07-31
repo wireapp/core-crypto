@@ -7,6 +7,29 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.5] - 2023-07-31
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+</details>
+
+* Fix WASM publication issues
+
+## [1.0.0-rc.4] - 2023-07-31
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.4
+- Patch visibility issue for enum 'E2eiConversationState' which was failing when building Typescript bindings
+
+</details>
+
+* Fix WASM publication issues
+
 ## [1.0.0-rc.3] - 2023-07-31
 
 <details>
