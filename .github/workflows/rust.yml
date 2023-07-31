@@ -137,13 +137,17 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - uses: browser-actions/setup-chrome@latest
+        id: setup-chrome
+        with:
+          chrome-version: stable
+      - run: |
+          echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
       - uses: Swatinem/rust-cache@v2
-      - name: Run tests (wasm w/ wasm-pack)
+      - name: Run tests (wasm)
         run: |
-          wasm-pack test --chrome --headless keystore --features proteus-keystore -- proteus
-          wasm-pack test --chrome --headless crypto --features proteus,cryptobox-migrate -- proteus
+          cargo test --features "proteus-keystore" --target wasm32-unknown-unknown -p core-crypto-keystore proteus
+          cargo test --features "proteus,cryptobox-migrate" --target wasm32-unknown-unknown -p core-crypto proteus
 
   e2e-interop-test:
     runs-on: ubuntu-latest
