@@ -14,6 +14,7 @@ use openmls::prelude::{KeyPackage, KeyPackageRef, MlsCredentialType as OpenMlsCr
 use openmls_traits::OpenMlsCryptoProvider;
 
 /// Result returned after rotating the Credential of the current client in all the local conversations
+#[derive(Debug, Clone)]
 pub struct MlsRotateBundle {
     /// An Update commit for each conversation
     pub commits: Vec<MlsCommitBundle>,
@@ -538,6 +539,109 @@ pub mod tests {
                     );
                 })
             })
+            .await
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn rotate_should_roundtrip(case: TestCase) {
+            let alice = "MGExNTA2MDNiMmQ5NDdhNmJmNGFjNGJlNTA2MDYxNmM:a661e79735dc890f@wire.com";
+            let bob = "NjY3NTVhNGYzMzE4NGFjMDgyOGQ5ZTZhOGM3NzYxNTI:ef6a91a91d3337a@wire.com";
+            run_test_with_client_ids(
+                case.clone(),
+                [alice, bob],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+
+                        // Alice's turn
+                        let (alice_new_handle, alice_new_display_name) = ("new_alice_wire", "New Alice Smith");
+
+                        let init_alice = |cc: &MlsCentral| match case.credential_type {
+                            MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
+                                cc.get_client_id(),
+                                alice_new_display_name.to_string(),
+                                alice_new_handle.to_string(),
+                                E2EI_EXPIRY,
+                                case.ciphersuite(),
+                            ),
+                            MlsCredentialType::X509 => cc.e2ei_new_rotate_enrollment(
+                                cc.get_client_id(),
+                                Some(alice_new_display_name.to_string()),
+                                Some(alice_new_handle.to_string()),
+                                E2EI_EXPIRY,
+                                case.ciphersuite(),
+                            ),
+                        };
+                        let (mut alice_central, enrollment, cert) =
+                            e2ei_enrollment(alice_central, None, init_alice, move |e, cc| {
+                                Box::pin(async move { (e, cc) })
+                            })
+                            .await
+                            .unwrap();
+
+                        let rotate_bundle = alice_central.e2ei_rotate_all(enrollment, cert, 10).await.unwrap();
+
+                        let commit = &rotate_bundle.commits.first().unwrap().commit;
+
+                        let decrypted = bob_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        alice_central.verify_sender_identity(&case, &decrypted);
+
+                        alice_central.commit_accepted(&id).await.unwrap();
+                        alice_central
+                            .verify_local_credential_rotated(&id, alice_new_handle, alice_new_display_name)
+                            .await;
+
+                        // Bob's turn
+                        let (bob_new_handle, bob_new_display_name) = ("new_bob_wire", "New Bob Smith");
+                        let init_bob = |cc: &MlsCentral| match case.credential_type {
+                            MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
+                                cc.get_client_id(),
+                                bob_new_display_name.to_string(),
+                                bob_new_handle.to_string(),
+                                E2EI_EXPIRY,
+                                case.ciphersuite(),
+                            ),
+                            MlsCredentialType::X509 => cc.e2ei_new_rotate_enrollment(
+                                cc.get_client_id(),
+                                Some(bob_new_display_name.to_string()),
+                                Some(bob_new_handle.to_string()),
+                                E2EI_EXPIRY,
+                                case.ciphersuite(),
+                            ),
+                        };
+                        let (mut bob_central, enrollment, cert) =
+                            e2ei_enrollment(bob_central, None, init_bob, move |e, cc| {
+                                Box::pin(async move { (e, cc) })
+                            })
+                            .await
+                            .unwrap();
+
+                        let rotate_bundle = bob_central.e2ei_rotate_all(enrollment, cert, 10).await.unwrap();
+
+                        let commit = &rotate_bundle.commits.first().unwrap().commit;
+
+                        let decrypted = alice_central
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        bob_central.verify_sender_identity(&case, &decrypted);
+
+                        bob_central.commit_accepted(&id).await.unwrap();
+                        bob_central
+                            .verify_local_credential_rotated(&id, bob_new_handle, bob_new_display_name)
+                            .await;
+                    })
+                },
+            )
             .await
         }
     }

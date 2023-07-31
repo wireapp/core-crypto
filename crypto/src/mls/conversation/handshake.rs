@@ -166,7 +166,7 @@ impl MlsConversationCreationMessage {
 }
 
 /// Returned when a commit is created
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MlsCommitBundle {
     /// A welcome message if there are pending Add proposals
     pub welcome: Option<MlsMessageOut>,
