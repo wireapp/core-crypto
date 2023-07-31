@@ -455,15 +455,14 @@ impl MlsCentral {
     pub fn verify_sender_identity(&self, case: &TestCase, decrypted: &MlsConversationDecryptMessage) {
         let mls_client = self.mls_client.as_ref().unwrap();
         let (sc, ct) = (case.signature_scheme(), case.credential_type);
-        let cb = mls_client.find_most_recent_credential_bundle(sc, ct).unwrap();
-        let sender_credential = cb.credential();
+        let sender_cb = mls_client.find_most_recent_credential_bundle(sc, ct).unwrap();
 
         if let openmls::prelude::MlsCredentialType::X509(openmls::prelude::Certificate {
             identity: dup_client_id,
             cert_data: cert_chain,
-        }) = &sender_credential.mls_credential()
+        }) = &sender_cb.credential().mls_credential()
         {
-            let leaf: Vec<u8> = cert_chain.get(0).map(|c| c.clone().into()).unwrap();
+            let leaf: Vec<u8> = cert_chain.first().unwrap().clone().into();
             let identity = leaf.as_slice().extract_identity().unwrap();
             let decr_identity = decrypted.identity.as_ref().unwrap();
             assert_eq!(decr_identity.client_id, identity.client_id);
