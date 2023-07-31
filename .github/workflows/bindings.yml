@@ -65,6 +65,9 @@ jobs:
 
   check-wasm:
     runs-on: ubuntu-latest
+    env:
+      # ensures we have same flags as when publishing
+      RUSTFLAGS: "-D warnings -W unreachable-pub"
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
