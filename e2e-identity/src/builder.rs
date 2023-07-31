@@ -89,7 +89,7 @@ impl WireIdentityBuilder {
         let domain = domain.unwrap_or_else(|| format!("{}.com", rand_str(6)));
         let client_id = ClientId::try_new(user_id, rand::random::<u64>(), &domain)
             .unwrap()
-            .to_raw();
+            .to_qualified();
         (client_id, domain)
     }
 

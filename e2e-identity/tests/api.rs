@@ -14,10 +14,10 @@ mod utils;
 fn e2e_api() {
     let prev_nonce = || utils::rand_base64_str(32);
     for (enrollment, backend_kp) in enrollments() {
-        let user_id = "OTcwOGYzNTk3NjNmNDk4Mzk0OTMxYjE0YTAwODdmZWE";
-        let client_id = "3238c2a01f3de75a";
+        let user_id = "T4Coy4vdRzianwfOgXpn6A";
+        let device_id = "a338e9ea9e87fec";
         let domain = "wire.org";
-        let qualified_client_id = format!("{user_id}:{client_id}@{domain}");
+        let qualified_client_id = format!("{user_id}:{device_id}@{domain}");
 
         let display_name = "Alice Smith".to_string();
         let qualified_handle = "alice_wire";
@@ -86,7 +86,7 @@ fn e2e_api() {
               "identifiers": [
                 {
                   "type": "wireapp-id",
-                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=OTcwOGYzNTk3NjNmNDk4Mzk0OTMxYjE0YTAwODdmZWE/3238c2a01f3de75a@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=T4Coy4vdRzianwfOgXpn6A/a338e9ea9e87fec@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
                 }
               ],
               "authorizations": [
@@ -128,12 +128,12 @@ fn e2e_api() {
                   "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
                   "status": "pending",
                   "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
-                  "target": "https://wire.com/clients/3238c2a01f3de75a/access-token"
+                  "target": "https://wire.com/clients/a338e9ea9e87fec/access-token"
                 }
               ],
               "identifier": {
                 "type": "wireapp-id",
-                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=OTcwOGYzNTk3NjNmNDk4Mzk0OTMxYjE0YTAwODdmZWE/3238c2a01f3de75a@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=T4Coy4vdRzianwfOgXpn6A/a338e9ea9e87fec@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
               }
             });
             let authz = enrollment.acme_new_authz_response(resp).unwrap();
@@ -231,7 +231,7 @@ fn e2e_api() {
               "identifiers": [
                 {
                   "type": "wireapp-id",
-                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=OTcwOGYzNTk3NjNmNDk4Mzk0OTMxYjE0YTAwODdmZWE/3238c2a01f3de75a@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=T4Coy4vdRzianwfOgXpn6A/a338e9ea9e87fec@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
                 }
               ],
               "authorizations": [
@@ -259,7 +259,7 @@ fn e2e_api() {
               "identifiers": [
                 {
                   "type": "wireapp-id",
-                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=OTcwOGYzNTk3NjNmNDk4Mzk0OTMxYjE0YTAwODdmZWE/3238c2a01f3de75a@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=T4Coy4vdRzianwfOgXpn6A/a338e9ea9e87fec@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
                 }
               ],
               "authorizations": [
@@ -280,30 +280,29 @@ fn e2e_api() {
                 .unwrap();
 
             let resp = r#"-----BEGIN CERTIFICATE-----
-MIICIjCCAcigAwIBAgIQfIQL73fDuFXiFa/H7aWcyzAKBggqhkjOPQQDAjAuMQ0w
-CwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3aXJlIEludGVybWVkaWF0ZSBDQTAeFw0y
-MzA1MjMxNTE2NDVaFw0yMzA1MjMxNjE2NDVaMCkxETAPBgNVBAoTCHdpcmUuY29t
-MRQwEgYDVQQDEwtBbGljZSBTbWl0aDAqMAUGAytlcAMhAM+x/mumunUoxPgFwCU7
-BjF0CvMz2w6f+LYBnocnMavao4H7MIH4MA4GA1UdDwEB/wQEAwIHgDATBgNVHSUE
-DDAKBggrBgEFBQcDAjAdBgNVHQ4EFgQU4AWR1uY0FHNxkHlAjLv6B3wTLl0wHwYD
-VR0jBBgwFoAUHdrTUbdzTf1nboZujI3ZoQGdB7EwcgYDVR0RBGswaYYVaW06d2ly
-ZWFwcD1hbGljZV93aXJlhlBpbTp3aXJlYXBwPU9UY3dPR1l6TlRrM05qTm1ORGs0
-TXprME9UTXhZakUwWVRBd09EZG1aV0UvMzIzOGMyYTAxZjNkZTc1YUB3aXJlLmNv
-bTAdBgwrBgEEAYKkZMYoQAEEDTALAgEGBAR3aXJlBAAwCgYIKoZIzj0EAwIDSAAw
-RQIgB/4pxnrKgCkehd9toCiLRHanEyscBbhufeUELT5urCYCIQC9D1LWQDnXfmp1
-6AxVTHOAg61xCRrLAmqWUo/Lx0ANMA==
+MIICDDCCAbOgAwIBAgIRAPByYiuFhbbYasW+GKz5FBkwCgYIKoZIzj0EAwIwLjEN
+MAsGA1UEChMEd2lyZTEdMBsGA1UEAxMUd2lyZSBJbnRlcm1lZGlhdGUgQ0EwHhcN
+MjMwNzMxMTQwMjA4WhcNMzMwNzI4MTQwMjA4WjApMREwDwYDVQQKEwh3aXJlLmNv
+bTEUMBIGA1UEAxMLQWxpY2UgU21pdGgwKjAFBgMrZXADIQAF/hZvvmRkWMzqZ5jU
+LnGKO+y8G/Vz+olfTknk7c/8IqOB5TCB4jAOBgNVHQ8BAf8EBAMCB4AwEwYDVR0l
+BAwwCgYIKwYBBQUHAwIwHQYDVR0OBBYEFGhAhRlgprn/FUxPfL+ehHvvAigpMB8G
+A1UdIwQYMBaAFB81Yl+jcBh8rnCo9MJtkZ+2vq5YMFwGA1UdEQRVMFOGFWltOndp
+cmVhcHA9YWxpY2Vfd2lyZYY6aW06d2lyZWFwcD1UNENveTR2ZFJ6aWFud2ZPZ1hw
+bjZBL2EzMzhlOWVhOWU4N2ZlY0B3aXJlLmNvbTAdBgwrBgEEAYKkZMYoQAEEDTAL
+AgEGBAR3aXJlBAAwCgYIKoZIzj0EAwIDRwAwRAIgCP+OnliYCy7PKs3rt+x4zUuF
+e2grybnLl5fsak6lFPUCIE4T8ZMlKkOZ9xeYdTlrUPT67hc++ZRAtcU03Kqiz8sm
 -----END CERTIFICATE-----
 -----BEGIN CERTIFICATE-----
-MIIBtzCCAV6gAwIBAgIQPbElEJQ58HlbQf7bqrJjXTAKBggqhkjOPQQDAjAmMQ0w
-CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjMwNDA1MDky
-NjUzWhcNMzMwNDAyMDkyNjUzWjAuMQ0wCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3
-aXJlIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGbM
-rA1eqJE9xlGOwO+sYbexThtlU/to9jJj5SBoKPx7Q8QMBlmPTjqDVumXhUvSe+xY
-JE7M+lBXfVZCywzIIPWjZjBkMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG
-AQH/AgEAMB0GA1UdDgQWBBQc9IfWftfzssBgmdz5wUbZrdkBDjAfBgNVHSMEGDAW
-gBQY+1rDw64QLm/weFQC1mo9y29ddTAKBggqhkjOPQQDAgNHADBEAiARvd7RBuuv
-OhUy7ncjd/nzoN5Qs0p6D+ujdSLDqLlNIAIgfkwAAgsQMDF3ClqVM/p9cmS95B0g
-CAdIObqPoNL5MJo=
+MIIBuTCCAV6gAwIBAgIQfYC2CCR4Uw9GPkJ2nSq8ATAKBggqhkjOPQQDAjAmMQ0w
+CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjMwNzMxMTQw
+MjA2WhcNMzMwNzI4MTQwMjA2WjAuMQ0wCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3
+aXJlIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABCOc
+sqiFG9+GHjqHP26inah0Vyxt8IoZykStaLLskp2IDB8/px2k6TbNV5areq09+g26
+QTxTzlaBWUE/Y9rCoqmjZjBkMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG
+AQH/AgEAMB0GA1UdDgQWBBQfNWJfo3AYfK5wqPTCbZGftr6uWDAfBgNVHSMEGDAW
+gBQgDq04Td1mq9ala953Mito5QHARjAKBggqhkjOPQQDAgNJADBGAiEA+MIEAiG2
+DxMYFdlfpS2zs/Ed+1Co/pkE3iTlbhcQK6ACIQD1Xhg2dteHl4bILtK0aVH1BRtD
+jHdSVZh5wt4eD7IMag==
 -----END CERTIFICATE-----"#;
             enrollment
                 .acme_x509_certificate_response(resp.to_string(), order)
