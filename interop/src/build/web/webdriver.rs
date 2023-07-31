@@ -18,20 +18,20 @@ use crate::util::RunningProcess;
 use crate::TEST_SERVER_URI;
 use color_eyre::eyre::Result;
 
-pub fn setup_webdriver(force: bool) -> Result<()> {
+pub async fn setup_webdriver(force: bool) -> Result<()> {
     let mut spinner = RunningProcess::new("Setting up WebDriver & co...", false);
 
     let wd_dir = dirs::home_dir().unwrap().join(".webdrivers");
-    let chrome = webdriver_install::Driver::Chrome;
+    let chrome = wasm_browser_run::WebdriverKind::Chrome;
 
     if force {
         spinner.update("FORCE_WEBDRIVER_INSTALL is set. Forcefully removing webdrivers...");
         std::fs::remove_dir(&wd_dir)?;
     }
 
-    if !wd_dir.join(chrome.as_str()).exists() {
+    if !wd_dir.join(chrome.as_exe_name()).exists() {
         spinner.update("Chrome WebDriver isn't installed. Installing...");
-        chrome.install()?;
+        chrome.install_webdriver(&wd_dir, force).await?;
     }
 
     spinner.update("Chrome WebDriver installed");

@@ -74,8 +74,7 @@ fn run_test() -> Result<()> {
         .unwrap();
 
     runtime.block_on(async {
-        let _ = tokio::task::spawn_blocking(move || build::web::webdriver::setup_webdriver(force_webdriver_install))
-            .await?;
+        build::web::webdriver::setup_webdriver(force_webdriver_install).await?;
 
         build::web::wasm::build_wasm().await?;
 
