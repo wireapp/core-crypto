@@ -2851,11 +2851,10 @@ impl From<AcmeChallenge> for core_crypto::prelude::E2eiAcmeChallenge {
     }
 }
 
-#[wasm_bindgen]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[repr(u8)]
 /// see [core_crypto::prelude::E2eiConversationState]
-pub(crate) enum E2eiConversationState {
+enum E2eiConversationState {
     Verified = 1,
     /// Some clients are either still Basic or their certificate is expired
     Degraded = 2,
