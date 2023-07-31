@@ -10,13 +10,13 @@ fn test_result_to_color_fmt_pair(result: bool) -> (better_term::Color, &'static 
 
 #[derive(Debug)]
 struct WasmTestFileContext {
-    pub location: std::path::PathBuf,
-    pub tests: Vec<String>,
-    pub module: walrus::Module,
+    pub(crate) location: std::path::PathBuf,
+    pub(crate) tests: Vec<String>,
+    pub(crate) module: walrus::Module,
 }
 
 impl WasmTestFileContext {
-    pub fn new(wasm_file_path: impl AsRef<std::path::Path>) -> WasmBrowserRunResult<Self> {
+    pub(crate) fn new(wasm_file_path: impl AsRef<std::path::Path>) -> WasmBrowserRunResult<Self> {
         let location = wasm_file_path.as_ref().to_owned();
         let mut module = walrus::Module::from_file(wasm_file_path).map_err(|e| eyre::eyre!("{e:?}"))?;
         let test_exports: Vec<String> = module
@@ -91,15 +91,15 @@ impl WasmTestFileContext {
 
 #[derive(Debug, Clone, serde::Deserialize)]
 struct TestResultSummary {
-    pub successful: bool,
-    pub success: u64,
-    pub fail: u64,
-    pub ignored: u64,
-    pub total: u64,
+    pub(crate) successful: bool,
+    pub(crate) success: u64,
+    pub(crate) fail: u64,
+    pub(crate) ignored: u64,
+    pub(crate) total: u64,
 }
 
 impl TestResultSummary {
-    pub fn ran_test_count(&self) -> u64 {
+    pub(crate) fn ran_test_count(&self) -> u64 {
         self.success.saturating_add(self.fail).saturating_add(self.ignored)
     }
 }
@@ -126,8 +126,8 @@ impl std::fmt::Display for TestResultSummary {
 
 #[derive(Debug, Clone)]
 struct ExpandedTestResult<'a> {
-    pub test_name: &'a str,
-    pub successful: bool,
+    pub(crate) test_name: &'a str,
+    pub(crate) successful: bool,
 }
 
 impl<'a> From<(&'a str, bool)> for ExpandedTestResult<'a> {
@@ -151,8 +151,8 @@ impl std::fmt::Display for ExpandedTestResult<'_> {
 
 #[derive(Debug, Clone, serde::Deserialize)]
 struct TestResultContainer {
-    pub details: std::collections::HashMap<String, bool>,
-    pub summary: TestResultSummary,
+    pub(crate) details: std::collections::HashMap<String, bool>,
+    pub(crate) summary: TestResultSummary,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
