@@ -44,7 +44,7 @@ enum ChromeDriverReleaseDetailsChannelInfoPlatform {
 }
 
 impl ChromeDriverReleaseDetailsChannelInfoPlatform {
-    pub fn detect() -> WasmBrowserRunResult<Self> {
+    pub(crate) fn detect() -> WasmBrowserRunResult<Self> {
         let is_aarch64 = std::env::consts::ARCH == "aarch64";
         let is_32_bits = cfg!(target_pointer_width = "32");
         let os = std::env::consts::OS;
@@ -73,7 +73,7 @@ impl ChromeDriverReleaseDetailsChannelInfoPlatform {
         })
     }
 
-    pub fn to_filename(&self) -> String {
+    pub(crate) fn to_filename(&self) -> String {
         format!(
             "chromedriver-{}",
             match self {

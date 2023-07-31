@@ -16,8 +16,8 @@
 
 pub mod error;
 mod wasm_test;
-mod webdriver;
-mod webdriver_bidi_protocol;
+pub mod webdriver;
+pub mod webdriver_bidi_protocol;
 
 use crate::error::*;
 
@@ -35,7 +35,10 @@ struct WebdriverContextInner {
 }
 
 impl WebdriverContextInner {
-    pub async fn init(driver_location: &std::path::Path, timeout: std::time::Duration) -> WasmBrowserRunResult<Self> {
+    pub(crate) async fn init(
+        driver_location: &std::path::Path,
+        timeout: std::time::Duration,
+    ) -> WasmBrowserRunResult<Self> {
         let driver_addr = tokio::net::TcpListener::bind("127.0.0.1:0").await?.local_addr()?;
         let driver = tokio::process::Command::new(driver_location)
             .arg(format!("--port={}", driver_addr.port()))
