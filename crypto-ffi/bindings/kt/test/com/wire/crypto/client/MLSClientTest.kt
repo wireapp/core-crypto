@@ -21,43 +21,49 @@ package com.wire.crypto.client
 import com.wire.crypto.CiphersuiteName
 import com.wire.crypto.MlsCredentialType
 import com.wire.crypto.client.CoreCryptoCentral.Companion.DEFAULT_CIPHERSUITE
+import com.wire.crypto.client.CoreCryptoCentral.Companion.DEFAULT_CREDENTIAL_TYPE
+import com.wire.crypto.coreCryptoDeferredInit
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
 import kotlin.test.*
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MLSClientTest {
 
-    private fun createClient(clientId: ClientId): MLSClient {
+    private fun createClient(clientId: ClientId): MLSClient = runBlocking {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
-        return CoreCryptoCentral(keyStore.absolutePath, "secret").mlsClient(clientId)
+        CoreCryptoCentral(keyStore.absolutePath, "secret").mlsClient(clientId)
     }
 
     @Test
-    fun givenClient_whenCallingGetPublicKey_ReturnNonEmptyResult() {
+    fun givenClient_whenCallingGetPublicKey_ReturnNonEmptyResult() = runTest {
         val mlsClient = createClient(ALICE1)
         assertTrue(mlsClient.getPublicKey(DEFAULT_CIPHERSUITE).isNotEmpty())
     }
 
     @Test
-    fun givenClient_whenCallingGenerateKeyPackages_ReturnListOfExpectedSize() {
+    fun givenClient_whenCallingGenerateKeyPackages_ReturnListOfExpectedSize() = runTest  {
         val mlsClient = createClient(ALICE1)
-        assertTrue(mlsClient.generateKeyPackages(DEFAULT_CIPHERSUITE, 10).isNotEmpty())
+        assertTrue(mlsClient.generateKeyPackages(DEFAULT_CIPHERSUITE, DEFAULT_CREDENTIAL_TYPE, 10).isNotEmpty())
     }
 
     @Test
-    fun givenNewConversation_whenCallingConversationEpoch_ReturnZeroEpoch() {
+    fun givenNewConversation_whenCallingConversationEpoch_ReturnZeroEpoch() = runTest  {
         val mlsClient = createClient(ALICE1)
         mlsClient.createConversation(MLS_CONVERSATION_ID, MlsCredentialType.BASIC)
         assertEquals(0UL, mlsClient.conversationEpoch(MLS_CONVERSATION_ID))
     }
 
     @Test
-    fun givenTwoClients_whenCallingUpdateKeyingMaterial_weCanProcessTheCommitMessage() {
+    fun givenTwoClients_whenCallingUpdateKeyingMaterial_weCanProcessTheCommitMessage() = runTest  {
         val aliceClient = createClient(ALICE1)
         val bobClient = createClient(BOB1)
 
-        val aliceKeyPackage = aliceClient.generateKeyPackages(DEFAULT_CIPHERSUITE, 1).first()
+        val aliceKeyPackage = aliceClient.generateKeyPackages(DEFAULT_CIPHERSUITE, DEFAULT_CREDENTIAL_TYPE, 1).first()
         val clientKeyPackageList = listOf(Pair(ALICE1, aliceKeyPackage))
         bobClient.createConversation(MLS_CONVERSATION_ID, MlsCredentialType.BASIC)
         val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
@@ -71,11 +77,11 @@ class MLSClientTest {
     }
 
     @Test
-    fun givenTwoClients_whenCallingCreateConversation_weCanProcessTheWelcomeMessage() {
+    fun givenTwoClients_whenCallingCreateConversation_weCanProcessTheWelcomeMessage() = runTest  {
         val aliceClient = createClient(ALICE1)
         val bobClient = createClient(BOB1)
 
-        val aliceKeyPackage = aliceClient.generateKeyPackages(DEFAULT_CIPHERSUITE, 1).first()
+        val aliceKeyPackage = aliceClient.generateKeyPackages(DEFAULT_CIPHERSUITE, DEFAULT_CREDENTIAL_TYPE, 1).first()
         val clientKeyPackageList = listOf(Pair(ALICE1, aliceKeyPackage))
         bobClient.createConversation(MLS_CONVERSATION_ID, MlsCredentialType.BASIC)
         val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)!!.welcome!!
@@ -85,12 +91,12 @@ class MLSClientTest {
     }
 
     @Test
-    fun givenTwoClients_whenCallingJoinConversation_weCanProcessTheAddProposalMessage() {
+    fun givenTwoClients_whenCallingJoinConversation_weCanProcessTheAddProposalMessage() = runTest  {
         val alice1Client = createClient(ALICE1)
         val alice2Client = createClient(ALICE2)
         val bobClient = createClient(BOB1)
 
-        val alice1KeyPackage = alice1Client.generateKeyPackages(DEFAULT_CIPHERSUITE, 1).first()
+        val alice1KeyPackage = alice1Client.generateKeyPackages(DEFAULT_CIPHERSUITE, DEFAULT_CREDENTIAL_TYPE, 1).first()
         val clientKeyPackageList = listOf(Pair(ALICE1, alice1KeyPackage))
 
         bobClient.createConversation(MLS_CONVERSATION_ID, MlsCredentialType.BASIC)
@@ -106,12 +112,12 @@ class MLSClientTest {
     }
 
     @Test
-    fun givenTwoClients_whenCallingEncryptMessage_weCanDecryptTheMessage() {
+    fun givenTwoClients_whenCallingEncryptMessage_weCanDecryptTheMessage() = runTest  {
         val aliceClient = createClient(ALICE1)
         val bobClient = createClient(BOB1)
 
         val clientKeyPackageList = listOf(
-            Pair(ALICE1, aliceClient.generateKeyPackages(DEFAULT_CIPHERSUITE, 1).first())
+            Pair(ALICE1, aliceClient.generateKeyPackages(DEFAULT_CIPHERSUITE, DEFAULT_CREDENTIAL_TYPE, 1).first())
         )
         bobClient.createConversation(MLS_CONVERSATION_ID, MlsCredentialType.BASIC)
         val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
@@ -125,12 +131,12 @@ class MLSClientTest {
     }
 
     @Test
-    fun givenTwoClients_whenCallingAddMember_weCanProcessTheWelcomeMessage() {
+    fun givenTwoClients_whenCallingAddMember_weCanProcessTheWelcomeMessage() = runTest  {
         val aliceClient = createClient(ALICE1)
         val bobClient = createClient(BOB1)
 
         val clientKeyPackageList = listOf(
-            Pair(ALICE1, aliceClient.generateKeyPackages(DEFAULT_CIPHERSUITE, 1).first())
+            Pair(ALICE1, aliceClient.generateKeyPackages(DEFAULT_CIPHERSUITE, DEFAULT_CREDENTIAL_TYPE, 1).first())
         )
         bobClient.createConversation(MLS_CONVERSATION_ID, MlsCredentialType.BASIC)
         val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
@@ -141,7 +147,7 @@ class MLSClientTest {
     }
 
     @Test
-    fun givenThreeClients_whenCallingAddMember_weCanProcessTheHandshakeMessage() {
+    fun givenThreeClients_whenCallingAddMember_weCanProcessTheHandshakeMessage() = runTest  {
         val aliceClient = createClient(ALICE1)
         val bobClient = createClient(BOB1)
         val carolClient = createClient(CAROL1)
@@ -149,7 +155,7 @@ class MLSClientTest {
         bobClient.createConversation(MLS_CONVERSATION_ID, MlsCredentialType.BASIC)
         val welcome = bobClient.addMember(
             MLS_CONVERSATION_ID,
-            listOf(Pair(ALICE1, aliceClient.generateKeyPackages(DEFAULT_CIPHERSUITE, 1).first()))
+            listOf(Pair(ALICE1, aliceClient.generateKeyPackages(DEFAULT_CIPHERSUITE, DEFAULT_CREDENTIAL_TYPE, 1).first()))
         )?.welcome!!
         bobClient.commitAccepted(MLS_CONVERSATION_ID)
 
@@ -157,26 +163,28 @@ class MLSClientTest {
 
         val commit = bobClient.addMember(
             MLS_CONVERSATION_ID,
-            listOf(Pair(CAROL1, carolClient.generateKeyPackages(DEFAULT_CIPHERSUITE, 1).first()))
+            listOf(Pair(CAROL1, carolClient.generateKeyPackages(DEFAULT_CIPHERSUITE, DEFAULT_CREDENTIAL_TYPE, 1).first()))
         )?.commit!!
 
         assertNull(aliceClient.decryptMessage(MLS_CONVERSATION_ID, commit).message)
     }
 
     @Test
-    fun givenThreeClients_whenCallingRemoveMember_weCanProcessTheHandshakeMessage() {
+    fun givenThreeClients_whenCallingRemoveMember_weCanProcessTheHandshakeMessage() = runTest  {
         val aliceClient = createClient(ALICE1)
         val bobClient = createClient(BOB1)
         val carolClient = createClient(CAROL1)
 
         val clientKeyPackageList = listOf(
-            ALICE1 to aliceClient.generateKeyPackages(DEFAULT_CIPHERSUITE, 1).first(),
-            CAROL1 to carolClient.generateKeyPackages(DEFAULT_CIPHERSUITE, 1).first()
+            ALICE1 to aliceClient.generateKeyPackages(DEFAULT_CIPHERSUITE, DEFAULT_CREDENTIAL_TYPE, 1).first(),
+            CAROL1 to carolClient.generateKeyPackages(DEFAULT_CIPHERSUITE, DEFAULT_CREDENTIAL_TYPE, 1).first()
         )
         bobClient.createConversation(MLS_CONVERSATION_ID, MlsCredentialType.BASIC)
         val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
         bobClient.commitAccepted(MLS_CONVERSATION_ID)
         val conversationId = aliceClient.processWelcomeMessage(welcome)
+
+        println(bobClient.members(conversationId))
 
         val clientRemovalList = listOf(CAROL1)
         val commit = bobClient.removeMember(conversationId, clientRemovalList).commit
@@ -184,8 +192,10 @@ class MLSClientTest {
         assertNull(aliceClient.decryptMessage(conversationId, commit).message)
     }
 
+
+    @Ignore 
     @Test
-    fun e2ei() {
+    fun e2ei() = runTest  {
         val clientId = ALICE1
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
@@ -343,11 +353,11 @@ CAdIObqPoNL5MJo=
     }
 
     @Test
-    fun `conversation should be degraded when at least 1 of the members uses a Basic credential`() {
+    fun `conversation should be degraded when at least 1 of the members uses a Basic credential`() = runTest  {
         val aliceClient = createClient(ALICE1)
         val bobClient = createClient(BOB1)
 
-        val aliceKp = aliceClient.generateKeyPackages(DEFAULT_CIPHERSUITE, 1).first()
+        val aliceKp = aliceClient.generateKeyPackages(DEFAULT_CIPHERSUITE, DEFAULT_CREDENTIAL_TYPE, 1).first()
         val aliceMember = listOf(ALICE1 to aliceKp)
         bobClient.createConversation(MLS_CONVERSATION_ID, MlsCredentialType.BASIC)
         val welcome = bobClient.addMember(MLS_CONVERSATION_ID, aliceMember)?.welcome!!

@@ -77,6 +77,7 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
     companion object {
         const val KEYSTORE_NAME = "keystore"
         fun CiphersuiteName.lower() = (ordinal + 1).toUShort()
+        val DEFAULT_CREDENTIAL_TYPE = MlsCredentialType.BASIC
         val DEFAULT_CIPHERSUITE = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
         val DEFAULT_CIPHERSUITES = listOf(DEFAULT_CIPHERSUITE)
 

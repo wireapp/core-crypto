@@ -34,7 +34,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProteusClientTest {
 
-    fun createProteusClient(clientId: ClientId): ProteusClient {
+    suspend fun createProteusClient(clientId: ClientId): ProteusClient {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
         return CoreCryptoCentral(keyStore.absolutePath, "secret").proteusClient()
