@@ -7,11 +7,26 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.3] - 2023-07-31
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.3" unreleased=true}}
+</details>
+
+
+* Ensure that all operations do not leak data (uncleared from the keystore). This was mostly happening with update proposals & credential rotation. Also introduced a separate table for storing epoch keypairs.
+* **[BREAKING]** as a consequence (of the new table) all existing conversations are becoming unusable. It is strongly advised to wipe them all.
+* Fix method `e2eiRotateAll` was returning undefined on WASM
+* Add method `e2eiIsEnabled` to tell if a MLS client has a valid Credential for the given Ciphersuite
+* **[BREAKING]** rename ~~`e2eiIsDegraded`~~ into `e2eiConversationState` which returns now an enumeration giving the state of the conversation regarding end-to-end identity.
+* Adapt CI to execute WASM tests with chromedriver 115
+
 ## [1.0.0-rc.2] - 2023-07-25
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.2" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.2"}}
 </details>
 
 * Added support for x509 certificate roots and policies in MLS GroupContext through a TrustAnchor GroupContextExtension #346
