@@ -96,6 +96,7 @@ pub mod tests {
         let store_credential = MlsCredential {
             id: credential_id.clone(),
             credential: credential.tls_serialize_detached().unwrap(),
+            created_at: 0,
         };
 
         backend.key_store().save(store_credential).await.unwrap();

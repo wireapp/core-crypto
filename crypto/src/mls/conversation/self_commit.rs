@@ -115,7 +115,7 @@ pub mod tests {
                     // change credential to verify later what we return in the decrypt message
                     let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                     let cb = alice_central
-                        .rotate_credential(&case, new_handle, new_display_name)
+                        .rotate_credential(&case, new_handle, new_display_name, None)
                         .await;
 
                     // create a commit. This will also store it in the store

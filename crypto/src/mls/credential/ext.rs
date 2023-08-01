@@ -14,11 +14,7 @@ pub(crate) trait CredentialExt {
 impl CredentialExt for Credential {
     fn parse_leaf_cert(&self) -> CryptoResult<Option<Certificate>> {
         match self.mls_credential() {
-            openmls::prelude::MlsCredentialType::X509(openmls::prelude::Certificate { cert_data, .. }) => {
-                let leaf = cert_data.get(0).ok_or(CryptoError::InvalidIdentity)?;
-                let leaf = Certificate::from_der(leaf.as_slice())?;
-                Ok(Some(leaf))
-            }
+            openmls::prelude::MlsCredentialType::X509(cert) => cert.parse_leaf_cert(),
             _ => Ok(None),
         }
     }
@@ -33,35 +29,55 @@ impl CredentialExt for Credential {
 
     fn extract_identity(&self) -> CryptoResult<Option<WireIdentity>> {
         match self.mls_credential() {
-            openmls::prelude::MlsCredentialType::X509(openmls::prelude::Certificate { cert_data, .. }) => {
-                let leaf = cert_data.get(0).ok_or(CryptoError::InvalidIdentity)?;
-                use wire_e2e_identity::prelude::WireIdentityReader as _;
-                let identity = leaf
-                    .as_slice()
-                    .extract_identity()
-                    .map_err(|_| CryptoError::InvalidIdentity)?;
-                Ok(Some(identity.into()))
-            }
+            openmls::prelude::MlsCredentialType::X509(cert) => cert.extract_identity(),
             _ => Ok(None),
         }
     }
 
     fn extract_public_key(&self) -> CryptoResult<Option<Vec<u8>>> {
         match self.mls_credential() {
-            openmls::prelude::MlsCredentialType::X509(openmls::prelude::Certificate { cert_data, .. }) => {
-                let leaf = cert_data.get(0).ok_or(CryptoError::InvalidIdentity)?;
-                use wire_e2e_identity::prelude::WireIdentityReader as _;
-                let pk = leaf
-                    .as_slice()
-                    .extract_public_key()
-                    .map_err(|_| CryptoError::InvalidIdentity)?;
-                Ok(Some(pk))
-            }
+            openmls::prelude::MlsCredentialType::X509(cert) => cert.extract_public_key(),
             _ => Ok(None),
         }
     }
 
     fn is_basic(&self) -> bool {
         self.credential_type() == openmls::prelude::CredentialType::Basic
+    }
+}
+
+impl CredentialExt for openmls::prelude::Certificate {
+    fn parse_leaf_cert(&self) -> CryptoResult<Option<Certificate>> {
+        let leaf = self.cert_data.get(0).ok_or(CryptoError::InvalidIdentity)?;
+        let leaf = Certificate::from_der(leaf.as_slice())?;
+        Ok(Some(leaf))
+    }
+
+    fn get_type(&self) -> CryptoResult<MlsCredentialType> {
+        Ok(MlsCredentialType::X509)
+    }
+
+    fn extract_identity(&self) -> CryptoResult<Option<WireIdentity>> {
+        let leaf = self.cert_data.get(0).ok_or(CryptoError::InvalidIdentity)?;
+        use wire_e2e_identity::prelude::WireIdentityReader as _;
+        let identity = leaf
+            .as_slice()
+            .extract_identity()
+            .map_err(|_| CryptoError::InvalidIdentity)?;
+        Ok(Some(identity.into()))
+    }
+
+    fn extract_public_key(&self) -> CryptoResult<Option<Vec<u8>>> {
+        let leaf = self.cert_data.get(0).ok_or(CryptoError::InvalidIdentity)?;
+        use wire_e2e_identity::prelude::WireIdentityReader as _;
+        let pk = leaf
+            .as_slice()
+            .extract_public_key()
+            .map_err(|_| CryptoError::InvalidIdentity)?;
+        Ok(Some(pk))
+    }
+
+    fn is_basic(&self) -> bool {
+        false
     }
 }

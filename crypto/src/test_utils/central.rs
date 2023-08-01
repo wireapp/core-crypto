@@ -405,10 +405,16 @@ impl MlsCentral {
         self.mls_backend.key_store().count::<MlsCredential>().await.unwrap()
     }
 
-    pub async fn rotate_credential(&mut self, case: &TestCase, handle: &str, display_name: &str) -> CredentialBundle {
+    pub async fn rotate_credential(
+        &mut self,
+        case: &TestCase,
+        handle: &str,
+        display_name: &str,
+        cert_kp: Option<Vec<u8>>,
+    ) -> CredentialBundle {
         let cid = &self.get_client_id();
-        let new_cert = CertificateBundle::new(case.signature_scheme(), handle, display_name, Some(cid), None);
         let client = self.mls_client.as_mut().unwrap();
+        let new_cert = CertificateBundle::new(case.signature_scheme(), handle, display_name, Some(cid), cert_kp);
         client
             .save_new_x509_credential_bundle(&self.mls_backend, case.signature_scheme(), new_cert)
             .await

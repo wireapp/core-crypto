@@ -39,12 +39,24 @@ async fn main() -> Result<()> {
     let mut json_serializer = serde_json::Serializer::pretty(std::io::stdout());
     let mut json_map = json_serializer.serialize_map(None)?;
 
-    let credentials: Vec<openmls::credentials::Credential> = keystore
+    let mut credentials: Vec<serde_json::Value> = vec![];
+    for cred in keystore
         .find_all::<MlsCredential>(Default::default())
         .await?
         .into_iter()
-        .map(|cred| openmls::prelude::Credential::tls_deserialize_bytes(cred.credential.as_slice()))
-        .collect::<Result<_, tls_codec::Error>>()?;
+    {
+        let mls_credential = openmls::prelude::Credential::tls_deserialize_bytes(&cred.credential)?;
+        let date = chrono::Utc
+            .timestamp_opt(cred.created_at as i64, 0)
+            .single()
+            .ok_or_else(|| eyre!("Cannot parse credential creation date"))?;
+
+        credentials.push(serde_json::json!({
+            "id": cred.id,
+            "credential": mls_credential,
+            "created_at": date
+        }));
+    }
     json_map.serialize_entry("mls_credentials", &credentials)?;
 
     let mut signature_keypairs: Vec<serde_json::Value> = vec![];
@@ -54,16 +66,10 @@ async fn main() -> Result<()> {
         .into_iter()
     {
         let mls_keypair = openmls_basic_credential::SignatureKeyPair::tls_deserialize_bytes(&kp.keypair)?;
-        let date = chrono::Utc
-            .timestamp_opt(kp.created_at as i64, 0)
-            .single()
-            .ok_or_else(|| eyre!("Cannot parse keypair creation date"))?;
-
         signature_keypairs.push(serde_json::json!({
             "signature_scheme": kp.signature_scheme,
             "mls_keypair": mls_keypair,
             "credential_id": kp.credential_id,
-            "created_at": date
         }));
     }
     json_map.serialize_entry("mls_signature_keypairs", &signature_keypairs)?;

@@ -1,14 +1,12 @@
-use crate::prelude::ClientId;
 use crate::{
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
     prelude::{
-        CertificateBundle, Client, CryptoError, CryptoResult, E2eIdentityError, E2eIdentityResult, E2eiEnrollment,
-        MlsCentral, MlsCiphersuite, MlsCommitBundle, MlsConversation, MlsCredentialType,
+        CertificateBundle, Client, ClientId, CryptoError, CryptoResult, E2eIdentityError, E2eIdentityResult,
+        E2eiEnrollment, MlsCentral, MlsCiphersuite, MlsCommitBundle, MlsConversation, MlsCredentialType,
     },
     MlsError,
 };
-use core_crypto_keystore::entities::MlsKeyPackage;
-use core_crypto_keystore::CryptoKeystoreMls;
+use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{KeyPackage, KeyPackageRef, MlsCredentialType as OpenMlsCredential};
 use openmls_traits::OpenMlsCryptoProvider;
@@ -65,9 +63,11 @@ impl MlsCentral {
         let client = self.mls_client()?;
 
         // look for existing credential of type basic. If there isn't, then this method has been misused
-        client
+        let cb = client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
             .ok_or(E2eIdentityError::ImplementationError)?;
+
+        let sign_keypair = Some(cb.signature_key.clone().try_into()?);
 
         E2eiEnrollment::try_new(
             client_id,
@@ -76,7 +76,7 @@ impl MlsCentral {
             expiry_days,
             &self.mls_backend,
             ciphersuite,
-            None,
+            sign_keypair,
         )
     }
 
@@ -99,6 +99,7 @@ impl MlsCentral {
         let cb = client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
             .ok_or(E2eIdentityError::ImplementationError)?;
+        let sign_keypair = Some(cb.signature_key.clone().try_into()?);
         let existing_identity = cb
             .credential()
             .extract_identity()?
@@ -114,7 +115,7 @@ impl MlsCentral {
             expiry_days,
             &self.mls_backend,
             ciphersuite,
-            None,
+            sign_keypair,
         )
     }
 
@@ -405,18 +406,7 @@ pub mod tests {
                             .await;
                         assert_eq!(nb_basic_kp, 0);
 
-                        // and since all of Alice's unclaimed KeyPackages have been purged, so should be her
-                        // old Credential and its associated keypair
-
-                        // No more previous CredentialBundle locally
-                        assert!(alice_central
-                            .find_credential_bundle(
-                                case.signature_scheme(),
-                                case.credential_type,
-                                &old_credential.signature_key.public().into()
-                            )
-                            .await
-                            .is_none());
+                        // and since all of Alice's unclaimed KeyPackages have been purged, so should be her old Credential
 
                         // Also the old Credential has been removed from the keystore
                         let after_delete = alice_central.count_entities().await;
@@ -472,15 +462,34 @@ pub mod tests {
                         .clone();
 
                     // simulate a real rotation where both credential are not created within the same second
-                    // we only have a precision of 1 second for the `created_at` field of the SignatureKeypair
+                    // we only have a precision of 1 second for the `created_at` field of the Credential
                     async_std::task::sleep(core::time::Duration::from_secs(1)).await;
 
                     let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
-                    let cb = alice_central
-                        .rotate_credential(&case, new_handle, new_display_name)
-                        .await;
 
-                    alice_central.e2ei_update_all(&cb).await.unwrap();
+                    let init = |cc: &MlsCentral| match case.credential_type {
+                        MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
+                            cc.get_client_id(),
+                            new_display_name.to_string(),
+                            new_handle.to_string(),
+                            E2EI_EXPIRY,
+                            case.ciphersuite(),
+                        ),
+                        MlsCredentialType::X509 => cc.e2ei_new_rotate_enrollment(
+                            cc.get_client_id(),
+                            Some(new_display_name.to_string()),
+                            Some(new_handle.to_string()),
+                            E2EI_EXPIRY,
+                            case.ciphersuite(),
+                        ),
+                    };
+                    let (mut alice_central, enrollment, cert) =
+                        e2ei_enrollment(alice_central, None, init, move |e, cc| Box::pin(async move { (e, cc) }))
+                            .await
+                            .unwrap();
+
+                    alice_central.e2ei_rotate_all(enrollment, cert, 10).await.unwrap();
+
                     alice_central.commit_accepted(&id).await.unwrap();
 
                     // So alice has a new Credential as expected
@@ -509,12 +518,17 @@ pub mod tests {
                         .key_store()
                         .find_all::<MlsCredential>(EntityFindParams::default())
                         .await
-                        .unwrap();
-                    let all_credentials = all_credentials
+                        .unwrap()
                         .into_iter()
-                        .map(|c| openmls::prelude::Credential::tls_deserialize_bytes(c.credential.as_slice()).unwrap())
+                        .map(|c| {
+                            let credential =
+                                openmls::prelude::Credential::tls_deserialize_bytes(c.credential.as_slice()).unwrap();
+                            (credential, c.created_at)
+                        })
                         .collect::<Vec<_>>();
-                    let client = Client::load(&alice_central.mls_backend, &cid, &all_credentials[..], scs)
+                    assert_eq!(all_credentials.len(), 2);
+
+                    let client = Client::load(&alice_central.mls_backend, &cid, all_credentials, scs)
                         .await
                         .unwrap();
                     alice_central.mls_client = Some(client);
@@ -527,14 +541,9 @@ pub mod tests {
                     let identity = cb.credential().extract_identity().unwrap().unwrap();
                     assert_eq!(identity.display_name, new_display_name);
                     assert_eq!(identity.handle, new_handle);
-                    let old_spk = SignaturePublicKey::from(old_cb.signature_key.public());
-                    let old_cb_found = alice_central
-                        .find_credential_bundle(case.signature_scheme(), case.credential_type, &old_spk)
-                        .await
-                        .unwrap();
-                    assert_eq!(&old_cb, old_cb_found);
+
                     assert_eq!(
-                        alice_central.mls_client.as_ref().unwrap().identities.iter().count(),
+                        alice_central.mls_client().unwrap().identities.iter().count(),
                         old_nb_identities
                     );
                 })
@@ -672,7 +681,7 @@ pub mod tests {
                             let alice_cid = &alice_central.get_client_id();
                             let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                             let cb = alice_central
-                                .rotate_credential(&case, new_handle, new_display_name)
+                                .rotate_credential(&case, new_handle, new_display_name, None)
                                 .await;
 
                             // Verify old identity is still there in the MLS group
@@ -738,7 +747,7 @@ pub mod tests {
                             // Alice creates a new Credential, updating her handle/display_name
                             let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                             let cb = alice_central
-                                .rotate_credential(&case, new_handle, new_display_name)
+                                .rotate_credential(&case, new_handle, new_display_name, None)
                                 .await;
 
                             // Alice issues an Update commit to replace her current identity

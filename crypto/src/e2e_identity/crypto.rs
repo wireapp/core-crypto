@@ -69,6 +69,6 @@ impl TryFrom<SignatureKeyPair> for E2eiSignatureKeypair {
             SIGN_KEYPAIR_LENGTH => &sk[..SIGN_KEY_LENGTH],
             _ => return Err(CryptoError::ImplementationError),
         };
-        Ok((kp.to_public_vec(), sk.to_vec()).into())
+        Ok((sk.to_vec(), kp.to_public_vec()).into())
     }
 }
