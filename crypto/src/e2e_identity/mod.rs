@@ -123,6 +123,7 @@ impl E2eiEnrollment {
         } else {
             Self::new_sign_key(ciphersuite, backend)?.0
         };
+
         let client_id = std::str::from_utf8(&client_id[..])?.to_string();
         let expiry = core::time::Duration::from_secs(u64::from(expiry_days) * 24 * 3600);
         Ok(Self {

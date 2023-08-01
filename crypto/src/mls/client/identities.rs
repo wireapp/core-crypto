@@ -2,7 +2,7 @@ use crate::{
     mls::credential::{typ::MlsCredentialType, CredentialBundle},
     prelude::{Client, CryptoError, CryptoResult, MlsConversation},
 };
-use openmls::prelude::SignaturePublicKey;
+use openmls::prelude::{Credential, SignaturePublicKey};
 use openmls_traits::types::SignatureScheme;
 use std::collections::HashMap;
 
@@ -62,19 +62,10 @@ impl ClientIdentities {
         Ok(())
     }
 
-    pub(crate) fn remove_credential_bundles(&mut self, sign_pk_to_delete: &[Vec<u8>]) -> CryptoResult<()> {
-        let found = self.0.iter_mut().any(|(_, cbs)| {
-            let mut found = false;
-            cbs.retain(|c| {
-                let contains = sign_pk_to_delete.iter().any(|spk| &spk[..] == c.signature_key.public());
-                found = found || contains;
-                !contains
-            });
-            found
+    pub(crate) fn remove(&mut self, credential: &Credential) -> CryptoResult<()> {
+        self.0.iter_mut().for_each(|(_, cbs)| {
+            cbs.retain(|c| c.credential() != credential);
         });
-        if !found {
-            return Err(CryptoError::CredentialNotFound);
-        }
         Ok(())
     }
 
@@ -120,7 +111,7 @@ impl Client {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{test_utils::*, CryptoError};
+    use crate::test_utils::*;
     use openmls::prelude::SignaturePublicKey;
     use rand::Rng;
     use wasm_bindgen_test::*;
@@ -214,55 +205,6 @@ pub mod tests {
                     let client = central.mls_client.as_mut().unwrap();
                     let push = client.identities.push_credential_bundle(case.signature_scheme(), cb);
                     assert!(push.is_err());
-                })
-            })
-            .await
-        }
-    }
-
-    pub mod delete {
-        use super::*;
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        pub async fn should_succeed(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
-                Box::pin(async move {
-                    const N: usize = 50;
-
-                    let mut cbs = vec![];
-
-                    for _ in 0..N {
-                        let cb = central.new_credential_bundle(&case).await;
-                        cbs.push(cb);
-                    }
-
-                    assert_eq!(central.mls_client.as_ref().unwrap().identities.iter().count(), N + 1);
-
-                    for cb in cbs {
-                        let pk = cb.signature_key.public();
-                        let client = central.mls_client.as_mut().unwrap();
-                        client.identities.remove_credential_bundles(&[pk.to_vec()]).unwrap();
-                    }
-                    assert_eq!(central.mls_client.as_ref().unwrap().identities.iter().count(), 1);
-                })
-            })
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        pub async fn should_fail_when_not_found(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
-                Box::pin(async move {
-                    let cb = central.new_credential_bundle(&case).await;
-
-                    use rand::prelude::SliceRandom as _;
-                    let mut pk = cb.signature_key.public().to_vec();
-                    pk.shuffle(&mut rand::thread_rng());
-                    let client = central.mls_client.as_mut().unwrap();
-                    let remove = client.identities.remove_credential_bundles(&[pk.to_vec()]);
-                    assert!(matches!(remove.unwrap_err(), CryptoError::CredentialNotFound));
                 })
             })
             .await

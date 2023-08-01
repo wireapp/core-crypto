@@ -219,6 +219,7 @@ pub mod utils {
                     Self {
                         id: id.into(),
                         credential,
+                        created_at: 0,
                     }
                 }
 
@@ -227,6 +228,10 @@ pub mod utils {
                     self.id = uuid::Uuid::new_v4().hyphenated().to_string().into();
                     self.credential = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut self.credential[..]);
+                }
+
+                fn equalize(&mut self) {
+                    self.created_at = 0;
                 }
             }
 
@@ -245,7 +250,7 @@ pub mod utils {
 
                     Self {
                         signature_scheme: rand::random(),
-                        keypair, pk, credential_id, created_at: 0,
+                        keypair, pk, credential_id,
                     }
                 }
 
@@ -257,10 +262,6 @@ pub mod utils {
 
                     self.credential_id = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut self.credential_id[..]);
-                }
-
-                fn equalize(&mut self) {
-                    self.created_at = 0;
                 }
             }
 

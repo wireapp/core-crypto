@@ -19,15 +19,15 @@ use crate::{
     prelude::{Client, CryptoError, CryptoResult, MlsCiphersuite, MlsCredentialType, MlsError},
 };
 use core_crypto_keystore::connection::KeystoreDatabaseConnection;
-use openmls::prelude::{CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
+use openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
 use openmls_traits::OpenMlsCryptoProvider;
-use std::collections::{HashMap, HashSet};
-use tls_codec::Serialize;
+use std::collections::HashMap;
+use tls_codec::{Deserialize, Serialize};
 
 use crate::prelude::MlsCentral;
 use core_crypto_keystore::entities::{
     EntityBase, EntityFindParams, MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsHpkePrivateKey,
-    MlsKeyPackage, MlsSignatureKeyPair,
+    MlsKeyPackage,
 };
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -191,7 +191,8 @@ impl Client {
     /// This could result in still valid, uploaded keypackages being pruned from the system and thus being impossible to find when referenced in a future Welcome message.
     pub async fn prune_keypackages(&self, backend: &MlsCryptoProvider, refs: &[KeyPackageRef]) -> CryptoResult<()> {
         let mut conn = backend.key_store().borrow_conn().await?;
-        let _ = self._prune_keypackages(&mut conn, refs, false).await?;
+        let kps = self.find_all_keypackages(&mut conn).await?;
+        let _ = self._prune_keypackages(&kps, &mut conn, refs).await?;
         Ok(())
     }
 
@@ -201,17 +202,33 @@ impl Client {
         refs: &[KeyPackageRef],
     ) -> CryptoResult<()> {
         let mut conn = backend.key_store().borrow_conn().await?;
-        let credentials_to_remove = self._prune_keypackages(&mut conn, refs, true).await?;
+        let kps = self.find_all_keypackages(&mut conn).await?;
+        let kp_to_delete = self._prune_keypackages(&kps, &mut conn, refs).await?;
 
-        for (credential, kps) in credentials_to_remove {
-            MlsCredential::delete_by_credential(&mut conn, credential).await?;
+        // Let's group KeyPackages by Credential
+        let mut grouped_kps = HashMap::<Vec<u8>, Vec<KeyPackageRef>>::new();
+        for (_, kp) in &kps {
+            let cred = kp
+                .leaf_node()
+                .credential()
+                .tls_serialize_detached()
+                .map_err(MlsError::from)?;
+            let kp_ref = kp.hash_ref(backend.crypto()).map_err(MlsError::from)?;
+            grouped_kps
+                .entry(cred)
+                .and_modify(|kprfs| kprfs.push(kp_ref.clone()))
+                .or_insert(vec![kp_ref]);
+        }
 
-            let sign_kp_to_delete = kps.iter().map(|k| k[..].into()).collect::<Vec<_>>();
-            MlsSignatureKeyPair::delete(&mut conn, &sign_kp_to_delete).await?;
-
-            let sign_kp_to_delete = kps.into_iter().collect::<Vec<_>>();
-            self.identities
-                .remove_credential_bundles(sign_kp_to_delete.as_slice())?;
+        for (credential, kps) in &grouped_kps {
+            // If all KeyPackages are to be deleted for this given Credential
+            let all_to_delete = kps.iter().all(|kpr| kp_to_delete.contains(&kpr.as_slice()));
+            if all_to_delete {
+                // then delete this Credential
+                MlsCredential::delete_by_credential(&mut conn, credential.clone()).await?;
+                let credential = Credential::tls_deserialize_bytes(credential).map_err(MlsError::from)?;
+                self.identities.remove(&credential)?;
+            }
         }
 
         Ok(())
@@ -221,102 +238,57 @@ impl Client {
     /// * HPKE private keys
     /// * HPKE Encryption KeyPairs
     /// * Signature KeyPairs & Credentials (use [Self::prune_keypackages_and_credential])
-    async fn _prune_keypackages(
+    async fn _prune_keypackages<'a>(
         &self,
+        kps: &'a [(MlsKeyPackage, KeyPackage)],
         conn: &mut KeystoreDatabaseConnection,
         refs: &[KeyPackageRef],
-        mut prune_credential: bool,
-    ) -> CryptoResult<HashMap<Vec<u8>, HashSet<Vec<u8>>>> {
+    ) -> Result<Vec<&'a [u8]>, CryptoError> {
         use core_crypto_keystore::entities::EntityBase as _;
 
+        let kp_to_delete = kps.iter().try_fold(vec![], |mut kp_to_delete, (store_kp, kp)| {
+            let is_expired = Self::is_mls_keypackage_expired(kp);
+            let mut to_delete = is_expired;
+            if !(is_expired || refs.is_empty()) {
+                // not expired and there are some refs to check
+                // then delete it when it's found in the refs
+                to_delete = refs.iter().any(|r| r.as_slice() == store_kp.keypackage_ref);
+            }
+
+            if to_delete {
+                kp_to_delete.push((kp, &store_kp.keypackage_ref));
+            }
+            CryptoResult::Ok(kp_to_delete)
+        })?;
+
+        for (kp, kp_ref) in &kp_to_delete {
+            // TODO: maybe rewrite this to optimize it. But honestly it's called so rarely and on a so tiny amount of data
+            MlsKeyPackage::delete(conn, &[kp_ref.as_slice().into()]).await?;
+            MlsHpkePrivateKey::delete(conn, &[kp.hpke_init_key().as_slice().into()]).await?;
+            MlsEncryptionKeyPair::delete(conn, &[kp.leaf_node().encryption_key().as_slice().into()]).await?;
+        }
+
+        let kp_to_delete = kp_to_delete
+            .into_iter()
+            .map(|(_, kpref)| &kpref[..])
+            .collect::<Vec<_>>();
+
+        Ok(kp_to_delete)
+    }
+
+    async fn find_all_keypackages(
+        &self,
+        conn: &mut KeystoreDatabaseConnection,
+    ) -> CryptoResult<Vec<(MlsKeyPackage, KeyPackage)>> {
         let kps = MlsKeyPackage::find_all(conn, EntityFindParams::default()).await?;
 
-        prune_credential = prune_credential && !refs.is_empty();
+        let kps = kps.into_iter().try_fold(vec![], |mut acc, raw_kp| {
+            let kp = core_crypto_keystore::deser::<KeyPackage>(&raw_kp.keypackage)?;
+            acc.push((raw_kp, kp));
+            CryptoResult::Ok(acc)
+        })?;
 
-        let (kp_refs_to_delete, sign_kp_to_delete, sign_kp_to_keep, hpke_sk_to_delete, hpke_encryption_kp_to_delete) =
-            kps.iter().try_fold(
-                (
-                    vec![],
-                    HashMap::<Vec<u8>, HashSet<Vec<u8>>>::new(),
-                    HashSet::new(),
-                    HashSet::new(),
-                    HashSet::new(),
-                ),
-                |(
-                    mut kp_refs_to_delete,
-                    mut sign_kp_to_delete,
-                    mut sign_kp_to_keep,
-                    mut hpke_sk_to_delete,
-                    mut hpke_encryption_kp_to_delete,
-                ),
-                 store_kp| {
-                    let kp = core_crypto_keystore::deser::<KeyPackage>(&store_kp.keypackage)?;
-
-                    let is_expired = Self::is_mls_keypackage_expired(&kp);
-                    let mut to_delete = is_expired;
-                    if !(is_expired || refs.is_empty()) {
-                        // not expired and there are some refs to check
-                        // then delete it when it's found in the refs
-                        to_delete = refs.iter().any(|r| r.as_slice() == store_kp.keypackage_ref);
-                    }
-
-                    let leaf_node = kp.leaf_node();
-                    let sign_pk = leaf_node.signature_key().as_slice();
-                    if to_delete {
-                        kp_refs_to_delete.push(store_kp.keypackage_ref.as_slice().into());
-                        hpke_sk_to_delete.insert(kp.hpke_init_key().as_slice().to_vec());
-                        hpke_encryption_kp_to_delete.insert(leaf_node.encryption_key().as_slice().to_vec());
-
-                        // Just stack all the credential and its associated signature keys to delete
-                        let credential = leaf_node.credential();
-                        let raw_credential = credential.tls_serialize_detached().map_err(MlsError::from)?;
-
-                        sign_kp_to_delete
-                            .entry(raw_credential)
-                            .and_modify(|c| {
-                                c.insert(sign_pk.to_vec());
-                            })
-                            .or_insert_with(|| HashSet::from([sign_pk.to_vec()]));
-                    } else if prune_credential {
-                        sign_kp_to_keep.insert(sign_pk.to_vec());
-                    }
-                    CryptoResult::Ok((
-                        kp_refs_to_delete,
-                        sign_kp_to_delete,
-                        sign_kp_to_keep,
-                        hpke_sk_to_delete,
-                        hpke_encryption_kp_to_delete,
-                    ))
-                },
-            )?;
-
-        if !kp_refs_to_delete.is_empty() {
-            MlsKeyPackage::delete(conn, &kp_refs_to_delete).await?;
-        }
-
-        let hpke_sk_to_delete = hpke_sk_to_delete.iter().map(|k| k[..].into()).collect::<Vec<_>>();
-        if !hpke_sk_to_delete.is_empty() {
-            MlsHpkePrivateKey::delete(conn, &hpke_sk_to_delete).await?;
-        }
-
-        let hpke_encryption_kp_to_delete = hpke_encryption_kp_to_delete
-            .iter()
-            .map(|k| k[..].into())
-            .collect::<Vec<_>>();
-        if !hpke_encryption_kp_to_delete.is_empty() {
-            MlsEncryptionKeyPair::delete(conn, &hpke_encryption_kp_to_delete).await?;
-        }
-
-        // Delete all the credentials except those whose signature keypair is referenced by a KeyPackage
-        let credentials_to_delete = sign_kp_to_delete
-            .into_iter()
-            .filter(|(_, kps)| {
-                let to_keep = kps.iter().any(|kp| sign_kp_to_keep.contains(kp.as_slice()));
-                !to_keep
-            })
-            .collect();
-
-        Ok(credentials_to_delete)
+        Ok(kps)
     }
 
     /// Allows to set the current default keypackage lifetime extension duration.

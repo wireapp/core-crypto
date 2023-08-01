@@ -99,6 +99,7 @@ pub struct MlsPendingMessage {
 pub struct MlsCredential {
     pub id: Vec<u8>,
     pub credential: Vec<u8>,
+    pub created_at: u64,
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -119,7 +120,6 @@ pub struct MlsSignatureKeyPair {
     pub pk: Vec<u8>,
     pub keypair: Vec<u8>,
     pub credential_id: Vec<u8>,
-    pub created_at: u64,
 }
 
 impl MlsSignatureKeyPair {
@@ -129,7 +129,6 @@ impl MlsSignatureKeyPair {
             pk,
             keypair,
             credential_id,
-            created_at: 0,
         }
     }
 }
