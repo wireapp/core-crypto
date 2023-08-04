@@ -209,10 +209,16 @@ pub enum CryptoError {
     InvalidCertificateChain,
     /// Emtpy trust anchor update
     #[error("The update anchors parameters can't be empty")]
-    EmptyTrustAnchorUdpate,
+    EmptyTrustAnchorUpdate,
     /// Adding a certificate chain already in the group's context
     #[error("The certificate chain is already in the group's context")]
     DuplicateCertificateChain,
+    /// This happens when the DS cannot flag KeyPackages as claimed or not. It this scenario, a client
+    /// requests their old KeyPackages to be deleted but one has already been claimed by another client to create a Welcome.
+    /// In that case the only solution is that the client receiving such a Welcome tries to join the group
+    /// with an External Commit instead
+    #[error("Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit")]
+    OrphanWelcome,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

@@ -626,6 +626,10 @@ public class CoreCryptoWrapper {
     }
 
     /// Ingest a TLS-serialized MLS welcome message to join a an existing MLS group
+    ///
+    /// Important: you have to catch the error "OrphanWelcome", ignore it and then try
+    /// to join this group with an external commit.
+    ///
     /// - parameter welcomeMessage: - TLS-serialized MLS Welcome message
     /// - parameter config: - configuration of the MLS group
     /// - returns: The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages

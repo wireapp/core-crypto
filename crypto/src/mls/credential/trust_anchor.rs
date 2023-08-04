@@ -175,7 +175,7 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<openmls::prelude::PerDomainTrustAnchor>> {
         if remove_domain_names.is_empty() && add_trust_anchors.is_empty() {
-            return Err(CryptoError::EmptyTrustAnchorUdpate);
+            return Err(CryptoError::EmptyTrustAnchorUpdate);
         }
 
         let context = self.group.export_group_context();
@@ -1363,7 +1363,7 @@ mod tests {
                             .update_trust_anchors_from_conversation(&id, vec![], vec![])
                             .await
                             .unwrap_err();
-                        assert!(matches!(error, CryptoError::EmptyTrustAnchorUdpate));
+                        assert!(matches!(error, CryptoError::EmptyTrustAnchorUpdate));
 
                         // both must have the anchors in the extensions
                         let alice_anchors = alice_central
