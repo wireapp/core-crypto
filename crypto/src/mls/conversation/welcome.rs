@@ -1,7 +1,9 @@
-use crate::group_store::GroupStore;
-use crate::prelude::{
-    ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationConfiguration,
-    MlsCustomConfiguration, MlsError,
+use crate::{
+    group_store::GroupStore,
+    prelude::{
+        ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationConfiguration,
+        MlsCustomConfiguration, MlsError,
+    },
 };
 use core_crypto_keystore::entities::PersistedMlsPendingGroup;
 use mls_crypto_provider::MlsCryptoProvider;
@@ -67,7 +69,6 @@ impl MlsCentral {
 
         let conversation_id = conversation.id.clone();
         self.mls_groups.insert(conversation_id.clone(), conversation);
-
         Ok(conversation_id)
     }
 }
@@ -90,9 +91,13 @@ impl MlsConversation {
         mls_groups: &mut GroupStore<MlsConversation>,
     ) -> CryptoResult<Self> {
         let mls_group_config = configuration.as_openmls_default_configuration(backend)?;
-        let group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None)
-            .await
-            .map_err(MlsError::from)?;
+
+        let group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None).await;
+
+        let group = match group {
+            Err(openmls::prelude::WelcomeError::NoMatchingKeyPackage) => return Err(CryptoError::OrphanWelcome),
+            _ => group.map_err(MlsError::from)?,
+        };
 
         let id = ConversationId::from(group.group_id().as_slice());
         let existing_conversation = mls_groups.get_fetch(&id[..], backend.borrow_keystore_mut(), None).await;

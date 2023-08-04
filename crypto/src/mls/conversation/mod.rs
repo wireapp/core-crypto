@@ -56,6 +56,7 @@ pub mod export;
 pub(crate) mod group_info;
 pub mod handshake;
 pub mod merge;
+mod orphan_welcome;
 mod renew;
 mod self_commit;
 pub(crate) mod welcome;

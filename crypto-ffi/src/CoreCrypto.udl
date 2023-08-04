@@ -191,8 +191,9 @@ enum CryptoError {
     "DomainNamesDontMatch",
     "DuplicateDomainName",
     "InvalidCertificateChain",
-    "EmptyTrustAnchorUdpate",
+    "EmptyTrustAnchorUpdate",
     "DuplicateCertificateChain",
+    "OrphanWelcome",
 };
 
 enum MlsWirePolicy {

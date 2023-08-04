@@ -1018,6 +1018,10 @@ export class CoreCrypto {
     /**
      * Ingest a TLS-serialized MLS welcome message to join an existing MLS group
      *
+     * Important: you have to catch the error with this reason "Although this Welcome seems valid, the local KeyPackage
+     * it references has already been deleted locally. Join this group with an external commit", ignore it and then try
+     * to join this group with an external commit.
+     *
      * @param welcomeMessage - TLS-serialized MLS Welcome message
      * @param configuration - configuration of the MLS group
      * @returns The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages
