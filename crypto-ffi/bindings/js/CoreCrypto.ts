@@ -1703,7 +1703,15 @@ export class CoreCrypto {
      * @param newKeyPackageCount - number of KeyPackages with new identity to generate
      */
     async e2eiRotateAll(enrollment: WireE2eIdentity, certificateChain: string, newKeyPackageCount: number): Promise<RotateBundle> {
-        return await this.#cc.e2ei_rotate_all(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain, newKeyPackageCount);
+        const ffiRet: CoreCryptoFfiTypes.RotateBundle = await this.#cc.e2ei_rotate_all(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain, newKeyPackageCount);
+
+        const ret: RotateBundle = {
+            commits: ffiRet.commits,
+            newKeyPackages: ffiRet.new_key_packages,
+            keyPackageRefsToRemove: ffiRet.key_package_refs_to_remove,
+        }
+
+        return ret;
     }
 
     /**
