@@ -7,10 +7,49 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.6] - 2023-08-08
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- `e2eiRotateAll` return type was not wrapped
+- Signature KeyPair was rotated when credentials were which was zealous. Also fixes an important bug caused by inverted private & public keypair part when rotating credentials
+
+### Features
+
+- [**breaking**] Handle the case when a client tries to decrypt a Welcome referring to a KeyPackage he already has deleted locally
+- Add keystore dump exporter CLI tool
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.6
+
+### Testing
+
+- Add a roundtrip test for e2ei credential rotation to tackle a false positive regression
+
+</details>
+
+* Add keystore dump CLI tool to debug internal applications and export the content of the keystore for further analysis
+* handle the "orphan welcome" corner case when the client receives a Welcome but already has deleted the associated KeyPackage.
+In that case he has to catch & ignore the "OrphanWelcome" error and to rejoin the group with an external commit.
+* Fix credential rotation in end-to-end identity was signing the certificate with the wrong keypair part
+* Fix `e2eiRotateAll` return type was not correctly wrapped in a object in Typescript
+
 ## [1.0.0-rc.5] - 2023-07-31
 
 <details>
     <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- E2ei enum for conversation state was unused and failing the Typescript publication. Now CI will have the same compiler flags when checking bindings in order to prevent this again
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.5
 
 </details>
 

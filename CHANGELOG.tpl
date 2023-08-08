@@ -7,11 +7,24 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.6] - 2023-08-08
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.8" unreleased=true}}
+</details>
+
+* Add keystore dump CLI tool to debug internal applications and export the content of the keystore for further analysis
+* handle the "orphan welcome" corner case when the client receives a Welcome but already has deleted the associated KeyPackage.
+In that case he has to catch & ignore the "OrphanWelcome" error and to rejoin the group with an external commit.
+* Fix credential rotation in end-to-end identity was signing the certificate with the wrong keypair part
+* Fix `e2eiRotateAll` return type was not correctly wrapped in a object in Typescript
+
 ## [1.0.0-rc.5] - 2023-07-31
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.5" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.5"}}
 </details>
 
 * Fix WASM publication issues
