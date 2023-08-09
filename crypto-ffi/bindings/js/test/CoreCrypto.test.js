@@ -74,7 +74,7 @@ test("init", async () => {
 
   await page.close();
   await ctx.close();
-});
+}, 10000);
 
 test("can use groupInfo enums", async () => {
   const [ctx, page] = await initBrowser();

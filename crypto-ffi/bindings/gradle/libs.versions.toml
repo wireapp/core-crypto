@@ -1,0 +1,36 @@
+[versions]
+kotlin = "1.9.0"
+app-compat = "1.6.1"
+coroutines = "1.7.3"
+jna = "5.13.0"
+ktx-core = "1.10.1"
+slf4j = "2.0.7"
+assertj = "3.24.2"
+espresso = "3.5.1"
+android-junit = "1.1.5"
+android-logback = "2.0.0"
+android-tools = "8.0.0"
+sdk-compile = "33"
+sdk-min = "26"
+gradle = "8.2.1"
+vanniktech-publish = "0.25.3"
+kotlin-gradle = "1.9.0"
+
+[plugins]
+vanniktech-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech-publish" }
+
+[libraries]
+kotlin-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+appCompat = { module = "androidx.appcompat:appcompat", version.ref = "app-compat" }
+coroutines-bom = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", version.ref = "coroutines" }
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+ktx-core = { module = "androidx.core:core-ktx", version.ref = "ktx-core" }
+slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+espresso = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
+android-junit = { module = "androidx.test.ext:junit", version.ref = "android-junit" }
+android-logback = { module = "com.github.tony19:logback-android", version.ref = "android-logback" }
+android-tools = { module = "com.android.tools.build:gradle", version.ref = "android-tools" }
+kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-gradle" }

@@ -40,10 +40,9 @@ pub struct MlsConversationDecryptMessage {
     /// * local pending proposal not in the accepted commit
     /// * If there is a pending commit, its proposals which are not in the accepted commit
     pub proposals: Vec<MlsProposalBundle>,
-    /// Is the conversation still active after receiving this commit
-    /// aka has the user been removed from the group
+    /// Is the conversation still active after receiving this commit aka has the user been removed from the group
     pub is_active: bool,
-    /// delay time in seconds to feed caller timer for committing
+    /// Delay time in seconds to feed caller timer for committing
     pub delay: Option<u64>,
     /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
     pub sender_client_id: Option<ClientId>,

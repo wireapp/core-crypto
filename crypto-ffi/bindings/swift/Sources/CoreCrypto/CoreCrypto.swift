@@ -548,19 +548,20 @@ public class CoreCryptoWrapper {
     /// Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID.
     /// This method is designed to be used in conjunction with ```CoreCrypto/mlsInitWithClientId``` and represents the first step in this process
     ///
-    /// - returns: the TLS-serialized identity key (i.e. the signature keypair's public key)
-    public func mlsGenerateKeypairs(ciphersuites: Array<UInt16>) async throws -> [[UInt8]] {
+    /// - returns: a list of random ClientId to use in ```CoreCrypto/mlsInitWithClientId```
+    public func mlsGenerateKeypairs(ciphersuites: Array<UInt16>) async throws -> [[ClientId]] {
         await try self.coreCrypto.mlsGenerateKeypairs(ciphersuites: ciphersuites)
     }
 
     /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
     ///
-    /// Important: This is designed to be called after ```CoreCrypto/mlsGenerateKeypair```
+    /// Important: This is designed to be called after ```CoreCrypto/mlsGenerateKeypairs```
     ///
     /// - parameter clientId: The newly allocated Client ID from the MLS Authentication Service
-    /// - parameter signaturePublicKey: The public key you obtained at step 1, for authentication purposes
-    public func mlsInitWithClientId(clientId: ClientId, signaturePublicKeys: [[UInt8]], ciphersuites: Array<UInt16>) async throws {
-        await try self.coreCrypto.mlsInitWithClientId(clientId: clientId, signaturePublicKeys: signaturePublicKeys, ciphersuites: ciphersuites)
+    /// - parameter tmpClientIds: The random clientId you obtained in ```CoreCrypto/mlsGenerateKeypairs```, for authentication purposes
+    /// - parameter ciphersuites: To initialize the Client with
+    public func mlsInitWithClientId(clientId: ClientId, tmpClientIds: [[ClientId]], ciphersuites: Array<UInt16>) async throws {
+        await try self.coreCrypto.mlsInitWithClientId(clientId: clientId, tmpClientIds: tmpClientIds, ciphersuites: ciphersuites)
     }
 
     /// `CoreCrypto` is supposed to be a singleton. Knowing that, it does some optimizations by

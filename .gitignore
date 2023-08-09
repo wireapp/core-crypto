@@ -30,8 +30,7 @@ sample-projects/ios/.swiftpm
 .DS_Store
 
 # Kotlin
-crypto-ffi/bindings/kt/main/com/wire/crypto/CoreCrypto.kt
-
+crypto-ffi/bindings/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt
 
 # Test databases leftovers
 *.edb

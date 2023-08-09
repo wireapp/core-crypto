@@ -127,7 +127,7 @@ fn bump_gradle_version(file: &str, bump_version: BumpLevel, dry_run: bool) -> Re
 }
 
 fn bump_gradle_versions(bump_version: BumpLevel, dry_run: bool) -> Result<()> {
-    bump_gradle_version("./kotlin/gradle.properties", bump_version, dry_run)?;
+    bump_gradle_version("./crypto-ffi/bindings/gradle.properties", bump_version, dry_run)?;
     Ok(())
 }
 
