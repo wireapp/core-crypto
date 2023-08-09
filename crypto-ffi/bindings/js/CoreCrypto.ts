@@ -805,7 +805,7 @@ export class CoreCrypto {
     /**
      * Closes this {@link CoreCrypto} instance and deallocates all loaded resources
      *
-     * **CAUTION**: This {@link CoreCrypto} instance won't be useable after a call to this method, but there's no way to express this requirement in TypeScript so you'll get errors instead!
+     * **CAUTION**: This {@link CoreCrypto} instance won't be usable after a call to this method, but there's no way to express this requirement in TypeScript, so you'll get errors instead!
      */
     async close() {
         await CoreCryptoError.asyncMapErr(this.#cc.close());
@@ -1042,7 +1042,10 @@ export class CoreCrypto {
     }
 
     /**
-     * @returns The client's public key
+     * Get the client's public signature key. To upload to the DS for further backend side validation
+     *
+     * @param ciphersuite - of the signature key to get
+     * @returns the client's public signature key
      */
     async clientPublicKey(ciphersuite: Ciphersuite): Promise<Uint8Array> {
         return await CoreCryptoError.asyncMapErr(this.#cc.client_public_key(ciphersuite));
@@ -1083,7 +1086,7 @@ export class CoreCrypto {
     /**
      * Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation.
      *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
+     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterward **ONLY IF** the Delivery Service responds
      * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
      * epoch, use new encryption secrets etc...
      *
@@ -1130,7 +1133,7 @@ export class CoreCrypto {
      * Removes the provided clients from a conversation; Assuming those clients exist and the current client is allowed
      * to do so, otherwise this operation does nothing.
      *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
+     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterward **ONLY IF** the Delivery Service responds
      * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
      * epoch, use new encryption secrets etc...
      *
@@ -1168,9 +1171,9 @@ export class CoreCrypto {
     }
 
     /**
-     * Creates an update commit which forces every client to update their keypackages in the conversation
+     * Creates an update commit which forces every client to update their LeafNode in the conversation
      *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
+     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterward **ONLY IF** the Delivery Service responds
      * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
      * epoch, use new encryption secrets etc...
      *
@@ -1282,6 +1285,9 @@ export class CoreCrypto {
         }
     }
 
+    /**
+     * Creates a new external Add proposal for self client to join a conversation.
+     */
     async newExternalProposal(
         externalProposalType: ExternalProposalType,
         args: ExternalAddProposalArgs
@@ -1342,7 +1348,7 @@ export class CoreCrypto {
      * and deletes the temporary one. This step makes the group operational and ready to encrypt/decrypt message
      *
      * @param conversationId - The ID of the conversation
-     * @returns the messages from current epoch which had been buffered, if any
+     * @returns eventually decrypted buffered messages if any
      */
     async mergePendingGroupFromExternalCommit(conversationId: ConversationId): Promise<DecryptedMessage[] | undefined> {
         return await CoreCryptoError.asyncMapErr(this.#cc.merge_pending_group_from_external_commit(conversationId));
@@ -1360,8 +1366,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Allows to mark the latest commit produced as "accepted" and be able to safely merge it
-     * into the local group state
+     * Allows to mark the latest commit produced as "accepted" and be able to safely merge it into the local group state
      *
      * @param conversationId - The group's ID
      * @returns the messages from current epoch which had been buffered, if any
@@ -1371,11 +1376,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Allows to remove a pending proposal (rollback). Use this when backend rejects the proposal you just sent e.g. if permissions
-     * have changed meanwhile.
+     * Allows to remove a pending proposal (rollback). Use this when backend rejects the proposal you just sent e.g. if permissions have changed meanwhile.
      *
      * **CAUTION**: only use this when you had an explicit response from the Delivery Service
-     * e.g. 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc..
+     * e.g. 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc…
      *
      * @param conversationId - The group's ID
      * @param proposalRef - A reference to the proposal to delete. You get one when using {@link CoreCrypto.newProposal}
@@ -1385,8 +1389,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Allows to remove a pending commit (rollback). Use this when backend rejects the commit you just sent e.g. if permissions
-     * have changed meanwhile.
+     * Allows to remove a pending commit (rollback). Use this when backend rejects the commit you just sent e.g. if permissions have changed meanwhile.
      *
      * **CAUTION**: only use this when you had an explicit response from the Delivery Service
      * e.g. 403. Do not use otherwise e.g. 5xx responses, timeout etc..
@@ -1644,12 +1647,12 @@ export class CoreCrypto {
      * Creates an enrollment instance with private key material you can use in order to fetch
      * a new x509 certificate from the acme server.
      *
-     * @param clientId client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
-     * @param displayName human readable name displayed in the application e.g. `Smith, Alice M (QA)`
-     * @param handle user handle e.g. `alice.smith.qa@example.com`
-     * @param expiryDays generated x509 certificate expiry
+     * @param clientId - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+     * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
+     * @param handle - user handle e.g. `alice.smith.qa@example.com`
+     * @param expiryDays - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
-     * @returns The new {@link WireE2eIdentity} object
+     * @returns The new {@link WireE2eIdentity} enrollment instance to use with {@link CoreCrypto.e2eiMlsInitOnly}
      */
     async e2eiNewEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<WireE2eIdentity> {
         const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
@@ -1660,12 +1663,12 @@ export class CoreCrypto {
      * Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
      * Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
      *
-     * @param clientId client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
-     * @param displayName human readable name displayed in the application e.g. `Smith, Alice M (QA)`
-     * @param handle user handle e.g. `alice.smith.qa@example.com`
-     * @param expiryDays generated x509 certificate expiry
+     * @param clientId - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+     * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
+     * @param handle - user handle e.g. `alice.smith.qa@example.com`
+     * @param expiryDays - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
-     * @returns The new {@link WireE2eIdentity} object
+     * @returns The new {@link WireE2eIdentity} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
      */
     async e2eiNewActivationEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<WireE2eIdentity> {
         const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_activation_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
@@ -1678,12 +1681,12 @@ export class CoreCrypto {
      * has been revoked. It lets you change the DisplayName or the handle
      * if you need to. Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
      *
-     * @param clientId client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
-     * @param expiryDays generated x509 certificate expiry
+     * @param clientId - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+     * @param expiryDays - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
-     * @param displayName human readable name displayed in the application e.g. `Smith, Alice M (QA)`
-     * @param handle user handle e.g. `alice.smith.qa@example.com`
-     * @returns The new {@link WireE2eIdentity} object
+     * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
+     * @param handle - user handle e.g. `alice.smith.qa@example.com`
+     * @returns The new {@link WireE2eIdentity} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
      */
     async e2eiNewRotateEnrollment(clientId: string, expiryDays: number, ciphersuite: Ciphersuite, displayName?: string, handle?: string,): Promise<WireE2eIdentity> {
         const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_rotate_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
@@ -1691,10 +1694,12 @@ export class CoreCrypto {
     }
 
     /**
-     * Use this method to initialize end-to-end identity when a client signs up and the grace period is already expired ; that means he cannot initialize with a Basic credential
+     * Use this method to initialize end-to-end identity when a client signs up and the grace period is already expired ;
+     * that means he cannot initialize with a Basic credential
      *
      * @param enrollment - the enrollment instance used to fetch the certificates
      * @param certificateChain - the raw response from ACME server
+     * @returns a MlsClient initialized with only a x509 credential
      */
     async e2eiMlsInitOnly(enrollment: WireE2eIdentity, certificateChain: string): Promise<void> {
         return await this.#cc.e2ei_mls_init_only(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain);
@@ -1708,6 +1713,7 @@ export class CoreCrypto {
      * @param enrollment - the enrollment instance used to fetch the certificates
      * @param certificateChain - the raw response from ACME server
      * @param newKeyPackageCount - number of KeyPackages with new identity to generate
+     * @returns a {@link RotateBundle} with commits to fan-out to other group members, KeyPackages to upload and old ones to delete
      */
     async e2eiRotateAll(enrollment: WireE2eIdentity, certificateChain: string, newKeyPackageCount: number): Promise<RotateBundle> {
         const ffiRet: CoreCryptoFfiTypes.RotateBundle = await this.#cc.e2ei_rotate_all(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain, newKeyPackageCount);
@@ -1760,7 +1766,7 @@ export class CoreCrypto {
      * Returns true when end-to-end-identity is enabled for the given Ciphersuite
      *
      * @param ciphersuite of the credential to check
-     * @returns true end-to-end identity is enabled for the given ciphersuite
+     * @returns true if end-to-end identity is enabled for the given ciphersuite
      */
     async e2eiIsEnabled(ciphersuite: Ciphersuite): Promise<boolean> {
         return await CoreCryptoError.asyncMapErr(this.#cc.e2ei_is_enabled(ciphersuite));
@@ -1983,7 +1989,7 @@ export class WireE2eIdentity {
      * Parses the response from `POST /acme/{provisioner-name}/order/{order-id}`.
      *
      * @param order HTTP response body
-     * @return the finalize url to use with {@link finalizeRequest}
+     * @return finalize url to use with {@link finalizeRequest}
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
     checkOrderResponse(order: JsonRawData): string {

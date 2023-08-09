@@ -881,7 +881,7 @@ impl CoreCrypto {
         self.central
             .lock()
             .await
-            .clear_pending_proposal(&conversation_id, proposal_ref)
+            .clear_pending_proposal(&conversation_id, proposal_ref.into())
             .await
     }
 

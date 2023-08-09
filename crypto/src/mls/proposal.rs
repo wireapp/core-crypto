@@ -38,6 +38,10 @@ impl MlsProposalRef {
     pub fn into_inner(self) -> ProposalRef {
         self.0
     }
+
+    pub(crate) fn to_bytes(&self) -> Vec<u8> {
+        self.0.as_slice().to_vec()
+    }
 }
 
 #[cfg(test)]

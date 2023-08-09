@@ -123,13 +123,13 @@ impl MlsCentral {
     pub async fn clear_pending_proposal(
         &mut self,
         conversation_id: &ConversationId,
-        proposal_ref: Vec<u8>,
+        proposal_ref: MlsProposalRef,
     ) -> CryptoResult<()> {
         self.get_conversation(conversation_id)
             .await?
             .write()
             .await
-            .clear_pending_proposal(proposal_ref.into(), &self.mls_backend)
+            .clear_pending_proposal(proposal_ref, &self.mls_backend)
             .await
     }
 
@@ -294,7 +294,7 @@ pub mod tests {
                         let update_ref = alice_central.new_update_proposal(&id).await.unwrap().proposal_ref;
 
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 3);
-                        alice_central.clear_pending_proposal(&id, add_ref.into()).await.unwrap();
+                        alice_central.clear_pending_proposal(&id, add_ref).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 2);
                         assert!(!alice_central
                             .pending_proposals(&id)
@@ -302,10 +302,7 @@ pub mod tests {
                             .into_iter()
                             .any(|p| matches!(p.proposal(), Proposal::Add(_))));
 
-                        alice_central
-                            .clear_pending_proposal(&id, remove_ref.into())
-                            .await
-                            .unwrap();
+                        alice_central.clear_pending_proposal(&id, remove_ref).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         assert!(!alice_central
                             .pending_proposals(&id)
@@ -313,10 +310,7 @@ pub mod tests {
                             .into_iter()
                             .any(|p| matches!(p.proposal(), Proposal::Remove(_))));
 
-                        alice_central
-                            .clear_pending_proposal(&id, update_ref.into())
-                            .await
-                            .unwrap();
+                        alice_central.clear_pending_proposal(&id, update_ref).await.unwrap();
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         assert!(!alice_central
                             .pending_proposals(&id)
@@ -335,9 +329,7 @@ pub mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    let simple_ref = MlsProposalRef::try_from(vec![0; case.ciphersuite().hash_length()])
-                        .unwrap()
-                        .into();
+                    let simple_ref = MlsProposalRef::try_from(vec![0; case.ciphersuite().hash_length()]).unwrap();
                     let clear = alice_central.clear_pending_proposal(&id, simple_ref).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::ConversationNotFound(conv_id) if conv_id == id))
                 })
@@ -357,7 +349,7 @@ pub mod tests {
                         .unwrap();
                     assert!(alice_central.pending_proposals(&id).await.is_empty());
                     let any_ref = MlsProposalRef::try_from(vec![0; case.ciphersuite().hash_length()]).unwrap();
-                    let clear = alice_central.clear_pending_proposal(&id, any_ref.clone().into()).await;
+                    let clear = alice_central.clear_pending_proposal(&id, any_ref.clone()).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::PendingProposalNotFound(prop_ref) if prop_ref == any_ref))
                 })
             })
@@ -380,7 +372,7 @@ pub mod tests {
                     let proposal_ref = cc.new_update_proposal(&id).await.unwrap().proposal_ref;
                     assert_eq!(cc.pending_proposals(&id).await.len(), 1);
 
-                    cc.clear_pending_proposal(&id, proposal_ref.into()).await.unwrap();
+                    cc.clear_pending_proposal(&id, proposal_ref).await.unwrap();
                     assert!(cc.pending_proposals(&id).await.is_empty());
 
                     // This whole flow should be idempotent.

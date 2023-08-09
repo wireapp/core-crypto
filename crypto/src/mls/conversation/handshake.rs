@@ -20,12 +20,12 @@ use crate::prelude::{
 
 use super::MlsConversation;
 
-/// Returned when a commit is created
+/// Returned when a Proposal is created. Helps roll backing a local proposal
 #[derive(Debug)]
 pub struct MlsProposalBundle {
     /// The proposal message
     pub proposal: MlsMessageOut,
-    /// An identifier of the proposal to rollback it later if required
+    /// A unique identifier of the proposal to rollback it later if required
     pub proposal_ref: MlsProposalRef,
 }
 
@@ -45,7 +45,7 @@ impl MlsProposalBundle {
     pub fn to_bytes_pair(&self) -> CryptoResult<(Vec<u8>, Vec<u8>)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let proposal = self.proposal.tls_serialize_detached().map_err(MlsError::from)?;
-        let proposal_ref = self.proposal_ref.tls_serialize_detached().map_err(MlsError::from)?;
+        let proposal_ref = self.proposal_ref.to_bytes();
 
         Ok((proposal, proposal_ref))
     }

@@ -1872,7 +1872,7 @@ impl CoreCrypto {
             async move {
                 this.write()
                     .await
-                    .clear_pending_proposal(&conversation_id.to_vec(), proposal_ref.to_vec())
+                    .clear_pending_proposal(&conversation_id.to_vec(), proposal_ref.to_vec().into())
                     .await
                     .map_err(CoreCryptoError::from)?;
 

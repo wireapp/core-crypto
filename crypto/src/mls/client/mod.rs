@@ -109,7 +109,7 @@ impl Client {
     }
 
     /// Initializes a raw MLS keypair without an associated client ID
-    /// Returns the raw bytes of the public key
+    /// Returns a random ClientId to bind later in [Client::init_with_external_client_id]
     ///
     /// # Arguments
     /// * `ciphersuites` - all ciphersuites this client is supposed to support
@@ -154,7 +154,8 @@ impl Client {
     ///
     /// # Arguments
     /// * `client_id` - The client ID you have fetched from the MLS Authentication Service
-    /// * `signature_public_key` - The client's public key. We need it to make sure
+    /// * `tmp_ids` - The temporary random client ids generated in the previous step [Client::generate_raw_keypairs]
+    /// * `ciphersuites` - To initialize the Client with
     /// * `backend` - the KeyStore and crypto provider to read identities from
     ///
     /// **WARNING**: You have absolutely NO reason to call this if you didn't call [Client::generate_raw_keypairs] first. You have been warned!
@@ -521,7 +522,7 @@ pub mod tests {
 
                     let prov_identity = identities.pop().unwrap();
 
-                    // Make sure we are actually returning the signature public key
+                    // Make sure we are actually returning the clientId
                     // TODO: test with multi-ciphersuite
                     let prov_client_id: ClientId = prov_identity.credential_id.as_slice().into();
                     assert_eq!(&prov_client_id, handles.first().unwrap());

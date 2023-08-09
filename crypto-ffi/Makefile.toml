@@ -1,6 +1,6 @@
 [env]
 ANDROID_NDK_PREFER_VERSION = "25.2"
-LIBRARY_EXTENSION = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "so", mapping = {"linux" = "so", "macos" = "dylib", "windows" = "dll", "openbsd" = "so" } }
+LIBRARY_EXTENSION = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "so", mapping = { "linux" = "so", "macos" = "dylib", "windows" = "dll", "openbsd" = "so" } }
 
 [tasks.clean]
 command = "cargo"
@@ -69,7 +69,7 @@ args = [
     "-moduleName", "CoreCrypto",
     "-pluginsClasspath",
     "../target/_kotlin_docs_tmp/dokka-base-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/dokka-analysis-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/dokka-analysis-intellij-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/dokka-analysis-compiler-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/kotlinx-coroutines-core-1.6.4.jar;../target/_kotlin_docs_tmp/kotlinx-html-jvm-0.8.1.jar;../target/_kotlin_docs_tmp/freemarker-2.3.31.jar",
-    "-sourceSet", "-src ./bindings/kt/main",
+    "-sourceSet", "-src ./bindings/jvm/src/main/kotlin",
     "-outputDir", "../target/doc/core_crypto_ffi/bindings/kotlin",
 ]
 
@@ -140,7 +140,7 @@ args = [
     "--bin", "uniffi-bindgen",
     "generate",
     "--language", "kotlin",
-    "--out-dir", "./bindings/kt/main",
+    "--out-dir", "./bindings/jvm/src/main/kotlin/",
     "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
@@ -200,7 +200,6 @@ script = '''
     ./build-xcframework.sh
 '''
 dependencies = ["ios"]
-
 
 ################################### Android ###################################
 
@@ -284,8 +283,8 @@ end
 
 release ${handle}
 
-println -c bright_blue "cp ./bindings/kt/com/wire/crypto/CoreCrypto.kt -> ../sample-projects/android/CoreCryptoTestApp/app/src/main/java/com/wire/core/CoreCrypto.kt"
-from = canonicalize "./bindings/kt/com/wire/crypto/CoreCrypto.kt"
+println -c bright_blue "cp ./bindings/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt -> ../sample-projects/android/CoreCryptoTestApp/app/src/main/java/com/wire/core/CoreCrypto.kt"
+from = canonicalize "./bindings/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt"
 to = canonicalize "../sample-projects/android/CoreCryptoTestApp/app/src/main/java/com/wire/crypto/CoreCrypto.kt"
 cp ${from} ${to}
 '''
