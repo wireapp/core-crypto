@@ -1,6 +1,7 @@
 package com.wire.crypto.client
 
 import com.wire.crypto.WireE2eIdentity
+import com.wire.crypto.CommitBundle
 import com.wire.crypto.client.AcmeChallenge.Companion.toAcmeChallenge
 import com.wire.crypto.client.AcmeDirectory.Companion.toAcmeDirectory
 import com.wire.crypto.client.NewAcmeAuthz.Companion.toNewAcmeAuthz
@@ -8,6 +9,12 @@ import com.wire.crypto.client.NewAcmeOrder.Companion.toNewAcmeOrder
 
 typealias JsonRawData = ByteArray
 typealias DpopToken = String
+
+data class RotateBundle(
+    val commits: HashMap<String, CommitBundle>,
+    val newKeyPackages: List<ByteArray>,
+    val keyPackageRefsToRemove: List<ByteArray>,
+)
 
 data class AcmeDirectory(
     val newNonce: String,

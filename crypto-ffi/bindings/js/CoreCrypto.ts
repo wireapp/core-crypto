@@ -357,7 +357,7 @@ export interface RotateBundle {
      *
      * @readonly
      */
-    commits: CommitBundle[];
+    commits: Map<string, CommitBundle>;
     /**
      * Fresh KeyPackages with the new Credential
      *

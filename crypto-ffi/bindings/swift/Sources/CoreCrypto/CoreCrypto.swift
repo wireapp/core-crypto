@@ -495,13 +495,13 @@ private extension RatchetTreeType {
 /// Result returned after rotating the Credential of the current client in all the local conversations
 public struct RotateBundle: ConvertToInner {
     /// An Update commit for each conversation
-    public var commits: [CommitBundle]
+    public var commits: [String : CommitBundle]
     /// Fresh KeyPackages with the new Credential
     public var newKeyPackages: [[UInt8]]
     /// All the now deprecated KeyPackages. Once deleted remotely, delete them locally with ``CoreCrypto/deleteKeypackages``
     public var keyPackageRefsToRemove: [[UInt8]]
 
-    public init(commits: [CommitBundle], newKeyPackages: [[UInt8]], keyPackageRefsToRemove: [[UInt8]]) {
+    public init(commits: [String : CommitBundle], newKeyPackages: [[UInt8]], keyPackageRefsToRemove: [[UInt8]]) {
         self.commits = commits
         self.newKeyPackages = newKeyPackages
         self.keyPackageRefsToRemove = keyPackageRefsToRemove

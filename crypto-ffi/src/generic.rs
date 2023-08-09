@@ -146,7 +146,7 @@ impl From<MlsGroupInfoBundle> for GroupInfoBundle {
 
 #[derive(Debug)]
 pub struct RotateBundle {
-    pub commits: Vec<CommitBundle>,
+    pub commits: HashMap<String, CommitBundle>,
     pub new_key_packages: Vec<Vec<u8>>,
     pub key_package_refs_to_remove: Vec<Vec<u8>>,
 }
@@ -159,8 +159,8 @@ impl TryFrom<MlsRotateBundle> for RotateBundle {
         let commits_size = commits.len();
         let commits = commits
             .into_iter()
-            .try_fold(Vec::with_capacity(commits_size), |mut acc, c| {
-                acc.push(c.try_into()?);
+            .try_fold(HashMap::with_capacity(commits_size), |mut acc, (id, c)| {
+                let _ = acc.insert(id, c.try_into()?);
                 CryptoResult::Ok(acc)
             })?;
         Ok(Self {

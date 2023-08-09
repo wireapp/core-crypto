@@ -394,7 +394,7 @@ impl From<MlsGroupInfoBundle> for GroupInfoBundle {
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RotateBundle {
-    commits: Vec<CommitBundle>,
+    commits: HashMap<String, CommitBundle>,
     new_key_packages: Vec<Vec<u8>>,
     key_package_refs_to_remove: Vec<Vec<u8>>,
 }
@@ -402,12 +402,12 @@ pub struct RotateBundle {
 #[wasm_bindgen]
 impl RotateBundle {
     #[wasm_bindgen(getter)]
-    pub fn commits(&self) -> js_sys::Array {
-        self.commits
-            .iter()
-            .cloned()
-            .map(JsValue::from)
-            .collect::<js_sys::Array>()
+    pub fn commits(&self) -> js_sys::Map {
+        let commits = js_sys::Map::new();
+        for (id, c) in &self.commits {
+            commits.set(&JsValue::from(id), &JsValue::from(c.clone()));
+        }
+        commits
     }
 
     #[wasm_bindgen(getter)]
@@ -436,10 +436,13 @@ impl TryFrom<MlsRotateBundle> for RotateBundle {
         let (commits, new_key_packages, key_package_refs_to_remove) =
             msg.to_bytes().map_err(CryptoError::from).map_err(Self::Error::from)?;
 
-        let commits = commits.into_iter().try_fold(vec![], |mut acc, c| {
-            acc.push(c.try_into()?);
-            WasmCryptoResult::Ok(acc)
-        })?;
+        let commits_size = commits.len();
+        let commits = commits
+            .into_iter()
+            .try_fold(HashMap::with_capacity(commits_size), |mut acc, (id, c)| {
+                let _ = acc.insert(id, c.try_into()?);
+                WasmCryptoResult::Ok(acc)
+            })?;
 
         Ok(Self {
             commits,
