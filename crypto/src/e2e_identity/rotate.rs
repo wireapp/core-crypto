@@ -1,3 +1,4 @@
+use crate::prelude::ConversationId;
 use crate::{
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
     prelude::{
@@ -10,12 +11,13 @@ use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{KeyPackage, KeyPackageRef, MlsCredentialType as OpenMlsCredential};
 use openmls_traits::OpenMlsCryptoProvider;
+use std::collections::HashMap;
 
 /// Result returned after rotating the Credential of the current client in all the local conversations
 #[derive(Debug, Clone)]
 pub struct MlsRotateBundle {
     /// An Update commit for each conversation
-    pub commits: Vec<MlsCommitBundle>,
+    pub commits: HashMap<ConversationId, MlsCommitBundle>,
     /// Fresh KeyPackages with the new Credential
     pub new_key_packages: Vec<KeyPackage>,
     /// All the now deprecated KeyPackages. Once deleted remotely, delete them locally with [MlsCentral::delete_keypackages]
@@ -25,8 +27,19 @@ pub struct MlsRotateBundle {
 impl MlsRotateBundle {
     /// Lower through the FFI
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> CryptoResult<(Vec<MlsCommitBundle>, Vec<Vec<u8>>, Vec<Vec<u8>>)> {
+    pub fn to_bytes(self) -> CryptoResult<(HashMap<String, MlsCommitBundle>, Vec<Vec<u8>>, Vec<Vec<u8>>)> {
         use openmls::prelude::TlsSerializeTrait as _;
+
+        let commits_size = self.commits.len();
+        let commits = self
+            .commits
+            .into_iter()
+            .try_fold(HashMap::with_capacity(commits_size), |mut acc, (id, c)| {
+                // because uniffi ONLY supports HashMap<String, T>
+                let id = hex::encode(id);
+                let _ = acc.insert(id, c);
+                CryptoResult::Ok(acc)
+            })?;
 
         let kp_size = self.new_key_packages.len();
         let new_key_packages =
@@ -42,7 +55,7 @@ impl MlsRotateBundle {
             // TODO: add a method for taking ownership in HashReference
             .map(|r| r.as_slice().to_vec())
             .collect::<Vec<_>>();
-        Ok((self.commits, new_key_packages, key_package_refs_to_remove))
+        Ok((commits, new_key_packages, key_package_refs_to_remove))
     }
 }
 
@@ -192,17 +205,18 @@ impl MlsCentral {
         Ok(kp_refs)
     }
 
-    async fn e2ei_update_all(&mut self, cb: &CredentialBundle) -> CryptoResult<Vec<MlsCommitBundle>> {
+    async fn e2ei_update_all(
+        &mut self,
+        cb: &CredentialBundle,
+    ) -> CryptoResult<HashMap<ConversationId, MlsCommitBundle>> {
         let all_conversations = self.get_all_conversations().await?;
 
-        let mut commits = vec![];
+        let mut commits = HashMap::with_capacity(all_conversations.len());
         for conv in all_conversations {
-            let commit = conv
-                .write()
-                .await
-                .e2ei_rotate(&self.mls_backend, self.mls_client()?, cb)
-                .await?;
-            commits.push(commit);
+            let mut conv = conv.write().await;
+            let id = conv.id().clone();
+            let commit = conv.e2ei_rotate(&self.mls_backend, self.mls_client()?, cb).await?;
+            let _ = commits.insert(id, commit);
         }
         Ok(commits)
     }
@@ -334,17 +348,16 @@ pub mod tests {
                         // and a new Credential has been persisted in the keystore
                         assert_eq!(after_rotate.credential - before_rotate.credential, 1);
 
-                        for (n, commit) in rotate_bundle.commits.into_iter().enumerate() {
-                            let id = ids.get(n).unwrap();
+                        for (id, commit) in rotate_bundle.commits.into_iter() {
                             let decrypted = bob_central
-                                .decrypt_message(id, commit.commit.to_bytes().unwrap())
+                                .decrypt_message(&id, commit.commit.to_bytes().unwrap())
                                 .await
                                 .unwrap();
                             alice_central.verify_sender_identity(&case, &decrypted);
 
-                            alice_central.commit_accepted(id).await.unwrap();
+                            alice_central.commit_accepted(&id).await.unwrap();
                             alice_central
-                                .verify_local_credential_rotated(id, new_handle, new_display_name)
+                                .verify_local_credential_rotated(&id, new_handle, new_display_name)
                                 .await;
                         }
 
@@ -596,7 +609,7 @@ pub mod tests {
 
                         let rotate_bundle = alice_central.e2ei_rotate_all(enrollment, cert, 10).await.unwrap();
 
-                        let commit = &rotate_bundle.commits.first().unwrap().commit;
+                        let commit = &rotate_bundle.commits.get(&id).unwrap().commit;
 
                         let decrypted = bob_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
@@ -636,7 +649,7 @@ pub mod tests {
 
                         let rotate_bundle = bob_central.e2ei_rotate_all(enrollment, cert, 10).await.unwrap();
 
-                        let commit = &rotate_bundle.commits.first().unwrap().commit;
+                        let commit = &rotate_bundle.commits.get(&id).unwrap().commit;
 
                         let decrypted = alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())

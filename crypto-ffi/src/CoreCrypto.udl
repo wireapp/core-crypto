@@ -104,7 +104,7 @@ dictionary AcmeChallenge {
 };
 
 dictionary RotateBundle {
-    sequence<CommitBundle> commits;
+    record<string, CommitBundle> commits;
     sequence<bytes> new_key_packages;
     sequence<bytes> key_package_refs_to_remove;
 };
