@@ -7,11 +7,21 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.7] - 2023-08-09
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.7" unreleased=true}}
+</details>
+
+* **[BREAKING]** `RotateBundle` now returns a `Map<ConversationId, CommitBundle>` instead of a `Vec<CommitBundle>` in order
+to correlate the commit with its group id and to merge it afterwards. Note that the `ConversationId` here is hex encoded due to limitations at the FFI boundary.
+
 ## [1.0.0-rc.6] - 2023-08-08
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.8" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.6"}}
 </details>
 
 * Add keystore dump CLI tool to debug internal applications and export the content of the keystore for further analysis

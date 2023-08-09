@@ -7,6 +7,24 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.7] - 2023-08-09
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Kotlin tests not compiling after methods became async
+
+### Features
+
+- Correlate RotateBundle with a GroupId
+
+</details>
+
+* **[BREAKING]** `RotateBundle` now returns a `Map<ConversationId, CommitBundle>` instead of a `Vec<CommitBundle>` in order
+to correlate the commit with its group id and to merge it afterwards. Note that the `ConversationId` here is hex encoded due to limitations at the FFI boundary.
+
 ## [1.0.0-rc.6] - 2023-08-08
 
 <details>
