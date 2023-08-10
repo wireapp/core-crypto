@@ -105,7 +105,7 @@ interface MLSClient {
         addTrustAnchors: List<PerDomainTrustAnchor>,
     ): CommitBundle?
 
-    suspend fun commitAccepted(groupId: MLSGroupId)
+    suspend fun commitAccepted(groupId: MLSGroupId): List<DecryptedMessage>?
 
     suspend fun commitPendingProposals(groupId: MLSGroupId): CommitBundle?
 
@@ -234,8 +234,8 @@ class MLSClientImpl(
         return cc.decryptMessage(groupId.toUByteList(), message.toUByteList()).toDecryptedMessageBundle()
     }
 
-    override suspend fun commitAccepted(groupId: MLSGroupId) {
-        cc.commitAccepted(groupId.toUByteList())
+    override suspend fun commitAccepted(groupId: MLSGroupId): List<DecryptedMessage>? {
+        return cc.commitAccepted(groupId.toUByteList())
     }
 
     override suspend fun commitPendingProposals(groupId: MLSGroupId): CommitBundle? {

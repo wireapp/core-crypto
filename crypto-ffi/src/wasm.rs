@@ -1353,7 +1353,7 @@ impl CoreCrypto {
     /// see [core_crypto::mls::MlsCentral::new_conversation]
     pub fn create_conversation(
         &self,
-        conversation_id: Box<[u8]>,
+        conversation_id: ConversationId,
         creator_credential_type: CredentialType,
         config: ConversationConfiguration,
     ) -> Promise {
@@ -1378,14 +1378,14 @@ impl CoreCrypto {
     /// Returns [`WasmCryptoResult<u64>`]
     ///
     /// see [core_crypto::mls::MlsCentral::conversation_epoch]
-    pub fn conversation_epoch(&self, conversation_id: Box<[u8]>) -> Promise {
+    pub fn conversation_epoch(&self, conversation_id: ConversationId) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
                 WasmCryptoResult::Ok(
                     this.write()
                         .await
-                        .conversation_epoch(&conversation_id.into())
+                        .conversation_epoch(&conversation_id)
                         .await
                         .map_err(CoreCryptoError::from)?
                         .into(),
@@ -1398,17 +1398,15 @@ impl CoreCrypto {
     /// Returns: [`bool`]
     ///
     /// see [core_crypto::mls::MlsCentral::conversation_exists]
-    pub fn conversation_exists(&self, conversation_id: Box<[u8]>) -> Promise {
+    pub fn conversation_exists(&self, conversation_id: ConversationId) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                WasmCryptoResult::Ok(
-                    if this.write().await.conversation_exists(&conversation_id.into()).await {
-                        JsValue::TRUE
-                    } else {
-                        JsValue::FALSE
-                    },
-                )
+                WasmCryptoResult::Ok(if this.write().await.conversation_exists(&conversation_id).await {
+                    JsValue::TRUE
+                } else {
+                    JsValue::FALSE
+                })
             }
             .err_into(),
         )
@@ -1440,7 +1438,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<Option<MemberAddedMessages>>`]
     ///
     /// see [core_crypto::mls::MlsCentral::add_members_to_conversation]
-    pub fn add_clients_to_conversation(&self, conversation_id: Box<[u8]>, clients: Box<[JsValue]>) -> Promise {
+    pub fn add_clients_to_conversation(&self, conversation_id: ConversationId, clients: Box<[JsValue]>) -> Promise {
         let this = self.inner.clone();
 
         future_to_promise(
@@ -1454,7 +1452,6 @@ impl CoreCrypto {
                 let mut central = this.write().await;
                 let backend = central.provider();
                 let mut members = Invitee::group_to_conversation_member(invitees, backend)?;
-                let conversation_id = conversation_id.into();
                 let commit = central
                     .add_members_to_conversation(&conversation_id, &mut members)
                     .await?;
@@ -1468,7 +1465,11 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<Option<js_sys::Uint8Array>>`]
     ///
     /// see [core_crypto::mls::MlsCentral::remove_members_from_conversation]
-    pub fn remove_clients_from_conversation(&self, conversation_id: Box<[u8]>, clients: Box<[Uint8Array]>) -> Promise {
+    pub fn remove_clients_from_conversation(
+        &self,
+        conversation_id: ConversationId,
+        clients: Box<[Uint8Array]>,
+    ) -> Promise {
         let this = self.inner.clone();
 
         future_to_promise(
@@ -1479,7 +1480,6 @@ impl CoreCrypto {
                     .map(|c| c.to_vec().into())
                     .collect::<Vec<ClientId>>();
 
-                let conversation_id = conversation_id.into();
                 let mut central = this.write().await;
                 let commit = central
                     .remove_members_from_conversation(&conversation_id, &clients)
@@ -1517,13 +1517,12 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<CommitBundle>`]
     ///
     /// see [core_crypto::mls::MlsCentral::update_keying_material]
-    pub fn update_keying_material(&self, conversation_id: Box<[u8]>) -> Promise {
+    pub fn update_keying_material(&self, conversation_id: ConversationId) -> Promise {
         let this = self.inner.clone();
 
         future_to_promise(
             async move {
                 let mut central = this.write().await;
-                let conversation_id = conversation_id.into();
                 let commit = central
                     .update_keying_material(&conversation_id)
                     .await
@@ -1538,13 +1537,12 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::MlsCentral::commit_pending_proposals]
-    pub fn commit_pending_proposals(&self, conversation_id: Box<[u8]>) -> Promise {
+    pub fn commit_pending_proposals(&self, conversation_id: ConversationId) -> Promise {
         let this = self.inner.clone();
 
         future_to_promise(
             async move {
                 let mut central = this.write().await;
-                let conversation_id = conversation_id.into();
                 let commit: Option<CommitBundle> = central
                     .commit_pending_proposals(&conversation_id)
                     .await?
@@ -1560,11 +1558,10 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::MlsCentral::wipe_conversation]
-    pub fn wipe_conversation(&self, conversation_id: Box<[u8]>) -> Promise {
+    pub fn wipe_conversation(&self, conversation_id: ConversationId) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                let conversation_id = conversation_id.into();
                 let mut central = this.write().await;
                 central
                     .wipe_conversation(&conversation_id)
@@ -1579,7 +1576,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<DecryptedMessage>`]
     ///
     /// see [core_crypto::mls::MlsCentral::decrypt_message]
-    pub fn decrypt_message(&self, conversation_id: Box<[u8]>, payload: Box<[u8]>) -> Promise {
+    pub fn decrypt_message(&self, conversation_id: ConversationId, payload: Box<[u8]>) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
@@ -1601,7 +1598,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<Uint8Array>`]
     ///
     /// see [core_crypto::mls::MlsCentral::encrypt_message]
-    pub fn encrypt_message(&self, conversation_id: Box<[u8]>, message: Box<[u8]>) -> Promise {
+    pub fn encrypt_message(&self, conversation_id: ConversationId, message: Box<[u8]>) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
@@ -1624,7 +1621,7 @@ impl CoreCrypto {
     /// see [core_crypto::mls::MlsCentral::update_trust_anchors_from_conversation]
     pub fn update_trust_anchors_from_conversation(
         &self,
-        conversation_id: Box<[u8]>,
+        conversation_id: ConversationId,
         remove_domain_names: Box<[js_sys::JsString]>,
         add_trust_anchors: js_sys::Array,
     ) -> Promise {
@@ -1663,7 +1660,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::mls::MlsCentral::new_add_proposal]
-    pub fn new_add_proposal(&self, conversation_id: Box<[u8]>, keypackage: Box<[u8]>) -> Promise {
+    pub fn new_add_proposal(&self, conversation_id: ConversationId, keypackage: Box<[u8]>) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
@@ -1689,7 +1686,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::mls::MlsCentral::new_update_proposal]
-    pub fn new_update_proposal(&self, conversation_id: Box<[u8]>) -> Promise {
+    pub fn new_update_proposal(&self, conversation_id: ConversationId) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
@@ -1709,7 +1706,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::mls::MlsCentral::new_remove_proposal]
-    pub fn new_remove_proposal(&self, conversation_id: Box<[u8]>, client_id: FfiClientId) -> Promise {
+    pub fn new_remove_proposal(&self, conversation_id: ConversationId, client_id: FfiClientId) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
@@ -1732,7 +1729,7 @@ impl CoreCrypto {
     /// see [core_crypto::mls::MlsCentral::new_external_add_proposal]
     pub fn new_external_add_proposal(
         &self,
-        conversation_id: Box<[u8]>,
+        conversation_id: ConversationId,
         epoch: u32,
         ciphersuite: Ciphersuite,
         credential_type: CredentialType,
@@ -1843,15 +1840,24 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::MlsCentral::commit_accepted]
-    pub fn commit_accepted(&self, conversation_id: Box<[u8]>) -> Promise {
+    pub fn commit_accepted(&self, conversation_id: ConversationId) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                this.write()
+                if let Some(decrypted_messages) = this
+                    .write()
                     .await
-                    .commit_accepted(&conversation_id.to_vec())
+                    .commit_accepted(&conversation_id)
                     .await
-                    .map_err(CoreCryptoError::from)?;
+                    .map_err(CoreCryptoError::from)?
+                {
+                    let messages = decrypted_messages
+                        .into_iter()
+                        .map(DecryptedMessage::try_from)
+                        .collect::<WasmCryptoResult<Vec<_>>>()?;
+
+                    return WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&messages)?);
+                }
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
@@ -1860,7 +1866,7 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::MlsCentral::clear_pending_proposal]
-    pub fn clear_pending_proposal(&self, conversation_id: Box<[u8]>, proposal_ref: Box<[u8]>) -> Promise {
+    pub fn clear_pending_proposal(&self, conversation_id: ConversationId, proposal_ref: Box<[u8]>) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
@@ -1877,7 +1883,7 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::MlsCentral::clear_pending_commit]
-    pub fn clear_pending_commit(&self, conversation_id: Box<[u8]>) -> Promise {
+    pub fn clear_pending_commit(&self, conversation_id: ConversationId) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
@@ -2256,7 +2262,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
     ///
     /// see [core_crypto::mls::MlsCentral::export_secret_key]
-    pub fn export_secret_key(&self, conversation_id: Box<[u8]>, key_length: usize) -> Promise {
+    pub fn export_secret_key(&self, conversation_id: ConversationId, key_length: usize) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
@@ -2275,7 +2281,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<Box<[js_sys::Uint8Array]>`]
     ///
     /// see [core_crypto::mls::MlsCentral::get_client_ids]
-    pub fn get_client_ids(&self, conversation_id: Box<[u8]>) -> Promise {
+    pub fn get_client_ids(&self, conversation_id: ConversationId) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
@@ -2472,14 +2478,14 @@ impl CoreCrypto {
     /// Returns [`WasmCryptoResult<bool>`]
     ///
     /// see [core_crypto::mls::MlsCentral::e2ei_conversation_state]
-    pub fn e2ei_conversation_state(&self, conversation_id: Box<[u8]>) -> Promise {
+    pub fn e2ei_conversation_state(&self, conversation_id: ConversationId) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
                 let state: E2eiConversationState = this
                     .write()
                     .await
-                    .e2ei_conversation_state(&conversation_id.into())
+                    .e2ei_conversation_state(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?
                     .into();
