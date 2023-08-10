@@ -11,13 +11,13 @@
 //! | 1+ pend. Proposal | ❌              | ✅              |
 //!
 
-use core_crypto_keystore::entities::MlsEncryptionKeyPair;
+use core_crypto_keystore::entities::{MlsEncryptionKeyPair, MlsPendingMessage};
 use openmls::prelude::MlsGroupStateError;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::prelude::MlsProposalRef;
+use crate::prelude::{MlsConversationDecryptMessage, MlsProposalRef};
 use crate::{
     mls::{ConversationId, MlsCentral, MlsConversation},
     CryptoError, CryptoResult, MlsError,
@@ -91,13 +91,19 @@ impl MlsCentral {
     /// to be used for the new epoch.
     /// We can now safely "merge" it (effectively apply the commit to the group) and update it
     /// in the keystore. The previous can be discarded to respect Forward Secrecy.
-    pub async fn commit_accepted(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
-        self.get_conversation(conversation_id)
-            .await?
-            .write()
-            .await
-            .commit_accepted(&self.mls_backend)
-            .await
+    pub async fn commit_accepted(
+        &mut self,
+        id: &ConversationId,
+    ) -> CryptoResult<Option<Vec<MlsConversationDecryptMessage>>> {
+        let conv = self.get_conversation(id).await?;
+        let mut conv = conv.write().await;
+        conv.commit_accepted(&self.mls_backend).await?;
+
+        let pending_messages = self.restore_pending_messages(&mut conv).await?;
+        if pending_messages.is_some() {
+            self.mls_backend.key_store().remove::<MlsPendingMessage, _>(id).await?;
+        }
+        Ok(pending_messages)
     }
 
     /// Allows to remove a pending (uncommitted) proposal. Use this when backend rejects the proposal

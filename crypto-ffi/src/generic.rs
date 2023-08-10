@@ -863,8 +863,17 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::commit_accepted]
-    pub async fn commit_accepted(&self, conversation_id: Vec<u8>) -> CryptoResult<()> {
-        self.central.lock().await.commit_accepted(&conversation_id).await
+    pub async fn commit_accepted(&self, conversation_id: Vec<u8>) -> CryptoResult<Option<Vec<DecryptedMessage>>> {
+        if let Some(decrypted_messages) = self.central.lock().await.commit_accepted(&conversation_id).await? {
+            return Ok(Some(
+                decrypted_messages
+                    .into_iter()
+                    .map(DecryptedMessage::try_from)
+                    .collect::<CryptoResult<Vec<_>>>()?,
+            ));
+        }
+
+        Ok(None)
     }
 
     /// See [core_crypto::mls::MlsCentral::clear_pending_proposal]

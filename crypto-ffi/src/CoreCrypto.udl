@@ -164,6 +164,7 @@ enum CryptoError {
     "InvalidHashReference",
     "DuplicateMessage",
     "WrongEpoch",
+    "BufferedFutureMessage",
     "DecryptionError",
     "HexDecodeError",
     "ProteusError",

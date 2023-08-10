@@ -43,6 +43,7 @@ use crate::{
     prelude::{CryptoError, CryptoResult, MlsCiphersuite, MlsCredentialType, MlsError},
 };
 
+mod buffer_messages;
 mod commit_delay;
 pub mod config;
 #[cfg(test)]

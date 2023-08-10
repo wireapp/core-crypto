@@ -122,6 +122,9 @@ pub enum CryptoError {
     /// Incoming message is for the wrong epoch
     #[error("Incoming message is for the wrong epoch")]
     WrongEpoch,
+    /// Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives
+    #[error("Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives")]
+    BufferedFutureMessage,
     /// Proteus Error Wrapper
     #[error(transparent)]
     ProteusError(#[from] ProteusError),

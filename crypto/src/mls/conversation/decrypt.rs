@@ -181,6 +181,7 @@ impl MlsConversation {
                 ))
             }
         };
+        let msg_epoch = protocol_message.epoch().as_u64();
         let processed_msg = self
             .group
             .process_message(backend, protocol_message)
@@ -192,6 +193,10 @@ impl MlsConversation {
                 ProcessMessageError::ValidationError(ValidationError::WrongEpoch) => {
                     if is_duplicate {
                         CryptoError::DuplicateMessage
+                    } else if msg_epoch == self.group.epoch().as_u64() + 1 {
+                        // limit to next epoch otherwise if we were buffering a commit for epoch + 2
+                        // we would fail when trying to decrypt it in [MlsCentral::commit_accepted]
+                        CryptoError::BufferedFutureMessage
                     } else {
                         CryptoError::WrongEpoch
                     }
@@ -236,7 +241,6 @@ impl MlsCentral {
         let Ok(conversation) = self.get_conversation(id).await else {
             return self.handle_when_group_is_pending(id, message).await;
         };
-        // let conversation = self.get_conversation(id).await?;
         let parent_conversation = self.get_parent_conversation(&conversation).await?;
         let decrypt_message = conversation
             .write()
@@ -248,7 +252,12 @@ impl MlsCentral {
                 &self.mls_backend,
                 self.callbacks.as_ref().map(|boxed| boxed.as_ref()),
             )
-            .await?;
+            .await;
+
+        let decrypt_message = match decrypt_message {
+            Err(CryptoError::BufferedFutureMessage) => self.handle_future_message(id, message).await?,
+            _ => decrypt_message?,
+        };
 
         if !decrypt_message.is_active {
             self.wipe_conversation(id).await?;
@@ -1050,7 +1059,7 @@ pub mod tests {
 
                         // which Bob cannot decrypt because of Post CompromiseSecurity
                         let decrypt = bob_central.decrypt_message(&id, &encrypted).await;
-                        assert!(matches!(decrypt.unwrap_err(), CryptoError::WrongEpoch));
+                        assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
 
                         bob_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())

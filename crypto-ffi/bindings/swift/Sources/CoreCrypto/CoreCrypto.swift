@@ -723,6 +723,10 @@ public class CoreCryptoWrapper {
     }
 
     /// Deserializes a TLS-serialized message, then deciphers it
+    /// Note: you should catch & ignore the following error:
+    /// - `DuplicateMessage`
+    /// - `UnmergedPendingGroup`
+    /// - `BufferedFutureMessage`
     ///
     /// - parameter conversationId: conversation identifier
     /// - parameter payload: the encrypted message as a byte array
@@ -811,6 +815,7 @@ public class CoreCryptoWrapper {
     /// deletes the temporary one. After merging, the group should be fully functional.
     ///
     /// - parameter conversationId: conversation identifier
+    /// - returns the messages from current epoch which had been buffered, if any
     public func mergePendingGroupFromExternalCommit(conversationId: ConversationId) async throws -> [DecryptedMessage]? {
         try await self.coreCrypto.mergePendingGroupFromExternalCommit(conversationId: conversationId)
     }
@@ -861,7 +866,8 @@ public class CoreCryptoWrapper {
     /// in the keystore. The previous can be discarded to respect Forward Secrecy.
     ///
     /// - parameter conversationId: conversation identifier
-    public func commitAccepted(conversationId: ConversationId) async throws {
+    /// - returns the messages from current epoch which had been buffered, if any
+    public func commitAccepted(conversationId: ConversationId) async throws -> [DecryptedMessage]? {
         try await self.coreCrypto.commitAccepted(conversationId: conversationId)
     }
 

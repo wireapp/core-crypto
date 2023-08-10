@@ -919,7 +919,12 @@ export class CoreCrypto {
     }
 
     /**
-     * Decrypts a message for a given conversation
+     * Decrypts a message for a given conversation.
+     *
+     * Note: you should catch & ignore the following error reasons:
+     * * "We already decrypted this message once"
+     * * "You tried to join with an external commit but did not merge it yet. We will reapply this message for you when you merge your external commit"
+     * * "Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives"
      *
      * @param conversationId - The ID of the conversation
      * @param payload - The encrypted message buffer
@@ -1337,6 +1342,7 @@ export class CoreCrypto {
      * and deletes the temporary one. This step makes the group operational and ready to encrypt/decrypt message
      *
      * @param conversationId - The ID of the conversation
+     * @returns the messages from current epoch which had been buffered, if any
      */
     async mergePendingGroupFromExternalCommit(conversationId: ConversationId): Promise<DecryptedMessage[] | undefined> {
         return await CoreCryptoError.asyncMapErr(this.#cc.merge_pending_group_from_external_commit(conversationId));
@@ -1358,8 +1364,9 @@ export class CoreCrypto {
      * into the local group state
      *
      * @param conversationId - The group's ID
+     * @returns the messages from current epoch which had been buffered, if any
      */
-    async commitAccepted(conversationId: ConversationId): Promise<void> {
+    async commitAccepted(conversationId: ConversationId): Promise<DecryptedMessage[] | undefined> {
         return await CoreCryptoError.asyncMapErr(this.#cc.commit_accepted(conversationId));
     }
 
