@@ -30,7 +30,7 @@ use crate::mls::credential::trust_anchor::PerDomainTrustAnchor;
 use crate::prelude::{CryptoResult, MlsCiphersuite};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
-pub(crate) const MAX_PAST_EPOCHS: usize = 2;
+pub(crate) const MAX_PAST_EPOCHS: usize = 3;
 
 /// The configuration parameters for a group/conversation
 #[derive(Debug, Clone, Default)]
