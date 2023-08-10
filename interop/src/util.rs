@@ -65,7 +65,7 @@ impl RunningProcess {
     }
 
     pub fn success(self, msg: impl AsRef<str> + std::fmt::Display) {
-        if let Some(spinner) = self.spinner {
+        if let Some(mut spinner) = self.spinner {
             spinner.success(msg.as_ref());
         } else {
             log::info!("{msg}");
