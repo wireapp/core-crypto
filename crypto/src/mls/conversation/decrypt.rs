@@ -75,29 +75,21 @@ impl MlsConversation {
 
         let message = self.parse_message(backend, message).await?;
 
-        let msg_epoch = message.epoch();
-
         let credential = message.credential();
         let identity = credential.extract_identity()?;
 
         let sender_client_id = credential.identity().into();
 
         let decrypted = match message.into_content() {
-            ProcessedMessageContent::ApplicationMessage(app_msg) => {
-                if msg_epoch.as_u64() < self.group.epoch().as_u64() {
-                    return Err(CryptoError::WrongEpoch);
-                }
-
-                MlsConversationDecryptMessage {
-                    app_msg: Some(app_msg.into_bytes()),
-                    proposals: vec![],
-                    is_active: true,
-                    delay: None,
-                    sender_client_id: Some(sender_client_id),
-                    has_epoch_changed: false,
-                    identity,
-                }
-            }
+            ProcessedMessageContent::ApplicationMessage(app_msg) => MlsConversationDecryptMessage {
+                app_msg: Some(app_msg.into_bytes()),
+                proposals: vec![],
+                is_active: true,
+                delay: None,
+                sender_client_id: Some(sender_client_id),
+                has_epoch_changed: false,
+                identity,
+            },
             ProcessedMessageContent::ProposalMessage(proposal) => {
                 self.group.store_pending_proposal(*proposal);
                 MlsConversationDecryptMessage {
@@ -268,6 +260,7 @@ impl MlsCentral {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::mls::conversation::config::MAX_PAST_EPOCHS;
     use crate::{
         prelude::{handshake::MlsCommitBundle, MemberId, MlsWirePolicy},
         test_utils::{ValidationCallbacks, *},
@@ -1152,8 +1145,6 @@ pub mod tests {
     }
 
     pub mod epoch_sync {
-        use crate::mls::conversation::config::MAX_PAST_EPOCHS;
-
         use super::*;
 
         #[apply(all_cred_cipher)]
