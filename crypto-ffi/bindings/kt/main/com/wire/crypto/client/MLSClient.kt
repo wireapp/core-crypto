@@ -235,7 +235,7 @@ class MLSClientImpl(
     }
 
     override suspend fun commitAccepted(groupId: MLSGroupId) {
-        cc.commitAccepted(groupId.toUByteList())
+        return cc.commitAccepted(groupId.toUByteList())
     }
 
     override suspend fun commitPendingProposals(groupId: MLSGroupId): CommitBundle? {
