@@ -7,19 +7,19 @@ typealias EnrollmentHandle = ByteArray
 
 private class Callbacks : CoreCryptoCallbacks {
 
-    override fun authorize(conversationId: ByteArray, clientId: List<UByte>): Boolean = true
+    override fun authorize(conversationId: ByteArray, clientId: ByteArray): Boolean = true
 
     override fun userAuthorize(
         conversationId: ByteArray,
-        externalClientId: List<UByte>,
-        existingClients: List<List<UByte>>
+        externalClientId: ByteArray,
+        existingClients: List<ByteArray>
     ): Boolean = true
 
     override fun clientIsExistingGroupUser(
         conversationId: ByteArray,
-        clientId: List<UByte>,
-        existingClients: List<List<UByte>>,
-        parentConversationClients: List<List<UByte>>?
+        clientId: ByteArray,
+        existingClients: List<ByteArray>,
+        parentConversationClients: List<ByteArray>?
     ): Boolean = true
 }
 
@@ -180,7 +180,7 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
      * @returns the persisted enrollment instance
      */
     suspend fun e2eiEnrollmentStashPop(handle: EnrollmentHandle): E2EIEnrollment {
-        return E2EIEnrollment(cc.e2eiEnrollmentStashPop(handle.asUByteArray().asList()))
+        return E2EIEnrollment(cc.e2eiEnrollmentStashPop(handle))
     }
 
     /**

@@ -120,7 +120,8 @@ impl From<CoreCryptoError> for wasm_bindgen::JsValue {
     }
 }
 
-pub type WasmCryptoResult<T> = Result<T, CoreCryptoError>;
+pub type CoreCryptoResult<T> = Result<T, CoreCryptoError>;
+pub type WasmCryptoResult<T> = CoreCryptoResult<T>;
 
 #[allow(non_camel_case_types)]
 #[wasm_bindgen]

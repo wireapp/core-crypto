@@ -19,7 +19,7 @@
 package com.wire.crypto.client
 
 import com.wire.crypto.CoreCrypto
-import com.wire.crypto.CryptoException
+import com.wire.crypto.CoreCryptoException
 import java.io.File
 
 typealias SessionId = String
@@ -95,13 +95,13 @@ class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto):
     override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
         return wrapException {
             from.until(from + count).map {
-                toPreKey(it.toUShort(), toByteArray(coreCrypto.proteusNewPrekey(it.toUShort())))
+                toPreKey(it.toUShort(), coreCrypto.proteusNewPrekey(it.toUShort()))
             } as ArrayList<PreKey>
         }
     }
 
     override suspend fun newLastPreKey(): PreKey {
-        return wrapException { toPreKey(coreCrypto.proteusLastResortPrekeyId(), toByteArray(coreCrypto.proteusLastResortPrekey())) }
+        return wrapException { toPreKey(coreCrypto.proteusLastResortPrekeyId(), coreCrypto.proteusLastResortPrekey()) }
     }
 
     override suspend fun doesSessionExist(sessionId: SessionId): Boolean {
@@ -111,7 +111,7 @@ class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto):
     }
 
     override suspend fun createSession(preKeyCrypto: PreKey, sessionId: SessionId) {
-        wrapException { coreCrypto.proteusSessionFromPrekey(sessionId, toUByteList(preKeyCrypto.data)) }
+        wrapException { coreCrypto.proteusSessionFromPrekey(sessionId, preKeyCrypto.data) }
     }
 
     override suspend fun deleteSession(sessionId: SessionId) {
@@ -125,11 +125,11 @@ class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto):
 
         return wrapException {
             if (sessionExists) {
-                val decryptedMessage = toByteArray(coreCrypto.proteusDecrypt(sessionId, toUByteList(message)))
+                val decryptedMessage = coreCrypto.proteusDecrypt(sessionId, message)
                 coreCrypto.proteusSessionSave(sessionId)
                 decryptedMessage
             } else {
-                val decryptedMessage = toByteArray(coreCrypto.proteusSessionFromMessage(sessionId, toUByteList(message)))
+                val decryptedMessage = coreCrypto.proteusSessionFromMessage(sessionId, message)
                 coreCrypto.proteusSessionSave(sessionId)
                 decryptedMessage
             }
@@ -138,7 +138,7 @@ class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto):
 
     override suspend fun encrypt(message: ByteArray, sessionId: SessionId): ByteArray {
         return wrapException {
-            val encryptedMessage = toByteArray(coreCrypto.proteusEncrypt(sessionId, toUByteList(message)))
+            val encryptedMessage = coreCrypto.proteusEncrypt(sessionId, message)
             coreCrypto.proteusSessionSave(sessionId)
             encryptedMessage
         }
@@ -146,8 +146,8 @@ class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto):
 
     override suspend fun encryptBatched(message: ByteArray, sessionIds: List<SessionId>): Map<SessionId, ByteArray> {
         return wrapException {
-            coreCrypto.proteusEncryptBatched(sessionIds.map { it }, toUByteList((message))).mapNotNull { entry ->
-                    entry.key to toByteArray(entry.value)
+            coreCrypto.proteusEncryptBatched(sessionIds.map { it }, message).mapNotNull { entry ->
+                    entry.key to entry.value
                 }
             }.toMap()
         }
@@ -158,8 +158,8 @@ class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto):
         sessionId: SessionId
     ): ByteArray {
         return wrapException {
-            coreCrypto.proteusSessionFromPrekey(sessionId, toUByteList(preKey.data))
-            val encryptedMessage = toByteArray(coreCrypto.proteusEncrypt(sessionId, toUByteList(message)))
+            coreCrypto.proteusSessionFromPrekey(sessionId, preKey.data)
+            val encryptedMessage = coreCrypto.proteusEncrypt(sessionId, message)
             coreCrypto.proteusSessionSave(sessionId)
             encryptedMessage
         }
@@ -169,7 +169,7 @@ class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto):
     private suspend fun <T> wrapException(b: suspend () -> T): T {
         try {
             return b()
-        } catch (e: CryptoException) {
+        } catch (e: CoreCryptoException) {
             throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e.cause)
         } catch (e: Exception) {
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
@@ -211,7 +211,7 @@ class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto):
                 migrateFromCryptoBoxIfNecessary(coreCrypto, rootDir)
                 coreCrypto.proteusInit()
                 return ProteusClientImpl(coreCrypto)
-            } catch (e: CryptoException) {
+            } catch (e: CoreCryptoException) {
                 throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e.cause)
             } catch (e: Exception) {
                 throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)

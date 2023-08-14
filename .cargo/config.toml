@@ -1,7 +1,3 @@
-# FIXME: This breaks rust-analyzer
-# [registries.crates-io]
-# protocol = "sparse"
-
 [env]
 # Android build flags
 # ? RANLIB flags are now needed because this https://github.com/alexcrichton/openssl-src-rs/pull/180 breaks everything
