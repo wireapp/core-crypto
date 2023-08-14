@@ -31,6 +31,7 @@ sample-projects/ios/.swiftpm
 
 # Kotlin
 crypto-ffi/bindings/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt
+crypto-ffi/bindings/local.properties
 
 # Test databases leftovers
 *.edb

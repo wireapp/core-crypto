@@ -57,7 +57,7 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
      */
     suspend fun directoryResponse(directory: JsonRawData) =
-        delegate.directoryResponse(directory.toUByteList()).toAcmeDirectory()
+        delegate.directoryResponse(directory).toAcmeDirectory()
 
     /**
      * For creating a new acme account. This returns a signed JWS-alike request body to send to
@@ -67,7 +67,7 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
      */
     suspend fun newAccountRequest(previousNonce: String) =
-        delegate.newAccountRequest(previousNonce).toByteArray()
+        delegate.newAccountRequest(previousNonce)
 
     /**
      * Parses the response from `POST /acme/{provisioner-name}/new-account`.
@@ -75,7 +75,7 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
      */
     suspend fun accountResponse(account: JsonRawData) =
-        delegate.newAccountResponse(account.toUByteList())
+        delegate.newAccountResponse(account)
 
     /**
      * Creates a new acme order for the handle (userId + display name) and the clientId.
@@ -84,7 +84,7 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
     suspend fun newOrderRequest(previousNonce: String) =
-        delegate.newOrderRequest(previousNonce).toByteArray()
+        delegate.newOrderRequest(previousNonce)
 
     /**
      * Parses the response from `POST /acme/{provisioner-name}/new-order`.
@@ -93,7 +93,7 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
     suspend fun newOrderResponse(order: JsonRawData) =
-        delegate.newOrderResponse(order.toUByteList()).toNewAcmeOrder()
+        delegate.newOrderResponse(order).toNewAcmeOrder()
 
     /**
      * Creates a new authorization request.
@@ -103,7 +103,7 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
      */
     suspend fun newAuthzRequest(url: String, previousNonce: String) =
-        delegate.newAuthzRequest(url, previousNonce).toByteArray()
+        delegate.newAuthzRequest(url, previousNonce)
 
     /**
      * Parses the response from `POST /acme/{provisioner-name}/authz/{authz-id}`
@@ -112,7 +112,7 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
      */
     suspend fun authzResponse(authz: JsonRawData) =
-        delegate.newAuthzResponse(authz.toUByteList()).toNewAcmeAuthz()
+        delegate.newAuthzResponse(authz).toNewAcmeAuthz()
 
     /**
      * Generates a new client Dpop JWT token. It demonstrates proof of possession of the nonces
@@ -135,7 +135,7 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
     suspend fun newDpopChallengeRequest(accessToken: String, previousNonce: String) =
-        delegate.newDpopChallengeRequest(accessToken, previousNonce).toByteArray()
+        delegate.newDpopChallengeRequest(accessToken, previousNonce)
 
     /**
      * Creates a new challenge request for Wire Oidc challenge.
@@ -145,7 +145,7 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
     suspend fun newOidcChallengeRequest(idToken: String, previousNonce: String) =
-        delegate.newOidcChallengeRequest(idToken, previousNonce).toByteArray()
+        delegate.newOidcChallengeRequest(idToken, previousNonce)
 
     /**
      * Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}`.
@@ -154,7 +154,7 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
     suspend fun challengeResponse(challenge: JsonRawData) =
-        delegate.newChallengeResponse(challenge.toUByteList())
+        delegate.newChallengeResponse(challenge)
 
     /**
      * Verifies that the previous challenge has been completed.
@@ -164,7 +164,7 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
     suspend fun checkOrderRequest(orderUrl: String, previousNonce: String) =
-        delegate.checkOrderRequest(orderUrl, previousNonce).toByteArray()
+        delegate.checkOrderRequest(orderUrl, previousNonce)
 
     /**
      * Parses the response from `POST /acme/{provisioner-name}/order/{order-id}`.
@@ -174,7 +174,7 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
     suspend fun checkOrderResponse(order: JsonRawData) =
-        delegate.checkOrderResponse(order.toUByteList())
+        delegate.checkOrderResponse(order)
 
     /**
      * Final step before fetching the certificate.
@@ -183,7 +183,7 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
     suspend fun finalizeRequest(previousNonce: String) =
-        delegate.finalizeRequest(previousNonce).toByteArray()
+        delegate.finalizeRequest(previousNonce)
 
     /**
      * Parses the response from `POST /acme/{provisioner-name}/order/{order-id}/finalize`.
@@ -193,7 +193,7 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
      */
     suspend fun finalizeResponse(finalize: JsonRawData) =
-        delegate.finalizeResponse(finalize.toUByteList())
+        delegate.finalizeResponse(finalize)
 
     /**
      * Creates a request for finally fetching the x509 certificate.
@@ -202,5 +202,5 @@ class E2EIEnrollment(private val delegate: WireE2eIdentity) {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2
      */
     suspend fun certificateRequest(previousNonce: String) =
-        delegate.certificateRequest(previousNonce).toByteArray()
+        delegate.certificateRequest(previousNonce)
 }

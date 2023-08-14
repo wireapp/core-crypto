@@ -21,23 +21,30 @@ macro_rules! proteus_impl {
                 #[allow(clippy::redundant_closure_call)]
                 let result = (async move { $body }).await;
 
-                if let Err(e) = &result {
-                    let errcode = e.proteus_error_code();
-                    if errcode > 0 {
-                        cfg_if::cfg_if! {
-                            if #[cfg(target_family = "wasm")] {
+                cfg_if::cfg_if! {
+                    if #[cfg(target_family = "wasm")] {
+                        if let Err(CoreCryptoError(WasmError::CryptoError(e))) = &result {
+                            let errcode = e.proteus_error_code();
+                            if errcode > 0 {
                                 let mut ec = $errcode_dest.write().await;
                                 *ec = errcode;
-                            } else {
+                            }
+                        }
+
+                        result
+                    } else {
+                        if let Err(CoreCryptoError::CryptoError(e)) = &result {
+                            let errcode = e.proteus_error_code();
+                            if errcode > 0 {
                                 $errcode_dest.store(errcode, std::sync::atomic::Ordering::SeqCst);
                             }
                         }
+
+                        CoreCryptoResult::Ok(result?)
                     }
                 }
-
-                result
             } else {
-                return <$err_type>::Err(CryptoError::ProteusSupportNotEnabled("proteus".into()).into());
+                return <$err_type>::Err(core_crypto::CryptoError::ProteusSupportNotEnabled("proteus".into()).into());
             }
         }
     }};
@@ -46,7 +53,7 @@ macro_rules! proteus_impl {
             if #[cfg(feature = "proteus")] {
                 $body
             } else {
-                return <$err_type>::Err(CryptoError::ProteusSupportNotEnabled("proteus".into()).into());
+                return <$err_type>::Err(core_crypto::CryptoError::ProteusSupportNotEnabled("proteus".into()).into());
             }
         }
     }};
@@ -65,10 +72,10 @@ cfg_if::cfg_if! {
         mod wasm;
         pub use self::wasm::*;
     } else {
+        uniffi::setup_scaffolding!("CoreCrypto");
+
         mod generic;
         pub use self::generic::*;
-
-        uniffi::include_scaffolding!("CoreCrypto");
     }
 }
 

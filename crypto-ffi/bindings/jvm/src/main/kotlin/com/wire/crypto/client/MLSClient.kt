@@ -117,7 +117,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      */
     suspend fun deleteKeyPackages(refs: List<MLSKeyPackageRef>) {
         // cannot be tested with the current API & helpers
-        return cc.deleteKeypackages(refs.map { it.lowerUByte() })
+        return cc.deleteKeypackages(refs.map { it.lower() })
     }
 
     /**
@@ -344,7 +344,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @return a [ProposalBundle] which allows to roll back this proposal with [clearPendingProposal] in case the DS rejects it
      */
     suspend fun newAddProposal(id: MLSGroupId, keyPackage: MLSKeyPackage): ProposalBundle {
-        return cc.newAddProposal(id.lower(), keyPackage.lowerUByte()).lift()
+        return cc.newAddProposal(id.lower(), keyPackage.lower()).lift()
     }
 
     /**
@@ -387,7 +387,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param proposalRef you get from a [ProposalBundle]
      */
     suspend fun clearPendingProposal(id: MLSGroupId, proposalRef: ProposalRef) {
-        cc.clearPendingProposal(id.lower(), proposalRef.lowerUByte())
+        cc.clearPendingProposal(id.lower(), proposalRef.lower())
     }
 
     /**

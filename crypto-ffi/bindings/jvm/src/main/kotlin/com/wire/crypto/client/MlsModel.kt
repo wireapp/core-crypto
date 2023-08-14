@@ -61,17 +61,17 @@ enum class CredentialType {
 }
 
 @JvmInline
-value class MLSGroupId(override val value: ByteArray) : Uniffi023 {
+value class MLSGroupId(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
-fun List<UByte>.toGroupId() = MLSGroupId(toByteArray())
+fun ByteArray.toGroupId() = MLSGroupId(this)
 fun String.toGroupId() = MLSGroupId(toByteArray())
 
 @JvmInline
 value class ClientId(override val value: String) : FfiType<String, com.wire.crypto.ClientId> {
 
-    override fun lower() = value.toUByteList()
+    override fun lower() = value.toByteArray()
 }
 
 @OptIn(ExperimentalUnsignedTypes::class)
@@ -84,40 +84,39 @@ value class ExternalSenderKey(override val value: ByteArray) : Uniffi {
 }
 
 @JvmInline
-value class Welcome(override val value: ByteArray) : Uniffi023 {
+value class Welcome(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
 fun ByteArray.toWelcome() = Welcome(this)
 
 @JvmInline
-value class MlsMessage(override val value: ByteArray) : Uniffi023 {
+value class MlsMessage(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
-fun List<UByte>.toMlsMessage() = toByteArray().toMlsMessage()
 fun ByteArray.toMlsMessage() = MlsMessage(this)
 
 @JvmInline
-value class AvsSecret(override val value: ByteArray) : Uniffi023 {
+value class AvsSecret(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
-fun List<UByte>.toAvsSecret() = AvsSecret(toByteArray())
+fun ByteArray.toAvsSecret() = AvsSecret(this)
 
 @JvmInline
-value class PlaintextMessage(override val value: ByteArray) : Uniffi023 {
+value class PlaintextMessage(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
 fun String.toPlaintextMessage() = PlaintextMessage(toByteArray())
 
 @JvmInline
-value class SignaturePublicKey(override val value: ByteArray) : Uniffi023 {
+value class SignaturePublicKey(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
-fun List<UByte>.toSignaturePublicKey() = SignaturePublicKey(toByteArray())
+fun ByteArray.toSignaturePublicKey() = SignaturePublicKey(this)
 
 @JvmInline
 value class MLSKeyPackage(override val value: ByteArray) : Uniffi {
@@ -126,7 +125,7 @@ value class MLSKeyPackage(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
-fun List<UByte>.toMLSKeyPackage() = MLSKeyPackage(toByteArray())
+fun ByteArray.toMLSKeyPackage() = MLSKeyPackage(this)
 
 @JvmInline
 value class MLSKeyPackageRef(override val value: ByteArray) : Uniffi {
@@ -146,16 +145,16 @@ fun ByteArray.toProposalRef() = ProposalRef(this)
 
 @JvmInline
 value class ExternallyGeneratedHandle(override val value: List<ByteArray>) :
-    FfiType<List<ByteArray>, List<List<UByte>>> {
-    override fun lower(): List<List<UByte>> = value.map { it.toUByteList() }
+    FfiType<List<ByteArray>, List<ByteArray>> {
+    override fun lower(): List<ByteArray> = value
 
     override fun toString() = value.joinToString("") { it.toString() }
 }
 
-fun List<List<UByte>>.toExternallyGeneratedHandle() = ExternallyGeneratedHandle(map { it.toByteArray() })
+fun List<ByteArray>.toExternallyGeneratedHandle() = ExternallyGeneratedHandle(map { it })
 
 @JvmInline
-value class GroupInfo(override val value: ByteArray) : Uniffi023 {
+value class GroupInfo(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 

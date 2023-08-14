@@ -740,13 +740,13 @@ export class CoreCrypto {
      * ````
      */
     static async init({
-                          databaseName,
-                          key,
-                          clientId,
-                          wasmFilePath,
-                          ciphersuites,
-                          entropySeed
-                      }: CoreCryptoParams): Promise<CoreCrypto> {
+        databaseName,
+        key,
+        clientId,
+        wasmFilePath,
+        ciphersuites,
+        entropySeed
+    }: CoreCryptoParams): Promise<CoreCrypto> {
         if (!this.#module) {
             const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
             const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
@@ -765,12 +765,12 @@ export class CoreCrypto {
      * @param params - {@link CoreCryptoDeferredParams}
      */
     static async deferredInit({
-                                  databaseName,
-                                  key,
-                                  ciphersuites,
-                                  entropySeed,
-                                  wasmFilePath
-                              }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
+        databaseName,
+        key,
+        ciphersuites,
+        entropySeed,
+        wasmFilePath
+    }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
         if (!this.#module) {
             const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
             const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
@@ -1044,7 +1044,7 @@ export class CoreCrypto {
      *
      * @returns A {@link CommitBundle}
      */
-    async update_trust_anchors_from_conversation(conversationId: ConversationId, removeDomainNames: string[], addTrustAnchors: PerDomainTrustAnchor[]): Promise<CommitBundle> {
+    async updateTrustAnchorsFromConversation(conversationId: ConversationId, removeDomainNames: string[], addTrustAnchors: PerDomainTrustAnchor[]): Promise<CommitBundle> {
         try {
             const ffiRet: CoreCryptoFfiTypes.CommitBundle = await CoreCryptoError.asyncMapErr(this.#cc.update_trust_anchors_from_conversation(
                 conversationId,

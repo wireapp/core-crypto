@@ -432,7 +432,7 @@ fn autodetect_android_env
 
         ndk_versions_hwnd = glob_array "${platform_dir}/Android/${sdk_folder}/ndk/*"
         for path in ${ndk_versions_hwnd}
-            print -c bright_blue "Found NDK path: $path"
+            print -c bright_blue "Found NDK path: ${path}\n"
             ndk_latest_version_path = set ${path}
 
             split_path_hwnd = split ${path} "/"
