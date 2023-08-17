@@ -53,19 +53,23 @@ pub async fn start_webdriver_chrome(addr: &std::net::SocketAddr) -> Result<tokio
 
 pub async fn setup_browser(addr: &std::net::SocketAddr, folder: &str) -> Result<fantoccini::Client> {
     // let spinner = RunningProcess::new("Starting Fantoccini remote browser...", false);
-    let caps = serde_json::Map::from_iter(
-        vec![(
-            "goog:chromeOptions".to_string(),
-            serde_json::json!({
-                "args": [
-                    "headless",
-                    "disable-dev-shm-usage",
-                    "no-sandbox"
-                ]
-            }),
-        )]
-        .into_iter(),
-    );
+    let mut caps_json = serde_json::json!({
+        "goog:chromeOptions": {
+            "args": [
+                "headless",
+                "disable-dev-shm-usage",
+                "no-sandbox"
+            ]
+        }
+    });
+
+    if let Ok(chrome_path) = std::env::var("CHROME_PATH") {
+        caps_json["goog:chromeOptions"]["binary"] = chrome_path.into();
+    }
+
+    let serde_json::Value::Object(caps) = caps_json else {
+        unreachable!("`serde_json::json!()` did not produce an object when provided an object. Something is broken.")
+    };
 
     let browser = fantoccini::ClientBuilder::native()
         .capabilities(caps)
