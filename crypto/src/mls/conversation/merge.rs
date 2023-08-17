@@ -17,9 +17,9 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::prelude::{MlsConversationDecryptMessage, MlsProposalRef};
 use crate::{
     mls::{ConversationId, MlsCentral, MlsConversation},
+    prelude::{decrypt::MlsBufferedConversationDecryptMessage, MlsProposalRef},
     CryptoError, CryptoResult, MlsError,
 };
 
@@ -94,7 +94,7 @@ impl MlsCentral {
     pub async fn commit_accepted(
         &mut self,
         id: &ConversationId,
-    ) -> CryptoResult<Option<Vec<MlsConversationDecryptMessage>>> {
+    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let conv = self.get_conversation(id).await?;
         let mut conv = conv.write().await;
         conv.commit_accepted(&self.mls_backend).await?;

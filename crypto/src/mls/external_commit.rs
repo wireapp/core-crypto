@@ -21,12 +21,13 @@ use core_crypto_keystore::entities::MlsPendingMessage;
 use core_crypto_keystore::{entities::PersistedMlsPendingGroup, CryptoKeystoreMls};
 use tls_codec::Serialize;
 
+use crate::prelude::decrypt::MlsBufferedConversationDecryptMessage;
 use crate::{
     group_store::GroupStoreValue,
     prelude::{
         id::ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsCiphersuite,
-        MlsConversation, MlsConversationConfiguration, MlsConversationDecryptMessage, MlsCredentialType,
-        MlsCustomConfiguration, MlsError, MlsGroupInfoBundle,
+        MlsConversation, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsError,
+        MlsGroupInfoBundle,
     },
 };
 
@@ -145,7 +146,7 @@ impl MlsCentral {
     pub async fn merge_pending_group_from_external_commit(
         &mut self,
         id: &ConversationId,
-    ) -> CryptoResult<Option<Vec<MlsConversationDecryptMessage>>> {
+    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         // Retrieve the pending MLS group from the keystore
         let (group, cfg) = self.mls_backend.key_store().mls_pending_groups_load(id).await?;
 
@@ -213,7 +214,7 @@ impl MlsConversation {
         &self,
         commit: &StagedCommit,
         sender: ClientId,
-        parent_conversation: Option<GroupStoreValue<MlsConversation>>,
+        parent_conversation: Option<&GroupStoreValue<MlsConversation>>,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
     ) -> CryptoResult<()> {
         // i.e. has this commit been created by [MlsCentral::join_by_external_commit] ?

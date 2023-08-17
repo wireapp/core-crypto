@@ -31,8 +31,6 @@ impl MlsCentral {
 #[cfg(test)]
 pub mod tests {
     use crate::{test_utils::*, CryptoError};
-    use core_crypto_keystore::entities::MlsPendingMessage;
-    use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -102,6 +100,9 @@ pub mod tests {
                     let decrypt = bob_central.decrypt_message(&id, app_msg).await;
                         assert!(matches!(decrypt.unwrap_err(), CryptoError::UnmergedPendingGroup));
 
+                    // Bob should have buffered the messages
+                    assert_eq!(bob_central.count_entities().await.pending_messages, 4);
+
                     // Finally, Bob receives the green light from the DS and he can merge the external commit
                     let Some(restored_messages) = bob_central.merge_pending_group_from_external_commit(&id).await.unwrap() else {
                         panic!("Alice's messages should have been restored at this point");
@@ -134,8 +135,7 @@ pub mod tests {
                     assert!(bob_central.try_talk_to(&id, &mut debbie_central).await.is_ok());
 
                     // After merging we should erase all those pending messages
-                    let count_pending_messages = bob_central.mls_backend.key_store().count::<MlsPendingMessage>().await.unwrap();
-                    assert_eq!(count_pending_messages, 0);
+                    assert_eq!(bob_central.count_entities().await.pending_messages, 0);
                 })
             },
         )

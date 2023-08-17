@@ -38,6 +38,17 @@ dictionary DecryptedMessage {
     ClientId? sender_client_id;
     boolean has_epoch_changed;
     WireIdentity? identity;
+    sequence<BufferedDecryptedMessage>? buffered_messages;
+};
+
+dictionary BufferedDecryptedMessage {
+    bytes? message;
+    sequence<ProposalBundle> proposals;
+    boolean is_active;
+    u64? commit_delay;
+    ClientId? sender_client_id;
+    boolean has_epoch_changed;
+    WireIdentity? identity;
 };
 
 dictionary WireIdentity {

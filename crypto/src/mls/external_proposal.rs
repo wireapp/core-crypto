@@ -18,7 +18,7 @@ impl MlsConversation {
     pub(crate) async fn validate_external_proposal(
         &self,
         proposal: &QueuedProposal,
-        parent_conversation: Option<GroupStoreValue<MlsConversation>>,
+        parent_conversation: Option<&GroupStoreValue<MlsConversation>>,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
     ) -> CryptoResult<()> {
         let is_external_proposal = matches!(proposal.sender(), Sender::External(_) | Sender::NewMemberProposal);

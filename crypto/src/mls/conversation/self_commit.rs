@@ -84,6 +84,7 @@ impl MlsConversation {
             sender_client_id: None,
             has_epoch_changed: true,
             identity,
+            buffered_messages: None,
         })
     }
 }

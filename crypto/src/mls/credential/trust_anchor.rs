@@ -1647,10 +1647,8 @@ mod tests {
                             .await;
                         alice_central.commit_accepted(&id).await.unwrap();
                         // bob parses the commit
-                        let error = bob_central
-                            .decrypt_message(&id, &commit.to_bytes().unwrap())
-                            .await
-                            .unwrap_err();
+                        let message = &commit.to_bytes().unwrap();
+                        let error = bob_central.decrypt_message(&id, message).await.unwrap_err();
 
                         assert!(matches!(
                             error,

@@ -82,7 +82,7 @@ pub mod prelude {
             config::MlsCentralConfiguration,
             conversation::{
                 config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
-                decrypt::MlsConversationDecryptMessage,
+                decrypt::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
                 group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
                 handshake::{MlsCommitBundle, MlsConversationCreationMessage, MlsProposalBundle},
                 *,

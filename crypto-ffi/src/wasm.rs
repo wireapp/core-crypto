@@ -540,6 +540,7 @@ pub struct DecryptedMessage {
     sender_client_id: Option<Vec<u8>>,
     has_epoch_changed: bool,
     identity: Option<WireIdentity>,
+    buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
 }
 
 impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
@@ -550,7 +551,116 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             .proposals
             .into_iter()
             .map(ProposalBundle::try_from)
-            .collect::<WasmCryptoResult<Vec<ProposalBundle>>>()?;
+            .collect::<WasmCryptoResult<Vec<_>>>()?;
+
+        let buffered_messages = if let Some(bm) = from.buffered_messages {
+            let bm = bm
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<WasmCryptoResult<Vec<_>>>()?;
+            Some(bm)
+        } else {
+            None
+        };
+
+        let commit_delay = if let Some(delay) = from.delay {
+            Some(delay.try_into().map_err(CryptoError::from)?)
+        } else {
+            None
+        };
+
+        Ok(Self {
+            message: from.app_msg,
+            proposals,
+            is_active: from.is_active,
+            commit_delay,
+            sender_client_id: from.sender_client_id.map(ClientId::into),
+            has_epoch_changed: from.has_epoch_changed,
+            identity: from.identity.map(Into::into),
+            buffered_messages,
+        })
+    }
+}
+
+#[wasm_bindgen]
+impl DecryptedMessage {
+    #[wasm_bindgen(getter)]
+    pub fn message(&self) -> JsValue {
+        if let Some(message) = &self.message {
+            Uint8Array::from(message.as_slice()).into()
+        } else {
+            JsValue::NULL
+        }
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn proposals(&self) -> js_sys::Array {
+        self.proposals
+            .iter()
+            .cloned()
+            .map(JsValue::from)
+            .collect::<js_sys::Array>()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn is_active(&self) -> bool {
+        self.is_active
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn commit_delay(&self) -> Option<u32> {
+        self.commit_delay
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn sender_client_id(&self) -> JsValue {
+        if let Some(cid) = &self.sender_client_id {
+            Uint8Array::from(cid.as_slice()).into()
+        } else {
+            JsValue::NULL
+        }
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn has_epoch_changed(&self) -> bool {
+        self.has_epoch_changed
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn identity(&self) -> Option<WireIdentity> {
+        self.identity.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn buffered_messages(&self) -> Option<js_sys::Array> {
+        self.buffered_messages
+            .clone()
+            .map(|bm| bm.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+/// to avoid recursion
+pub struct BufferedDecryptedMessage {
+    message: Option<Vec<u8>>,
+    proposals: Vec<ProposalBundle>,
+    is_active: bool,
+    commit_delay: Option<u32>,
+    sender_client_id: Option<Vec<u8>>,
+    has_epoch_changed: bool,
+    identity: Option<WireIdentity>,
+}
+
+impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage {
+    type Error = CoreCryptoError;
+
+    fn try_from(from: MlsBufferedConversationDecryptMessage) -> Result<Self, Self::Error> {
+        let proposals = from
+            .proposals
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<WasmCryptoResult<Vec<_>>>()?;
 
         let commit_delay = if let Some(delay) = from.delay {
             Some(delay.try_into().map_err(CryptoError::from)?)
@@ -571,7 +681,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
 }
 
 #[wasm_bindgen]
-impl DecryptedMessage {
+impl BufferedDecryptedMessage {
     #[wasm_bindgen(getter)]
     pub fn message(&self) -> JsValue {
         if let Some(message) = &self.message {
@@ -1809,8 +1919,8 @@ impl CoreCrypto {
                 {
                     let messages = decrypted_messages
                         .into_iter()
-                        .map(DecryptedMessage::try_from)
-                        .collect::<WasmCryptoResult<Vec<_>>>()?;
+                        .map(TryInto::try_into)
+                        .collect::<WasmCryptoResult<Vec<BufferedDecryptedMessage>>>()?;
 
                     return WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&messages)?);
                 }
@@ -1853,8 +1963,8 @@ impl CoreCrypto {
                 {
                     let messages = decrypted_messages
                         .into_iter()
-                        .map(DecryptedMessage::try_from)
-                        .collect::<WasmCryptoResult<Vec<_>>>()?;
+                        .map(TryInto::try_into)
+                        .collect::<WasmCryptoResult<Vec<BufferedDecryptedMessage>>>()?;
 
                     return WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&messages)?);
                 }

@@ -60,7 +60,7 @@ export class CoreCryptoError extends Error {
         const parts = msg.split("\n\n");
         if (parts.length < 2) {
             const cause = new Error("CoreCrypto WASM FFI Error doesn't have enough elements to build a rich error");
-            return this.fallback(msg, { cause }, ...params);
+            return this.fallback(msg, {cause}, ...params);
         }
 
         const [errMsg, richErrorJSON,] = parts;
@@ -68,7 +68,7 @@ export class CoreCryptoError extends Error {
             const richError: CoreCryptoRichError = JSON.parse(richErrorJSON);
             return new this(errMsg, richError, ...params);
         } catch (cause) {
-            return this.fallback(msg, { cause }, ...params);
+            return this.fallback(msg, {cause}, ...params);
         }
     }
 
@@ -486,6 +486,46 @@ export interface DecryptedMessage {
      * Present for all messages
      */
     identity?: WireIdentity;
+    /**
+     * Only set when the decrypted message is a commit.
+     * Contains buffered messages for next epoch which were received before the commit creating the epoch
+     * because the DS did not fan them out in order.
+     */
+    bufferedMessages?: BufferedDecryptedMessage[],
+}
+
+/**
+ * Almost same as {@link DecryptedMessage} but avoids recursion
+ */
+export interface BufferedDecryptedMessage {
+    /**
+     * see {@link DecryptedMessage.message}
+     */
+    message?: Uint8Array;
+    /**
+     * see {@link DecryptedMessage.proposals}
+     */
+    proposals: ProposalBundle[];
+    /**
+     * see {@link DecryptedMessage.isActive}
+     */
+    isActive: boolean;
+    /**
+     * see {@link DecryptedMessage.commitDelay}
+     */
+    commitDelay?: number;
+    /**
+     * see {@link DecryptedMessage.senderClientId}
+     */
+    senderClientId?: ClientId;
+    /**
+     * see {@link DecryptedMessage.hasEpochChanged}
+     */
+    hasEpochChanged: boolean;
+    /**
+     * see {@link DecryptedMessage.identity}
+     */
+    identity?: WireIdentity;
 }
 
 /**
@@ -700,15 +740,15 @@ export class CoreCrypto {
      * ````
      */
     static async init({
-        databaseName,
-        key,
-        clientId,
-        wasmFilePath,
-        ciphersuites,
-        entropySeed
-    }: CoreCryptoParams): Promise<CoreCrypto> {
+                          databaseName,
+                          key,
+                          clientId,
+                          wasmFilePath,
+                          ciphersuites,
+                          entropySeed
+                      }: CoreCryptoParams): Promise<CoreCrypto> {
         if (!this.#module) {
-            const wasmImportArgs = wasmFilePath ? { importHook: () => wasmFilePath } : undefined;
+            const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
             const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
             this.#module = exports;
         }
@@ -725,14 +765,14 @@ export class CoreCrypto {
      * @param params - {@link CoreCryptoDeferredParams}
      */
     static async deferredInit({
-        databaseName,
-        key,
-        ciphersuites,
-        entropySeed,
-        wasmFilePath
-    }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
+                                  databaseName,
+                                  key,
+                                  ciphersuites,
+                                  entropySeed,
+                                  wasmFilePath
+                              }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
         if (!this.#module) {
-            const wasmImportArgs = wasmFilePath ? { importHook: () => wasmFilePath } : undefined;
+            const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
             const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
             this.#module = exports;
         }
@@ -903,7 +943,7 @@ export class CoreCrypto {
         configuration: ConversationConfiguration = {}
     ) {
         try {
-            const { ciphersuite, externalSenders, custom = {}, perDomainTrustAnchors = [] } = configuration || {};
+            const {ciphersuite, externalSenders, custom = {}, perDomainTrustAnchors = []} = configuration || {};
             const config = new CoreCrypto.#module.ConversationConfiguration(
                 ciphersuite,
                 externalSenders,
@@ -956,6 +996,16 @@ export class CoreCrypto {
                 senderClientId: ffiDecryptedMessage.sender_client_id,
                 commitDelay,
                 hasEpochChanged: ffiDecryptedMessage.has_epoch_changed,
+                bufferedMessages: ffiDecryptedMessage.buffered_messages?.map(m => {
+                    return {
+                        message: m.message,
+                        proposals: m.proposals,
+                        isActive: m.is_active,
+                        senderClientId: m.sender_client_id,
+                        commitDelay: m.commit_delay,
+                        hasEpochChanged: m.has_epoch_changed,
+                    }
+                }),
             };
 
             return ret;
@@ -998,8 +1048,8 @@ export class CoreCrypto {
         try {
             const ffiRet: CoreCryptoFfiTypes.CommitBundle = await CoreCryptoError.asyncMapErr(this.#cc.update_trust_anchors_from_conversation(
                 conversationId,
-            removeDomainNames,
-              addTrustAnchors
+                removeDomainNames,
+                addTrustAnchors
             ));
 
             const gi = ffiRet.group_info;
@@ -1015,7 +1065,7 @@ export class CoreCrypto {
             };
 
             return ret;
-        } catch(e) {
+        } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
@@ -1033,7 +1083,7 @@ export class CoreCrypto {
      */
     async processWelcomeMessage(welcomeMessage: Uint8Array, configuration: CustomConfiguration = {}): Promise<ConversationId> {
         try {
-            const { keyRotationSpan, wirePolicy } = configuration || {};
+            const {keyRotationSpan, wirePolicy} = configuration || {};
             const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
             return await CoreCryptoError.asyncMapErr(this.#cc.process_welcome_message(welcomeMessage, config));
         } catch (e) {
@@ -1321,7 +1371,7 @@ export class CoreCrypto {
      */
     async joinByExternalCommit(groupInfo: Uint8Array, credentialType: CredentialType, configuration: CustomConfiguration = {}): Promise<ConversationInitBundle> {
         try {
-            const { keyRotationSpan, wirePolicy } = configuration || {};
+            const {keyRotationSpan, wirePolicy} = configuration || {};
             const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
             const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await CoreCryptoError.asyncMapErr(this.#cc.join_by_external_commit(groupInfo, config, credentialType));
 
@@ -1350,8 +1400,8 @@ export class CoreCrypto {
      * @param conversationId - The ID of the conversation
      * @returns eventually decrypted buffered messages if any
      */
-    async mergePendingGroupFromExternalCommit(conversationId: ConversationId): Promise<DecryptedMessage[] | undefined> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.merge_pending_group_from_external_commit(conversationId));
+    async mergePendingGroupFromExternalCommit(conversationId: ConversationId): Promise<BufferedDecryptedMessage[] | undefined> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.merge_pending_group_from_external_commit(conversationId))
     }
 
     /**
@@ -1371,7 +1421,7 @@ export class CoreCrypto {
      * @param conversationId - The group's ID
      * @returns the messages from current epoch which had been buffered, if any
      */
-    async commitAccepted(conversationId: ConversationId): Promise<DecryptedMessage[] | undefined> {
+    async commitAccepted(conversationId: ConversationId): Promise<BufferedDecryptedMessage[] | undefined> {
         return await CoreCryptoError.asyncMapErr(this.#cc.commit_accepted(conversationId));
     }
 
@@ -1452,7 +1502,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Initiailizes the proteus client
+     * Initializes the proteus client
      */
     async proteusInit(): Promise<void> {
         return await CoreCryptoError.asyncMapErr(this.#cc.proteus_init());

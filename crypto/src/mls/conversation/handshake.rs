@@ -1369,9 +1369,10 @@ pub mod tests {
                         // fails when a commit is skipped
                         let out_of_order = bob_central.decrypt_message(&id, &commit2).await;
                         assert!(matches!(out_of_order.unwrap_err(), CryptoError::BufferedFutureMessage));
+
                         // works in the right order though
-                        assert!(bob_central.decrypt_message(&id, &commit1).await.is_ok());
-                        assert!(bob_central.decrypt_message(&id, &commit2).await.is_ok());
+                        // NB: here 'commit2' has been buffered so it is also applied when we decrypt commit1
+                        bob_central.decrypt_message(&id, &commit1).await.unwrap();
 
                         // and then fails again when trying to decrypt a commit with an epoch in the past
                         let past_commit = bob_central.decrypt_message(&id, &commit1).await;
