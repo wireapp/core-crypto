@@ -47,6 +47,7 @@ indexmap = "2"
 x509-cert = "0.2"
 pem = "3.0"
 oid-registry = "0.6"
+async-recursion = "1"
 
 [dependencies.proteus-wasm]
 version = "2.1"

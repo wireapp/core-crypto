@@ -239,6 +239,12 @@ data class DecryptedMessage(
      * Present for all messages
      */
     val identity: WireIdentity?,
+    /**
+     * Identity claims present in the sender credential
+     * Only present when the credential is a x509 certificate
+     * Present for all messages
+     */
+    val bufferedMessages: List<BufferedDecryptedMessage>?,
 ) {
 
     override fun equals(other: Any?): Boolean {
@@ -274,6 +280,69 @@ data class DecryptedMessage(
 }
 
 fun com.wire.crypto.DecryptedMessage.lift() = DecryptedMessage(
+    message,
+    proposals.asSequence().map { it.lift() }.toSet(),
+    isActive,
+    commitDelay?.toLong(),
+    senderClientId?.toClientId(),
+    hasEpochChanged,
+    identity?.lift(),
+    bufferedMessages?.map { it.lift() }
+)
+
+/**
+ * Type safe recursion of [DecryptedMessage]
+ */
+data class BufferedDecryptedMessage(
+    /** @see DecryptedMessage.message */
+    val message: ByteArray?,
+    /** @see DecryptedMessage.proposals */
+    val proposals: Set<ProposalBundle>,
+    /** @see DecryptedMessage.isActive */
+    val isActive: Boolean,
+    /** @see DecryptedMessage.commitDelay */
+    val commitDelay: Long?,
+    /** @see DecryptedMessage.senderClientId */
+    val senderClientId: ClientId?,
+    /** @see DecryptedMessage.hasEpochChanged */
+    val hasEpochChanged: Boolean,
+    /** @see DecryptedMessage.identity */
+    val identity: WireIdentity?,
+) {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as DecryptedMessage
+
+        if (message != null) {
+            if (other.message == null) return false
+            if (!message.contentEquals(other.message)) return false
+        } else if (other.message != null) return false
+        if (proposals != other.proposals) return false
+        if (isActive != other.isActive) return false
+        if (commitDelay != other.commitDelay) return false
+        if (senderClientId != other.senderClientId) return false
+        if (hasEpochChanged != other.hasEpochChanged) return false
+        if (identity != other.identity) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = message?.contentHashCode() ?: 0
+        result = 31 * result + proposals.hashCode()
+        result = 31 * result + isActive.hashCode()
+        result = 31 * result + (commitDelay?.hashCode() ?: 0)
+        result = 31 * result + (senderClientId?.hashCode() ?: 0)
+        result = 31 * result + hasEpochChanged.hashCode()
+        result = 31 * result + (identity?.hashCode() ?: 0)
+        return result
+    }
+}
+
+fun com.wire.crypto.BufferedDecryptedMessage.lift() = BufferedDecryptedMessage(
     message,
     proposals.asSequence().map { it.lift() }.toSet(),
     isActive,

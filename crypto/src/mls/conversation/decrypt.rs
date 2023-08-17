@@ -15,7 +15,9 @@ use openmls::{
         ProtocolMessage, ValidationError,
     },
 };
+use openmls_traits::OpenMlsCryptoProvider;
 
+use core_crypto_keystore::entities::MlsPendingMessage;
 use mls_crypto_provider::MlsCryptoProvider;
 use tls_codec::Deserialize;
 
@@ -52,6 +54,43 @@ pub struct MlsConversationDecryptMessage {
     /// Only present when the credential is a x509 certificate
     /// Present for all messages
     pub identity: Option<WireIdentity>,
+    /// Only set when the decrypted message is a commit.
+    /// Contains buffered messages for next epoch which were received before the commit creating the epoch
+    /// because the DS did not fan them out in order.
+    pub buffered_messages: Option<Vec<MlsBufferedConversationDecryptMessage>>,
+}
+
+/// Type safe recursion of [MlsConversationDecryptMessage]
+#[derive(Debug)]
+pub struct MlsBufferedConversationDecryptMessage {
+    /// see [MlsConversationDecryptMessage]
+    pub app_msg: Option<Vec<u8>>,
+    /// see [MlsConversationDecryptMessage]
+    pub proposals: Vec<MlsProposalBundle>,
+    /// see [MlsConversationDecryptMessage]
+    pub is_active: bool,
+    /// see [MlsConversationDecryptMessage]
+    pub delay: Option<u64>,
+    /// see [MlsConversationDecryptMessage]
+    pub sender_client_id: Option<ClientId>,
+    /// see [MlsConversationDecryptMessage]
+    pub has_epoch_changed: bool,
+    /// see [MlsConversationDecryptMessage]
+    pub identity: Option<WireIdentity>,
+}
+
+impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessage {
+    fn from(from: MlsConversationDecryptMessage) -> Self {
+        Self {
+            app_msg: from.app_msg,
+            proposals: from.proposals,
+            is_active: from.is_active,
+            delay: from.delay,
+            sender_client_id: from.sender_client_id,
+            has_epoch_changed: from.has_epoch_changed,
+            identity: from.identity,
+        }
+    }
 }
 
 /// Abstraction over a MLS group capable of decrypting a MLS message
@@ -61,10 +100,11 @@ impl MlsConversation {
     pub async fn decrypt_message(
         &mut self,
         message: MlsMessageIn,
-        parent_conversation: Option<GroupStoreValue<MlsConversation>>,
+        parent_conv: Option<&GroupStoreValue<MlsConversation>>,
         client: &Client,
         backend: &MlsCryptoProvider,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
+        restore_pending: bool,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
         // handles the crooked case where we receive our own commits.
         // Since this would result in an error in openmls, we handle it here
@@ -88,6 +128,7 @@ impl MlsConversation {
                 sender_client_id: Some(sender_client_id),
                 has_epoch_changed: false,
                 identity,
+                buffered_messages: None,
             },
             ProcessedMessageContent::ProposalMessage(proposal) => {
                 self.group.store_pending_proposal(*proposal);
@@ -99,10 +140,11 @@ impl MlsConversation {
                     sender_client_id: None,
                     has_epoch_changed: false,
                     identity,
+                    buffered_messages: None,
                 }
             }
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
-                self.validate_external_commit(&staged_commit, sender_client_id, parent_conversation, callbacks)
+                self.validate_external_commit(&staged_commit, sender_client_id, parent_conv, callbacks)
                     .await?;
 
                 #[allow(clippy::needless_collect)] // false positive
@@ -130,6 +172,20 @@ impl MlsConversation {
                     .renew_proposals_for_current_epoch(client, backend, proposals_to_renew.into_iter(), needs_update)
                     .await?;
 
+                let buffered_messages = if restore_pending {
+                    if let Some(pm) = self
+                        .restore_pending_messages(client, backend, callbacks, parent_conv)
+                        .await?
+                    {
+                        backend.key_store().remove::<MlsPendingMessage, _>(self.id()).await?;
+                        Some(pm)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals,
@@ -138,10 +194,11 @@ impl MlsConversation {
                     sender_client_id: None,
                     has_epoch_changed: true,
                     identity,
+                    buffered_messages,
                 }
             }
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
-                self.validate_external_proposal(&proposal, parent_conversation, callbacks)
+                self.validate_external_proposal(&proposal, parent_conv, callbacks)
                     .await?;
                 self.group.store_pending_proposal(*proposal);
 
@@ -153,6 +210,7 @@ impl MlsConversation {
                     sender_client_id: None,
                     has_epoch_changed: false,
                     identity,
+                    buffered_messages: None,
                 }
             }
         };
@@ -241,15 +299,17 @@ impl MlsCentral {
             return self.handle_when_group_is_pending(id, message).await;
         };
         let parent_conversation = self.get_parent_conversation(&conversation).await?;
+        let callbacks = self.callbacks.as_ref().map(|boxed| boxed.as_ref());
         let decrypt_message = conversation
             .write()
             .await
             .decrypt_message(
                 msg,
-                parent_conversation,
+                parent_conversation.as_ref(),
                 self.mls_client()?,
                 &self.mls_backend,
-                self.callbacks.as_ref().map(|boxed| boxed.as_ref()),
+                callbacks,
+                true,
             )
             .await;
 
@@ -1048,7 +1108,7 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
-                        // only Alice which change epoch without notifying Bob
+                        // only Alice will change epoch without notifying Bob
                         let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
                         alice_central.commit_accepted(&id).await.unwrap();
 
@@ -1060,13 +1120,13 @@ pub mod tests {
                         let decrypt = bob_central.decrypt_message(&id, &encrypted).await;
                         assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
 
-                        bob_central
+                        let decrypted_commit = bob_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        let decrypted = bob_central.decrypt_message(&id, encrypted).await.unwrap();
-
-                        assert_eq!(&decrypted.app_msg.unwrap(), msg);
+                        let buffered_msg = decrypted_commit.buffered_messages.unwrap();
+                        let decrypted_msg = buffered_msg.first().unwrap().app_msg.clone().unwrap();
+                        assert_eq!(&decrypted_msg, msg);
                     })
                 },
             )

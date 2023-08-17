@@ -1,7 +1,7 @@
 use crate::prelude::MlsCentral;
 use core_crypto_keystore::entities::{
     E2eiEnrollment, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage,
-    MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup,
+    MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -14,6 +14,7 @@ pub struct EntitiesCount {
     pub hpke_private_key: usize,
     pub key_package: usize,
     pub pending_group: usize,
+    pub pending_messages: usize,
     /// TODO: PreSharedKey are never ever deleted by openmls. Pay attention to this we introducing them
     pub psk_bundle: usize,
     pub signature_keypair: usize,
@@ -30,6 +31,7 @@ impl MlsCentral {
         let hpke_private_key = keystore.count::<MlsHpkePrivateKey>().await.unwrap();
         let key_package = keystore.count::<MlsKeyPackage>().await.unwrap();
         let pending_group = keystore.count::<PersistedMlsPendingGroup>().await.unwrap();
+        let pending_messages = keystore.count::<MlsPendingMessage>().await.unwrap();
         let psk_bundle = keystore.count::<MlsPskBundle>().await.unwrap();
         let signature_keypair = keystore.count::<MlsSignatureKeyPair>().await.unwrap();
         EntitiesCount {
@@ -41,6 +43,7 @@ impl MlsCentral {
             hpke_private_key,
             key_package,
             pending_group,
+            pending_messages,
             psk_bundle,
             signature_keypair,
         }

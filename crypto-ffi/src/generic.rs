@@ -14,13 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use core_crypto::prelude::{
-    ClientIdentifier, ConversationMember, EntropySeed, KeyPackageIn, KeyPackageRef, MlsCentral,
-    MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle, MlsConversationConfiguration,
-    MlsConversationCreationMessage, MlsConversationDecryptMessage, MlsConversationInitBundle, MlsCryptoProvider,
-    MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle, MlsRotateBundle, VerifiableGroupInfo,
+use core_crypto::{
+    prelude::{
+        ClientIdentifier, ConversationMember, EntropySeed, KeyPackageIn, KeyPackageRef,
+        MlsBufferedConversationDecryptMessage, MlsCentral, MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle,
+        MlsConversationConfiguration, MlsConversationCreationMessage, MlsConversationDecryptMessage,
+        MlsConversationInitBundle, MlsCryptoProvider, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle,
+        MlsRotateBundle, VerifiableGroupInfo,
+    },
+    CryptoResult, MlsError,
 };
-use core_crypto::{CryptoResult, MlsError};
 use std::collections::HashMap;
 use tls_codec::{Deserialize, Serialize};
 
@@ -223,12 +226,58 @@ pub struct DecryptedMessage {
     pub sender_client_id: Option<ClientId>,
     pub has_epoch_changed: bool,
     pub identity: Option<WireIdentity>,
+    pub buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
+}
+
+#[derive(Debug)]
+/// because Uniffi does not support recursive structs
+pub struct BufferedDecryptedMessage {
+    pub message: Option<Vec<u8>>,
+    pub proposals: Vec<ProposalBundle>,
+    pub is_active: bool,
+    pub commit_delay: Option<u64>,
+    pub sender_client_id: Option<ClientId>,
+    pub has_epoch_changed: bool,
+    pub identity: Option<WireIdentity>,
 }
 
 impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
     type Error = CryptoError;
 
     fn try_from(from: MlsConversationDecryptMessage) -> Result<Self, Self::Error> {
+        let proposals = from
+            .proposals
+            .into_iter()
+            .map(ProposalBundle::try_from)
+            .collect::<CryptoResult<Vec<_>>>()?;
+
+        let buffered_messages = if let Some(bm) = from.buffered_messages {
+            let bm = bm
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<CryptoResult<Vec<_>>>()?;
+            Some(bm)
+        } else {
+            None
+        };
+
+        Ok(Self {
+            message: from.app_msg,
+            proposals,
+            is_active: from.is_active,
+            commit_delay: from.delay,
+            sender_client_id: from.sender_client_id.map(ClientId),
+            has_epoch_changed: from.has_epoch_changed,
+            identity: from.identity.map(Into::into),
+            buffered_messages,
+        })
+    }
+}
+
+impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage {
+    type Error = CryptoError;
+
+    fn try_from(from: MlsBufferedConversationDecryptMessage) -> Result<Self, Self::Error> {
         let proposals = from
             .proposals
             .into_iter()
@@ -819,7 +868,7 @@ impl CoreCrypto {
     pub async fn merge_pending_group_from_external_commit(
         &self,
         conversation_id: Vec<u8>,
-    ) -> CryptoResult<Option<Vec<DecryptedMessage>>> {
+    ) -> CryptoResult<Option<Vec<BufferedDecryptedMessage>>> {
         if let Some(decrypted_messages) = self
             .central
             .lock()
@@ -830,7 +879,7 @@ impl CoreCrypto {
             return Ok(Some(
                 decrypted_messages
                     .into_iter()
-                    .map(DecryptedMessage::try_from)
+                    .map(TryInto::try_into)
                     .collect::<CryptoResult<Vec<_>>>()?,
             ));
         }
@@ -863,12 +912,15 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::commit_accepted]
-    pub async fn commit_accepted(&self, conversation_id: Vec<u8>) -> CryptoResult<Option<Vec<DecryptedMessage>>> {
+    pub async fn commit_accepted(
+        &self,
+        conversation_id: Vec<u8>,
+    ) -> CryptoResult<Option<Vec<BufferedDecryptedMessage>>> {
         if let Some(decrypted_messages) = self.central.lock().await.commit_accepted(&conversation_id).await? {
             return Ok(Some(
                 decrypted_messages
                     .into_iter()
-                    .map(DecryptedMessage::try_from)
+                    .map(TryInto::try_into)
                     .collect::<CryptoResult<Vec<_>>>()?,
             ));
         }

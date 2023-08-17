@@ -49,9 +49,30 @@ extension CoreCryptoSwift.ConversationInitBundle {
 
 extension CoreCryptoSwift.DecryptedMessage {
     func convertTo() -> DecryptedMessage {
-        return DecryptedMessage(message: self.message, proposals: self.proposals.map({ (bundle) -> ProposalBundle in
-            return bundle.convertTo()
-        }), isActive: self.isActive, commitDelay: self.commitDelay, senderClientId: self.senderClientId, hasEpochChanged: self.hasEpochChanged, identity: self.identity?.convertTo())
+        return DecryptedMessage(
+            message: self.message,
+            proposals: self.proposals.map({ (bundle) -> ProposalBundle in return bundle.convertTo() }),
+            isActive: self.isActive,
+            commitDelay: self.commitDelay,
+            senderClientId: self.senderClientId,
+            hasEpochChanged: self.hasEpochChanged,
+            identity: self.identity?.convertTo(),
+            bufferedMessages: self.bufferedMessages.map({ (bm) -> BufferedDecryptedMessage in return bm.convertTo() })
+        )
+    }
+}
+
+extension CoreCryptoSwift.BufferedDecryptedMessage {
+    func convertTo() -> BufferedDecryptedMessage {
+        return BufferedDecryptedMessage(
+            message: self.message,
+            proposals: self.proposals.map({ (bundle) -> ProposalBundle in return bundle.convertTo() }),
+            isActive: self.isActive,
+            commitDelay: self.commitDelay,
+            senderClientId: self.senderClientId,
+            hasEpochChanged: self.hasEpochChanged,
+            identity: self.identity?.convertTo()
+        )
     }
 }
 
@@ -323,6 +344,53 @@ public struct DecryptedMessage: ConvertToInner {
     /// Only present when the credential is a x509 certificate
     /// Present for all messages
     public var identity: WireIdentity?
+    /// Only set when the decrypted message is a commit.
+    /// Contains buffered messages for next epoch which were received before the commit creating the epoch
+    /// because the DS did not fan them out in order.
+    public var bufferedMessages: [BufferedDecryptedMessage]?
+
+    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?, hasEpochChanged: Bool, identity: WireIdentity?, bufferedMessages: [BufferedDecryptedMessage]?) {
+        self.message = message
+        self.proposals = proposals
+        self.isActive = isActive
+        self.commitDelay = commitDelay
+        self.senderClientId = senderClientId
+        self.hasEpochChanged = hasEpochChanged
+        self.identity = identity
+        self.bufferedMessages = bufferedMessages
+    }
+
+    func convert() -> Inner {
+        return CoreCryptoSwift.DecryptedMessage(
+            message: self.message,
+            proposals: self.proposals.map({ (bundle) -> CoreCryptoSwift.ProposalBundle in bundle.convert() }),
+            isActive: self.isActive,
+            commitDelay: self.commitDelay,
+            senderClientId: self.senderClientId,
+            hasEpochChanged: self.hasEpochChanged,
+            identity: self.identity?.convert(),
+            bufferedMessages: self.bufferedMessages.map({ (bm) -> CoreCryptoSwift.DecryptedMessage in bm.convert() })
+        )
+    }
+}
+
+/// Type safe recursion of ```DecryptedMessage```
+public struct BufferedDecryptedMessage: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.BufferedDecryptedMessage
+    /// see ```DecryptedMessage.message```
+    public var message: [UInt8]?
+    /// see ```DecryptedMessage.proposals```
+    public var proposals: [ProposalBundle]
+    /// see ```DecryptedMessage.isActive```
+    public var isActive: Bool
+    /// see ```DecryptedMessage.commitDelay```
+    public var commitDelay: UInt64?
+    /// see ```DecryptedMessage.senderClientId```
+    public var senderClientId: ClientId?
+    /// see ```DecryptedMessage.hasEpochChanged```
+    public var hasEpochChanged: Bool
+    /// see ```DecryptedMessage.identity```
+    public var identity: WireIdentity?
 
     public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?, hasEpochChanged: Bool, identity: WireIdentity?) {
         self.message = message
@@ -335,9 +403,15 @@ public struct DecryptedMessage: ConvertToInner {
     }
 
     func convert() -> Inner {
-        return CoreCryptoSwift.DecryptedMessage(message: self.message, proposals: self.proposals.map({ (bundle) -> CoreCryptoSwift.ProposalBundle in
-            bundle.convert()
-        }), isActive: self.isActive, commitDelay: self.commitDelay, senderClientId: self.senderClientId, hasEpochChanged: self.hasEpochChanged, identity: self.identity?.convert())
+        return CoreCryptoSwift.BufferedDecryptedMessage(
+            message: self.message,
+            proposals: self.proposals.map({ (bundle) -> CoreCryptoSwift.ProposalBundle in bundle.convert() }),
+            isActive: self.isActive,
+            commitDelay: self.commitDelay,
+            senderClientId: self.senderClientId,
+            hasEpochChanged: self.hasEpochChanged,
+            identity: self.identity?.convert()
+        )
     }
 }
 
@@ -817,7 +891,7 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter conversationId: conversation identifier
     /// - returns the messages from current epoch which had been buffered, if any
-    public func mergePendingGroupFromExternalCommit(conversationId: ConversationId) async throws -> [DecryptedMessage]? {
+    public func mergePendingGroupFromExternalCommit(conversationId: ConversationId) async throws -> [BufferedDecryptedMessage]? {
         try await self.coreCrypto.mergePendingGroupFromExternalCommit(conversationId: conversationId)
     }
 
@@ -868,7 +942,7 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter conversationId: conversation identifier
     /// - returns the messages from current epoch which had been buffered, if any
-    public func commitAccepted(conversationId: ConversationId) async throws -> [DecryptedMessage]? {
+    public func commitAccepted(conversationId: ConversationId) async throws -> [BufferedDecryptedMessage]? {
         try await self.coreCrypto.commitAccepted(conversationId: conversationId)
     }
 

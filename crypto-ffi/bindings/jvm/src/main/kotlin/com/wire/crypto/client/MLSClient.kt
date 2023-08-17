@@ -180,7 +180,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @return eventually decrypted buffered messages if any
      */
-    suspend fun mergePendingGroupFromExternalCommit(id: MLSGroupId): List<DecryptedMessage>? {
+    suspend fun mergePendingGroupFromExternalCommit(id: MLSGroupId): List<BufferedDecryptedMessage>? {
         return cc.mergePendingGroupFromExternalCommit(id.lower())?.map { it.lift() }
     }
 
@@ -373,7 +373,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      *
      * @param id conversation identifier
      */
-    suspend fun commitAccepted(id: MLSGroupId): List<DecryptedMessage>? {
+    suspend fun commitAccepted(id: MLSGroupId): List<BufferedDecryptedMessage>? {
         return cc.commitAccepted(id.lower())?.map { it.lift() }
     }
 
