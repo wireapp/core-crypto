@@ -14,22 +14,28 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{
-    mls::credential::CredentialBundle,
-    prelude::{Client, CryptoError, CryptoResult, MlsCiphersuite, MlsCredentialType, MlsError},
-};
-use core_crypto_keystore::connection::KeystoreDatabaseConnection;
+use std::collections::HashMap;
+
 use openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
 use openmls_traits::OpenMlsCryptoProvider;
-use std::collections::HashMap;
 use tls_codec::{Deserialize, Serialize};
 
-use crate::prelude::MlsCentral;
-use core_crypto_keystore::entities::{
-    EntityBase, EntityFindParams, MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsHpkePrivateKey,
-    MlsKeyPackage,
+use core_crypto_keystore::{
+    connection::KeystoreDatabaseConnection,
+    entities::{
+        EntityBase, EntityFindParams, MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsHpkePrivateKey,
+        MlsKeyPackage,
+    },
 };
 use mls_crypto_provider::MlsCryptoProvider;
+
+use crate::{
+    mls::credential::CredentialBundle,
+    prelude::{
+        Client, CryptoError, CryptoResult, MlsCentral, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType,
+        MlsError,
+    },
+};
 
 /// Default number of KeyPackages a client generates the first time it's created
 #[cfg(not(test))]
@@ -56,6 +62,7 @@ impl Client {
         cb: &CredentialBundle,
     ) -> CryptoResult<KeyPackage> {
         let keypackage = KeyPackage::builder()
+            .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
             .key_package_lifetime(Lifetime::new(self.keypackage_lifetime.as_secs()))
             .build(
                 CryptoConfig {
@@ -350,15 +357,18 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
-    use openmls::prelude::{KeyPackage, KeyPackageRef};
+    use openmls::prelude::{ExtensionType, KeyPackage, KeyPackageIn, KeyPackageRef, ProtocolVersion};
+    use openmls_traits::types::VerifiableCiphersuite;
     use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
 
-    use crate::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
     use mls_crypto_provider::MlsCryptoProvider;
 
-    use super::Client;
+    use crate::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
+    use crate::prelude::MlsConversationConfiguration;
     use crate::test_utils::*;
+
+    use super::Client;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -521,5 +531,46 @@ pub mod tests {
         // TADA!
         assert_eq!(unexpired_match, UNEXPIRED_COUNT);
         assert_eq!(expired_match, 0);
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn new_keypackage_has_correct_extensions(case: TestCase) {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
+            Box::pin(async move {
+                let kps = cc
+                    .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 1)
+                    .await
+                    .unwrap();
+                let kp = kps.first().unwrap();
+
+                // make sure it's valid
+                assert!(KeyPackageIn::from(kp.clone())
+                    .standalone_validate(cc.mls_backend.crypto(), ProtocolVersion::Mls10)
+                    .is_ok());
+
+                // see https://www.rfc-editor.org/rfc/rfc9420.html#section-10-10
+                assert!(kp.extensions().is_empty());
+
+                assert_eq!(kp.leaf_node().capabilities().versions(), &[ProtocolVersion::Mls10]);
+                assert_eq!(
+                    kp.leaf_node().capabilities().ciphersuites().to_vec(),
+                    MlsConversationConfiguration::DEFAULT_SUPPORTED_CIPHERSUITES
+                        .iter()
+                        .map(|c| VerifiableCiphersuite::try_from(*c).unwrap())
+                        .collect::<Vec<_>>()
+                );
+                assert!(kp.leaf_node().capabilities().proposals().is_empty());
+                assert_eq!(
+                    kp.leaf_node().capabilities().extensions(),
+                    &[ExtensionType::PerDomainTrustAnchor]
+                );
+                assert_eq!(
+                    kp.leaf_node().capabilities().credentials(),
+                    MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
+                );
+            })
+        })
+        .await
     }
 }

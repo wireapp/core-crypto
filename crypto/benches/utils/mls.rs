@@ -239,6 +239,7 @@ pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, Clien
 
     let cfg = CryptoConfig::with_default_version(cs);
     let kp = KeyPackage::builder()
+        .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
         .build(cfg, &backend, &signer, credential)
         .await
         .unwrap();

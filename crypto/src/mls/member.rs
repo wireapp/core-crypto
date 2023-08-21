@@ -46,7 +46,7 @@ impl ConversationMember {
     pub fn new_raw(client_id: ClientId, kp_ser: Vec<u8>, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
         let kp = KeyPackageIn::tls_deserialize_bytes(kp_ser).map_err(MlsError::from)?;
         let kp = kp
-            .validate(backend.crypto(), openmls::versions::ProtocolVersion::Mls10)
+            .standalone_validate(backend.crypto(), openmls::versions::ProtocolVersion::Mls10)
             .map_err(MlsError::from)?;
 
         Ok(Self {
@@ -80,7 +80,7 @@ impl ConversationMember {
     pub fn keypackages_for_all_clients(
         &mut self,
         ciphersuite: &MlsCiphersuite,
-    ) -> HashMap<&ClientId, Option<KeyPackage>> {
+    ) -> HashMap<&ClientId, Option<KeyPackageIn>> {
         self.clients
             .iter_mut()
             .map(|(client, client_kps)| {
@@ -89,7 +89,7 @@ impl ConversationMember {
                     client_kps
                         .iter()
                         .position(|kp| kp.ciphersuite() == ciphersuite.0)
-                        .map(|pos| client_kps.remove(pos)),
+                        .map(|pos| client_kps.remove(pos).into()),
                 )
             })
             .collect()
@@ -105,7 +105,7 @@ impl ConversationMember {
     pub fn add_keypackage(&mut self, kp: Vec<u8>, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         let kp = KeyPackageIn::tls_deserialize_bytes(kp).map_err(MlsError::from)?;
         let kp = kp
-            .validate(backend.crypto(), openmls::versions::ProtocolVersion::Mls10)
+            .standalone_validate(backend.crypto(), openmls::versions::ProtocolVersion::Mls10)
             .map_err(MlsError::from)?;
         let cid = ClientId::from(kp.leaf_node().credential().identity());
         self.clients.entry(cid).or_insert_with(Vec::new).push(kp);

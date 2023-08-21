@@ -270,6 +270,7 @@ pub mod tests {
     use openmls::prelude::*;
     use wasm_bindgen_test::*;
 
+    use crate::prelude::MlsConversationConfiguration;
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -752,6 +753,43 @@ pub mod tests {
 
                     assert!(
                         matches!(conflict_welcome.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id)
+                    );
+                })
+            },
+        )
+        .await
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn group_should_have_right_config(case: TestCase) {
+        run_test_with_client_ids(
+            case.clone(),
+            ["alice", "bob"],
+            move |[mut alice_central, mut bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+
+                    let gi = alice_central.get_group_info(&id).await;
+                    bob_central
+                        .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
+                        .await
+                        .unwrap();
+                    bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
+                    let group = bob_central.get_conversation_unchecked(&id).await;
+
+                    let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
+
+                    // see https://www.rfc-editor.org/rfc/rfc9420.html#section-11.1
+                    assert_eq!(capabilities.extension_types(), &[ExtensionType::PerDomainTrustAnchor]);
+                    assert!(capabilities.proposal_types().is_empty());
+                    assert_eq!(
+                        capabilities.credential_types(),
+                        MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
                     );
                 })
             },

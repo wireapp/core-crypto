@@ -60,7 +60,6 @@ impl CredentialExt for openmls::prelude::Certificate {
     fn extract_identity(&self) -> CryptoResult<Option<WireIdentity>> {
         let leaf = self.certificates.get(0).ok_or(CryptoError::InvalidIdentity)?;
         let leaf = leaf.as_slice();
-
         use wire_e2e_identity::prelude::WireIdentityReader as _;
         let identity = leaf.extract_identity().map_err(|_| CryptoError::InvalidIdentity)?;
         let identity = WireIdentity::try_from((identity, leaf))?;
