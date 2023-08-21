@@ -1,4 +1,6 @@
+use core_crypto_keystore::entities::MlsEncryptionKeyPair;
 use openmls::prelude::{LeafNode, LeafNodeIndex, Proposal, QueuedProposal, Sender, StagedCommit};
+use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -104,8 +106,8 @@ impl MlsConversation {
         let is_external = |p: &QueuedProposal| matches!(p.sender(), Sender::External(_) | Sender::NewMemberProposal);
         let proposals = proposals.filter(|p| !is_external(p));
         for proposal in proposals {
-            let msg = match proposal.proposal() {
-                Proposal::Add(add) => self.propose_add_member(client, backend, add.key_package()).await?,
+            let msg = match proposal.proposal {
+                Proposal::Add(add) => self.propose_add_member(client, backend, add.key_package).await?,
                 Proposal::Remove(remove) => self.propose_remove_member(client, backend, remove.removed()).await?,
                 Proposal::Update(update) => self.renew_update(client, backend, Some(update.leaf_node())).await?,
                 _ => return Err(CryptoError::ImplementationError),
@@ -128,6 +130,15 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
         leaf_node: Option<&LeafNode>,
     ) -> CryptoResult<MlsProposalBundle> {
+        if let Some(leaf_node) = leaf_node {
+            // Creating an update rekeys the LeafNode everytime. Hence we need to clear the previous
+            // encryption key from the keystore otherwise we would have a leak
+            backend
+                .key_store()
+                .remove::<MlsEncryptionKeyPair, _>(leaf_node.encryption_key().as_slice())
+                .await?;
+        }
+
         let mut leaf_node = leaf_node
             .or_else(|| self.group.own_leaf())
             .cloned()
@@ -322,10 +333,8 @@ pub mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        let gi = alice_central.get_group_info(&id).await;
-                        charlie_central
-                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
+                        alice_central
+                            .invite_all(&case, &id, [&mut bob_central, &mut charlie_central])
                             .await
                             .unwrap();
 
@@ -452,10 +461,8 @@ pub mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        let gi = alice_central.get_group_info(&id).await;
-                        charlie_central
-                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
+                        alice_central
+                            .invite_all(&case, &id, [&mut bob_central, &mut charlie_central])
                             .await
                             .unwrap();
 
@@ -591,10 +598,8 @@ pub mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        let gi = alice_central.get_group_info(&id).await;
-                        charlie_central
-                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
+                        alice_central
+                            .invite_all(&case, &id, [&mut bob_central, &mut charlie_central])
                             .await
                             .unwrap();
 
@@ -637,10 +642,8 @@ pub mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        let gi = alice_central.get_group_info(&id).await;
-                        charlie_central
-                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
+                        alice_central
+                            .invite_all(&case, &id, [&mut bob_central, &mut charlie_central])
                             .await
                             .unwrap();
 
@@ -684,19 +687,11 @@ pub mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        let gi = alice_central.get_group_info(&id).await;
-                        charlie_central
-                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
-                            .await
-                            .unwrap();
-                        let gi = alice_central.get_group_info(&id).await;
-                        debbie_central
-                            .try_join_from_group_info(
+                        alice_central
+                            .invite_all(
                                 &case,
                                 &id,
-                                gi,
-                                vec![&mut alice_central, &mut bob_central, &mut charlie_central],
+                                [&mut bob_central, &mut charlie_central, &mut debbie_central],
                             )
                             .await
                             .unwrap();
@@ -742,19 +737,11 @@ pub mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        let gi = alice_central.get_group_info(&id).await;
-                        charlie_central
-                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
-                            .await
-                            .unwrap();
-                        let gi = alice_central.get_group_info(&id).await;
-                        debbie_central
-                            .try_join_from_group_info(
+                        alice_central
+                            .invite_all(
                                 &case,
                                 &id,
-                                gi,
-                                vec![&mut alice_central, &mut bob_central, &mut charlie_central],
+                                [&mut bob_central, &mut charlie_central, &mut debbie_central],
                             )
                             .await
                             .unwrap();
@@ -799,19 +786,11 @@ pub mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        let gi = alice_central.get_group_info(&id).await;
-                        charlie_central
-                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
-                            .await
-                            .unwrap();
-                        let gi = alice_central.get_group_info(&id).await;
-                        debbie_central
-                            .try_join_from_group_info(
+                        alice_central
+                            .invite_all(
                                 &case,
                                 &id,
-                                gi,
-                                vec![&mut alice_central, &mut bob_central, &mut charlie_central],
+                                [&mut bob_central, &mut charlie_central, &mut debbie_central],
                             )
                             .await
                             .unwrap();
