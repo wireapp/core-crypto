@@ -18,14 +18,14 @@ use crate::{
     mls::credential::{ext::CredentialExt, trust_anchor::PerDomainTrustAnchor, CredentialBundle},
     prelude::{
         CertificateBundle, Client, ClientId, ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral,
-        MlsCiphersuite, MlsConversation, MlsConversationDecryptMessage, MlsConversationInitBundle, MlsCredentialType,
-        MlsCustomConfiguration, MlsError,
+        MlsCiphersuite, MlsConversation, MlsConversationConfiguration, MlsConversationDecryptMessage,
+        MlsConversationInitBundle, MlsCredentialType, MlsCustomConfiguration, MlsError,
     },
     test_utils::{MessageExt, TestCase},
 };
 use openmls::prelude::{
-    group_info::VerifiableGroupInfo, Credential, HpkePublicKey, KeyPackage, LeafNodeIndex, MlsMessageIn, MlsMessageOut,
-    QueuedProposal, SignaturePublicKey, StagedCommit,
+    group_info::VerifiableGroupInfo, Capabilities, Credential, CredentialWithKey, CryptoConfig, HpkePublicKey,
+    KeyPackage, LeafNodeIndex, Lifetime, MlsMessageIn, MlsMessageOut, QueuedProposal, SignaturePublicKey, StagedCommit,
 };
 use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
 use tls_codec::{Deserialize, Serialize};
@@ -43,6 +43,57 @@ impl MlsCentral {
             .await
             .unwrap();
         kps.first().unwrap().clone()
+    }
+
+    pub async fn new_keypackage(&self, case: &TestCase, lifetime: Lifetime) -> KeyPackage {
+        let cb = self
+            .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+            .await
+            .unwrap();
+        KeyPackage::builder()
+            .key_package_lifetime(lifetime)
+            .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
+            .build(
+                CryptoConfig {
+                    ciphersuite: case.ciphersuite().into(),
+                    version: openmls::versions::ProtocolVersion::default(),
+                },
+                &self.mls_backend,
+                &cb.signature_key,
+                CredentialWithKey {
+                    credential: cb.credential.clone(),
+                    signature_key: cb.signature_key.public().into(),
+                },
+            )
+            .await
+            .unwrap()
+    }
+
+    pub async fn new_invalid_keypackage(&self, case: &TestCase) -> KeyPackage {
+        let cb = self
+            .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+            .await
+            .unwrap();
+        let capabilities = Capabilities {
+            extensions: vec![],
+            ..MlsConversationConfiguration::default_leaf_capabilities()
+        };
+        KeyPackage::builder()
+            .leaf_node_capabilities(capabilities)
+            .build(
+                CryptoConfig {
+                    ciphersuite: case.ciphersuite().into(),
+                    version: openmls::versions::ProtocolVersion::default(),
+                },
+                &self.mls_backend,
+                &cb.signature_key,
+                CredentialWithKey {
+                    credential: cb.credential.clone(),
+                    signature_key: cb.signature_key.public().into(),
+                },
+            )
+            .await
+            .unwrap()
     }
 
     pub async fn count_key_package(&self, cs: MlsCiphersuite, ct: Option<MlsCredentialType>) -> usize {
@@ -193,7 +244,7 @@ impl MlsCentral {
         assert_eq!(conversation_id.as_slice(), id.as_slice());
         for other in others {
             let commit = commit.tls_serialize_detached().map_err(MlsError::from)?;
-            other.decrypt_message(id, commit).await?;
+            other.decrypt_message(id, commit).await.unwrap();
             self.try_talk_to(id, other).await?;
         }
         Ok(())

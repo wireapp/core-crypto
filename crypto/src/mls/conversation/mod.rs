@@ -56,13 +56,13 @@ pub mod encrypt;
 pub mod export;
 pub(crate) mod group_info;
 pub mod handshake;
+mod leaf_node_validation;
 pub mod merge;
 mod orphan_welcome;
 mod renew;
 mod self_commit;
 pub(crate) mod welcome;
 mod wipe;
-
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 pub type ConversationId = Vec<u8>;
 

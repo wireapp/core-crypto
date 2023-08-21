@@ -83,8 +83,7 @@ impl Client {
             .into_iter()
             .filter(|c| &c.id[..] == id.as_slice())
             .try_fold(vec![], |mut acc, c| {
-                let credential = openmls::prelude::Credential::tls_deserialize_bytes(c.credential.as_slice())
-                    .map_err(MlsError::from)?;
+                let credential = Credential::tls_deserialize_bytes(c.credential.as_slice()).map_err(MlsError::from)?;
                 acc.push((credential, c.created_at));
                 CryptoResult::Ok(acc)
             })?;

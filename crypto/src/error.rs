@@ -341,6 +341,9 @@ pub enum MlsError {
     MlsUpdateExtensionsError(
         #[from] openmls::prelude::UpdateExtensionsError<core_crypto_keystore::CryptoKeystoreError>,
     ),
+    /// OpenMLS LeafNode validation error
+    #[error(transparent)]
+    MlsLeafNodeValidationError(#[from] openmls::prelude::LeafNodeValidationError),
 }
 
 #[derive(Debug, thiserror::Error, strum::IntoStaticStr)]

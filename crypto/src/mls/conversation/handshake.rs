@@ -8,7 +8,7 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
-use openmls::prelude::{KeyPackage, LeafNode, LeafNodeIndex, MlsMessageOut};
+use openmls::prelude::{KeyPackage, KeyPackageIn, LeafNode, LeafNodeIndex, MlsMessageOut};
 
 use crate::mls::credential::CredentialBundle;
 use mls_crypto_provider::MlsCryptoProvider;
@@ -59,7 +59,7 @@ impl MlsConversation {
         &mut self,
         client: &Client,
         backend: &MlsCryptoProvider,
-        key_package: &KeyPackage,
+        key_package: KeyPackage,
     ) -> CryptoResult<MlsProposalBundle> {
         let signer = &self
             .find_current_credential_bundle(client)?
@@ -68,7 +68,7 @@ impl MlsConversation {
 
         let proposal = self
             .group
-            .propose_add_member(backend, signer, key_package)
+            .propose_add_member(backend, signer, key_package.into())
             .map_err(MlsError::from)
             .map(MlsProposalBundle::from)?;
         self.persist_group_when_changed(backend, false).await?;
@@ -211,7 +211,7 @@ impl MlsConversation {
             .iter_mut()
             .flat_map(|member| member.keypackages_for_all_clients(&cs))
             .filter_map(|(_, kps)| kps)
-            .collect::<Vec<KeyPackage>>();
+            .collect::<Vec<KeyPackageIn>>();
 
         let signer = &self
             .find_most_recent_credential_bundle(client)?
@@ -220,7 +220,7 @@ impl MlsConversation {
 
         let (commit, welcome, gi) = self
             .group
-            .add_members(backend, signer, keypackages.as_slice())
+            .add_members(backend, signer, keypackages)
             .await
             .map_err(MlsError::from)?;
 
@@ -795,10 +795,8 @@ pub mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        let gi = alice_central.get_group_info(&id).await;
-                        charlie_central
-                            .try_join_from_group_info(&case, &id, gi, vec![&mut alice_central, &mut bob_central])
+                        alice_central
+                            .invite_all(&case, &id, [&mut bob_central, &mut charlie_central])
                             .await
                             .unwrap();
 

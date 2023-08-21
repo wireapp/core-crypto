@@ -71,7 +71,7 @@ impl MlsProposal {
         mut conversation: impl std::ops::DerefMut<Target = MlsConversation>,
     ) -> CryptoResult<MlsProposalBundle> {
         let proposal = match self {
-            MlsProposal::Add(key_package) => (*conversation).propose_add_member(client, backend, &key_package).await,
+            MlsProposal::Add(key_package) => (*conversation).propose_add_member(client, backend, key_package).await,
             MlsProposal::Update => (*conversation).propose_self_update(client, backend).await,
             MlsProposal::Remove(client_id) => {
                 let index = conversation
