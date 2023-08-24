@@ -51,10 +51,7 @@ impl MlsConversation {
             .into_iter()
             .filter(|(m, _)| client_ids.contains(&&ClientId::from(&m[..])))
             .filter_map(|(_, c)| c.extract_identity().transpose())
-            .try_fold(Vec::with_capacity(client_ids.len()), |mut acc, c| {
-                acc.push(c?);
-                CryptoResult::Ok(acc)
-            })
+            .collect::<CryptoResult<Vec<_>>>()
     }
 }
 

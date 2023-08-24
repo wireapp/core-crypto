@@ -81,7 +81,7 @@ impl Hash for CredentialBundle {
         self.credential().identity().hash(state);
         match self.credential().mls_credential() {
             openmls::prelude::MlsCredentialType::X509(cert) => {
-                cert.cert_data.hash(state);
+                cert.certificates.hash(state);
             }
             openmls::prelude::MlsCredentialType::Basic(_) => {}
         };
@@ -120,14 +120,13 @@ impl Client {
     }
 
     pub(crate) fn new_x509_credential_bundle(cert: CertificateBundle) -> CryptoResult<CredentialBundle> {
-        let client_id = cert.get_client_id()?;
         let created_at = cert.get_created_at()?;
         let (sk, ..) = cert.private_key.into_parts();
         let chain = cert.certificate_chain;
 
         let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(MlsError::from)?;
 
-        let credential = Credential::new_x509(client_id.into(), chain).map_err(MlsError::from)?;
+        let credential = Credential::new_x509(chain).map_err(MlsError::from)?;
 
         let cb = CredentialBundle {
             credential,

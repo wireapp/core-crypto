@@ -1,5 +1,8 @@
 use super::CredentialBundle;
-use crate::prelude::{CertificateBundle, Client, ClientId, CryptoResult};
+use crate::{
+    prelude::CryptoError,
+    prelude::{CertificateBundle, Client, ClientId, CryptoResult},
+};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::types::SignatureScheme;
 use std::collections::{HashMap, HashSet};
@@ -24,7 +27,7 @@ impl ClientIdentifier {
                 // since ClientId has uniqueness constraints, it is the same for all certificates.
                 // hence no need to compute it for every certificate then verify its uniqueness
                 // that's not a getter's job
-                let cert = certs.values().next().unwrap();
+                let cert = certs.values().next().ok_or(CryptoError::ImplementationError)?;
                 let id = cert.get_client_id()?;
                 Ok(std::borrow::Cow::Owned(id))
             }

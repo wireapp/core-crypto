@@ -465,10 +465,10 @@ impl MlsCentral {
 
         if let openmls::prelude::MlsCredentialType::X509(openmls::prelude::Certificate {
             identity: dup_client_id,
-            cert_data: cert_chain,
+            certificates,
         }) = &sender_cb.credential().mls_credential()
         {
-            let leaf: Vec<u8> = cert_chain.first().unwrap().clone().into();
+            let leaf: Vec<u8> = certificates.first().unwrap().clone().into();
             let identity = leaf.as_slice().extract_identity().unwrap();
             let decr_identity = decrypted.identity.as_ref().unwrap();
             assert_eq!(decr_identity.client_id, identity.client_id);
