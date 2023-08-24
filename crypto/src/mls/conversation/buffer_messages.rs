@@ -286,8 +286,12 @@ pub mod tests {
                     // Finally, Alice receives the original commit for this epoch
                     let original_commit = ext_commit.commit.to_bytes().unwrap();
 
-
-                    let Some(restored_messages) = alice_central.decrypt_message(&id, original_commit).await.unwrap().buffered_messages else {
+                    let Some(restored_messages) = alice_central
+                        .decrypt_message(&id, original_commit)
+                        .await
+                        .unwrap()
+                        .buffered_messages
+                    else {
                         panic!("Bob's messages should have been restored at this point");
                     };
                     for (i, m) in restored_messages.into_iter().enumerate() {
@@ -319,7 +323,6 @@ pub mod tests {
 
                     // After merging we should erase all those pending messages
                     assert_eq!(alice_central.count_entities().await.pending_messages, 0);
-
                 })
             },
         )

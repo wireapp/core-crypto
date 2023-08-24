@@ -440,6 +440,19 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param ciphersuite of the credential to check
      * @returns true if end-to-end identity is enabled for the given ciphersuite
      */
-    suspend fun e2eiIsEnabled(ciphersuite: Ciphersuite = Ciphersuite.DEFAULT): Boolean =
-        cc.e2eiIsEnabled(ciphersuite.lower())
+    suspend fun e2eiIsEnabled(ciphersuite: Ciphersuite = Ciphersuite.DEFAULT): Boolean {
+        return cc.e2eiIsEnabled(ciphersuite.lower())
+    }
+
+    /**
+     * From a given conversation, get the identity of the members supplied. Identity is only present for members with a
+     * Certificate Credential (after turning on end-to-end identity).
+     *
+     * @param id conversation identifier
+     * @param clientIds identifiers of the user
+     * @returns identities or if no member has a x509 certificate, it will return an empty List
+     */
+    suspend fun getUserIdentities(id: MLSGroupId, clientIds: List<ClientId>): List<WireIdentity> {
+        return cc.getUserIdentities(id.lower(), clientIds.map { it.lower() }).map { it.lift() }
+    }
 }

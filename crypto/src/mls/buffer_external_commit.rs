@@ -71,11 +71,7 @@ pub mod tests {
 
                     // ...then Alice generates new messages for this epoch
                     let app_msg = alice_central.encrypt_message(&id, b"Hello Bob !").await.unwrap();
-                    let proposal = alice_central
-                        .new_update_proposal(&id)
-                        .await
-                        .unwrap()
-                        .proposal;
+                    let proposal = alice_central.new_update_proposal(&id).await.unwrap().proposal;
                     alice_central
                         .decrypt_message(&id, external_proposal.to_bytes().unwrap())
                         .await
@@ -86,25 +82,35 @@ pub mod tests {
                         .await
                         .unwrap();
                     alice_central.commit_accepted(&id).await.unwrap();
-                    charlie_central.process_welcome_message(commit.welcome.clone().into(), case.custom_cfg()).await.unwrap();
-                    debbie_central.process_welcome_message(commit.welcome.clone().into(), case.custom_cfg()).await.unwrap();
+                    charlie_central
+                        .process_welcome_message(commit.welcome.clone().into(), case.custom_cfg())
+                        .await
+                        .unwrap();
+                    debbie_central
+                        .process_welcome_message(commit.welcome.clone().into(), case.custom_cfg())
+                        .await
+                        .unwrap();
 
                     // And now Bob will have to decrypt those messages while he hasn't yet merged its external commit
                     // To add more fun, he will buffer the messages in exactly the wrong order (to make
                     // sure he reapplies them in the right order afterwards)
-                    let messages = vec![commit.commit, external_proposal, proposal].into_iter().map(|m| m.to_bytes().unwrap());
+                    let messages = vec![commit.commit, external_proposal, proposal]
+                        .into_iter()
+                        .map(|m| m.to_bytes().unwrap());
                     for m in messages {
                         let decrypt = bob_central.decrypt_message(&id, m).await;
                         assert!(matches!(decrypt.unwrap_err(), CryptoError::UnmergedPendingGroup));
                     }
                     let decrypt = bob_central.decrypt_message(&id, app_msg).await;
-                        assert!(matches!(decrypt.unwrap_err(), CryptoError::UnmergedPendingGroup));
+                    assert!(matches!(decrypt.unwrap_err(), CryptoError::UnmergedPendingGroup));
 
                     // Bob should have buffered the messages
                     assert_eq!(bob_central.count_entities().await.pending_messages, 4);
 
                     // Finally, Bob receives the green light from the DS and he can merge the external commit
-                    let Some(restored_messages) = bob_central.merge_pending_group_from_external_commit(&id).await.unwrap() else {
+                    let Some(restored_messages) =
+                        bob_central.merge_pending_group_from_external_commit(&id).await.unwrap()
+                    else {
                         panic!("Alice's messages should have been restored at this point");
                     };
                     for (i, m) in restored_messages.into_iter().enumerate() {
@@ -126,7 +132,7 @@ pub mod tests {
                             }
                             _ => unreachable!(),
                         }
-                    };
+                    }
                     // because external commit got merged
                     assert!(bob_central.try_talk_to(&id, &mut alice_central).await.is_ok());
                     // because Alice's commit got merged

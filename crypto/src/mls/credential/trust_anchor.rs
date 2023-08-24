@@ -345,7 +345,7 @@ pub(crate) fn extract_domain_names(certificate: &Certificate) -> CryptoResult<Ve
                 })
                 .collect::<Vec<_>>()
         })
-        .chain(common_name.into_iter())
+        .chain(common_name)
         .collect();
 
     if dns_names.is_empty() {

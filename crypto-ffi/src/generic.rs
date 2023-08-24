@@ -1236,7 +1236,7 @@ impl CoreCrypto {
         handle: String,
         expiry_days: u32,
         ciphersuite: Ciphersuite,
-    ) -> CoreCryptoResult<std::sync::Arc<WireE2eIdentity>> {
+    ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
         self.central
             .lock()
             .await
@@ -1249,7 +1249,7 @@ impl CoreCrypto {
             )
             .map(async_lock::Mutex::new)
             .map(std::sync::Arc::new)
-            .map(WireE2eIdentity)
+            .map(E2eiEnrollment)
             .map(std::sync::Arc::new)
             .map_err(|_| core_crypto::prelude::CryptoError::ImplementationError.into())
     }
@@ -1262,7 +1262,7 @@ impl CoreCrypto {
         handle: String,
         expiry_days: u32,
         ciphersuite: Ciphersuite,
-    ) -> CoreCryptoResult<std::sync::Arc<WireE2eIdentity>> {
+    ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
         self.central
             .lock()
             .await
@@ -1275,7 +1275,7 @@ impl CoreCrypto {
             )
             .map(async_lock::Mutex::new)
             .map(std::sync::Arc::new)
-            .map(WireE2eIdentity)
+            .map(E2eiEnrollment)
             .map(std::sync::Arc::new)
             .map_err(|_| core_crypto::prelude::CryptoError::ImplementationError.into())
     }
@@ -1288,7 +1288,7 @@ impl CoreCrypto {
         handle: Option<String>,
         expiry_days: u32,
         ciphersuite: Ciphersuite,
-    ) -> CoreCryptoResult<std::sync::Arc<WireE2eIdentity>> {
+    ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
         self.central
             .lock()
             .await
@@ -1301,7 +1301,7 @@ impl CoreCrypto {
             )
             .map(async_lock::Mutex::new)
             .map(std::sync::Arc::new)
-            .map(WireE2eIdentity)
+            .map(E2eiEnrollment)
             .map(std::sync::Arc::new)
             .map_err(|_| core_crypto::prelude::CryptoError::ImplementationError.into())
     }
@@ -1309,7 +1309,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
     pub async fn e2ei_mls_init_only(
         &self,
-        enrollment: std::sync::Arc<WireE2eIdentity>,
+        enrollment: std::sync::Arc<E2eiEnrollment>,
         certificate_chain: String,
     ) -> CoreCryptoResult<()> {
         if std::sync::Arc::strong_count(&enrollment) > 1 {
@@ -1337,7 +1337,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_rotate_all]
     pub async fn e2ei_rotate_all(
         &self,
-        enrollment: std::sync::Arc<WireE2eIdentity>,
+        enrollment: std::sync::Arc<E2eiEnrollment>,
         certificate_chain: String,
         new_key_packages_count: u32,
     ) -> CoreCryptoResult<RotateBundle> {
@@ -1365,10 +1365,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash]
-    pub async fn e2ei_enrollment_stash(
-        &self,
-        enrollment: std::sync::Arc<WireE2eIdentity>,
-    ) -> CoreCryptoResult<Vec<u8>> {
+    pub async fn e2ei_enrollment_stash(&self, enrollment: std::sync::Arc<E2eiEnrollment>) -> CoreCryptoResult<Vec<u8>> {
         let enrollment =
             std::sync::Arc::into_inner(enrollment).ok_or_else(|| core_crypto::prelude::CryptoError::LockPoisonError)?;
         let enrollment = std::sync::Arc::into_inner(enrollment.0)
@@ -1385,10 +1382,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash_pop]
-    pub async fn e2ei_enrollment_stash_pop(
-        &self,
-        handle: Vec<u8>,
-    ) -> CoreCryptoResult<std::sync::Arc<WireE2eIdentity>> {
+    pub async fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
         Ok(self
             .central
             .lock()
@@ -1397,7 +1391,7 @@ impl CoreCrypto {
             .await
             .map(async_lock::Mutex::new)
             .map(std::sync::Arc::new)
-            .map(WireE2eIdentity)
+            .map(E2eiEnrollment)
             .map(std::sync::Arc::new)
             .map_err(|_| core_crypto::prelude::CryptoError::ImplementationError)?)
     }
@@ -1418,6 +1412,24 @@ impl CoreCrypto {
         let sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
             .signature_algorithm();
         Ok(self.central.lock().await.e2ei_is_enabled(sc)?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::get_user_identities]
+    pub async fn get_user_identities(
+        &self,
+        conversation_id: Vec<u8>,
+        client_ids: Vec<ClientId>,
+    ) -> CoreCryptoResult<Vec<WireIdentity>> {
+        let client_ids = client_ids.iter().map(|cid| &cid.0).collect::<Vec<_>>();
+        Ok(self
+            .central
+            .lock()
+            .await
+            .get_user_identities(&conversation_id, &client_ids[..])
+            .await?
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<_>>())
     }
 }
 
@@ -1638,10 +1650,10 @@ impl CoreCrypto {
 
 #[derive(Debug, uniffi::Object)]
 /// See [core_crypto::e2e_identity::WireE2eIdentity]
-pub struct WireE2eIdentity(std::sync::Arc<async_lock::Mutex<core_crypto::prelude::E2eiEnrollment>>);
+pub struct E2eiEnrollment(std::sync::Arc<async_lock::Mutex<core_crypto::prelude::E2eiEnrollment>>);
 
 #[uniffi::export]
-impl WireE2eIdentity {
+impl E2eiEnrollment {
     /// See [core_crypto::e2e_identity::E2eiEnrollment::directory_response]
     pub async fn directory_response(&self, directory: Vec<u8>) -> CoreCryptoResult<AcmeDirectory> {
         Ok(self
