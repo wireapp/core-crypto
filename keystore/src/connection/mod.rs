@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+// FIXME
+#![allow(clippy::arc_with_non_send_sync)]
+
 pub mod platform {
     cfg_if::cfg_if! {
         if #[cfg(target_family = "wasm")] {

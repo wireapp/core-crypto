@@ -99,7 +99,9 @@ impl WebdriverContextInner {
         }
 
         let serde_json::Value::Object(caps) = raw_json else {
-            unreachable!("`serde_json::json!()` did not produce an object when provided an object. Something is broken.")
+            unreachable!(
+                "`serde_json::json!()` did not produce an object when provided an object. Something is broken."
+            )
         };
 
         let browser = fantoccini::ClientBuilder::native()

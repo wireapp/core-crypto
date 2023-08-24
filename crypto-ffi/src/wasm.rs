@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+// FIXME
+#![allow(clippy::arc_with_non_send_sync)]
+
 use std::collections::HashMap;
 
 use core_crypto::prelude::*;
@@ -777,6 +780,17 @@ impl WireIdentity {
 
 impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
     fn from(i: core_crypto::prelude::WireIdentity) -> Self {
+        Self {
+            client_id: i.client_id,
+            handle: i.handle,
+            display_name: i.display_name,
+            domain: i.domain,
+        }
+    }
+}
+
+impl From<WireIdentity> for core_crypto::prelude::WireIdentity {
+    fn from(i: WireIdentity) -> Self {
         Self {
             client_id: i.client_id,
             handle: i.handle,
@@ -2418,7 +2432,7 @@ impl CoreCrypto {
 // End-to-end identity methods
 #[wasm_bindgen]
 impl CoreCrypto {
-    /// Returns: [`WasmCryptoResult<WireE2eIdentity>`]
+    /// Returns: [`WasmCryptoResult<E2eiEnrollment>`]
     ///
     /// see [core_crypto::mls::MlsCentral::e2ei_new_enrollment]
     pub fn e2ei_new_enrollment(
@@ -2442,7 +2456,7 @@ impl CoreCrypto {
                         expiry_days,
                         ciphersuite.into(),
                     )
-                    .map(WireE2eIdentity)
+                    .map(E2eiEnrollment)
                     .map_err(|_| CryptoError::ImplementationError)
                     .map_err(CoreCryptoError::from)?;
 
@@ -2452,7 +2466,7 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: [`WasmCryptoResult<WireE2eIdentity>`]
+    /// Returns: [`WasmCryptoResult<E2eiEnrollment>`]
     ///
     /// see [core_crypto::mls::MlsCentral::e2ei_new_activation_enrollment]
     pub fn e2ei_new_activation_enrollment(
@@ -2476,7 +2490,7 @@ impl CoreCrypto {
                         expiry_days,
                         ciphersuite.into(),
                     )
-                    .map(WireE2eIdentity)
+                    .map(E2eiEnrollment)
                     .map_err(|_| CryptoError::ImplementationError)
                     .map_err(CoreCryptoError::from)?;
 
@@ -2486,7 +2500,7 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: [`WasmCryptoResult<WireE2eIdentity>`]
+    /// Returns: [`WasmCryptoResult<E2eiEnrollment>`]
     ///
     /// see [core_crypto::mls::MlsCentral::e2ei_new_rotate_enrollment]
     pub fn e2ei_new_rotate_enrollment(
@@ -2510,7 +2524,7 @@ impl CoreCrypto {
                         expiry_days,
                         ciphersuite.into(),
                     )
-                    .map(WireE2eIdentity)
+                    .map(E2eiEnrollment)
                     .map_err(|_| CryptoError::ImplementationError)
                     .map_err(CoreCryptoError::from)?;
 
@@ -2521,7 +2535,7 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
-    pub fn e2ei_mls_init_only(&self, enrollment: WireE2eIdentity, certificate_chain: String) -> Promise {
+    pub fn e2ei_mls_init_only(&self, enrollment: E2eiEnrollment, certificate_chain: String) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
@@ -2536,7 +2550,7 @@ impl CoreCrypto {
     /// see [core_crypto::mls::MlsCentral::e2ei_rotate_all]
     pub fn e2ei_rotate_all(
         &self,
-        enrollment: WireE2eIdentity,
+        enrollment: E2eiEnrollment,
         certificate_chain: String,
         new_key_packages_count: u32,
     ) -> Promise {
@@ -2555,7 +2569,7 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::MlsCentral::e2ei_enrollment_stash]
-    pub fn e2ei_enrollment_stash(&self, enrollment: WireE2eIdentity) -> Promise {
+    pub fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
@@ -2576,7 +2590,7 @@ impl CoreCrypto {
                 let enrollment = this
                     .e2ei_enrollment_stash_pop(handle.to_vec())
                     .await
-                    .map(WireE2eIdentity)
+                    .map(E2eiEnrollment)
                     .map_err(|_| CryptoError::ImplementationError)
                     .map_err(CoreCryptoError::from)?;
 
@@ -2625,15 +2639,39 @@ impl CoreCrypto {
             .err_into(),
         )
     }
+
+    /// Returns [`WasmCryptoResult<Vec<WireIdentity>>`]
+    ///
+    /// see [core_crypto::mls::MlsCentral::get_user_identities]
+    pub fn get_user_identities(&self, conversation_id: ConversationId, client_ids: Box<[Uint8Array]>) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                let client_ids = client_ids.iter().map(|c| c.to_vec().into()).collect::<Vec<ClientId>>();
+                let client_ids = client_ids.iter().collect::<Vec<_>>();
+                let identities = this
+                    .write()
+                    .await
+                    .get_user_identities(&conversation_id, &client_ids[..])
+                    .await
+                    .map_err(CoreCryptoError::from)?
+                    .into_iter()
+                    .map(Into::into)
+                    .collect::<Vec<WireIdentity>>();
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&identities)?)
+            }
+            .err_into(),
+        )
+    }
 }
 
 #[derive(Debug)]
 #[wasm_bindgen(js_name = FfiWireE2EIdentity)]
 #[repr(transparent)]
-pub struct WireE2eIdentity(core_crypto::prelude::E2eiEnrollment);
+pub struct E2eiEnrollment(core_crypto::prelude::E2eiEnrollment);
 
 #[wasm_bindgen(js_class = FfiWireE2EIdentity)]
-impl WireE2eIdentity {
+impl E2eiEnrollment {
     /// See [core_crypto::e2e_identity::WireE2eIdentity::directory_response]
     pub fn directory_response(&mut self, directory: Vec<u8>) -> WasmCryptoResult<AcmeDirectory> {
         WasmCryptoResult::Ok(self.0.directory_response(directory)?.into())

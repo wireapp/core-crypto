@@ -1207,6 +1207,16 @@ public class CoreCryptoWrapper {
         return try await self.coreCrypto.e2eiIsEnabled(ciphersuite: ciphersuite)
     }
 
+    /// From a given conversation, get the identity of the members supplied. Identity is only present for members with a
+    // Certificate Credential (after turning on end-to-end identity).
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - parameter clientIds: identifiers of the user
+    /// - returns: identities or if no member has a x509 certificate, it will return an empty List
+    public func getUserIdentities(conversationId: ConversationId, clientIds: [ClientId]) async throws -> [WireIdentity] {
+        return try await self.coreCrypto.getUserIdentities(conversationId: conversationId, clientIds: clientIds)
+    }
+
     /// - returns: The CoreCrypto version
     public static func version() -> String {
         return CoreCryptoSwift.version()

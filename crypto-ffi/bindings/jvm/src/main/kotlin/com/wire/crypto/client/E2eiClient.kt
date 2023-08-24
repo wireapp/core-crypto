@@ -1,6 +1,6 @@
 package com.wire.crypto.client
 
-import com.wire.crypto.WireE2eIdentity
+import com.wire.crypto.E2eiEnrollment
 
 typealias JsonRawData = ByteArray
 
@@ -45,7 +45,7 @@ data class NewAcmeAuthz(private val delegate: com.wire.crypto.NewAcmeAuthz) {
 fun com.wire.crypto.NewAcmeAuthz.toNewAcmeAuthz() = NewAcmeAuthz(this)
 
 @Suppress("TooManyFunctions")
-class E2EIEnrollment(private val delegate: WireE2eIdentity) {
+class E2EIEnrollment(private val delegate: com.wire.crypto.E2eiEnrollment) {
 
     internal fun lower() = delegate
 

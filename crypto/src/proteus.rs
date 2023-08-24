@@ -1215,7 +1215,10 @@ mod tests {
                 .await
                 .unwrap();
 
-        let Err(crate::CryptoError::CryptoboxMigrationError(crate::CryptoboxMigrationError::ProvidedPathDoesNotExist(_))) = ProteusCentral::cryptobox_migrate(&keystore, "invalid path").await else {
+        let Err(crate::CryptoError::CryptoboxMigrationError(crate::CryptoboxMigrationError::ProvidedPathDoesNotExist(
+            _,
+        ))) = ProteusCentral::cryptobox_migrate(&keystore, "invalid path").await
+        else {
             panic!("ProteusCentral::cryptobox_migrate did not throw an error on invalid path");
         };
 

@@ -4,10 +4,10 @@ use super::MlsConversation;
 use crate::MlsError;
 
 /// These constants intend to ramp up the delay and flatten the curve for later positions
-pub(self) const DELAY_RAMP_UP_MULTIPLIER: f32 = 120.0;
-pub(self) const DELAY_RAMP_UP_SUB: u64 = 106;
-pub(self) const DELAY_POS_LINEAR_INCR: u64 = 15;
-pub(self) const DELAY_POS_LINEAR_RANGE: std::ops::RangeInclusive<u64> = 1..=3;
+const DELAY_RAMP_UP_MULTIPLIER: f32 = 120.0;
+const DELAY_RAMP_UP_SUB: u64 = 106;
+const DELAY_POS_LINEAR_INCR: u64 = 15;
+const DELAY_POS_LINEAR_RANGE: std::ops::RangeInclusive<u64> = 1..=3;
 
 impl MlsConversation {
     /// Helps consumer by providing a deterministic delay in seconds for him to commit its pending proposal.

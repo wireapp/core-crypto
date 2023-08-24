@@ -1702,11 +1702,11 @@ export class CoreCrypto {
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
-     * @returns The new {@link WireE2eIdentity} enrollment instance to use with {@link CoreCrypto.e2eiMlsInitOnly}
+     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiMlsInitOnly}
      */
-    async e2eiNewEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<WireE2eIdentity> {
+    async e2eiNewEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<E2eiEnrollment> {
         const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
-        return new WireE2eIdentity(e2ei);
+        return new E2eiEnrollment(e2ei);
     }
 
     /**
@@ -1718,11 +1718,11 @@ export class CoreCrypto {
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
-     * @returns The new {@link WireE2eIdentity} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
+     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
      */
-    async e2eiNewActivationEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<WireE2eIdentity> {
+    async e2eiNewActivationEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<E2eiEnrollment> {
         const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_activation_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
-        return new WireE2eIdentity(e2ei);
+        return new E2eiEnrollment(e2ei);
     }
 
     /**
@@ -1736,11 +1736,11 @@ export class CoreCrypto {
      * @param ciphersuite - for generating signing key material
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
-     * @returns The new {@link WireE2eIdentity} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
+     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
      */
-    async e2eiNewRotateEnrollment(clientId: string, expiryDays: number, ciphersuite: Ciphersuite, displayName?: string, handle?: string,): Promise<WireE2eIdentity> {
+    async e2eiNewRotateEnrollment(clientId: string, expiryDays: number, ciphersuite: Ciphersuite, displayName?: string, handle?: string,): Promise<E2eiEnrollment> {
         const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_rotate_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
-        return new WireE2eIdentity(e2ei);
+        return new E2eiEnrollment(e2ei);
     }
 
     /**
@@ -1751,7 +1751,7 @@ export class CoreCrypto {
      * @param certificateChain - the raw response from ACME server
      * @returns a MlsClient initialized with only a x509 credential
      */
-    async e2eiMlsInitOnly(enrollment: WireE2eIdentity, certificateChain: string): Promise<void> {
+    async e2eiMlsInitOnly(enrollment: E2eiEnrollment, certificateChain: string): Promise<void> {
         return await this.#cc.e2ei_mls_init_only(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain);
     }
 
@@ -1765,7 +1765,7 @@ export class CoreCrypto {
      * @param newKeyPackageCount - number of KeyPackages with new identity to generate
      * @returns a {@link RotateBundle} with commits to fan-out to other group members, KeyPackages to upload and old ones to delete
      */
-    async e2eiRotateAll(enrollment: WireE2eIdentity, certificateChain: string, newKeyPackageCount: number): Promise<RotateBundle> {
+    async e2eiRotateAll(enrollment: E2eiEnrollment, certificateChain: string, newKeyPackageCount: number): Promise<RotateBundle> {
         const ffiRet: CoreCryptoFfiTypes.RotateBundle = await this.#cc.e2ei_rotate_all(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain, newKeyPackageCount);
 
         const ret: RotateBundle = {
@@ -1784,7 +1784,7 @@ export class CoreCrypto {
      * @param enrollment the enrollment instance to persist
      * @returns a handle to fetch the enrollment later with {@link e2eiEnrollmentStashPop}
      */
-    async e2eiEnrollmentStash(enrollment: WireE2eIdentity): Promise<Uint8Array> {
+    async e2eiEnrollmentStash(enrollment: E2eiEnrollment): Promise<Uint8Array> {
         return await CoreCryptoError.asyncMapErr(this.#cc.e2ei_enrollment_stash(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity))
     }
 
@@ -1794,9 +1794,9 @@ export class CoreCrypto {
      * @param handle returned by {@link e2eiEnrollmentStash}
      * @returns the persisted enrollment instance
      */
-    async e2eiEnrollmentStashPop(handle: Uint8Array): Promise<WireE2eIdentity> {
+    async e2eiEnrollmentStashPop(handle: Uint8Array): Promise<E2eiEnrollment> {
         const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_enrollment_stash_pop(handle));
-        return new WireE2eIdentity(e2ei);
+        return new E2eiEnrollment(e2ei);
     }
 
     /**
@@ -1823,6 +1823,18 @@ export class CoreCrypto {
     }
 
     /**
+     * From a given conversation, get the identity of the members supplied. Identity is only present for members with a
+     * Certificate Credential (after turning on end-to-end identity).
+     *
+     * @param conversationId - identifier of the conversation
+     * @param clientIds - identifiers of the user
+     * @returns identities or if no member has a x509 certificate, it will return an empty List
+     */
+    async getUserIdentities(conversationId: ConversationId, clientIds: ClientId[]): Promise<WireIdentity[]> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.get_user_identities(conversationId, clientIds));
+    }
+
+    /**
      * Returns the current version of {@link CoreCrypto}
      *
      * @returns The `core-crypto-ffi` version as defined in its `Cargo.toml` file
@@ -1835,24 +1847,24 @@ export class CoreCrypto {
 
 type JsonRawData = Uint8Array;
 
-export class WireE2eIdentity {
+export class E2eiEnrollment {
     /** @hidden */
-    #e2ei: CoreCryptoFfiTypes.FfiWireE2EIdentity;
+    #enrollment: CoreCryptoFfiTypes.FfiWireE2EIdentity;
 
     /** @hidden */
     constructor(e2ei: unknown) {
-        this.#e2ei = e2ei as CoreCryptoFfiTypes.FfiWireE2EIdentity;
+        this.#enrollment = e2ei as CoreCryptoFfiTypes.FfiWireE2EIdentity;
     }
 
     free() {
-        this.#e2ei.free();
+        this.#enrollment.free();
     }
 
     /**
      * Should only be used internally
      */
     inner(): unknown {
-        return this.#e2ei as CoreCryptoFfiTypes.FfiWireE2EIdentity;
+        return this.#enrollment as CoreCryptoFfiTypes.FfiWireE2EIdentity;
     }
 
     /**
@@ -1865,7 +1877,7 @@ export class WireE2eIdentity {
      */
     directoryResponse(directory: JsonRawData): AcmeDirectory {
         try {
-            return this.#e2ei.directory_response(directory);
+            return this.#enrollment.directory_response(directory);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1880,7 +1892,7 @@ export class WireE2eIdentity {
      */
     newAccountRequest(previousNonce: string): JsonRawData {
         try {
-            return this.#e2ei.new_account_request(previousNonce);
+            return this.#enrollment.new_account_request(previousNonce);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1893,7 +1905,7 @@ export class WireE2eIdentity {
      */
     newAccountResponse(account: JsonRawData): void {
         try {
-            return this.#e2ei.new_account_response(account);
+            return this.#enrollment.new_account_response(account);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1907,7 +1919,7 @@ export class WireE2eIdentity {
      */
     newOrderRequest(previousNonce: string): JsonRawData {
         try {
-            return this.#e2ei.new_order_request(previousNonce);
+            return this.#enrollment.new_order_request(previousNonce);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1921,7 +1933,7 @@ export class WireE2eIdentity {
      */
     newOrderResponse(order: JsonRawData): NewAcmeOrder {
         try {
-            return this.#e2ei.new_order_response(order);
+            return this.#enrollment.new_order_response(order);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1937,7 +1949,7 @@ export class WireE2eIdentity {
      */
     newAuthzRequest(url: string, previousNonce: string): JsonRawData {
         try {
-            return this.#e2ei.new_authz_request(url, previousNonce);
+            return this.#enrollment.new_authz_request(url, previousNonce);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1951,7 +1963,7 @@ export class WireE2eIdentity {
      */
     newAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
         try {
-            return this.#e2ei.new_authz_response(authz);
+            return this.#enrollment.new_authz_response(authz);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1970,7 +1982,7 @@ export class WireE2eIdentity {
      */
     createDpopToken(expirySecs: number, backendNonce: string): Uint8Array {
         try {
-            return this.#e2ei.create_dpop_token(expirySecs, backendNonce);
+            return this.#enrollment.create_dpop_token(expirySecs, backendNonce);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1985,7 +1997,7 @@ export class WireE2eIdentity {
      */
     newDpopChallengeRequest(accessToken: string, previousNonce: string): JsonRawData {
         try {
-            return this.#e2ei.new_dpop_challenge_request(accessToken, previousNonce);
+            return this.#enrollment.new_dpop_challenge_request(accessToken, previousNonce);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -2000,7 +2012,7 @@ export class WireE2eIdentity {
      */
     newOidcChallengeRequest(idToken: string, previousNonce: string): JsonRawData {
         try {
-            return this.#e2ei.new_oidc_challenge_request(idToken, previousNonce);
+            return this.#enrollment.new_oidc_challenge_request(idToken, previousNonce);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -2014,7 +2026,7 @@ export class WireE2eIdentity {
      */
     newChallengeResponse(challenge: JsonRawData): void {
         try {
-            return this.#e2ei.new_challenge_response(challenge);
+            return this.#enrollment.new_challenge_response(challenge);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -2029,7 +2041,7 @@ export class WireE2eIdentity {
      */
     checkOrderRequest(orderUrl: string, previousNonce: string): JsonRawData {
         try {
-            return this.#e2ei.check_order_request(orderUrl, previousNonce);
+            return this.#enrollment.check_order_request(orderUrl, previousNonce);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -2044,7 +2056,7 @@ export class WireE2eIdentity {
      */
     checkOrderResponse(order: JsonRawData): string {
         try {
-            return this.#e2ei.check_order_response(order);
+            return this.#enrollment.check_order_response(order);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -2058,7 +2070,7 @@ export class WireE2eIdentity {
      */
     finalizeRequest(previousNonce: string): JsonRawData {
         try {
-            return this.#e2ei.finalize_request(previousNonce);
+            return this.#enrollment.finalize_request(previousNonce);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -2073,7 +2085,7 @@ export class WireE2eIdentity {
      */
     finalizeResponse(finalize: JsonRawData): string {
         try {
-            return this.#e2ei.finalize_response(finalize);
+            return this.#enrollment.finalize_response(finalize);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -2087,7 +2099,7 @@ export class WireE2eIdentity {
      */
     certificateRequest(previousNonce: string): JsonRawData {
         try {
-            return this.#e2ei.certificate_request(previousNonce);
+            return this.#enrollment.certificate_request(previousNonce);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
