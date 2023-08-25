@@ -56,7 +56,7 @@ pub mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 central
-                    .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
                 assert!(central.get_conversation_unchecked(&id).await.group.is_active());
@@ -88,7 +88,7 @@ pub mod tests {
         run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
             Box::pin(async move {
                 let id = conversation_id();
-                cc.new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                cc.new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
                 let initial_count = cc.count_entities().await;

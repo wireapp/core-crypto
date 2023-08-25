@@ -1486,7 +1486,7 @@ impl CoreCrypto {
                 this.write()
                     .await
                     .new_conversation(
-                        conversation_id.to_vec(),
+                        &conversation_id.to_vec(),
                         creator_credential_type.into(),
                         config.try_into()?,
                     )

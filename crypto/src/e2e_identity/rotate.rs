@@ -290,7 +290,7 @@ pub mod tests {
                         for _ in 0..N {
                             let id = conversation_id();
                             alice_central
-                                .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                                .new_conversation(&id, case.credential_type, case.cfg.clone())
                                 .await
                                 .unwrap();
                             alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
@@ -441,7 +441,7 @@ pub mod tests {
                         // Now charlie tries to add Alice to a conversation with her new KeyPackages
                         let id = conversation_id();
                         charlie_central
-                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         // required because now Alice does not anymore have a Basic credential
@@ -464,7 +464,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
@@ -576,7 +576,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
@@ -682,7 +682,7 @@ pub mod tests {
                         Box::pin(async move {
                             let id = conversation_id();
                             alice_central
-                                .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                                .new_conversation(&id, case.credential_type, case.cfg.clone())
                                 .await
                                 .unwrap();
 
@@ -746,7 +746,7 @@ pub mod tests {
                         Box::pin(async move {
                             let id = conversation_id();
                             alice_central
-                                .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                                .new_conversation(&id, case.credential_type, case.cfg.clone())
                                 .await
                                 .unwrap();
 

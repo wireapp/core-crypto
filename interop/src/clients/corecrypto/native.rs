@@ -108,20 +108,21 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
     }
 
     async fn add_client(&mut self, conversation_id: &[u8], client_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
-        if !self.cc.conversation_exists(&conversation_id.to_vec()).await {
+        let conversation_id = conversation_id.to_vec();
+        if !self.cc.conversation_exists(&conversation_id).await {
             let config = MlsConversationConfiguration {
                 ciphersuite: CIPHERSUITE_IN_USE.into(),
                 ..Default::default()
             };
             self.cc
-                .new_conversation(conversation_id.to_vec(), MlsCredentialType::Basic, config)
+                .new_conversation(&conversation_id, MlsCredentialType::Basic, config)
                 .await?;
         }
 
         let member = ConversationMember::new_raw(client_id.to_vec().into(), kp.to_vec(), self.cc.provider())?;
         let welcome = self
             .cc
-            .add_members_to_conversation(&conversation_id.to_vec(), &mut [member])
+            .add_members_to_conversation(&conversation_id, &mut [member])
             .await?;
 
         Ok(welcome.welcome.tls_serialize_detached()?)

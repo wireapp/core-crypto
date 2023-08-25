@@ -90,7 +90,7 @@ pub mod tests {
                     // That way the conversation creator (Alice) will have the same credential type as Bob
                     let creator_ct = case.credential_type;
                     alice_central
-                        .new_conversation(id.clone(), creator_ct, case.cfg.clone())
+                        .new_conversation(&id, creator_ct, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
@@ -158,7 +158,7 @@ pub mod tests {
                     };
 
                     alice_central
-                        .new_conversation(id.clone(), creator_ct, case.cfg.clone())
+                        .new_conversation(&id, creator_ct, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
@@ -186,7 +186,7 @@ pub mod tests {
                         let id = conversation_id();
 
                         alice_central
-                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
@@ -235,7 +235,7 @@ pub mod tests {
                     let id = conversation_id();
 
                     alice_central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 

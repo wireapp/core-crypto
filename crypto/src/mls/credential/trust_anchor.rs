@@ -1683,7 +1683,7 @@ mod tests {
     ) -> CryptoResult<ConversationId> {
         let id = conversation_id();
         let custom_cfg = cfg.custom.clone();
-        alice_central.new_conversation(id.clone(), credential_type, cfg).await?;
+        alice_central.new_conversation(&id, credential_type, cfg).await?;
         assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
 
         let MlsConversationCreationMessage { welcome, .. } = alice_central

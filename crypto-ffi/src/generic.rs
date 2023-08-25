@@ -868,7 +868,7 @@ impl CoreCrypto {
             .central
             .lock()
             .await
-            .new_conversation(conversation_id, creator_credential_type.into(), config.try_into()?)
+            .new_conversation(&conversation_id, creator_credential_type.into(), config.try_into()?)
             .await?)
     }
 
