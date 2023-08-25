@@ -181,7 +181,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
@@ -209,7 +209,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central.new_update_proposal(&id).await.unwrap();
@@ -235,7 +235,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
@@ -272,7 +272,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
@@ -344,7 +344,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     assert!(alice_central.pending_proposals(&id).await.is_empty());
@@ -362,7 +362,7 @@ pub mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    cc.new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                    cc.new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     assert!(cc.pending_proposals(&id).await.is_empty());
@@ -396,7 +396,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     assert!(alice_central.pending_commit(&id).await.is_none());
@@ -430,7 +430,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     assert!(alice_central.pending_commit(&id).await.is_none());
@@ -447,7 +447,7 @@ pub mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    cc.new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                    cc.new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     assert!(cc.pending_commit(&id).await.is_none());

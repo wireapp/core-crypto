@@ -140,7 +140,7 @@ pub mod tests {
 
                     // Create a conversation from alice, where she invites bob
                     alice_central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
@@ -176,7 +176,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     let bob = bob_central.rand_member(&case).await;
@@ -188,7 +188,7 @@ pub mod tests {
 
                     // Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
                     bob_central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     let join_welcome = bob_central

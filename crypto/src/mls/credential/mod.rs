@@ -421,7 +421,7 @@ pub mod tests {
         guest_central.mls_init(guest_identifier, ciphersuites.clone()).await?;
 
         creator_central
-            .new_conversation(id.clone(), creator_ct, case.cfg.clone())
+            .new_conversation(&id, creator_ct, case.cfg.clone())
             .await?;
         let guest_member = guest_central.rand_member_of_type(case, guest_ct).await;
         creator_central

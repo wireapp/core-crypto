@@ -318,12 +318,12 @@ impl MlsCentral {
     #[cfg_attr(test, crate::dispotent)]
     pub async fn new_conversation(
         &mut self,
-        id: ConversationId,
+        id: &ConversationId,
         creator_credential_type: MlsCredentialType,
         config: MlsConversationConfiguration,
     ) -> CryptoResult<()> {
-        if self.conversation_exists(&id).await || self.pending_group_exists(&id).await {
-            return Err(CryptoError::ConversationAlreadyExists(id));
+        if self.conversation_exists(id).await || self.pending_group_exists(id).await {
+            return Err(CryptoError::ConversationAlreadyExists(id.clone()));
         }
 
         let mls_client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
@@ -336,7 +336,7 @@ impl MlsCentral {
         )
         .await?;
 
-        self.mls_groups.insert(id, conversation);
+        self.mls_groups.insert(id.clone(), conversation);
 
         Ok(())
     }
@@ -426,7 +426,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     let epoch = central.conversation_epoch(&id).await.unwrap();
@@ -446,7 +446,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
@@ -568,13 +568,13 @@ pub mod tests {
                 let id = conversation_id();
 
                 let create = alice_central
-                    .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
                 assert!(create.is_ok());
 
                 // creating a conversation should first verify that the conversation does not already exist ; only then create it
                 let repeat_create = alice_central
-                    .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
                 assert!(matches!(repeat_create.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
             })

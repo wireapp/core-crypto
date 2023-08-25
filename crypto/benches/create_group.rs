@@ -34,7 +34,7 @@ fn create_group_bench(c: &mut Criterion) {
                     },
                     |(mut central, id, cfg)| async move {
                         central
-                            .new_conversation(id, MlsCredentialType::Basic, cfg)
+                            .new_conversation(&id, MlsCredentialType::Basic, cfg)
                             .await
                             .unwrap();
                         black_box(());

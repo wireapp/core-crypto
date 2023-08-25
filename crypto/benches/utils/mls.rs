@@ -142,7 +142,7 @@ pub async fn setup_mls(
     let id = conversation_id();
     central
         .new_conversation(
-            id.clone(),
+            &id,
             MlsCredentialType::Basic,
             MlsConversationConfiguration {
                 ciphersuite,

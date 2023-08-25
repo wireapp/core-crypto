@@ -309,7 +309,7 @@ pub mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
@@ -341,7 +341,7 @@ pub mod tests {
                     let id = conversation_id();
 
                     alice_central
-                        .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
@@ -388,7 +388,7 @@ pub mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
 

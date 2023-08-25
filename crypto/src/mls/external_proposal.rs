@@ -162,7 +162,7 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         owner_central
-                            .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         let epoch = owner_central.get_conversation_unchecked(&id).await.group.epoch();

@@ -453,7 +453,7 @@ pub mod tests {
 
                 // verify the created client can create a conversation
                 let id = conversation_id();
-                cc.new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                cc.new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
                 cc.encrypt_message(&id, "Hello e2e identity !").await.unwrap();

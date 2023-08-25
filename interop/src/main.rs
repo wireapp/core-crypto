@@ -147,7 +147,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
         ..Default::default()
     };
     master_client
-        .new_conversation(conversation_id.clone(), MlsCredentialType::Basic, config)
+        .new_conversation(&conversation_id, MlsCredentialType::Basic, config)
         .await?;
 
     spinner.success("[MLS] Step 0: Initializing clients [OK]");

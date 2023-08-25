@@ -77,7 +77,7 @@ pub mod tests {
                 central.mls_init(cid.clone(), vec![case.ciphersuite()]).await.unwrap();
                 let id = conversation_id();
                 let _ = central
-                    .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
 
                 central.mls_groups.remove(id.as_slice()).unwrap();
@@ -141,7 +141,7 @@ pub mod tests {
                 bob_central.mls_init(bob_cid, vec![case.ciphersuite()]).await.unwrap();
 
                 alice_central
-                    .new_conversation(id.clone(), case.credential_type, case.cfg.clone())
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
                 alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
