@@ -108,7 +108,7 @@ jobs:
       - name: Publish package
         uses: gradle/gradle-build-action@v2
         with:
-          build-root-directory: kotlin
+          build-root-directory: crypto-ffi/bindings/
           arguments: "jvm::publishAllPublicationsToMavenCentral --no-configuration-cache"
         env:
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
