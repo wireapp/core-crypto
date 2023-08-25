@@ -14,9 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-// FIXME
-#![allow(clippy::arc_with_non_send_sync)]
-
 use std::collections::HashMap;
 
 use core_crypto::prelude::*;
@@ -1026,6 +1023,7 @@ impl CoreCryptoWasmCallbacks {
         client_is_existing_group_user: js_sys::Function,
         ctx: JsValue,
     ) -> Self {
+        #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
         Self {
             authorize: std::sync::Arc::new(authorize.into()),
             user_authorize: std::sync::Arc::new(user_authorize.into()),

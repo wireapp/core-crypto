@@ -14,9 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-// FIXME
-#![allow(clippy::arc_with_non_send_sync)]
-
 pub mod platform {
     cfg_if::cfg_if! {
         if #[cfg(target_family = "wasm")] {
@@ -91,20 +88,20 @@ unsafe impl Sync for Connection {}
 
 impl Connection {
     pub async fn open_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
-        let conn = Arc::new(
-            KeystoreDatabaseConnection::open(name.as_ref(), key.as_ref())
-                .await?
-                .into(),
-        );
+        let conn = KeystoreDatabaseConnection::open(name.as_ref(), key.as_ref())
+            .await?
+            .into();
+        #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
+        let conn = Arc::new(conn);
         Ok(Self { conn })
     }
 
     pub async fn open_in_memory_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
-        let conn = Arc::new(
-            KeystoreDatabaseConnection::open_in_memory(name.as_ref(), key.as_ref())
-                .await?
-                .into(),
-        );
+        let conn = KeystoreDatabaseConnection::open_in_memory(name.as_ref(), key.as_ref())
+            .await?
+            .into();
+        #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
+        let conn = Arc::new(conn);
         Ok(Self { conn })
     }
 
