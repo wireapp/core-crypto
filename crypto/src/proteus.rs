@@ -954,11 +954,10 @@ impl ProteusCentral {
 #[cfg(test)]
 mod tests {
     use crate::{
-        prelude::{CertificateBundle, MlsCentral, MlsCentralConfiguration},
+        prelude::{CertificateBundle, ClientIdentifier, MlsCentral, MlsCentralConfiguration, MlsCredentialType},
         test_utils::{proteus_utils::*, *},
     };
 
-    use crate::prelude::{ClientIdentifier, MlsCredentialType};
     use proteus_traits::PreKeyStore;
     use wasm_bindgen_test::*;
 
@@ -969,7 +968,10 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn cc_can_init(case: TestCase) {
+        #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
+        #[cfg(target_family = "wasm")]
+        let (path, _) = tmp_db_file();
         let client_id = "alice".into();
         let cfg = MlsCentralConfiguration::try_new(
             path,
@@ -982,13 +984,17 @@ mod tests {
         let mut cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
         assert!(cc.proteus_init().await.is_ok());
         assert!(cc.proteus_new_prekey(1).await.is_ok());
+        #[cfg(not(target_family = "wasm"))]
         drop(db_file);
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn cc_can_2_phase_init(case: TestCase) {
+        #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
+        #[cfg(target_family = "wasm")]
+        let (path, _) = tmp_db_file();
         // we are deferring MLS initialization here, not passing a MLS 'client_id' yet
         let cfg =
             MlsCentralConfiguration::try_new(path, "test".to_string(), None, vec![case.ciphersuite()], None).unwrap();
@@ -1011,13 +1017,17 @@ mod tests {
                 .len(),
             2
         );
+        #[cfg(not(target_family = "wasm"))]
         drop(db_file);
     }
 
     #[async_std::test]
     #[wasm_bindgen_test]
     async fn can_init() {
+        #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
+        #[cfg(target_family = "wasm")]
+        let (path, _) = tmp_db_file();
         let keystore = core_crypto_keystore::Connection::open_with_key(&path, "test")
             .await
             .unwrap();
@@ -1033,14 +1043,19 @@ mod tests {
         assert_eq!(identity, *central.proteus_identity);
 
         keystore.wipe().await.unwrap();
+        #[cfg(not(target_family = "wasm"))]
         drop(db_file);
     }
 
     #[async_std::test]
     #[wasm_bindgen_test]
     async fn can_talk_with_proteus() {
-        let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
+        #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
+        #[cfg(target_family = "wasm")]
+        let (path, _) = tmp_db_file();
+
+        let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let mut keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
             .await
@@ -1066,14 +1081,19 @@ mod tests {
         assert_eq!(decrypted, message);
 
         keystore.wipe().await.unwrap();
+        #[cfg(not(target_family = "wasm"))]
         drop(db_file);
     }
 
     #[async_std::test]
     #[wasm_bindgen_test]
     async fn can_produce_proteus_consumed_prekeys() {
-        let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
+        #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
+        #[cfg(target_family = "wasm")]
+        let (path, _) = tmp_db_file();
+
+        let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let mut keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
             .await
@@ -1101,6 +1121,7 @@ mod tests {
         assert_eq!(message, decrypted.as_slice());
 
         keystore.wipe().await.unwrap();
+        #[cfg(not(target_family = "wasm"))]
         drop(db_file);
     }
 
@@ -1110,7 +1131,11 @@ mod tests {
         use core_crypto_keystore::entities::ProteusPrekey;
         const GAP_AMOUNT: u16 = 5;
         const ID_TEST_RANGE: std::ops::RangeInclusive<u16> = 1..=30;
+
+        #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
+        #[cfg(target_family = "wasm")]
+        let (path, _) = tmp_db_file();
 
         let keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
             .await
@@ -1169,6 +1194,7 @@ mod tests {
         }
 
         keystore.wipe().await.unwrap();
+        #[cfg(not(target_family = "wasm"))]
         drop(db_file);
     }
 
