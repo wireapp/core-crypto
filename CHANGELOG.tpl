@@ -7,11 +7,26 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.8] - 2023-08-25
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.8" unreleased=true}}
+</details>
+
+* **[BREAKING]** regular commits were also (in addition to external commits) impacted by unordered backend messages. As a
+consequence, both `commitAccepted` and `decryptMessages` now return buffered messages.
+* Improved Kotlin wrapper: documented, tested, type safe
+* fix: Rust future was leaked when Kotlin coroutine cancelled
+* fix: TLS serialization of x509 Credential which makes this release interoperable with wire-server
+* feat: expose `getUserIdentities` to list the identity of MLS group members using e2ei
+* increase max past epoch from 2 to 3 to respect backend's configuration
+
 ## [1.0.0-rc.7] - 2023-08-09
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.7" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.7"}}
 </details>
 
 * **[BREAKING]** `RotateBundle` now returns a `Map<ConversationId, CommitBundle>` instead of a `Vec<CommitBundle>` in order

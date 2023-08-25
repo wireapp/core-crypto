@@ -7,6 +7,48 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.8] - 2023-08-25
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- TLS serialization of x509 credential
+- [**breaking**] UniFFI Async cancellable routines + bytes
+- Make interop runner pick up CHROME_PATH from env
+
+### Features
+
+- Expose `getUserIdentities` through the FFI
+- [**breaking**] Also restore buffered messages on the receiver side
+- Increase max past epoch to 3 since backend inordering of messages requires client's config to backend's one + 1
+
+### Miscellaneous Tasks
+
+- Fix clippy lint on wasm tests
+- Quiet clippy new lint about non send in Arc because it comes from wasm-bindgen wrapped Javascript object which cannot be shared between threads anyway
+- Remove useless application message epoch check
+
+### Refactor
+
+- Borrow conversation_id in `new_conversation`
+
+### Testing
+
+- Fix wasm test hitting a limit. Just split them for now, waiting for a proper solution
+- Fix spinoff 0.8 compilation
+
+</details>
+
+* **[BREAKING]** regular commits were also (in addition to external commits) impacted by unordered backend messages. As a
+consequence, both `commitAccepted` and `decryptMessages` now return buffered messages.
+* Improved Kotlin wrapper: documented, tested, type safe
+* fix: Rust future was leaked when Kotlin coroutine cancelled
+* fix: TLS serialization of x509 Credential which makes this release interoperable with wire-server
+* feat: expose `getUserIdentities` to list the identity of MLS group members using e2ei
+* increase max past epoch from 2 to 3 to respect backend's configuration
+
 ## [1.0.0-rc.7] - 2023-08-09
 
 <details>
@@ -19,6 +61,10 @@ Platform support legends:
 ### Features
 
 - Correlate RotateBundle with a GroupId
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.7
 
 </details>
 
