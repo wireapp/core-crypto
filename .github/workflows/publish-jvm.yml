@@ -109,7 +109,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: crypto-ffi/bindings/
-          arguments: "jvm::publishAllPublicationsToMavenCentral --no-configuration-cache"
+          arguments: ":jvm:publishAllPublicationsToMavenCentral --no-configuration-cache"
         env:
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
