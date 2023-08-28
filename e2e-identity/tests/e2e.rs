@@ -405,6 +405,7 @@ mod dpop_challenge {
                         backend_kp,
                         test.hash_alg,
                         5,
+                        core::time::Duration::from_secs(360),
                     )
                     .unwrap();
                     Ok((test, access_token))
@@ -469,6 +470,7 @@ mod dpop_challenge {
                         backend_kp,
                         test.hash_alg,
                         5,
+                        core::time::Duration::from_secs(360),
                     )
                     .unwrap();
                     Ok((test, access_token))

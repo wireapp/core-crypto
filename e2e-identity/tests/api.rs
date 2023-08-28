@@ -1,8 +1,9 @@
 use jwt_simple::prelude::*;
-use rusty_jwt_tools::prelude::*;
 use serde_json::json;
-use utils::keys::enrollments;
 use wasm_bindgen_test::*;
+
+use rusty_jwt_tools::prelude::*;
+use utils::keys::enrollments;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -180,6 +181,7 @@ fn e2e_api() {
                 backend_kp,
                 enrollment.hash_alg,
                 5,
+                core::time::Duration::from_secs(360),
             )
             .unwrap();
             access_token

@@ -74,6 +74,7 @@ fn generate_access_token(dpop: &str, client_id: ClientId, nonce: BackendNonce) -
         backend_kp,
         hash_alg,
         5,
+        core::time::Duration::from_secs(360),
     )
     .unwrap();
     serde_json::json!({
