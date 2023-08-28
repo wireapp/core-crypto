@@ -1,15 +1,17 @@
 //! Test helper for sharing data between the resource server (wire-server) and the client which
 //! is responsible for displaying them.
 
-use crate::utils::cfg::default_http_client;
-use base64::Engine;
-use itertools::Itertools;
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use std::net::SocketAddr;
 use std::{
     collections::{hash_map::RandomState, HashMap},
     str::FromStr,
 };
+
+use base64::Engine;
+use itertools::Itertools;
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+
+use crate::utils::cfg::default_http_client;
 
 lazy_static::lazy_static! {
     // ugly but openidconnect::Client has too many generics and it's a hell to store in a context
@@ -150,7 +152,7 @@ pub fn ctx_get_request(key: &'static str) -> reqwest::Request {
     // sadly this is currently the only way to build a RequestBuilder
     let mut req = reqwest::Client::new()
         .request(method, uri)
-        .headers(HeaderMap::from_iter(headers.into_iter()));
+        .headers(HeaderMap::from_iter(headers));
     if let Some(body) = body {
         req = req.body(body)
     }
@@ -173,7 +175,7 @@ pub fn ctx_get_resp(key: &'static str, as_html: bool) -> String {
             kv.next().zip(kv.next())
         })
         .collect::<Vec<(&str, &str)>>();
-    let headers = HashMap::<&str, &str, RandomState>::from_iter(headers.into_iter());
+    let headers = HashMap::<&str, &str, RandomState>::from_iter(headers);
     let body = ctx_get(format!("{key}-response-body"))
         .map(|body| base64::prelude::BASE64_STANDARD.decode(body).unwrap())
         .map(|body| String::from_utf8(body).unwrap());
