@@ -404,6 +404,7 @@ mod dpop_challenge {
                         2136351646,
                         backend_kp,
                         test.hash_alg,
+                        5,
                     )
                     .unwrap();
                     Ok((test, access_token))
@@ -467,6 +468,7 @@ mod dpop_challenge {
                         2136351646,
                         backend_kp,
                         test.hash_alg,
+                        5,
                     )
                     .unwrap();
                     Ok((test, access_token))

@@ -73,6 +73,7 @@ fn generate_access_token(dpop: &str, client_id: ClientId, nonce: BackendNonce) -
         max_expiry,
         backend_kp,
         hash_alg,
+        5,
     )
     .unwrap();
     serde_json::json!({
