@@ -476,6 +476,15 @@ impl MlsCentral {
             assert_eq!(decr_identity.handle, identity.handle);
             assert_eq!(decr_identity.display_name, identity.display_name);
             assert_eq!(decr_identity.domain, identity.domain);
+            assert!(decr_identity.certificate.starts_with("-----BEGIN CERTIFICATE-----"));
+            assert!(decr_identity.certificate.ends_with("-----END CERTIFICATE-----\n"));
+            let chain = x509_cert::Certificate::load_pem_chain(decr_identity.certificate.as_bytes()).unwrap();
+            let cert = chain.first().unwrap();
+            let cert_identity = cert.extract_identity().unwrap();
+            assert_eq!(cert_identity.client_id, identity.client_id);
+            assert_eq!(cert_identity.handle, identity.handle);
+            assert_eq!(cert_identity.display_name, identity.display_name);
+            assert_eq!(cert_identity.domain, identity.domain);
         }
     }
 

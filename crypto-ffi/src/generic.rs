@@ -454,6 +454,7 @@ pub struct WireIdentity {
     pub handle: String,
     pub display_name: String,
     pub domain: String,
+    pub certificate: String,
 }
 
 impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
@@ -463,6 +464,7 @@ impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
             handle: i.handle,
             display_name: i.display_name,
             domain: i.domain,
+            certificate: i.certificate,
         }
     }
 }
