@@ -276,7 +276,7 @@ pub mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn enrollment_should_rotate_all(case: TestCase) {
-            let alice = "MGExNTA2MDNiMmQ5NDdhNmJmNGFjNGJlNTA2MDYxNmM:a661e79735dc890f@wire.com";
+            let alice = "t6wRpI8BRSeviBwwiFp5MQ:a661e79735dc890f@wire.com";
             run_test_with_client_ids(
                 case.clone(),
                 [alice, "bob", "charlie"],
@@ -459,7 +459,7 @@ pub mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_restore_credentials_in_order(case: TestCase) {
-            let alice = "MGExNTA2MDNiMmQ5NDdhNmJmNGFjNGJlNTA2MDYxNmM:a661e79735dc890f@wire.com";
+            let alice = "t6wRpI8BRSeviBwwiFp5MQ:a661e79735dc890f@wire.com";
             run_test_with_client_ids(case.clone(), [alice], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -567,8 +567,8 @@ pub mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn rotate_should_roundtrip(case: TestCase) {
-            let alice = "MGExNTA2MDNiMmQ5NDdhNmJmNGFjNGJlNTA2MDYxNmM:a661e79735dc890f@wire.com";
-            let bob = "NjY3NTVhNGYzMzE4NGFjMDgyOGQ5ZTZhOGM3NzYxNTI:ef6a91a91d3337a@wire.com";
+            let alice = "t6wRpI8BRSeviBwwiFp5MQ:a661e79735dc890f@wire.com";
+            let bob = "t6wRpI8BRSeviBwwiFp5MQ:ef6a91a91d3337a@wire.com";
             run_test_with_client_ids(
                 case.clone(),
                 [alice, bob],

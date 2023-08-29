@@ -62,8 +62,8 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    const ALICE_ANDROID: &str = "MGExNTA2MDNiMmQ5NDdhNmJmNGFjNGJlNTA2MDYxNmM:a661e79735dc890f@wire.com";
-    const ALICE_IOS: &str = "MGExNTA2MDNiMmQ5NDdhNmJmNGFjNGJlNTA2MDYxNmM:ce3c1921aacdbcfe@wire.com";
+    const ALICE_ANDROID: &str = "t6wRpI8BRSeviBwwiFp5MQ:a661e79735dc890f@wire.com";
+    const ALICE_IOS: &str = "t6wRpI8BRSeviBwwiFp5MQ:ce3c1921aacdbcfe@wire.com";
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]

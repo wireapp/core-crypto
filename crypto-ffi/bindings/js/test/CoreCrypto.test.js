@@ -889,7 +889,7 @@ test("end-to-end-identity", async () => {
     const encoder = new TextEncoder();
     const jsonToByteArray = json => encoder.encode(JSON.stringify(json, null, 0));
 
-    const clientId = "YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM:4959bc6ab12f2846@wire.com";
+    const clientId = "t6wRpI8BRSeviBwwiFp5MQ:4959bc6ab12f2846@wire.com";
     const displayName = "Alice Smith";
     const handle = "alice_wire";
     const expiryDays = 90;
@@ -899,7 +899,8 @@ test("end-to-end-identity", async () => {
     const directoryResp = {
         "newNonce": "https://example.com/acme/new-nonce",
         "newAccount": "https://example.com/acme/new-account",
-        "newOrder": "https://example.com/acme/new-order"
+        "newOrder": "https://example.com/acme/new-order",
+        "revokeCert": "https://example.com/acme/revoke-cert"
     };
     enrollment.directoryResponse(jsonToByteArray(directoryResp));
 
@@ -922,7 +923,7 @@ test("end-to-end-identity", async () => {
         "identifiers": [
             {
                 "type": "wireapp-id",
-                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
             }
         ],
         "authorizations": [
@@ -940,7 +941,7 @@ test("end-to-end-identity", async () => {
         "expires": "2016-01-02T14:09:30Z",
         "identifier": {
             "type": "wireapp-id",
-            "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+            "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
         },
         "challenges": [
             {
@@ -998,7 +999,7 @@ test("end-to-end-identity", async () => {
         "identifiers": [
             {
                 "type": "wireapp-id",
-                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
             }
         ],
         "authorizations": [
@@ -1018,7 +1019,7 @@ test("end-to-end-identity", async () => {
         "identifiers": [
             {
                 "type": "wireapp-id",
-                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
             }
         ],
         "authorizations": [

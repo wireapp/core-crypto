@@ -2776,16 +2776,18 @@ pub struct AcmeDirectory {
     new_nonce: String,
     new_account: String,
     new_order: String,
+    revoke_cert: String,
 }
 
 #[wasm_bindgen]
 impl AcmeDirectory {
     #[wasm_bindgen(constructor)]
-    pub fn new(new_nonce: String, new_account: String, new_order: String) -> Self {
+    pub fn new(new_nonce: String, new_account: String, new_order: String, revoke_cert: String) -> Self {
         Self {
             new_nonce,
             new_account,
             new_order,
+            revoke_cert,
         }
     }
 
@@ -2806,6 +2808,12 @@ impl AcmeDirectory {
     pub fn new_order(&self) -> String {
         self.new_order.to_string()
     }
+
+    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(js_name = "revokeCert")]
+    pub fn revoke_cert(&self) -> String {
+        self.revoke_cert.to_string()
+    }
 }
 
 impl From<core_crypto::prelude::E2eiAcmeDirectory> for AcmeDirectory {
@@ -2814,6 +2822,7 @@ impl From<core_crypto::prelude::E2eiAcmeDirectory> for AcmeDirectory {
             new_nonce: directory.new_nonce,
             new_account: directory.new_account,
             new_order: directory.new_order,
+            revoke_cert: directory.revoke_cert,
         }
     }
 }
@@ -2824,6 +2833,7 @@ impl From<AcmeDirectory> for core_crypto::prelude::E2eiAcmeDirectory {
             new_nonce: directory.new_nonce,
             new_account: directory.new_account,
             new_order: directory.new_order,
+            revoke_cert: directory.revoke_cert,
         }
     }
 }

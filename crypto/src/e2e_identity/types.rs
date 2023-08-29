@@ -12,6 +12,8 @@ pub struct E2eiAcmeDirectory {
     pub new_account: String,
     /// URL to call with [crate::prelude::E2eiEnrollment::new_order_request]
     pub new_order: String,
+    /// Not yet used
+    pub revoke_cert: String,
 }
 
 impl From<wire_e2e_identity::prelude::AcmeDirectory> for E2eiAcmeDirectory {
@@ -20,6 +22,7 @@ impl From<wire_e2e_identity::prelude::AcmeDirectory> for E2eiAcmeDirectory {
             new_nonce: directory.new_nonce.to_string(),
             new_account: directory.new_account.to_string(),
             new_order: directory.new_order.to_string(),
+            revoke_cert: directory.revoke_cert.to_string(),
         }
     }
 }
@@ -32,6 +35,7 @@ impl TryFrom<&E2eiAcmeDirectory> for wire_e2e_identity::prelude::AcmeDirectory {
             new_nonce: directory.new_nonce.parse()?,
             new_account: directory.new_account.parse()?,
             new_order: directory.new_order.parse()?,
+            revoke_cert: directory.revoke_cert.parse()?,
         })
     }
 }

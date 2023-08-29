@@ -102,7 +102,7 @@ pub mod tests {
     #[wasm_bindgen_test]
     pub async fn should_succeed_when_incoming_commit_same_as_pending(case: TestCase) {
         if !case.is_pure_ciphertext() {
-            let alice = "MGExNTA2MDNiMmQ5NDdhNmJmNGFjNGJlNTA2MDYxNmM:a661e79735dc890f@wire.com";
+            let alice = "t6wRpI8BRSeviBwwiFp5MQ:a661e79735dc890f@wire.com";
             run_test_with_client_ids(case.clone(), [alice], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();

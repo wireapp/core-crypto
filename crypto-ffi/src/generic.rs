@@ -1764,6 +1764,7 @@ pub struct AcmeDirectory {
     pub new_nonce: String,
     pub new_account: String,
     pub new_order: String,
+    pub revoke_cert: String,
 }
 
 impl From<core_crypto::prelude::E2eiAcmeDirectory> for AcmeDirectory {
@@ -1772,6 +1773,7 @@ impl From<core_crypto::prelude::E2eiAcmeDirectory> for AcmeDirectory {
             new_nonce: directory.new_nonce,
             new_account: directory.new_account,
             new_order: directory.new_order,
+            revoke_cert: directory.revoke_cert,
         }
     }
 }
@@ -1782,6 +1784,7 @@ impl From<AcmeDirectory> for core_crypto::prelude::E2eiAcmeDirectory {
             new_nonce: directory.new_nonce,
             new_account: directory.new_account,
             new_order: directory.new_order,
+            revoke_cert: directory.revoke_cert,
         }
     }
 }

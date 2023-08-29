@@ -2129,6 +2129,12 @@ export interface AcmeDirectory {
      * @readonly
      */
     newOrder: string;
+    /**
+     * Revocation URL
+     *
+     * @readonly
+     */
+    revokeCert: string;
 }
 
 /**
