@@ -120,8 +120,6 @@ fun ByteArray.toSignaturePublicKey() = SignaturePublicKey(this)
 
 @JvmInline
 value class MLSKeyPackage(override val value: ByteArray) : Uniffi {
-    // FIXME: inconsistent representation across FFI ; ByteArray in out position, List<UByte> in in position
-    fun lowerUByte() = value.toUByteList()
     override fun toString() = value.toHex()
 }
 
@@ -129,15 +127,11 @@ fun ByteArray.toMLSKeyPackage() = MLSKeyPackage(this)
 
 @JvmInline
 value class MLSKeyPackageRef(override val value: ByteArray) : Uniffi {
-    // FIXME: inconsistent representation across FFI ; ByteArray in out position, List<UByte> in in position
-    fun lowerUByte() = value.toUByteList()
     override fun toString() = value.toHex()
 }
 
 @JvmInline
 value class ProposalRef(override val value: ByteArray) : Uniffi {
-    // FIXME: inconsistent representation across FFI ; ByteArray in out position, List<UByte> in in position
-    fun lowerUByte() = value.toUByteList()
     override fun toString() = value.toHex()
 }
 
@@ -370,7 +364,11 @@ data class WireIdentity(
     /**
      * DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
      */
-    val domain: String
+    val domain: String,
+    /**
+     * X509 certificate identifying this client in the MLS group ; PEM encoded
+     */
+    val certificate: String
 )
 
-fun com.wire.crypto.WireIdentity.lift() = WireIdentity(clientId, handle, displayName, domain)
+fun com.wire.crypto.WireIdentity.lift() = WireIdentity(clientId, handle, displayName, domain, certificate)

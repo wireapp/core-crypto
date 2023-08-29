@@ -548,6 +548,10 @@ export interface WireIdentity {
      * DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
      */
     domain: string;
+    /**
+     * X509 certificate identifying this client in the MLS group ; PEM encoded
+     */
+    certificate: string;
 }
 
 /**

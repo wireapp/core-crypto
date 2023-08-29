@@ -1,7 +1,9 @@
 use crate::{
     mls::credential::ext::CredentialExt,
     prelude::{ClientId, ConversationId, CryptoResult, MlsCentral, MlsConversation},
+    CryptoError,
 };
+use x509_cert::der::pem::LineEnding;
 
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group
@@ -15,16 +17,24 @@ pub struct WireIdentity {
     pub display_name: String,
     /// DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
     pub domain: String,
+    /// X509 certificate identifying this client in the MLS group ; PEM encoded
+    pub certificate: String,
 }
 
-impl From<wire_e2e_identity::prelude::WireIdentity> for WireIdentity {
-    fn from(i: wire_e2e_identity::prelude::WireIdentity) -> Self {
-        Self {
+impl<'a> TryFrom<(wire_e2e_identity::prelude::WireIdentity, &'a [u8])> for WireIdentity {
+    type Error = CryptoError;
+
+    fn try_from((i, cert): (wire_e2e_identity::prelude::WireIdentity, &'a [u8])) -> CryptoResult<Self> {
+        use x509_cert::der::Decode as _;
+        let document = x509_cert::der::Document::from_der(cert)?;
+        let certificate = document.to_pem("CERTIFICATE", LineEnding::LF)?;
+        Ok(Self {
             client_id: i.client_id,
             handle: i.handle,
             display_name: i.display_name,
             domain: i.domain,
-        }
+            certificate,
+        })
     }
 }
 

@@ -740,17 +740,19 @@ pub struct WireIdentity {
     handle: String,
     display_name: String,
     domain: String,
+    certificate: String,
 }
 
 #[wasm_bindgen]
 impl WireIdentity {
     #[wasm_bindgen(constructor)]
-    pub fn new(client_id: String, handle: String, display_name: String, domain: String) -> Self {
+    pub fn new(client_id: String, handle: String, display_name: String, domain: String, certificate: String) -> Self {
         Self {
             client_id,
             handle,
             display_name,
             domain,
+            certificate,
         }
     }
 
@@ -773,6 +775,11 @@ impl WireIdentity {
     pub fn domain(&self) -> String {
         self.domain.clone()
     }
+
+    #[wasm_bindgen(getter)]
+    pub fn certificate(&self) -> String {
+        self.certificate.clone()
+    }
 }
 
 impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
@@ -782,6 +789,7 @@ impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
             handle: i.handle,
             display_name: i.display_name,
             domain: i.domain,
+            certificate: i.certificate,
         }
     }
 }
@@ -793,6 +801,7 @@ impl From<WireIdentity> for core_crypto::prelude::WireIdentity {
             handle: i.handle,
             display_name: i.display_name,
             domain: i.domain,
+            certificate: i.certificate,
         }
     }
 }
