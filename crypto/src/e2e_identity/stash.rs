@@ -1,7 +1,7 @@
 use crate::prelude::{CryptoError, E2eIdentityResult, E2eiEnrollment, MlsCentral};
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls_traits::{crypto::OpenMlsCrypto, types::HashType, OpenMlsCryptoProvider};
+use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
 
 /// A unique identifier for an enrollment a consumer can use to fetch it from the keystore when he
 /// wants to resume the process
@@ -9,8 +9,11 @@ pub(crate) type EnrollmentHandle = Vec<u8>;
 
 impl E2eiEnrollment {
     pub(crate) async fn stash(self, backend: &MlsCryptoProvider) -> E2eIdentityResult<EnrollmentHandle> {
+        // should be enough to prevent collisions
+        const HANDLE_SIZE: usize = 32;
+
         let content = serde_json::to_vec(&self)?;
-        let handle = backend.crypto().hash(HashType::Sha2_256, &content)?;
+        let handle = backend.crypto().random_vec(HANDLE_SIZE).map_err(CryptoError::from)?;
         backend
             .key_store()
             .save_e2ei_enrollment(&handle, &content)
