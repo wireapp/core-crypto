@@ -8,6 +8,7 @@ data class AcmeDirectory(private val delegate: com.wire.crypto.AcmeDirectory) {
     val newNonce: String get() = delegate.newNonce
     val newOrder: String get() = delegate.newOrder
     val newAccount: String get() = delegate.newAccount
+    val revokeCert: String get() = delegate.revokeCert
 
     fun lower() = delegate
 }

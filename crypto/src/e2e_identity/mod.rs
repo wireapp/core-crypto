@@ -426,8 +426,8 @@ pub mod tests {
 
     pub const E2EI_DISPLAY_NAME: &str = "Alice Smith";
     pub const E2EI_HANDLE: &str = "alice_wire";
-    pub const E2EI_CLIENT_ID: &str = "YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM:4959bc6ab12f2846@wire.com";
-    pub const E2EI_CLIENT_ID_URI: &str = "YzAzYjVhOWQ0ZjIwNGI5OTkzOGE4ODJmOTcxM2ZmOGM/4959bc6ab12f2846@wire.com";
+    pub const E2EI_CLIENT_ID: &str = "t6wRpI8BRSeviBwwiFp5MQ:4959bc6ab12f2846@wire.com";
+    pub const E2EI_CLIENT_ID_URI: &str = "t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com";
     pub const E2EI_EXPIRY: u32 = 90;
 
     #[apply(all_cred_cipher)]
@@ -479,7 +479,8 @@ pub mod tests {
         let directory = json!({
             "newNonce": "https://example.com/acme/new-nonce",
             "newAccount": "https://example.com/acme/new-account",
-            "newOrder": "https://example.com/acme/new-order"
+            "newOrder": "https://example.com/acme/new-order",
+            "revokeCert": "https://example.com/acme/revoke-cert"
         });
         let directory = serde_json::to_vec(&directory)?;
         enrollment.directory_response(directory)?;
