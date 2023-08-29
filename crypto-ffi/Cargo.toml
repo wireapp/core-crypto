@@ -36,8 +36,8 @@ sha2 = { version = "0.10", features = ["force-soft"] }
 # UniFFI - Android + iOS bindings - Runtime support
 [target.'cfg(not(target_family = "wasm"))'.dependencies.uniffi]
 version = "0.24"
-git = "https://github.com/ijc/uniffi-rs.git"
-branch = "vec-u8-as-bytes"
+git = "https://github.com/wireapp/uniffi-rs.git"
+branch = "wire/uniffi"
 
 [target.wasm32-unknown-unknown.dependencies]
 wasm-bindgen = "0.2"
@@ -53,8 +53,8 @@ strum = "0.25"
 # UniFFI - Android + iOS bindings - Build support
 [target.'cfg(not(target_family = "wasm"))'.build-dependencies.uniffi]
 version = "0.24"
-git = "https://github.com/ijc/uniffi-rs.git"
-branch = "vec-u8-as-bytes"
+git = "https://github.com/wireapp/uniffi-rs.git"
+branch = "wire/uniffi"
 features = ["build", "bindgen"]
 
 [build-dependencies]
