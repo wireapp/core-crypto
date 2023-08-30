@@ -14,30 +14,13 @@ Platform support legends:
 
 ### Bug Fixes
 
-- TLS serialization of x509 credential
-- [**breaking**] UniFFI Async cancellable routines + bytes
-- Make interop runner pick up CHROME_PATH from env
+- Make UniFFI produce the correct symbol in bindings
+- Change e2ei enrollment identifier causing collision now that keypairs are reused
 
 ### Features
 
-- Expose `getUserIdentities` through the FFI
-- [**breaking**] Also restore buffered messages on the receiver side
-- Increase max past epoch to 3 since backend inordering of messages requires client's config to backend's one + 1
-
-### Miscellaneous Tasks
-
-- Fix clippy lint on wasm tests
-- Quiet clippy new lint about non send in Arc because it comes from wasm-bindgen wrapped Javascript object which cannot be shared between threads anyway
-- Remove useless application message epoch check
-
-### Refactor
-
-- Borrow conversation_id in `new_conversation`
-
-### Testing
-
-- Fix wasm test hitting a limit. Just split them for now, waiting for a proper solution
-- Fix spinoff 0.8 compilation
+- [**breaking**] Return raw PEM certificate in `getUserIdentities` for display purpose
+- [**breaking**] Bump rusty-jwt-tools to v0.5.0. Add 'revokeCert' to AcmeDirectory
 
 </details>
 
