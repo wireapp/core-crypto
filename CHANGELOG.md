@@ -7,7 +7,7 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
-## [1.0.0-rc.8] - 2023-08-25
+## [1.0.0-rc.9] - 2023-08-30
 
 <details>
     <summary>git-conventional changelog</summary>
@@ -17,10 +17,59 @@ Platform support legends:
 - Make UniFFI produce the correct symbol in bindings
 - Change e2ei enrollment identifier causing collision now that keypairs are reused
 
+### Documentation
+
+- Regenerate changelog
+
 ### Features
 
 - [**breaking**] Return raw PEM certificate in `getUserIdentities` for display purpose
 - [**breaking**] Bump rusty-jwt-tools to v0.5.0. Add 'revokeCert' to AcmeDirectory
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.9
+
+</details>
+
+* fix: tentatively fix the Kotlin & Swift wrapper by producing correct symbols
+* fix: e2ei enrollment persistence collision (only used by web)
+* fix: bump rusty-jwt-tools to v0.5.0 and fix `userId` encoding
+* feat: expose `getUserIdentities()` (for e2ei purposes) in the FFI
+* feat: add raw X.509 certificate in `WireIdentity` to display the certificate in the app
+
+## [1.0.0-rc.8] - 2023-08-25
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- TLS serialization of x509 credential
+- [**breaking**] UniFFI Async cancellable routines + bytes
+- Make interop runner pick up CHROME_PATH from env
+
+### Features
+
+- Expose `getUserIdentities` through the FFI
+- [**breaking**] Also restore buffered messages on the receiver side
+- Increase max past epoch to 3 since backend inordering of messages requires client's config to backend's one + 1
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.8
+- Fix clippy lint on wasm tests
+- Quiet clippy new lint about non send in Arc because it comes from wasm-bindgen wrapped Javascript object which cannot be shared between threads anyway
+- Remove useless application message epoch check
+
+### Refactor
+
+- Borrow conversation_id in `new_conversation`
+
+### Testing
+
+- Fix wasm test hitting a limit. Just split them for now, waiting for a proper solution
+- Fix spinoff 0.8 compilation
 
 </details>
 

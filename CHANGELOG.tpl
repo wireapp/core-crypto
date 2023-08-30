@@ -7,11 +7,24 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.9] - 2023-08-30
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.9" unreleased=true}}
+</details>
+
+* fix: tentatively fix the Kotlin & Swift wrapper by producing correct symbols
+* fix: e2ei enrollment persistence collision (only used by web)
+* fix: bump rusty-jwt-tools to v0.5.0 and fix `userId` encoding
+* feat: expose `getUserIdentities()` (for e2ei purposes) in the FFI
+* feat: add raw X.509 certificate in `WireIdentity` to display the certificate in the app
+
 ## [1.0.0-rc.8] - 2023-08-25
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.8" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.8"}}
 </details>
 
 * **[BREAKING]** regular commits were also (in addition to external commits) impacted by unordered backend messages. As a
