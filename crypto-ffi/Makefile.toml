@@ -133,8 +133,9 @@ args = [
 
 [tasks.ffi-swift]
 dependencies = ["compile-ffi-swift"]
-script_runner = "@duckscript"
-script = "mv ./bindings/swift/WireCoreCrypto/WireCoreCrypto/core_crypto_ffi.swift ./bindings/swift/WireCoreCrypto/WireCoreCrypto/CoreCrypto.swift"
+script = '''
+    mv ./bindings/swift/WireCoreCrypto/WireCoreCrypto/core_crypto_ffi.swift ./bindings/swift/WireCoreCrypto/WireCoreCrypto/CoreCrypto.swift
+'''
 
 
 [tasks.compile-ffi-kotlin]
@@ -152,8 +153,12 @@ args = [
 
 [tasks.ffi-kotlin]
 dependencies = ["compile-ffi-kotlin"]
-script_runner = "@duckscript"
-script = "mv ./bindings/jvm/src/main/kotlin/com/wire/crypto/core_crypto_ffi.kt ./bindings/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt"
+script = '''
+    mv ./bindings/jvm/src/main/kotlin/com/wire/crypto/core_crypto_ffi.kt ./bindings/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt
+    sed -i -e 's/\CryptoException\b/CryptoError/g' \
+           -e 's/\bE2eIdentityException\b/E2eIdentityError/g' \
+           ./bindings/jvm/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
+'''
 
 [tasks.ffi]
 dependencies = ["ffi-swift", "ffi-kotlin"]

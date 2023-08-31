@@ -12,7 +12,10 @@ crypto-ffi/bindings/*/build
 crypto-ffi/bindings/*/.swiftpm
 crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/CoreCrypto.swift
 crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/core_crypto_ffi.swift
+crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/core_crypto.swift
 crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/core_cryptoFFI.h
+crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/core_crypto_ffiFFI.h
+crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/core_cryptoFFI.modulemap
 DerivedData/
 *.moved-aside
 *.pbxuser
@@ -33,6 +36,7 @@ sample-projects/ios/.swiftpm
 # Kotlin
 crypto-ffi/bindings/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt
 crypto-ffi/bindings/jvm/src/main/kotlin/com/wire/crypto/core_crypto_ffi.kt
+crypto-ffi/bindings/jvm/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
 crypto-ffi/bindings/local.properties
 
 # Test databases leftovers

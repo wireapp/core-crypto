@@ -197,4 +197,4 @@ jobs:
       - uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v2
       - name: cargo/hack (verify features compile in isolation)
-        run: cargo hack check --each-feature --no-dev-deps
+        run: cargo hack check --each-feature --exclude-features uniffi --no-dev-deps

@@ -7,6 +7,8 @@ pub type E2eIdentityResult<T> = Result<T, E2eIdentityError>;
 
 /// End to end identity errors
 #[derive(Debug, thiserror::Error)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
+#[cfg_attr(feature = "uniffi", uniffi(flat_error))]
 pub enum E2eIdentityError {
     /// Client misused this library
     #[error("Incorrect usage of this API")]

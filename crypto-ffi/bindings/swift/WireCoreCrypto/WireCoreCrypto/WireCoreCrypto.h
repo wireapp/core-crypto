@@ -24,6 +24,7 @@ FOUNDATION_EXPORT double WireCoreCryptoVersionNumber;
 //! Project version string for WireCoreCrypto.
 FOUNDATION_EXPORT const unsigned char WireCoreCryptoVersionString[];
 
+#import <WireCoreCrypto/core_crypto_ffiFFI.h>
 #import <WireCoreCrypto/core_cryptoFFI.h>
 
 
