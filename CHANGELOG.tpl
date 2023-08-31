@@ -7,11 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.10] - 2023-08-31
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.10" unreleased=true}}
+</details>
+
+* fix: Fix Kotin & Swift wrappers by producing correct symbols
+
 ## [1.0.0-rc.9] - 2023-08-30
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.9" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.9"}}
 </details>
 
 * fix: tentatively fix the Kotlin & Swift wrapper by producing correct symbols
