@@ -72,7 +72,7 @@ cfg_if::cfg_if! {
         mod wasm;
         pub use self::wasm::*;
     } else {
-        uniffi::setup_scaffolding!("CoreCrypto");
+        uniffi::setup_scaffolding!("core_crypto_ffi");
 
         mod generic;
         pub use self::generic::*;
