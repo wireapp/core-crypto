@@ -8,6 +8,19 @@ Platform support legends:
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
 
+## [1.0.0-rc.12] - 2023-08-31
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Use sed in a cross-platform way for kt edits
+
+</details>
+
+* fix: Use sed in cross platform way for ffi build
+
 ## [1.0.0-rc.11] - 2023-08-31
 
 <details>
@@ -16,6 +29,10 @@ Platform support legends:
 ### Bug Fixes
 
 - [**breaking**] UniFFI Errors
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.11
 
 </details>
 

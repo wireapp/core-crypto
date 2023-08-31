@@ -8,11 +8,20 @@ Platform support legends:
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
 
+## [1.0.0-rc.12] - 2023-08-31
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.12" unreleased=true}}
+</details>
+
+* fix: Use sed in cross platform way for ffi build
+
 ## [1.0.0-rc.11] - 2023-08-31
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.11" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.11"}}
 </details>
 
 * fix!: Fix Kotlin & Swift FFI errors
