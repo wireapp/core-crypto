@@ -155,9 +155,13 @@ args = [
 dependencies = ["compile-ffi-kotlin"]
 script = '''
     mv ./bindings/jvm/src/main/kotlin/com/wire/crypto/core_crypto_ffi.kt ./bindings/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt
-    sed -i -e 's/\CryptoException\b/CryptoError/g' \
-           -e 's/\bE2eIdentityException\b/E2eIdentityError/g' \
-           ./bindings/jvm/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
+
+    sed -i.bak \
+        -e 's/\CryptoException\b/CryptoError/g' \
+        -e 's/\bE2eIdentityException\b/E2eIdentityError/g' \
+        ./bindings/jvm/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
+
+    rm ./bindings/jvm/src/main/kotlin/uniffi/core_crypto/core_crypto.kt.bak
 '''
 
 [tasks.ffi]
