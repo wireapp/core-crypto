@@ -118,7 +118,7 @@ args = ["run", "build"]
 
 ##################################### FFI #####################################
 
-[tasks.ffi-swift]
+[tasks.compile-ffi-swift]
 dependencies = ["release-build"]
 command = "cargo"
 args = [
@@ -131,7 +131,13 @@ args = [
     "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
-[tasks.ffi-kotlin]
+[tasks.ffi-swift]
+dependencies = ["compile-ffi-swift"]
+script_runner = "@duckscript"
+script = "mv ./bindings/swift/WireCoreCrypto/WireCoreCrypto/core_crypto_ffi.swift ./bindings/swift/WireCoreCrypto/WireCoreCrypto/CoreCrypto.swift"
+
+
+[tasks.compile-ffi-kotlin]
 dependencies = ["release-build"]
 command = "cargo"
 args = [
@@ -143,6 +149,11 @@ args = [
     "--out-dir", "./bindings/jvm/src/main/kotlin/",
     "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
+
+[tasks.ffi-kotlin]
+dependencies = ["compile-ffi-kotlin"]
+script_runner = "@duckscript"
+script = "mv ./bindings/jvm/src/main/kotlin/com/wire/crypto/core_crypto_ffi.kt ./bindings/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt"
 
 [tasks.ffi]
 dependencies = ["ffi-swift", "ffi-kotlin"]
