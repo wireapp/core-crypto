@@ -37,12 +37,17 @@ pub fn version() -> String {
 }
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
-#[uniffi(flat_error)]
 pub enum CoreCryptoError {
     #[error(transparent)]
-    CryptoError(#[from] CryptoError),
+    CryptoError {
+        #[from]
+        error: CryptoError,
+    },
     #[error(transparent)]
-    E2eIdentityError(#[from] E2eIdentityError),
+    E2eIdentityError {
+        #[from]
+        error: E2eIdentityError,
+    },
 }
 
 type CoreCryptoResult<T> = Result<T, CoreCryptoError>;

@@ -21,7 +21,6 @@ default = ["proteus"]
 proteus = ["core-crypto/proteus", "core-crypto/cryptobox-migrate"]
 
 [dependencies]
-core-crypto = { version = "^1.0.0-rc.10", path = "../crypto" }
 thiserror = "1.0"
 cfg-if = "1.0"
 futures-util = "0.3"
@@ -33,11 +32,10 @@ async-lock = "2.5"
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "x86")))'.dependencies]
 sha2 = { version = "0.10", features = ["force-soft"] }
 
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
 # UniFFI - Android + iOS bindings - Runtime support
-[target.'cfg(not(target_family = "wasm"))'.dependencies.uniffi]
-version = "0.24"
-git = "https://github.com/wireapp/uniffi-rs.git"
-branch = "wire/uniffi-stable"
+uniffi = { workspace = true }
+core-crypto = { version = "^1.0.0-rc.10", path = "../crypto", features = ["uniffi"] }
 
 [target.wasm32-unknown-unknown.dependencies]
 wasm-bindgen = "0.2"
@@ -48,13 +46,12 @@ serde = { version = "1.0", features = ["derive"] }
 js-sys = "0.3"
 web-sys = "0.3"
 strum = "0.25"
+core-crypto = { version = "^1.0.0-rc.10", path = "../crypto" }
 
 
 # UniFFI - Android + iOS bindings - Build support
 [target.'cfg(not(target_family = "wasm"))'.build-dependencies.uniffi]
-version = "0.24"
-git = "https://github.com/wireapp/uniffi-rs.git"
-branch = "wire/uniffi-stable"
+workspace = true
 features = ["build", "bindgen"]
 
 [build-dependencies]

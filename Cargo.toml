@@ -19,6 +19,11 @@ resolver = "2"
 [workspace.dependencies]
 tls_codec = "0.3.0"
 
+[workspace.dependencies.uniffi]
+version = "0.24"
+git = "https://github.com/wireapp/uniffi-rs.git"
+branch = "wire/uniffi-stable"
+
 [patch.crates-io.schnellru]
 git = "https://github.com/wireapp/schnellru"
 branch = "feat/try-insert"

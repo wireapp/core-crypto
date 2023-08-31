@@ -5,5 +5,5 @@ cdylib_name = "core_crypto_ffi"
 [bindings.swift]
 cdylib_name = "core_crypto_ffi"
 ffi_module_name = "LibCoreCrypto"
-ffi_module_filename = "core_cryptoFFI"
+ffi_module_filename = "core_crypto_ffiFFI"
 generate_module_map = false
