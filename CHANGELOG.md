@@ -7,6 +7,21 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+
+## [1.0.0-rc.11] - 2023-08-31
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- [**breaking**] UniFFI Errors
+
+</details>
+
+* fix!: Fix Kotlin & Swift FFI errors
+    * This includes a breaking change where CoreCrypto and E2EI errors are separated, so change accordingly
+
 ## [1.0.0-rc.10] - 2023-08-31
 
 <details>
@@ -15,6 +30,136 @@ Platform support legends:
 ### Bug Fixes
 
 - UniFFI symbol matching
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.10
+
+
+### Bug Fixes
+
+- Make UniFFI produce the correct symbol in bindings
+- Change e2ei enrollment identifier causing collision now that keypairs are reused
+
+### Documentation
+
+- Regenerate changelog
+
+### Features
+
+- [**breaking**] Return raw PEM certificate in `getUserIdentities` for display purpose
+- [**breaking**] Bump rusty-jwt-tools to v0.5.0. Add 'revokeCert' to AcmeDirectory
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.9
+
+
+### Bug Fixes
+
+- TLS serialization of x509 credential
+- [**breaking**] UniFFI Async cancellable routines + bytes
+- Make interop runner pick up CHROME_PATH from env
+
+### Features
+
+- Expose `getUserIdentities` through the FFI
+- [**breaking**] Also restore buffered messages on the receiver side
+- Increase max past epoch to 3 since backend inordering of messages requires client's config to backend's one + 1
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.8
+- Fix clippy lint on wasm tests
+- Quiet clippy new lint about non send in Arc because it comes from wasm-bindgen wrapped Javascript object which cannot be shared between threads anyway
+- Remove useless application message epoch check
+
+### Refactor
+
+- Borrow conversation_id in `new_conversation`
+
+### Testing
+
+- Fix wasm test hitting a limit. Just split them for now, waiting for a proper solution
+- Fix spinoff 0.8 compilation
+
+
+### Bug Fixes
+
+- Kotlin tests not compiling after methods became async
+
+### Features
+
+- Correlate RotateBundle with a GroupId
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.7
+
+
+### Bug Fixes
+
+- `e2eiRotateAll` return type was not wrapped
+- Signature KeyPair was rotated when credentials were which was zealous. Also fixes an important bug caused by inverted private & public keypair part when rotating credentials
+
+### Features
+
+- [**breaking**] Handle the case when a client tries to decrypt a Welcome referring to a KeyPackage he already has deleted locally
+- Add keystore dump exporter CLI tool
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.6
+
+### Testing
+
+- Add a roundtrip test for e2ei credential rotation to tackle a false positive regression
+
+
+### Bug Fixes
+
+- E2ei enum for conversation state was unused and failing the Typescript publication. Now CI will have the same compiler flags when checking bindings in order to prevent this again
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.5
+
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.4
+- Patch visibility issue for enum 'E2eiConversationState' which was failing when building Typescript bindings
+
+
+### Bug Fixes
+
+- Proteus wasm test now uses wasm-browser-run
+- Cargo doc fixes for wasm-browser-run
+- Interop runner now uses wasm-browser-run to install chromedriver
+- Support chromedriver 115 delivery method
+- `e2ei_rotate_all` was returning 'undefined' on WASM
+- [**breaking**] Entities leaked. Some methods handling the lifecycle of a MLS group were not cleaning created entities correctly. This avoids required storage space to grow linearly.
+
+### Features
+
+- [**breaking**] Rename `e2eiIsDegraded` by `e2eiConversationState` and change return type to an enumeration instead of a boolean to match all the e2ei states a conversation could have.
+- Add `e2ei_is_enabled` for clients to spot if their MLS client is enrolled for end-to-end identity
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.3
+- Update rstest versions
+- Updated xtask deps
+
+
+### Features
+
+- [**breaking**] Expose 'ClientId' in e2ei methods for credential rotation since the e2ei client identifier differs from the one used in MLS
+- Include certificate roots and certificate policy in GroupContext - WPB-1188
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.2
 
 </details>
 
@@ -217,15 +362,6 @@ In that case he has to catch & ignore the "OrphanWelcome" error and to rejoin th
 
 <details>
     <summary>git-conventional changelog</summary>
-
-### Features
-
-- [**breaking**] Expose 'ClientId' in e2ei methods for credential rotation since the e2ei client identifier differs from the one used in MLS
-- Include certificate roots and certificate policy in GroupContext - WPB-1188
-
-### Miscellaneous Tasks
-
-- Release v1.0.0-rc.2
 
 </details>
 
