@@ -199,6 +199,12 @@ pub enum CryptoError {
     /// see [`pem::PemError`]
     #[error(transparent)]
     PemError(#[from] pem::PemError),
+    /// see [`rustls::client::InvalidDnsNameError`]
+    #[error(transparent)]
+    RustlsDnsNameError(#[from] rustls::client::InvalidDnsNameError),
+    /// see [`rustls::client::RustlsTlsError`]
+    #[error(transparent)]
+    RustlsError(#[from] rustls::Error),
     /// Domain name not found in the certificate
     #[error("Could not find domain name in the certificate")]
     DomainNameNotFound,

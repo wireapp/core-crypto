@@ -90,7 +90,7 @@ impl MlsConversation {
         backend: &mut MlsCryptoProvider,
         mls_groups: &mut GroupStore<MlsConversation>,
     ) -> CryptoResult<Self> {
-        let mls_group_config = configuration.as_openmls_default_configuration(backend)?;
+        let mls_group_config = configuration.as_openmls_default_configuration()?;
 
         let group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None).await;
 

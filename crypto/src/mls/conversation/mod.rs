@@ -105,7 +105,7 @@ impl MlsConversation {
         let group = MlsGroup::new_with_group_id(
             backend,
             &cb.signature_key,
-            &configuration.as_openmls_default_configuration(backend)?,
+            &configuration.as_openmls_default_configuration()?,
             openmls::prelude::GroupId::from_slice(id.as_slice()),
             cb.to_mls_credential_with_key(),
         )

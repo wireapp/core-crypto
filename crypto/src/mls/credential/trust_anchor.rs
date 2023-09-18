@@ -1,8 +1,8 @@
-use mls_crypto_provider::MlsCryptoProvider;
+use fluvio_wasm_timer::SystemTime;
 use openmls::prelude::group_context::GroupContext;
-use openmls_traits::OpenMlsCryptoProvider;
-use openmls_x509_credential::X509Ext;
-use x509_cert::{der::Decode, Certificate, PkiPath};
+use x509_cert::{der::Decode, der::Encode, Certificate, PkiPath};
+
+use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
     mls::{
@@ -46,10 +46,9 @@ impl PerDomainTrustAnchor {
     /// It performs validation first
     pub fn try_as_checked_openmls_trust_anchor(
         self,
-        backend: &MlsCryptoProvider,
         group_context: Option<&GroupContext>,
     ) -> CryptoResult<openmls::extensions::PerDomainTrustAnchor> {
-        let certificate_chain = self.validate(backend, group_context)?;
+        let certificate_chain = self.validate(group_context)?;
         Ok(openmls::extensions::PerDomainTrustAnchor::new(
             self.domain_name.into(),
             openmls::prelude::CredentialType::X509,
@@ -59,13 +58,9 @@ impl PerDomainTrustAnchor {
     }
 
     /// Validates the trust anchor and return its encoded chain encoded to der.
-    fn validate(
-        &self,
-        backend: &MlsCryptoProvider,
-        group_context: Option<&GroupContext>,
-    ) -> CryptoResult<Vec<Vec<u8>>> {
+    fn validate(&self, group_context: Option<&GroupContext>) -> CryptoResult<Vec<Vec<u8>>> {
         // parse PEM
-        let certificate_chain = pem::parse_many(&self.intermediate_certificate_chain)?
+        let mut certificate_chain: PkiPath = pem::parse_many(&self.intermediate_certificate_chain)?
             .iter()
             .map(|p| Certificate::from_der(p.contents()))
             .collect::<Result<PkiPath, x509_cert::der::Error>>()?;
@@ -86,33 +81,37 @@ impl PerDomainTrustAnchor {
         }
 
         // empty chains are not allowed
-        let leaf_cert = certificate_chain.first().ok_or(CryptoError::InvalidCertificateChain)?;
+        if certificate_chain.is_empty() {
+            return Err(CryptoError::InvalidCertificateChain);
+        }
+        let end_identity = certificate_chain.remove(0);
 
         // validate domain in the leaf matches with the one supplied
-        let domain_names = extract_domain_names(leaf_cert)?;
+        let domain_names = extract_domain_names(&end_identity)?;
         if !domain_names.contains(&self.domain_name) {
             return Err(CryptoError::DomainNamesDontMatch);
         }
 
         // verify the whole chain
-        let root_cert = certificate_chain
-            .iter()
-            .map(Ok)
-            .reduce(
-                |child, parent| -> Result<&Certificate, openmls_traits::types::CryptoError> {
-                    let child = child?;
-                    let parent = parent?;
-                    child.is_valid()?;
-                    child.is_signed_by(backend.crypto(), parent)?;
-                    Ok(parent)
-                },
-            )
-            .unwrap()
-            .map_err(MlsError::from)?;
-        // ensure that the root is also valid
-        root_cert.is_valid().map_err(MlsError::from)?;
+        use rustls::client::ServerCertVerifier as _;
+        let verifier = rustls_platform_verifier::Verifier::new();
 
-        check_root_in_trust_store(root_cert)?;
+        let end_identity = rustls::Certificate(end_identity.to_der()?);
+        let intermediates = certificate_chain
+            .into_iter()
+            .map(|c| c.to_der().map(rustls::Certificate).map_err(CryptoError::from))
+            .collect::<CryptoResult<Vec<rustls::Certificate>>>()?;
+
+        let server_name = rustls::ServerName::try_from(self.domain_name.as_str())?;
+
+        verifier.verify_server_cert(
+            &end_identity,
+            &intermediates,
+            &server_name,
+            &mut std::iter::empty(),
+            &[],
+            SystemTime::now(),
+        )?;
 
         let encoded_chain = pem::parse_many(&self.intermediate_certificate_chain)?
             .into_iter()
@@ -120,12 +119,6 @@ impl PerDomainTrustAnchor {
             .collect::<Vec<_>>();
         Ok(encoded_chain)
     }
-}
-
-/// Checks the root cert against the trust store. In wasm maybe use webpki-roots (https://github.com/rustls/webpki-roots) crate
-fn check_root_in_trust_store(_root: &Certificate) -> CryptoResult<()> {
-    // TODO: verify root certificate is valid in the device's trust store
-    Ok(())
 }
 
 fn is_trust_anchor_new(new_anchor: &openmls::prelude::PerDomainTrustAnchor, old_group_context: &GroupContext) -> bool {
@@ -148,19 +141,18 @@ impl MlsConversation {
     pub(crate) fn validate_received_trust_anchors(
         old_group_context: &GroupContext,
         commit_group_context: &GroupContext,
-        backend: &MlsCryptoProvider,
     ) -> CryptoResult<()> {
         if let Some(new_anchors) = commit_group_context.extensions().per_domain_trust_anchors() {
             // find new anchors
             new_anchors
                 .iter()
                 .filter(|new_anchor| is_trust_anchor_new(new_anchor, old_group_context))
-                .try_for_each(|anchor| -> CryptoResult<()> {
+                .try_for_each(|anchor| {
                     let anchor = PerDomainTrustAnchor::try_from(anchor)?;
                     // the domain will obviously be in the context and will be already applied by
                     // other client, so the domain uniqueness should not be validated here
-                    anchor.validate(backend, None)?;
-                    Ok(())
+                    anchor.validate(None)?;
+                    CryptoResult::Ok(())
                 })?;
         }
         Ok(())
@@ -172,7 +164,6 @@ impl MlsConversation {
         &self,
         remove_domain_names: Vec<String>,
         add_trust_anchors: Vec<PerDomainTrustAnchor>,
-        backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<openmls::prelude::PerDomainTrustAnchor>> {
         if remove_domain_names.is_empty() && add_trust_anchors.is_empty() {
             return Err(CryptoError::EmptyTrustAnchorUpdate);
@@ -217,7 +208,7 @@ impl MlsConversation {
         let new_anchors = anchors
             .into_iter()
             .chain(add_trust_anchors.into_iter())
-            .map(|anchor| anchor.try_as_checked_openmls_trust_anchor(backend, None))
+            .map(|anchor| anchor.try_as_checked_openmls_trust_anchor(None))
             .collect::<CryptoResult<Vec<_>>>()?;
         Ok(new_anchors)
     }
@@ -234,7 +225,7 @@ impl MlsConversation {
         // parse back to mls and validate the anchors
         let context = self.group.export_group_context();
         let mut extensions = context.extensions().clone();
-        let new_anchors = self.compute_anchors_for_next_epoch(remove_domain_names, add_trust_anchors, backend)?;
+        let new_anchors = self.compute_anchors_for_next_epoch(remove_domain_names, add_trust_anchors)?;
         extensions.add_or_replace(openmls::prelude::Extension::PerDomainTrustAnchor(new_anchors));
 
         // update the group extension through a GCE commit
@@ -372,15 +363,16 @@ mod tests {
     };
 
     mod domain_name_extraction {
-        use crate::{mls::credential::trust_anchor::extract_domain_names, test_utils::TestCase};
+        use openmls_traits::types::Ciphersuite;
+        use wasm_bindgen_test::*;
 
-        use super::*;
+        use crate::{mls::credential::trust_anchor::extract_domain_names, test_utils::TestCase};
         use crate::{
             test_utils::{x509::*, *},
             CryptoError,
         };
-        use openmls_traits::types::Ciphersuite;
-        use wasm_bindgen_test::*;
+
+        use super::*;
 
         wasm_bindgen_test_configure!(run_in_browser);
 
@@ -443,16 +435,17 @@ mod tests {
     }
 
     mod on_group_creation {
+        use openmls::prelude::CryptoError as MlsCryptoError;
+        use openmls_traits::types::Ciphersuite;
+        use wasm_bindgen_test::*;
 
-        use super::*;
         use crate::{
             mls::credential::trust_anchor::PerDomainTrustAnchor,
             test_utils::{x509::*, *},
             CryptoError, MlsError,
         };
-        use openmls::prelude::CryptoError as MlsCryptoError;
-        use openmls_traits::types::Ciphersuite;
-        use wasm_bindgen_test::*;
+
+        use super::*;
 
         wasm_bindgen_test_configure!(run_in_browser);
 
@@ -496,7 +489,7 @@ mod tests {
                             .per_domain_trust_anchors();
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
-                        alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
+                        alice_anchors[0].validate(None).unwrap();
                     })
                 },
             )
@@ -582,7 +575,7 @@ mod tests {
                             .per_domain_trust_anchors();
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
-                        alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
+                        alice_anchors[0].validate(None).unwrap();
                     })
                 },
             )
@@ -717,15 +710,16 @@ mod tests {
     }
 
     mod update_anchors {
+        use openmls::prelude::CryptoError as MlsCryptoError;
+        use openmls_traits::types::Ciphersuite;
+        use wasm_bindgen_test::*;
 
-        use super::*;
         use crate::{
             test_utils::{x509::*, *},
             CryptoError, MlsError,
         };
-        use openmls::prelude::CryptoError as MlsCryptoError;
-        use openmls_traits::types::Ciphersuite;
-        use wasm_bindgen_test::*;
+
+        use super::*;
 
         wasm_bindgen_test_configure!(run_in_browser);
 
@@ -787,7 +781,7 @@ mod tests {
                             .per_domain_trust_anchors();
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
-                        alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
+                        alice_anchors[0].validate(None).unwrap();
                     })
                 },
             )
@@ -855,8 +849,8 @@ mod tests {
                             .per_domain_trust_anchors();
                         assert_eq!(alice_anchors.len(), 2);
                         assert_eq!(alice_anchors, bob_anchors);
-                        alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
-                        alice_anchors[1].validate(&alice_central.mls_backend, None).unwrap();
+                        alice_anchors[0].validate(None).unwrap();
+                        alice_anchors[1].validate(None).unwrap();
                         assert_eq!(alice_anchors[0].domain_name, "wire.com");
                         assert_eq!(alice_anchors[1].domain_name, "wire2.com");
                     })
@@ -1133,15 +1127,16 @@ mod tests {
     }
 
     mod remove_anchors {
-        use super::*;
+        use openmls_traits::types::Ciphersuite;
+        use wasm_bindgen_test::*;
+
         use crate::{
             mls::credential::trust_anchor::PerDomainTrustAnchor,
             test_utils::{x509::*, *},
             CryptoError,
         };
 
-        use openmls_traits::types::Ciphersuite;
-        use wasm_bindgen_test::*;
+        use super::*;
 
         wasm_bindgen_test_configure!(run_in_browser);
 
@@ -1268,7 +1263,7 @@ mod tests {
                             .per_domain_trust_anchors();
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
-                        alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
+                        alice_anchors[0].validate(None).unwrap();
                         assert_eq!(alice_anchors[0].domain_name, "wire2.com");
                     })
                 },
@@ -1451,7 +1446,7 @@ mod tests {
                             .per_domain_trust_anchors();
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
-                        alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
+                        alice_anchors[0].validate(None).unwrap();
                         assert_eq!(alice_anchors[0].domain_name, "wire.com");
                         assert_ne!(new_chain, old_chain);
                     })
@@ -1523,15 +1518,16 @@ mod tests {
     }
 
     mod receiver_validation {
-        use super::*;
+        use openmls::prelude::CryptoError as MlsCryptoError;
+        use openmls_traits::types::Ciphersuite;
+        use wasm_bindgen_test::*;
+
         use crate::{
             test_utils::{x509::*, *},
             CryptoError, MlsError,
         };
 
-        use openmls::prelude::CryptoError as MlsCryptoError;
-        use openmls_traits::types::Ciphersuite;
-        use wasm_bindgen_test::*;
+        use super::*;
 
         wasm_bindgen_test_configure!(run_in_browser);
 

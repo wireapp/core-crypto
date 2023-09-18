@@ -51,6 +51,13 @@ pem = "3.0"
 oid-registry = "0.6"
 async-recursion = "1"
 uniffi = { workspace = true, optional = true }
+fluvio-wasm-timer = "0.2"
+
+rustls = { version = "0.21", features = ["dangerous_configuration", "tls12", "logging"] }
+
+[dependencies.rustls-platform-verifier]
+version = "0.1"
+path = "../../rustls-platform-verifier"
 
 [dependencies.proteus-wasm]
 version = "2.1"
@@ -99,7 +106,6 @@ futures-util = { version = "0.3", features = ["std", "alloc"] }
 proteus-traits = "2.0"
 async-trait = "0.1"
 wire-e2e-identity = { version = "0.5", features = ["identity-builder"] }
-fluvio-wasm-timer = "0.2"
 time = { version = "0.3", features = ["wasm-bindgen"] }
 
 [dev-dependencies.rcgen]

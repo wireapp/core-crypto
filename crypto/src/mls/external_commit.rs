@@ -107,7 +107,7 @@ impl MlsCentral {
             &cb.signature_key,
             None,
             group_info,
-            &configuration.as_openmls_default_configuration(&self.mls_backend)?,
+            &configuration.as_openmls_default_configuration()?,
             &[],
             cb.to_mls_credential_with_key(),
         )
