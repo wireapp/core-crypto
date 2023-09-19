@@ -436,10 +436,8 @@ pub mod tests {
         fn should_extract_domain_name(case: TestCase) {
             let cert = create_single_certificate(
                 CertificateParams {
-                    org: "Project Zeta GmBh".to_string(),
                     common_name: None,
-                    domain: Some("wire.com".to_string()),
-                    expiration: Duration::from_secs(10),
+                    ..Default::default()
                 },
                 case.signature_scheme(),
                 false,
@@ -454,10 +452,8 @@ pub mod tests {
         fn should_extract_domain_name_common_name(case: TestCase) {
             let cert = create_single_certificate(
                 CertificateParams {
-                    org: "Project Zeta GmBh".to_string(),
-                    common_name: Some("wire.com".to_string()),
                     domain: None,
-                    expiration: Duration::from_secs(10),
+                    ..Default::default()
                 },
                 case.signature_scheme(),
                 false,
@@ -472,10 +468,9 @@ pub mod tests {
         fn should_fail_extract_domain_name(case: TestCase) {
             let cert = create_single_certificate(
                 CertificateParams {
-                    org: "Project Zeta GmBh".to_string(),
                     common_name: None,
                     domain: None,
-                    expiration: Duration::from_secs(10),
+                    ..Default::default()
                 },
                 case.signature_scheme(),
                 false,
@@ -508,14 +503,8 @@ pub mod tests {
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // both must have the anchors in the extensions
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
-                        let bob_anchors = bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&case).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&case).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
                         alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
@@ -571,8 +560,8 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         // both must have the anchors in the extensions
-                        let alice_anchors = alice_central.per_domain_trust_anchors().await;
-                        let bob_anchors = bob_central.per_domain_trust_anchors().await;
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&case).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&case).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
                         alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
