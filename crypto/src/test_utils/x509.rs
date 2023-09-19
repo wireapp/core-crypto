@@ -1,3 +1,4 @@
+use openmls::prelude::PerDomainTrustAnchorsExtension;
 use std::time::Duration;
 
 use openmls_traits::types::SignatureScheme;
@@ -193,7 +194,11 @@ impl MlsCentral {
 
 impl MlsConversation {
     pub fn per_domain_trust_anchors(&self) -> Vec<PerDomainTrustAnchor> {
-        let anchors = self.extensions().per_domain_trust_anchors().unwrap();
+        let anchors = self
+            .extensions()
+            .per_domain_trust_anchors()
+            .cloned()
+            .unwrap_or_else(|| PerDomainTrustAnchorsExtension::default());
         anchors
             .iter()
             .map(|a| PerDomainTrustAnchor::try_from(a).unwrap())
