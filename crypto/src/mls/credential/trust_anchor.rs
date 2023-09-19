@@ -360,15 +360,14 @@ pub(crate) fn extract_domain_names(certificate: &Certificate) -> CryptoResult<Ve
 pub mod tests {
     use std::time::Duration;
 
+    use openmls::prelude::CryptoError as MlsCryptoError;
     use wasm_bindgen_test::*;
 
     use crate::{
-        mls::{conversation::ConversationId, credential::trust_anchor::extract_domain_names, MlsCentral},
+        mls::credential::trust_anchor::extract_domain_names,
         test_utils::{x509::*, *},
-        CryptoError, CryptoResult,
+        CryptoError,
     };
-    use openmls::prelude::CryptoError as MlsCryptoError;
-
     use crate::{mls::credential::trust_anchor::PerDomainTrustAnchor, MlsError};
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -432,7 +431,6 @@ pub mod tests {
     }
 
     mod on_group_creation {
-
         use super::*;
 
         #[apply(all_cred_cipher)]
@@ -481,32 +479,30 @@ pub mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_create_group_with_expired_certs(mut case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
-                    Box::pin(async move {
-                        let anchors = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::ZERO,
-                            },
-                            case.signature_scheme(),
-                        );
-                        case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let error = create_group(&mut alice_central, &mut bob_central, &case)
-                            .await
-                            .unwrap_err();
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+                Box::pin(async move {
+                    let anchors = create_intermediate_certificates(
+                        CertificateParams {
+                            org: "Project Zeta GmBh".to_string(),
+                            common_name: Some("wire.com".to_string()),
+                            domain: Some("wire.com".to_string()),
+                            expiration: Duration::ZERO,
+                        },
+                        case.signature_scheme(),
+                    );
+                    case.cfg.per_domain_trust_anchors = vec![anchors.into()];
+                    let id = conversation_id();
+                    let error = alice_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap_err();
 
-                        assert!(matches!(
-                            error,
-                            CryptoError::MlsError(MlsError::MlsCryptoError(MlsCryptoError::ExpiredCertificate))
-                        ));
-                    })
-                },
-            )
+                    assert!(matches!(
+                        error,
+                        CryptoError::MlsError(MlsError::MlsCryptoError(MlsCryptoError::ExpiredCertificate))
+                    ));
+                })
+            })
             .await;
         }
 
@@ -529,7 +525,12 @@ pub mod tests {
                             true,
                         );
                         case.cfg.per_domain_trust_anchors = vec![cert.into()];
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         // both must have the anchors in the extensions
                         let alice_anchors = alice_central
                             .get_conversation_unchecked(&id)
@@ -551,105 +552,99 @@ pub mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_create_group_invalid_chain(mut case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
-                    Box::pin(async move {
-                        let cert = create_single_certificate(
-                            CertificateParams {
-                                org: "World Domination Inc".to_string(),
-                                common_name: Some("World Domination".to_string()),
-                                domain: None,
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                            false,
-                        );
-                        let ca = create_single_certificate(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                            true,
-                        );
-                        case.cfg.per_domain_trust_anchors = vec![vec![cert, ca].into()];
-                        let error = dbg!(create_group(&mut alice_central, &mut bob_central, &case)
-                            .await
-                            .unwrap_err());
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+                Box::pin(async move {
+                    let cert = create_single_certificate(
+                        CertificateParams {
+                            org: "World Domination Inc".to_string(),
+                            common_name: Some("World Domination".to_string()),
+                            domain: None,
+                            expiration: Duration::from_secs(10),
+                        },
+                        case.signature_scheme(),
+                        false,
+                    );
+                    let ca = create_single_certificate(
+                        CertificateParams {
+                            org: "Project Zeta GmBh".to_string(),
+                            common_name: Some("wire.com".to_string()),
+                            domain: Some("wire.com".to_string()),
+                            expiration: Duration::from_secs(10),
+                        },
+                        case.signature_scheme(),
+                        true,
+                    );
+                    case.cfg.per_domain_trust_anchors = vec![vec![cert, ca].into()];
+                    let id = conversation_id();
+                    let error = alice_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap_err();
 
-                        assert!(matches!(
-                            error,
-                            CryptoError::MlsError(MlsError::MlsCryptoError(MlsCryptoError::InvalidSignature))
-                        ));
-                    })
-                },
-            )
+                    assert!(matches!(
+                        error,
+                        CryptoError::MlsError(MlsError::MlsCryptoError(MlsCryptoError::InvalidSignature))
+                    ));
+                })
+            })
             .await;
         }
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_create_group_unmatched_domains(mut case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
-                    Box::pin(async move {
-                        let mut anchor: PerDomainTrustAnchor = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::ZERO,
-                            },
-                            case.signature_scheme(),
-                        )
-                        .into();
-                        anchor.domain_name = "wrong.domain.cc".to_string();
-                        case.cfg.per_domain_trust_anchors = vec![anchor];
-                        let error = create_group(&mut alice_central, &mut bob_central, &case)
-                            .await
-                            .unwrap_err();
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+                Box::pin(async move {
+                    let mut anchor: PerDomainTrustAnchor = create_intermediate_certificates(
+                        CertificateParams {
+                            org: "Project Zeta GmBh".to_string(),
+                            common_name: Some("wire.com".to_string()),
+                            domain: Some("wire.com".to_string()),
+                            expiration: Duration::ZERO,
+                        },
+                        case.signature_scheme(),
+                    )
+                    .into();
+                    anchor.domain_name = "wrong.domain.cc".to_string();
+                    case.cfg.per_domain_trust_anchors = vec![anchor];
+                    let id = conversation_id();
+                    let error = alice_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap_err();
 
-                        assert!(matches!(error, CryptoError::DomainNamesDontMatch));
-                    })
-                },
-            )
+                    assert!(matches!(error, CryptoError::DomainNamesDontMatch));
+                })
+            })
             .await;
         }
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_create_group_domain_not_found(mut case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
-                    Box::pin(async move {
-                        // No domain at all
-                        let anchor: PerDomainTrustAnchor = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: None,
-                                domain: None,
-                                expiration: Duration::ZERO,
-                            },
-                            case.signature_scheme(),
-                        )
-                        .into();
-                        case.cfg.per_domain_trust_anchors = vec![anchor];
-                        let error = create_group(&mut alice_central, &mut bob_central, &case)
-                            .await
-                            .unwrap_err();
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+                Box::pin(async move {
+                    // No domain at all
+                    let anchor: PerDomainTrustAnchor = create_intermediate_certificates(
+                        CertificateParams {
+                            org: "Project Zeta GmBh".to_string(),
+                            common_name: None,
+                            domain: None,
+                            expiration: Duration::ZERO,
+                        },
+                        case.signature_scheme(),
+                    )
+                    .into();
+                    case.cfg.per_domain_trust_anchors = vec![anchor];
+                    let id = conversation_id();
+                    let error = alice_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap_err();
 
-                        assert!(matches!(error, CryptoError::DomainNameNotFound));
-                    })
-                },
-            )
+                    assert!(matches!(error, CryptoError::DomainNameNotFound));
+                })
+            })
             .await;
         }
     }
@@ -674,7 +669,12 @@ pub mod tests {
                             },
                             case.signature_scheme(),
                         );
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         // anchors should not be present
                         assert!(alice_central
                             .get_conversation_unchecked(&id)
@@ -731,7 +731,12 @@ pub mod tests {
                             case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let new_anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta 2 GmBh".to_string(),
@@ -793,7 +798,12 @@ pub mod tests {
                             case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         let new_anchors = create_intermediate_certificates(
                             CertificateParams {
@@ -845,7 +855,12 @@ pub mod tests {
                             case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let cert = create_single_certificate(
                             CertificateParams {
                                 org: "World Domination Inc".to_string(),
@@ -911,7 +926,12 @@ pub mod tests {
                             case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let new_anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -966,7 +986,12 @@ pub mod tests {
                             case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let cert = create_single_certificate(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -1007,7 +1032,6 @@ pub mod tests {
     }
 
     mod remove_anchors {
-
         use super::*;
 
         #[apply(all_cred_cipher)]
@@ -1028,7 +1052,12 @@ pub mod tests {
                             case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // remove anchor to group
                         let commit_bundle = alice_central
@@ -1077,7 +1106,12 @@ pub mod tests {
                             case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let new_anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta 2 GmBh".to_string(),
@@ -1141,7 +1175,12 @@ pub mod tests {
                             case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // remove anchor to group
                         let error = alice_central
@@ -1185,7 +1224,12 @@ pub mod tests {
                             case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // remove anchor to group
                         let error = alice_central
@@ -1231,7 +1275,12 @@ pub mod tests {
                         .into();
                         let old_chain = anchors.intermediate_certificate_chain.clone();
                         case.cfg.per_domain_trust_anchors = vec![anchors];
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let new_anchors: PerDomainTrustAnchor = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -1299,7 +1348,12 @@ pub mod tests {
                             case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.clone().into()];
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // try adding anchors to group
                         let pems = anchors
@@ -1334,7 +1388,6 @@ pub mod tests {
     }
 
     mod receiver_validation {
-
         use super::*;
 
         #[apply(all_cred_cipher)]
@@ -1345,7 +1398,12 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // adding anchors to group
                         let anchors = create_intermediate_certificates(
@@ -1400,7 +1458,12 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // adding anchors to group
                         let cert = create_single_certificate(
@@ -1456,18 +1519,5 @@ pub mod tests {
             )
             .await;
         }
-    }
-
-    async fn create_group(
-        alice_central: &mut MlsCentral,
-        mut bob_central: &mut MlsCentral,
-        case: &TestCase,
-    ) -> CryptoResult<ConversationId> {
-        let id = conversation_id();
-        alice_central
-            .new_conversation(&id, case.credential_type, case.cfg.clone())
-            .await?;
-        alice_central.invite_all(case, &id, [&mut bob_central]).await.unwrap();
-        Ok(id)
     }
 }
