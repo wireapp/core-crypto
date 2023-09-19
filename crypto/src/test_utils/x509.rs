@@ -74,24 +74,25 @@ impl From<Certificate> for PerDomainTrustAnchor {
 
 /// Create a certificate chain with a CA and a Leaf for usage with the certificate trust anchors
 /// extension
-pub fn create_intermediate_certificates(cert_params: CertificateParams, signature_scheme: SignatureScheme) -> PkiPath {
+pub fn new_certificate_chain(cert_params: CertificateParams, signature_scheme: SignatureScheme) -> PkiPath {
     let ca_params = CertificateParams {
         org: "World Domination Inc".to_string(),
         common_name: Some("World Domination".to_string()),
         domain: Some("world.com".to_string()),
         expiration: Duration::from_secs(10),
     };
-    let key_pair = rcgen::KeyPair::generate(signature_scheme.rcgen_signature_alg()).unwrap();
-    let ca_params = new_cert_params(key_pair, signature_scheme, ca_params, true);
+    let ca_key_pair = rcgen::KeyPair::generate(signature_scheme.rcgen_signature_alg()).unwrap();
+    let ca_params = new_cert_params(ca_key_pair, signature_scheme, ca_params, true);
     let ca_cert = rcgen::Certificate::from_params(ca_params).unwrap();
+
     let leaf_key = rcgen::KeyPair::generate(signature_scheme.rcgen_signature_alg()).unwrap();
-    let pk = leaf_key.public_key_raw().to_vec();
+    let leaf_pk = leaf_key.public_key_raw().to_vec();
     let leaf_params = new_cert_params(leaf_key, signature_scheme, cert_params, false);
     let csr = rcgen::CertificateSigningRequest {
         params: leaf_params,
         public_key: rcgen::PublicKey {
             alg: signature_scheme.rcgen_signature_alg(),
-            raw: pk,
+            raw: leaf_pk,
         },
     };
     let cert = csr.serialize_der_with_signer(&ca_cert).unwrap();
@@ -104,7 +105,7 @@ pub fn create_intermediate_certificates(cert_params: CertificateParams, signatur
 }
 
 /// Create a single certificate
-pub fn create_single_certificate(
+pub fn new_self_signed_certificate(
     cert_params: CertificateParams,
     signature_scheme: SignatureScheme,
     is_ca: bool,

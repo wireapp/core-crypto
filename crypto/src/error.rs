@@ -224,6 +224,12 @@ pub enum CryptoError {
     /// with an External Commit instead
     #[error("Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit")]
     OrphanWelcome,
+    /// rustls DNS error
+    #[error(transparent)]
+    InvalidDnsNameError(#[from] rustls::client::InvalidDnsNameError),
+    /// rustls error
+    #[error(transparent)]
+    RustlsError(#[from] rustls::Error),
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]
