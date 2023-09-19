@@ -503,8 +503,8 @@ pub mod tests {
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // both must have the anchors in the extensions
-                        let alice_anchors = alice_central.per_domain_trust_anchors(&case).await;
-                        let bob_anchors = bob_central.per_domain_trust_anchors(&case).await;
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
                         alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
@@ -560,8 +560,8 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         // both must have the anchors in the extensions
-                        let alice_anchors = alice_central.per_domain_trust_anchors(&case).await;
-                        let bob_anchors = bob_central.per_domain_trust_anchors(&case).await;
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
                         alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
@@ -680,12 +680,7 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         // anchors should not be present
-                        assert!(alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .extensions()
-                            .per_domain_trust_anchors()
-                            .is_none());
+                        assert!(alice_central.per_domain_trust_anchors(&id).await.is_empty());
 
                         // adding anchors to group
                         let commit_bundle = alice_central
@@ -700,14 +695,8 @@ pub mod tests {
                             .unwrap();
 
                         // both must have the anchors in the extensions
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
-                        let bob_anchors = bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
                         alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
@@ -757,14 +746,8 @@ pub mod tests {
                             .unwrap();
 
                         // both must have the anchors in the extensions
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
-                        let bob_anchors = bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 2);
                         assert_eq!(alice_anchors, bob_anchors);
                         alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
@@ -804,14 +787,8 @@ pub mod tests {
                             .unwrap_err();
 
                         assert!(matches!(error, CryptoError::DuplicateDomainName));
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
-                        let bob_anchors = bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
                     })
@@ -859,14 +836,8 @@ pub mod tests {
                             error,
                             CryptoError::MlsError(MlsError::MlsCryptoError(MlsCryptoError::InvalidSignature))
                         ));
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
-                        let bob_anchors = bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
                     })
@@ -912,14 +883,8 @@ pub mod tests {
                             error,
                             CryptoError::MlsError(MlsError::MlsCryptoError(MlsCryptoError::ExpiredCertificate))
                         ));
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
-                        let bob_anchors = bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
                     })
@@ -966,14 +931,8 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
-                        let bob_anchors = bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 2);
                         assert_eq!(alice_anchors, bob_anchors);
                     })
@@ -1017,14 +976,8 @@ pub mod tests {
                             .unwrap();
 
                         // both must have the anchors in the extensions
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
-                        let bob_anchors = bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 0);
                         assert_eq!(alice_anchors, bob_anchors);
                     })
@@ -1077,14 +1030,8 @@ pub mod tests {
                             .unwrap();
 
                         // both must have the anchors in the extensions
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
-                        let bob_anchors = bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
                         alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
@@ -1121,14 +1068,8 @@ pub mod tests {
                         assert!(matches!(error, CryptoError::DomainNameNotFound));
 
                         // both must have the anchors in the extensions
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
-                        let bob_anchors = bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
                     })
@@ -1163,14 +1104,8 @@ pub mod tests {
                         assert!(matches!(error, CryptoError::EmptyTrustAnchorUpdate));
 
                         // both must have the anchors in the extensions
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
-                        let bob_anchors = bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
                     })
@@ -1220,14 +1155,8 @@ pub mod tests {
                             .unwrap();
 
                         // both must have the anchors in the extensions
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
-                        let bob_anchors = bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
                         alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
@@ -1273,14 +1202,8 @@ pub mod tests {
                             .unwrap_err();
 
                         assert!(matches!(error, CryptoError::DuplicateCertificateChain));
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
-                        let bob_anchors = bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
                     })
@@ -1334,17 +1257,9 @@ pub mod tests {
                         ));
 
                         // alice should have the invalid anchor but not bob
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
-                        assert!(bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .extensions()
-                            .per_domain_trust_anchors()
-                            .is_none());
+                        assert!(bob_central.per_domain_trust_anchors(&id).await.is_empty());
                     })
                 },
             )
@@ -1395,17 +1310,9 @@ pub mod tests {
                         ));
 
                         // alice should have the invalid anchor but not bob
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
-                        assert!(bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .extensions()
-                            .per_domain_trust_anchors()
-                            .is_none());
+                        assert!(bob_central.per_domain_trust_anchors(&id).await.is_empty());
                     })
                 },
             )
