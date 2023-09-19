@@ -18,6 +18,17 @@ pub struct CertificateParams {
     pub expiration: Duration,
 }
 
+impl Default for CertificateParams {
+    fn default() -> Self {
+        Self {
+            org: "Project Zeta GmBh".to_string(),
+            common_name: Some("wire.com".to_string()),
+            domain: Some("wire.com".to_string()),
+            expiration: Duration::from_secs(10),
+        }
+    }
+}
+
 impl PerDomainTrustAnchor {
     pub fn into_mls_unchecked(self) -> openmls::extensions::PerDomainTrustAnchor {
         let certificate_chain = pem::parse_many(&self.intermediate_certificate_chain)

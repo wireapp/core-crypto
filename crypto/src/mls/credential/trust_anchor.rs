@@ -441,15 +441,8 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let anchors = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        );
+                        let anchors =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme());
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = conversation_id();
                         alice_central
@@ -483,10 +476,8 @@ pub mod tests {
                 Box::pin(async move {
                     let anchors = create_intermediate_certificates(
                         CertificateParams {
-                            org: "Project Zeta GmBh".to_string(),
-                            common_name: Some("wire.com".to_string()),
-                            domain: Some("wire.com".to_string()),
                             expiration: Duration::ZERO,
+                            ..Default::default()
                         },
                         case.signature_scheme(),
                     );
@@ -514,16 +505,8 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let cert = create_single_certificate(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                            true,
-                        );
+                        let cert =
+                            create_single_certificate(CertificateParams::default(), case.signature_scheme(), true);
                         case.cfg.per_domain_trust_anchors = vec![cert.into()];
                         let id = conversation_id();
                         alice_central
@@ -559,21 +542,12 @@ pub mod tests {
                             org: "World Domination Inc".to_string(),
                             common_name: Some("World Domination".to_string()),
                             domain: None,
-                            expiration: Duration::from_secs(10),
+                            ..Default::default()
                         },
                         case.signature_scheme(),
                         false,
                     );
-                    let ca = create_single_certificate(
-                        CertificateParams {
-                            org: "Project Zeta GmBh".to_string(),
-                            common_name: Some("wire.com".to_string()),
-                            domain: Some("wire.com".to_string()),
-                            expiration: Duration::from_secs(10),
-                        },
-                        case.signature_scheme(),
-                        true,
-                    );
+                    let ca = create_single_certificate(CertificateParams::default(), case.signature_scheme(), true);
                     case.cfg.per_domain_trust_anchors = vec![vec![cert, ca].into()];
                     let id = conversation_id();
                     let error = alice_central
@@ -597,10 +571,8 @@ pub mod tests {
                 Box::pin(async move {
                     let mut anchor: PerDomainTrustAnchor = create_intermediate_certificates(
                         CertificateParams {
-                            org: "Project Zeta GmBh".to_string(),
-                            common_name: Some("wire.com".to_string()),
-                            domain: Some("wire.com".to_string()),
                             expiration: Duration::ZERO,
+                            ..Default::default()
                         },
                         case.signature_scheme(),
                     )
@@ -627,10 +599,10 @@ pub mod tests {
                     // No domain at all
                     let anchor: PerDomainTrustAnchor = create_intermediate_certificates(
                         CertificateParams {
-                            org: "Project Zeta GmBh".to_string(),
                             common_name: None,
                             domain: None,
                             expiration: Duration::ZERO,
+                            ..Default::default()
                         },
                         case.signature_scheme(),
                     )
@@ -660,15 +632,8 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let anchors = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        );
+                        let anchors =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme());
                         let id = conversation_id();
                         alice_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
@@ -721,15 +686,8 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let anchors = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        );
+                        let anchors =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme());
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = conversation_id();
                         alice_central
@@ -742,7 +700,7 @@ pub mod tests {
                                 org: "Project Zeta 2 GmBh".to_string(),
                                 common_name: Some("wire2.com".to_string()),
                                 domain: Some("wire2.com".to_string()),
-                                expiration: Duration::from_secs(10),
+                                ..Default::default()
                             },
                             case.signature_scheme(),
                         );
@@ -788,15 +746,8 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let anchors = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        );
+                        let anchors =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme());
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = conversation_id();
                         alice_central
@@ -805,15 +756,8 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
-                        let new_anchors = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        );
+                        let new_anchors =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme());
                         // try adding anchors to group
                         let error = alice_central
                             .update_trust_anchors_from_conversation(&id, vec![], vec![new_anchors.into()])
@@ -845,15 +789,8 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let anchors = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        );
+                        let anchors =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme());
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = conversation_id();
                         alice_central
@@ -866,21 +803,12 @@ pub mod tests {
                                 org: "World Domination Inc".to_string(),
                                 common_name: Some("World Domination".to_string()),
                                 domain: None,
-                                expiration: Duration::from_secs(10),
+                                ..Default::default()
                             },
                             case.signature_scheme(),
                             false,
                         );
-                        let ca = create_single_certificate(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                            true,
-                        );
+                        let ca = create_single_certificate(CertificateParams::default(), case.signature_scheme(), true);
 
                         // try adding anchors to group
                         let error = alice_central
@@ -916,15 +844,8 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let anchors = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        );
+                        let anchors =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme());
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = conversation_id();
                         alice_central
@@ -934,10 +855,10 @@ pub mod tests {
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let new_anchors = create_intermediate_certificates(
                             CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
                                 common_name: Some("wire2.com".to_string()),
                                 domain: Some("wire2.com".to_string()),
                                 expiration: Duration::ZERO,
+                                ..Default::default()
                             },
                             case.signature_scheme(),
                         );
@@ -976,15 +897,8 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let anchors = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        );
+                        let anchors =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme());
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = conversation_id();
                         alice_central
@@ -994,10 +908,9 @@ pub mod tests {
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         let cert = create_single_certificate(
                             CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
                                 common_name: Some("wire2.com".to_string()),
                                 domain: Some("wire2.com".to_string()),
-                                expiration: Duration::from_secs(10),
+                                ..Default::default()
                             },
                             case.signature_scheme(),
                             false,
@@ -1042,15 +955,8 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let anchors = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        );
+                        let anchors =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme());
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = conversation_id();
                         alice_central
@@ -1096,15 +1002,8 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let anchors = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        );
+                        let anchors =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme());
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = conversation_id();
                         alice_central
@@ -1117,7 +1016,7 @@ pub mod tests {
                                 org: "Project Zeta 2 GmBh".to_string(),
                                 common_name: Some("wire2.com".to_string()),
                                 domain: Some("wire2.com".to_string()),
-                                expiration: Duration::from_secs(10),
+                                ..Default::default()
                             },
                             case.signature_scheme(),
                         );
@@ -1165,15 +1064,8 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let anchors = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        );
+                        let anchors =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme());
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = conversation_id();
                         alice_central
@@ -1214,15 +1106,8 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let anchors = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        );
+                        let anchors =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme());
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = conversation_id();
                         alice_central
@@ -1263,16 +1148,9 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let anchors: PerDomainTrustAnchor = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        )
-                        .into();
+                        let anchors: PerDomainTrustAnchor =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme())
+                                .into();
                         let old_chain = anchors.intermediate_certificate_chain.clone();
                         case.cfg.per_domain_trust_anchors = vec![anchors];
                         let id = conversation_id();
@@ -1281,16 +1159,9 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        let new_anchors: PerDomainTrustAnchor = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        )
-                        .into();
+                        let new_anchors: PerDomainTrustAnchor =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme())
+                                .into();
                         let new_chain = new_anchors.intermediate_certificate_chain.clone();
 
                         // adding anchors to group
@@ -1338,15 +1209,8 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         use x509_cert::der::Encode;
-                        let anchors = create_intermediate_certificates(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                        );
+                        let anchors =
+                            create_intermediate_certificates(CertificateParams::default(), case.signature_scheme());
                         case.cfg.per_domain_trust_anchors = vec![anchors.clone().into()];
                         let id = conversation_id();
                         alice_central
@@ -1408,10 +1272,8 @@ pub mod tests {
                         // adding anchors to group
                         let anchors = create_intermediate_certificates(
                             CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
                                 expiration: Duration::ZERO,
+                                ..Default::default()
                             },
                             case.signature_scheme(),
                         );
@@ -1471,22 +1333,13 @@ pub mod tests {
                                 org: "World Domination Inc".to_string(),
                                 common_name: Some("World Domination".to_string()),
                                 domain: None,
-                                expiration: Duration::from_secs(10),
+                                ..Default::default()
                             },
                             case.signature_scheme(),
                             false,
                         );
 
-                        let ca = create_single_certificate(
-                            CertificateParams {
-                                org: "Project Zeta GmBh".to_string(),
-                                common_name: Some("wire.com".to_string()),
-                                domain: Some("wire.com".to_string()),
-                                expiration: Duration::from_secs(10),
-                            },
-                            case.signature_scheme(),
-                            true,
-                        );
+                        let ca = create_single_certificate(CertificateParams::default(), case.signature_scheme(), true);
 
                         // replace with manual openmls gce
                         let commit = alice_central
