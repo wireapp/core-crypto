@@ -1,8 +1,9 @@
-use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::group_context::GroupContext;
 use openmls_traits::OpenMlsCryptoProvider;
 use openmls_x509_credential::X509Ext;
 use x509_cert::{der::Decode, Certificate, PkiPath};
+
+use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
     mls::{
@@ -359,35 +360,25 @@ pub(crate) fn extract_domain_names(certificate: &Certificate) -> CryptoResult<Ve
 pub mod tests {
     use std::time::Duration;
 
+    use wasm_bindgen_test::*;
+
     use crate::{
-        mls::{
-            conversation::{
-                config::MlsConversationConfiguration, handshake::MlsConversationCreationMessage, ConversationId,
-            },
-            credential::typ::MlsCredentialType,
-            MlsCentral,
-        },
-        test_utils::{conversation_id, TestCase},
-        CryptoResult,
+        mls::{conversation::ConversationId, credential::trust_anchor::extract_domain_names, MlsCentral},
+        test_utils::{x509::*, *},
+        CryptoError, CryptoResult,
     };
+    use openmls::prelude::CryptoError as MlsCryptoError;
+
+    use crate::{mls::credential::trust_anchor::PerDomainTrustAnchor, MlsError};
+
+    wasm_bindgen_test_configure!(run_in_browser);
 
     mod domain_name_extraction {
-        use crate::{mls::credential::trust_anchor::extract_domain_names, test_utils::TestCase};
-
         use super::*;
-        use crate::{
-            test_utils::{x509::*, *},
-            CryptoError,
-        };
-        use openmls_traits::types::Ciphersuite;
-        use wasm_bindgen_test::*;
-
-        wasm_bindgen_test_configure!(run_in_browser);
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         fn should_extract_domain_name(case: TestCase) {
-            let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
             let cert = create_single_certificate(
                 CertificateParams {
                     org: "Project Zeta GmBh".to_string(),
@@ -395,7 +386,7 @@ pub mod tests {
                     domain: Some("wire.com".to_string()),
                     expiration: Duration::from_secs(10),
                 },
-                ciphersuite.into(),
+                case.signature_scheme(),
                 false,
             );
 
@@ -406,7 +397,6 @@ pub mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         fn should_extract_domain_name_common_name(case: TestCase) {
-            let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
             let cert = create_single_certificate(
                 CertificateParams {
                     org: "Project Zeta GmBh".to_string(),
@@ -414,7 +404,7 @@ pub mod tests {
                     domain: None,
                     expiration: Duration::from_secs(10),
                 },
-                ciphersuite.into(),
+                case.signature_scheme(),
                 false,
             );
 
@@ -425,7 +415,6 @@ pub mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         fn should_fail_extract_domain_name(case: TestCase) {
-            let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
             let cert = create_single_certificate(
                 CertificateParams {
                     org: "Project Zeta GmBh".to_string(),
@@ -433,7 +422,7 @@ pub mod tests {
                     domain: None,
                     expiration: Duration::from_secs(10),
                 },
-                ciphersuite.into(),
+                case.signature_scheme(),
                 false,
             );
 
@@ -445,16 +434,6 @@ pub mod tests {
     mod on_group_creation {
 
         use super::*;
-        use crate::{
-            mls::credential::trust_anchor::PerDomainTrustAnchor,
-            test_utils::{x509::*, *},
-            CryptoError, MlsError,
-        };
-        use openmls::prelude::CryptoError as MlsCryptoError;
-        use openmls_traits::types::Ciphersuite;
-        use wasm_bindgen_test::*;
-
-        wasm_bindgen_test_configure!(run_in_browser);
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -464,7 +443,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -472,10 +450,15 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // both must have the anchors in the extensions
                         let alice_anchors = alice_central
@@ -503,7 +486,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -511,7 +493,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::ZERO,
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let error = create_group(&mut alice_central, &mut bob_central, &case)
@@ -536,7 +518,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let cert = create_single_certificate(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -544,7 +525,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                             true,
                         );
                         case.cfg.per_domain_trust_anchors = vec![cert.into()];
@@ -575,7 +556,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let cert = create_single_certificate(
                             CertificateParams {
                                 org: "World Domination Inc".to_string(),
@@ -583,7 +563,7 @@ pub mod tests {
                                 domain: None,
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                             false,
                         );
                         let ca = create_single_certificate(
@@ -593,7 +573,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                             true,
                         );
                         case.cfg.per_domain_trust_anchors = vec![vec![cert, ca].into()];
@@ -619,7 +599,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let mut anchor: PerDomainTrustAnchor = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -627,7 +606,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::ZERO,
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         )
                         .into();
                         anchor.domain_name = "wrong.domain.cc".to_string();
@@ -651,7 +630,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         // No domain at all
                         let anchor: PerDomainTrustAnchor = create_intermediate_certificates(
                             CertificateParams {
@@ -660,7 +638,7 @@ pub mod tests {
                                 domain: None,
                                 expiration: Duration::ZERO,
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         )
                         .into();
                         case.cfg.per_domain_trust_anchors = vec![anchor];
@@ -677,17 +655,7 @@ pub mod tests {
     }
 
     mod update_anchors {
-
         use super::*;
-        use crate::{
-            test_utils::{x509::*, *},
-            CryptoError, MlsError,
-        };
-        use openmls::prelude::CryptoError as MlsCryptoError;
-        use openmls_traits::types::Ciphersuite;
-        use wasm_bindgen_test::*;
-
-        wasm_bindgen_test_configure!(run_in_browser);
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -697,7 +665,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -705,7 +672,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
                         let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
                         // anchors should not be present
@@ -754,7 +721,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -762,7 +728,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
@@ -773,7 +739,7 @@ pub mod tests {
                                 domain: Some("wire2.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
 
                         // adding anchors to group
@@ -817,7 +783,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -825,7 +790,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
@@ -837,7 +802,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
                         // try adding anchors to group
                         let error = alice_central
@@ -870,7 +835,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -878,7 +842,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
@@ -889,7 +853,7 @@ pub mod tests {
                                 domain: None,
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                             false,
                         );
                         let ca = create_single_certificate(
@@ -899,7 +863,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                             true,
                         );
 
@@ -937,7 +901,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -945,7 +908,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
@@ -956,7 +919,7 @@ pub mod tests {
                                 domain: Some("wire2.com".to_string()),
                                 expiration: Duration::ZERO,
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
 
                         // try adding anchors to group
@@ -993,7 +956,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -1001,7 +963,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
@@ -1012,7 +974,7 @@ pub mod tests {
                                 domain: Some("wire2.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                             false,
                         );
 
@@ -1045,17 +1007,8 @@ pub mod tests {
     }
 
     mod remove_anchors {
+
         use super::*;
-        use crate::{
-            mls::credential::trust_anchor::PerDomainTrustAnchor,
-            test_utils::{x509::*, *},
-            CryptoError,
-        };
-
-        use openmls_traits::types::Ciphersuite;
-        use wasm_bindgen_test::*;
-
-        wasm_bindgen_test_configure!(run_in_browser);
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -1065,7 +1018,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -1073,7 +1025,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
@@ -1115,7 +1067,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -1123,7 +1074,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
@@ -1134,7 +1085,7 @@ pub mod tests {
                                 domain: Some("wire2.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
 
                         // adding anchors to group
@@ -1180,7 +1131,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -1188,7 +1138,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
@@ -1225,7 +1175,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -1233,7 +1182,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
                         let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
@@ -1270,7 +1219,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let anchors: PerDomainTrustAnchor = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -1278,7 +1226,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         )
                         .into();
                         let old_chain = anchors.intermediate_certificate_chain.clone();
@@ -1291,7 +1239,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         )
                         .into();
                         let new_chain = new_anchors.intermediate_certificate_chain.clone();
@@ -1341,7 +1289,6 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         use x509_cert::der::Encode;
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -1349,7 +1296,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.clone().into()];
                         let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
@@ -1387,17 +1334,8 @@ pub mod tests {
     }
 
     mod receiver_validation {
+
         use super::*;
-        use crate::{
-            test_utils::{x509::*, *},
-            CryptoError, MlsError,
-        };
-
-        use openmls::prelude::CryptoError as MlsCryptoError;
-        use openmls_traits::types::Ciphersuite;
-        use wasm_bindgen_test::*;
-
-        wasm_bindgen_test_configure!(run_in_browser);
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -1407,7 +1345,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
 
                         // adding anchors to group
@@ -1418,7 +1355,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::ZERO,
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                         );
 
                         // replace with manual openmls gce
@@ -1463,7 +1400,6 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
                         let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
 
                         // adding anchors to group
@@ -1474,7 +1410,7 @@ pub mod tests {
                                 domain: None,
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                             false,
                         );
 
@@ -1485,7 +1421,7 @@ pub mod tests {
                                 domain: Some("wire.com".to_string()),
                                 expiration: Duration::from_secs(10),
                             },
-                            ciphersuite.into(),
+                            case.signature_scheme(),
                             true,
                         );
 
