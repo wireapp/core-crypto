@@ -63,6 +63,13 @@ branch = "2.x"
 optional = true
 version = "2.0"
 
+rustls = { version = "0.21", features = ["dangerous_configuration", "tls12", "logging"] }
+
+[dependencies.rustls-platform-verifier]
+version = "0.1"
+path = "../../rustls-platform-verifier"
+features = ["dbg"]
+
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 sysinfo = { version = "0.29", default-features = false, features = ["apple-app-store"] }
 async-fs = { version = "1.6", optional = true }

@@ -356,7 +356,7 @@ pub(crate) fn extract_domain_names(certificate: &Certificate) -> CryptoResult<Ve
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use std::time::Duration;
 
     use crate::{
@@ -475,15 +475,7 @@ mod tests {
                             ciphersuite.into(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
 
                         // both must have the anchors in the extensions
                         let alice_anchors = alice_central
@@ -522,15 +514,9 @@ mod tests {
                             ciphersuite.into(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let error = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap_err();
+                        let error = create_group(&mut alice_central, &mut bob_central, &case)
+                            .await
+                            .unwrap_err();
 
                         assert!(matches!(
                             error,
@@ -562,15 +548,7 @@ mod tests {
                             true,
                         );
                         case.cfg.per_domain_trust_anchors = vec![cert.into()];
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
                         // both must have the anchors in the extensions
                         let alice_anchors = alice_central
                             .get_conversation_unchecked(&id)
@@ -619,15 +597,9 @@ mod tests {
                             true,
                         );
                         case.cfg.per_domain_trust_anchors = vec![vec![cert, ca].into()];
-                        let error = dbg!(create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case
-                        )
-                        .await
-                        .unwrap_err());
+                        let error = dbg!(create_group(&mut alice_central, &mut bob_central, &case)
+                            .await
+                            .unwrap_err());
 
                         assert!(matches!(
                             error,
@@ -660,15 +632,9 @@ mod tests {
                         .into();
                         anchor.domain_name = "wrong.domain.cc".to_string();
                         case.cfg.per_domain_trust_anchors = vec![anchor];
-                        let error = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap_err();
+                        let error = create_group(&mut alice_central, &mut bob_central, &case)
+                            .await
+                            .unwrap_err();
 
                         assert!(matches!(error, CryptoError::DomainNamesDontMatch));
                     })
@@ -698,15 +664,9 @@ mod tests {
                         )
                         .into();
                         case.cfg.per_domain_trust_anchors = vec![anchor];
-                        let error = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap_err();
+                        let error = create_group(&mut alice_central, &mut bob_central, &case)
+                            .await
+                            .unwrap_err();
 
                         assert!(matches!(error, CryptoError::DomainNameNotFound));
                     })
@@ -747,15 +707,7 @@ mod tests {
                             },
                             ciphersuite.into(),
                         );
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
                         // anchors should not be present
                         assert!(alice_central
                             .get_conversation_unchecked(&id)
@@ -813,15 +765,7 @@ mod tests {
                             ciphersuite.into(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
                         let new_anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta 2 GmBh".to_string(),
@@ -884,15 +828,7 @@ mod tests {
                             ciphersuite.into(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
 
                         let new_anchors = create_intermediate_certificates(
                             CertificateParams {
@@ -945,15 +881,7 @@ mod tests {
                             ciphersuite.into(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
                         let cert = create_single_certificate(
                             CertificateParams {
                                 org: "World Domination Inc".to_string(),
@@ -1020,15 +948,7 @@ mod tests {
                             ciphersuite.into(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
                         let new_anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -1084,15 +1004,7 @@ mod tests {
                             ciphersuite.into(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
                         let cert = create_single_certificate(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -1164,15 +1076,7 @@ mod tests {
                             ciphersuite.into(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
 
                         // remove anchor to group
                         let commit_bundle = alice_central
@@ -1222,15 +1126,7 @@ mod tests {
                             ciphersuite.into(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
                         let new_anchors = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta 2 GmBh".to_string(),
@@ -1295,15 +1191,7 @@ mod tests {
                             ciphersuite.into(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
 
                         // remove anchor to group
                         let error = alice_central
@@ -1348,15 +1236,7 @@ mod tests {
                             ciphersuite.into(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
 
                         // remove anchor to group
                         let error = alice_central
@@ -1403,15 +1283,7 @@ mod tests {
                         .into();
                         let old_chain = anchors.intermediate_certificate_chain.clone();
                         case.cfg.per_domain_trust_anchors = vec![anchors];
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
                         let new_anchors: PerDomainTrustAnchor = create_intermediate_certificates(
                             CertificateParams {
                                 org: "Project Zeta GmBh".to_string(),
@@ -1480,15 +1352,7 @@ mod tests {
                             ciphersuite.into(),
                         );
                         case.cfg.per_domain_trust_anchors = vec![anchors.clone().into()];
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
 
                         // try adding anchors to group
                         let pems = anchors
@@ -1544,15 +1408,7 @@ mod tests {
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
 
                         // adding anchors to group
                         let anchors = create_intermediate_certificates(
@@ -1608,15 +1464,7 @@ mod tests {
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let ciphersuite: Ciphersuite = case.cfg.ciphersuite.into();
-                        let id = create_group(
-                            case.cfg.clone(),
-                            case.credential_type,
-                            &mut alice_central,
-                            &mut bob_central,
-                            &case,
-                        )
-                        .await
-                        .unwrap();
+                        let id = create_group(&mut alice_central, &mut bob_central, &case).await.unwrap();
 
                         // adding anchors to group
                         let cert = create_single_certificate(
@@ -1675,25 +1523,15 @@ mod tests {
     }
 
     async fn create_group(
-        cfg: MlsConversationConfiguration,
-        credential_type: MlsCredentialType,
         alice_central: &mut MlsCentral,
-        bob_central: &mut MlsCentral,
-        test_case: &TestCase,
+        mut bob_central: &mut MlsCentral,
+        case: &TestCase,
     ) -> CryptoResult<ConversationId> {
         let id = conversation_id();
-        let custom_cfg = cfg.custom.clone();
-        alice_central.new_conversation(&id, credential_type, cfg).await?;
-        assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
-
-        let MlsConversationCreationMessage { welcome, .. } = alice_central
-            .add_members_to_conversation(&id, &mut [bob_central.rand_member(test_case).await])
+        alice_central
+            .new_conversation(&id, case.credential_type, case.cfg.clone())
             .await?;
-        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-        alice_central.commit_accepted(&id).await?;
-        bob_central
-            .try_join_from_welcome(&id, welcome.into(), custom_cfg, vec![alice_central])
-            .await?;
+        alice_central.invite_all(case, &id, [&mut bob_central]).await.unwrap();
         Ok(id)
     }
 }
