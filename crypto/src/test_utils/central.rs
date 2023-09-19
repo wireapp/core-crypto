@@ -570,15 +570,6 @@ impl MlsConversation {
         self.group.export_group_context().extensions()
     }
 
-    pub fn per_domain_trust_anchors(&self) -> Vec<PerDomainTrustAnchor> {
-        self.extensions()
-            .per_domain_trust_anchors()
-            .unwrap()
-            .iter()
-            .map(|a| PerDomainTrustAnchor::try_from(a).unwrap())
-            .collect()
-    }
-
     pub async fn add_per_domain_trust_anchor_unchecked(
         &mut self,
         trust_anchor: PerDomainTrustAnchor,

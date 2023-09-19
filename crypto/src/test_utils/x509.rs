@@ -8,6 +8,7 @@ use x509_cert::{
 };
 
 use crate::mls::credential::trust_anchor::{extract_domain_names, PerDomainTrustAnchor};
+use crate::prelude::{ConversationId, MlsCentral, MlsConversation};
 
 /// Params for generating the Certificate chain
 #[derive(Debug, Clone)]
@@ -181,5 +182,21 @@ impl SignatureSchemeEx for SignatureScheme {
             SignatureScheme::ED25519 => &rcgen::PKCS_ED25519,
             _ => panic!("Unsupported signature scheme"),
         }
+    }
+}
+
+impl MlsCentral {
+    pub async fn per_domain_trust_anchors(&mut self, id: &ConversationId) -> Vec<PerDomainTrustAnchor> {
+        self.get_conversation_unchecked(id).await.per_domain_trust_anchors()
+    }
+}
+
+impl MlsConversation {
+    pub fn per_domain_trust_anchors(&self) -> Vec<PerDomainTrustAnchor> {
+        let anchors = self.extensions().per_domain_trust_anchors().unwrap();
+        anchors
+            .iter()
+            .map(|a| PerDomainTrustAnchor::try_from(a).unwrap())
+            .collect()
     }
 }

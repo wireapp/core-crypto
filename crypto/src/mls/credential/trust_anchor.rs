@@ -113,20 +113,76 @@ impl PerDomainTrustAnchor {
         // ensure that the root is also valid
         root_cert.is_valid().map_err(MlsError::from)?;
 
-        check_root_in_trust_store(root_cert)?;
-
         let encoded_chain = pem::parse_many(&self.intermediate_certificate_chain)?
             .into_iter()
             .map(|p| p.into_contents())
             .collect::<Vec<_>>();
         Ok(encoded_chain)
     }
-}
 
-/// Checks the root cert against the trust store. In wasm maybe use webpki-roots (https://github.com/rustls/webpki-roots) crate
-fn check_root_in_trust_store(_root: &Certificate) -> CryptoResult<()> {
-    // TODO: verify root certificate is valid in the device's trust store
-    Ok(())
+    /// Validates the trust anchor and return its encoded chain encoded to der.
+    fn new_validate(
+        &self,
+        backend: &MlsCryptoProvider,
+        group_context: Option<&GroupContext>,
+    ) -> CryptoResult<Vec<Vec<u8>>> {
+        // parse PEM
+        let mut certificate_chain: PkiPath = pem::parse_many(&self.intermediate_certificate_chain)?
+            .iter()
+            .map(|p| Certificate::from_der(p.contents()))
+            .collect::<Result<PkiPath, x509_cert::der::Error>>()?;
+
+        // verify domain_name is unique
+        if let Some(group_context) = group_context {
+            if group_context
+                .extensions()
+                .per_domain_trust_anchors()
+                .is_some_and(|anchors| {
+                    anchors
+                        .iter()
+                        .any(|anchor| anchor.domain_name() == self.domain_name.as_bytes())
+                })
+            {
+                return Err(CryptoError::DuplicateDomainName);
+            }
+        }
+
+        // empty chains are not allowed
+        if certificate_chain.is_empty() {
+            return Err(CryptoError::InvalidCertificateChain);
+        }
+        let leaf_cert = certificate_chain.remove(0);
+
+        // validate domain in the leaf matches with the one supplied
+        let domain_names = extract_domain_names(&leaf_cert)?;
+        if !domain_names.contains(&self.domain_name) {
+            return Err(CryptoError::DomainNamesDontMatch);
+        }
+
+        // verify the whole chain
+        let root_cert = certificate_chain
+            .iter()
+            .map(Ok)
+            .reduce(
+                |child, parent| -> Result<&Certificate, openmls_traits::types::CryptoError> {
+                    let child = child?;
+                    let parent = parent?;
+                    child.is_valid()?;
+                    child.is_signed_by(backend.crypto(), parent)?;
+                    Ok(parent)
+                },
+            )
+            .unwrap()
+            .map_err(MlsError::from)?;
+        // ensure that the root is also valid
+        root_cert.is_valid().map_err(MlsError::from)?;
+
+        let encoded_chain = pem::parse_many(&self.intermediate_certificate_chain)?
+            .into_iter()
+            .map(pem::Pem::into_contents)
+            .collect::<Vec<_>>();
+        Ok(encoded_chain)
+    }
 }
 
 fn is_trust_anchor_new(new_anchor: &openmls::prelude::PerDomainTrustAnchor, old_group_context: &GroupContext) -> bool {
@@ -515,14 +571,8 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
                         // both must have the anchors in the extensions
-                        let alice_anchors = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
-                        let bob_anchors = bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .per_domain_trust_anchors();
+                        let alice_anchors = alice_central.per_domain_trust_anchors().await;
+                        let bob_anchors = bob_central.per_domain_trust_anchors().await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
                         alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
