@@ -1,20 +1,13 @@
 use openmls::prelude::group_context::GroupContext;
 use openmls_traits::OpenMlsCryptoProvider;
-use openmls_x509_credential::X509Ext;
+use openmls_x509_credential::X509Ext as _;
 use x509_cert::{der::Decode, Certificate, PkiPath};
 
-use mls_crypto_provider::MlsCryptoProvider;
-
-use crate::{
-    mls::{
-        client::Client,
-        conversation::{group_info::MlsGroupInfoBundle, handshake::MlsCommitBundle, ConversationId},
-        MlsCentral,
-    },
-    prelude::MlsConversation,
-    MlsError,
+use crate::prelude::{
+    Client, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsCommitBundle, MlsConversation, MlsError,
+    MlsGroupInfoBundle,
 };
-use crate::{CryptoError, CryptoResult};
+use mls_crypto_provider::MlsCryptoProvider;
 
 /// A wrapper containing the configuration for trust anchors to be added in the group's context
 /// extensions
@@ -414,17 +407,15 @@ pub(crate) fn extract_domain_names(certificate: &Certificate) -> CryptoResult<Ve
 
 #[cfg(test)]
 pub mod tests {
+    use super::*;
     use std::time::Duration;
 
-    use openmls::prelude::CryptoError as MlsCryptoError;
     use wasm_bindgen_test::*;
 
     use crate::{
-        mls::credential::trust_anchor::extract_domain_names,
+        mls::credential::{trust_anchor::extract_domain_names, trust_anchor::PerDomainTrustAnchor},
         test_utils::{x509::*, *},
-        CryptoError,
     };
-    use crate::{mls::credential::trust_anchor::PerDomainTrustAnchor, MlsError};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
