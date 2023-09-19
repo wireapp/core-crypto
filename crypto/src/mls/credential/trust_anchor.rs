@@ -412,6 +412,8 @@ pub mod tests {
 
     use wasm_bindgen_test::*;
 
+    use openmls::prelude::CryptoError as MlsCryptoError;
+
     use crate::{
         mls::credential::{trust_anchor::extract_domain_names, trust_anchor::PerDomainTrustAnchor},
         test_utils::{x509::*, *},
