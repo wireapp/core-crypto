@@ -44,7 +44,7 @@ impl PerDomainTrustAnchor {
         backend: &MlsCryptoProvider,
         group_context: Option<&GroupContext>,
     ) -> CryptoResult<openmls::extensions::PerDomainTrustAnchor> {
-        let certificate_chain = self.validate(backend, group_context)?;
+        let certificate_chain = self.new_validate(group_context)?;
         Ok(openmls::extensions::PerDomainTrustAnchor::new(
             self.domain_name.into(),
             openmls::prelude::CredentialType::X509,
@@ -149,10 +149,6 @@ impl PerDomainTrustAnchor {
             return Err(CryptoError::DomainNamesDontMatch);
         }
 
-        // empty chains are not allowed
-        if certificate_chain.is_empty() {
-            return Err(CryptoError::InvalidCertificateChain);
-        }
         // verify the whole chain
         use rustls::client::ServerCertVerifier as _;
         let verifier = rustls_platform_verifier::Verifier::new();
@@ -165,14 +161,16 @@ impl PerDomainTrustAnchor {
 
         let server_name = rustls::ServerName::try_from(self.domain_name.as_str())?;
 
-        verifier.verify_server_cert(
-            &end_identity,
-            &intermediates,
-            &server_name,
-            &mut std::iter::empty(),
-            &[],
-            std::time::SystemTime::now(),
-        )?;
+        verifier
+            .verify_server_cert(
+                &end_identity,
+                &intermediates,
+                &server_name,
+                &mut std::iter::empty(),
+                &[],
+                std::time::SystemTime::now(),
+            )
+            .unwrap();
 
         /*// verify the whole chain
         let root_cert = certificate_chain
@@ -231,7 +229,7 @@ impl MlsConversation {
                     let anchor = PerDomainTrustAnchor::try_from(anchor)?;
                     // the domain will obviously be in the context and will be already applied by
                     // other client, so the domain uniqueness should not be validated here
-                    anchor.validate(backend, None)?;
+                    anchor.new_validate(None)?;
                     Ok(())
                 })?;
         }
@@ -566,6 +564,7 @@ pub mod tests {
                     Box::pin(async move {
                         let cert =
                             new_self_signed_certificate(CertificateParams::default(), case.signature_scheme(), true);
+
                         case.cfg.per_domain_trust_anchors = vec![cert.into()];
                         let id = conversation_id();
                         alice_central
@@ -573,6 +572,7 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+
                         // both must have the anchors in the extensions
                         let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
                         let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
