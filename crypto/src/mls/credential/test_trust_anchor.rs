@@ -78,6 +78,26 @@ fn toy_2() {
         .unwrap();
 }
 
+#[test]
+fn toy_3() {
+    // let verifier = rustls_platform_verifier::Verifier::new_with_fake_root(ROOT1);
+    let verifier = rustls_platform_verifier::Verifier::new();
+    let end_entity = rustls::Certificate(ROOT1.to_vec());
+    // let intermediates = [end_entity.clone()];
+    let intermediates = [];
+    let server_name = rustls::client::ServerName::try_from("example.com").unwrap();
+    verifier
+        .verify_server_cert(
+            &end_entity,
+            &intermediates,
+            &server_name,
+            &mut std::iter::empty(),
+            &[],
+            std::time::SystemTime::now(),
+        )
+        .unwrap();
+}
+
 pub fn rand_base64_str(size: usize) -> String {
     use base64::Engine as _;
     base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(rand_str(size))
