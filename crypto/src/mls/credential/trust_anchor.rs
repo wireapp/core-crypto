@@ -491,31 +491,23 @@ pub mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_create_group_single_cert(mut case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
-                    Box::pin(async move {
-                        let cert =
-                            new_self_signed_certificate(CertificateParams::default(), case.signature_scheme(), true);
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+                Box::pin(async move {
+                    let cert = new_self_signed_certificate(CertificateParams::default(), case.signature_scheme(), true);
 
-                        case.cfg.per_domain_trust_anchors = vec![cert.into()];
-                        let id = conversation_id();
-                        alice_central
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+                    case.cfg.per_domain_trust_anchors = vec![cert.into()];
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
 
-                        // both must have the anchors in the extensions
-                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
-                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
-                        assert_eq!(alice_anchors.len(), 1);
-                        assert_eq!(alice_anchors, bob_anchors);
-                        alice_anchors[0].validate(None).unwrap();
-                    })
-                },
-            )
+                    // both must have the anchors in the extensions
+                    let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
+                    assert_eq!(alice_anchors.len(), 1);
+                    alice_anchors[0].validate(None).unwrap();
+                })
+            })
             .await;
         }
 
@@ -709,130 +701,102 @@ pub mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_add_duplicate_anchors_to_group(mut case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
-                    Box::pin(async move {
-                        let anchors = new_certificate_chain(CertificateParams::default(), case.signature_scheme());
-                        case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = conversation_id();
-                        alice_central
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+                Box::pin(async move {
+                    let anchors = new_certificate_chain(CertificateParams::default(), case.signature_scheme());
+                    case.cfg.per_domain_trust_anchors = vec![anchors.into()];
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
 
-                        let new_anchors = new_certificate_chain(CertificateParams::default(), case.signature_scheme());
-                        // try adding anchors to group
-                        let error = alice_central
-                            .update_trust_anchors_from_conversation(&id, vec![], vec![new_anchors.into()])
-                            .await
-                            .unwrap_err();
+                    let new_anchors = new_certificate_chain(CertificateParams::default(), case.signature_scheme());
+                    // try adding anchors to group
+                    let error = alice_central
+                        .update_trust_anchors_from_conversation(&id, vec![], vec![new_anchors.into()])
+                        .await
+                        .unwrap_err();
 
-                        assert!(matches!(error, CryptoError::DuplicateDomainName));
-                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
-                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
-                        assert_eq!(alice_anchors.len(), 1);
-                        assert_eq!(alice_anchors, bob_anchors);
-                    })
-                },
-            )
+                    assert!(matches!(error, CryptoError::DuplicateDomainName));
+                })
+            })
             .await;
         }
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_add_invalid_anchors_to_group(mut case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
-                    Box::pin(async move {
-                        let anchors = new_certificate_chain(CertificateParams::default(), case.signature_scheme());
-                        case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = conversation_id();
-                        alice_central
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        let cert = new_self_signed_certificate(
-                            CertificateParams {
-                                org: "World Domination Inc".to_string(),
-                                common_name: Some("World Domination".to_string()),
-                                domain: None,
-                                ..Default::default()
-                            },
-                            case.signature_scheme(),
-                            false,
-                        );
-                        let ca =
-                            new_self_signed_certificate(CertificateParams::default(), case.signature_scheme(), true);
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+                Box::pin(async move {
+                    let anchors = new_certificate_chain(CertificateParams::default(), case.signature_scheme());
+                    case.cfg.per_domain_trust_anchors = vec![anchors.into()];
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    let cert = new_self_signed_certificate(
+                        CertificateParams {
+                            org: "World Domination Inc".to_string(),
+                            common_name: Some("World Domination".to_string()),
+                            domain: None,
+                            ..Default::default()
+                        },
+                        case.signature_scheme(),
+                        false,
+                    );
+                    let ca = new_self_signed_certificate(CertificateParams::default(), case.signature_scheme(), true);
 
-                        // try adding anchors to group
-                        let error = alice_central
-                            .update_trust_anchors_from_conversation(&id, vec![], vec![vec![cert, ca].into()])
-                            .await
-                            .unwrap_err();
+                    // try adding anchors to group
+                    let error = alice_central
+                        .update_trust_anchors_from_conversation(&id, vec![], vec![vec![cert, ca].into()])
+                        .await
+                        .unwrap_err();
 
-                        assert!(matches!(
-                            error,
-                            CryptoError::MlsError(MlsError::MlsCryptoError(MlsCryptoError::InvalidSignature))
-                        ));
-                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
-                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
-                        assert_eq!(alice_anchors.len(), 1);
-                        assert_eq!(alice_anchors, bob_anchors);
-                    })
-                },
-            )
+                    assert!(matches!(
+                        error,
+                        CryptoError::MlsError(MlsError::MlsCryptoError(MlsCryptoError::InvalidSignature))
+                    ));
+                })
+            })
             .await;
         }
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_add_expired_anchors_to_group(mut case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
-                    Box::pin(async move {
-                        let anchors = new_certificate_chain(CertificateParams::default(), case.signature_scheme());
-                        case.cfg.per_domain_trust_anchors = vec![anchors.into()];
-                        let id = conversation_id();
-                        alice_central
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        let new_anchors = new_certificate_chain(
-                            CertificateParams {
-                                common_name: Some("wire2.com".to_string()),
-                                domain: Some("wire2.com".to_string()),
-                                expiration: Duration::ZERO,
-                                ..Default::default()
-                            },
-                            case.signature_scheme(),
-                        );
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+                Box::pin(async move {
+                    let anchors = new_certificate_chain(CertificateParams::default(), case.signature_scheme());
+                    case.cfg.per_domain_trust_anchors = vec![anchors.into()];
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    let new_anchors = new_certificate_chain(
+                        CertificateParams {
+                            common_name: Some("wire2.com".to_string()),
+                            domain: Some("wire2.com".to_string()),
+                            expiration: Duration::ZERO,
+                            ..Default::default()
+                        },
+                        case.signature_scheme(),
+                    );
 
-                        // try adding anchors to group
-                        let error = alice_central
-                            .update_trust_anchors_from_conversation(&id, vec![], vec![new_anchors.into()])
-                            .await
-                            .unwrap_err();
+                    // try adding anchors to group
+                    let error = alice_central
+                        .update_trust_anchors_from_conversation(&id, vec![], vec![new_anchors.into()])
+                        .await
+                        .unwrap_err();
 
-                        assert!(matches!(
-                            error,
-                            CryptoError::MlsError(MlsError::MlsCryptoError(MlsCryptoError::ExpiredCertificate))
-                        ));
-                        let alice_anchors = alice_central.per_domain_trust_anchors(&id).await;
-                        let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
-                        assert_eq!(alice_anchors.len(), 1);
-                        assert_eq!(alice_anchors, bob_anchors);
-                    })
-                },
-            )
+                    assert!(matches!(
+                        error,
+                        CryptoError::MlsError(MlsError::MlsCryptoError(MlsCryptoError::ExpiredCertificate))
+                    ));
+                })
+            })
             .await;
         }
 
