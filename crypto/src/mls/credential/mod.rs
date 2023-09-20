@@ -4,7 +4,6 @@ use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 
 pub(crate) mod ext;
-mod test_trust_anchor;
 pub(crate) mod trust_anchor;
 pub(crate) mod typ;
 pub(crate) mod x509;

@@ -27,10 +27,7 @@ use openmls::prelude::{
 use openmls_traits::types::Ciphersuite;
 use serde::{Deserialize, Serialize};
 
-use mls_crypto_provider::MlsCryptoProvider;
-
-use crate::mls::credential::trust_anchor::PerDomainTrustAnchor;
-use crate::prelude::{CryptoResult, MlsCiphersuite};
+use crate::prelude::{CryptoResult, MlsCiphersuite, PerDomainTrustAnchor};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -82,14 +79,11 @@ impl MlsConversationConfiguration {
 
     /// Generates an `MlsGroupConfig` from this configuration
     #[inline(always)]
-    pub fn as_openmls_default_configuration(
-        &self,
-        backend: &MlsCryptoProvider,
-    ) -> CryptoResult<openmls::group::MlsGroupConfig> {
+    pub fn as_openmls_default_configuration(&self) -> CryptoResult<openmls::group::MlsGroupConfig> {
         let trust_certificates = self.per_domain_trust_anchors.clone().into_iter().try_fold(
             vec![],
             |mut acc, c| -> CryptoResult<Vec<_>> {
-                acc.push(c.try_as_checked_openmls_trust_anchor(backend, None)?);
+                acc.push(c.try_as_checked_openmls_trust_anchor(None)?);
                 Ok(acc)
             },
         )?;

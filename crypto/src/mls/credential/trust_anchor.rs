@@ -1,6 +1,4 @@
 use openmls::prelude::group_context::GroupContext;
-use openmls_traits::OpenMlsCryptoProvider;
-use openmls_x509_credential::X509Ext as _;
 use x509_cert::der::Encode;
 use x509_cert::{der::Decode, Certificate, PkiPath};
 
@@ -41,10 +39,9 @@ impl PerDomainTrustAnchor {
     /// It performs validation first
     pub fn try_as_checked_openmls_trust_anchor(
         self,
-        backend: &MlsCryptoProvider,
         group_context: Option<&GroupContext>,
     ) -> CryptoResult<openmls::extensions::PerDomainTrustAnchor> {
-        let certificate_chain = self.new_validate(group_context)?;
+        let certificate_chain = self.validate(group_context)?;
         Ok(openmls::extensions::PerDomainTrustAnchor::new(
             self.domain_name.into(),
             openmls::prelude::CredentialType::X509,
@@ -54,68 +51,7 @@ impl PerDomainTrustAnchor {
     }
 
     /// Validates the trust anchor and return its encoded chain encoded to der.
-    fn validate(
-        &self,
-        backend: &MlsCryptoProvider,
-        group_context: Option<&GroupContext>,
-    ) -> CryptoResult<Vec<Vec<u8>>> {
-        // parse PEM
-        let certificate_chain = pem::parse_many(&self.intermediate_certificate_chain)?
-            .iter()
-            .map(|p| Certificate::from_der(p.contents()))
-            .collect::<Result<PkiPath, x509_cert::der::Error>>()?;
-
-        // verify domain_name is unique
-        if let Some(group_context) = group_context {
-            if group_context
-                .extensions()
-                .per_domain_trust_anchors()
-                .is_some_and(|anchors| {
-                    anchors
-                        .iter()
-                        .any(|anchor| String::from_utf8_lossy(anchor.domain_name()) == self.domain_name)
-                })
-            {
-                return Err(CryptoError::DuplicateDomainName);
-            }
-        }
-
-        // empty chains are not allowed
-        let leaf_cert = certificate_chain.first().ok_or(CryptoError::InvalidCertificateChain)?;
-
-        // validate domain in the leaf matches with the one supplied
-        let domain_names = extract_domain_names(leaf_cert)?;
-        if !domain_names.contains(&self.domain_name) {
-            return Err(CryptoError::DomainNamesDontMatch);
-        }
-
-        // verify the whole chain
-        let root_cert = certificate_chain
-            .iter()
-            .map(Ok)
-            .reduce(
-                |child, parent| -> Result<&Certificate, openmls_traits::types::CryptoError> {
-                    let child = child?;
-                    let parent = parent?;
-                    child.is_valid()?;
-                    child.is_signed_by(backend.crypto(), parent)?;
-                    Ok(parent)
-                },
-            )
-            .unwrap()
-            .map_err(MlsError::from)?;
-        // ensure that the root is also valid
-        root_cert.is_valid().map_err(MlsError::from)?;
-
-        let encoded_chain = pem::parse_many(&self.intermediate_certificate_chain)?
-            .into_iter()
-            .map(|p| p.into_contents())
-            .collect::<Vec<_>>();
-        Ok(encoded_chain)
-    }
-
-    /// Validates the trust anchor and return its encoded chain encoded to der.
-    fn new_validate(&self, group_context: Option<&GroupContext>) -> CryptoResult<Vec<Vec<u8>>> {
+    fn validate(&self, group_context: Option<&GroupContext>) -> CryptoResult<Vec<Vec<u8>>> {
         // parse PEM
         let mut certificate_chain: PkiPath = pem::parse_many(&self.intermediate_certificate_chain)?
             .iter()
@@ -218,7 +154,6 @@ impl MlsConversation {
     pub(crate) fn validate_received_trust_anchors(
         old_group_context: &GroupContext,
         commit_group_context: &GroupContext,
-        backend: &MlsCryptoProvider,
     ) -> CryptoResult<()> {
         if let Some(new_anchors) = commit_group_context.extensions().per_domain_trust_anchors() {
             // find new anchors
@@ -229,7 +164,7 @@ impl MlsConversation {
                     let anchor = PerDomainTrustAnchor::try_from(anchor)?;
                     // the domain will obviously be in the context and will be already applied by
                     // other client, so the domain uniqueness should not be validated here
-                    anchor.new_validate(None)?;
+                    anchor.validate(None)?;
                     Ok(())
                 })?;
         }
@@ -242,7 +177,6 @@ impl MlsConversation {
         &self,
         remove_domain_names: Vec<String>,
         add_trust_anchors: Vec<PerDomainTrustAnchor>,
-        backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<openmls::prelude::PerDomainTrustAnchor>> {
         if remove_domain_names.is_empty() && add_trust_anchors.is_empty() {
             return Err(CryptoError::EmptyTrustAnchorUpdate);
@@ -287,7 +221,7 @@ impl MlsConversation {
         let new_anchors = anchors
             .into_iter()
             .chain(add_trust_anchors.into_iter())
-            .map(|anchor| anchor.try_as_checked_openmls_trust_anchor(backend, None))
+            .map(|anchor| anchor.try_as_checked_openmls_trust_anchor(None))
             .collect::<CryptoResult<Vec<_>>>()?;
         Ok(new_anchors)
     }
@@ -304,7 +238,7 @@ impl MlsConversation {
         // parse back to mls and validate the anchors
         let context = self.group.export_group_context();
         let mut extensions = context.extensions().clone();
-        let new_anchors = self.compute_anchors_for_next_epoch(remove_domain_names, add_trust_anchors, backend)?;
+        let new_anchors = self.compute_anchors_for_next_epoch(remove_domain_names, add_trust_anchors)?;
         extensions.add_or_replace(openmls::prelude::Extension::PerDomainTrustAnchor(new_anchors));
 
         // update the group extension through a GCE commit
@@ -519,7 +453,7 @@ pub mod tests {
                         let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
-                        alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
+                        alice_anchors[0].validate(None).unwrap();
                     })
                 },
             )
@@ -578,7 +512,7 @@ pub mod tests {
                         let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
-                        alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
+                        alice_anchors[0].validate(None).unwrap();
                     })
                 },
             )
@@ -712,7 +646,7 @@ pub mod tests {
                         let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
-                        alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
+                        alice_anchors[0].validate(None).unwrap();
                     })
                 },
             )
@@ -762,8 +696,8 @@ pub mod tests {
                         let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 2);
                         assert_eq!(alice_anchors, bob_anchors);
-                        alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
-                        alice_anchors[1].validate(&alice_central.mls_backend, None).unwrap();
+                        alice_anchors[0].validate(None).unwrap();
+                        alice_anchors[1].validate(None).unwrap();
                         assert_eq!(alice_anchors[0].domain_name, "wire.com");
                         assert_eq!(alice_anchors[1].domain_name, "wire2.com");
                     })
@@ -1040,7 +974,7 @@ pub mod tests {
                         let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
-                        alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
+                        alice_anchors[0].validate(None).unwrap();
                         assert_eq!(alice_anchors[0].domain_name, "wire2.com");
                     })
                 },
@@ -1161,7 +1095,7 @@ pub mod tests {
                         let bob_anchors = bob_central.per_domain_trust_anchors(&id).await;
                         assert_eq!(alice_anchors.len(), 1);
                         assert_eq!(alice_anchors, bob_anchors);
-                        alice_anchors[0].validate(&alice_central.mls_backend, None).unwrap();
+                        alice_anchors[0].validate(None).unwrap();
                         assert_eq!(alice_anchors[0].domain_name, "wire.com");
                         assert_ne!(new_chain, old_chain);
                     })
