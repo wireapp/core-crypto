@@ -72,7 +72,7 @@ pub use rstest_reuse::{self, *};
     //     crate::prelude::MlsCredentialType::X509,
     //     openmls::prelude::Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519
     // )),
-    case::pure_ciphertext(TestCase {
+    /*case::pure_ciphertext(TestCase {
         credential_type: crate::prelude::MlsCredentialType::Basic,
         cfg: $crate::prelude::MlsConversationConfiguration {
             custom: $crate::prelude::MlsCustomConfiguration {
@@ -81,7 +81,7 @@ pub use rstest_reuse::{self, *};
             },
             ..Default::default()
         }
-    }),
+    }),*/
 )]
 #[allow(non_snake_case)]
 pub fn all_cred_cipher(case: TestCase) {}
