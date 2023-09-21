@@ -108,24 +108,6 @@ impl PerDomainTrustAnchor {
             )
             .unwrap();
 
-        /*// verify the whole chain
-        let root_cert = certificate_chain
-            .iter()
-            .map(Ok)
-            .reduce(
-                |child, parent| -> Result<&Certificate, openmls_traits::types::CryptoError> {
-                    let child = child?;
-                    let parent = parent?;
-                    child.is_valid()?;
-                    child.is_signed_by(backend.crypto(), parent)?;
-                    Ok(parent)
-                },
-            )
-            .unwrap()
-            .map_err(MlsError::from)?;
-        // ensure that the root is also valid
-        root_cert.is_valid().map_err(MlsError::from)?;*/
-
         let encoded_chain = pem::parse_many(&self.intermediate_certificate_chain)?
             .into_iter()
             .map(pem::Pem::into_contents)

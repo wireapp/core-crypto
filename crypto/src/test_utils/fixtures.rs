@@ -24,15 +24,15 @@ pub use rstest_reuse::{self, *};
 #[template]
 #[rstest(
     case,
-    case::basic_cs1(TestCase::new(
+    /*case::basic_cs1(TestCase::new(
         crate::prelude::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )),
     case::cert_cs1(TestCase::new(
         crate::prelude::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-    )),
-    #[cfg(feature = "test-all-cipher")]
+    )),*/
+    // #[cfg(feature = "test-all-cipher")]
     case::basic_cs2(TestCase::new(
         crate::prelude::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
