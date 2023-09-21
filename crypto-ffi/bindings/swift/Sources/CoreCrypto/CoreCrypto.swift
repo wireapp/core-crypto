@@ -609,14 +609,14 @@ public class CoreCryptoWrapper {
     /// set up the keystore and will allow generating proteus prekeys.Then, those keys can be traded for a clientId.
     /// Use this clientId to initialize MLS with ```CoreCrypto/mlsInit```.
     public static func deferredInit(path: String, key: String, ciphersuites: Array<UInt16>) async throws -> CoreCrypto {
-        await try CoreCrypto.deferredInit(path: path, key: key, ciphersuites: ciphersuites)
+        try await CoreCrypto.deferredInit(path: path, key: key, ciphersuites: ciphersuites)
     }
 
     /// Use this after ```CoreCrypto/deferredInit``` when you have a clientId. It initializes MLS.
     ///
     /// - parameter clientId: client identifier
     public func mlsInit(clientId: ClientId, ciphersuites: Array<UInt16>) async throws {
-        await try self.coreCrypto.mlsInit(clientId: clientId, ciphersuites: ciphersuites)
+        try await self.coreCrypto.mlsInit(clientId: clientId, ciphersuites: ciphersuites)
     }
 
     /// Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID.
@@ -624,7 +624,7 @@ public class CoreCryptoWrapper {
     ///
     /// - returns: a list of random ClientId to use in ```CoreCrypto/mlsInitWithClientId```
     public func mlsGenerateKeypairs(ciphersuites: Array<UInt16>) async throws -> [[ClientId]] {
-        await try self.coreCrypto.mlsGenerateKeypairs(ciphersuites: ciphersuites)
+        try await self.coreCrypto.mlsGenerateKeypairs(ciphersuites: ciphersuites)
     }
 
     /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
@@ -635,7 +635,7 @@ public class CoreCryptoWrapper {
     /// - parameter tmpClientIds: The random clientId you obtained in ```CoreCrypto/mlsGenerateKeypairs```, for authentication purposes
     /// - parameter ciphersuites: To initialize the Client with
     public func mlsInitWithClientId(clientId: ClientId, tmpClientIds: [[ClientId]], ciphersuites: Array<UInt16>) async throws {
-        await try self.coreCrypto.mlsInitWithClientId(clientId: clientId, tmpClientIds: tmpClientIds, ciphersuites: ciphersuites)
+        try await self.coreCrypto.mlsInitWithClientId(clientId: clientId, tmpClientIds: tmpClientIds, ciphersuites: ciphersuites)
     }
 
     /// `CoreCrypto` is supposed to be a singleton. Knowing that, it does some optimizations by
@@ -1075,7 +1075,6 @@ public class CoreCryptoWrapper {
         try self.coreCrypto.proteusLastErrorCode()
     }
 
-
     /// Proteus public key fingerprint
     /// It's basically the public key encoded as an hex string
     ///
@@ -1118,41 +1117,44 @@ public class CoreCryptoWrapper {
     /// Creates an enrollment instance with private key material you can use in order to fetch
     /// a new x509 certificate from the acme server.
     ///
-    /// - parameter clientId: client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+    /// - parameter clientId: client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
     /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
     /// - parameter expiryDays: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material.
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func e2eiNewEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16) async throws -> CoreCryptoSwift.WireE2eIdentity {
-        return try await self.coreCrypto.e2eiNewEnrollment(clientId: clientId, displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
+    public func e2eiNewEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16) async throws -> E2eiEnrollment {
+        let enrollment = try await self.coreCrypto.e2eiNewEnrollment(clientId: clientId, displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
+        return E2eiEnrollment(enrollment)
     }
 
     /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
     /// Once the enrollment is finished, use the instance in ``CoreCrypto/e2eiRotateAll`` to do the rotation.
     ///
-    /// - parameter clientId: client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+    /// - parameter clientId: client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
     /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
     /// - parameter expiryDays: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material.
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func e2eiNewActivationEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16) async throws -> CoreCryptoSwift.WireE2eIdentity {
-        return try await self.coreCrypto.e2eiNewActivationEnrollment(clientId: clientId, displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
+    public func e2eiNewActivationEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16) async throws -> E2eiEnrollment {
+        let enrollment = try await self.coreCrypto.e2eiNewActivationEnrollment(clientId: clientId, displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
+        return E2eiEnrollment(enrollment)
     }
 
     /// Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)having to change/rotate
     /// their credential, either because the former one is expired or it has been revoked. It lets you change
     /// the DisplayName or the handle if you need to. Once the enrollment is finished, use the instance in ``CoreCrypto/e2eiRotateAll`` to do the rotation.
     ///
-    /// - parameter clientId: client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+    /// - parameter clientId: client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
     /// - parameter expiryDays: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material.
     /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func e2eiNewRotateEnrollment(clientId: String, expiryDays: UInt32, ciphersuite: UInt16, displayName: String? = nil, handle: String? = nil) async throws -> CoreCryptoSwift.WireE2eIdentity {
-        return try await self.coreCrypto.e2eiNewRotateEnrollment(clientId: clientId, expiryDays: expiryDays, ciphersuite: ciphersuite, displayName: displayName, handle: handle)
+    public func e2eiNewRotateEnrollment(clientId: String, expiryDays: UInt32, ciphersuite: UInt16, displayName: String? = nil, handle: String? = nil) async throws -> E2eiEnrollment {
+        let enrollment = try await self.coreCrypto.e2eiNewRotateEnrollment(clientId: clientId, expiryDays: expiryDays, ciphersuite: ciphersuite, displayName: displayName, handle: handle)
+        return E2eiEnrollment(enrollment)
     }
 
     /// Use this method to initialize end-to-end identity when a client signs up and the grace period is already expired ; that means he cannot initialize with a Basic credential
@@ -1223,7 +1225,157 @@ public class CoreCryptoWrapper {
     }
 }
 
+/// Instance for enrolling a certificate with the ACME server
+public struct E2eiEnrollment: ConvertToInner {
+    public var delegate: CoreCryptoSwift.WireE2eIdentity
 
+    public init(delegate: CoreCryptoSwift.WireE2eIdentity) {
+        self.delegate = delegate
+    }
+    typealias Inner = CoreCryptoSwift.WireE2eIdentity
+
+    func convert() -> Inner {
+        return CoreCryptoSwift.WireE2eIdentity(delegate: self.delegate)
+    }
+
+    /// Parses the response from `GET /acme/{provisioner-name}/directory`.
+    /// Use this ``AcmeDirectory`` in the next step to fetch the first nonce from the acme server. Use
+    /// ``AcmeDirectory/newNonce``.
+    /// - Parameter directory: HTTP response body
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
+    public func directoryResponse(directory: JsonRawData) async throws -> AcmeDirectory {
+        return try await self.delegate.directoryResponse(directory: directory)
+    }
+
+    /// For creating a new acme account. This returns a signed JWS-alike request body to send to `POST /acme/{provisioner-name}/new-account`.
+    /// - Parameter previousNonce: you got from calling HEAD ``AcmeDirectory/newNonce``
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
+    public func newAccountRequest(previousNonce: String) async throws -> JsonRawData {
+        return try await self.delegate.newAccountRequest(previousNonce: previousNonce)
+    }
+
+    /// Parses the response from `POST /acme/{provisioner-name}/new-account`.
+    /// - Parameter account: HTTP response body
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
+    public func newAccountResponse(account: JsonRawData) async throws {
+        return try await self.delegate.newAccountResponse(account: account)
+    }
+
+    /// Creates a new acme order for the handle (userId + display name) and the clientId.
+    /// - Parameter previousNonce: `replay-nonce` response header from `POST /acme/{provisioner-name}/new-account`
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+    public func newOrderRequest(previousNonce: String) async throws -> JsonRawData {
+        return try await self.delegate.newOrderRequest(previousNonce: previousNonce)
+    }
+
+    /// Parses the response from `POST /acme/{provisioner-name}/new-order`.
+    /// - Parameter account: HTTP response body
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+    public func newOrderResponse(order: JsonRawData) async throws -> NewAcmeOrder {
+        return try await self.delegate.newOrderResponse(order: order)
+    }
+
+    /// Creates a new authorization request.
+    /// - Parameter url: one of the URL in new order's authorizations (use ``NewAcmeOrder/authorizations`` from ``E2eiEnrollment/newOrderResponse``)
+    /// - Parameter previousNonce: `replay-nonce` response header from `POST /acme/{provisioner-name}/new-order` (or from the previous to this method if you are creating the second authorization)
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
+    public func newAuthzRequest(url: String, previousNonce: String) async throws -> JsonRawData {
+        return try await self.delegate.newAuthzRequest(url: url, previousNonce: previousNonce)
+    }
+
+    /// Parses the response from `POST /acme/{provisioner-name}/authz/{authz-id}`
+    /// - Parameter authz: HTTP response body
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
+    public func newAuthzResponse(authz: JsonRawData) async throws -> NewAcmeAuthz {
+        return try await self.delegate.newAuthzResponse(authz: authz)
+    }
+
+    /// Generates a new client Dpop JWT token. It demonstrates proof of possession of the nonces
+    /// (from wire-server & acme server) and will be verified by the acme server when verifying the
+    /// challenge (in order to deliver a certificate).
+    /// Then send it to `POST /clients/{id}/access-token` ``https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token`` on wire-server.
+    /// - Parameter expirySecs: of the client Dpop JWT. This should be equal to the grace period set in Team Management
+    /// - Parameter backendNonce: you get by calling `GET /clients/token/nonce` on wire-server as defined here ``https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce``
+    public func createDpopToken(expirySecs: UInt16, backendNonce: String) async throws -> [UInt8] {
+        return try await self.delegate.createDpopToken(expirySecs: expirySecs, backendNonce: backendNonce)
+    }
+
+    /// Creates a new challenge request for Wire Dpop challenge.
+    /// - Parameter accessToken: returned by wire-server from https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/post_clients__cid__access_token
+    /// - Parameter previousNonce: `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
+    public func newDpopChallengeRequest(url: String, previousNonce: String) async throws -> JsonRawData {
+        return try await self.delegate.newDpopChallengeRequest(url: url, previousNonce: previousNonce)
+    }
+
+    /// Creates a new challenge request for Wire Oidc challenge.
+    /// - Parameter idToken: you get back from Identity Provider
+    /// - Parameter previousNonce: `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
+    public func newOidcChallengeRequest(idToken: String, previousNonce: String) async throws -> JsonRawData {
+        return try await self.delegate.newOidcChallengeRequest(idToken: idToken, previousNonce: previousNonce)
+    }
+
+    /// Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}`.
+    /// - Parameter challenge: HTTP response body
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
+    public func newChallengeResponse(challenge: JsonRawData) async throws {
+        return try await self.delegate.newChallengeResponse(challenge: challenge)
+    }
+
+    /// Verifies that the previous challenge has been completed.
+    /// - Parameter orderUrl: `location` header from http response you got from ``E2eiEnrollment/newOrderResponse``
+    /// - Parameter previousNonce: `replay-nonce` response header from `POST /acme/{provisioner-name}/challenge/{challenge-id}`
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+    public func checkOrderRequest(orderUrl: String, previousNonce: String) async throws -> JsonRawData {
+        return try await self.delegate.checkOrderRequest(orderUrl: orderUrl, previousNonce: previousNonce)
+    }
+
+    /// Parses the response from `POST /acme/{provisioner-name}/order/{order-id}`.
+    /// - Parameter order: HTTP response body
+    /// - Returns: url to use with ``E2eiEnrollment/finalizeRequest``
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+    public func checkOrderResponse(order: JsonRawData) async throws -> String {
+        return try await self.delegate.checkOrderResponse(order: order)
+    }
+
+    /// Final step before fetching the certificate.
+    /// - Parameter previousNonce: `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+    public func finalizeRequest(previousNonce: String) async throws -> JsonRawData {
+        return try await self.delegate.finalizeRequest(previousNonce: previousNonce)
+    }
+
+    /// Parses the response from `POST /acme/{provisioner-name}/order/{order-id}/finalize`.
+    /// - Parameter finalize: HTTP response body
+    /// - Returns: the certificate url to use with ``E2eiEnrollment/certificateRequest``
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+    public func finalizeResponse(finalize: JsonRawData) async throws -> String {
+        return try await self.delegate.finalizeResponse(finalize: finalize)
+    }
+
+    /// Creates a request for finally fetching the x509 certificate.
+    /// - Parameter previousNonce: `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}/finalize`
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2
+    public func certificateRequest(previousNonce: String) async throws -> JsonRawData {
+        return try await self.delegate.certificateRequest(previousNonce: previousNonce)
+    }
+}
 
 /// Indicates the state of a Conversation regarding end-to-end identity.
 /// Note: this does not check pending state (pending commit, pending proposals) so it does not consider members about to be added/removed
@@ -1245,5 +1397,104 @@ private extension E2eiConversationState {
         case .notEnabled:
             return CoreCryptoSwift.E2eiConversationState.notEnabled
         }
+    }
+}
+
+public typealias JsonRawData = [UInt8]
+
+/// Holds URLs of all the standard ACME endpoint supported on an ACME server.
+/// - SeeAlso:
+/// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
+public struct AcmeDirectory: ConvertToInner {
+    /// URL for fetching a new nonce. Use this only for creating a new account.
+    public var newNonce: String
+    /// URL for creating a new account.
+    public var newAccount: String
+    /// URL for creating a new order.
+    public var newOrder: String
+    /// Revocation URL
+    public var revokeCert: String
+
+    public init(newNonce: String, newAccount: String, newOrder: String, revokeCert: String) {
+        self.newNonce = newNonce
+        self.newAccount = newAccount
+        self.newOrder = newOrder
+        self.revokeCert = revokeCert
+    }
+
+    typealias Inner = CoreCryptoSwift.AcmeDirectory
+
+    func convert() -> Inner {
+        return CoreCryptoSwift.AcmeDirectory(newNonce: self.newNonce, newAccount: self.newAccount, newOrder: self.newOrder, revokeCert: self.revokeCert)
+    }
+}
+
+/// Result of an order creation
+/// - SeeAlso:
+/// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+public struct NewAcmeOrder: ConvertToInner {
+    /// Contains raw JSON data of this order. This is parsed by the underlying Rust library hence should not be accessed
+    public var delegate: [UInt8]
+    /// An authorization for each domain to create
+    public var authorizations: [[UInt8]]
+
+    public init(delegate: [UInt8], authorizations: [[UInt8]]) {
+        self.delegate = delegate
+        self.authorizations = authorizations
+    }
+
+    typealias Inner = CoreCryptoSwift.NewAcmeOrder
+
+    func convert() -> Inner {
+        return CoreCryptoSwift.NewAcmeOrder(delegate: self.delegate, authorizations: self.authorizations)
+    }
+}
+
+/// Result of an authorization creation.
+/// - SeeAlso:
+/// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
+public struct NewAcmeAuthz: ConvertToInner {
+    /// DNS entry associated with those challenge
+    public var identifier: String
+    /// Challenge for the deviceId owned by wire-server
+    public var wireDpopChallenge: AcmeChallenge?
+    /// Challenge for the userId and displayName owned by the identity provider
+    public var wireOidcChallenge: AcmeChallenge?
+
+    public init(identifier: String, wireDpopChallenge: AcmeChallenge?, wireOidcChallenge: AcmeChallenge?) {
+        self.identifier = identifier
+        self.wireDpopChallenge = wireDpopChallenge
+        self.wireOidcChallenge = wireOidcChallenge
+    }
+
+    typealias Inner = CoreCryptoSwift.NewAcmeAuthz
+
+    func convert() -> Inner {
+        return CoreCryptoSwift.NewAcmeAuthz(identifier: self.identifier, wireDpopChallenge: self.wireDpopChallenge, wireOidcChallenge: self.wireOidcChallenge)
+    }
+}
+
+/// For creating a challenge
+/// - SeeAlso:
+/// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
+public struct AcmeChallenge: ConvertToInner {
+    /// Contains raw JSON data of this challenge. This is parsed by the underlying Rust library hence should not be accessed
+    public var delegate: [UInt8]
+    /// URL of this challenge
+    public var url: String
+    /// Non-standard, Wire specific claim. Indicates the consumer from where it should get the challenge proof.
+    /// Either from wire-server "/access-token" endpoint in case of a DPoP challenge, or from an OAuth token endpoint for an OIDC challenge
+    public var target: String
+
+    public init(delegate: [UInt8], url: String, target: String) {
+        self.delegate = delegate
+        self.url = url
+        self.target = target
+    }
+
+    typealias Inner = CoreCryptoSwift.AcmeChallenge
+
+    func convert() -> Inner {
+        return CoreCryptoSwift.AcmeChallenge(delegate: self.delegate, url: self.url, target: self.target)
     }
 }
