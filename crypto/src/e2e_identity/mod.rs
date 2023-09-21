@@ -26,7 +26,7 @@ impl MlsCentral {
     /// a new x509 certificate from the acme server.
     ///
     /// # Parameters
-    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
     /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
     /// * `expiry_days` - generated x509 certificate expiry in days
@@ -104,7 +104,7 @@ impl E2eiEnrollment {
     /// enrollment process then dropped to clear secret key material.
     ///
     /// # Parameters
-    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
     /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
     /// * `expiry_days` - generated x509 certificate expiry in days

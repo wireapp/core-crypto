@@ -1701,7 +1701,7 @@ export class CoreCrypto {
      * Creates an enrollment instance with private key material you can use in order to fetch
      * a new x509 certificate from the acme server.
      *
-     * @param clientId - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+     * @param clientId - client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays - generated x509 certificate expiry
@@ -1717,7 +1717,7 @@ export class CoreCrypto {
      * Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
      * Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
      *
-     * @param clientId - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+     * @param clientId - client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays - generated x509 certificate expiry
@@ -1735,7 +1735,7 @@ export class CoreCrypto {
      * has been revoked. It lets you change the DisplayName or the handle
      * if you need to. Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
      *
-     * @param clientId - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
+     * @param clientId - client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
      * @param expiryDays - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
@@ -2172,13 +2172,13 @@ export interface NewAcmeAuthz {
      */
     identifier: string;
     /**
-     * Challenge for the clientId
+     * Challenge for the deviceId owned by wire-server
      *
      * @readonly
      */
     wireDpopChallenge?: AcmeChallenge;
     /**
-     * Challenge for the userId and displayName
+     * Challenge for the userId and displayName owned by the identity provider
      *
      * @readonly
      */
