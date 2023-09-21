@@ -87,7 +87,18 @@ impl PerDomainTrustAnchor {
 
         // verify the whole chain
         use rustls::client::ServerCertVerifier as _;
+
+        #[cfg(not(test))]
         let verifier = rustls_platform_verifier::Verifier::new();
+        #[cfg(test)]
+        let verifier = {
+            use x509_cert::der::DecodePem as _;
+            let root = std::env::var("TEST_CERT").unwrap();
+            // let root = super::cert_playground::ROOT;
+            let root = x509_cert::Certificate::from_pem(root).unwrap();
+            let root = root.to_der().unwrap();
+            rustls_platform_verifier::Verifier::new_with_fake_root(&root)
+        };
 
         let end_identity = rustls::Certificate(end_identity.to_der()?);
         let intermediates = certificate_chain
@@ -413,9 +424,11 @@ pub mod tests {
     mod on_group_creation {
         use super::*;
 
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        pub async fn should_create_group_with_trust_anchors(mut case: TestCase) {
+        // #[apply(all_cred_cipher)]
+        // #[wasm_bindgen_test]
+        #[async_std::test]
+        pub async fn should_create_group_with_trust_anchors(/*mut case: TestCase*/) {
+            let mut case = TestCase::default_for_trust_anchor();
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],

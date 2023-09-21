@@ -3,6 +3,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 
+mod cert_playground;
 pub(crate) mod ext;
 pub(crate) mod trust_anchor;
 pub(crate) mod typ;

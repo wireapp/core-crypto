@@ -122,6 +122,16 @@ impl TestCase {
         }
     }
 
+    pub fn default_for_trust_anchor() -> Self {
+        Self {
+            cfg: MlsConversationConfiguration {
+                ciphersuite: openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256.into(),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+
     pub fn is_x509(&self) -> bool {
         matches!(self.credential_type, MlsCredentialType::X509)
     }

@@ -87,6 +87,10 @@ package = "openssl-src"
 git = "https://github.com/wireapp/rust-jwt-simple"
 tag = "v0.11.4-pre.core-crypto-0.7.0"
 
+
+[patch.crates-io.rustls-platform-verifier]
+path = "../rustls-platform-verifier"
+
 [profile.release]
 lto = true
 codegen-units = 1

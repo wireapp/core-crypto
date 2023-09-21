@@ -86,6 +86,8 @@ pub fn new_certificate_chain(cert_params: CertificateParams, signature_scheme: S
     let ca_params = new_cert_params(ca_key_pair, signature_scheme, ca_params, true);
     let ca_cert = rcgen::Certificate::from_params(ca_params).unwrap();
 
+    std::env::set_var("TEST_CERT", ca_cert.serialize_pem().unwrap());
+
     let leaf_key = rcgen::KeyPair::generate(signature_scheme.rcgen_signature_alg()).unwrap();
     let leaf_pk = leaf_key.public_key_raw().to_vec();
     let leaf_params = new_cert_params(leaf_key, signature_scheme, cert_params, false);
