@@ -94,7 +94,6 @@ impl PerDomainTrustAnchor {
         let verifier = {
             use x509_cert::der::DecodePem as _;
             let root = std::env::var("TEST_CERT").unwrap();
-            // let root = super::cert_playground::ROOT;
             let root = x509_cert::Certificate::from_pem(root).unwrap();
             let root = root.to_der().unwrap();
             rustls_platform_verifier::Verifier::new_with_fake_root(&root)

@@ -1,4 +1,3 @@
-use oid_registry::asn1_rs::nom::AsBytes;
 use openmls::prelude::PerDomainTrustAnchorsExtension;
 use std::time::Duration;
 
@@ -73,6 +72,37 @@ impl From<Certificate> for PerDomainTrustAnchor {
     }
 }
 
+/// Create a single self-signed root certificate
+pub fn new_self_signed_certificate(
+    cert_params: CertificateParams,
+    signature_scheme: SignatureScheme,
+    is_ca: bool,
+) -> Certificate {
+    let key_pair = rcgen::KeyPair::generate(signature_scheme.rcgen_signature_alg()).unwrap();
+    let mut params = new_cert_params(key_pair, signature_scheme, cert_params, is_ca);
+    params.extended_key_usages = vec![
+        rcgen::ExtendedKeyUsagePurpose::ClientAuth,
+        rcgen::ExtendedKeyUsagePurpose::ServerAuth,
+    ];
+    let cert = rcgen::Certificate::from_params(params).unwrap();
+    Certificate::from_der(&cert.serialize_der().unwrap()).unwrap()
+}
+
+/// Create a single self-signed root certificate
+pub fn new_self_signed_certificate_2(
+    cert_params: CertificateParams,
+    signature_scheme: SignatureScheme,
+    is_ca: bool,
+) -> rcgen::Certificate {
+    let key_pair = rcgen::KeyPair::generate(signature_scheme.rcgen_signature_alg()).unwrap();
+    let mut params = new_cert_params(key_pair, signature_scheme, cert_params, is_ca);
+    params.extended_key_usages = vec![
+        rcgen::ExtendedKeyUsagePurpose::ClientAuth,
+        rcgen::ExtendedKeyUsagePurpose::ServerAuth,
+    ];
+    rcgen::Certificate::from_params(params).unwrap()
+}
+
 /// Create a certificate chain with a CA and a Leaf for usage with the certificate trust anchors
 /// extension
 pub fn new_certificate_chain(cert_params: CertificateParams, signature_scheme: SignatureScheme) -> PkiPath {
@@ -82,15 +112,17 @@ pub fn new_certificate_chain(cert_params: CertificateParams, signature_scheme: S
         domain: Some("world.com".to_string()),
         expiration: Duration::from_secs(10),
     };
-    let ca_key_pair = rcgen::KeyPair::generate(signature_scheme.rcgen_signature_alg()).unwrap();
-    let ca_params = new_cert_params(ca_key_pair, signature_scheme, ca_params, true);
-    let ca_cert = rcgen::Certificate::from_params(ca_params).unwrap();
+    let ca_cert = new_self_signed_certificate_2(ca_params, signature_scheme, true);
 
     std::env::set_var("TEST_CERT", ca_cert.serialize_pem().unwrap());
 
     let leaf_key = rcgen::KeyPair::generate(signature_scheme.rcgen_signature_alg()).unwrap();
     let leaf_pk = leaf_key.public_key_raw().to_vec();
-    let leaf_params = new_cert_params(leaf_key, signature_scheme, cert_params, false);
+    let mut leaf_params = new_cert_params(leaf_key, signature_scheme, cert_params, false);
+    leaf_params.extended_key_usages = vec![
+        rcgen::ExtendedKeyUsagePurpose::ServerAuth,
+        rcgen::ExtendedKeyUsagePurpose::ClientAuth,
+    ];
     let csr = rcgen::CertificateSigningRequest {
         params: leaf_params,
         public_key: rcgen::PublicKey {
@@ -105,18 +137,6 @@ pub fn new_certificate_chain(cert_params: CertificateParams, signature_scheme: S
         Certificate::from_der(&cert).unwrap(),
         Certificate::from_der(&ca_cert).unwrap(),
     ])
-}
-
-/// Create a single certificate
-pub fn new_self_signed_certificate(
-    cert_params: CertificateParams,
-    signature_scheme: SignatureScheme,
-    is_ca: bool,
-) -> Certificate {
-    let key_pair = rcgen::KeyPair::generate(signature_scheme.rcgen_signature_alg()).unwrap();
-    let params = new_cert_params(key_pair, signature_scheme, cert_params, is_ca);
-    let cert = rcgen::Certificate::from_params(params).unwrap();
-    Certificate::from_der(&cert.serialize_der().unwrap()).unwrap()
 }
 
 fn new_cert_params(

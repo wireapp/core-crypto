@@ -1,10 +1,11 @@
 #![cfg(test)]
 
 use crate::prelude::MlsConversationConfiguration;
-use crate::test_utils::x509::{new_self_signed_certificate, CertificateParams};
+use crate::test_utils::x509::{new_certificate_chain, new_self_signed_certificate, CertificateParams};
 use crate::test_utils::TestCase;
+use rustls::client::ServerCertVerifier;
 use x509_cert::der::pem::LineEnding;
-use x509_cert::der::EncodePem;
+use x509_cert::der::{Encode, EncodePem};
 
 pub const ROOT: &str = r#"-----BEGIN CERTIFICATE-----
 MIIBmzCCAUGgAwIBAgIIBdicm6yCejUwCgYIKoZIzj0EAwIwLzEaMBgGA1UECgwR
@@ -20,14 +21,34 @@ Nb+z2F1DosAftchaLpBrfAw3qQPnKova7907uUXH7g==
 
 #[test]
 fn generate_root() {
-    let case = TestCase {
-        cfg: MlsConversationConfiguration {
-            ciphersuite: openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256.into(),
-            ..Default::default()
-        },
-        ..Default::default()
-    };
+    let case = TestCase::default_for_trust_anchor();
     let cert = new_self_signed_certificate(CertificateParams::default(), case.signature_scheme(), true);
     let pem = cert.to_pem(LineEnding::CRLF).unwrap();
     println!("{}", pem);
+}
+
+#[test]
+fn test_root() {
+    let case = TestCase::default_for_trust_anchor();
+    let mut chain = new_certificate_chain(CertificateParams::default(), case.signature_scheme());
+
+    use x509_cert::der::DecodePem as _;
+    let root = std::env::var("TEST_CERT").unwrap();
+    let root = x509_cert::Certificate::from_pem(root).unwrap();
+    let root = root.to_der().unwrap();
+    let verifier = rustls_platform_verifier::Verifier::new_with_fake_root(&root);
+
+    let end_entity = rustls::Certificate(chain.remove(0).to_der().unwrap());
+    let server_name = rustls::ServerName::try_from("wire.com").unwrap();
+
+    verifier
+        .verify_server_cert(
+            &end_entity,
+            &[],
+            &server_name,
+            &mut std::iter::empty(),
+            &[],
+            std::time::SystemTime::now(),
+        )
+        .unwrap();
 }
