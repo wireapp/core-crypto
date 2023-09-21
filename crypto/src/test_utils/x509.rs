@@ -112,9 +112,6 @@ pub fn new_self_signed_certificate(
     is_ca: bool,
 ) -> Certificate {
     let key_pair = rcgen::KeyPair::generate(signature_scheme.rcgen_signature_alg()).unwrap();
-
-    println!("{}", key_pair.public_key_raw().as_bytes().len());
-
     let params = new_cert_params(key_pair, signature_scheme, cert_params, is_ca);
     let cert = rcgen::Certificate::from_params(params).unwrap();
     Certificate::from_der(&cert.serialize_der().unwrap()).unwrap()
