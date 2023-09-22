@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+#![allow(unused_variables)]
+
+use super::wasm_utils::*;
 use std::collections::HashMap;
 
 use core_crypto::prelude::*;
@@ -252,40 +255,19 @@ impl From<core_crypto::prelude::MlsCredentialType> for CredentialType {
 
 pub type FfiClientId = Box<[u8]>;
 
-#[wasm_bindgen]
+/// Data shape for the returned MLS commit & welcome message tuple upon adding clients to a conversation
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-/// see [core_crypto::prelude::MlsConversationCreationMessage]
 pub struct MemberAddedMessages {
-    welcome: Vec<u8>,
-    commit: Vec<u8>,
-    group_info: GroupInfoBundle,
-}
-
-#[wasm_bindgen]
-impl MemberAddedMessages {
-    #[wasm_bindgen(constructor)]
-    pub fn new(welcome: Uint8Array, commit: Uint8Array, group_info: GroupInfoBundle) -> Self {
-        Self {
-            welcome: welcome.to_vec(),
-            commit: commit.to_vec(),
-            group_info,
-        }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn welcome(&self) -> Uint8Array {
-        Uint8Array::from(&*self.welcome)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn commit(&self) -> Uint8Array {
-        Uint8Array::from(&*self.commit)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn group_info(&self) -> GroupInfoBundle {
-        self.group_info.clone()
-    }
+    /// TLS-serialized MLS Commit that needs to be fanned out to other (existing) members of the conversation
+    #[wasm_bindgen(readonly, js_name = "welcome")]
+    pub welcome: Vec<u8>,
+    /// TLS-serialized MLS Welcome message that needs to be fanned out to the clients newly added to the conversation
+    #[wasm_bindgen(readonly, js_name = "commit")]
+    pub commit: Vec<u8>,
+    /// MLS GroupInfo which is required for joining a group by external commit
+    #[wasm_bindgen(readonly, js_name = "groupInfo")]
+    pub group_info: GroupInfoBundle,
 }
 
 impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
@@ -305,38 +287,31 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     }
 }
 
-#[wasm_bindgen]
+/// Data shape for proteusNewPrekeyAuto() call returns.
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ProteusAutoPrekeyBundle {
+    /// Proteus PreKey id
+    #[wasm_bindgen(readonly, js_name = "id")]
     pub id: u16,
-    #[wasm_bindgen(getter_with_clone)]
+    /// CBOR-serialized Proteus PreKeyBundle
+    #[wasm_bindgen(readonly, js_name = "pkb")]
     pub pkb: Vec<u8>,
 }
 
-#[wasm_bindgen]
+/// Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome)
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CommitBundle {
-    commit: Vec<u8>,
-    welcome: Option<Vec<u8>>,
-    group_info: GroupInfoBundle,
-}
-
-#[wasm_bindgen]
-impl CommitBundle {
-    #[wasm_bindgen(getter)]
-    pub fn commit(&self) -> Uint8Array {
-        Uint8Array::from(&*self.commit)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn welcome(&self) -> Option<Uint8Array> {
-        self.welcome.as_ref().map(|buf| Uint8Array::from(buf.as_slice()))
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn group_info(&self) -> GroupInfoBundle {
-        self.group_info.clone()
-    }
+    /// TLS-serialized MLS Commit that needs to be fanned out to other (existing) members of the conversation
+    #[wasm_bindgen(readonly, js_name = "commit")]
+    pub commit: Vec<u8>,
+    /// Optional TLS-serialized MLS Welcome message that needs to be fanned out to the clients newly added to the conversation
+    #[wasm_bindgen(readonly, js_name = "welcome")]
+    pub welcome: Option<Vec<u8>>,
+    /// MLS GroupInfo which is required for joining a group by external commit
+    #[wasm_bindgen(readonly, js_name = "groupInfo")]
+    pub group_info: GroupInfoBundle,
 }
 
 impl TryFrom<MlsCommitBundle> for CommitBundle {
@@ -356,38 +331,73 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
     }
 }
 
-#[wasm_bindgen]
+/// Wraps a GroupInfo in order to efficiently upload it to the Delivery Service.
+/// This is not part of MLS protocol but parts might be standardized at some point.
+#[wasm_bindgen(skip_jsdoc)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct GroupInfoBundle {
-    encryption_type: u8,
-    ratchet_tree_type: u8,
-    payload: Vec<u8>,
-}
-
-#[wasm_bindgen]
-impl GroupInfoBundle {
-    #[wasm_bindgen(getter)]
-    pub fn encryption_type(&self) -> u8 {
-        self.encryption_type
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn ratchet_tree_type(&self) -> u8 {
-        self.ratchet_tree_type
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn payload(&self) -> Uint8Array {
-        Uint8Array::from(&*self.payload)
-    }
+    /// Whether the payload is encrypted or not
+    #[wasm_bindgen(readonly, js_name = "encryptionType")]
+    pub encryption_type: EncryptionType,
+    /// Whether the payload is complete or partial
+    #[wasm_bindgen(readonly, js_name = "ratchetTreeType")]
+    pub ratchet_tree_type: RatchetTreeType,
+    /// TLS-serialized GroupInfo
+    #[wasm_bindgen(readonly, getter_with_clone, js_name = "payload")]
+    pub payload: Vec<u8>,
 }
 
 impl From<MlsGroupInfoBundle> for GroupInfoBundle {
     fn from(gi: MlsGroupInfoBundle) -> Self {
         Self {
-            encryption_type: gi.encryption_type as u8,
-            ratchet_tree_type: gi.ratchet_tree_type as u8,
+            encryption_type: gi.encryption_type.into(),
+            ratchet_tree_type: gi.ratchet_tree_type.into(),
             payload: gi.payload.bytes(),
+        }
+    }
+}
+
+/// Indicates the state of a Conversation regarding end-to-end identity.
+/// Note: this does not check pending state (pending commit, pending proposals) so it does not
+/// consider members about to be added/removed
+#[wasm_bindgen(skip_jsdoc)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[repr(u8)]
+pub enum RatchetTreeType {
+    /// Complete GroupInfo
+    Full = 1,
+    /// Contains the difference since previous epoch (not yet implemented)
+    Delta = 2,
+    /// To define (not yet implemented)
+    ByRef = 3,
+}
+
+impl From<core_crypto::prelude::MlsRatchetTreeType> for RatchetTreeType {
+    fn from(state: core_crypto::prelude::MlsRatchetTreeType) -> Self {
+        match state {
+            core_crypto::prelude::MlsRatchetTreeType::Full => Self::Full,
+            core_crypto::prelude::MlsRatchetTreeType::Delta => Self::Delta,
+            core_crypto::prelude::MlsRatchetTreeType::ByRef => Self::ByRef,
+        }
+    }
+}
+
+/// Informs whether the GroupInfo is confidential
+#[wasm_bindgen(skip_jsdoc)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[repr(u8)]
+pub enum EncryptionType {
+    /// Unencrypted
+    Plaintext = 1,
+    /// Encrypted in a JWE (not yet implemented)
+    JweEncrypted = 2,
+}
+
+impl From<core_crypto::prelude::MlsGroupInfoEncryptionType> for EncryptionType {
+    fn from(state: core_crypto::prelude::MlsGroupInfoEncryptionType) -> Self {
+        match state {
+            core_crypto::prelude::MlsGroupInfoEncryptionType::Plaintext => Self::Plaintext,
+            core_crypto::prelude::MlsGroupInfoEncryptionType::JweEncrypted => Self::JweEncrypted,
         }
     }
 }
@@ -396,13 +406,14 @@ impl From<MlsGroupInfoBundle> for GroupInfoBundle {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RotateBundle {
     commits: HashMap<String, CommitBundle>,
-    new_key_packages: Vec<Vec<u8>>,
-    key_package_refs_to_remove: Vec<Vec<u8>>,
+    new_key_packages: ArrayOfByteArray,
+    key_package_refs_to_remove: ArrayOfByteArray,
 }
 
 #[wasm_bindgen]
 impl RotateBundle {
-    #[wasm_bindgen(getter)]
+    /// An Update commit for each conversation. Each key of this Map is a ConversationId and is encoded in hexadecimal
+    #[wasm_bindgen(getter = commits)]
     pub fn commits(&self) -> js_sys::Map {
         let commits = js_sys::Map::new();
         for (id, c) in &self.commits {
@@ -411,22 +422,14 @@ impl RotateBundle {
         commits
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = newKeyPackages)]
     pub fn new_key_packages(&self) -> Vec<Uint8Array> {
-        self.new_key_packages
-            .iter()
-            .cloned()
-            .map(|jsv| jsv.as_slice().into())
-            .collect()
+        self.new_key_packages.clone().into()
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = keyPackageRefsToRemove)]
     pub fn key_package_refs_to_remove(&self) -> Vec<Uint8Array> {
-        self.key_package_refs_to_remove
-            .iter()
-            .cloned()
-            .map(|jsv| jsv.as_slice().into())
-            .collect()
+        self.key_package_refs_to_remove.clone().into()
     }
 }
 
@@ -447,30 +450,22 @@ impl TryFrom<MlsRotateBundle> for RotateBundle {
 
         Ok(Self {
             commits,
-            new_key_packages,
-            key_package_refs_to_remove,
+            new_key_packages: new_key_packages.into(),
+            key_package_refs_to_remove: key_package_refs_to_remove.into(),
         })
     }
 }
 
-#[wasm_bindgen]
+/// Returned by all methods creating proposals. Contains a proposal message and an identifier to roll back the proposal
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ProposalBundle {
-    proposal: Vec<u8>,
-    proposal_ref: Vec<u8>,
-}
-
-#[wasm_bindgen]
-impl ProposalBundle {
-    #[wasm_bindgen(getter)]
-    pub fn proposal(&self) -> Uint8Array {
-        Uint8Array::from(&*self.proposal)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn proposal_ref(&self) -> Uint8Array {
-        Uint8Array::from(&*self.proposal_ref)
-    }
+    /// TLS-serialized MLS proposal that needs to be fanned out to other (existing) members of the conversation
+    #[wasm_bindgen(readonly, js_name = "proposal")]
+    pub proposal: Vec<u8>,
+    /// Unique identifier of a proposal. Use this in 'clearPendingProposal' to roll back (delete) the proposal
+    #[wasm_bindgen(readonly, js_name = "proposalRef")]
+    pub proposal_ref: Vec<u8>,
 }
 
 impl TryFrom<MlsProposalBundle> for ProposalBundle {
@@ -486,30 +481,19 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
     }
 }
 
-#[wasm_bindgen]
+/// Returned from a Conversation creation
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ConversationInitBundle {
-    conversation_id: ConversationId,
-    commit: Vec<u8>,
-    group_info: GroupInfoBundle,
-}
-
-#[wasm_bindgen]
-impl ConversationInitBundle {
-    #[wasm_bindgen(getter)]
-    pub fn conversation_id(&self) -> Uint8Array {
-        Uint8Array::from(&*self.conversation_id)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn commit(&self) -> Uint8Array {
-        Uint8Array::from(&*self.commit)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn group_info(&self) -> GroupInfoBundle {
-        self.group_info.clone()
-    }
+    /// Conversation ID of the conversation created
+    #[wasm_bindgen(readonly, js_name = "conversationId")]
+    pub conversation_id: ConversationId,
+    /// TLS-serialized MLS External Commit that needs to be fanned out
+    #[wasm_bindgen(readonly, js_name = "commit")]
+    pub commit: Vec<u8>,
+    /// MLS GroupInfo which becomes valid when the external commit is accepted by the Delivery Service
+    #[wasm_bindgen(readonly, js_name = "groupInfo")]
+    pub group_info: GroupInfoBundle,
 }
 
 impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
@@ -530,18 +514,57 @@ impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
     }
 }
 
-#[wasm_bindgen]
+/// This is a wrapper for all the possible outcomes you can get after decrypting a message
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// see [core_crypto::prelude::decrypt::MlsConversationDecryptMessage]
 pub struct DecryptedMessage {
-    message: Option<Vec<u8>>,
+    /// Raw decrypted application message, if the decrypted MLS message is an application message
+    #[wasm_bindgen(readonly, js_name = "message")]
+    pub message: Option<Vec<u8>>,
     proposals: Vec<ProposalBundle>,
-    is_active: bool,
-    commit_delay: Option<u32>,
-    sender_client_id: Option<Vec<u8>>,
-    has_epoch_changed: bool,
-    identity: Option<WireIdentity>,
+    /// It is set to false if ingesting this MLS message has resulted in the client being removed from the group (i.e. a Remove commit)
+    #[wasm_bindgen(readonly, js_name = "isActive")]
+    pub is_active: bool,
+    /// Commit delay hint (in milliseconds) to prevent clients from hammering the server with epoch changes
+    #[wasm_bindgen(readonly, js_name = "commitDelay")]
+    pub commit_delay: Option<u32>,
+    /// Client identifier of the sender of the message being decrypted. Only present for application messages.
+    #[wasm_bindgen(readonly, js_name = "senderClientId")]
+    pub sender_client_id: Option<Vec<u8>>,
+    /// true when the decrypted message resulted in an epoch change i.e. it was a commit
+    #[wasm_bindgen(readonly, js_name = "hasEpochChanged")]
+    pub has_epoch_changed: bool,
+    /// Identity claims present in the sender credential.
+    /// Only present when the credential is a x509 certificate.
+    /// Present for all messages
+    #[wasm_bindgen(readonly, js_name = "identity")]
+    pub identity: Option<WireIdentity>,
     buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
+}
+
+#[wasm_bindgen]
+impl DecryptedMessage {
+    /// Only when decrypted message is a commit, CoreCrypto will renew local proposal which could not make it in the commit.
+    /// This will contain either:
+    ///     * local pending proposal not in the accepted commit
+    ///     * If there is a pending commit, its proposals which are not in the accepted commit
+    #[wasm_bindgen(getter = proposals)]
+    pub fn proposals(&self) -> js_sys::Array {
+        self.proposals
+            .iter()
+            .cloned()
+            .map(JsValue::from)
+            .collect::<js_sys::Array>()
+    }
+
+    /// Only set when the decrypted message is a commit.
+    /// Contains buffered messages for next epoch which were received before the commit creating the epoch because the DS did not fan them out in order.
+    #[wasm_bindgen(getter = bufferedMessages)]
+    pub fn buffered_messages(&self) -> Option<js_sys::Array> {
+        self.buffered_messages
+            .clone()
+            .map(|bm| bm.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
+    }
 }
 
 impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
@@ -583,74 +606,30 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
     }
 }
 
-#[wasm_bindgen]
-impl DecryptedMessage {
-    #[wasm_bindgen(getter)]
-    pub fn message(&self) -> JsValue {
-        if let Some(message) = &self.message {
-            Uint8Array::from(message.as_slice()).into()
-        } else {
-            JsValue::NULL
-        }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn proposals(&self) -> js_sys::Array {
-        self.proposals
-            .iter()
-            .cloned()
-            .map(JsValue::from)
-            .collect::<js_sys::Array>()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn is_active(&self) -> bool {
-        self.is_active
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn commit_delay(&self) -> Option<u32> {
-        self.commit_delay
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn sender_client_id(&self) -> JsValue {
-        if let Some(cid) = &self.sender_client_id {
-            Uint8Array::from(cid.as_slice()).into()
-        } else {
-            JsValue::NULL
-        }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn has_epoch_changed(&self) -> bool {
-        self.has_epoch_changed
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn identity(&self) -> Option<WireIdentity> {
-        self.identity.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn buffered_messages(&self) -> Option<js_sys::Array> {
-        self.buffered_messages
-            .clone()
-            .map(|bm| bm.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
-    }
-}
-
-#[wasm_bindgen]
+/// Almost same as 'DecryptedMessage' but avoids recursion
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// to avoid recursion
 pub struct BufferedDecryptedMessage {
-    message: Option<Vec<u8>>,
+    /// see 'DecryptedMessage.message'
+    #[wasm_bindgen(readonly, js_name = "message")]
+    pub message: Option<Vec<u8>>,
+    /// see 'DecryptedMessage.proposals'
     proposals: Vec<ProposalBundle>,
-    is_active: bool,
-    commit_delay: Option<u32>,
-    sender_client_id: Option<Vec<u8>>,
-    has_epoch_changed: bool,
-    identity: Option<WireIdentity>,
+    /// see 'DecryptedMessage.isActive'
+    #[wasm_bindgen(readonly, js_name = "isActive")]
+    pub is_active: bool,
+    /// see 'DecryptedMessage.commitDelay'
+    #[wasm_bindgen(readonly, js_name = "commitDelay")]
+    pub commit_delay: Option<u32>,
+    /// see 'DecryptedMessage.senderClientId'
+    #[wasm_bindgen(readonly, js_name = "senderClientId")]
+    pub sender_client_id: Option<Vec<u8>>,
+    /// see 'DecryptedMessage.hasEpochChanged'
+    #[wasm_bindgen(readonly, js_name = "hasEpochChanged")]
+    pub has_epoch_changed: bool,
+    /// see 'DecryptedMessage.identity'
+    #[wasm_bindgen(readonly, js_name = "identity")]
+    pub identity: Option<WireIdentity>,
 }
 
 impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage {
@@ -683,16 +662,11 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
 
 #[wasm_bindgen]
 impl BufferedDecryptedMessage {
-    #[wasm_bindgen(getter)]
-    pub fn message(&self) -> JsValue {
-        if let Some(message) = &self.message {
-            Uint8Array::from(message.as_slice()).into()
-        } else {
-            JsValue::NULL
-        }
-    }
-
-    #[wasm_bindgen(getter)]
+    /// Only when decrypted message is a commit, CoreCrypto will renew local proposal which could not make it in the commit.
+    /// This will contain either:
+    ///     * local pending proposal not in the accepted commit
+    ///     * If there is a pending commit, its proposals which are not in the accepted commit
+    #[wasm_bindgen(getter = proposals)]
     pub fn proposals(&self) -> js_sys::Array {
         self.proposals
             .iter()
@@ -700,86 +674,27 @@ impl BufferedDecryptedMessage {
             .map(JsValue::from)
             .collect::<js_sys::Array>()
     }
-
-    #[wasm_bindgen(getter)]
-    pub fn is_active(&self) -> bool {
-        self.is_active
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn commit_delay(&self) -> Option<u32> {
-        self.commit_delay
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn sender_client_id(&self) -> JsValue {
-        if let Some(cid) = &self.sender_client_id {
-            Uint8Array::from(cid.as_slice()).into()
-        } else {
-            JsValue::NULL
-        }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn has_epoch_changed(&self) -> bool {
-        self.has_epoch_changed
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn identity(&self) -> Option<WireIdentity> {
-        self.identity.clone()
-    }
 }
 
-#[wasm_bindgen]
+/// Represents the identity claims identifying a client. Those claims are verifiable by any member in the group
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// see [core_crypto::prelude::WireIdentity]
 pub struct WireIdentity {
-    client_id: String,
-    handle: String,
-    display_name: String,
-    domain: String,
-    certificate: String,
-}
-
-#[wasm_bindgen]
-impl WireIdentity {
-    #[wasm_bindgen(constructor)]
-    pub fn new(client_id: String, handle: String, display_name: String, domain: String, certificate: String) -> Self {
-        Self {
-            client_id,
-            handle,
-            display_name,
-            domain,
-            certificate,
-        }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn client_id(&self) -> String {
-        self.client_id.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn handle(&self) -> String {
-        self.handle.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn display_name(&self) -> String {
-        self.display_name.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn domain(&self) -> String {
-        self.domain.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn certificate(&self) -> String {
-        self.certificate.clone()
-    }
+    /// Represents the identity claims identifying a client. Those claims are verifiable by any member in the group
+    #[wasm_bindgen(readonly, js_name = "clientId")]
+    pub client_id: String,
+    /// user handle e.g. `john_wire`
+    #[wasm_bindgen(readonly, js_name = "handle")]
+    pub handle: String,
+    /// Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
+    #[wasm_bindgen(readonly, js_name = "displayName")]
+    pub display_name: String,
+    /// DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
+    #[wasm_bindgen(readonly, js_name = "domain")]
+    pub domain: String,
+    /// X509 certificate identifying this client in the MLS group ; PEM encoded
+    #[wasm_bindgen(readonly, js_name = "certificate")]
+    pub certificate: String,
 }
 
 impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
@@ -866,6 +781,27 @@ impl Invitee {
     }
 }
 
+/// A wrapper containing the configuration for trust anchors to be added in the group's context extensions
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct PerDomainTrustAnchor {
+    /// Domain name of the owning backend this anchor refers to. One of the certificate in the chain has to have this domain in its SANs
+    #[wasm_bindgen(readonly, js_name = "domainName")]
+    pub domain_name: String,
+    /// PEM encoded (partial) certificate chain. This contains the certificate chain for the CA certificate issuing the E2E Identity certificates
+    #[wasm_bindgen(readonly, js_name = "intermediateCertificateChain")]
+    pub intermediate_certificate_chain: String,
+}
+
+impl From<PerDomainTrustAnchor> for core_crypto::prelude::PerDomainTrustAnchor {
+    fn from(wasm_cfg: PerDomainTrustAnchor) -> Self {
+        Self {
+            domain_name: wasm_cfg.domain_name,
+            intermediate_certificate_chain: wasm_cfg.intermediate_certificate_chain,
+        }
+    }
+}
+
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// see [core_crypto::prelude::MlsConversationConfiguration]
@@ -874,24 +810,6 @@ pub struct ConversationConfiguration {
     external_senders: Vec<Vec<u8>>,
     custom: CustomConfiguration,
     per_domain_trust_anchors: Vec<PerDomainTrustAnchor>,
-}
-
-#[wasm_bindgen]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct PerDomainTrustAnchor {
-    domain_name: String,
-    intermediate_certificate_chain: String,
-}
-
-#[wasm_bindgen]
-impl PerDomainTrustAnchor {
-    #[wasm_bindgen(constructor)]
-    pub fn new(domain_name: String, intermediate_certificate_chain: String) -> Self {
-        Self {
-            domain_name,
-            intermediate_certificate_chain,
-        }
-    }
 }
 
 #[wasm_bindgen]
@@ -920,15 +838,6 @@ impl ConversationConfiguration {
                     .collect::<WasmCryptoResult<Vec<_>>>()?
             },
         })
-    }
-}
-
-impl From<PerDomainTrustAnchor> for core_crypto::prelude::PerDomainTrustAnchor {
-    fn from(wasm_cfg: PerDomainTrustAnchor) -> Self {
-        Self {
-            domain_name: wasm_cfg.domain_name,
-            intermediate_certificate_chain: wasm_cfg.intermediate_certificate_chain,
-        }
     }
 }
 
@@ -2777,15 +2686,23 @@ impl E2eiEnrollment {
     }
 }
 
-#[wasm_bindgen]
+/// Holds URLs of all the standard ACME endpoint supported on an ACME server.
+/// @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// See [core_crypto::e2e_identity::types::E2eiAcmeDirectory]
 pub struct AcmeDirectory {
-    new_nonce: String,
-    new_account: String,
-    new_order: String,
-    revoke_cert: String,
+    /// URL for fetching a new nonce. Use this only for creating a new account.
+    #[wasm_bindgen(readonly, js_name = "newNonce")]
+    pub new_nonce: String,
+    /// URL for creating a new account.
+    #[wasm_bindgen(readonly, js_name = "newAccount")]
+    pub new_account: String,
+    /// URL for creating a new order.
+    #[wasm_bindgen(readonly, js_name = "newOrder")]
+    pub new_order: String,
+    /// Revocation URL
+    #[wasm_bindgen(readonly, js_name = "revokeCert")]
+    pub revoke_cert: String,
 }
 
 #[wasm_bindgen]
@@ -2798,30 +2715,6 @@ impl AcmeDirectory {
             new_order,
             revoke_cert,
         }
-    }
-
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "newNonce")]
-    pub fn new_nonce(&self) -> String {
-        self.new_nonce.to_string()
-    }
-
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "newAccount")]
-    pub fn new_account(&self) -> String {
-        self.new_account.to_string()
-    }
-
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "newOrder")]
-    pub fn new_order(&self) -> String {
-        self.new_order.to_string()
-    }
-
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "revokeCert")]
-    pub fn revoke_cert(&self) -> String {
-        self.revoke_cert.to_string()
     }
 }
 
@@ -2847,13 +2740,15 @@ impl From<AcmeDirectory> for core_crypto::prelude::E2eiAcmeDirectory {
     }
 }
 
-#[wasm_bindgen]
+/// Result of an order creation.
+/// @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+#[wasm_bindgen(skip_jsdoc)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// See [core_crypto::e2e_identity::types::E2eiNewAcmeOrder]
 pub struct NewAcmeOrder {
-    delegate: Vec<u8>,
-    authorizations: Vec<Vec<u8>>,
+    /// Contains raw JSON data of this order. This is parsed by the underlying Rust library hence should not be accessed
+    #[wasm_bindgen(readonly, getter_with_clone, js_name = "delegate")]
+    pub delegate: Vec<u8>,
+    authorizations: ArrayOfByteArray,
 }
 
 #[wasm_bindgen]
@@ -2862,21 +2757,14 @@ impl NewAcmeOrder {
     pub fn new(delegate: Uint8Array, authorizations: Vec<Uint8Array>) -> Self {
         Self {
             delegate: delegate.to_vec(),
-            authorizations: authorizations.iter().map(Uint8Array::to_vec).collect(),
+            authorizations: authorizations.into(),
         }
     }
 
+    /// An authorization for each domain to create.
     #[wasm_bindgen(getter)]
-    pub fn delegate(&self) -> Uint8Array {
-        self.delegate.as_slice().into()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn authorizations(&self) -> js_sys::Array {
-        self.authorizations
-            .iter()
-            .map(|a| Uint8Array::from(a.as_slice()))
-            .collect::<js_sys::Array>()
+    pub fn authorizations(&self) -> Vec<Uint8Array> {
+        self.authorizations.clone().into()
     }
 }
 
@@ -2884,7 +2772,12 @@ impl From<core_crypto::prelude::E2eiNewAcmeOrder> for NewAcmeOrder {
     fn from(new_order: core_crypto::prelude::E2eiNewAcmeOrder) -> Self {
         Self {
             delegate: new_order.delegate,
-            authorizations: new_order.authorizations.into_iter().map(String::into_bytes).collect(),
+            authorizations: new_order
+                .authorizations
+                .into_iter()
+                .map(String::into_bytes)
+                .collect::<Vec<_>>()
+                .into(),
         }
     }
 }
@@ -2895,25 +2788,30 @@ impl TryFrom<NewAcmeOrder> for core_crypto::prelude::E2eiNewAcmeOrder {
     fn try_from(new_order: NewAcmeOrder) -> WasmCryptoResult<Self> {
         Ok(Self {
             delegate: new_order.delegate,
-            authorizations: new_order.authorizations.into_iter().try_fold(
-                vec![],
-                |mut acc, a| -> WasmCryptoResult<Vec<String>> {
-                    acc.push(String::from_utf8(a).map_err(CryptoError::from)?);
-                    Ok(acc)
-                },
-            )?,
+            authorizations: new_order
+                .authorizations
+                .0
+                .into_iter()
+                .map(|a| String::from_utf8(a).map_err(CryptoError::from))
+                .collect::<CryptoResult<Vec<String>>>()?,
         })
     }
 }
 
-#[wasm_bindgen]
+/// Result of an authorization creation.
+/// @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
+#[wasm_bindgen(skip_jsdoc)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// See [core_crypto::e2e_identity::types::E2eiNewAcmeAuthz]
 pub struct NewAcmeAuthz {
-    identifier: String,
-    wire_dpop_challenge: Option<AcmeChallenge>,
-    wire_oidc_challenge: Option<AcmeChallenge>,
+    /// DNS entry associated with those challenge
+    #[wasm_bindgen(readonly, getter_with_clone, js_name = "identifier")]
+    pub identifier: String,
+    /// Challenge for the deviceId owned by wire-server
+    #[wasm_bindgen(readonly, getter_with_clone, js_name = "wireDpopChallenge")]
+    pub wire_dpop_challenge: Option<AcmeChallenge>,
+    /// Challenge for the userId and displayName owned by the identity provider
+    #[wasm_bindgen(readonly, getter_with_clone, js_name = "wireOidcChallenge")]
+    pub wire_oidc_challenge: Option<AcmeChallenge>,
 }
 
 #[wasm_bindgen]
@@ -2929,23 +2827,6 @@ impl NewAcmeAuthz {
             wire_dpop_challenge,
             wire_oidc_challenge,
         }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn identifier(&self) -> String {
-        self.identifier.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "wireDpopChallenge")]
-    pub fn wire_dpop_challenge(&self) -> Option<AcmeChallenge> {
-        self.wire_dpop_challenge.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "wireOidcChallenge")]
-    pub fn wire_oidc_challenge(&self) -> Option<AcmeChallenge> {
-        self.wire_oidc_challenge.clone()
     }
 }
 
@@ -2971,8 +2852,6 @@ impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// See [core_crypto::e2e_identity::types::E2eiAcmeChallenge]
 pub struct AcmeChallenge {
     delegate: Vec<u8>,
     url: String,

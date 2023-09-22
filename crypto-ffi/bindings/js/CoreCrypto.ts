@@ -14,11 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-
 // @ts-ignore
 import wasm from "../../../crypto-ffi/Cargo.toml";
 
 import type * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi";
+import {
+    AcmeDirectory,
+    CommitBundle,
+    ConversationInitBundle,
+    MemberAddedMessages,
+    NewAcmeAuthz,
+    NewAcmeOrder,
+    PerDomainTrustAnchor,
+    ProposalBundle,
+    ProteusAutoPrekeyBundle,
+    WireIdentity,
+} from "./wasm";
 
 interface CoreCryptoRichError {
     errorName: string;
@@ -40,7 +51,11 @@ export class CoreCryptoError extends Error {
     rustStackTrace: string;
     proteusErrorCode: number;
 
-    private constructor(msg: string, richError: CoreCryptoRichError, ...params: any[]) {
+    private constructor(
+        msg: string,
+        richError: CoreCryptoRichError,
+        ...params: any[]
+    ) {
         // @ts-ignore
         super(msg, ...params);
         Object.setPrototypeOf(this, new.target.prototype);
@@ -51,7 +66,9 @@ export class CoreCryptoError extends Error {
     }
 
     private static fallback(msg: string, ...params: any[]): Error {
-        console.warn(`Cannot build CoreCryptoError, falling back to standard Error! ctx: ${msg}`);
+        console.warn(
+            `Cannot build CoreCryptoError, falling back to standard Error! ctx: ${msg}`
+        );
         // @ts-ignore
         return new Error(msg, ...params);
     }
@@ -59,16 +76,18 @@ export class CoreCryptoError extends Error {
     static build(msg: string, ...params: any[]): CoreCryptoError | Error {
         const parts = msg.split("\n\n");
         if (parts.length < 2) {
-            const cause = new Error("CoreCrypto WASM FFI Error doesn't have enough elements to build a rich error");
-            return this.fallback(msg, {cause}, ...params);
+            const cause = new Error(
+                "CoreCrypto WASM FFI Error doesn't have enough elements to build a rich error"
+            );
+            return this.fallback(msg, { cause }, ...params);
         }
 
-        const [errMsg, richErrorJSON,] = parts;
+        const [errMsg, richErrorJSON] = parts;
         try {
             const richError: CoreCryptoRichError = JSON.parse(richErrorJSON);
             return new this(errMsg, richError, ...params);
         } catch (cause) {
-            return this.fallback(msg, {cause}, ...params);
+            return this.fallback(msg, { cause }, ...params);
         }
     }
 
@@ -83,15 +102,13 @@ export class CoreCryptoError extends Error {
     }
 
     static async asyncMapErr<T>(p: Promise<T>): Promise<T> {
-        const mappedErrorPromise = p.catch((e: Error | CoreCryptoError) => {
+        return await p.catch((e: Error | CoreCryptoError) => {
             if (e instanceof CoreCryptoError) {
                 throw e;
             } else {
                 throw this.fromStdError(e);
             }
         });
-
-        return await mappedErrorPromise;
     }
 }
 
@@ -131,7 +148,7 @@ export enum Ciphersuite {
     /**
      *  x25519Kyber768Draft00 Hybrid KEM | AES-GCM 128 | SHA2-256 | Ed25519
      */
-    MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519 = 0xF031,
+    MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519 = 0xf031,
 }
 
 export enum CredentialType {
@@ -165,21 +182,6 @@ export interface ConversationConfiguration {
      * Trust anchors to be added in the group's context extensions
      */
     perDomainTrustAnchors?: PerDomainTrustAnchor[];
-}
-
-/**
- * A wrapper containing the configuration for trust anchors to be added in the group's context
- * extensions
- */
-export interface PerDomainTrustAnchor {
-    /**
-     * Domain name of the owning backend this anchor refers to. One of the certificate in the chain has to have this domain in its SANs
-     */
-    domain_name: string,
-    /**
-     * PEM encoded (partial) certificate chain. This contains the certificate chain for the CA certificate issuing the E2E Identity certificates
-     */
-    intermediate_certificate_chain: string,
 }
 
 /**
@@ -230,130 +232,11 @@ export type ClientId = Uint8Array;
 export type ProposalRef = Uint8Array;
 
 /**
- * Data shape for proteusNewPrekeyAuto() call returns.
- */
-export interface ProteusAutoPrekeyBundle {
-    /**
-     * Proteus PreKey id
-     *
-     * @readonly
-     */
-    id: number;
-    /**
-     * CBOR-serialized Proteus PreKeyBundle
-     *
-     * @readonly
-     */
-    pkb: Uint8Array;
-}
-
-/**
- * Data shape for the returned MLS commit & welcome message tuple upon adding clients to a conversation
- */
-export interface MemberAddedMessages {
-    /**
-     * TLS-serialized MLS Commit that needs to be fanned out to other (existing) members of the conversation
-     *
-     * @readonly
-     */
-    commit: Uint8Array;
-    /**
-     * TLS-serialized MLS Welcome message that needs to be fanned out to the clients newly added to the conversation
-     *
-     * @readonly
-     */
-    welcome: Uint8Array;
-    /**
-     * MLS GroupInfo which is required for joining a group by external commit
-     *
-     * @readonly
-     */
-    groupInfo: GroupInfoBundle;
-}
-
-/**
- * Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome)
- */
-export interface CommitBundle {
-    /**
-     * TLS-serialized MLS Commit that needs to be fanned out to other (existing) members of the conversation
-     *
-     * @readonly
-     */
-    commit: Uint8Array;
-    /**
-     * Optional TLS-serialized MLS Welcome message that needs to be fanned out to the clients newly added to the conversation
-     *
-     * @readonly
-     */
-    welcome?: Uint8Array;
-    /**
-     * MLS GroupInfo which is required for joining a group by external commit
-     *
-     * @readonly
-     */
-    groupInfo: GroupInfoBundle;
-}
-
-/**
- * Wraps a GroupInfo in order to efficiently upload it to the Delivery Service.
- * This is not part of MLS protocol but parts might be standardized at some point.
- */
-export interface GroupInfoBundle {
-    /**
-     * see {@link GroupInfoEncryptionType}
-     */
-    encryptionType: GroupInfoEncryptionType,
-    /**
-     * see {@link RatchetTreeType}
-     */
-    ratchetTreeType: RatchetTreeType,
-    /**
-     * TLS-serialized GroupInfo
-     */
-    payload: Uint8Array,
-}
-
-/**
- * Informs whether the GroupInfo is confidential
- * see [core_crypto::mls::conversation::group_info::GroupInfoEncryptionType]
- */
-export enum GroupInfoEncryptionType {
-    /**
-     * Unencrypted
-     */
-    Plaintext = 0x01,
-    /**
-     * Encrypted in a JWE (not yet implemented)
-     */
-    JweEncrypted = 0x02,
-}
-
-/**
- * Represents different ways of carrying the Ratchet Tree with some optimizations to save some space
- * see [core_crypto::mls::conversation::group_info::RatchetTreeType]
- */
-export enum RatchetTreeType {
-    /**
-     * Complete GroupInfo
-     */
-    Full = 0x01,
-    /**
-     * Contains the difference since previous epoch (not yet implemented)
-     */
-    Delta = 0x02,
-    /**
-     * To define (not yet implemented)
-     */
-    ByRef = 0x03,
-}
-
-/**
  * Result returned after rotating the Credential of the current client in all the local conversations
  */
 export interface RotateBundle {
     /**
-     * An Update commit for each conversation
+     * An Update commit for each conversation. Each key of this Map is a ConversationId and is encoded in hexadecimal
      *
      * @readonly
      */
@@ -389,7 +272,7 @@ export interface CoreCryptoDeferredParams {
     /**
      * All the ciphersuites this MLS client can support
      */
-    ciphersuites: Ciphersuite[]
+    ciphersuites: Ciphersuite[];
     /**
      * External PRNG entropy pool seed.
      * This **must** be exactly 32 bytes
@@ -427,28 +310,6 @@ export interface Invitee {
     kp: Uint8Array;
 }
 
-export interface ConversationInitBundle {
-    /**
-     * Conversation ID of the conversation created
-     *
-     * @readonly
-     */
-    conversationId: ConversationId;
-    /**
-     * TLS-serialized MLS External Commit that needs to be fanned out
-     *
-     * @readonly
-     */
-    commit: Uint8Array;
-    /**
-     * MLS Public Group State (aka Group Info) which becomes valid when the external commit is accepted by the Delivery Service
-     * with {@link CoreCrypto.mergePendingGroupFromExternalCommit}
-     *
-     * @readonly
-     */
-    groupInfo: GroupInfoBundle;
-}
-
 /**
  * This is a wrapper for all the possible outcomes you can get after decrypting a message
  */
@@ -481,17 +342,13 @@ export interface DecryptedMessage {
      */
     hasEpochChanged: boolean;
     /**
-     * Identity claims present in the sender credential
-     * Only present when the credential is a x509 certificate
-     * Present for all messages
+     * Identity claims present in the sender credential. Only present when the credential is a x509 certificate. Present for all messages
      */
     identity?: WireIdentity;
     /**
-     * Only set when the decrypted message is a commit.
-     * Contains buffered messages for next epoch which were received before the commit creating the epoch
-     * because the DS did not fan them out in order.
+     * Only set when the decrypted message is a commit. Contains buffered messages for next epoch which were received before the commit creating the epoch because the DS did not fan them out in order.
      */
-    bufferedMessages?: BufferedDecryptedMessage[],
+    bufferedMessages?: BufferedDecryptedMessage[];
 }
 
 /**
@@ -526,50 +383,6 @@ export interface BufferedDecryptedMessage {
      * see {@link DecryptedMessage.identity}
      */
     identity?: WireIdentity;
-}
-
-/**
- * Represents the identity claims identifying a client. Those claims are verifiable by any member in the group
- */
-export interface WireIdentity {
-    /**
-     * Represents the identity claims identifying a client. Those claims are verifiable by any member in the group
-     */
-    clientId: string;
-    /**
-     * user handle e.g. `john_wire`
-     */
-    handle: string;
-    /**
-     * Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
-     */
-    displayName: string;
-    /**
-     * DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
-     */
-    domain: string;
-    /**
-     * X509 certificate identifying this client in the MLS group ; PEM encoded
-     */
-    certificate: string;
-}
-
-/**
- * Returned by all methods creating proposals. Contains a proposal message and an identifier to roll back the proposal
- */
-export interface ProposalBundle {
-    /**
-     * TLS-serialized MLS proposal that needs to be fanned out to other (existing) members of the conversation
-     *
-     * @readonly
-     */
-    proposal: Uint8Array;
-    /**
-     * Unique identifier of a proposal. Use this in {@link CoreCrypto.clearPendingProposal} to roll back (delete) the proposal
-     *
-     * @readonly
-     */
-    proposalRef: ProposalRef;
 }
 
 /**
@@ -646,12 +459,12 @@ export interface ExternalAddProposalArgs extends ExternalProposalArgs {
     /**
      * {@link Ciphersuite} to propose to join the MLS group with.
      */
-    ciphersuite: Ciphersuite,
+    ciphersuite: Ciphersuite;
     /**
      * Fails when it is {@link CredentialType.X509} and no Credential has been created
      * for it beforehand with {@link CoreCrypto.e2eiMlsInit} or variants.
      */
-    credentialType: CredentialType,
+    credentialType: CredentialType;
 }
 
 export interface CoreCryptoCallbacks {
@@ -666,7 +479,10 @@ export interface CoreCryptoCallbacks {
      * @param clientId - id of the client performing an operation requiring authorization
      * @returns whether the user is authorized by the logic layer to perform the operation
      */
-    authorize: (conversationId: Uint8Array, clientId: Uint8Array) => Promise<boolean>;
+    authorize: (
+        conversationId: Uint8Array,
+        clientId: Uint8Array
+    ) => Promise<boolean>;
 
     /**
      * A mix between {@link authorize} and {@link clientIsExistingGroupUser}. We currently use this callback to verify
@@ -679,7 +495,11 @@ export interface CoreCryptoCallbacks {
      * @param existingClients - all the clients currently within the MLS group
      * @returns true if the external client is authorized to write to the conversation
      */
-    userAuthorize: (conversationId: Uint8Array, externalClientId: Uint8Array, existingClients: Uint8Array[]) => Promise<boolean>;
+    userAuthorize: (
+        conversationId: Uint8Array,
+        externalClientId: Uint8Array,
+        existingClients: Uint8Array[]
+    ) => Promise<boolean>;
 
     /**
      * Callback to ensure that the given `clientId` belongs to one of the provided `existingClients`
@@ -689,7 +509,12 @@ export interface CoreCryptoCallbacks {
      * @param clientId - id of a client
      * @param existingClients - all the clients currently within the MLS group
      */
-    clientIsExistingGroupUser: (conversationId: Uint8Array, clientId: Uint8Array, existingClients: Uint8Array[], parent_conversation_clients?: Uint8Array[]) => Promise<boolean>;
+    clientIsExistingGroupUser: (
+        conversationId: Uint8Array,
+        clientId: Uint8Array,
+        existingClients: Uint8Array[],
+        parent_conversation_clients?: Uint8Array[]
+    ) => Promise<boolean>;
 }
 
 /**
@@ -749,15 +574,27 @@ export class CoreCrypto {
         clientId,
         wasmFilePath,
         ciphersuites,
-        entropySeed
+        entropySeed,
     }: CoreCryptoParams): Promise<CoreCrypto> {
         if (!this.#module) {
-            const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
-            const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
+            const wasmImportArgs = wasmFilePath
+                ? { importHook: () => wasmFilePath }
+                : undefined;
+            const exports = (await wasm(
+                wasmImportArgs
+            )) as typeof CoreCryptoFfiTypes;
             this.#module = exports;
         }
-        let cs = ciphersuites.map(cs => cs.valueOf());
-        const cc = await CoreCryptoError.asyncMapErr(this.#module.CoreCrypto._internal_new(databaseName, key, clientId, Uint16Array.of(...cs), entropySeed));
+        let cs = ciphersuites.map((cs) => cs.valueOf());
+        const cc = await CoreCryptoError.asyncMapErr(
+            this.#module.CoreCrypto._internal_new(
+                databaseName,
+                key,
+                clientId,
+                Uint16Array.of(...cs),
+                entropySeed
+            )
+        );
         return new this(cc);
     }
 
@@ -773,15 +610,26 @@ export class CoreCrypto {
         key,
         ciphersuites,
         entropySeed,
-        wasmFilePath
+        wasmFilePath,
     }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
         if (!this.#module) {
-            const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
-            const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
+            const wasmImportArgs = wasmFilePath
+                ? { importHook: () => wasmFilePath }
+                : undefined;
+            const exports = (await wasm(
+                wasmImportArgs
+            )) as typeof CoreCryptoFfiTypes;
             this.#module = exports;
         }
-        let cs = ciphersuites.map(cs => cs.valueOf());
-        const cc = await CoreCryptoError.asyncMapErr(this.#module.CoreCrypto.deferred_init(databaseName, key, Uint16Array.of(...cs), entropySeed));
+        let cs = ciphersuites.map((cs) => cs.valueOf());
+        const cc = await CoreCryptoError.asyncMapErr(
+            this.#module.CoreCrypto.deferred_init(
+                databaseName,
+                key,
+                Uint16Array.of(...cs),
+                entropySeed
+            )
+        );
         return new this(cc);
     }
 
@@ -791,9 +639,14 @@ export class CoreCrypto {
      * @param clientId - {@link CoreCryptoParams#clientId} but required
      * @param ciphersuites - All the ciphersuites supported by this MLS client
      */
-    async mlsInit(clientId: ClientId, ciphersuites: Ciphersuite[]): Promise<void> {
-        let cs = ciphersuites.map(cs => cs.valueOf());
-        return await CoreCryptoError.asyncMapErr(this.#cc.mls_init(clientId, Uint16Array.of(...cs)));
+    async mlsInit(
+        clientId: ClientId,
+        ciphersuites: Ciphersuite[]
+    ): Promise<void> {
+        let cs = ciphersuites.map((cs) => cs.valueOf());
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.mls_init(clientId, Uint16Array.of(...cs))
+        );
     }
 
     /**
@@ -803,9 +656,13 @@ export class CoreCrypto {
      * @param ciphersuites - All the ciphersuites supported by this MLS client
      * @returns This returns the TLS-serialized identity key (i.e. the signature keypair's public key)
      */
-    async mlsGenerateKeypair(ciphersuites: Ciphersuite[]): Promise<Uint8Array[]> {
-        let cs = ciphersuites.map(cs => cs.valueOf());
-        return await CoreCryptoError.asyncMapErr(this.#cc.mls_generate_keypair(Uint16Array.of(...cs)));
+    async mlsGenerateKeypair(
+        ciphersuites: Ciphersuite[]
+    ): Promise<Uint8Array[]> {
+        let cs = ciphersuites.map((cs) => cs.valueOf());
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.mls_generate_keypair(Uint16Array.of(...cs))
+        );
     }
 
     /**
@@ -817,9 +674,19 @@ export class CoreCrypto {
      * @param signaturePublicKeys - The public key you were given at the first step; This is for authentication purposes
      * @param ciphersuites - All the ciphersuites supported by this MLS client
      */
-    async mlsInitWithClientId(clientId: ClientId, signaturePublicKeys: Uint8Array[], ciphersuites: Ciphersuite[]): Promise<void> {
-        let cs = ciphersuites.map(cs => cs.valueOf());
-        return await CoreCryptoError.asyncMapErr(this.#cc.mls_init_with_client_id(clientId, signaturePublicKeys, Uint16Array.of(...cs)));
+    async mlsInitWithClientId(
+        clientId: ClientId,
+        signaturePublicKeys: Uint8Array[],
+        ciphersuites: Ciphersuite[]
+    ): Promise<void> {
+        let cs = ciphersuites.map((cs) => cs.valueOf());
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.mls_init_with_client_id(
+                clientId,
+                signaturePublicKeys,
+                Uint16Array.of(...cs)
+            )
+        );
     }
 
     /** @hidden */
@@ -860,14 +727,18 @@ export class CoreCrypto {
      *
      * @param callbacks - Any interface following the {@link CoreCryptoCallbacks} interface
      */
-    async registerCallbacks(callbacks: CoreCryptoCallbacks, ctx: any = null): Promise<void> {
+    async registerCallbacks(
+        callbacks: CoreCryptoCallbacks,
+        ctx: any = null
+    ): Promise<void> {
         try {
-            const wasmCallbacks = new CoreCrypto.#module.CoreCryptoWasmCallbacks(
-                callbacks.authorize,
-                callbacks.userAuthorize,
-                callbacks.clientIsExistingGroupUser,
-                ctx,
-            );
+            const wasmCallbacks =
+                new CoreCrypto.#module.CoreCryptoWasmCallbacks(
+                    callbacks.authorize,
+                    callbacks.userAuthorize,
+                    callbacks.clientIsExistingGroupUser,
+                    ctx
+                );
             await this.#cc.set_callbacks(wasmCallbacks);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
@@ -891,7 +762,9 @@ export class CoreCrypto {
      * ```
      */
     async conversationExists(conversationId: ConversationId): Promise<boolean> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.conversation_exists(conversationId));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.conversation_exists(conversationId)
+        );
     }
 
     /**
@@ -901,8 +774,13 @@ export class CoreCrypto {
      * @param childId - conversation identifier of the child conversation
      * @param parentId - conversation identifier of the parent conversation
      */
-    async markConversationAsChildOf(childId: ConversationId, parentId: ConversationId): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.mark_conversation_as_child_of(childId, parentId));
+    async markConversationAsChildOf(
+        childId: ConversationId,
+        parentId: ConversationId
+    ): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.mark_conversation_as_child_of(childId, parentId)
+        );
     }
 
     /**
@@ -918,7 +796,9 @@ export class CoreCrypto {
      * ```
      */
     async conversationEpoch(conversationId: ConversationId): Promise<number> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.conversation_epoch(conversationId));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.conversation_epoch(conversationId)
+        );
     }
 
     /**
@@ -927,7 +807,9 @@ export class CoreCrypto {
      * @param conversationId - The ID of the conversation to remove
      */
     async wipeConversation(conversationId: ConversationId): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.wipe_conversation(conversationId));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.wipe_conversation(conversationId)
+        );
     }
 
     /**
@@ -947,16 +829,26 @@ export class CoreCrypto {
         configuration: ConversationConfiguration = {}
     ) {
         try {
-            const {ciphersuite, externalSenders, custom = {}, perDomainTrustAnchors = []} = configuration || {};
+            const {
+                ciphersuite,
+                externalSenders,
+                custom = {},
+                perDomainTrustAnchors = [],
+            } = configuration || {};
             const config = new CoreCrypto.#module.ConversationConfiguration(
                 ciphersuite,
                 externalSenders,
                 custom?.keyRotationSpan,
                 custom?.wirePolicy,
-                perDomainTrustAnchors as any[],
+                perDomainTrustAnchors as any[]
             );
-            const ret = await CoreCryptoError.asyncMapErr(this.#cc.create_conversation(conversationId, creatorCredentialType, config));
-            return ret;
+            return await CoreCryptoError.asyncMapErr(
+                this.#cc.create_conversation(
+                    conversationId,
+                    creatorCredentialType,
+                    config
+                )
+            );
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -975,44 +867,47 @@ export class CoreCrypto {
      *
      * @returns a {@link DecryptedMessage}. Note that {@link DecryptedMessage#message} is `undefined` when the encrypted payload contains a system message such a proposal or commit
      */
-    async decryptMessage(conversationId: ConversationId, payload: Uint8Array): Promise<DecryptedMessage> {
+    async decryptMessage(
+        conversationId: ConversationId,
+        payload: Uint8Array
+    ): Promise<DecryptedMessage> {
         if (!payload?.length) {
             throw new Error("decryptMessage payload is empty or null");
         }
 
         try {
-            const ffiDecryptedMessage: CoreCryptoFfiTypes.DecryptedMessage = await CoreCryptoError.asyncMapErr(this.#cc.decrypt_message(
-                conversationId,
-                payload
-            ));
+            const ffiDecryptedMessage: CoreCryptoFfiTypes.DecryptedMessage =
+                await CoreCryptoError.asyncMapErr(
+                    this.#cc.decrypt_message(conversationId, payload)
+                );
 
-            const ffiCommitDelay = ffiDecryptedMessage.commit_delay;
+            const ffiCommitDelay = ffiDecryptedMessage.commitDelay;
 
             let commitDelay = undefined;
             if (typeof ffiCommitDelay === "number" && ffiCommitDelay >= 0) {
                 commitDelay = ffiCommitDelay * 1000;
             }
 
-            const ret: DecryptedMessage = {
+            return {
                 message: ffiDecryptedMessage.message,
                 proposals: ffiDecryptedMessage.proposals,
-                isActive: ffiDecryptedMessage.is_active,
-                senderClientId: ffiDecryptedMessage.sender_client_id,
+                isActive: ffiDecryptedMessage.isActive,
+                senderClientId: ffiDecryptedMessage.senderClientId,
                 commitDelay,
-                hasEpochChanged: ffiDecryptedMessage.has_epoch_changed,
-                bufferedMessages: ffiDecryptedMessage.buffered_messages?.map(m => {
-                    return {
-                        message: m.message,
-                        proposals: m.proposals,
-                        isActive: m.is_active,
-                        senderClientId: m.sender_client_id,
-                        commitDelay: m.commit_delay,
-                        hasEpochChanged: m.has_epoch_changed,
+                hasEpochChanged: ffiDecryptedMessage.hasEpochChanged,
+                bufferedMessages: ffiDecryptedMessage.bufferedMessages?.map(
+                    (m) => {
+                        return {
+                            message: m.message,
+                            proposals: m.proposals,
+                            isActive: m.isActive,
+                            senderClientId: m.senderClientId,
+                            commitDelay: m.commitDelay,
+                            hasEpochChanged: m.hasEpochChanged,
+                        };
                     }
-                }),
+                ),
             };
-
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1026,11 +921,13 @@ export class CoreCrypto {
      *
      * @returns The encrypted payload for the given group. This needs to be fanned out to the other members of the group.
      */
-    async encryptMessage(conversationId: ConversationId, message: Uint8Array): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.encrypt_message(
-            conversationId,
-            message
-        ));
+    async encryptMessage(
+        conversationId: ConversationId,
+        message: Uint8Array
+    ): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.encrypt_message(conversationId, message)
+        );
     }
 
     /**
@@ -1048,27 +945,19 @@ export class CoreCrypto {
      *
      * @returns A {@link CommitBundle}
      */
-    async updateTrustAnchorsFromConversation(conversationId: ConversationId, removeDomainNames: string[], addTrustAnchors: PerDomainTrustAnchor[]): Promise<CommitBundle> {
+    async updateTrustAnchorsFromConversation(
+        conversationId: ConversationId,
+        removeDomainNames: string[],
+        addTrustAnchors: PerDomainTrustAnchor[]
+    ): Promise<CommitBundle> {
         try {
-            const ffiRet: CoreCryptoFfiTypes.CommitBundle = await CoreCryptoError.asyncMapErr(this.#cc.update_trust_anchors_from_conversation(
-                conversationId,
-                removeDomainNames,
-                addTrustAnchors
-            ));
-
-            const gi = ffiRet.group_info;
-
-            const ret: CommitBundle = {
-                welcome: ffiRet.welcome,
-                commit: ffiRet.commit,
-                groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload
-                },
-            };
-
-            return ret;
+            return await CoreCryptoError.asyncMapErr(
+                this.#cc.update_trust_anchors_from_conversation(
+                    conversationId,
+                    removeDomainNames,
+                    addTrustAnchors
+                )
+            );
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1085,11 +974,19 @@ export class CoreCrypto {
      * @param configuration - configuration of the MLS group
      * @returns The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages
      */
-    async processWelcomeMessage(welcomeMessage: Uint8Array, configuration: CustomConfiguration = {}): Promise<ConversationId> {
+    async processWelcomeMessage(
+        welcomeMessage: Uint8Array,
+        configuration: CustomConfiguration = {}
+    ): Promise<ConversationId> {
         try {
-            const {keyRotationSpan, wirePolicy} = configuration || {};
-            const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
-            return await CoreCryptoError.asyncMapErr(this.#cc.process_welcome_message(welcomeMessage, config));
+            const { keyRotationSpan, wirePolicy } = configuration || {};
+            const config = new CoreCrypto.#module.CustomConfiguration(
+                keyRotationSpan,
+                wirePolicy
+            );
+            return await CoreCryptoError.asyncMapErr(
+                this.#cc.process_welcome_message(welcomeMessage, config)
+            );
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1102,7 +999,9 @@ export class CoreCrypto {
      * @returns the client's public signature key
      */
     async clientPublicKey(ciphersuite: Ciphersuite): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.client_public_key(ciphersuite));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.client_public_key(ciphersuite)
+        );
     }
 
     /**
@@ -1111,8 +1010,13 @@ export class CoreCrypto {
      * @param credentialType - of the KeyPackages to count
      * @returns The amount of valid, non-expired KeyPackages that are persisted in the backing storage
      */
-    async clientValidKeypackagesCount(ciphersuite: Ciphersuite, credentialType: CredentialType): Promise<number> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.client_valid_keypackages_count(ciphersuite, credentialType));
+    async clientValidKeypackagesCount(
+        ciphersuite: Ciphersuite,
+        credentialType: CredentialType
+    ): Promise<number> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.client_valid_keypackages_count(ciphersuite, credentialType)
+        );
     }
 
     /**
@@ -1123,8 +1027,18 @@ export class CoreCrypto {
      * @param amountRequested - The amount of keypackages requested
      * @returns An array of length `amountRequested` containing TLS-serialized KeyPackages
      */
-    async clientKeypackages(ciphersuite: Ciphersuite, credentialType: CredentialType, amountRequested: number): Promise<Array<Uint8Array>> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.client_keypackages(ciphersuite, credentialType, amountRequested));
+    async clientKeypackages(
+        ciphersuite: Ciphersuite,
+        credentialType: CredentialType,
+        amountRequested: number
+    ): Promise<Array<Uint8Array>> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.client_keypackages(
+                ciphersuite,
+                credentialType,
+                amountRequested
+            )
+        );
     }
 
     /**
@@ -1134,7 +1048,9 @@ export class CoreCrypto {
      * @param refs - KeyPackage references to delete obtained from a {RotateBundle}
      */
     async deleteKeypackages(refs: Uint8Array[]): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.delete_keypackages(refs));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.delete_keypackages(refs)
+        );
     }
 
     /**
@@ -1155,29 +1071,21 @@ export class CoreCrypto {
     ): Promise<MemberAddedMessages> {
         try {
             const ffiClients = clients.map(
-                (invitee) => new CoreCrypto.#module.Invitee(invitee.id, invitee.kp)
+                (invitee) =>
+                    new CoreCrypto.#module.Invitee(invitee.id, invitee.kp)
             );
 
-            const ffiRet: CoreCryptoFfiTypes.MemberAddedMessages = await CoreCryptoError.asyncMapErr(this.#cc.add_clients_to_conversation(
-                conversationId,
-                ffiClients
-            ));
+            const ffiRet: CoreCryptoFfiTypes.MemberAddedMessages =
+                await CoreCryptoError.asyncMapErr(
+                    this.#cc.add_clients_to_conversation(
+                        conversationId,
+                        ffiClients
+                    )
+                );
 
-            ffiClients.forEach(c => c.free());
+            ffiClients.forEach((c) => c.free());
 
-            const gi = ffiRet.group_info;
-
-            const ret: MemberAddedMessages = {
-                welcome: ffiRet.welcome,
-                commit: ffiRet.commit,
-                groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload
-                },
-            };
-
-            return ret;
+            return ffiRet;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1201,24 +1109,12 @@ export class CoreCrypto {
         clientIds: ClientId[]
     ): Promise<CommitBundle> {
         try {
-            const ffiRet: CoreCryptoFfiTypes.CommitBundle = await CoreCryptoError.asyncMapErr(this.#cc.remove_clients_from_conversation(
-                conversationId,
-                clientIds
-            ));
-
-            const gi = ffiRet.group_info;
-
-            const ret: CommitBundle = {
-                welcome: ffiRet.welcome,
-                commit: ffiRet.commit,
-                groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload
-                },
-            };
-
-            return ret;
+            return await CoreCryptoError.asyncMapErr(
+                this.#cc.remove_clients_from_conversation(
+                    conversationId,
+                    clientIds
+                )
+            );
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1235,25 +1131,13 @@ export class CoreCrypto {
      *
      * @returns A {@link CommitBundle}
      */
-    async updateKeyingMaterial(conversationId: ConversationId): Promise<CommitBundle> {
+    async updateKeyingMaterial(
+        conversationId: ConversationId
+    ): Promise<CommitBundle> {
         try {
-            const ffiRet: CoreCryptoFfiTypes.CommitBundle = await CoreCryptoError.asyncMapErr(this.#cc.update_keying_material(
-                conversationId
-            ));
-
-            const gi = ffiRet.group_info;
-
-            const ret: CommitBundle = {
-                welcome: ffiRet.welcome,
-                commit: ffiRet.commit,
-                groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload
-                },
-            };
-
-            return ret;
+            return await CoreCryptoError.asyncMapErr(
+                this.#cc.update_keying_material(conversationId)
+            );
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1270,27 +1154,20 @@ export class CoreCrypto {
      *
      * @returns A {@link CommitBundle} or `undefined` when there was no pending proposal to commit
      */
-    async commitPendingProposals(conversationId: ConversationId): Promise<CommitBundle | undefined> {
+    async commitPendingProposals(
+        conversationId: ConversationId
+    ): Promise<CommitBundle | undefined> {
         try {
-            const ffiCommitBundle: CoreCryptoFfiTypes.CommitBundle | undefined = await CoreCryptoError.asyncMapErr(this.#cc.commit_pending_proposals(
-                conversationId
-            ));
+            const ffiCommitBundle: CoreCryptoFfiTypes.CommitBundle | undefined =
+                await CoreCryptoError.asyncMapErr(
+                    this.#cc.commit_pending_proposals(conversationId)
+                );
 
             if (!ffiCommitBundle) {
                 return undefined;
             }
 
-            const gi = ffiCommitBundle.group_info;
-
-            return {
-                welcome: ffiCommitBundle.welcome,
-                commit: ffiCommitBundle.commit,
-                groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload
-                },
-            };
+            return ffiCommitBundle;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1311,12 +1188,16 @@ export class CoreCrypto {
         switch (proposalType) {
             case ProposalType.Add: {
                 if (!(args as AddProposalArgs).kp) {
-                    throw new Error("kp is not contained in the proposal arguments");
+                    throw new Error(
+                        "kp is not contained in the proposal arguments"
+                    );
                 }
-                return await CoreCryptoError.asyncMapErr(this.#cc.new_add_proposal(
-                    args.conversationId,
-                    (args as AddProposalArgs).kp
-                ));
+                return await CoreCryptoError.asyncMapErr(
+                    this.#cc.new_add_proposal(
+                        args.conversationId,
+                        (args as AddProposalArgs).kp
+                    )
+                );
             }
             case ProposalType.Remove: {
                 if (!(args as RemoveProposalArgs).clientId) {
@@ -1324,15 +1205,17 @@ export class CoreCrypto {
                         "clientId is not contained in the proposal arguments"
                     );
                 }
-                return await CoreCryptoError.asyncMapErr(this.#cc.new_remove_proposal(
-                    args.conversationId,
-                    (args as RemoveProposalArgs).clientId
-                ));
+                return await CoreCryptoError.asyncMapErr(
+                    this.#cc.new_remove_proposal(
+                        args.conversationId,
+                        (args as RemoveProposalArgs).clientId
+                    )
+                );
             }
             case ProposalType.Update: {
-                return await CoreCryptoError.asyncMapErr(this.#cc.new_update_proposal(
-                    args.conversationId
-                ));
+                return await CoreCryptoError.asyncMapErr(
+                    this.#cc.new_update_proposal(args.conversationId)
+                );
             }
             default:
                 throw new Error("Invalid proposal type!");
@@ -1348,8 +1231,15 @@ export class CoreCrypto {
     ): Promise<Uint8Array> {
         switch (externalProposalType) {
             case ExternalProposalType.Add: {
-                let addArgs = (args as ExternalAddProposalArgs);
-                return await CoreCryptoError.asyncMapErr(this.#cc.new_external_add_proposal(args.conversationId, args.epoch, addArgs.ciphersuite, addArgs.credentialType));
+                let addArgs = args as ExternalAddProposalArgs;
+                return await CoreCryptoError.asyncMapErr(
+                    this.#cc.new_external_add_proposal(
+                        args.conversationId,
+                        args.epoch,
+                        addArgs.ciphersuite,
+                        addArgs.credentialType
+                    )
+                );
             }
             default:
                 throw new Error("Invalid external proposal type!");
@@ -1373,25 +1263,24 @@ export class CoreCrypto {
      * When {@link CredentialType.X509} is chosen, it fails when no Credential has been created for the given {@link Ciphersuite}.
      * @returns see {@link ConversationInitBundle}
      */
-    async joinByExternalCommit(groupInfo: Uint8Array, credentialType: CredentialType, configuration: CustomConfiguration = {}): Promise<ConversationInitBundle> {
+    async joinByExternalCommit(
+        groupInfo: Uint8Array,
+        credentialType: CredentialType,
+        configuration: CustomConfiguration = {}
+    ): Promise<ConversationInitBundle> {
         try {
-            const {keyRotationSpan, wirePolicy} = configuration || {};
-            const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
-            const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await CoreCryptoError.asyncMapErr(this.#cc.join_by_external_commit(groupInfo, config, credentialType));
-
-            const gi = ffiInitMessage.group_info;
-
-            const ret: ConversationInitBundle = {
-                conversationId: ffiInitMessage.conversation_id,
-                commit: ffiInitMessage.commit,
-                groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload
-                },
-            };
-
-            return ret;
+            const { keyRotationSpan, wirePolicy } = configuration || {};
+            const config = new CoreCrypto.#module.CustomConfiguration(
+                keyRotationSpan,
+                wirePolicy
+            );
+            return await CoreCryptoError.asyncMapErr(
+                this.#cc.join_by_external_commit(
+                    groupInfo,
+                    config,
+                    credentialType
+                )
+            );
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1404,8 +1293,12 @@ export class CoreCrypto {
      * @param conversationId - The ID of the conversation
      * @returns eventually decrypted buffered messages if any
      */
-    async mergePendingGroupFromExternalCommit(conversationId: ConversationId): Promise<BufferedDecryptedMessage[] | undefined> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.merge_pending_group_from_external_commit(conversationId))
+    async mergePendingGroupFromExternalCommit(
+        conversationId: ConversationId
+    ): Promise<BufferedDecryptedMessage[] | undefined> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.merge_pending_group_from_external_commit(conversationId)
+        );
     }
 
     /**
@@ -1415,8 +1308,12 @@ export class CoreCrypto {
      *
      * @param conversationId - The ID of the conversation
      */
-    async clearPendingGroupFromExternalCommit(conversationId: ConversationId): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.clear_pending_group_from_external_commit(conversationId));
+    async clearPendingGroupFromExternalCommit(
+        conversationId: ConversationId
+    ): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.clear_pending_group_from_external_commit(conversationId)
+        );
     }
 
     /**
@@ -1425,8 +1322,12 @@ export class CoreCrypto {
      * @param conversationId - The group's ID
      * @returns the messages from current epoch which had been buffered, if any
      */
-    async commitAccepted(conversationId: ConversationId): Promise<BufferedDecryptedMessage[] | undefined> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.commit_accepted(conversationId));
+    async commitAccepted(
+        conversationId: ConversationId
+    ): Promise<BufferedDecryptedMessage[] | undefined> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.commit_accepted(conversationId)
+        );
     }
 
     /**
@@ -1438,8 +1339,13 @@ export class CoreCrypto {
      * @param conversationId - The group's ID
      * @param proposalRef - A reference to the proposal to delete. You get one when using {@link CoreCrypto.newProposal}
      */
-    async clearPendingProposal(conversationId: ConversationId, proposalRef: ProposalRef): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.clear_pending_proposal(conversationId, proposalRef));
+    async clearPendingProposal(
+        conversationId: ConversationId,
+        proposalRef: ProposalRef
+    ): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.clear_pending_proposal(conversationId, proposalRef)
+        );
     }
 
     /**
@@ -1453,7 +1359,9 @@ export class CoreCrypto {
      * @param conversationId - The group's ID
      */
     async clearPendingCommit(conversationId: ConversationId): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.clear_pending_commit(conversationId));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.clear_pending_commit(conversationId)
+        );
     }
 
     /**
@@ -1465,8 +1373,13 @@ export class CoreCrypto {
      *
      * @returns A `Uint8Array` representing the derived key
      */
-    async exportSecretKey(conversationId: ConversationId, keyLength: number): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.export_secret_key(conversationId, keyLength));
+    async exportSecretKey(
+        conversationId: ConversationId,
+        keyLength: number
+    ): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.export_secret_key(conversationId, keyLength)
+        );
     }
 
     /**
@@ -1477,7 +1390,9 @@ export class CoreCrypto {
      * @returns A list of clients from the members of the group
      */
     async getClientIds(conversationId: ConversationId): Promise<ClientId[]> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.get_client_ids(conversationId));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.get_client_ids(conversationId)
+        );
     }
 
     /**
@@ -1499,7 +1414,9 @@ export class CoreCrypto {
      */
     async reseedRng(seed: Uint8Array): Promise<void> {
         if (seed.length !== 32) {
-            throw new Error(`The seed length needs to be exactly 32 bytes. ${seed.length} bytes provided.`);
+            throw new Error(
+                `The seed length needs to be exactly 32 bytes. ${seed.length} bytes provided.`
+            );
         }
 
         return await CoreCryptoError.asyncMapErr(this.#cc.reseed_rng(seed));
@@ -1518,8 +1435,13 @@ export class CoreCrypto {
      * @param sessionId - ID of the Proteus session
      * @param prekey - CBOR-encoded Proteus prekey of the other client
      */
-    async proteusSessionFromPrekey(sessionId: string, prekey: Uint8Array): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_session_from_prekey(sessionId, prekey));
+    async proteusSessionFromPrekey(
+        sessionId: string,
+        prekey: Uint8Array
+    ): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_session_from_prekey(sessionId, prekey)
+        );
     }
 
     /**
@@ -1530,8 +1452,13 @@ export class CoreCrypto {
      *
      * @returns A `Uint8Array` containing the message that was sent along with the session handshake
      */
-    async proteusSessionFromMessage(sessionId: string, envelope: Uint8Array): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_session_from_message(sessionId, envelope));
+    async proteusSessionFromMessage(
+        sessionId: string,
+        envelope: Uint8Array
+    ): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_session_from_message(sessionId, envelope)
+        );
     }
 
     /**
@@ -1542,7 +1469,9 @@ export class CoreCrypto {
      * @param sessionId - ID of the Proteus session
      */
     async proteusSessionSave(sessionId: string): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_session_save(sessionId));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_session_save(sessionId)
+        );
     }
 
     /**
@@ -1552,7 +1481,9 @@ export class CoreCrypto {
      * @param sessionId - ID of the Proteus session
      */
     async proteusSessionDelete(sessionId: string): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_session_delete(sessionId));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_session_delete(sessionId)
+        );
     }
 
     /**
@@ -1563,7 +1494,9 @@ export class CoreCrypto {
      * @returns whether the session exists or not
      */
     async proteusSessionExists(sessionId: string): Promise<boolean> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_session_exists(sessionId));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_session_exists(sessionId)
+        );
     }
 
     /**
@@ -1573,8 +1506,13 @@ export class CoreCrypto {
      * @param ciphertext - CBOR encoded, encrypted proteus message
      * @returns The decrypted payload contained within the message
      */
-    async proteusDecrypt(sessionId: string, ciphertext: Uint8Array): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_decrypt(sessionId, ciphertext));
+    async proteusDecrypt(
+        sessionId: string,
+        ciphertext: Uint8Array
+    ): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_decrypt(sessionId, ciphertext)
+        );
     }
 
     /**
@@ -1584,8 +1522,13 @@ export class CoreCrypto {
      * @param plaintext - payload to encrypt
      * @returns The CBOR-serialized encrypted message
      */
-    async proteusEncrypt(sessionId: string, plaintext: Uint8Array): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_encrypt(sessionId, plaintext));
+    async proteusEncrypt(
+        sessionId: string,
+        plaintext: Uint8Array
+    ): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_encrypt(sessionId, plaintext)
+        );
     }
 
     /**
@@ -1596,8 +1539,13 @@ export class CoreCrypto {
      * @param plaintext - payload to encrypt
      * @returns A map indexed by each session ID and the corresponding CBOR-serialized encrypted message for this session
      */
-    async proteusEncryptBatched(sessions: string[], plaintext: Uint8Array): Promise<Map<string, Uint8Array>> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_encrypt_batched(sessions, plaintext));
+    async proteusEncryptBatched(
+        sessions: string[],
+        plaintext: Uint8Array
+    ): Promise<Map<string, Uint8Array>> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_encrypt_batched(sessions, plaintext)
+        );
     }
 
     /**
@@ -1607,7 +1555,9 @@ export class CoreCrypto {
      * @returns: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
      */
     async proteusNewPrekey(prekeyId: number): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_new_prekey(prekeyId));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_new_prekey(prekeyId)
+        );
     }
 
     /**
@@ -1616,7 +1566,9 @@ export class CoreCrypto {
      * @returns A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey accompanied by its ID
      */
     async proteusNewPrekeyAuto(): Promise<ProteusAutoPrekeyBundle> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_new_prekey_auto());
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_new_prekey_auto()
+        );
     }
 
     /**
@@ -1625,7 +1577,9 @@ export class CoreCrypto {
      * @returns A CBOR-serialize version of the PreKeyBundle associated with the last resort PreKey (holding the last resort prekey id)
      */
     async proteusLastResortPrekey(): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_last_resort_prekey());
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_last_resort_prekey()
+        );
     }
 
     /**
@@ -1643,7 +1597,9 @@ export class CoreCrypto {
      * @returns Hex-encoded public key string
      */
     async proteusFingerprint(): Promise<string> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_fingerprint());
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_fingerprint()
+        );
     }
 
     /**
@@ -1653,7 +1609,9 @@ export class CoreCrypto {
      * @returns Hex-encoded public key string
      */
     async proteusFingerprintLocal(sessionId: string): Promise<string> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_fingerprint_local(sessionId));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_fingerprint_local(sessionId)
+        );
     }
 
     /**
@@ -1663,7 +1621,9 @@ export class CoreCrypto {
      * @returns Hex-encoded public key string
      */
     async proteusFingerprintRemote(sessionId: string): Promise<string> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_fingerprint_remote(sessionId));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_fingerprint_remote(sessionId)
+        );
     }
 
     /**
@@ -1674,7 +1634,9 @@ export class CoreCrypto {
      **/
     static proteusFingerprintPrekeybundle(prekey: Uint8Array): string {
         try {
-            return this.#module.CoreCrypto.proteus_fingerprint_prekeybundle(prekey);
+            return this.#module.CoreCrypto.proteus_fingerprint_prekeybundle(
+                prekey
+            );
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1686,7 +1648,9 @@ export class CoreCrypto {
      * @param storeName - The name of the IndexedDB store where the data is stored
      */
     async proteusCryptoboxMigrate(storeName: string): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_cryptobox_migrate(storeName));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.proteus_cryptobox_migrate(storeName)
+        );
     }
 
     /**
@@ -1708,9 +1672,24 @@ export class CoreCrypto {
      * @param ciphersuite - for generating signing key material
      * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiMlsInitOnly}
      */
-    async e2eiNewEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<E2eiEnrollment> {
-        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
-        return new E2eiEnrollment(e2ei);
+    async e2eiNewEnrollment(
+        clientId: string,
+        displayName: string,
+        handle: string,
+        expiryDays: number,
+        ciphersuite: Ciphersuite
+    ): Promise<E2eiEnrollment> {
+        return new E2eiEnrollment(
+            await CoreCryptoError.asyncMapErr(
+                this.#cc.e2ei_new_enrollment(
+                    clientId,
+                    displayName,
+                    handle,
+                    expiryDays,
+                    ciphersuite
+                )
+            )
+        );
     }
 
     /**
@@ -1724,9 +1703,24 @@ export class CoreCrypto {
      * @param ciphersuite - for generating signing key material
      * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
      */
-    async e2eiNewActivationEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<E2eiEnrollment> {
-        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_activation_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
-        return new E2eiEnrollment(e2ei);
+    async e2eiNewActivationEnrollment(
+        clientId: string,
+        displayName: string,
+        handle: string,
+        expiryDays: number,
+        ciphersuite: Ciphersuite
+    ): Promise<E2eiEnrollment> {
+        return new E2eiEnrollment(
+            await CoreCryptoError.asyncMapErr(
+                this.#cc.e2ei_new_activation_enrollment(
+                    clientId,
+                    displayName,
+                    handle,
+                    expiryDays,
+                    ciphersuite
+                )
+            )
+        );
     }
 
     /**
@@ -1742,9 +1736,24 @@ export class CoreCrypto {
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
      * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
      */
-    async e2eiNewRotateEnrollment(clientId: string, expiryDays: number, ciphersuite: Ciphersuite, displayName?: string, handle?: string,): Promise<E2eiEnrollment> {
-        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_rotate_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
-        return new E2eiEnrollment(e2ei);
+    async e2eiNewRotateEnrollment(
+        clientId: string,
+        expiryDays: number,
+        ciphersuite: Ciphersuite,
+        displayName?: string,
+        handle?: string
+    ): Promise<E2eiEnrollment> {
+        return new E2eiEnrollment(
+            await CoreCryptoError.asyncMapErr(
+                this.#cc.e2ei_new_rotate_enrollment(
+                    clientId,
+                    displayName,
+                    handle,
+                    expiryDays,
+                    ciphersuite
+                )
+            )
+        );
     }
 
     /**
@@ -1755,8 +1764,14 @@ export class CoreCrypto {
      * @param certificateChain - the raw response from ACME server
      * @returns a MlsClient initialized with only a x509 credential
      */
-    async e2eiMlsInitOnly(enrollment: E2eiEnrollment, certificateChain: string): Promise<void> {
-        return await this.#cc.e2ei_mls_init_only(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain);
+    async e2eiMlsInitOnly(
+        enrollment: E2eiEnrollment,
+        certificateChain: string
+    ): Promise<void> {
+        return await this.#cc.e2ei_mls_init_only(
+            enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity,
+            certificateChain
+        );
     }
 
     /**
@@ -1769,16 +1784,16 @@ export class CoreCrypto {
      * @param newKeyPackageCount - number of KeyPackages with new identity to generate
      * @returns a {@link RotateBundle} with commits to fan-out to other group members, KeyPackages to upload and old ones to delete
      */
-    async e2eiRotateAll(enrollment: E2eiEnrollment, certificateChain: string, newKeyPackageCount: number): Promise<RotateBundle> {
-        const ffiRet: CoreCryptoFfiTypes.RotateBundle = await this.#cc.e2ei_rotate_all(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain, newKeyPackageCount);
-
-        const ret: RotateBundle = {
-            commits: ffiRet.commits,
-            newKeyPackages: ffiRet.new_key_packages,
-            keyPackageRefsToRemove: ffiRet.key_package_refs_to_remove,
-        }
-
-        return ret;
+    async e2eiRotateAll(
+        enrollment: E2eiEnrollment,
+        certificateChain: string,
+        newKeyPackageCount: number
+    ): Promise<RotateBundle> {
+        return await this.#cc.e2ei_rotate_all(
+            enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity,
+            certificateChain,
+            newKeyPackageCount
+        );
     }
 
     /**
@@ -1789,7 +1804,11 @@ export class CoreCrypto {
      * @returns a handle to fetch the enrollment later with {@link e2eiEnrollmentStashPop}
      */
     async e2eiEnrollmentStash(enrollment: E2eiEnrollment): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.e2ei_enrollment_stash(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity))
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.e2ei_enrollment_stash(
+                enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity
+            )
+        );
     }
 
     /**
@@ -1799,8 +1818,11 @@ export class CoreCrypto {
      * @returns the persisted enrollment instance
      */
     async e2eiEnrollmentStashPop(handle: Uint8Array): Promise<E2eiEnrollment> {
-        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_enrollment_stash_pop(handle));
-        return new E2eiEnrollment(e2ei);
+        return new E2eiEnrollment(
+            await CoreCryptoError.asyncMapErr(
+                this.#cc.e2ei_enrollment_stash_pop(handle)
+            )
+        );
     }
 
     /**
@@ -1810,8 +1832,12 @@ export class CoreCrypto {
      * @param conversationId The group's ID
      * @returns the conversation state given current members
      */
-    async e2eiConversationState(conversationId: ConversationId): Promise<E2eiConversationState> {
-        let state = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_conversation_state(conversationId));
+    async e2eiConversationState(
+        conversationId: ConversationId
+    ): Promise<E2eiConversationState> {
+        let state = await CoreCryptoError.asyncMapErr(
+            this.#cc.e2ei_conversation_state(conversationId)
+        );
         // @ts-ignore
         return E2eiConversationState[E2eiConversationState[state]];
     }
@@ -1823,7 +1849,9 @@ export class CoreCrypto {
      * @returns true if end-to-end identity is enabled for the given ciphersuite
      */
     async e2eiIsEnabled(ciphersuite: Ciphersuite): Promise<boolean> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.e2ei_is_enabled(ciphersuite));
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.e2ei_is_enabled(ciphersuite)
+        );
     }
 
     /**
@@ -1834,8 +1862,13 @@ export class CoreCrypto {
      * @param clientIds - identifiers of the user
      * @returns identities or if no member has a x509 certificate, it will return an empty List
      */
-    async getUserIdentities(conversationId: ConversationId, clientIds: ClientId[]): Promise<WireIdentity[]> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.get_user_identities(conversationId, clientIds));
+    async getUserIdentities(
+        conversationId: ConversationId,
+        clientIds: ClientId[]
+    ): Promise<WireIdentity[]> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.get_user_identities(conversationId, clientIds)
+        );
     }
 
     /**
@@ -1999,9 +2032,15 @@ export class E2eiEnrollment {
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
-    newDpopChallengeRequest(accessToken: string, previousNonce: string): JsonRawData {
+    newDpopChallengeRequest(
+        accessToken: string,
+        previousNonce: string
+    ): JsonRawData {
         try {
-            return this.#enrollment.new_dpop_challenge_request(accessToken, previousNonce);
+            return this.#enrollment.new_dpop_challenge_request(
+                accessToken,
+                previousNonce
+            );
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -2014,9 +2053,15 @@ export class E2eiEnrollment {
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
-    newOidcChallengeRequest(idToken: string, previousNonce: string): JsonRawData {
+    newOidcChallengeRequest(
+        idToken: string,
+        previousNonce: string
+    ): JsonRawData {
         try {
-            return this.#enrollment.new_oidc_challenge_request(idToken, previousNonce);
+            return this.#enrollment.new_oidc_challenge_request(
+                idToken,
+                previousNonce
+            );
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -2045,7 +2090,10 @@ export class E2eiEnrollment {
      */
     checkOrderRequest(orderUrl: string, previousNonce: string): JsonRawData {
         try {
-            return this.#enrollment.check_order_request(orderUrl, previousNonce);
+            return this.#enrollment.check_order_request(
+                orderUrl,
+                previousNonce
+            );
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -2108,107 +2156,6 @@ export class E2eiEnrollment {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
-}
-
-/**
- * Holds URLs of all the standard ACME endpoint supported on an ACME server.
- * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
- */
-export interface AcmeDirectory {
-    /**
-     * URL for fetching a new nonce. Use this only for creating a new account.
-     *
-     * @readonly
-     */
-    newNonce: string;
-    /**
-     * URL for creating a new account.
-     *
-     * @readonly
-     */
-    newAccount: string;
-    /**
-     * URL for creating a new order.
-     *
-     * @readonly
-     */
-    newOrder: string;
-    /**
-     * Revocation URL
-     *
-     * @readonly
-     */
-    revokeCert: string;
-}
-
-/**
- * Result of an order creation
- * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
- */
-export interface NewAcmeOrder {
-    /**
-     * Contains raw JSON data of this order. This is parsed by the underlying Rust library hence should not be accessed
-     *
-     * @readonly
-     */
-    delegate: Uint8Array;
-    /**
-     * An authorization for each domain to create
-     *
-     * @readonly
-     */
-    authorizations: Uint8Array[];
-}
-
-/**
- * Result of an authorization creation.
- * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
- */
-export interface NewAcmeAuthz {
-    /**
-     * DNS entry associated with those challenge
-     *
-     * @readonly
-     */
-    identifier: string;
-    /**
-     * Challenge for the deviceId owned by wire-server
-     *
-     * @readonly
-     */
-    wireDpopChallenge?: AcmeChallenge;
-    /**
-     * Challenge for the userId and displayName owned by the identity provider
-     *
-     * @readonly
-     */
-    wireOidcChallenge?: AcmeChallenge;
-}
-
-/**
- * For creating a challenge
- * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
- */
-export interface AcmeChallenge {
-    /**
-     * Contains raw JSON data of this challenge. This is parsed by the underlying Rust library hence should not be accessed
-     *
-     * @readonly
-     */
-    delegate: Uint8Array;
-    /**
-     * URL of this challenge
-     *
-     * @readonly
-     */
-    url: string;
-    /**
-     * Non-standard, Wire specific claim. Indicates the consumer from where it should get the challenge proof.
-     * Either from wire-server "/access-token" endpoint in case of a DPoP challenge, or from an OAuth token endpoint for an OIDC challenge
-     *
-     * @readonly
-     */
-    target: string;
 }
 
 /**
