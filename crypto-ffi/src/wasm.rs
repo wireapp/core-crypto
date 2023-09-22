@@ -282,7 +282,7 @@ impl MemberAddedMessages {
         Uint8Array::from(&*self.commit)
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = groupInfo)]
     pub fn group_info(&self) -> GroupInfoBundle {
         self.group_info.clone()
     }
@@ -333,7 +333,7 @@ impl CommitBundle {
         self.welcome.as_ref().map(|buf| Uint8Array::from(buf.as_slice()))
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = groupInfo)]
     pub fn group_info(&self) -> GroupInfoBundle {
         self.group_info.clone()
     }
@@ -366,12 +366,12 @@ pub struct GroupInfoBundle {
 
 #[wasm_bindgen]
 impl GroupInfoBundle {
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = encryptionType)]
     pub fn encryption_type(&self) -> u8 {
         self.encryption_type
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = ratchetTreeType)]
     pub fn ratchet_tree_type(&self) -> u8 {
         self.ratchet_tree_type
     }
@@ -411,7 +411,7 @@ impl RotateBundle {
         commits
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = newKeyPackages)]
     pub fn new_key_packages(&self) -> Vec<Uint8Array> {
         self.new_key_packages
             .iter()
@@ -420,7 +420,7 @@ impl RotateBundle {
             .collect()
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = keyPackageRefsToRemove)]
     pub fn key_package_refs_to_remove(&self) -> Vec<Uint8Array> {
         self.key_package_refs_to_remove
             .iter()
@@ -467,7 +467,7 @@ impl ProposalBundle {
         Uint8Array::from(&*self.proposal)
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = proposalRef)]
     pub fn proposal_ref(&self) -> Uint8Array {
         Uint8Array::from(&*self.proposal_ref)
     }
@@ -496,7 +496,7 @@ pub struct ConversationInitBundle {
 
 #[wasm_bindgen]
 impl ConversationInitBundle {
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = conversationId)]
     pub fn conversation_id(&self) -> Uint8Array {
         Uint8Array::from(&*self.conversation_id)
     }
@@ -506,7 +506,7 @@ impl ConversationInitBundle {
         Uint8Array::from(&*self.commit)
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = groupInfo)]
     pub fn group_info(&self) -> GroupInfoBundle {
         self.group_info.clone()
     }
@@ -603,17 +603,17 @@ impl DecryptedMessage {
             .collect::<js_sys::Array>()
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = isActive)]
     pub fn is_active(&self) -> bool {
         self.is_active
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = commitDelay)]
     pub fn commit_delay(&self) -> Option<u32> {
         self.commit_delay
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = senderClientId)]
     pub fn sender_client_id(&self) -> JsValue {
         if let Some(cid) = &self.sender_client_id {
             Uint8Array::from(cid.as_slice()).into()
@@ -622,7 +622,7 @@ impl DecryptedMessage {
         }
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = hasEpochChanged)]
     pub fn has_epoch_changed(&self) -> bool {
         self.has_epoch_changed
     }
@@ -632,7 +632,7 @@ impl DecryptedMessage {
         self.identity.clone()
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = bufferedMessages)]
     pub fn buffered_messages(&self) -> Option<js_sys::Array> {
         self.buffered_messages
             .clone()
@@ -701,17 +701,17 @@ impl BufferedDecryptedMessage {
             .collect::<js_sys::Array>()
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = isActive)]
     pub fn is_active(&self) -> bool {
         self.is_active
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = commitDelay)]
     pub fn commit_delay(&self) -> Option<u32> {
         self.commit_delay
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = senderClientId)]
     pub fn sender_client_id(&self) -> JsValue {
         if let Some(cid) = &self.sender_client_id {
             Uint8Array::from(cid.as_slice()).into()
@@ -720,7 +720,7 @@ impl BufferedDecryptedMessage {
         }
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = hasEpochChanged)]
     pub fn has_epoch_changed(&self) -> bool {
         self.has_epoch_changed
     }
@@ -756,7 +756,7 @@ impl WireIdentity {
         }
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = clientId)]
     pub fn client_id(&self) -> String {
         self.client_id.clone()
     }
@@ -766,7 +766,7 @@ impl WireIdentity {
         self.handle.clone()
     }
 
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter = displayName)]
     pub fn display_name(&self) -> String {
         self.display_name.clone()
     }
@@ -2800,26 +2800,22 @@ impl AcmeDirectory {
         }
     }
 
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "newNonce")]
+    #[wasm_bindgen(getter = newNonce)]
     pub fn new_nonce(&self) -> String {
         self.new_nonce.to_string()
     }
 
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "newAccount")]
+    #[wasm_bindgen(getter = newAccount)]
     pub fn new_account(&self) -> String {
         self.new_account.to_string()
     }
 
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "newOrder")]
+    #[wasm_bindgen(getter = newOrder)]
     pub fn new_order(&self) -> String {
         self.new_order.to_string()
     }
 
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "revokeCert")]
+    #[wasm_bindgen(getter = revokeCert)]
     pub fn revoke_cert(&self) -> String {
         self.revoke_cert.to_string()
     }
@@ -2936,14 +2932,12 @@ impl NewAcmeAuthz {
         self.identifier.clone()
     }
 
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "wireDpopChallenge")]
+    #[wasm_bindgen(getter = wireDpopChallenge)]
     pub fn wire_dpop_challenge(&self) -> Option<AcmeChallenge> {
         self.wire_dpop_challenge.clone()
     }
 
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "wireOidcChallenge")]
+    #[wasm_bindgen(getter = wireOidcChallenge)]
     pub fn wire_oidc_challenge(&self) -> Option<AcmeChallenge> {
         self.wire_oidc_challenge.clone()
     }

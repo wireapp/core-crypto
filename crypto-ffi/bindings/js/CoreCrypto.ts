@@ -955,8 +955,7 @@ export class CoreCrypto {
                 custom?.wirePolicy,
                 perDomainTrustAnchors as any[],
             );
-            const ret = await CoreCryptoError.asyncMapErr(this.#cc.create_conversation(conversationId, creatorCredentialType, config));
-            return ret;
+            return await CoreCryptoError.asyncMapErr(this.#cc.create_conversation(conversationId, creatorCredentialType, config));
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -986,33 +985,31 @@ export class CoreCrypto {
                 payload
             ));
 
-            const ffiCommitDelay = ffiDecryptedMessage.commit_delay;
+            const ffiCommitDelay = ffiDecryptedMessage.commitDelay;
 
             let commitDelay = undefined;
             if (typeof ffiCommitDelay === "number" && ffiCommitDelay >= 0) {
                 commitDelay = ffiCommitDelay * 1000;
             }
 
-            const ret: DecryptedMessage = {
+            return {
                 message: ffiDecryptedMessage.message,
                 proposals: ffiDecryptedMessage.proposals,
-                isActive: ffiDecryptedMessage.is_active,
-                senderClientId: ffiDecryptedMessage.sender_client_id,
+                isActive: ffiDecryptedMessage.isActive,
+                senderClientId: ffiDecryptedMessage.senderClientId,
                 commitDelay,
-                hasEpochChanged: ffiDecryptedMessage.has_epoch_changed,
-                bufferedMessages: ffiDecryptedMessage.buffered_messages?.map(m => {
+                hasEpochChanged: ffiDecryptedMessage.hasEpochChanged,
+                bufferedMessages: ffiDecryptedMessage.bufferedMessages?.map(m => {
                     return {
                         message: m.message,
                         proposals: m.proposals,
-                        isActive: m.is_active,
-                        senderClientId: m.sender_client_id,
-                        commitDelay: m.commit_delay,
-                        hasEpochChanged: m.has_epoch_changed,
+                        isActive: m.isActive,
+                        senderClientId: m.senderClientId,
+                        commitDelay: m.commitDelay,
+                        hasEpochChanged: m.hasEpochChanged,
                     }
                 }),
             };
-
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1056,19 +1053,15 @@ export class CoreCrypto {
                 addTrustAnchors
             ));
 
-            const gi = ffiRet.group_info;
-
-            const ret: CommitBundle = {
+            return {
                 welcome: ffiRet.welcome,
                 commit: ffiRet.commit,
                 groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload
+                    encryptionType: ffiRet.groupInfo.encryptionType,
+                    ratchetTreeType: ffiRet.groupInfo.ratchetTreeType,
+                    payload: ffiRet.groupInfo.payload
                 },
             };
-
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1165,19 +1158,15 @@ export class CoreCrypto {
 
             ffiClients.forEach(c => c.free());
 
-            const gi = ffiRet.group_info;
-
-            const ret: MemberAddedMessages = {
+            return {
                 welcome: ffiRet.welcome,
                 commit: ffiRet.commit,
                 groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload
+                    encryptionType: ffiRet.groupInfo.encryptionType,
+                    ratchetTreeType: ffiRet.groupInfo.ratchetTreeType,
+                    payload: ffiRet.groupInfo.payload
                 },
             };
-
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1206,19 +1195,15 @@ export class CoreCrypto {
                 clientIds
             ));
 
-            const gi = ffiRet.group_info;
-
-            const ret: CommitBundle = {
+            return {
                 welcome: ffiRet.welcome,
                 commit: ffiRet.commit,
                 groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload
+                    encryptionType: ffiRet.groupInfo.encryptionType,
+                    ratchetTreeType: ffiRet.groupInfo.ratchetTreeType,
+                    payload: ffiRet.groupInfo.payload
                 },
             };
-
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1241,19 +1226,15 @@ export class CoreCrypto {
                 conversationId
             ));
 
-            const gi = ffiRet.group_info;
-
-            const ret: CommitBundle = {
+            return {
                 welcome: ffiRet.welcome,
                 commit: ffiRet.commit,
                 groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload
+                    encryptionType: ffiRet.groupInfo.encryptionType,
+                    ratchetTreeType: ffiRet.groupInfo.ratchetTreeType,
+                    payload: ffiRet.groupInfo.payload
                 },
             };
-
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1280,15 +1261,13 @@ export class CoreCrypto {
                 return undefined;
             }
 
-            const gi = ffiCommitBundle.group_info;
-
             return {
                 welcome: ffiCommitBundle.welcome,
                 commit: ffiCommitBundle.commit,
                 groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload
+                    encryptionType: ffiCommitBundle.groupInfo.encryptionType,
+                    ratchetTreeType: ffiCommitBundle.groupInfo.ratchetTreeType,
+                    payload: ffiCommitBundle.groupInfo.payload
                 },
             };
         } catch (e) {
@@ -1379,19 +1358,15 @@ export class CoreCrypto {
             const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
             const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await CoreCryptoError.asyncMapErr(this.#cc.join_by_external_commit(groupInfo, config, credentialType));
 
-            const gi = ffiInitMessage.group_info;
-
-            const ret: ConversationInitBundle = {
-                conversationId: ffiInitMessage.conversation_id,
+            return {
+                conversationId: ffiInitMessage.conversationId,
                 commit: ffiInitMessage.commit,
                 groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload
+                    encryptionType: ffiInitMessage.groupInfo.encryptionType,
+                    ratchetTreeType: ffiInitMessage.groupInfo.ratchetTreeType,
+                    payload: ffiInitMessage.groupInfo.payload
                 },
             };
-
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1772,13 +1747,11 @@ export class CoreCrypto {
     async e2eiRotateAll(enrollment: E2eiEnrollment, certificateChain: string, newKeyPackageCount: number): Promise<RotateBundle> {
         const ffiRet: CoreCryptoFfiTypes.RotateBundle = await this.#cc.e2ei_rotate_all(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain, newKeyPackageCount);
 
-        const ret: RotateBundle = {
+        return {
             commits: ffiRet.commits,
-            newKeyPackages: ffiRet.new_key_packages,
-            keyPackageRefsToRemove: ffiRet.key_package_refs_to_remove,
-        }
-
-        return ret;
+            newKeyPackages: ffiRet.newKeyPackages,
+            keyPackageRefsToRemove: ffiRet.keyPackageRefsToRemove,
+        };
     }
 
     /**
