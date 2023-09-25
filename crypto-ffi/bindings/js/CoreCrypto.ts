@@ -20,9 +20,6 @@ import wasm from "../../../crypto-ffi/Cargo.toml";
 import type * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi";
 import {
     AcmeDirectory,
-    CommitBundle,
-    ConversationInitBundle,
-    MemberAddedMessages,
     NewAcmeAuthz,
     NewAcmeOrder,
     PerDomainTrustAnchor,
@@ -232,6 +229,107 @@ export type ClientId = Uint8Array;
 export type ProposalRef = Uint8Array;
 
 /**
+ * Data shape for the returned MLS commit & welcome message tuple upon adding clients to a conversation
+ */
+export interface MemberAddedMessages {
+    /**
+     * TLS-serialized MLS Commit that needs to be fanned out to other (existing) members of the conversation
+     *
+     * @readonly
+     */
+    commit: Uint8Array;
+    /**
+     * TLS-serialized MLS Welcome message that needs to be fanned out to the clients newly added to the conversation
+     *
+     * @readonly
+     */
+    welcome: Uint8Array;
+    /**
+     * MLS GroupInfo which is required for joining a group by external commit
+     *
+     * @readonly
+     */
+    groupInfo: GroupInfoBundle;
+}
+
+/**
+ * Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome)
+ */
+export interface CommitBundle {
+    /**
+     * TLS-serialized MLS Commit that needs to be fanned out to other (existing) members of the conversation
+     *
+     * @readonly
+     */
+    commit: Uint8Array;
+    /**
+     * Optional TLS-serialized MLS Welcome message that needs to be fanned out to the clients newly added to the conversation
+     *
+     * @readonly
+     */
+    welcome?: Uint8Array;
+    /**
+     * MLS GroupInfo which is required for joining a group by external commit
+     *
+     * @readonly
+     */
+    groupInfo: GroupInfoBundle;
+}
+
+/**
+ * Wraps a GroupInfo in order to efficiently upload it to the Delivery Service.
+ * This is not part of MLS protocol but parts might be standardized at some point.
+ */
+export interface GroupInfoBundle {
+    /**
+     * see {@link GroupInfoEncryptionType}
+     */
+    encryptionType: GroupInfoEncryptionType;
+    /**
+     * see {@link RatchetTreeType}
+     */
+    ratchetTreeType: RatchetTreeType;
+    /**
+     * TLS-serialized GroupInfo
+     */
+    payload: Uint8Array;
+}
+
+/**
+ * Informs whether the GroupInfo is confidential
+ * see [core_crypto::mls::conversation::group_info::GroupInfoEncryptionType]
+ */
+export enum GroupInfoEncryptionType {
+    /**
+     * Unencrypted
+     */
+    Plaintext = 0x01,
+    /**
+     * Encrypted in a JWE (not yet implemented)
+     */
+    JweEncrypted = 0x02,
+}
+
+/**
+ * Represents different ways of carrying the Ratchet Tree with some optimizations to save some space
+ * see [core_crypto::mls::conversation::group_info::RatchetTreeType]
+ */
+export enum RatchetTreeType {
+    /**
+     * Complete GroupInfo
+     */
+    Full = 0x01,
+    /**
+     * Contains the difference since previous epoch (not yet implemented)
+     */
+    Delta = 0x02,
+    /**
+     * To define (not yet implemented)
+     */
+    ByRef = 0x03,
+}
+
+/**
  * Result returned after rotating the Credential of the current client in all the local conversations
  */
 export interface RotateBundle {
@@ -308,6 +406,28 @@ export interface Invitee {
      * MLS KeyPackage belonging to the aforementioned client
      */
     kp: Uint8Array;
+}
+
+export interface ConversationInitBundle {
+    /**
+     * Conversation ID of the conversation created
+     *
+     * @readonly
+     */
+    conversationId: ConversationId;
+    /**
+     * TLS-serialized MLS External Commit that needs to be fanned out
+     *
+     * @readonly
+     */
+    commit: Uint8Array;
+    /**
+     * MLS Public Group State (aka Group Info) which becomes valid when the external commit is accepted by the Delivery Service
+     * with {@link CoreCrypto.mergePendingGroupFromExternalCommit}
+     *
+     * @readonly
+     */
+    groupInfo: GroupInfoBundle;
 }
 
 /**
@@ -951,13 +1071,25 @@ export class CoreCrypto {
         addTrustAnchors: PerDomainTrustAnchor[]
     ): Promise<CommitBundle> {
         try {
-            return await CoreCryptoError.asyncMapErr(
-                this.#cc.update_trust_anchors_from_conversation(
-                    conversationId,
-                    removeDomainNames,
-                    addTrustAnchors
-                )
-            );
+            const ffiRet: CoreCryptoFfiTypes.CommitBundle =
+                await CoreCryptoError.asyncMapErr(
+                    this.#cc.update_trust_anchors_from_conversation(
+                        conversationId,
+                        removeDomainNames,
+                        addTrustAnchors
+                    )
+                );
+
+            const gi = ffiRet.groupInfo;
+            return {
+                welcome: ffiRet.welcome,
+                commit: ffiRet.commit,
+                groupInfo: {
+                    encryptionType: gi.encryptionType,
+                    ratchetTreeType: gi.ratchetTreeType,
+                    payload: gi.payload,
+                },
+            };
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1085,7 +1217,16 @@ export class CoreCrypto {
 
             ffiClients.forEach((c) => c.free());
 
-            return ffiRet;
+            const gi = ffiRet.groupInfo;
+            return {
+                welcome: ffiRet.welcome,
+                commit: ffiRet.commit,
+                groupInfo: {
+                    encryptionType: gi.encryptionType,
+                    ratchetTreeType: gi.ratchetTreeType,
+                    payload: gi.payload,
+                },
+            };
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1109,12 +1250,24 @@ export class CoreCrypto {
         clientIds: ClientId[]
     ): Promise<CommitBundle> {
         try {
-            return await CoreCryptoError.asyncMapErr(
-                this.#cc.remove_clients_from_conversation(
-                    conversationId,
-                    clientIds
-                )
-            );
+            const ffiRet: CoreCryptoFfiTypes.CommitBundle =
+                await CoreCryptoError.asyncMapErr(
+                    this.#cc.remove_clients_from_conversation(
+                        conversationId,
+                        clientIds
+                    )
+                );
+
+            const gi = ffiRet.groupInfo;
+            return {
+                welcome: ffiRet.welcome,
+                commit: ffiRet.commit,
+                groupInfo: {
+                    encryptionType: gi.encryptionType,
+                    ratchetTreeType: gi.ratchetTreeType,
+                    payload: gi.payload,
+                },
+            };
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1135,9 +1288,21 @@ export class CoreCrypto {
         conversationId: ConversationId
     ): Promise<CommitBundle> {
         try {
-            return await CoreCryptoError.asyncMapErr(
-                this.#cc.update_keying_material(conversationId)
-            );
+            const ffiRet: CoreCryptoFfiTypes.CommitBundle =
+                await CoreCryptoError.asyncMapErr(
+                    this.#cc.update_keying_material(conversationId)
+                );
+
+            const gi = ffiRet.groupInfo;
+            return {
+                welcome: ffiRet.welcome,
+                commit: ffiRet.commit,
+                groupInfo: {
+                    encryptionType: gi.encryptionType,
+                    ratchetTreeType: gi.ratchetTreeType,
+                    payload: gi.payload,
+                },
+            };
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1167,7 +1332,16 @@ export class CoreCrypto {
                 return undefined;
             }
 
-            return ffiCommitBundle;
+            const gi = ffiCommitBundle.groupInfo;
+            return {
+                welcome: ffiCommitBundle.welcome,
+                commit: ffiCommitBundle.commit,
+                groupInfo: {
+                    encryptionType: gi.encryptionType,
+                    ratchetTreeType: gi.ratchetTreeType,
+                    payload: gi.payload,
+                },
+            };
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1274,13 +1448,26 @@ export class CoreCrypto {
                 keyRotationSpan,
                 wirePolicy
             );
-            return await CoreCryptoError.asyncMapErr(
-                this.#cc.join_by_external_commit(
-                    groupInfo,
-                    config,
-                    credentialType
-                )
-            );
+            const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle =
+                await CoreCryptoError.asyncMapErr(
+                    this.#cc.join_by_external_commit(
+                        groupInfo,
+                        config,
+                        credentialType
+                    )
+                );
+
+            const gi = ffiInitMessage.groupInfo;
+
+            return {
+                conversationId: ffiInitMessage.conversationId,
+                commit: ffiInitMessage.commit,
+                groupInfo: {
+                    encryptionType: gi.encryptionType,
+                    ratchetTreeType: gi.ratchetTreeType,
+                    payload: gi.payload,
+                },
+            };
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
