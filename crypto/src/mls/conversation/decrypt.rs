@@ -174,7 +174,7 @@ impl MlsConversation {
 
                 let buffered_messages = if restore_pending {
                     if let Some(pm) = self
-                        .restore_pending_messages(client, backend, callbacks, parent_conv)
+                        .restore_pending_messages(client, backend, callbacks, parent_conv, false)
                         .await?
                     {
                         backend.key_store().remove::<MlsPendingMessage, _>(self.id()).await?;

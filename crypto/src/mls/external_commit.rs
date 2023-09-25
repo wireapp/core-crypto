@@ -166,11 +166,13 @@ impl MlsCentral {
             ..Default::default()
         };
 
+        let is_rejoin = self.mls_backend.key_store().mls_group_exists(id.as_slice()).await;
+
         // Persist the now usable MLS group in the keystore
         // TODO: find a way to make the insertion of the MlsGroup and deletion of the pending group transactional
         let mut conversation = MlsConversation::from_mls_group(mls_group, configuration, &self.mls_backend).await?;
 
-        let pending_messages = self.restore_pending_messages(&mut conversation).await?;
+        let pending_messages = self.restore_pending_messages(&mut conversation, is_rejoin).await?;
 
         self.mls_groups.insert(id.clone(), conversation);
 
