@@ -147,4 +147,55 @@ pub mod tests {
         )
         .await
     }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn should_not_reapply_buffered_messages_when_external_commit_contains_remove(case: TestCase) {
+        run_test_with_client_ids(
+            case.clone(),
+            ["alice", "bob"],
+            move |[mut alice_central, mut bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+
+                    // Alice will never see this commit
+                    bob_central.update_keying_material(&id).await.unwrap();
+                    bob_central.commit_accepted(&id).await.unwrap();
+
+                    let msg1 = bob_central.encrypt_message(&id, "A").await.unwrap();
+                    let msg2 = bob_central.encrypt_message(&id, "B").await.unwrap();
+
+                    // Since Alice missed Bob's commit she should buffer this message
+                    let decrypt = alice_central.decrypt_message(&id, msg1).await;
+                    assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                    let decrypt = alice_central.decrypt_message(&id, msg2).await;
+                    assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                    assert_eq!(alice_central.count_entities().await.pending_messages, 2);
+
+                    let gi = bob_central.get_group_info(&id).await;
+                    let ext_commit = alice_central
+                        .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
+                        .await
+                        .unwrap();
+                    alice_central
+                        .merge_pending_group_from_external_commit(&id)
+                        .await
+                        .unwrap();
+
+                    bob_central
+                        .decrypt_message(&id, ext_commit.commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    // Alice should have deleted all her buffered messages
+                    assert_eq!(alice_central.count_entities().await.pending_messages, 0);
+                })
+            },
+        )
+        .await
+    }
 }

@@ -99,7 +99,7 @@ impl MlsCentral {
         let mut conv = conv.write().await;
         conv.commit_accepted(&self.mls_backend).await?;
 
-        let pending_messages = self.restore_pending_messages(&mut conv).await?;
+        let pending_messages = self.restore_pending_messages(&mut conv, false).await?;
         if pending_messages.is_some() {
             self.mls_backend.key_store().remove::<MlsPendingMessage, _>(id).await?;
         }

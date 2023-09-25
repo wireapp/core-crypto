@@ -3,12 +3,13 @@
 //!
 //! Feel free to delete all of this when the issue is fixed on the DS side !
 
-use crate::group_store::GroupStoreValue;
-use crate::prelude::decrypt::MlsBufferedConversationDecryptMessage;
-use crate::prelude::{
-    Client, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationDecryptMessage,
+use crate::{
+    group_store::GroupStoreValue,
+    prelude::{
+        decrypt::MlsBufferedConversationDecryptMessage, Client, ConversationId, CoreCryptoCallbacks, CryptoError,
+        CryptoResult, MlsCentral, MlsConversation, MlsConversationDecryptMessage, MlsError,
+    },
 };
-use crate::{CoreCryptoCallbacks, MlsError};
 use core_crypto_keystore::entities::{EntityFindParams, MlsPendingMessage};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
@@ -33,6 +34,7 @@ impl MlsCentral {
     pub(crate) async fn restore_pending_messages(
         &mut self,
         conversation: &mut MlsConversation,
+        is_rejoin: bool,
     ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let parent_conversation = match &conversation.parent_id {
             Some(id) => self.get_conversation(id).await.ok(),
@@ -45,6 +47,7 @@ impl MlsCentral {
                 &self.mls_backend,
                 callbacks,
                 parent_conversation.as_ref(),
+                is_rejoin,
             )
             .await
     }
@@ -59,14 +62,27 @@ impl MlsConversation {
         backend: &'a MlsCryptoProvider,
         callbacks: Option<&'a dyn CoreCryptoCallbacks>,
         parent_conversation: Option<&'a GroupStoreValue<Self>>,
+        is_rejoin: bool,
     ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let keystore = backend.borrow_keystore();
+
+        let group_id = self.id().as_slice();
+        if is_rejoin {
+            // This means the external commit is about rejoining the group.
+            // This is most of the time a last resort measure (for example when a commit is dropped)
+            // and you go out of sync so there's no point in decrypting buffered messages
+
+            if keystore.find::<MlsPendingMessage>(group_id).await?.is_some() {
+                keystore.remove::<MlsPendingMessage, _>(group_id).await?;
+            }
+            return Ok(None);
+        }
 
         let mut pending_messages = keystore
             .find_all::<MlsPendingMessage>(EntityFindParams::default())
             .await?
             .into_iter()
-            .filter(|pm| pm.id == self.id.as_slice())
+            .filter(|pm| pm.id == group_id)
             .try_fold(vec![], |mut acc, m| {
                 let msg = MlsMessageIn::tls_deserialize_bytes(m.message.as_slice()).map_err(MlsError::from)?;
                 let ct = match msg.body_as_ref() {
@@ -219,113 +235,120 @@ pub mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn should_buffer_and_reapply_messages_after_commit_merged_for_receivers(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob", "charlie", "debbie"],
-            move |[mut alice_central, mut bob_central, mut charlie_central, mut debbie_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+        if !case.is_pure_ciphertext() {
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob", "charlie", "debbie"],
+                move |[mut alice_central, mut bob_central, mut charlie_central, mut debbie_central]| {
+                    Box::pin(async move {
+                        let id = conversation_id();
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
 
-                    // Bob joins the group with an external commit...
-                    let gi = alice_central.get_group_info(&id).await;
-                    let ext_commit = bob_central
-                        .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
-                        .await
-                        .unwrap();
-                    bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
+                        // Bob joins the group with an external commit...
+                        let gi = alice_central.get_group_info(&id).await;
+                        let ext_commit = bob_central
+                            .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
+                            .await
+                            .unwrap();
+                        bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
 
-                    // And before others had the chance to get the commit, Bob will create & send messages in the next epoch
-                    // which Alice will have to buffer until she receives the commit.
-                    // This simulates what the DS does with unordered messages
-                    let epoch = bob_central.conversation_epoch(&id).await.unwrap();
-                    let external_proposal = charlie_central
-                        .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
-                        .await
-                        .unwrap();
-                    let app_msg = bob_central.encrypt_message(&id, b"Hello Alice !").await.unwrap();
-                    let proposal = bob_central.new_update_proposal(&id).await.unwrap().proposal;
-                    bob_central
-                        .decrypt_message(&id, external_proposal.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    let debbie = debbie_central.rand_member(&case).await;
-                    let commit = bob_central
-                        .add_members_to_conversation(&id, &mut [debbie])
-                        .await
-                        .unwrap();
-                    bob_central.commit_accepted(&id).await.unwrap();
-                    charlie_central
-                        .process_welcome_message(commit.welcome.clone().into(), case.custom_cfg())
-                        .await
-                        .unwrap();
-                    debbie_central
-                        .process_welcome_message(commit.welcome.clone().into(), case.custom_cfg())
-                        .await
-                        .unwrap();
+                        // And before others had the chance to get the commit, Bob will create & send messages in the next epoch
+                        // which Alice will have to buffer until she receives the commit.
+                        // This simulates what the DS does with unordered messages
+                        let epoch = bob_central.conversation_epoch(&id).await.unwrap();
+                        let external_proposal = charlie_central
+                            .new_external_add_proposal(
+                                id.clone(),
+                                epoch.into(),
+                                case.ciphersuite(),
+                                case.credential_type,
+                            )
+                            .await
+                            .unwrap();
+                        let app_msg = bob_central.encrypt_message(&id, b"Hello Alice !").await.unwrap();
+                        let proposal = bob_central.new_update_proposal(&id).await.unwrap().proposal;
+                        bob_central
+                            .decrypt_message(&id, external_proposal.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+                        let debbie = debbie_central.rand_member(&case).await;
+                        let commit = bob_central
+                            .add_members_to_conversation(&id, &mut [debbie])
+                            .await
+                            .unwrap();
+                        bob_central.commit_accepted(&id).await.unwrap();
+                        charlie_central
+                            .process_welcome_message(commit.welcome.clone().into(), case.custom_cfg())
+                            .await
+                            .unwrap();
+                        debbie_central
+                            .process_welcome_message(commit.welcome.clone().into(), case.custom_cfg())
+                            .await
+                            .unwrap();
 
-                    // And now Alice will have to decrypt those messages while he hasn't yet merged the commit
-                    // To add more fun, he will buffer the messages in exactly the wrong order (to make
-                    // sure he reapplies them in the right order afterwards)
-                    let messages = vec![commit.commit, external_proposal, proposal]
-                        .into_iter()
-                        .map(|m| m.to_bytes().unwrap());
-                    for m in messages {
-                        let decrypt = alice_central.decrypt_message(&id, m).await;
-                        assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
-                    }
-                    let decrypt = alice_central.decrypt_message(&id, app_msg).await;
-                    assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
-
-                    // Alice should have buffered the messages
-                    assert_eq!(alice_central.count_entities().await.pending_messages, 4);
-
-                    // Finally, Alice receives the original commit for this epoch
-                    let original_commit = ext_commit.commit.to_bytes().unwrap();
-
-                    let Some(restored_messages) = alice_central
-                        .decrypt_message(&id, original_commit)
-                        .await
-                        .unwrap()
-                        .buffered_messages
-                    else {
-                        panic!("Bob's messages should have been restored at this point");
-                    };
-                    for (i, m) in restored_messages.into_iter().enumerate() {
-                        match i {
-                            0 => {
-                                // this is the application message
-                                assert_eq!(&m.app_msg.unwrap(), b"Hello Alice !");
-                                assert!(!m.has_epoch_changed);
-                            }
-                            1 | 2 => {
-                                // this is either the member or the external proposal
-                                assert!(m.app_msg.is_none());
-                                assert!(!m.has_epoch_changed);
-                            }
-                            3 => {
-                                // this is the commit
-                                assert!(m.app_msg.is_none());
-                                assert!(m.has_epoch_changed);
-                            }
-                            _ => unreachable!(),
+                        // And now Alice will have to decrypt those messages while he hasn't yet merged the commit
+                        // To add more fun, he will buffer the messages in exactly the wrong order (to make
+                        // sure he reapplies them in the right order afterwards)
+                        let messages = vec![commit.commit, external_proposal, proposal]
+                            .into_iter()
+                            .map(|m| m.to_bytes().unwrap());
+                        for m in messages {
+                            let decrypt = alice_central.decrypt_message(&id, m).await;
+                            assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
                         }
-                    }
-                    // because external commit got merged
-                    assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
-                    // because Alice's commit got merged
-                    assert!(alice_central.try_talk_to(&id, &mut charlie_central).await.is_ok());
-                    // because Debbie's external proposal got merged through the commit
-                    assert!(alice_central.try_talk_to(&id, &mut debbie_central).await.is_ok());
+                        let decrypt = alice_central.decrypt_message(&id, app_msg).await;
+                        assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
 
-                    // After merging we should erase all those pending messages
-                    assert_eq!(alice_central.count_entities().await.pending_messages, 0);
-                })
-            },
-        )
-        .await
+                        // Alice should have buffered the messages
+                        assert_eq!(alice_central.count_entities().await.pending_messages, 4);
+
+                        // Finally, Alice receives the original commit for this epoch
+                        let original_commit = ext_commit.commit.to_bytes().unwrap();
+
+                        let Some(restored_messages) = alice_central
+                            .decrypt_message(&id, original_commit)
+                            .await
+                            .unwrap()
+                            .buffered_messages
+                        else {
+                            panic!("Bob's messages should have been restored at this point");
+                        };
+                        for (i, m) in restored_messages.into_iter().enumerate() {
+                            match i {
+                                0 => {
+                                    // this is the application message
+                                    assert_eq!(&m.app_msg.unwrap(), b"Hello Alice !");
+                                    assert!(!m.has_epoch_changed);
+                                }
+                                1 | 2 => {
+                                    // this is either the member or the external proposal
+                                    assert!(m.app_msg.is_none());
+                                    assert!(!m.has_epoch_changed);
+                                }
+                                3 => {
+                                    // this is the commit
+                                    assert!(m.app_msg.is_none());
+                                    assert!(m.has_epoch_changed);
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        // because external commit got merged
+                        assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_ok());
+                        // because Alice's commit got merged
+                        assert!(alice_central.try_talk_to(&id, &mut charlie_central).await.is_ok());
+                        // because Debbie's external proposal got merged through the commit
+                        assert!(alice_central.try_talk_to(&id, &mut debbie_central).await.is_ok());
+
+                        // After merging we should erase all those pending messages
+                        assert_eq!(alice_central.count_entities().await.pending_messages, 0);
+                    })
+                },
+            )
+            .await
+        }
     }
 }
