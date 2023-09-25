@@ -338,10 +338,10 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
 pub struct GroupInfoBundle {
     /// Whether the payload is encrypted or not
     #[wasm_bindgen(readonly, js_name = "encryptionType")]
-    pub encryption_type: EncryptionType,
+    pub encryption_type: u8,
     /// Whether the payload is complete or partial
     #[wasm_bindgen(readonly, js_name = "ratchetTreeType")]
-    pub ratchet_tree_type: RatchetTreeType,
+    pub ratchet_tree_type: u8,
     /// TLS-serialized GroupInfo
     #[wasm_bindgen(readonly, getter_with_clone, js_name = "payload")]
     pub payload: Vec<u8>,
@@ -350,8 +350,8 @@ pub struct GroupInfoBundle {
 impl From<MlsGroupInfoBundle> for GroupInfoBundle {
     fn from(gi: MlsGroupInfoBundle) -> Self {
         Self {
-            encryption_type: gi.encryption_type.into(),
-            ratchet_tree_type: gi.ratchet_tree_type.into(),
+            encryption_type: gi.encryption_type as u8,
+            ratchet_tree_type: gi.ratchet_tree_type as u8,
             payload: gi.payload.bytes(),
         }
     }
