@@ -48,7 +48,7 @@ impl CoreCryptoNativeClient {
             None
         };
         let configuration =
-            MlsCentralConfiguration::try_new("whatever".into(), "test".into(), cid, ciphersuites, None)?;
+            MlsCentralConfiguration::try_new("whatever".into(), "test".into(), cid, ciphersuites, None, Some(100))?;
 
         let cc = CoreCrypto::from(MlsCentral::try_new_in_memory(configuration).await?);
 

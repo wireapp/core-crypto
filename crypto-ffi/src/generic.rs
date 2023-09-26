@@ -683,9 +683,20 @@ pub async fn core_crypto_new(
     key: String,
     client_id: ClientId,
     ciphersuites: Ciphersuites,
+    nb_key_package: Option<u32>,
 ) -> CoreCryptoResult<std::sync::Arc<CoreCrypto>> {
-    let configuration =
-        MlsCentralConfiguration::try_new(path, key, Some(client_id.0.clone()), (&ciphersuites).into(), None)?;
+    let nb_key_package = nb_key_package
+        .map(usize::try_from)
+        .transpose()
+        .map_err(CryptoError::from)?;
+    let configuration = MlsCentralConfiguration::try_new(
+        path,
+        key,
+        Some(client_id.0.clone()),
+        (&ciphersuites).into(),
+        None,
+        nb_key_package,
+    )?;
 
     let central = MlsCentral::try_new(configuration).await?;
     let central = core_crypto::CoreCrypto::from(central).into();
@@ -703,8 +714,14 @@ pub async fn core_crypto_deferred_init(
     path: String,
     key: String,
     ciphersuites: Ciphersuites,
+    nb_key_package: Option<u32>,
 ) -> CoreCryptoResult<std::sync::Arc<CoreCrypto>> {
-    let configuration = MlsCentralConfiguration::try_new(path, key, None, (&ciphersuites).into(), None)?;
+    let nb_key_package = nb_key_package
+        .map(usize::try_from)
+        .transpose()
+        .map_err(CryptoError::from)?;
+    let configuration =
+        MlsCentralConfiguration::try_new(path, key, None, (&ciphersuites).into(), None, nb_key_package)?;
 
     let central = MlsCentral::try_new(configuration).await?;
     let central = core_crypto::CoreCrypto::from(central).into();
@@ -719,12 +736,25 @@ pub async fn core_crypto_deferred_init(
 #[uniffi::export]
 impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::mls_init]
-    pub async fn mls_init(&self, client_id: ClientId, ciphersuites: Ciphersuites) -> CoreCryptoResult<()> {
+    pub async fn mls_init(
+        &self,
+        client_id: ClientId,
+        ciphersuites: Ciphersuites,
+        nb_key_package: Option<u32>,
+    ) -> CoreCryptoResult<()> {
+        let nb_key_package = nb_key_package
+            .map(usize::try_from)
+            .transpose()
+            .map_err(CryptoError::from)?;
         Ok(self
             .central
             .lock()
             .await
-            .mls_init(ClientIdentifier::Basic(client_id.0), (&ciphersuites).into())
+            .mls_init(
+                ClientIdentifier::Basic(client_id.0),
+                (&ciphersuites).into(),
+                nb_key_package,
+            )
             .await?)
     }
 
@@ -1318,6 +1348,7 @@ impl CoreCrypto {
         &self,
         enrollment: std::sync::Arc<E2eiEnrollment>,
         certificate_chain: String,
+        nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<()> {
         if std::sync::Arc::strong_count(&enrollment) > 1 {
             unsafe {
@@ -1333,10 +1364,15 @@ impl CoreCrypto {
             .ok_or_else(|| core_crypto::prelude::CryptoError::LockPoisonError)?
             .into_inner();
 
+        let nb_key_package = nb_key_package
+            .map(usize::try_from)
+            .transpose()
+            .map_err(CryptoError::from)?;
+
         self.central
             .lock()
             .await
-            .e2ei_mls_init_only(e2ei, certificate_chain)
+            .e2ei_mls_init_only(e2ei, certificate_chain, nb_key_package)
             .await
             .map_err(|_| core_crypto::prelude::CryptoError::ImplementationError.into())
     }

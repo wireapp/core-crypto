@@ -22,10 +22,8 @@ pub(crate) mod key_package;
 use crate::{
     mls::{credential::ext::CredentialExt, credential::CredentialBundle},
     prelude::{
-        identifier::ClientIdentifier,
-        key_package::{INITIAL_KEYING_MATERIAL_COUNT, KEYPACKAGE_DEFAULT_LIFETIME},
-        CertificateBundle, ClientId, CryptoError, CryptoResult, MlsCentral, MlsCiphersuite, MlsCredentialType,
-        MlsError,
+        identifier::ClientIdentifier, key_package::KEYPACKAGE_DEFAULT_LIFETIME, CertificateBundle, ClientId,
+        CryptoError, CryptoResult, MlsCentral, MlsCiphersuite, MlsCredentialType, MlsError,
     },
 };
 use openmls::prelude::{Credential, CredentialType};
@@ -71,6 +69,7 @@ impl Client {
         identifier: ClientIdentifier,
         ciphersuites: &[MlsCiphersuite],
         backend: &MlsCryptoProvider,
+        nb_key_package: usize,
     ) -> CryptoResult<Self> {
         let id = identifier.get_id()?;
 
@@ -96,12 +95,12 @@ impl Client {
             match Self::load(backend, id.as_ref(), credentials, signature_schemes).await {
                 Ok(client) => client,
                 Err(CryptoError::ClientSignatureNotFound) => {
-                    Self::generate(identifier, backend, ciphersuites, true).await?
+                    Self::generate(identifier, backend, ciphersuites, nb_key_package).await?
                 }
                 Err(e) => return Err(e),
             }
         } else {
-            Self::generate(identifier, backend, ciphersuites, true).await?
+            Self::generate(identifier, backend, ciphersuites, nb_key_package).await?
         };
 
         Ok(client)
@@ -236,7 +235,7 @@ impl Client {
         identifier: ClientIdentifier,
         backend: &MlsCryptoProvider,
         ciphersuites: &[MlsCiphersuite],
-        provision: bool,
+        nb_key_package: usize,
     ) -> CryptoResult<Self> {
         let id = identifier.get_id()?;
         let signature_schemes = ciphersuites
@@ -255,20 +254,13 @@ impl Client {
             client.save_identity(backend, Some(&id), sc, cb).await?;
         }
 
-        if provision {
+        if nb_key_package != 0 {
             for cs in ciphersuites {
-                for (_, cb) in client
-                    .identities
-                    .iter()
-                    .filter(|(id_sc, _)| id_sc == &cs.signature_algorithm())
-                {
+                let sc = cs.signature_algorithm();
+                let identity = client.identities.iter().filter(|(id_sc, _)| id_sc == &sc);
+                for (_, cb) in identity {
                     client
-                        .request_key_packages(
-                            INITIAL_KEYING_MATERIAL_COUNT,
-                            *cs,
-                            cb.credential.credential_type().into(),
-                            backend,
-                        )
+                        .request_key_packages(nb_key_package, *cs, cb.credential.credential_type().into(), backend)
                         .await?;
                 }
             }
@@ -463,7 +455,12 @@ impl Client {
                 crate::prelude::CertificateBundle::rand_identifier(&[case.signature_scheme()], client_id)
             }
         };
-        Self::generate(identity, backend, &[case.ciphersuite()], provision).await
+        let nb_key_package = if provision {
+            crate::prelude::INITIAL_KEYING_MATERIAL_COUNT
+        } else {
+            0
+        };
+        Self::generate(identity, backend, &[case.ciphersuite()], nb_key_package).await
     }
 
     pub async fn find_keypackages(

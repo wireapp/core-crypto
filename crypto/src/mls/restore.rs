@@ -44,7 +44,10 @@ pub mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{
-        prelude::{CertificateBundle, ClientIdentifier, MlsCentral, MlsCentralConfiguration, MlsCredentialType},
+        prelude::{
+            CertificateBundle, ClientIdentifier, MlsCentral, MlsCentralConfiguration, MlsCredentialType,
+            INITIAL_KEYING_MATERIAL_COUNT,
+        },
         test_utils::*,
     };
     use std::collections::HashMap;
@@ -70,11 +73,19 @@ pub mod tests {
                     None,
                     vec![case.ciphersuite()],
                     None,
+                    Some(INITIAL_KEYING_MATERIAL_COUNT),
                 )
                 .unwrap();
 
                 let mut central = MlsCentral::try_new(configuration.clone()).await.unwrap();
-                central.mls_init(cid.clone(), vec![case.ciphersuite()]).await.unwrap();
+                central
+                    .mls_init(
+                        cid.clone(),
+                        vec![case.ciphersuite()],
+                        Some(INITIAL_KEYING_MATERIAL_COUNT),
+                    )
+                    .await
+                    .unwrap();
                 let id = conversation_id();
                 let _ = central
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
@@ -84,7 +95,10 @@ pub mod tests {
                 central.close().await.unwrap();
 
                 let mut central = MlsCentral::try_new(configuration).await.unwrap();
-                central.mls_init(cid, vec![case.ciphersuite()]).await.unwrap();
+                central
+                    .mls_init(cid, vec![case.ciphersuite()], Some(INITIAL_KEYING_MATERIAL_COUNT))
+                    .await
+                    .unwrap();
                 let _ = central.encrypt_message(&id, b"Test").await.unwrap();
 
                 central.mls_backend.destroy_and_reset().await.unwrap();
@@ -121,11 +135,16 @@ pub mod tests {
                     None,
                     vec![case.ciphersuite()],
                     None,
+                    Some(INITIAL_KEYING_MATERIAL_COUNT),
                 )
                 .unwrap();
                 let mut alice_central = MlsCentral::try_new(alice_cfg.clone()).await.unwrap();
                 alice_central
-                    .mls_init(alice_cid.clone(), vec![case.ciphersuite()])
+                    .mls_init(
+                        alice_cid.clone(),
+                        vec![case.ciphersuite()],
+                        Some(INITIAL_KEYING_MATERIAL_COUNT),
+                    )
                     .await
                     .unwrap();
 
@@ -135,10 +154,14 @@ pub mod tests {
                     None,
                     vec![case.ciphersuite()],
                     None,
+                    Some(INITIAL_KEYING_MATERIAL_COUNT),
                 )
                 .unwrap();
                 let mut bob_central = MlsCentral::try_new(bob_cfg).await.unwrap();
-                bob_central.mls_init(bob_cid, vec![case.ciphersuite()]).await.unwrap();
+                bob_central
+                    .mls_init(bob_cid, vec![case.ciphersuite()], Some(INITIAL_KEYING_MATERIAL_COUNT))
+                    .await
+                    .unwrap();
 
                 alice_central
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
@@ -149,7 +172,7 @@ pub mod tests {
                 // Create another central which will be desynchronized at some point
                 let mut alice_central_mirror = MlsCentral::try_new(alice_cfg).await.unwrap();
                 alice_central_mirror
-                    .mls_init(alice_cid, vec![case.ciphersuite()])
+                    .mls_init(alice_cid, vec![case.ciphersuite()], Some(INITIAL_KEYING_MATERIAL_COUNT))
                     .await
                     .unwrap();
                 assert!(alice_central_mirror.try_talk_to(&id, &mut bob_central).await.is_ok());
