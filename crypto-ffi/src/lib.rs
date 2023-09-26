@@ -70,6 +70,7 @@ macro_rules! proteus_impl {
 cfg_if::cfg_if! {
     if #[cfg(target_family = "wasm")] {
         mod wasm;
+        mod wasm_utils;
         pub use self::wasm::*;
     } else {
         uniffi::setup_scaffolding!("core_crypto_ffi");

@@ -14,8 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+#![allow(unused_variables)]
+
 use std::collections::HashMap;
 
+use super::wasm_utils::*;
 use core_crypto::prelude::*;
 use core_crypto::CryptoError;
 use futures_util::future::TryFutureExt;
@@ -2777,52 +2780,23 @@ impl E2eiEnrollment {
     }
 }
 
-#[wasm_bindgen]
+/// Holds URLs of all the standard ACME endpoint supported on an ACME server.
+/// @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// See [core_crypto::e2e_identity::types::E2eiAcmeDirectory]
 pub struct AcmeDirectory {
-    new_nonce: String,
-    new_account: String,
-    new_order: String,
-    revoke_cert: String,
-}
-
-#[wasm_bindgen]
-impl AcmeDirectory {
-    #[wasm_bindgen(constructor)]
-    pub fn new(new_nonce: String, new_account: String, new_order: String, revoke_cert: String) -> Self {
-        Self {
-            new_nonce,
-            new_account,
-            new_order,
-            revoke_cert,
-        }
-    }
-
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "newNonce")]
-    pub fn new_nonce(&self) -> String {
-        self.new_nonce.to_string()
-    }
-
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "newAccount")]
-    pub fn new_account(&self) -> String {
-        self.new_account.to_string()
-    }
-
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "newOrder")]
-    pub fn new_order(&self) -> String {
-        self.new_order.to_string()
-    }
-
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "revokeCert")]
-    pub fn revoke_cert(&self) -> String {
-        self.revoke_cert.to_string()
-    }
+    /// URL for fetching a new nonce. Use this only for creating a new account.
+    #[wasm_bindgen(readonly, js_name = "newNonce")]
+    pub new_nonce: String,
+    /// URL for creating a new account.
+    #[wasm_bindgen(readonly, js_name = "newAccount")]
+    pub new_account: String,
+    /// URL for creating a new order.
+    #[wasm_bindgen(readonly, js_name = "newOrder")]
+    pub new_order: String,
+    /// Revocation URL
+    #[wasm_bindgen(readonly, js_name = "revokeCert")]
+    pub revoke_cert: String,
 }
 
 impl From<core_crypto::prelude::E2eiAcmeDirectory> for AcmeDirectory {
@@ -2847,36 +2821,22 @@ impl From<AcmeDirectory> for core_crypto::prelude::E2eiAcmeDirectory {
     }
 }
 
-#[wasm_bindgen]
+/// Result of an order creation.
+/// @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+#[wasm_bindgen(skip_jsdoc)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// See [core_crypto::e2e_identity::types::E2eiNewAcmeOrder]
 pub struct NewAcmeOrder {
-    delegate: Vec<u8>,
-    authorizations: Vec<Vec<u8>>,
+    /// Contains raw JSON data of this order. This is parsed by the underlying Rust library hence should not be accessed
+    #[wasm_bindgen(readonly, getter_with_clone, js_name = "delegate")]
+    pub delegate: Vec<u8>,
+    authorizations: ArrayOfByteArray,
 }
 
 #[wasm_bindgen]
 impl NewAcmeOrder {
-    #[wasm_bindgen(constructor)]
-    pub fn new(delegate: Uint8Array, authorizations: Vec<Uint8Array>) -> Self {
-        Self {
-            delegate: delegate.to_vec(),
-            authorizations: authorizations.iter().map(Uint8Array::to_vec).collect(),
-        }
-    }
-
     #[wasm_bindgen(getter)]
-    pub fn delegate(&self) -> Uint8Array {
-        self.delegate.as_slice().into()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn authorizations(&self) -> js_sys::Array {
-        self.authorizations
-            .iter()
-            .map(|a| Uint8Array::from(a.as_slice()))
-            .collect::<js_sys::Array>()
+    pub fn authorizations(&self) -> Vec<Uint8Array> {
+        self.authorizations.clone().into()
     }
 }
 
@@ -2884,7 +2844,12 @@ impl From<core_crypto::prelude::E2eiNewAcmeOrder> for NewAcmeOrder {
     fn from(new_order: core_crypto::prelude::E2eiNewAcmeOrder) -> Self {
         Self {
             delegate: new_order.delegate,
-            authorizations: new_order.authorizations.into_iter().map(String::into_bytes).collect(),
+            authorizations: new_order
+                .authorizations
+                .into_iter()
+                .map(String::into_bytes)
+                .collect::<Vec<_>>()
+                .into(),
         }
     }
 }
@@ -2895,58 +2860,30 @@ impl TryFrom<NewAcmeOrder> for core_crypto::prelude::E2eiNewAcmeOrder {
     fn try_from(new_order: NewAcmeOrder) -> WasmCryptoResult<Self> {
         Ok(Self {
             delegate: new_order.delegate,
-            authorizations: new_order.authorizations.into_iter().try_fold(
-                vec![],
-                |mut acc, a| -> WasmCryptoResult<Vec<String>> {
-                    acc.push(String::from_utf8(a).map_err(CryptoError::from)?);
-                    Ok(acc)
-                },
-            )?,
+            authorizations: new_order
+                .authorizations
+                .0
+                .into_iter()
+                .map(|a| String::from_utf8(a).map_err(CryptoError::from))
+                .collect::<CryptoResult<Vec<String>>>()?,
         })
     }
 }
 
-#[wasm_bindgen]
+/// Result of an authorization creation.
+/// @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// See [core_crypto::e2e_identity::types::E2eiNewAcmeAuthz]
 pub struct NewAcmeAuthz {
-    identifier: String,
-    wire_dpop_challenge: Option<AcmeChallenge>,
-    wire_oidc_challenge: Option<AcmeChallenge>,
-}
-
-#[wasm_bindgen]
-impl NewAcmeAuthz {
-    #[wasm_bindgen(constructor)]
-    pub fn new(
-        identifier: String,
-        wire_dpop_challenge: Option<AcmeChallenge>,
-        wire_oidc_challenge: Option<AcmeChallenge>,
-    ) -> Self {
-        Self {
-            identifier,
-            wire_dpop_challenge,
-            wire_oidc_challenge,
-        }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn identifier(&self) -> String {
-        self.identifier.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "wireDpopChallenge")]
-    pub fn wire_dpop_challenge(&self) -> Option<AcmeChallenge> {
-        self.wire_dpop_challenge.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    #[wasm_bindgen(js_name = "wireOidcChallenge")]
-    pub fn wire_oidc_challenge(&self) -> Option<AcmeChallenge> {
-        self.wire_oidc_challenge.clone()
-    }
+    /// DNS entry associated with those challenge
+    #[wasm_bindgen(readonly, js_name = "identifier")]
+    pub identifier: String,
+    /// Challenge for the deviceId owned by wire-server
+    #[wasm_bindgen(readonly, js_name = "wireDpopChallenge")]
+    pub wire_dpop_challenge: Option<AcmeChallenge>,
+    /// Challenge for the userId and displayName owned by the identity provider
+    #[wasm_bindgen(readonly, js_name = "wireOidcChallenge")]
+    pub wire_oidc_challenge: Option<AcmeChallenge>,
 }
 
 impl From<core_crypto::prelude::E2eiNewAcmeAuthz> for NewAcmeAuthz {
@@ -2969,41 +2906,21 @@ impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
     }
 }
 
-#[wasm_bindgen]
+/// For creating a challenge.
+/// @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// See [core_crypto::e2e_identity::types::E2eiAcmeChallenge]
 pub struct AcmeChallenge {
-    delegate: Vec<u8>,
-    url: String,
-    target: String,
-}
-
-#[wasm_bindgen]
-impl AcmeChallenge {
-    #[wasm_bindgen(constructor)]
-    pub fn new(delegate: Uint8Array, url: String, target: String) -> Self {
-        Self {
-            delegate: delegate.to_vec(),
-            url,
-            target,
-        }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn delegate(&self) -> Uint8Array {
-        self.delegate.as_slice().into()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn url(&self) -> String {
-        self.url.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn target(&self) -> String {
-        self.target.clone()
-    }
+    /// Contains raw JSON data of this challenge. This is parsed by the underlying Rust library hence should not be accessed
+    #[wasm_bindgen(readonly, js_name = "delegate")]
+    pub delegate: Vec<u8>,
+    /// URL of this challenge
+    #[wasm_bindgen(readonly, js_name = "url")]
+    pub url: String,
+    /// Non-standard, Wire specific claim. Indicates the consumer from where it should get the challenge proof.
+    /// Either from wire-server "/access-token" endpoint in case of a DPoP challenge, or from an OAuth token endpoint for an OIDC challenge
+    #[wasm_bindgen(readonly, js_name = "target")]
+    pub target: String,
 }
 
 impl From<core_crypto::prelude::E2eiAcmeChallenge> for AcmeChallenge {

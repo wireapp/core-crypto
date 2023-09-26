@@ -19,6 +19,7 @@
 import wasm from "../../../crypto-ffi/Cargo.toml";
 
 import type * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi";
+import { AcmeDirectory, NewAcmeOrder, NewAcmeAuthz } from "./wasm";
 
 interface CoreCryptoRichError {
     errorName: string;
@@ -2108,107 +2109,6 @@ export class E2eiEnrollment {
             throw CoreCryptoError.fromStdError(e as Error);
         }
     }
-}
-
-/**
- * Holds URLs of all the standard ACME endpoint supported on an ACME server.
- * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
- */
-export interface AcmeDirectory {
-    /**
-     * URL for fetching a new nonce. Use this only for creating a new account.
-     *
-     * @readonly
-     */
-    newNonce: string;
-    /**
-     * URL for creating a new account.
-     *
-     * @readonly
-     */
-    newAccount: string;
-    /**
-     * URL for creating a new order.
-     *
-     * @readonly
-     */
-    newOrder: string;
-    /**
-     * Revocation URL
-     *
-     * @readonly
-     */
-    revokeCert: string;
-}
-
-/**
- * Result of an order creation
- * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
- */
-export interface NewAcmeOrder {
-    /**
-     * Contains raw JSON data of this order. This is parsed by the underlying Rust library hence should not be accessed
-     *
-     * @readonly
-     */
-    delegate: Uint8Array;
-    /**
-     * An authorization for each domain to create
-     *
-     * @readonly
-     */
-    authorizations: Uint8Array[];
-}
-
-/**
- * Result of an authorization creation.
- * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
- */
-export interface NewAcmeAuthz {
-    /**
-     * DNS entry associated with those challenge
-     *
-     * @readonly
-     */
-    identifier: string;
-    /**
-     * Challenge for the deviceId owned by wire-server
-     *
-     * @readonly
-     */
-    wireDpopChallenge?: AcmeChallenge;
-    /**
-     * Challenge for the userId and displayName owned by the identity provider
-     *
-     * @readonly
-     */
-    wireOidcChallenge?: AcmeChallenge;
-}
-
-/**
- * For creating a challenge
- * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
- */
-export interface AcmeChallenge {
-    /**
-     * Contains raw JSON data of this challenge. This is parsed by the underlying Rust library hence should not be accessed
-     *
-     * @readonly
-     */
-    delegate: Uint8Array;
-    /**
-     * URL of this challenge
-     *
-     * @readonly
-     */
-    url: string;
-    /**
-     * Non-standard, Wire specific claim. Indicates the consumer from where it should get the challenge proof.
-     * Either from wire-server "/access-token" endpoint in case of a DPoP challenge, or from an OAuth token endpoint for an OIDC challenge
-     *
-     * @readonly
-     */
-    target: string;
 }
 
 /**
