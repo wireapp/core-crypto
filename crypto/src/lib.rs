@@ -78,6 +78,7 @@ pub mod prelude {
             ciphersuite::MlsCiphersuite,
             client::id::ClientId,
             client::identifier::ClientIdentifier,
+            client::key_package::INITIAL_KEYING_MATERIAL_COUNT,
             client::*,
             config::MlsCentralConfiguration,
             conversation::{

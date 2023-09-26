@@ -32,7 +32,7 @@ pub mod x509;
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
 
-use crate::prelude::{ClientIdentifier, MlsCredentialType};
+use crate::prelude::{ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
 pub use central::*;
 pub use fixtures::TestCase;
 pub use fixtures::*;
@@ -61,8 +61,15 @@ pub async fn run_test_with_client_ids<const N: usize>(
             let stream = paths.into_iter().enumerate().map(|(i, p)| async move {
                 let client_id: ClientId = client_id[i].into();
 
-                let configuration =
-                    MlsCentralConfiguration::try_new(p, "test".into(), None, vec![case.cfg.ciphersuite], None).unwrap();
+                let configuration = MlsCentralConfiguration::try_new(
+                    p,
+                    "test".into(),
+                    None,
+                    vec![case.cfg.ciphersuite],
+                    None,
+                    Some(INITIAL_KEYING_MATERIAL_COUNT),
+                )
+                .unwrap();
                 let mut central = MlsCentral::try_new(configuration).await.unwrap();
 
                 let identity = match case.credential_type {
@@ -75,7 +82,14 @@ pub async fn run_test_with_client_ids<const N: usize>(
                         ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]))
                     }
                 };
-                central.mls_init(identity, vec![case.cfg.ciphersuite]).await.unwrap();
+                central
+                    .mls_init(
+                        identity,
+                        vec![case.cfg.ciphersuite],
+                        Some(INITIAL_KEYING_MATERIAL_COUNT),
+                    )
+                    .await
+                    .unwrap();
                 central.callbacks(Box::<ValidationCallbacks>::default());
                 central
             });
@@ -95,8 +109,15 @@ pub async fn run_test_wo_clients(
             let p = paths.get(0).unwrap();
 
             let ciphersuites = vec![case.cfg.ciphersuite];
-            let configuration =
-                MlsCentralConfiguration::try_new(p.to_string(), "test".into(), None, ciphersuites, None).unwrap();
+            let configuration = MlsCentralConfiguration::try_new(
+                p.to_string(),
+                "test".into(),
+                None,
+                ciphersuites,
+                None,
+                Some(INITIAL_KEYING_MATERIAL_COUNT),
+            )
+            .unwrap();
             let mut central = MlsCentral::try_new(configuration).await.unwrap();
             central.callbacks(Box::<ValidationCallbacks>::default());
             test(central).await

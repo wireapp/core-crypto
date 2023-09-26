@@ -149,6 +149,7 @@ pub mod tests {
         mls::credential::x509::CertificatePrivateKey,
         prelude::{
             ClientIdentifier, ConversationId, CryptoError, MlsCentral, MlsCentralConfiguration, MlsCredentialType,
+            INITIAL_KEYING_MATERIAL_COUNT,
         },
         test_utils::*,
     };
@@ -406,19 +407,42 @@ pub mod tests {
 
         let creator_path = tmp_db_file();
 
-        let creator_cfg =
-            MlsCentralConfiguration::try_new(creator_path.0, "alice".into(), None, ciphersuites.clone(), None)?;
+        let creator_cfg = MlsCentralConfiguration::try_new(
+            creator_path.0,
+            "alice".into(),
+            None,
+            ciphersuites.clone(),
+            None,
+            Some(INITIAL_KEYING_MATERIAL_COUNT),
+        )?;
 
         let mut creator_central = MlsCentral::try_new(creator_cfg).await?;
         creator_central
-            .mls_init(creator_identifier, ciphersuites.clone())
+            .mls_init(
+                creator_identifier,
+                ciphersuites.clone(),
+                Some(INITIAL_KEYING_MATERIAL_COUNT),
+            )
             .await?;
 
         let guest_path = tmp_db_file();
-        let guest_cfg = MlsCentralConfiguration::try_new(guest_path.0, "bob".into(), None, ciphersuites.clone(), None)?;
+        let guest_cfg = MlsCentralConfiguration::try_new(
+            guest_path.0,
+            "bob".into(),
+            None,
+            ciphersuites.clone(),
+            None,
+            Some(INITIAL_KEYING_MATERIAL_COUNT),
+        )?;
 
         let mut guest_central = MlsCentral::try_new(guest_cfg).await?;
-        guest_central.mls_init(guest_identifier, ciphersuites.clone()).await?;
+        guest_central
+            .mls_init(
+                guest_identifier,
+                ciphersuites.clone(),
+                Some(INITIAL_KEYING_MATERIAL_COUNT),
+            )
+            .await?;
 
         creator_central
             .new_conversation(&id, creator_ct, case.cfg.clone())

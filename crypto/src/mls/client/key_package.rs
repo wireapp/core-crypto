@@ -39,9 +39,9 @@ use crate::{
 
 /// Default number of KeyPackages a client generates the first time it's created
 #[cfg(not(test))]
-pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
+pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
 #[cfg(test)]
-pub(crate) const INITIAL_KEYING_MATERIAL_COUNT: usize = 10;
+pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 10;
 
 /// Default lifetime of all generated KeyPackages. Matches the limit defined in openmls
 pub(crate) const KEYPACKAGE_DEFAULT_LIFETIME: std::time::Duration =

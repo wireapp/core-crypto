@@ -55,6 +55,7 @@ impl MlsCentral {
         &mut self,
         enrollment: E2eiEnrollment,
         certificate_chain: String,
+        nb_init_key_packages: Option<usize>,
     ) -> E2eIdentityResult<()> {
         let sk = enrollment.get_sign_key_for_mls()?;
         let cs = enrollment.ciphersuite;
@@ -69,7 +70,7 @@ impl MlsCentral {
             private_key,
         };
         let identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
-        self.mls_init(identifier, vec![cs]).await?;
+        self.mls_init(identifier, vec![cs], nb_init_key_packages).await?;
         Ok(())
     }
 }
@@ -414,6 +415,7 @@ impl E2eiEnrollment {
 
 #[cfg(test)]
 pub mod tests {
+    use crate::prelude::INITIAL_KEYING_MATERIAL_COUNT;
     use crate::{
         prelude::{CertificateBundle, ClientId, E2eIdentityError, E2eIdentityResult, E2eiEnrollment, MlsCentral},
         test_utils::*,
@@ -449,7 +451,10 @@ pub mod tests {
                 })
                 .await
                 .unwrap();
-                assert!(cc.e2ei_mls_init_only(enrollment, cert).await.is_ok());
+                assert!(cc
+                    .e2ei_mls_init_only(enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
+                    .await
+                    .is_ok());
 
                 // verify the created client can create a conversation
                 let id = conversation_id();

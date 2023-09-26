@@ -958,6 +958,7 @@ mod tests {
         test_utils::{proteus_utils::*, *},
     };
 
+    use crate::prelude::INITIAL_KEYING_MATERIAL_COUNT;
     use proteus_traits::PreKeyStore;
     use wasm_bindgen_test::*;
 
@@ -979,6 +980,7 @@ mod tests {
             Some(client_id),
             vec![case.ciphersuite()],
             None,
+            Some(INITIAL_KEYING_MATERIAL_COUNT),
         )
         .unwrap();
         let mut cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
@@ -996,8 +998,15 @@ mod tests {
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
         // we are deferring MLS initialization here, not passing a MLS 'client_id' yet
-        let cfg =
-            MlsCentralConfiguration::try_new(path, "test".to_string(), None, vec![case.ciphersuite()], None).unwrap();
+        let cfg = MlsCentralConfiguration::try_new(
+            path,
+            "test".to_string(),
+            None,
+            vec![case.ciphersuite()],
+            None,
+            Some(INITIAL_KEYING_MATERIAL_COUNT),
+        )
+        .unwrap();
         let mut cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
         assert!(cc.proteus_init().await.is_ok());
         // proteus is initialized, prekeys can be generated
@@ -1008,7 +1017,13 @@ mod tests {
             MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
             MlsCredentialType::X509 => CertificateBundle::rand_identifier(&[case.signature_scheme()], client_id),
         };
-        cc.mls_init(identifier, vec![case.ciphersuite()]).await.unwrap();
+        cc.mls_init(
+            identifier,
+            vec![case.ciphersuite()],
+            Some(INITIAL_KEYING_MATERIAL_COUNT),
+        )
+        .await
+        .unwrap();
         // expect MLS to work
         assert_eq!(
             cc.get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 2)

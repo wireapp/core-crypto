@@ -56,6 +56,7 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
+    use crate::prelude::INITIAL_KEYING_MATERIAL_COUNT;
     use crate::{
         e2e_identity::tests::*,
         prelude::{E2eiEnrollment, MlsCentral},
@@ -89,7 +90,10 @@ pub mod tests {
                 })
                 .await
                 .unwrap();
-                assert!(cc.e2ei_mls_init_only(enrollment, cert).await.is_ok());
+                assert!(cc
+                    .e2ei_mls_init_only(enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
+                    .await
+                    .is_ok());
             })
         })
         .await

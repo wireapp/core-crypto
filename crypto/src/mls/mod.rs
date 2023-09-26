@@ -2,6 +2,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
 
+use crate::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
 use crate::prelude::{
     identifier::ClientIdentifier, Client, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult,
     MlsCentralConfiguration, MlsCiphersuite, MlsConversation, MlsConversationConfiguration, MlsCredentialType,
@@ -40,6 +41,8 @@ pub(crate) mod config {
         /// All supported ciphersuites
         /// TODO: pending wire-server API supports selecting a ciphersuite only the first item of this array will be used.
         pub ciphersuites: Vec<ciphersuite::MlsCiphersuite>,
+        /// Number of [openmls::prelude::KeyPackage] to create when creating a MLS client. Default to [INITIAL_KEYING_MATERIAL_COUNT]
+        pub nb_init_key_packages: Option<usize>,
     }
 
     impl MlsCentralConfiguration {
@@ -61,7 +64,7 @@ pub(crate) mod config {
         /// ```
         /// use core_crypto::{prelude::MlsCentralConfiguration, CryptoError};
         ///
-        /// let result = MlsCentralConfiguration::try_new(String::new(), String::new(), Some(b"".to_vec().into()), vec![], None);
+        /// let result = MlsCentralConfiguration::try_new(String::new(), String::new(), Some(b"".to_vec().into()), vec![], None, Some(100));
         /// assert!(matches!(result.unwrap_err(), CryptoError::MalformedIdentifier(_)));
         /// ```
         ///
@@ -75,6 +78,7 @@ pub(crate) mod config {
         ///     Some(b"MY_CLIENT_ID".to_vec().into()),
         ///     vec![MlsCiphersuite::default()],
         ///     None,
+        ///     Some(100),
         /// );
         /// assert!(result.is_ok());
         /// ```
@@ -84,6 +88,7 @@ pub(crate) mod config {
             client_id: Option<ClientId>,
             ciphersuites: Vec<MlsCiphersuite>,
             entropy: Option<Vec<u8>>,
+            nb_init_key_packages: Option<usize>,
         ) -> CryptoResult<Self> {
             // TODO: probably more complex rules to enforce
             if store_path.trim().is_empty() {
@@ -110,6 +115,7 @@ pub(crate) mod config {
                 client_id,
                 ciphersuites,
                 external_entropy,
+                nb_init_key_packages,
             })
         }
 
@@ -173,6 +179,9 @@ impl MlsCentral {
                     ClientIdentifier::Basic(id),
                     configuration.ciphersuites.as_slice(),
                     &mls_backend,
+                    configuration
+                        .nb_init_key_packages
+                        .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
                 )
                 .await?,
             )
@@ -206,6 +215,9 @@ impl MlsCentral {
                     ClientIdentifier::Basic(id),
                     configuration.ciphersuites.as_slice(),
                     &mls_backend,
+                    configuration
+                        .nb_init_key_packages
+                        .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
                 )
                 .await?,
             )
@@ -229,12 +241,14 @@ impl MlsCentral {
         &mut self,
         identifier: ClientIdentifier,
         ciphersuites: Vec<MlsCiphersuite>,
+        nb_init_key_packages: Option<usize>,
     ) -> CryptoResult<()> {
         if self.mls_client.is_some() {
             // prevents wrong usage of the method instead of silently hiding the mistake
             return Err(CryptoError::ImplementationError);
         }
-        let mls_client = Client::init(identifier, &ciphersuites, &self.mls_backend).await?;
+        let nb_key_package = nb_init_key_packages.unwrap_or(INITIAL_KEYING_MATERIAL_COUNT);
+        let mls_client = Client::init(identifier, &ciphersuites, &self.mls_backend, nb_key_package).await?;
         self.mls_client = Some(mls_client);
         Ok(())
     }
@@ -408,7 +422,7 @@ impl MlsCentral {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::prelude::{CertificateBundle, ClientIdentifier, MlsCredentialType};
+    use crate::prelude::{CertificateBundle, ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
     use crate::{
         mls::{CryptoError, MlsCentral, MlsCentralConfiguration},
         test_utils::*,
@@ -488,6 +502,7 @@ pub mod tests {
                         Some("alice".into()),
                         vec![case.ciphersuite()],
                         None,
+                        Some(INITIAL_KEYING_MATERIAL_COUNT),
                     )
                     .unwrap();
 
@@ -508,6 +523,7 @@ pub mod tests {
                 Some("alice".into()),
                 ciphersuites,
                 None,
+                Some(INITIAL_KEYING_MATERIAL_COUNT),
             );
             assert!(matches!(
                 configuration.unwrap_err(),
@@ -527,6 +543,7 @@ pub mod tests {
                         Some("alice".into()),
                         ciphersuites,
                         None,
+                        Some(INITIAL_KEYING_MATERIAL_COUNT),
                     );
                     assert!(matches!(
                         configuration.unwrap_err(),
@@ -549,6 +566,7 @@ pub mod tests {
                         Some("".into()),
                         ciphersuites,
                         None,
+                        Some(INITIAL_KEYING_MATERIAL_COUNT),
                     );
                     assert!(matches!(
                         configuration.unwrap_err(),
@@ -593,6 +611,7 @@ pub mod tests {
                     Some("potato".into()),
                     vec![case.ciphersuite()],
                     None,
+                    Some(INITIAL_KEYING_MATERIAL_COUNT),
                 )
                 .unwrap();
 
@@ -614,6 +633,7 @@ pub mod tests {
                     None,
                     vec![case.ciphersuite()],
                     None,
+                    Some(INITIAL_KEYING_MATERIAL_COUNT),
                 )
                 .unwrap();
                 // phase 1: init without mls_client
@@ -627,7 +647,14 @@ pub mod tests {
                         CertificateBundle::rand_identifier(&[case.signature_scheme()], client_id)
                     }
                 };
-                central.mls_init(identifier, vec![case.ciphersuite()]).await.unwrap();
+                central
+                    .mls_init(
+                        identifier,
+                        vec![case.ciphersuite()],
+                        Some(INITIAL_KEYING_MATERIAL_COUNT),
+                    )
+                    .await
+                    .unwrap();
                 assert!(central.mls_client.is_some());
                 // expect mls_client to work
                 assert_eq!(

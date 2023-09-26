@@ -292,9 +292,10 @@ impl MlsCentral {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::prelude::ClientIdentifier;
     use crate::{
-        mls::{conversation::handshake::MlsConversationCreationMessage, MlsCentralConfiguration},
+        prelude::{
+            ClientIdentifier, MlsCentralConfiguration, MlsConversationCreationMessage, INITIAL_KEYING_MATERIAL_COUNT,
+        },
         test_utils::*,
     };
 
@@ -397,9 +398,15 @@ pub mod tests {
                     let uuid = uuid::Uuid::new_v4();
                     let name = uuid.hyphenated().to_string();
                     let path = tmp_db_file();
-                    let config =
-                        MlsCentralConfiguration::try_new(path.0, name.clone(), None, vec![case.ciphersuite()], None)
-                            .unwrap();
+                    let config = MlsCentralConfiguration::try_new(
+                        path.0,
+                        name.clone(),
+                        None,
+                        vec![case.ciphersuite()],
+                        None,
+                        Some(INITIAL_KEYING_MATERIAL_COUNT),
+                    )
+                    .unwrap();
                     let mut central = MlsCentral::try_new(config).await.unwrap();
 
                     let client_id: ClientId = name.as_str().into();
@@ -413,7 +420,14 @@ pub mod tests {
                             ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]))
                         }
                     };
-                    central.mls_init(identity, vec![case.cfg.ciphersuite]).await.unwrap();
+                    central
+                        .mls_init(
+                            identity,
+                            vec![case.cfg.ciphersuite],
+                            Some(INITIAL_KEYING_MATERIAL_COUNT),
+                        )
+                        .await
+                        .unwrap();
 
                     bob_and_friends.push(central);
                 }
