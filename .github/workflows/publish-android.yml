@@ -39,7 +39,7 @@ jobs:
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
+        uses: android-actions/setup-android@v3
       - name: Install NDK 25
         run: echo "y" | sdkmanager --install "ndk;25.2.9519653"
       - name: Build Android package
