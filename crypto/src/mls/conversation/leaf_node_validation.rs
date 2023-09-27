@@ -79,6 +79,8 @@ pub mod tests {
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
+                        let expiration_time = 14;
+                        let start = fluvio_wasm_timer::Instant::now();
                         let id = conversation_id();
                         alice_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
@@ -86,12 +88,20 @@ pub mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
-                        let invalid_kp = charlie_central.new_keypackage(&case, Lifetime::new(1)).await;
+                        let invalid_kp = charlie_central
+                            .new_keypackage(&case, Lifetime::new(expiration_time))
+                            .await;
 
                         let proposal = alice_central.new_add_proposal(&id, invalid_kp).await.unwrap();
                         let proposal = proposal.proposal.to_bytes().unwrap();
 
-                        async_std::task::sleep(core::time::Duration::from_secs(2)).await; // have it expire
+                        let elapsed = start.elapsed();
+                        // Give time to the certificate to expire
+                        let expiration_time = core::time::Duration::from_secs(expiration_time);
+                        if expiration_time > elapsed {
+                            async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1))
+                                .await;
+                        }
 
                         let decrypting = bob_central.decrypt_message(&id, proposal).await;
                         assert!(matches!(
@@ -118,6 +128,8 @@ pub mod tests {
                 ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
+                        let expiration_time = 14;
+                        let start = fluvio_wasm_timer::Instant::now();
                         let id = conversation_id();
                         alice_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
@@ -126,7 +138,9 @@ pub mod tests {
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // should fail when receiving Add commit
-                        let invalid_kp = charlie_central.new_keypackage(&case, Lifetime::new(1)).await;
+                        let invalid_kp = charlie_central
+                            .new_keypackage(&case, Lifetime::new(expiration_time))
+                            .await;
                         let invalid_member = ConversationMember::new(bob_central.get_client_id(), invalid_kp);
 
                         let commit = alice_central
@@ -135,7 +149,13 @@ pub mod tests {
                             .unwrap();
                         let commit = commit.commit.to_bytes().unwrap();
 
-                        async_std::task::sleep(core::time::Duration::from_secs(2)).await; // have it expire
+                        let elapsed = start.elapsed();
+                        // Give time to the certificate to expire
+                        let expiration_time = core::time::Duration::from_secs(expiration_time);
+                        if expiration_time > elapsed {
+                            async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1))
+                                .await;
+                        }
 
                         let decrypting = bob_central.decrypt_message(&id, commit).await;
                         assert!(matches!(
@@ -160,13 +180,15 @@ pub mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
+                        let expiration_time = 14;
+                        let start = fluvio_wasm_timer::Instant::now();
                         let id = conversation_id();
                         alice_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
 
-                        let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(1)).await;
+                        let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
                         let invalid_member = ConversationMember::new(bob_central.get_client_id(), invalid_kp);
                         let commit = alice_central
                             .add_members_to_conversation(&id, &mut [invalid_member])
@@ -174,7 +196,13 @@ pub mod tests {
                             .unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
 
-                        async_std::task::sleep(core::time::Duration::from_secs(2)).await; // have it expire
+                        let elapsed = start.elapsed();
+                        // Give time to the certificate to expire
+                        let expiration_time = core::time::Duration::from_secs(expiration_time);
+                        if expiration_time > elapsed {
+                            async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1))
+                                .await;
+                        }
 
                         let process_welcome = bob_central
                             .process_welcome_message(commit.welcome.into(), case.custom_cfg())
