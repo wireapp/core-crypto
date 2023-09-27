@@ -596,27 +596,30 @@ public class CoreCryptoWrapper {
     /// - parameter path: Name of the IndexedDB database
     /// - parameter key: Encryption master key
     /// - parameter clientId: MLS Client ID.
+    /// - parameter ciphersuites: supported by this client
+    /// - parameter nbKeyPackage: number of initial KeyPackage to create when initializing the client
     ///
     /// # Notes #
     /// 1. ``clientId`` should stay consistent as it will be verified against the stored signature & identity to validate the persisted credential
     /// 2. ``key`` should be appropriately stored in a secure location (i.e. WebCrypto private key storage)
     ///
-    public init(path: String, key: String, clientId: ClientId, ciphersuites: Array<UInt16>) async throws {
-        self.coreCrypto = try await CoreCrypto(path: path, key: key, clientId: clientId, ciphersuites: ciphersuites)
+    public init(path: String, key: String, clientId: ClientId, ciphersuites: Array<UInt16>, nbKeyPackage: UInt32 = 100) async throws {
+        self.coreCrypto = try await CoreCrypto(path: path, key: key, clientId: clientId, ciphersuites: ciphersuites, nbKeyPackage: nbKeyPackage)
     }
 
     /// Almost identical to ```CoreCrypto/init``` but allows a 2 phase initialization of MLS.First, calling this will
     /// set up the keystore and will allow generating proteus prekeys.Then, those keys can be traded for a clientId.
     /// Use this clientId to initialize MLS with ```CoreCrypto/mlsInit```.
-    public static func deferredInit(path: String, key: String, ciphersuites: Array<UInt16>) async throws -> CoreCrypto {
-        try await CoreCrypto.deferredInit(path: path, key: key, ciphersuites: ciphersuites)
+    public static func deferredInit(path: String, key: String, ciphersuites: Array<UInt16>, nbKeyPackage: UInt32 = 100) async throws -> CoreCrypto {
+        try await CoreCrypto.deferredInit(path: path, key: key, ciphersuites: ciphersuites, nbKeyPackage: nbKeyPackage)
     }
 
     /// Use this after ```CoreCrypto/deferredInit``` when you have a clientId. It initializes MLS.
     ///
     /// - parameter clientId: client identifier
-    public func mlsInit(clientId: ClientId, ciphersuites: Array<UInt16>) async throws {
-        try await self.coreCrypto.mlsInit(clientId: clientId, ciphersuites: ciphersuites)
+    /// - parameter nbKeyPackage: number of initial KeyPackage to create when initializing the client
+    public func mlsInit(clientId: ClientId, ciphersuites: Array<UInt16>, nbKeyPackage: UInt32 = 100) async throws {
+        try await self.coreCrypto.mlsInit(clientId: clientId, ciphersuites: ciphersuites, nbKeyPackage: nbKeyPackage)
     }
 
     /// Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID.
@@ -1161,8 +1164,9 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter e2ei: the enrollment instance used to fetch the certificates
     /// - parameter certificateChain: the raw response from ACME server
-    public func e2eiMlsInitOnly(enrollment: CoreCryptoSwift.WireE2eIdentity, certificateChain: String) async throws {
-        return try await self.coreCrypto.e2eiMlsInitOnly(enrollment: enrollment, certificateChain: certificateChain)
+    /// - parameter nbKeyPackage: number of initial KeyPackage to create when initializing the client
+    public func e2eiMlsInitOnly(enrollment: CoreCryptoSwift.WireE2eIdentity, certificateChain: String, nbKeyPackage: UInt32 = 100) async throws {
+        return try await self.coreCrypto.e2eiMlsInitOnly(enrollment: enrollment, certificateChain: certificateChain, nbKeyPackage: nbKeyPackage)
     }
 
     /// Creates a commit in all local conversations for changing the credential. Requires first having enrolled a new
