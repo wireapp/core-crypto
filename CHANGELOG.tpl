@@ -7,12 +7,23 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.13] - 2023-09-27
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.13" unreleased=true}}
+</details>
+
+* feat!: introduce missing LeafNode validation at different step in the protocol. As a consequence, previous KeyPackages are not compatible with newly created groups and vice versa. It is recommended to purge everything. Otherwise, joining a group is likely to fail with a "InsufficientCapabilities" error.
+* feat!: initial number of KeyPackage is now configurable, defaulting to 100
+* feat: add e2ei methods for certificate enrollment in Swift wrapper
+* fix: in the case where an external commit is used to rejoin a group, buffered messages are ignored since they probably aren't recoverable given this way to use external commit is often a last resort solution.
 
 ## [1.0.0-rc.12] - 2023-08-31
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.12" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.12"}}
 </details>
 
 * fix: Use sed in cross platform way for ffi build
