@@ -18,6 +18,7 @@
 
 package com.wire.crypto.client
 
+import com.wire.crypto.client.CoreCryptoCentral.Companion.DEFAULT_NB_KEY_PACKAGE
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -36,8 +37,12 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
     /**
      * This is your entrypoint to initialize [com.wire.crypto.client.MLSClient] with a Basic Credential
      */
-    suspend fun mlsInit(id: ClientId, ciphersuites: Ciphersuites = Ciphersuites.DEFAULT) {
-        cc.mlsInit(id.lower(), ciphersuites.lower())
+    suspend fun mlsInit(
+        id: ClientId,
+        ciphersuites: Ciphersuites = Ciphersuites.DEFAULT,
+        nbKeyPackage: UInt? = DEFAULT_NB_KEY_PACKAGE
+    ) {
+        cc.mlsInit(id.lower(), ciphersuites.lower(), nbKeyPackage)
     }
 
     /**

@@ -399,6 +399,10 @@ export interface CoreCryptoDeferredParams {
      * .wasm file path, this will be useful in case your bundling system likes to relocate files (i.e. what webpack does)
      */
     wasmFilePath?: string;
+    /**
+     * Number of initial KeyPackage to create when initializing the client
+     */
+    nbKeyPackage?: number;
 }
 
 /**
@@ -749,7 +753,8 @@ export class CoreCrypto {
         clientId,
         wasmFilePath,
         ciphersuites,
-        entropySeed
+        entropySeed,
+        nbKeyPackage,
     }: CoreCryptoParams): Promise<CoreCrypto> {
         if (!this.#module) {
             const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
@@ -757,7 +762,7 @@ export class CoreCrypto {
             this.#module = exports;
         }
         let cs = ciphersuites.map(cs => cs.valueOf());
-        const cc = await CoreCryptoError.asyncMapErr(this.#module.CoreCrypto._internal_new(databaseName, key, clientId, Uint16Array.of(...cs), entropySeed));
+        const cc = await CoreCryptoError.asyncMapErr(this.#module.CoreCrypto._internal_new(databaseName, key, clientId, Uint16Array.of(...cs), entropySeed, nbKeyPackage));
         return new this(cc);
     }
 
@@ -773,7 +778,8 @@ export class CoreCrypto {
         key,
         ciphersuites,
         entropySeed,
-        wasmFilePath
+        wasmFilePath,
+        nbKeyPackage,
     }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
         if (!this.#module) {
             const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
@@ -781,7 +787,7 @@ export class CoreCrypto {
             this.#module = exports;
         }
         let cs = ciphersuites.map(cs => cs.valueOf());
-        const cc = await CoreCryptoError.asyncMapErr(this.#module.CoreCrypto.deferred_init(databaseName, key, Uint16Array.of(...cs), entropySeed));
+        const cc = await CoreCryptoError.asyncMapErr(this.#module.CoreCrypto.deferred_init(databaseName, key, Uint16Array.of(...cs), entropySeed, nbKeyPackage));
         return new this(cc);
     }
 
@@ -790,10 +796,11 @@ export class CoreCrypto {
      *
      * @param clientId - {@link CoreCryptoParams#clientId} but required
      * @param ciphersuites - All the ciphersuites supported by this MLS client
+     * @param nbKeyPackage - number of initial KeyPackage to create when initializing the client
      */
-    async mlsInit(clientId: ClientId, ciphersuites: Ciphersuite[]): Promise<void> {
+    async mlsInit(clientId: ClientId, ciphersuites: Ciphersuite[], nbKeyPackage?: number): Promise<void> {
         let cs = ciphersuites.map(cs => cs.valueOf());
-        return await CoreCryptoError.asyncMapErr(this.#cc.mls_init(clientId, Uint16Array.of(...cs)));
+        return await CoreCryptoError.asyncMapErr(this.#cc.mls_init(clientId, Uint16Array.of(...cs), nbKeyPackage));
     }
 
     /**
@@ -1753,10 +1760,11 @@ export class CoreCrypto {
      *
      * @param enrollment - the enrollment instance used to fetch the certificates
      * @param certificateChain - the raw response from ACME server
+     * @param nbKeyPackage - number of initial KeyPackage to create when initializing the client
      * @returns a MlsClient initialized with only a x509 credential
      */
-    async e2eiMlsInitOnly(enrollment: E2eiEnrollment, certificateChain: string): Promise<void> {
-        return await this.#cc.e2ei_mls_init_only(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain);
+    async e2eiMlsInitOnly(enrollment: E2eiEnrollment, certificateChain: string, nbKeyPackage?: number): Promise<void> {
+        return await this.#cc.e2ei_mls_init_only(enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity, certificateChain, nbKeyPackage);
     }
 
     /**
