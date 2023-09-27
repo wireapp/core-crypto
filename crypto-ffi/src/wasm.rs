@@ -1165,12 +1165,23 @@ impl CoreCrypto {
         client_id: FfiClientId,
         ciphersuites: Box<[u16]>,
         entropy_seed: Option<Box<[u8]>>,
+        nb_key_package: Option<u32>,
     ) -> WasmCryptoResult<CoreCrypto> {
         let ciphersuites = lower_ciphersuites(&ciphersuites)?;
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
-        let configuration =
-            MlsCentralConfiguration::try_new(path, key, Some(client_id.into()), ciphersuites, entropy_seed)
-                .map_err(CoreCryptoError::from)?;
+        let nb_key_package = nb_key_package
+            .map(usize::try_from)
+            .transpose()
+            .map_err(CryptoError::from)?;
+        let configuration = MlsCentralConfiguration::try_new(
+            path,
+            key,
+            Some(client_id.into()),
+            ciphersuites,
+            entropy_seed,
+            nb_key_package,
+        )
+        .map_err(CoreCryptoError::from)?;
 
         let central = MlsCentral::try_new(configuration)
             .await
@@ -1187,11 +1198,17 @@ impl CoreCrypto {
         key: String,
         ciphersuites: Box<[u16]>,
         entropy_seed: Option<Box<[u8]>>,
+        nb_key_package: Option<u32>,
     ) -> WasmCryptoResult<CoreCrypto> {
         let ciphersuites = lower_ciphersuites(&ciphersuites)?;
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
-        let configuration = MlsCentralConfiguration::try_new(path, key, None, ciphersuites, entropy_seed)
-            .map_err(CoreCryptoError::from)?;
+        let nb_key_package = nb_key_package
+            .map(usize::try_from)
+            .transpose()
+            .map_err(CryptoError::from)?;
+        let configuration =
+            MlsCentralConfiguration::try_new(path, key, None, ciphersuites, entropy_seed, nb_key_package)
+                .map_err(CoreCryptoError::from)?;
 
         let central = MlsCentral::try_new(configuration)
             .await
@@ -1204,14 +1221,22 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::MlsCentral::mls_init]
-    pub fn mls_init(&self, client_id: FfiClientId, ciphersuites: Box<[u16]>) -> Promise {
+    pub fn mls_init(&self, client_id: FfiClientId, ciphersuites: Box<[u16]>, nb_key_package: Option<u32>) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
                 let mut central = this.write().await;
                 let ciphersuites = lower_ciphersuites(&ciphersuites)?;
+                let nb_key_package = nb_key_package
+                    .map(usize::try_from)
+                    .transpose()
+                    .map_err(CryptoError::from)?;
                 central
-                    .mls_init(ClientIdentifier::Basic(client_id.clone().into()), ciphersuites)
+                    .mls_init(
+                        ClientIdentifier::Basic(client_id.clone().into()),
+                        ciphersuites,
+                        nb_key_package,
+                    )
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
@@ -2545,12 +2570,22 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
-    pub fn e2ei_mls_init_only(&self, enrollment: E2eiEnrollment, certificate_chain: String) -> Promise {
+    pub fn e2ei_mls_init_only(
+        &self,
+        enrollment: E2eiEnrollment,
+        certificate_chain: String,
+        nb_key_package: Option<u32>,
+    ) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
                 let mut this = this.write().await;
-                this.e2ei_mls_init_only(enrollment.0, certificate_chain).await?;
+                let nb_key_package = nb_key_package
+                    .map(usize::try_from)
+                    .transpose()
+                    .map_err(CryptoError::from)?;
+                this.e2ei_mls_init_only(enrollment.0, certificate_chain, nb_key_package)
+                    .await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),

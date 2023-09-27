@@ -165,8 +165,15 @@ pub async fn new_central(
     let client_id = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
     let secret = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
     let ciphersuites = vec![ciphersuite];
-    let cfg =
-        MlsCentralConfiguration::try_new(path, secret, Some(client_id.as_bytes().into()), ciphersuites, None).unwrap();
+    let cfg = MlsCentralConfiguration::try_new(
+        path,
+        secret,
+        Some(client_id.as_bytes().into()),
+        ciphersuites,
+        None,
+        Some(100),
+    )
+    .unwrap();
     let central = if in_memory {
         MlsCentral::try_new_in_memory(cfg).await.unwrap()
     } else {
