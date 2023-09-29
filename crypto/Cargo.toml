@@ -53,7 +53,7 @@ async-recursion = "1"
 uniffi = { workspace = true, optional = true }
 
 # TODO: remove when coarsetime > 0.1.28 released
-coarsetime = "=0.1.23"
+coarsetime = "=0.1.28"
 
 [dependencies.proteus-wasm]
 version = "2.1"
