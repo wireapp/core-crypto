@@ -172,11 +172,15 @@ impl CryptoKeystoreMls for crate::connection::Connection {
         credential_id: &[u8],
     ) -> CryptoKeystoreResult<()> {
         let Some(mut keypair) = self.find::<MlsSignatureKeyPair>(public_key).await? else {
-            return Err(CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsSignatureKeyPair));
+            return Err(CryptoKeystoreError::MissingKeyInStore(
+                MissingKeyErrorKind::MlsSignatureKeyPair,
+            ));
         };
 
         let Some(credential) = self.find::<MlsCredential>(credential_id).await? else {
-            return Err(CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsCredential));
+            return Err(CryptoKeystoreError::MissingKeyInStore(
+                MissingKeyErrorKind::MlsCredential,
+            ));
         };
 
         keypair.credential_id = credential.id.clone();

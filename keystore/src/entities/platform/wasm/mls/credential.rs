@@ -93,7 +93,7 @@ impl MlsCredentialExt for MlsCredential {
                 let Some(entity_raw) = store_index.get(&credential_js).await? else {
                     let reason = "'credential' in 'mls_credentials' collection";
                     let value = hex::encode(&credential);
-                    return Err(CryptoKeystoreError::NotFound(reason, value))
+                    return Err(CryptoKeystoreError::NotFound(reason, value));
                 };
 
                 let mut credential = serde_wasm_bindgen::from_value::<MlsCredential>(entity_raw)?;

@@ -106,8 +106,11 @@ impl MlsSignatureKeyPairExt for MlsSignatureKeyPair {
         let sc = wasm_bindgen::JsValue::from_f64(signature_scheme as u16 as _);
         let Some(keypair) = storage
             .get_indexed::<Self>("mls_signature_keypairs", "signature_scheme", &sc)
-            .await? else {
-            return Err(CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsSignatureKeyPair));
+            .await?
+        else {
+            return Err(CryptoKeystoreError::MissingKeyInStore(
+                MissingKeyErrorKind::MlsSignatureKeyPair,
+            ));
         };
 
         if !keypair.credential_id.is_empty() && keypair.credential_id != credential_id {
