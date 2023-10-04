@@ -91,7 +91,7 @@ impl CoreCryptoError {
 impl std::fmt::Display for CoreCryptoError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let rich_error = CoreCryptoJsRichError::from(self);
-        let rich_error_json = serde_json::to_string(&rich_error).map_err(|_| std::fmt::Error::default())?;
+        let rich_error_json = serde_json::to_string(&rich_error).map_err(|_| std::fmt::Error)?;
         write!(f, "{}\n\n{rich_error_json}", self.0)
     }
 }
@@ -859,6 +859,7 @@ impl CoreCryptoWasmCallbacks {
         client_is_existing_group_user: js_sys::Function,
         ctx: JsValue,
     ) -> Self {
+        #[allow(clippy::arc_with_non_send_sync)]
         Self {
             authorize: std::sync::Arc::new(authorize.into()),
             user_authorize: std::sync::Arc::new(user_authorize.into()),

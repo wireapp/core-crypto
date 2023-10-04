@@ -81,6 +81,7 @@ unsafe impl Sync for Connection {}
 
 impl Connection {
     pub async fn open_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
+        #[allow(clippy::arc_with_non_send_sync)]
         let conn = Arc::new(
             KeystoreDatabaseConnection::open(name.as_ref(), key.as_ref())
                 .await?
@@ -90,6 +91,7 @@ impl Connection {
     }
 
     pub async fn open_in_memory_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
+        #[allow(clippy::arc_with_non_send_sync)]
         let conn = Arc::new(
             KeystoreDatabaseConnection::open_in_memory(name.as_ref(), key.as_ref())
                 .await?
