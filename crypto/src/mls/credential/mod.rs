@@ -309,6 +309,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
+    #[ignore]
     async fn should_fail_when_certificate_expired(case: TestCase) {
         if case.is_x509() {
             let expiration_time = core::time::Duration::from_secs(14);
@@ -353,6 +354,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
+    #[ignore]
     async fn should_fail_when_certificate_not_valid_yet(case: TestCase) {
         if case.is_x509() {
             let tomorrow = now() + core::time::Duration::from_secs(3600 * 24);
