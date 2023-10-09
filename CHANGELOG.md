@@ -7,6 +7,252 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.14] - 2023-10-09
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Backward incompatible database schemas. It only preserves Proteus compatibility when migrating from CC 0.11.0 -> 1.0.0. For anything MLS-related it is recommended to wipe all the groups
+
+
+### Bug Fixes
+
+- Do not reapply buffered messages when rejoining with external commit
+- Coarsetime issue causing compilation error on WASM
+
+### Features
+
+- [**breaking**] Make initial number of generated KeyPackage configurable
+- Add e2ei ffi in Swift wrapper
+- [**breaking**] Add LeafNode validation
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.13
+- Use wasm_bindgen macros to generate Typescript classes used in e2ei enrollment process
+
+### Testing
+
+- Try fixing flaky time-based LeafNode validation tests
+
+
+### Bug Fixes
+
+- Use sed in a cross-platform way for kt edits
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.12
+
+
+### Bug Fixes
+
+- [**breaking**] UniFFI Errors
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.11
+
+
+### Bug Fixes
+
+- UniFFI symbol matching
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.10
+
+
+### Bug Fixes
+
+- Make UniFFI produce the correct symbol in bindings
+- Change e2ei enrollment identifier causing collision now that keypairs are reused
+
+### Documentation
+
+- Regenerate changelog
+
+### Features
+
+- [**breaking**] Return raw PEM certificate in `getUserIdentities` for display purpose
+- [**breaking**] Bump rusty-jwt-tools to v0.5.0. Add 'revokeCert' to AcmeDirectory
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.9
+
+
+### Bug Fixes
+
+- TLS serialization of x509 credential
+- [**breaking**] UniFFI Async cancellable routines + bytes
+- Make interop runner pick up CHROME_PATH from env
+
+### Features
+
+- Expose `getUserIdentities` through the FFI
+- [**breaking**] Also restore buffered messages on the receiver side
+- Increase max past epoch to 3 since backend inordering of messages requires client's config to backend's one + 1
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.8
+- Fix clippy lint on wasm tests
+- Quiet clippy new lint about non send in Arc because it comes from wasm-bindgen wrapped Javascript object which cannot be shared between threads anyway
+- Remove useless application message epoch check
+
+### Refactor
+
+- Borrow conversation_id in `new_conversation`
+
+### Testing
+
+- Fix wasm test hitting a limit. Just split them for now, waiting for a proper solution
+- Fix spinoff 0.8 compilation
+
+
+### Bug Fixes
+
+- Kotlin tests not compiling after methods became async
+
+### Features
+
+- Correlate RotateBundle with a GroupId
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.7
+
+
+### Bug Fixes
+
+- `e2eiRotateAll` return type was not wrapped
+- Signature KeyPair was rotated when credentials were which was zealous. Also fixes an important bug caused by inverted private & public keypair part when rotating credentials
+
+### Features
+
+- [**breaking**] Handle the case when a client tries to decrypt a Welcome referring to a KeyPackage he already has deleted locally
+- Add keystore dump exporter CLI tool
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.6
+
+### Testing
+
+- Add a roundtrip test for e2ei credential rotation to tackle a false positive regression
+
+
+### Bug Fixes
+
+- E2ei enum for conversation state was unused and failing the Typescript publication. Now CI will have the same compiler flags when checking bindings in order to prevent this again
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.5
+
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.4
+- Patch visibility issue for enum 'E2eiConversationState' which was failing when building Typescript bindings
+
+
+### Bug Fixes
+
+- Proteus wasm test now uses wasm-browser-run
+- Cargo doc fixes for wasm-browser-run
+- Interop runner now uses wasm-browser-run to install chromedriver
+- Support chromedriver 115 delivery method
+- `e2ei_rotate_all` was returning 'undefined' on WASM
+- [**breaking**] Entities leaked. Some methods handling the lifecycle of a MLS group were not cleaning created entities correctly. This avoids required storage space to grow linearly.
+
+### Features
+
+- [**breaking**] Rename `e2eiIsDegraded` by `e2eiConversationState` and change return type to an enumeration instead of a boolean to match all the e2ei states a conversation could have.
+- Add `e2ei_is_enabled` for clients to spot if their MLS client is enrolled for end-to-end identity
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.3
+- Update rstest versions
+- Updated xtask deps
+
+
+### Features
+
+- [**breaking**] Expose 'ClientId' in e2ei methods for credential rotation since the e2ei client identifier differs from the one used in MLS
+- Include certificate roots and certificate policy in GroupContext - WPB-1188
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.2
+
+
+### Bug Fixes
+
+- `merge_pending_group_from_external_commit` FFI incorrect return type
+- UniFFI bindgen requirements & size tweaks
+- Address review comments
+- Revert bloating up binaries by emitting crate-type=lib
+- Strip mobile libraries
+- Handles nicely self-commits
+
+### Documentation
+
+- Add document to detail our crypto primitives
+
+### Features
+
+- Buffer pending messages during join by external commit process to tolerate unordered messages
+- Use -dalek fast proteus version
+- Use RFC9420 OpenMLS [WPB-579]
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.1
+- Build swift bindings with xcode 14.3.1 ([#342](https://github.com/wireapp/core-crypto/issues/342))
+- Update HPQ hpke to bump dalek
+- Stop shipping kotlin UniFFI bindings [WPB-1180]
+- [**breaking**] UniFFI 0.24 upgrade
+- Update deps
+- Tweak cargo-deny CI
+- Whitelist Kyber fork dependency
+
+
+### Bug Fixes
+
+- Use correct env var for maven central credentials ([#355](https://github.com/wireapp/core-crypto/issues/355))
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-pre.8
+
+
+### Bug Fixes
+
+- Make clippy happy
+- Xtask release fix for kotlin sonatype publishing
+- Disable stripping to allow FFI to build
+- Incorrect error value in tests
+
+### Features
+
+- [**breaking**] Prevent conversation overwrite when joining
+- [**breaking**] Detect duplicate messages from previous epoch and fail with a dedicated error
+- Publish to Sonatype instead of Github Packages ([#347](https://github.com/wireapp/core-crypto/issues/347))
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-pre.7
+- Pin dependencies on wireapp org forks
+
+</details>
+
+* fix: backward incompatible database schemas. It only preserves Proteus compatibility when migrating from CC 0.11.0 -> 1.0.0. For anything MLS-related it is recommended to wipe all the groups
+
 ## [1.0.0-rc.13] - 2023-09-27
 
 <details>
