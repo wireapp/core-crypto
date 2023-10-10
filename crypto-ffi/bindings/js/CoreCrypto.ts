@@ -19,7 +19,10 @@
 import wasm from "../../../crypto-ffi/Cargo.toml";
 
 import type * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi";
-import { AcmeDirectory, NewAcmeOrder, NewAcmeAuthz } from "./wasm";
+import { AcmeDirectory, NewAcmeOrder, NewAcmeAuthz, AcmeChallenge } from "./wasm";
+
+// re-exports
+export { AcmeDirectory, NewAcmeOrder, NewAcmeAuthz, AcmeChallenge };
 
 interface CoreCryptoRichError {
     errorName: string;
