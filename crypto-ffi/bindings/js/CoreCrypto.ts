@@ -14,12 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-
-// @ts-ignore
-import wasm from "../../../crypto-ffi/Cargo.toml";
-
-import type * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi";
-import { AcmeDirectory, NewAcmeOrder, NewAcmeAuthz, AcmeChallenge } from "./wasm";
+import type * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi.d.ts";
+import initWasm, {
+    CoreCrypto as CoreCryptoFfi,
+    ConversationConfiguration as ConversationConfigurationFfi,
+    CustomConfiguration as CustomConfigurationFfi,
+    Invitee as InviteeFfi,
+    CoreCryptoWasmCallbacks,
+    AcmeDirectory,
+    NewAcmeOrder,
+    NewAcmeAuthz,
+    AcmeChallenge
+} from "./wasm";
 
 // re-exports
 export { AcmeDirectory, NewAcmeOrder, NewAcmeAuthz, AcmeChallenge };
@@ -718,6 +724,13 @@ export class CoreCrypto {
         }
     }
 
+    /** @hidden */
+    static async #loadModule(wasmFilePath?: string) {
+        if (!this.#module) {
+            this.#module = (await initWasm(wasmFilePath)) as typeof CoreCryptoFfiTypes;
+        }
+    }
+
     /**
      * This is your entrypoint to initialize {@link CoreCrypto}!
      *
@@ -760,13 +773,10 @@ export class CoreCrypto {
         entropySeed,
         nbKeyPackage,
     }: CoreCryptoParams): Promise<CoreCrypto> {
-        if (!this.#module) {
-            const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
-            const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
-            this.#module = exports;
-        }
+        await this.#loadModule(wasmFilePath);
+
         let cs = ciphersuites.map(cs => cs.valueOf());
-        const cc = await CoreCryptoError.asyncMapErr(this.#module.CoreCrypto._internal_new(databaseName, key, clientId, Uint16Array.of(...cs), entropySeed, nbKeyPackage));
+        const cc = await CoreCryptoError.asyncMapErr(CoreCryptoFfi._internal_new(databaseName, key, clientId, Uint16Array.of(...cs), entropySeed, nbKeyPackage));
         return new this(cc);
     }
 
@@ -785,13 +795,10 @@ export class CoreCrypto {
         wasmFilePath,
         nbKeyPackage,
     }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
-        if (!this.#module) {
-            const wasmImportArgs = wasmFilePath ? {importHook: () => wasmFilePath} : undefined;
-            const exports = (await wasm(wasmImportArgs)) as typeof CoreCryptoFfiTypes;
-            this.#module = exports;
-        }
+        await this.#loadModule(wasmFilePath);
+
         let cs = ciphersuites.map(cs => cs.valueOf());
-        const cc = await CoreCryptoError.asyncMapErr(this.#module.CoreCrypto.deferred_init(databaseName, key, Uint16Array.of(...cs), entropySeed, nbKeyPackage));
+        const cc = await CoreCryptoError.asyncMapErr(CoreCryptoFfi.deferred_init(databaseName, key, Uint16Array.of(...cs), entropySeed, nbKeyPackage));
         return new this(cc);
     }
 
@@ -873,7 +880,7 @@ export class CoreCrypto {
      */
     async registerCallbacks(callbacks: CoreCryptoCallbacks, ctx: any = null): Promise<void> {
         try {
-            const wasmCallbacks = new CoreCrypto.#module.CoreCryptoWasmCallbacks(
+            const wasmCallbacks = new CoreCryptoWasmCallbacks(
                 callbacks.authorize,
                 callbacks.userAuthorize,
                 callbacks.clientIsExistingGroupUser,
@@ -959,7 +966,7 @@ export class CoreCrypto {
     ) {
         try {
             const {ciphersuite, externalSenders, custom = {}, perDomainTrustAnchors = []} = configuration || {};
-            const config = new CoreCrypto.#module.ConversationConfiguration(
+            const config = new ConversationConfigurationFfi(
                 ciphersuite,
                 externalSenders,
                 custom?.keyRotationSpan,
@@ -1099,7 +1106,7 @@ export class CoreCrypto {
     async processWelcomeMessage(welcomeMessage: Uint8Array, configuration: CustomConfiguration = {}): Promise<ConversationId> {
         try {
             const {keyRotationSpan, wirePolicy} = configuration || {};
-            const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
+            const config = new CustomConfigurationFfi(keyRotationSpan, wirePolicy);
             return await CoreCryptoError.asyncMapErr(this.#cc.process_welcome_message(welcomeMessage, config));
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
@@ -1166,7 +1173,7 @@ export class CoreCrypto {
     ): Promise<MemberAddedMessages> {
         try {
             const ffiClients = clients.map(
-                (invitee) => new CoreCrypto.#module.Invitee(invitee.id, invitee.kp)
+                (invitee) => new InviteeFfi(invitee.id, invitee.kp)
             );
 
             const ffiRet: CoreCryptoFfiTypes.MemberAddedMessages = await CoreCryptoError.asyncMapErr(this.#cc.add_clients_to_conversation(
@@ -1387,7 +1394,7 @@ export class CoreCrypto {
     async joinByExternalCommit(groupInfo: Uint8Array, credentialType: CredentialType, configuration: CustomConfiguration = {}): Promise<ConversationInitBundle> {
         try {
             const {keyRotationSpan, wirePolicy} = configuration || {};
-            const config = new CoreCrypto.#module.CustomConfiguration(keyRotationSpan, wirePolicy);
+            const config = new CustomConfigurationFfi(keyRotationSpan, wirePolicy);
             const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle = await CoreCryptoError.asyncMapErr(this.#cc.join_by_external_commit(groupInfo, config, credentialType));
 
             const gi = ffiInitMessage.group_info;
@@ -1644,7 +1651,7 @@ export class CoreCrypto {
      */
     static proteusLastResortPrekeyId(): number {
         this.#assertModuleLoaded();
-        return this.#module.CoreCrypto.proteus_last_resort_prekey_id();
+        return CoreCryptoFfi.proteus_last_resort_prekey_id();
     }
 
     /**
@@ -1685,7 +1692,7 @@ export class CoreCrypto {
      **/
     static proteusFingerprintPrekeybundle(prekey: Uint8Array): string {
         try {
-            return this.#module.CoreCrypto.proteus_fingerprint_prekeybundle(prekey);
+            return CoreCryptoFfi.proteus_fingerprint_prekeybundle(prekey);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1857,7 +1864,7 @@ export class CoreCrypto {
      */
     static version(): string {
         this.#assertModuleLoaded();
-        return this.#module.CoreCrypto.version();
+        return CoreCryptoFfi.version();
     }
 }
 

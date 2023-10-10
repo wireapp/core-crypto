@@ -20,7 +20,7 @@ use color_eyre::eyre::Result;
 use std::net::SocketAddr;
 
 pub async fn find_wasm_file(deploy_path: &std::path::Path) -> Result<std::path::PathBuf> {
-    let wasm_base_path = deploy_path.join("assets");
+    let wasm_base_path = deploy_path.to_path_buf();
     let wasm_path = if wasm_base_path.exists() {
         let mut wasm_dir = tokio::fs::read_dir(wasm_base_path.clone()).await?;
         let mut maybe_wasm_path = None;
@@ -107,7 +107,7 @@ pub async fn build_wasm() -> Result<()> {
         spinner.update("WASM: No cache file found, rebuilding to get a cache! Please wait...");
     }
 
-    let mut cargo_args = vec!["make", "wasm-build"];
+    let mut cargo_args = vec!["make", "wasm"];
     let mut npm_env = vec![];
 
     if cfg!(feature = "proteus") {
@@ -127,17 +127,9 @@ pub async fn build_wasm() -> Result<()> {
         .status()
         .await?;
 
-    Command::new("npm")
-        .args(["install"])
+    Command::new("bun")
+        .args(["test"])
         .envs(npm_env.clone())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .await?;
-
-    Command::new("npm")
-        .args(["run", "build:test"])
-        .envs(npm_env)
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .status()

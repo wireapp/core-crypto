@@ -70,9 +70,16 @@ jobs:
       RUSTFLAGS: "-D warnings -W unreachable-pub"
     steps:
       - uses: actions/checkout@v4
+      - uses: browser-actions/setup-chrome@latest
+        id: setup-chrome
+        with:
+          chrome-version: stable
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
       - uses: actions/setup-node@v3
         with:
           node-version: 18
@@ -83,13 +90,12 @@ jobs:
         uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: "latest"
-      - name: Build WASM package
+
+      - name: Build & test WASM / JS package
         run: |
           cd crypto-ffi
-          cargo make wasm-build
-      - name: Build TS bindings
-        run: |
           npm install
-          npm run build
-      - name: Run E2E JS suite
-        run: npm run test:raw
+          bun install
+          cargo make wasm
+          bun test --bail
+

@@ -104,17 +104,31 @@ args = [
     "build",
     "--out-dir", "bindings/js/wasm",
     "--out-name", "core-crypto-ffi",
-    "--mode", "normal", "${@}"
+    "--mode", "normal",
+    "--target", "web",
+    "${@}"
 ]
 
 # Quiets warning related to wasm-opt. Used to generate bindings and check Typescript wrapper
 [tasks.wasm-build-dev]
 script = "cargo make wasm-build --dev"
 
-[tasks.wasm]
+[tasks.wasm-build-ts]
 dependencies = ["wasm-build"]
-command = "npm"
-args = ["run", "build"]
+command = "bun"
+args = [
+    "build",
+    "--target", "browser",
+    "./bindings/js/CoreCrypto.ts",
+    "--outdir", "../platforms/web"
+]
+
+[tasks.wasm]
+dependencies = ["wasm-build-ts"]
+script = '''
+    cp ./bindings/js/wasm/core-crypto-ffi_bg.wasm ../platforms/web
+    mv ../platforms/web/CoreCrypto.js ../platforms/web/corecrypto.js
+'''
 
 ##################################### FFI #####################################
 

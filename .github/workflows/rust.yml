@@ -183,6 +183,12 @@ jobs:
         id: setup-chrome
         with:
           chrome-version: stable
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
       - run: |
           echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
       - uses: Swatinem/rust-cache@v2

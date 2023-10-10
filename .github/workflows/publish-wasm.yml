@@ -23,9 +23,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v3
         with:
           node-version: 18
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -42,12 +47,8 @@ jobs:
       - name: Build WASM package
         run: |
           cd crypto-ffi
-          cargo make wasm-build
-
-      - name: Build TS/JS Library
-        run: |
-          npm install
-          npm run build
+          bun install
+          cargo make wasm
 
       - name: Publishes package to NPM
         uses: JS-DevTools/npm-publish@v2
