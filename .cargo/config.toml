@@ -48,26 +48,30 @@ ar = "llvm-ar"
 linker = "armv7a-linux-androideabi24-clang"
 rustflags = [
     "-C", "link-args=-Lsupport/android",
-    "-C", "target_feature=+neon"
+    "-C", "target_feature=+neon",
+    "-C", "link-args=-latomic"
 ]
 
 [target.aarch64-linux-android]
 ar = "llvm-ar"
 linker = "aarch64-linux-android24-clang"
 rustflags = [
-    "-C", "link-args=-Lsupport/android"
+    "-C", "link-args=-Lsupport/android",
+    "-C", "link-args=-latomic"
 ]
 
 [target.x86_64-linux-android]
 ar = "llvm-ar"
 linker = "x86_64-linux-android24-clang"
 rustflags = [
-    "-C", "link-args=-Lsupport/android"
+    "-C", "link-args=-Lsupport/android",
+    "-C", "link-args=-latomic"
 ]
 
 [target.i686-linux-android]
 ar = "llvm-ar"
 linker = "i686-linux-android24-clang"
 rustflags = [
-    "-C", "link-args=-Lsupport/android"
+    "-C", "link-args=-Lsupport/android",
+    "-C", "link-args=-latomic"
 ]
