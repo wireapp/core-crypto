@@ -77,11 +77,12 @@ git = "https://github.com/wireapp/rusty-jwt-tools"
 package = "wire-e2e-identity"
 tag = "v0.5.0"
 
+# TODO: this is unused in the graph anyway. Reevaluate if still required
 # aarch64-apple-ios-sim target support has not yet been released
-[patch.crates-io.openssl-src]
-git = "https://github.com/alexcrichton/openssl-src-rs.git"
-branch = "release/111"
-package = "openssl-src"
+#[patch.crates-io.openssl-src]
+#git = "https://github.com/alexcrichton/openssl-src-rs.git"
+#branch = "release/111"
+#package = "openssl-src"
 
 [patch.crates-io.jwt-simple]
 git = "https://github.com/wireapp/rust-jwt-simple"
