@@ -7,11 +7,21 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.15] - 2023-10-10
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.15" unreleased=true}}
+</details>
+
+* fix: add '-latomic' flag when building for Android to dynamically link atomic lib which is supposedly causing issues with openssl
+* feat: re-export e2ei types
+
 ## [1.0.0-rc.14] - 2023-10-09
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.14" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.14"}}
 </details>
 
 * fix: backward incompatible database schemas. It only preserves Proteus compatibility when migrating from CC 0.11.0 -> 1.0.0. For anything MLS-related it is recommended to wipe all the groups
