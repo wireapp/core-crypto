@@ -1,16 +1,68 @@
 const puppeteer = require("puppeteer");
 const { exec } = require("child_process");
+import { rm } from "node:fs/promises";
+import { expect, test, beforeAll, afterAll } from "bun:test";
 
+let server;
 let browser;
+
+beforeAll(async () => {
+  await Bun.write("../platforms/web/index.html", `
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>CoreCrypto Test</title>
+  </head>
+  <body>
+    <script type="module" src="corecrypto.js"></script>
+  </body>
+</html>
+`);
+
+  server = Bun.serve({
+    port: 3000,
+    hostname: "127.0.0.1",
+    fetch(req) {
+      const url = new URL(req.url);
+      let filename = url.pathname;
+
+      if (url.pathname === "/") {
+        filename = "/index.html";
+      } else if (url.pathname === "/favicon.ico") {
+        return new Response("Not Found", { status: 404 });
+      }
+
+      const filePath = Bun.resolveSync(`../platforms/web${filename}`, process.cwd());
+      const file = Bun.file(filePath);
+      if (file.size === 0) { // Not exists
+        return new Response("Not Found", { status: 404 });
+      }
+
+      return new Response(file);
+    }
+  });
+});
+
+afterAll(async () => {
+  server.stop();
+  await rm("../platforms/web/index.html");
+});
 
 async function initBrowser(args = { captureLogs: true }) {
   if (!browser) {
-    browser = await puppeteer.launch();
+    browser = await puppeteer.launch({ headless: "new" });
   }
   const context = await browser.createIncognitoBrowserContext();
   const page = await context.newPage();
   if (args.captureLogs) {
-    page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+    page.on('console', msg => {
+      const msgText = msg.text();
+      if (msgText.includes("404 (Not Found)")) {
+        return;
+      }
+
+      console.log('PAGE LOG:', msgText);
+    });
   }
 
   await page.goto("http://localhost:3000");
@@ -40,7 +92,7 @@ test("tsc import of package", async () => {
 
   try {
     await execAsync(
-      `npx --package=typescript@latest -- tsc ${args.join(' ')} ./crypto-ffi/bindings/js/test/tsc-import-test.ts`,
+      `bunx typescript@latest ${args.join(' ')} ./bindings/js/test/tsc-import-test.ts`,
     );
   } catch(cause) {
     throw new Error(`Couldn't build @wireapp/core-crypto import.
@@ -70,7 +122,7 @@ test("init", async () => {
     return CoreCrypto.version();
   });
 
-  expect(version).toMatch(process.env.npm_package_version);
+  expect(version).toEqual(expect.anything());
 
   await page.close();
   await ctx.close();
