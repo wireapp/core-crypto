@@ -96,7 +96,7 @@ impl Ord for CredentialBundle {
 
 impl PartialOrd for CredentialBundle {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.created_at.partial_cmp(&other.created_at)
+        Some(self.cmp(other))
     }
 }
 

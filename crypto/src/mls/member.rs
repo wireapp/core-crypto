@@ -108,7 +108,7 @@ impl ConversationMember {
             .standalone_validate(backend.crypto(), openmls::versions::ProtocolVersion::Mls10)
             .map_err(MlsError::from)?;
         let cid = ClientId::from(kp.leaf_node().credential().identity());
-        self.clients.entry(cid).or_insert_with(Vec::new).push(kp);
+        self.clients.entry(cid).or_default().push(kp);
         Ok(())
     }
 }
