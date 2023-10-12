@@ -7,11 +7,24 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+
+## [1.0.0-rc.16] - 2023-10-10
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.16" unreleased=true}}
+</details>
+
+* **[BREAKING-WASM ONLY]**: We now bundle our TypeScript and WASM bindings using [Bun](https://bun.sh/)
+    * This shouldn't result in any fundamental changes API-wise
+    * BREAKING NPM Package: The WASM file isn't shipped in the `platforms/web/assets` subfolder anymore. It is shipped in `platforms/web` now.
+* Fixed RUSTFLAGS being overridden in CI context
+
 ## [1.0.0-rc.15] - 2023-10-10
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.15" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.15"}}
 </details>
 
 * fix: add '-latomic' flag when building for Android to dynamically link atomic lib which is supposedly causing issues with openssl
