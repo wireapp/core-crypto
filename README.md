@@ -76,6 +76,7 @@ rustup target add x86_64-unknown-linux-gnu
 * Install [wasm-pack](https://rustwasm.github.io/wasm-pack/)
 * Install the wasm32-unknown-unknown toolchain `rustup target add wasm32-unknown-unknown`
 * Install node.js (recommended way is via [Volta](https://volta.sh/))
+* Install Bun (follow the instructions on [Bun's website](https://bun.sh/))
 
 ### Bindings
 
@@ -93,7 +94,7 @@ cargo make "copy-android-resources"
 # builds iOS framework
 cargo make "create-swift-package"
 
-# builds wasm binary
+# builds wasm binary & TS bindings
 cargo make wasm
 ```
 
@@ -125,3 +126,4 @@ cd kotlin
 ### JS / WASM
 
 Given that you are logged in NPM and can publish to `@wireapp/core-crypto`, you can just `npm publish` to push a new version
+But this is not needed as releases are auto-published to the `@wireapp` organization
