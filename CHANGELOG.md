@@ -7,6 +7,51 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+
+## [1.0.0-rc.16] - 2023-10-10
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Prevent CI from overriding RUSTFLAGS
+- Added missing d.ts declarations
+- KP test was taking too much time
+
+### Features
+
+- Switch from node to bun
+
+
+### Bug Fixes
+
+- Add '-latomic' flag when building for Android to dynamically link atomic lib which is supposedly causing issues with openssl
+
+### Features
+
+- Re-export e2ei types
+
+### Miscellaneous Tasks
+
+- Fix some clippy lints
+
+
+### Bug Fixes
+
+- Backward incompatible database schemas. It only preserves Proteus compatibility when migrating from CC 0.11.0 -> 1.0.0. For anything MLS-related it is recommended to wipe all the groups
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.14
+
+</details>
+
+* **[BREAKING-WASM ONLY]**: We now bundle our TypeScript and WASM bindings using [Bun](https://bun.sh/)
+    * This shouldn't result in any fundamental changes API-wise
+    * BREAKING NPM Package: The WASM file isn't shipped in the `platforms/web/assets` subfolder anymore. It is shipped in `platforms/web` now.
+* Fixed RUSTFLAGS being overridden in CI context
+
 ## [1.0.0-rc.15] - 2023-10-10
 
 <details>
@@ -464,36 +509,6 @@ In that case he has to catch & ignore the "OrphanWelcome" error and to rejoin th
 <details>
     <summary>git-conventional changelog</summary>
 
-### Bug Fixes
-
-- `merge_pending_group_from_external_commit` FFI incorrect return type
-- UniFFI bindgen requirements & size tweaks
-- Address review comments
-- Revert bloating up binaries by emitting crate-type=lib
-- Strip mobile libraries
-- Handles nicely self-commits
-
-### Documentation
-
-- Add document to detail our crypto primitives
-
-### Features
-
-- Buffer pending messages during join by external commit process to tolerate unordered messages
-- Use -dalek fast proteus version
-- Use RFC9420 OpenMLS [WPB-579]
-
-### Miscellaneous Tasks
-
-- Release v1.0.0-rc.1
-- Build swift bindings with xcode 14.3.1 ([#342](https://github.com/wireapp/core-crypto/issues/342))
-- Update HPQ hpke to bump dalek
-- Stop shipping kotlin UniFFI bindings [WPB-1180]
-- [**breaking**] UniFFI 0.24 upgrade
-- Update deps
-- Tweak cargo-deny CI
-- Whitelist Kyber fork dependency
-
 </details>
 
 * **[BREAKING]** With this release, CoreCrypto is now [RFC9420](https://www.rfc-editor.org/rfc/rfc9420.txt) compliant.
@@ -588,6 +603,47 @@ In that case he has to catch & ignore the "OrphanWelcome" error and to rejoin th
 - [**breaking**] Credential rotation
 - PostQuantum Ciphersuite
 - [**breaking**] Remove `export_group_info()`
+
+
+### Bug Fixes
+
+- Backend sends raw GroupInfo, we were trying to deserialize it from a MlsMessage
+
+
+### Bug Fixes
+
+- Pin a version of openmls with a fix in tls_codec related to variable length encoding
+
+### Testing
+
+- Fix external commit test was not merging the external commit
+
+
+### Bug Fixes
+
+- Typo in build xcframework task
+
+
+### Features
+
+- CoreCrypto draft-20 upgrade
+- Generate XCFramework when releasing for Swift ([#330](https://github.com/wireapp/core-crypto/issues/330))
+
+
+### Features
+
+- Add `e2ei_is_degraded` to flag a conversation as degraded when at least 1 member is not using a e2ei certificate
+
+
+### Bug Fixes
+
+- Usize to u64 conversion error on Android in `client_valid_keypackages_count`. Whatever the reason this applies a default meaningful value
+- [**breaking**] Creating a MLS group does not consume an existing KeyPackage anymore, instead it always generates a new local one. Also, explicitly ask for the credential type of the creator before creating a new MLS group.
+- Mobile FFI was failing when initializing MLS client due to a Arc being incremented one too many times. Also add the E2EI API in the Kotlin wrapper and a test for it
+
+### Features
+
+- [**breaking**] Hide everywhere `Vec<Ciphersuite>` appears in the public API since it seems to fail for obscure reasons on aarch64 Android devices. Undo when we have a better understanding of the root cause of this
 
 </details>
 
