@@ -727,7 +727,7 @@ export class CoreCrypto {
     /** @hidden */
     static async #loadModule(wasmFilePath?: string) {
         if (!this.#module) {
-            this.#module = (await initWasm(wasmFilePath)) as typeof CoreCryptoFfiTypes;
+            this.#module = (await initWasm(wasmFilePath)) as unknown as typeof CoreCryptoFfiTypes;
         }
     }
 
