@@ -2,7 +2,7 @@
 name = "core-crypto-ffi"
 description = "Platform-specific bindings (Android, iOS, WASM) for CoreCrypto"
 repository = "https://github.com/wireapp/core-crypto"
-version = "1.0.0-rc.13+001"
+version = "1.0.0-rc.13+003"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
