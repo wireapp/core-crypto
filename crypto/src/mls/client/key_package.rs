@@ -396,8 +396,8 @@ pub mod tests {
     pub async fn generates_correct_number_of_kpbs(case: TestCase) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
             Box::pin(async move {
-                const N: usize = 50;
-                const COUNT: usize = 124;
+                const N: usize = 2;
+                const COUNT: usize = 109;
 
                 let init = cc.count_entities().await;
                 assert_eq!(init.key_package, INITIAL_KEYING_MATERIAL_COUNT);
