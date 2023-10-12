@@ -59,7 +59,7 @@ reqwest = { version = "0.11", features = ["json"], default_features = false }
 tokio = { version = "1.5", features = ["macros"], default_features = false }
 hyper = { version = "0.14", features = ["server"], default_features = false }
 asserhttp = { version = "0.6", features = ["reqwest"] }
-testcontainers = "0.14"
+testcontainers = "0.15"
 oauth2 = "4.3"
 http = "0.2"
 
