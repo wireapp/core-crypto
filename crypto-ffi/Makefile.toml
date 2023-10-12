@@ -113,22 +113,10 @@ args = [
 [tasks.wasm-build-dev]
 script = "cargo make wasm-build --dev"
 
-[tasks.wasm-build-ts]
+[tasks.wasm]
 dependencies = ["wasm-build"]
 command = "bun"
-args = [
-    "build",
-    "--target", "browser",
-    "./bindings/js/CoreCrypto.ts",
-    "--outdir", "../platforms/web"
-]
-
-[tasks.wasm]
-dependencies = ["wasm-build-ts"]
-script = '''
-    cp ./bindings/js/wasm/core-crypto-ffi_bg.wasm ../platforms/web
-    mv ../platforms/web/CoreCrypto.js ../platforms/web/corecrypto.js
-'''
+args = ["run", "build_ts.ts"]
 
 ##################################### FFI #####################################
 
