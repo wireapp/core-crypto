@@ -2,7 +2,7 @@
 name = "core-crypto"
 description = "Abstraction over OpenMLS with persistent keystore"
 repository = "https://github.com/wireapp/core-crypto"
-version = "1.0.0-pre.6+v1-schemafix-002"
+version = "1.0.0-pre.6+v1-schemafix-003"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
@@ -44,9 +44,6 @@ schnellru = "0.2"
 zeroize = "1.5"
 wire-e2e-identity = { version = "0.4", default-features = false }
 indexmap = "2"
-
-# TODO: remove when coarsetime > 0.1.28 released
-coarsetime = "=0.1.23"
 
 [dependencies.proteus-wasm]
 version = "2.0"
