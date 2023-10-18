@@ -39,9 +39,6 @@ async-lock = "2.5"
 postcard = { version = "1.0", default-features = false, features = ["use-std"] }
 sha2 = "0.10"
 
-# Fixes the dynamic linking issue on Android with the atomic lib
-openssl-sys = "=0.9.92"
-
 # iOS specific things
 security-framework = { version = "2.8", optional = true }
 security-framework-sys = { version = "2.8", optional = true }
@@ -62,6 +59,8 @@ branch = "2.x"
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = "1.5"
 blocking = "1.2"
+# Fixes the dynamic linking issue on Android with the atomic lib
+openssl-sys = "=0.9.92"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.rusqlite]
 version = "0.29"
