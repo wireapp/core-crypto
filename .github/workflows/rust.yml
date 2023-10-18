@@ -11,24 +11,31 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: true
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
 
 jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt
-      - uses: Swatinem/rust-cache@v2
+          rustflags: ''
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - run: cargo fmt --all -- --check
 
   check-strict:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - run: cargo check --tests
       - run: cargo check --benches
       - run: cargo doc --all --no-deps
@@ -39,8 +46,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - run: cargo check --tests
       - run: cargo check --benches
 
@@ -48,11 +58,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
+          rustflags: ''
           components: clippy
-          targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v2
+          target: wasm32-unknown-unknown
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - run: cargo build --verbose
       - run: cargo clippy -- -D warnings
       - run: cargo clippy --target wasm32-unknown-unknown -- -D warnings
@@ -61,8 +73,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - uses: taiki-e/install-action@nextest
       - name: "Test CoreCrypto"
         run: cargo nextest run --verbose
@@ -73,8 +88,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - uses: taiki-e/install-action@nextest
       - name: "Test CoreCrypto's proteus implementation"
         run: cargo nextest run --verbose --features proteus,cryptobox-migrate,proteus-keystore proteus
@@ -84,8 +102,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - uses: taiki-e/install-action@nextest
       - name: "Test CoreCrypto xtask tooling"
         run: cargo nextest run --verbose --manifest-path xtask/Cargo.toml
@@ -99,12 +120,14 @@ jobs:
         workspace: [ "crypto", "keystore", "mls-provider" ]
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          targets: wasm32-unknown-unknown
+          target: wasm32-unknown-unknown
+          rustflags: ''
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - uses: Swatinem/rust-cache@v2
       - name: WASM check
         run: cargo check --tests --target wasm32-unknown-unknown
       - name: WASM build
@@ -118,16 +141,18 @@ jobs:
         workspace: ["core-crypto-keystore", "mls-crypto-provider"]
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          targets: wasm32-unknown-unknown
+          target: wasm32-unknown-unknown
+          rustflags: ''
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - uses: browser-actions/setup-chrome@latest
         id: setup-chrome
         with:
           chrome-version: stable
       - run: |
           echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
-      - uses: Swatinem/rust-cache@v2
       - name: Run tests (wasm)
         run: cargo test --target wasm32-unknown-unknown -p ${{ matrix.workspace }}
 
@@ -136,16 +161,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          targets: wasm32-unknown-unknown
+          target: wasm32-unknown-unknown
+          rustflags: ''
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - uses: browser-actions/setup-chrome@latest
         id: setup-chrome
         with:
           chrome-version: stable
       - run: |
           echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
-      - uses: Swatinem/rust-cache@v2
       - name: Run core tests (wasm)
         run: sh crypto-ffi/bindings/js/test/wasm-tests.sh
 
@@ -153,16 +180,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          targets: wasm32-unknown-unknown
+          target: wasm32-unknown-unknown
+          rustflags: ''
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - uses: browser-actions/setup-chrome@latest
         id: setup-chrome
         with:
           chrome-version: stable
       - run: |
           echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
-      - uses: Swatinem/rust-cache@v2
       - name: Run tests (wasm)
         run: |
           cargo test --features "proteus-keystore" --target wasm32-unknown-unknown -p core-crypto-keystore proteus
@@ -172,9 +201,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          targets: wasm32-unknown-unknown
+          target: wasm32-unknown-unknown
+          rustflags: ''
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: Install wasm-pack
@@ -191,7 +223,6 @@ jobs:
           node-version: 18
       - run: |
           echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
-      - uses: Swatinem/rust-cache@v2
       - name: Run E2E interop test
         run: cargo run --bin interop
 
@@ -199,8 +230,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - uses: taiki-e/install-action@cargo-hack
-      - uses: Swatinem/rust-cache@v2
       - name: cargo/hack (verify features compile in isolation)
         run: cargo hack check --each-feature --exclude-features uniffi --no-dev-deps
