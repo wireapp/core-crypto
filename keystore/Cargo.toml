@@ -57,7 +57,7 @@ git = "https://github.com/wireapp/proteus"
 branch = "2.x"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-async-fs = "1.5"
+async-fs = "2.0"
 blocking = "1.2"
 # Fixes the dynamic linking issue on Android with the atomic lib
 openssl-sys = "=0.9.92"
