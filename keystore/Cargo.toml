@@ -35,7 +35,7 @@ cfg-if = "1.0"
 hex = "0.4"
 zeroize = { version = "1.5", features = ["zeroize_derive"] }
 async-trait = "0.1"
-async-lock = "2.5"
+async-lock = "3.0"
 postcard = { version = "1.0", default-features = false, features = ["use-std"] }
 sha2 = "0.10"
 
