@@ -12,7 +12,7 @@ Platform support legends:
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.17"}}
+{{git-cliff tag="v1.0.0-rc.17" unreleased=true}}
 </details>
 
 * Remove dependency of OpenSSL for Wasm
