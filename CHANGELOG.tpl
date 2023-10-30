@@ -8,11 +8,21 @@ Platform support legends:
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
 
+## [1.0.0-rc.17] - 2023-10-23
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.17" unreleased=true}}
+</details>
+
+* Remove dependency of OpenSSL for Wasm
+* Fix linking issue on Android
+
 ## [1.0.0-rc.16] - 2023-10-10
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.16" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.16"}}
 </details>
 
 * **[BREAKING-WASM ONLY]**: We now bundle our TypeScript and WASM bindings using [Bun](https://bun.sh/)
