@@ -105,7 +105,7 @@ mls-crypto-provider = { path = "../mls-provider" }
 rstest = "0.18"
 rstest_reuse = "0.6"
 async-std = { version = "1.12", features = ["attributes"] }
-futures-lite = "1.12"
+futures-lite = "2.0"
 core-crypto-keystore = { path = ".", features = ["idb-regression-test", "log-queries"] }
 pretty_env_logger = "0.5"
 
