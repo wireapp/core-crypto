@@ -49,9 +49,6 @@ openmls_x509_credential = { version = "0.1", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
 log = { version = "0.4", optional = true }
 
-# Fixes the dynamic linking issue on Android with the atomic lib
-openssl-sys = "=0.9.92"
-
 [dependencies.proteus-traits]
 optional = true
 package = "proteus-traits"
