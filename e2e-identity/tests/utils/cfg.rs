@@ -64,25 +64,31 @@ impl<'a> E2eTest<'a> {
     const LDAP_HOST: &'static str = "ldap";
     const WIRE_HOST: &'static str = "wire.com";
     const HOSTS: [&'static str; 4] = [Self::DEX_HOST, Self::STEPCA_HOST, Self::LDAP_HOST, Self::WIRE_HOST];
-    const DEFAULT_TEMPLATE: &'static str = r#"{
-        	"subject": {
-        	    "organization": "wire.com",
-        	    "commonName": {{ toJson .Oidc.preferred_username }}
-        	},
-        	"uris": [{{ toJson .Oidc.name }}, {{ toJson .Dpop.sub }}],
+
+    pub fn default_template(org: &str) -> String {
+        // we use '{' to escape '{'. That's why we sometimes have 4: this uses handlebars template
+        format!(
+            r#"{{
+        	"subject": {{
+        	    "organization": "{org}",
+        	    "commonName": {{{{ toJson .Oidc.preferred_username }}}}
+        	}},
+        	"uris": [{{{{ toJson .Oidc.name }}}}, {{{{ toJson .Dpop.sub }}}}],
         	"keyUsage": ["digitalSignature"],
         	"extKeyUsage": ["clientAuth"]
-        }"#;
+        }}"#
+        )
+    }
 
     pub fn new() -> Self {
-        Self::new_internal(false)
+        Self::new_internal(false, JwsAlgorithm::Ed25519)
     }
 
     pub fn new_demo() -> Self {
-        Self::new_internal(true)
+        Self::new_internal(true, JwsAlgorithm::Ed25519)
     }
 
-    fn new_internal(is_demo: bool) -> Self {
+    pub fn new_internal(is_demo: bool, alg: JwsAlgorithm) -> Self {
         let [dex_host, ca_host, ldap_host, domain] = if is_demo {
             Self::HOSTS.map(|h| h.to_string())
         } else {
@@ -104,13 +110,42 @@ impl<'a> E2eTest<'a> {
         // TODO: support https for jwks uri
         let jwks_uri = format!("http://{dex_host}:{}/dex/keys", DexImage::PORT);
 
-        let alg = JwsAlgorithm::Ed25519;
-        let hash_alg = HashAlgorithm::SHA256;
-        let client_kp = Ed25519KeyPair::generate();
-        let backend_kp = Ed25519KeyPair::generate();
+        let (client_kp, client_jwk, sign_key, backend_kp) = match alg {
+            JwsAlgorithm::Ed25519 => {
+                let client_kp = Ed25519KeyPair::generate();
+                let backend_kp = Ed25519KeyPair::generate();
+                (
+                    Pem::from(client_kp.to_pem()),
+                    client_kp.public_key().try_into_jwk().unwrap(),
+                    backend_kp.public_key().to_pem(),
+                    Pem::from(backend_kp.to_pem()),
+                )
+            }
+            JwsAlgorithm::P256 => {
+                let client_kp = ES256KeyPair::generate();
+                let backend_kp = ES256KeyPair::generate();
+                (
+                    Pem::from(client_kp.to_pem().unwrap()),
+                    client_kp.public_key().try_into_jwk().unwrap(),
+                    backend_kp.public_key().to_pem().unwrap(),
+                    Pem::from(backend_kp.to_pem().unwrap()),
+                )
+            }
+            JwsAlgorithm::P384 => {
+                let client_kp = ES384KeyPair::generate();
+                let backend_kp = ES384KeyPair::generate();
+                (
+                    Pem::from(client_kp.to_pem().unwrap()),
+                    client_kp.public_key().try_into_jwk().unwrap(),
+                    backend_kp.public_key().to_pem().unwrap(),
+                    Pem::from(backend_kp.to_pem().unwrap()),
+                )
+            }
+        };
 
+        let hash_alg = HashAlgorithm::SHA256;
         let display = TestDisplay::new(format!("{:?} - {:?}", alg, hash_alg), false);
-        let template = Self::DEFAULT_TEMPLATE;
+        let template = Self::default_template(&domain);
 
         Self {
             domain: domain.to_string(),
@@ -137,7 +172,7 @@ impl<'a> E2eTest<'a> {
                 domain,
             },
             ca_cfg: CaCfg {
-                sign_key: backend_kp.public_key().to_pem(),
+                sign_key,
                 issuer,
                 audience: audience.to_string(),
                 jwks_uri,
@@ -153,9 +188,9 @@ impl<'a> E2eTest<'a> {
             },
             alg,
             hash_alg,
-            client_kp: client_kp.to_pem().into(),
-            client_jwk: client_kp.public_key().try_into_jwk().unwrap(),
-            backend_kp: backend_kp.to_pem().into(),
+            client_kp,
+            client_jwk,
+            backend_kp,
             display,
             wire_server: None,
             ldap_server: None,
@@ -165,59 +200,6 @@ impl<'a> E2eTest<'a> {
             is_demo,
             client: reqwest::Client::new(),
             oidc_provider: OidcProvider::Dex,
-        }
-    }
-
-    pub fn with_alg(self, alg: JwsAlgorithm) -> Self {
-        match alg {
-            JwsAlgorithm::Ed25519 => {
-                let client_kp = Ed25519KeyPair::generate();
-                let backend_kp = Ed25519KeyPair::generate();
-                Self {
-                    ca_cfg: CaCfg {
-                        sign_key: backend_kp.public_key().to_pem(),
-                        ..self.ca_cfg
-                    },
-                    alg,
-                    hash_alg: alg.into(),
-                    client_kp: client_kp.to_pem().into(),
-                    client_jwk: client_kp.public_key().try_into_jwk().unwrap(),
-                    backend_kp: backend_kp.to_pem().into(),
-                    ..self
-                }
-            }
-            JwsAlgorithm::P256 => {
-                let client_kp = ES256KeyPair::generate();
-                let backend_kp = ES256KeyPair::generate();
-                Self {
-                    ca_cfg: CaCfg {
-                        sign_key: backend_kp.public_key().to_pem().unwrap(),
-                        ..self.ca_cfg
-                    },
-                    alg,
-                    hash_alg: alg.into(),
-                    client_kp: client_kp.to_pem().unwrap().into(),
-                    client_jwk: client_kp.public_key().try_into_jwk().unwrap(),
-                    backend_kp: backend_kp.to_pem().unwrap().into(),
-                    ..self
-                }
-            }
-            JwsAlgorithm::P384 => {
-                let client_kp = ES384KeyPair::generate();
-                let backend_kp = ES384KeyPair::generate();
-                Self {
-                    ca_cfg: CaCfg {
-                        sign_key: backend_kp.public_key().to_pem().unwrap(),
-                        ..self.ca_cfg
-                    },
-                    alg,
-                    hash_alg: alg.into(),
-                    client_kp: client_kp.to_pem().unwrap().into(),
-                    client_jwk: client_kp.public_key().try_into_jwk().unwrap(),
-                    backend_kp: backend_kp.to_pem().unwrap().into(),
-                    ..self
-                }
-            }
         }
     }
 
