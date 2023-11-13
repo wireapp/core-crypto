@@ -1,0 +1,20 @@
+[package]
+name = "cc-keystore-08"
+version = "0.0.0"
+edition = "2021"
+resolver = "2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+core-crypto-keystore = { git = "https://github.com/wireapp/core-crypto.git", tag = "v0.8.2", package = "core-crypto-keystore" }
+cc-keystore-support = { path = "../cc-keystore-support"}
+
+[patch.crates-io.rexie]
+git = "https://github.com/wireapp/rexie"
+branch = "feat/api-expansion"
+
+[patch.crates-io.openmls_traits]
+package = "openmls_traits"
+git = "https://github.com/wireapp/openmls"
+tag = "v0.5.6-pre.core-crypto-0.7.0"

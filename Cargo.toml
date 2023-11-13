@@ -12,7 +12,8 @@ exclude = [
     "xtask",
     "extras/core-ds",
     "extras/wasm-browser-run",
-    "extras/wasm-browser-test-runner"
+    "extras/wasm-browser-test-runner",
+    "extras/keystore-regression-versions"
 ]
 resolver = "2"
 
