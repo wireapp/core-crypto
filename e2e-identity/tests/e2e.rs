@@ -19,7 +19,7 @@ use utils::{
 mod utils;
 
 fn docker() -> &'static Cli {
-    Box::leak(Box::new(Cli::docker()))
+    Box::leak(Box::new(Cli::new::<testcontainers::core::env::Os>()))
 }
 
 /// Tests the nominal case and prints the pretty output with the mermaid chart in this crate README.
@@ -651,7 +651,7 @@ mod optimize {
 
     #[tokio::test]
     async fn should_validate_challenges_in_parallel() {
-        let docker = Box::leak(Box::new(Cli::docker()));
+        let docker = Box::leak(Box::new(Cli::new::<testcontainers::core::env::Os>()));
         let mut test = E2eTest::new().start(docker).await;
         let directory = test.get_acme_directory().await.unwrap();
         let previous_nonce = test.get_acme_nonce(&directory).await.unwrap();
