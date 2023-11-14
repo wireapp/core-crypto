@@ -135,7 +135,7 @@ pub mod tests {
                     if case.is_x509() {
                         alice_central.verify_sender_identity(&case, &decrypt_self);
                         alice_central
-                            .verify_local_credential_rotated(&id, new_handle, new_display_name)
+                            .verify_local_credential_rotated(&id, &format!("{new_handle}@wire.com"), new_display_name)
                             .await;
                     }
                 })

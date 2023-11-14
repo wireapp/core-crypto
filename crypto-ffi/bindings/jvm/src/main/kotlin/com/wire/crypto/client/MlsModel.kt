@@ -368,7 +368,43 @@ data class WireIdentity(
     /**
      * X509 certificate identifying this client in the MLS group ; PEM encoded
      */
-    val certificate: String
+    val certificate: String,
+    /**
+     * Status of the Credential at the moment T when this object is created
+     */
+    val status: DeviceStatus,
+    /**
+     * MLS thumbprint
+     */
+    val thumbprint: String,
 )
 
-fun com.wire.crypto.WireIdentity.lift() = WireIdentity(clientId, handle, displayName, domain, certificate)
+fun com.wire.crypto.WireIdentity.lift() =
+    WireIdentity(clientId, handle, displayName, domain, certificate, status.lift(), thumbprint)
+
+/**
+ * Indicates the standalone status of a device Credential in a MLS group at a moment T. This does not represent the
+ * states where a device is not using MLS or is not using end-to-end identity
+ */
+enum class DeviceStatus {
+    /**
+     * All is fine
+     */
+    Valid,
+
+    /**
+     * The Credential's certificate is expired
+     */
+    Expired,
+
+    /**
+     * The Credential's certificate is revoked (not implemented yet)
+     */
+    Revoked,
+}
+
+fun com.wire.crypto.DeviceStatus.lift(): DeviceStatus = when (this) {
+    com.wire.crypto.DeviceStatus.VALID -> DeviceStatus.Valid
+    com.wire.crypto.DeviceStatus.EXPIRED -> DeviceStatus.Expired
+    com.wire.crypto.DeviceStatus.REVOKED -> DeviceStatus.Revoked
+}

@@ -10,13 +10,14 @@ use crate::{
     prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCentral, MlsCiphersuite},
 };
 
+pub(crate) mod conversation_state;
 mod crypto;
+pub(crate) mod device_status;
 pub mod enabled;
 pub mod error;
 pub(crate) mod identity;
 pub(crate) mod rotate;
 pub(crate) mod stash;
-pub(crate) mod state;
 pub mod types;
 
 type Json = Vec<u8>;
@@ -509,7 +510,7 @@ pub mod tests {
         let client_id = client_id
             .map(|c| format!("{}{c}", wire_e2e_identity::prelude::E2eiClientId::URI_PREFIX))
             .unwrap_or_else(|| cc.get_e2ei_client_id().to_uri());
-        let identifier_value = format!("{{\"name\":\"{display_name}\",\"domain\":\"wire.com\",\"client-id\":\"{client_id}\",\"handle\":\"im:wireapp={handle}\"}}");
+        let identifier_value = format!("{{\"name\":\"{display_name}\",\"domain\":\"wire.com\",\"client-id\":\"{client_id}\",\"handle\":\"im:wireapp=%40{handle}@wire.com\"}}");
         let order_resp = json!({
             "status": "pending",
             "expires": "2037-01-05T14:09:07.99Z",

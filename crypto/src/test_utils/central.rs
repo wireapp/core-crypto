@@ -30,6 +30,7 @@ use openmls::prelude::{
 use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
 use tls_codec::{Deserialize, Serialize};
 
+use crate::e2e_identity::device_status::DeviceStatus;
 use core_crypto_keystore::entities::{
     EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
 };
@@ -484,13 +485,18 @@ impl MlsCentral {
         new_handle: &str,
         new_display_name: &str,
     ) {
-        let cid = &self.get_client_id();
-        let group_identities = self.get_user_identities(id, &[cid]).await.unwrap();
+        // verify the identity in..
+        // the MLS group
+        let cid = self.get_client_id();
+        let group_identities = self.get_device_identities(id, &[cid.clone()]).await.unwrap();
         let group_identity = group_identities.first().unwrap();
-        assert_eq!(&group_identity.client_id.as_bytes(), &cid.0);
+        assert_eq!(group_identity.client_id.as_bytes(), cid.0.as_slice());
         assert_eq!(group_identity.display_name, new_display_name);
         assert_eq!(group_identity.handle, new_handle);
+        assert_eq!(group_identity.status, DeviceStatus::Valid);
+        assert!(!group_identity.thumbprint.is_empty());
 
+        // the in-memory mapping
         let cb = self
             .find_most_recent_credential_bundle_for_conversation(id)
             .await
@@ -500,13 +506,18 @@ impl MlsCentral {
         assert_eq!(&local_identity.client_id.as_bytes(), &cid.0);
         assert_eq!(local_identity.display_name, new_display_name);
         assert_eq!(local_identity.handle, new_handle);
+        assert_eq!(local_identity.status, DeviceStatus::Valid);
+        assert!(!local_identity.thumbprint.is_empty());
 
+        // the keystore
         let credential = self.find_credential_from_keystore(&cb).await.unwrap();
         let credential = Credential::tls_deserialize_bytes(credential.credential.as_slice()).unwrap();
         assert_eq!(credential.identity(), &cid.0);
         let keystore_identity = credential.extract_identity().unwrap().unwrap();
         assert_eq!(keystore_identity.display_name, new_display_name);
         assert_eq!(keystore_identity.handle, new_handle);
+        assert_eq!(keystore_identity.status, DeviceStatus::Valid);
+        assert!(!keystore_identity.thumbprint.is_empty());
     }
 
     pub fn verify_sender_identity(&self, case: &TestCase, decrypted: &MlsConversationDecryptMessage) {
@@ -527,6 +538,8 @@ impl MlsCentral {
             assert_eq!(decr_identity.handle, identity.handle);
             assert_eq!(decr_identity.display_name, identity.display_name);
             assert_eq!(decr_identity.domain, identity.domain);
+            assert_eq!(decr_identity.status, identity.status.clone().into());
+            assert_eq!(decr_identity.thumbprint, identity.thumbprint);
             assert!(decr_identity.certificate.starts_with("-----BEGIN CERTIFICATE-----"));
             assert!(decr_identity.certificate.ends_with("-----END CERTIFICATE-----\n"));
             let chain = x509_cert::Certificate::load_pem_chain(decr_identity.certificate.as_bytes()).unwrap();
@@ -536,6 +549,10 @@ impl MlsCentral {
             assert_eq!(cert_identity.handle, identity.handle);
             assert_eq!(cert_identity.display_name, identity.display_name);
             assert_eq!(cert_identity.domain, identity.domain);
+            assert_eq!(cert_identity.status, identity.status);
+            assert_eq!(cert_identity.thumbprint, identity.thumbprint);
+            assert_eq!(DeviceStatus::from(identity.status), DeviceStatus::Valid);
+            assert!(!identity.thumbprint.is_empty());
         }
     }
 

@@ -460,6 +460,8 @@ pub struct WireIdentity {
     pub display_name: String,
     pub domain: String,
     pub certificate: String,
+    pub status: DeviceStatus,
+    pub thumbprint: String,
 }
 
 impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
@@ -470,6 +472,29 @@ impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
             display_name: i.display_name,
             domain: i.domain,
             certificate: i.certificate,
+            status: i.status.into(),
+            thumbprint: i.thumbprint,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, uniffi::Enum)]
+#[repr(u8)]
+pub enum DeviceStatus {
+    /// All is fine
+    Valid = core_crypto::prelude::DeviceStatus::Valid as u8,
+    /// The Credential's certificate is expired
+    Expired = core_crypto::prelude::DeviceStatus::Expired as u8,
+    /// The Credential's certificate is revoked (not implemented yet)
+    Revoked = core_crypto::prelude::DeviceStatus::Revoked as u8,
+}
+
+impl From<core_crypto::prelude::DeviceStatus> for DeviceStatus {
+    fn from(value: core_crypto::prelude::DeviceStatus) -> Self {
+        match value {
+            core_crypto::prelude::DeviceStatus::Valid => Self::Valid,
+            core_crypto::prelude::DeviceStatus::Expired => Self::Expired,
+            core_crypto::prelude::DeviceStatus::Revoked => Self::Revoked,
         }
     }
 }
@@ -1457,22 +1482,39 @@ impl CoreCrypto {
         Ok(self.central.lock().await.e2ei_is_enabled(sc)?)
     }
 
-    /// See [core_crypto::mls::MlsCentral::get_user_identities]
-    pub async fn get_user_identities(
+    /// See [core_crypto::mls::MlsCentral::get_device_identities]
+    pub async fn get_device_identities(
         &self,
         conversation_id: Vec<u8>,
-        client_ids: Vec<ClientId>,
+        device_ids: Vec<ClientId>,
     ) -> CoreCryptoResult<Vec<WireIdentity>> {
-        let client_ids = client_ids.iter().map(|cid| &cid.0).collect::<Vec<_>>();
+        let device_ids = device_ids.into_iter().map(|cid| cid.0).collect::<Vec<_>>();
         Ok(self
             .central
             .lock()
             .await
-            .get_user_identities(&conversation_id, &client_ids[..])
+            .get_device_identities(&conversation_id, &device_ids[..])
             .await?
             .into_iter()
             .map(Into::into)
             .collect::<Vec<_>>())
+    }
+
+    /// See [core_crypto::mls::MlsCentral::get_user_identities]
+    pub async fn get_user_identities(
+        &self,
+        conversation_id: Vec<u8>,
+        user_ids: Vec<String>,
+    ) -> CoreCryptoResult<HashMap<String, Vec<WireIdentity>>> {
+        Ok(self
+            .central
+            .lock()
+            .await
+            .get_user_identities(&conversation_id, &user_ids[..])
+            .await?
+            .into_iter()
+            .map(|(k, v)| (k, v.into_iter().map(Into::into).collect()))
+            .collect::<HashMap<String, Vec<WireIdentity>>>())
     }
 }
 

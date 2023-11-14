@@ -53,14 +53,20 @@ pub async fn run_test_with_central(
 
 pub async fn run_test_with_client_ids<const N: usize>(
     case: TestCase,
-    client_id: [&'static str; N],
+    client_ids: [&'static str; N],
+    test: impl FnOnce([MlsCentral; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+) {
+    run_test_with_deterministic_client_ids(case, client_ids.map(|i| [i, "", ""]), test).await
+}
+
+pub async fn run_test_with_deterministic_client_ids<const N: usize>(
+    case: TestCase,
+    client_ids: [[&'static str; 3]; N],
     test: impl FnOnce([MlsCentral; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
     run_tests(move |paths: [String; N]| {
         Box::pin(async move {
             let stream = paths.into_iter().enumerate().map(|(i, p)| async move {
-                let client_id: ClientId = client_id[i].into();
-
                 let configuration = MlsCentralConfiguration::try_new(
                     p,
                     "test".into(),
@@ -73,13 +79,26 @@ pub async fn run_test_with_client_ids<const N: usize>(
                 let mut central = MlsCentral::try_new(configuration).await.unwrap();
 
                 let identity = match case.credential_type {
-                    MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
+                    MlsCredentialType::Basic => {
+                        let client_id: ClientId = client_ids[i][0].into();
+                        ClientIdentifier::Basic(client_id)
+                    }
                     MlsCredentialType::X509 => {
-                        let cert = crate::prelude::CertificateBundle::rand(
-                            &client_id,
-                            case.cfg.ciphersuite.signature_algorithm(),
-                        );
-                        ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]))
+                        let sc = case.cfg.ciphersuite.signature_algorithm();
+                        let id = client_ids[i];
+                        let [client_id, handle, display_name] = id;
+
+                        let cert = match (handle, display_name) {
+                            ("", "") => crate::prelude::CertificateBundle::rand(&client_id.into(), sc),
+                            _ => crate::prelude::CertificateBundle::new(
+                                sc,
+                                handle,
+                                display_name,
+                                Some(&client_id.into()),
+                                None,
+                            ),
+                        };
+                        ClientIdentifier::X509(HashMap::from([(sc, cert)]))
                     }
                 };
                 central

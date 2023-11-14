@@ -357,7 +357,11 @@ pub mod tests {
 
                             alice_central.commit_accepted(&id).await.unwrap();
                             alice_central
-                                .verify_local_credential_rotated(&id, new_handle, new_display_name)
+                                .verify_local_credential_rotated(
+                                    &id,
+                                    &format!("{new_handle}@wire.com"),
+                                    new_display_name,
+                                )
                                 .await;
                         }
 
@@ -370,7 +374,7 @@ pub mod tests {
                             assert_eq!(c.credential_type(), openmls::prelude::CredentialType::X509);
                             let identity = c.extract_identity().unwrap().unwrap();
                             assert_eq!(identity.display_name, new_display_name);
-                            assert_eq!(identity.handle, new_handle);
+                            assert_eq!(identity.handle, format!("{new_handle}@wire.com"));
                         }
 
                         // Alice has to delete her old KeyPackages
@@ -512,7 +516,7 @@ pub mod tests {
                         .unwrap();
                     let identity = cb.credential().extract_identity().unwrap().unwrap();
                     assert_eq!(identity.display_name, new_display_name);
-                    assert_eq!(identity.handle, new_handle);
+                    assert_eq!(identity.handle, format!("{new_handle}@wire.com"));
 
                     // but keeps her old one since it's referenced from some KeyPackages
                     let old_spk = SignaturePublicKey::from(old_cb.signature_key.public());
@@ -553,7 +557,7 @@ pub mod tests {
                         .unwrap();
                     let identity = cb.credential().extract_identity().unwrap().unwrap();
                     assert_eq!(identity.display_name, new_display_name);
-                    assert_eq!(identity.handle, new_handle);
+                    assert_eq!(identity.handle, format!("{new_handle}@wire.com"));
 
                     assert_eq!(
                         alice_central.mls_client().unwrap().identities.iter().count(),
@@ -619,7 +623,11 @@ pub mod tests {
 
                         alice_central.commit_accepted(&id).await.unwrap();
                         alice_central
-                            .verify_local_credential_rotated(&id, alice_new_handle, alice_new_display_name)
+                            .verify_local_credential_rotated(
+                                &id,
+                                &format!("{alice_new_handle}@wire.com"),
+                                alice_new_display_name,
+                            )
                             .await;
 
                         // Bob's turn
@@ -659,7 +667,11 @@ pub mod tests {
 
                         bob_central.commit_accepted(&id).await.unwrap();
                         bob_central
-                            .verify_local_credential_rotated(&id, bob_new_handle, bob_new_display_name)
+                            .verify_local_credential_rotated(
+                                &id,
+                                &format!("{bob_new_handle}@wire.com"),
+                                bob_new_display_name,
+                            )
                             .await;
                     })
                 },
@@ -691,7 +703,7 @@ pub mod tests {
                             let init_count = alice_central.count_entities().await;
 
                             // Alice creates a new Credential, updating her handle/display_name
-                            let alice_cid = &alice_central.get_client_id();
+                            let alice_cid = alice_central.get_client_id();
                             let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                             let cb = alice_central
                                 .rotate_credential(&case, new_handle, new_display_name, None)
@@ -699,10 +711,10 @@ pub mod tests {
 
                             // Verify old identity is still there in the MLS group
                             let alice_old_identities =
-                                alice_central.get_user_identities(&id, &[alice_cid]).await.unwrap();
+                                alice_central.get_device_identities(&id, &[alice_cid]).await.unwrap();
                             let alice_old_identity = alice_old_identities.first().unwrap();
                             assert_ne!(alice_old_identity.display_name, new_display_name);
-                            assert_ne!(alice_old_identity.handle, new_handle);
+                            assert_ne!(alice_old_identity.handle, format!("{new_handle}@wire.com"));
 
                             // Alice issues an Update commit to replace her current identity
                             let commit = alice_central.e2ei_rotate(&id, &cb).await.unwrap();
@@ -718,7 +730,11 @@ pub mod tests {
                             // Finally, Alice merges her commit and verifies her new identity gets applied
                             alice_central.commit_accepted(&id).await.unwrap();
                             alice_central
-                                .verify_local_credential_rotated(&id, new_handle, new_display_name)
+                                .verify_local_credential_rotated(
+                                    &id,
+                                    &format!("{new_handle}@wire.com"),
+                                    new_display_name,
+                                )
                                 .await;
 
                             let final_count = alice_central.count_entities().await;
@@ -790,7 +806,11 @@ pub mod tests {
                             // Finally, Alice merges her commit and verifies her new identity gets applied
                             alice_central.commit_accepted(&id).await.unwrap();
                             alice_central
-                                .verify_local_credential_rotated(&id, new_handle, new_display_name)
+                                .verify_local_credential_rotated(
+                                    &id,
+                                    &format!("{new_handle}@wire.com"),
+                                    new_display_name,
+                                )
                                 .await;
 
                             // Bob verifies that now Alice is represented with her new identity
