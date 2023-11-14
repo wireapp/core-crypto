@@ -7,11 +7,15 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
-
-## [1.0.0-rc.17] - 2023-10-23
+## [1.0.0-rc.18] - 2023-10-23
 
 <details>
     <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Preserve schema upgrade path between schemafix'd versions and upcoming
+
 
 ### Bug Fixes
 
@@ -20,7 +24,7 @@ Platform support legends:
 
 ### Miscellaneous Tasks
 
-- Release v1.0.0-rc.17
+- Release v1.0.0-rc.17 ([#425](https://github.com/wireapp/core-crypto/issues/425))
 - Use actual CI cache
 
 
@@ -296,6 +300,25 @@ Platform support legends:
 
 - Release v1.0.0-pre.7
 - Pin dependencies on wireapp org forks
+
+</details>
+
+* Native platforms only: Preserve database schema upgrade path from 0.8.x, 1.0.0-pre.6+schemafix-0007 and onwards.
+
+## [1.0.0-rc.17] - 2023-10-23
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Don't depend on OpenSSL on WASM
+- Dynamic linking issue on Android with the atomic lib
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.17 ([#425](https://github.com/wireapp/core-crypto/issues/425))
+- Use actual CI cache
 
 </details>
 
@@ -884,6 +907,47 @@ In that case he has to catch & ignore the "OrphanWelcome" error and to rejoin th
 - PostQuantum Ciphersuite
 - [**breaking**] Remove `export_group_info()`
 
+
+### Bug Fixes
+
+- Backend sends raw GroupInfo, we were trying to deserialize it from a MlsMessage
+
+
+### Bug Fixes
+
+- Pin a version of openmls with a fix in tls_codec related to variable length encoding
+
+### Testing
+
+- Fix external commit test was not merging the external commit
+
+
+### Bug Fixes
+
+- Typo in build xcframework task
+
+
+### Features
+
+- CoreCrypto draft-20 upgrade
+- Generate XCFramework when releasing for Swift ([#330](https://github.com/wireapp/core-crypto/issues/330))
+
+
+### Features
+
+- Add `e2ei_is_degraded` to flag a conversation as degraded when at least 1 member is not using a e2ei certificate
+
+
+### Bug Fixes
+
+- Usize to u64 conversion error on Android in `client_valid_keypackages_count`. Whatever the reason this applies a default meaningful value
+- [**breaking**] Creating a MLS group does not consume an existing KeyPackage anymore, instead it always generates a new local one. Also, explicitly ask for the credential type of the creator before creating a new MLS group.
+- Mobile FFI was failing when initializing MLS client due to a Arc being incremented one too many times. Also add the E2EI API in the Kotlin wrapper and a test for it
+
+### Features
+
+- [**breaking**] Hide everywhere `Vec<Ciphersuite>` appears in the public API since it seems to fail for obscure reasons on aarch64 Android devices. Undo when we have a better understanding of the root cause of this
+
 </details>
 
 * feat!: PostQuantum Ciphersuite support ! Using [Xyber768](https://www.ietf.org/archive/id/draft-westerbaan-cfrg-hpke-xyber768d00-02.html) for Key Exchange.
@@ -1117,6 +1181,81 @@ the FFI. Still uncertain about the root cause but to move on all the parameters 
 
 <details>
     <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Fixed iOS keychain handling with proper attributes
+
+### Features
+
+- Verify x509 credential identity and return identity (client_id, handle, display_name, domain) once message is decrypted
+
+### Miscellaneous Tasks
+
+- Release v0.7.0
+- Update deps & cargo-deny configuration
+- Get rid of internal 'CredentialSupplier' test util
+
+
+### Bug Fixes
+
+- [**breaking**] Tweak WASM API
+- Use schnellru fork for GroupStore faillible inserts
+- Fixed GroupStore memory limiter behavior
+
+### Features
+
+- Remove any transitive crate using ring. As a consequence supports EcDSA on WASM
+- Copy/modify kotlin wrapper from Kalium ([#284](https://github.com/wireapp/core-crypto/issues/284))
+- [**breaking**] Support creating a MLS client from an e2e identity certificate
+
+### Miscellaneous Tasks
+
+- Release v0.7.0-rc.4
+- Update interop runner `dirs` dep
+- Appease clippy
+
+
+### Bug Fixes
+
+- Proteus auto prekey ids not incrementing
+
+### Miscellaneous Tasks
+
+- Release v0.7.0-rc.3
+
+
+### Miscellaneous Tasks
+
+- Release v0.7.0-rc.2
+
+
+### Bug Fixes
+
+- [**breaking**] Make FFI parameters compliant with rfc8555
+- Added missing version() function to Swift bindings
+- Enable ios-wal-compat for iOS builds by default
+- Exclude self from self-remove-commit delay
+- Fix rustsec advisories on xtask deps
+
+### Features
+
+- [**breaking**] Latest e2e identity iteration. ClientId (from MLS) is used instead of requiring just parts of it
+- Added API to check the `Arc` strongref counter
+- [**breaking**] Add ability to mark subconversations
+- [**breaking**] Change proteus auto prekey return type to include prekey id
+- [**breaking**] Added LRU cache-based underlying group store to replace the HashMaps
+
+### Miscellaneous Tasks
+
+- Release 0.7.0-rc.1
+- Use crates.io sparse protocol on CI via env
+- Android upgrade to NDK 25 + openssl android build fix
+- Updated serde-wasm-bindgen to 0.5.0
+- Updated crypto deps (p256/384 & ecdsa)
+- Updated changelog for LRU store changes
+- [**breaking**] Drop LRU from keystore
+- Bump webdriver version to 110
 
 </details>
 
