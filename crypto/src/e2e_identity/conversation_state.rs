@@ -67,7 +67,7 @@ impl MlsConversation {
 #[cfg(test)]
 pub mod tests {
     use crate::{
-        e2e_identity::state::E2eiConversationState,
+        e2e_identity::conversation_state::E2eiConversationState,
         mls::credential::tests::now,
         prelude::{CertificateBundle, Client, MlsCredentialType},
         test_utils::*,

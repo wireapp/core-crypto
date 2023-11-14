@@ -17,6 +17,7 @@
 #![allow(unused_variables)]
 
 use std::collections::HashMap;
+use std::ops::Deref;
 
 use super::wasm_utils::*;
 use core_crypto::prelude::*;
@@ -734,55 +735,32 @@ impl BufferedDecryptedMessage {
     }
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// see [core_crypto::prelude::WireIdentity]
+/// Represents the identity claims identifying a client
+/// Those claims are verifiable by any member in the group
 pub struct WireIdentity {
-    client_id: String,
-    handle: String,
-    display_name: String,
-    domain: String,
-    certificate: String,
-}
-
-#[wasm_bindgen]
-impl WireIdentity {
-    #[wasm_bindgen(constructor)]
-    pub fn new(client_id: String, handle: String, display_name: String, domain: String, certificate: String) -> Self {
-        Self {
-            client_id,
-            handle,
-            display_name,
-            domain,
-            certificate,
-        }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn client_id(&self) -> String {
-        self.client_id.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn handle(&self) -> String {
-        self.handle.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn display_name(&self) -> String {
-        self.display_name.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn domain(&self) -> String {
-        self.domain.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn certificate(&self) -> String {
-        self.certificate.clone()
-    }
+    /// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
+    #[wasm_bindgen(readonly, js_name = "clientId")]
+    pub client_id: String,
+    /// user handle e.g. `john_wire`
+    #[wasm_bindgen(readonly, js_name = "handle")]
+    pub handle: String,
+    /// Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
+    #[wasm_bindgen(readonly, js_name = "displayName")]
+    pub display_name: String,
+    /// DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
+    #[wasm_bindgen(readonly, js_name = "domain")]
+    pub domain: String,
+    /// X509 certificate identifying this client in the MLS group ; PEM encoded
+    #[wasm_bindgen(readonly, js_name = "certificate")]
+    pub certificate: String,
+    /// Status of the Credential at the moment T when this object is created
+    #[wasm_bindgen(readonly, js_name = "status")]
+    pub status: DeviceStatus,
+    /// MLS thumbprint
+    #[wasm_bindgen(readonly, js_name = "thumbprint")]
+    pub thumbprint: String,
 }
 
 impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
@@ -793,18 +771,8 @@ impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
             display_name: i.display_name,
             domain: i.domain,
             certificate: i.certificate,
-        }
-    }
-}
-
-impl From<WireIdentity> for core_crypto::prelude::WireIdentity {
-    fn from(i: WireIdentity) -> Self {
-        Self {
-            client_id: i.client_id,
-            handle: i.handle,
-            display_name: i.display_name,
-            domain: i.domain,
-            certificate: i.certificate,
+            status: i.status.into(),
+            thumbprint: i.thumbprint,
         }
     }
 }
@@ -2687,23 +2655,50 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<Vec<WireIdentity>>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::get_user_identities]
-    pub fn get_user_identities(&self, conversation_id: ConversationId, client_ids: Box<[Uint8Array]>) -> Promise {
+    /// see [core_crypto::mls::MlsCentral::get_device_identities]
+    pub fn get_device_identities(&self, conversation_id: ConversationId, device_ids: Box<[Uint8Array]>) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                let client_ids = client_ids.iter().map(|c| c.to_vec().into()).collect::<Vec<ClientId>>();
-                let client_ids = client_ids.iter().collect::<Vec<_>>();
+                let device_ids = device_ids.iter().map(|c| c.to_vec().into()).collect::<Vec<ClientId>>();
                 let identities = this
                     .write()
                     .await
-                    .get_user_identities(&conversation_id, &client_ids[..])
+                    .get_device_identities(&conversation_id, &device_ids[..])
                     .await
                     .map_err(CoreCryptoError::from)?
                     .into_iter()
                     .map(Into::into)
                     .collect::<Vec<WireIdentity>>();
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&identities)?)
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns [`WasmCryptoResult<HashMap<String, Vec<WireIdentity>>>`]
+    ///
+    /// see [core_crypto::mls::MlsCentral::get_user_identities]
+    pub fn get_user_identities(&self, conversation_id: ConversationId, user_ids: Box<[String]>) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                let identities: HashMap<String, Vec<WireIdentity>> = this
+                    .write()
+                    .await
+                    .get_user_identities(&conversation_id, user_ids.deref())
+                    .await
+                    .map_err(CoreCryptoError::from)?
+                    .into_iter()
+                    .map(|(k, v)| (k, v.into_iter().map(Into::into).collect()))
+                    .collect::<HashMap<String, Vec<WireIdentity>>>();
+                let js_obj = js_sys::Map::new();
+                for (uid, identities) in identities.into_iter() {
+                    let uid = js_sys::JsString::from(uid).into();
+                    let identities = serde_wasm_bindgen::to_value(&identities)?;
+                    js_obj.set(&uid, &identities);
+                }
+                WasmCryptoResult::Ok(js_obj.into())
             }
             .err_into(),
         )
@@ -2995,6 +2990,29 @@ impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState
             core_crypto::prelude::E2eiConversationState::Verified => Self::Verified,
             core_crypto::prelude::E2eiConversationState::Degraded => Self::Degraded,
             core_crypto::prelude::E2eiConversationState::NotEnabled => Self::NotEnabled,
+        }
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[repr(u8)]
+/// see [core_crypto::prelude::DeviceStatus]
+pub enum DeviceStatus {
+    /// All is fine
+    Valid,
+    /// The Credential's certificate is expired
+    Expired,
+    /// The Credential's certificate is revoked (not implemented yet)
+    Revoked,
+}
+
+impl From<core_crypto::prelude::DeviceStatus> for DeviceStatus {
+    fn from(state: core_crypto::prelude::DeviceStatus) -> Self {
+        match state {
+            core_crypto::prelude::DeviceStatus::Valid => Self::Valid,
+            core_crypto::prelude::DeviceStatus::Expired => Self::Expired,
+            core_crypto::prelude::DeviceStatus::Revoked => Self::Revoked,
         }
     }
 }

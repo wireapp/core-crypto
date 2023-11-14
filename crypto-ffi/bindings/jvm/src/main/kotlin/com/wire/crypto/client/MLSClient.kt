@@ -454,10 +454,23 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * Certificate Credential (after turning on end-to-end identity).
      *
      * @param id conversation identifier
-     * @param clientIds identifiers of the user
+     * @param deviceIds identifiers of the devices
      * @returns identities or if no member has a x509 certificate, it will return an empty List
      */
-    suspend fun getUserIdentities(id: MLSGroupId, clientIds: List<ClientId>): List<WireIdentity> {
-        return cc.getUserIdentities(id.lower(), clientIds.map { it.lower() }).map { it.lift() }
+    suspend fun getDeviceIdentities(id: MLSGroupId, deviceIds: List<ClientId>): List<WireIdentity> {
+        return cc.getDeviceIdentities(id.lower(), deviceIds.map { it.lower() }).map { it.lift() }
+    }
+
+    /**
+     * From a given conversation, get the identity of the users (device holders) supplied.
+     * Identity is only present for devices with a Certificate Credential (after turning on end-to-end identity).
+     * If no member has a x509 certificate, it will return an empty Vec.
+     *
+     * @param id conversation identifier
+     * @param userIds user identifiers e.g. t6wRpI8BRSeviBwwiFp5MQ which is a base64UrlUnpadded UUIDv4
+     * @returns a Map with all the identities for a given users. Consumers are then recommended to reduce those identities to determine the actual status of a user.
+     */
+    suspend fun getUserIdentities(id: MLSGroupId, userIds: List<String>): Map<String, List<WireIdentity>> {
+        return cc.getUserIdentities(id.lower(), userIds).mapValues { (_, v) -> v.map { it.lift() } }
     }
 }

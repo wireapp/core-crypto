@@ -224,6 +224,9 @@ pub enum CryptoError {
     /// with an External Commit instead
     #[error("Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit")]
     OrphanWelcome,
+    /// The encountered ClientId does not match Wire's definition
+    #[error("The encountered ClientId does not match Wire's definition")]
+    InvalidClientId,
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

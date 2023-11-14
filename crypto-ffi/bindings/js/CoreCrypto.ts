@@ -24,11 +24,13 @@ import initWasm, {
     AcmeDirectory,
     NewAcmeOrder,
     NewAcmeAuthz,
-    AcmeChallenge
+    AcmeChallenge,
+    WireIdentity,
+    DeviceStatus,
 } from "./wasm";
 
 // re-exports
-export { AcmeDirectory, NewAcmeOrder, NewAcmeAuthz, AcmeChallenge };
+export { AcmeDirectory, NewAcmeOrder, NewAcmeAuthz, AcmeChallenge, WireIdentity, DeviceStatus };
 
 interface CoreCryptoRichError {
     errorName: string;
@@ -540,32 +542,6 @@ export interface BufferedDecryptedMessage {
      * see {@link DecryptedMessage.identity}
      */
     identity?: WireIdentity;
-}
-
-/**
- * Represents the identity claims identifying a client. Those claims are verifiable by any member in the group
- */
-export interface WireIdentity {
-    /**
-     * Represents the identity claims identifying a client. Those claims are verifiable by any member in the group
-     */
-    clientId: string;
-    /**
-     * user handle e.g. `john_wire`
-     */
-    handle: string;
-    /**
-     * Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
-     */
-    displayName: string;
-    /**
-     * DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
-     */
-    domain: string;
-    /**
-     * X509 certificate identifying this client in the MLS group ; PEM encoded
-     */
-    certificate: string;
 }
 
 /**
@@ -1850,11 +1826,24 @@ export class CoreCrypto {
      * Certificate Credential (after turning on end-to-end identity).
      *
      * @param conversationId - identifier of the conversation
-     * @param clientIds - identifiers of the user
+     * @param deviceIds - identifiers of the devices
      * @returns identities or if no member has a x509 certificate, it will return an empty List
      */
-    async getUserIdentities(conversationId: ConversationId, clientIds: ClientId[]): Promise<WireIdentity[]> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.get_user_identities(conversationId, clientIds));
+    async getDeviceIdentities(conversationId: ConversationId, deviceIds: ClientId[]): Promise<WireIdentity[]> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.get_device_identities(conversationId, deviceIds));
+    }
+
+    /**
+     * From a given conversation, get the identity of the users (device holders) supplied.
+     * Identity is only present for devices with a Certificate Credential (after turning on end-to-end identity).
+     * If no member has a x509 certificate, it will return an empty Vec.
+     *
+     * @param conversationId - identifier of the conversation
+     * @param userIds - user identifiers e.g. t6wRpI8BRSeviBwwiFp5MQ which is a base64UrlUnpadded UUIDv4
+     * @returns a Map with all the identities for a given users. Consumers are then recommended to reduce those identities to determine the actual status of a user.
+     */
+    async getUserIdentities(conversationId: ConversationId, userIds: string[]): Promise<Map<string, WireIdentity[]>> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.get_user_identities(conversationId, userIds));
     }
 
     /**

@@ -18,6 +18,7 @@ pub(crate) mod id;
 pub(crate) mod identifier;
 pub(crate) mod identities;
 pub(crate) mod key_package;
+pub(crate) mod user_id;
 
 use crate::{
     mls::{credential::ext::CredentialExt, credential::CredentialBundle},

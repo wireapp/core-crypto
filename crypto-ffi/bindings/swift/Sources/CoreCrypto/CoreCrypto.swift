@@ -427,16 +427,45 @@ public struct WireIdentity: ConvertToInner {
     public var displayName: String
     /// DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
     public var domain: String
+    /// Status of the Credential at the moment T when this object is created
+    public var status: DeviceStatus
+    /// MLS thumbprint
+    public var thumbprint: String
 
-    public init(clientId: String, handle: String, displayName: String, domain: String) {
+    public init(clientId: String, handle: String, displayName: String, domain: String, status: DeviceStatus, thumbprint: String) {
         self.clientId = clientId
         self.handle = handle
         self.displayName = displayName
         self.domain = domain
+        self.status = status
+        self.thumbprint = thumbprint
     }
 
     func convert() -> Inner {
-        return CoreCryptoSwift.WireIdentity(clientId: self.clientId, handle: self.handle, displayName: self.displayName, domain: self.domain)
+        return CoreCryptoSwift.WireIdentity(clientId: self.clientId, handle: self.handle, displayName: self.displayName, domain: self.domain, status: self.status.convert(), thumbprint: self.thumbprint)
+    }
+}
+
+/// Indicates the standalone status of a device Credential in a MLS group at a moment T. This does not represent the
+/// states where a device is not using MLS or is not using end-to-end identity
+public enum DeviceStatus: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.DeviceStatus
+
+    case valid
+    case expired
+    case revoked
+}
+
+private extension DeviceStatus {
+    func convert() -> Inner {
+        switch self {
+        case .valid:
+            return CoreCryptoSwift.DeviceStatus.valid
+        case .expired:
+            return CoreCryptoSwift.DeviceStatus.expired
+        case .revoked:
+            return CoreCryptoSwift.DeviceStatus.revoked
+        }
     }
 }
 
@@ -1214,13 +1243,24 @@ public class CoreCryptoWrapper {
     }
 
     /// From a given conversation, get the identity of the members supplied. Identity is only present for members with a
-    // Certificate Credential (after turning on end-to-end identity).
+    /// Certificate Credential (after turning on end-to-end identity).
     ///
     /// - parameter conversationId: conversation identifier
-    /// - parameter clientIds: identifiers of the user
+    /// - parameter deviceIds: identifiers of the user
     /// - returns: identities or if no member has a x509 certificate, it will return an empty List
-    public func getUserIdentities(conversationId: ConversationId, clientIds: [ClientId]) async throws -> [WireIdentity] {
-        return try await self.coreCrypto.getUserIdentities(conversationId: conversationId, clientIds: clientIds)
+    public func getDeviceIdentities(conversationId: ConversationId, deviceIds: [ClientId]) async throws -> [WireIdentity] {
+        return try await self.coreCrypto.getDeviceIdentities(conversationId: conversationId, deviceIds: deviceIds)
+    }
+
+    /// From a given conversation, get the identity of the users (device holders) supplied.
+    /// Identity is only present for devices with a Certificate Credential (after turning on end-to-end identity).
+    /// If no member has a x509 certificate, it will return an empty Vec.
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - parameter userIds: user identifiers e.g. t6wRpI8BRSeviBwwiFp5MQ which is a base64UrlUnpadded UUIDv4
+    /// - returns: a Map with all the identities for a given users. Consumers are then recommended to reduce those identities to determine the actual status of a user.
+    public func getUserIdentities(conversationId: ConversationId, userIds: [String]) async throws -> [String: [WireIdentity]] {
+        return try await self.coreCrypto.getUserIdentities(conversationId: conversationId, userIds: userIds)
     }
 
     /// - returns: The CoreCrypto version

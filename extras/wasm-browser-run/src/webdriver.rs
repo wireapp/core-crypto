@@ -138,14 +138,14 @@ pub enum WebdriverKind {
 }
 
 impl WebdriverKind {
-    const CHROMIUM_MAJOR_VERSION: &str = "115";
+   const CHROMIUM_MAJOR_VERSION: &'static str = "119";
 
-    const EDGE_RELEASE_URL: &str = const_format::concatcp!(
+    const EDGE_RELEASE_URL: &'static str = const_format::concatcp!(
         "https://msedgedriver.azureedge.net/LATEST_RELEASE_",
         WebdriverKind::CHROMIUM_MAJOR_VERSION
     );
 
-    const GECKO_RELEASE_URL: &str = "https://api.github.com/repos/mozilla/geckodriver/releases/latest";
+    const GECKO_RELEASE_URL: &'static str = "https://api.github.com/repos/mozilla/geckodriver/releases/latest";
 
     pub fn as_exe_name(&self) -> &str {
         match self {

@@ -39,7 +39,7 @@ use config::MlsConversationConfiguration;
 
 use crate::group_store::GroupStoreValue;
 use crate::{
-    mls::{client::Client, member::MemberId, ClientId, MlsCentral},
+    mls::{client::Client, member::MemberId, MlsCentral},
     prelude::{CryptoError, CryptoResult, MlsCiphersuite, MlsCredentialType, MlsError},
 };
 
@@ -170,8 +170,7 @@ impl MlsConversation {
     pub fn members(&self) -> HashMap<MemberId, Credential> {
         self.group.members().fold(HashMap::new(), |mut acc, kp| {
             let credential = kp.credential;
-            let client_id: ClientId = credential.identity().into();
-            let member_id: MemberId = client_id.to_vec();
+            let member_id: MemberId = credential.identity().into();
             acc.entry(member_id).or_insert(credential);
             acc
         })
@@ -409,7 +408,7 @@ pub mod tests {
                     .unwrap();
                     let mut central = MlsCentral::try_new(config).await.unwrap();
 
-                    let client_id: ClientId = name.as_str().into();
+                    let client_id: crate::prelude::ClientId = name.as_str().into();
                     let identity = match case.credential_type {
                         MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
                         MlsCredentialType::X509 => {

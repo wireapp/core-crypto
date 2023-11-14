@@ -23,9 +23,9 @@ use crate::mls::{
 };
 
 impl MlsConversation {
-    const EXPORTER_LABEL: &str = "exporter";
+    const EXPORTER_LABEL: &'static str = "exporter";
     // TODO: check if this can be a constant or if we need to pass the group state
-    const EXPORTER_CONTEXT: &[u8] = &[];
+    const EXPORTER_CONTEXT: &'static [u8] = &[];
 
     /// See [MlsCentral::export_secret_key]
     pub fn export_secret_key(&self, backend: &MlsCryptoProvider, key_length: usize) -> CryptoResult<Vec<u8>> {
