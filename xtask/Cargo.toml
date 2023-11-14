@@ -10,12 +10,13 @@ femme = "2.2"
 log = "0.4"
 color-eyre = "0.6"
 clap = { version = "4", features = ["derive"] }
-git2 = "0.17"
 xshell = "0.2"
-handlebars = "4.3"
+handlebars = "4.5"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 semver = "1.0"
-toml_edit = "0.19"
-cargo = "0.72"
+cargo = "0.74"
+git2 = "^0.17.2"   # Keep it in sync with the required cargo version
+toml_edit = "^0.19.4"  # Keep it in sync with the required cargo version
+
 
 

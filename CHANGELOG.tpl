@@ -7,12 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.18] - 2023-10-23
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.18" unreleased=true}}
+</details>
+
+* Native platforms only: Preserve database schema upgrade path from 0.8.x, 1.0.0-pre.6+schemafix-0007 and onwards.
 
 ## [1.0.0-rc.17] - 2023-10-23
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.17" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.17"}}
 </details>
 
 * Remove dependency of OpenSSL for Wasm
