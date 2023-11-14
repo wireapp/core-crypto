@@ -26,10 +26,10 @@ CREATE TABLE mls_encryption_keypairs (
 
 CREATE TABLE mls_psk_bundles (
     psk_id BLOB,
-    psk    BLOB
+    psk BLOB
 );
 
 CREATE TABLE mls_keypackages (
     keypackage_ref BLOB,
-    keypackage     BLOB
+    keypackage BLOB
 );
