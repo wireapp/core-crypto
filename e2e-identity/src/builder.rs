@@ -200,7 +200,13 @@ impl WireIdentityBuilder {
         cert_params.distinguished_name = dn;
 
         let client_id = ClientId::try_from_qualified(&self.client_id).unwrap().to_uri();
-        let handle = format!("{}{}", ClientId::URI_PREFIX, self.handle);
+        let handle = format!(
+            "{}{}{}@{}",
+            ClientId::URI_PREFIX,
+            ClientId::HANDLE_PREFIX,
+            self.handle,
+            self.domain
+        );
         cert_params.subject_alt_names = vec![rcgen::SanType::URI(client_id), rcgen::SanType::URI(handle)];
 
         cert_params.extended_key_usages = vec![rcgen::ExtendedKeyUsagePurpose::ClientAuth];

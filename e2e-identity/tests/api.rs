@@ -15,8 +15,8 @@ mod utils;
 fn e2e_api() {
     let prev_nonce = || utils::rand_base64_str(32);
     for (enrollment, backend_kp) in enrollments() {
-        let user_id = "T4Coy4vdRzianwfOgXpn6A";
-        let device_id = "a338e9ea9e87fec";
+        let user_id = "yl-8A_wZSfaS2uV8VuMEBw";
+        let device_id = "7e79723a8bdc694f";
         let domain = "wire.org";
         let qualified_client_id = format!("{user_id}:{device_id}@{domain}");
 
@@ -87,7 +87,7 @@ fn e2e_api() {
               "identifiers": [
                 {
                   "type": "wireapp-id",
-                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=T4Coy4vdRzianwfOgXpn6A/a338e9ea9e87fec@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=yl-8A_wZSfaS2uV8VuMEBw/7e79723a8bdc694f@wire.com\",\"handle\":\"im:wireapp=%40alice_wire@wire.com\"}"
                 }
               ],
               "authorizations": [
@@ -129,12 +129,12 @@ fn e2e_api() {
                   "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
                   "status": "pending",
                   "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
-                  "target": "https://wire.com/clients/a338e9ea9e87fec/access-token"
+                  "target": "https://wire.com/clients/7e79723a8bdc694f/access-token"
                 }
               ],
               "identifier": {
                 "type": "wireapp-id",
-                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=T4Coy4vdRzianwfOgXpn6A/a338e9ea9e87fec@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=yl-8A_wZSfaS2uV8VuMEBw/7e79723a8bdc694f@wire.com\",\"handle\":\"im:wireapp=%40alice_wire@wire.com\"}"
               }
             });
             let authz = enrollment.acme_new_authz_response(resp).unwrap();
@@ -234,7 +234,7 @@ fn e2e_api() {
               "identifiers": [
                 {
                   "type": "wireapp-id",
-                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=T4Coy4vdRzianwfOgXpn6A/a338e9ea9e87fec@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=yl-8A_wZSfaS2uV8VuMEBw/7e79723a8bdc694f@wire.com\",\"handle\":\"im:wireapp=%40alice_wire@wire.com\"}"
                 }
               ],
               "authorizations": [
@@ -262,7 +262,7 @@ fn e2e_api() {
               "identifiers": [
                 {
                   "type": "wireapp-id",
-                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=T4Coy4vdRzianwfOgXpn6A/a338e9ea9e87fec@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=yl-8A_wZSfaS2uV8VuMEBw/7e79723a8bdc694f@wire.com\",\"handle\":\"im:wireapp=%40alice_wire@wire.com\"}"
                 }
               ],
               "authorizations": [
@@ -283,29 +283,30 @@ fn e2e_api() {
                 .unwrap();
 
             let resp = r#"-----BEGIN CERTIFICATE-----
-MIICDDCCAbOgAwIBAgIRAPByYiuFhbbYasW+GKz5FBkwCgYIKoZIzj0EAwIwLjEN
-MAsGA1UEChMEd2lyZTEdMBsGA1UEAxMUd2lyZSBJbnRlcm1lZGlhdGUgQ0EwHhcN
-MjMwNzMxMTQwMjA4WhcNMzMwNzI4MTQwMjA4WjApMREwDwYDVQQKEwh3aXJlLmNv
-bTEUMBIGA1UEAxMLQWxpY2UgU21pdGgwKjAFBgMrZXADIQAF/hZvvmRkWMzqZ5jU
-LnGKO+y8G/Vz+olfTknk7c/8IqOB5TCB4jAOBgNVHQ8BAf8EBAMCB4AwEwYDVR0l
-BAwwCgYIKwYBBQUHAwIwHQYDVR0OBBYEFGhAhRlgprn/FUxPfL+ehHvvAigpMB8G
-A1UdIwQYMBaAFB81Yl+jcBh8rnCo9MJtkZ+2vq5YMFwGA1UdEQRVMFOGFWltOndp
-cmVhcHA9YWxpY2Vfd2lyZYY6aW06d2lyZWFwcD1UNENveTR2ZFJ6aWFud2ZPZ1hw
-bjZBL2EzMzhlOWVhOWU4N2ZlY0B3aXJlLmNvbTAdBgwrBgEEAYKkZMYoQAEEDTAL
-AgEGBAR3aXJlBAAwCgYIKoZIzj0EAwIDRwAwRAIgCP+OnliYCy7PKs3rt+x4zUuF
-e2grybnLl5fsak6lFPUCIE4T8ZMlKkOZ9xeYdTlrUPT67hc++ZRAtcU03Kqiz8sm
+MIICGDCCAb+gAwIBAgIQHhoe3LLRoHP+EPY4KOTgATAKBggqhkjOPQQDAjAuMQ0w
+CwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3aXJlIEludGVybWVkaWF0ZSBDQTAeFw0y
+MzExMTYxMDM3MjZaFw0zMzExMTMxMDM3MjZaMCkxETAPBgNVBAoTCHdpcmUuY29t
+MRQwEgYDVQQDEwtBbGljZSBTbWl0aDAqMAUGAytlcAMhANmHK7rIOLVhj/vmKmK1
+qei8Dor8Lu/FPOnXmKLZGKrfo4HyMIHvMA4GA1UdDwEB/wQEAwIHgDATBgNVHSUE
+DDAKBggrBgEFBQcDAjAdBgNVHQ4EFgQUFlquvWRvc3MxFaLrNgzv+UdGoaswHwYD
+VR0jBBgwFoAUz40pQ/qEp4eFDfctCF0jmJB+5xswaQYDVR0RBGIwYIYhaW06d2ly
+ZWFwcD0lNDBhbGljZV93aXJlQHdpcmUuY29thjtpbTp3aXJlYXBwPXlsLThBX3da
+U2ZhUzJ1VjhWdU1FQncvN2U3OTcyM2E4YmRjNjk0ZkB3aXJlLmNvbTAdBgwrBgEE
+AYKkZMYoQAEEDTALAgEGBAR3aXJlBAAwCgYIKoZIzj0EAwIDRwAwRAIgRqbsOAF7
+OseMTgkjrKe3UO/UjDUGzW+jlDWOGLZsh5ECIDdNastqkvwOGfbWaeh+IuM6/oBz
+flIOs9TQGOVc0YL1
 -----END CERTIFICATE-----
 -----BEGIN CERTIFICATE-----
-MIIBuTCCAV6gAwIBAgIQfYC2CCR4Uw9GPkJ2nSq8ATAKBggqhkjOPQQDAjAmMQ0w
-CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjMwNzMxMTQw
-MjA2WhcNMzMwNzI4MTQwMjA2WjAuMQ0wCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3
-aXJlIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABCOc
-sqiFG9+GHjqHP26inah0Vyxt8IoZykStaLLskp2IDB8/px2k6TbNV5areq09+g26
-QTxTzlaBWUE/Y9rCoqmjZjBkMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG
-AQH/AgEAMB0GA1UdDgQWBBQfNWJfo3AYfK5wqPTCbZGftr6uWDAfBgNVHSMEGDAW
-gBQgDq04Td1mq9ala953Mito5QHARjAKBggqhkjOPQQDAgNJADBGAiEA+MIEAiG2
-DxMYFdlfpS2zs/Ed+1Co/pkE3iTlbhcQK6ACIQD1Xhg2dteHl4bILtK0aVH1BRtD
-jHdSVZh5wt4eD7IMag==
+MIIBuTCCAV+gAwIBAgIRALZ7S0CrN0AU7he5I5RE7kUwCgYIKoZIzj0EAwIwJjEN
+MAsGA1UEChMEd2lyZTEVMBMGA1UEAxMMd2lyZSBSb290IENBMB4XDTIzMTExNjEw
+MzcyNFoXDTMzMTExMzEwMzcyNFowLjENMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMU
+d2lyZSBJbnRlcm1lZGlhdGUgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAARX
+N+Bn/11sYUO48us2X+JrOBMXf/Gn9kV1D+fp1SQ3JzQl/KEwmtG3OJHB6ljtQiIF
+QTKP2xV8Zu9vK1Z8zD43o2YwZDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgw
+BgEB/wIBADAdBgNVHQ4EFgQUz40pQ/qEp4eFDfctCF0jmJB+5xswHwYDVR0jBBgw
+FoAUCseuIlZpBnsVzFcCJvAXBodYgo0wCgYIKoZIzj0EAwIDSAAwRQIgfR0sHfuG
+N2EBypbVEz5g7zRMQsbKCUxUAW5cNiEc9IICIQDCDymSCXPFRw1QNv/7WQXATH1L
+hQc4PK0oC9I4QpceyA==
 -----END CERTIFICATE-----"#;
             enrollment
                 .acme_x509_certificate_response(resp.to_string(), order)
