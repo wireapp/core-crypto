@@ -19,7 +19,7 @@ rusty-jwt-tools = { version = "0.5.1", path = "../jwt" }
 jwt-simple = "0.11.3"
 derive_more = { version = "0.99", features = ["deref", "from", "into"] }
 url = "2.3"
-zeroize = "1.5"
+zeroize = "1.6"
 
 uuid = { version = "1.3", optional = true }
 rand = { version = "0.8", optional = true }
