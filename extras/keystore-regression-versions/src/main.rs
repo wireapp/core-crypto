@@ -41,6 +41,7 @@ async fn warmup_build() -> Result<()> {
     let cwd = std::env::current_dir()?;
     let bins = [
         "cc-keystore-08",
+        "cc-keystore-09",
         "cc-keystore-10p",
         "cc-keystore-10r",
         "cc-keystore-current",
@@ -97,6 +98,8 @@ async fn main() -> Result<()> {
 
     let spinner_10p = init_spinner();
 
+    // === Android ===
+
     // Initialize a Keystore on version 0.8.2, let this keystore as ks-08
     spinner_wrap_err(&spinner_10p, run_init_with_bin("cc-keystore-08", &ks_10p).await)?;
     spinner_10p.set_message("0.8.2");
@@ -135,6 +138,47 @@ async fn main() -> Result<()> {
     spinner_wrap_err(&spinner_current, run_init_with_bin("cc-keystore-current", &ks_08).await)?;
     tokio::fs::remove_file(&ks_08).await?;
     spinner_current.finish_with_message("0.8.2 -> develop ✅");
+
+    // === iOS ===
+
+    // Initialize a Keystore on version 0.8.2, let this keystore as ks-09
+    spinner_wrap_err(&spinner_10p, run_init_with_bin("cc-keystore-09", &ks_10p).await)?;
+    spinner_10p.set_message("0.9.2");
+    // Try to open and migrate ks-09 to version 1.0.0-pre, let this keystore as ks-10p
+    spinner_wrap_err(&spinner_10p, run_init_with_bin("cc-keystore-10p", &ks_10p).await)?;
+    spinner_10p.set_message("0.9.2 -> 1.0.0-pre");
+
+    // Try to open and migrate ks-10p to version 1.0.0-rc, let this keystore as ks-10pr
+    spinner_wrap_err(&spinner_10p, run_init_with_bin("cc-keystore-10r", &ks_10p).await)?;
+    spinner_10p.set_message("0.9.2 -> 1.0.0-pre -> 1.0.0-rc");
+
+    spinner_wrap_err(&spinner_10p, run_init_with_bin("cc-keystore-current", &ks_10p).await)?;
+    spinner_10p.finish_with_message("0.9.2 -> 1.0.0-pre -> 1.0.0-rc -> develop ✅");
+    tokio::fs::remove_file(&ks_10p).await?;
+
+    let spinner_10r = init_spinner();
+
+    // Try to open and migrate ks-08 to version 1.0.0-rc, let this keystore as ks-10r
+    spinner_wrap_err(&spinner_10r, run_init_with_bin("cc-keystore-09", &ks_10r).await)?;
+    spinner_10r.set_message("0.9.2");
+
+    spinner_wrap_err(&spinner_10r, run_init_with_bin("cc-keystore-10r", &ks_10r).await)?;
+    spinner_10r.set_message("0.9.2 -> 1.0.0-rc");
+
+    spinner_wrap_err(&spinner_10r, run_init_with_bin("cc-keystore-current", &ks_10r).await)?;
+    tokio::fs::remove_file(&ks_10r).await?;
+
+    spinner_10r.finish_with_message("0.9.2 -> 1.0.0-rc -> develop ✅");
+
+    let spinner_current = init_spinner();
+
+    // Try to open and migrate a ks08 directly to current version
+    spinner_wrap_err(&spinner_current, run_init_with_bin("cc-keystore-09", &ks_08).await)?;
+    spinner_current.set_message("0.9.2");
+
+    spinner_wrap_err(&spinner_current, run_init_with_bin("cc-keystore-current", &ks_08).await)?;
+    tokio::fs::remove_file(&ks_08).await?;
+    spinner_current.finish_with_message("0.9.2 -> develop ✅");
 
     Ok(())
 }
