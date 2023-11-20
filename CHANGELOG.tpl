@@ -7,11 +7,24 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.19] - 2023-11-20
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.19" unreleased=true}}
+</details>
+
+* feat!(e2ei): ~~`get_user_identities`~~ becomes `get_device_identities` and a new `get_user_identities` added to list identities in a group belonging to the same user
+* feat!(e2ei): `get_device_identities` now accepts a `ClientId` as it is present in the MLS group and not as present in the Credential's X509
+* feat(e2ei): handle is format changed from `im:wireapp={input}` to `im:wireapp=%40{input}@{domain}`
+* feat!(e2ei): WireIdentity contains JWK thumbprint of the certificate public key and a validation status (Valid/Expired/Revoked) (even though revocation is not implemented yet)
+* fix: X509 signature validation was failing when issuer had a different signature scheme than the subject
+
 ## [1.0.0-rc.18] - 2023-10-23
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.18" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.18"}}
 </details>
 
 * Native platforms only: Preserve database schema upgrade path from 0.8.x, 1.0.0-pre.6+schemafix-0007 and onwards.

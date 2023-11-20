@@ -138,7 +138,7 @@ pub enum WebdriverKind {
 }
 
 impl WebdriverKind {
-   const CHROMIUM_MAJOR_VERSION: &'static str = "119";
+    const CHROMIUM_MAJOR_VERSION: &'static str = "119";
 
     const EDGE_RELEASE_URL: &'static str = const_format::concatcp!(
         "https://msedgedriver.azureedge.net/LATEST_RELEASE_",
