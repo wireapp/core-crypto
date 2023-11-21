@@ -5,7 +5,7 @@ use error::*;
 use prelude::*;
 use rusty_acme::prelude::{AcmeChallenge, AcmeChallengeType};
 use rusty_jwt_tools::jwk::TryIntoJwk;
-use rusty_jwt_tools::prelude::{ClientId, Dpop, Htm, Pem, RustyJwtTools};
+use rusty_jwt_tools::prelude::{ClientId, Dpop, Handle, Htm, Pem, RustyJwtTools};
 
 #[cfg(feature = "identity-builder")]
 mod builder;
@@ -139,7 +139,7 @@ impl RustyE2eIdentity {
         let order_req = RustyAcme::new_order_request(
             display_name,
             client_id,
-            handle,
+            &handle.into(),
             expiry,
             directory,
             &account,
@@ -231,6 +231,7 @@ impl RustyE2eIdentity {
     /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `NDUyMGUyMmY2YjA3NGU3NjkyZjE1NjJjZTAwMmQ2NTQ:6add501bacd1d90e@example.com`
     /// * `dpop_challenge` - you found after [Self::acme_new_authz_response]
     /// * `backend_nonce` - you get by calling `GET /clients/token/nonce` on wire-server.
+    /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
     /// See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
     /// * `expiry` - token expiry
     #[allow(clippy::too_many_arguments)]
@@ -239,16 +240,21 @@ impl RustyE2eIdentity {
         client_id: &str,
         dpop_challenge: &E2eiAcmeChall,
         backend_nonce: String,
+        handle: &str,
+        team: Option<String>,
         expiry: core::time::Duration,
     ) -> E2eIdentityResult<String> {
         let dpop_chall: AcmeChallenge = dpop_challenge.clone().try_into()?;
+        let client_id = ClientId::try_from_qualified(client_id)?;
+        let handle = Handle::from(handle).to_qualified(&client_id.domain);
         let dpop = Dpop {
             htm: Htm::Post,
             htu: dpop_challenge.target.clone().into(),
             challenge: dpop_chall.token.into(),
+            handle,
+            team,
             extra_claims: None,
         };
-        let client_id = ClientId::try_from_qualified(client_id)?;
         Ok(RustyJwtTools::generate_dpop_token(
             dpop,
             &client_id,

@@ -26,6 +26,7 @@ use crate::utils::{
 pub struct E2eTest<'a> {
     pub display_name: String,
     pub domain: String,
+    pub team: Option<String>,
     pub wire_client_id: u64,
     pub sub: ClientId,
     pub handle: String,
@@ -99,8 +100,8 @@ impl<'a> E2eTest<'a> {
         let wire_user_id = uuid::Uuid::new_v4();
         let wire_client_id = random::<u64>();
         let sub = ClientId::try_new(wire_user_id.to_string(), wire_client_id, &domain).unwrap();
-        let handle = "alice_wire".to_string();
-        let password = "foo";
+        let (handle, team, password) = ("alice_wire", "wire", "foo");
+        let qualified_handle = Handle::from(handle).to_qualified(&domain);
         let email = format!("alicesmith@{domain}");
         let audience = "wireapp";
         let client_secret = rand_base64_str(24);
@@ -152,11 +153,12 @@ impl<'a> E2eTest<'a> {
             display_name: display_name.to_string(),
             wire_client_id,
             sub: sub.clone(),
-            handle: handle.clone(),
+            handle: handle.to_string(),
+            team: Some(team.to_string()),
             ldap_cfg: LdapCfg {
                 host: ldap_host.to_string(),
                 display_name: display_name.to_string(),
-                handle: format!("{}%40{handle}@{domain}", ClientId::URI_PREFIX),
+                handle: qualified_handle.to_string(),
                 email,
                 password: password.to_string(),
                 domain: domain.to_string(),
@@ -346,7 +348,7 @@ pub struct EnrollmentFlow {
     pub new_authz: Flow<(AcmeAccount, AcmeOrder, String), (AcmeAuthz, String)>,
     pub extract_challenges: Flow<AcmeAuthz, (AcmeChallenge, AcmeChallenge)>,
     pub get_wire_server_nonce: Flow<(), BackendNonce>,
-    pub create_dpop_token: Flow<(AcmeChallenge, BackendNonce, core::time::Duration), String>,
+    pub create_dpop_token: Flow<(AcmeChallenge, BackendNonce, QualifiedHandle, Team, core::time::Duration), String>,
     pub get_access_token: Flow<(AcmeChallenge, String), String>,
     pub verify_dpop_challenge: Flow<(AcmeAccount, AcmeChallenge, String, String), String>,
     pub fetch_id_token: Flow<AcmeChallenge, String>,
@@ -402,9 +404,11 @@ impl Default for EnrollmentFlow {
                     Ok((test, backend_nonce))
                 })
             }),
-            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, expiry)| {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, handle, team, expiry)| {
                 Box::pin(async move {
-                    let client_dpop_token = test.create_dpop_token(&dpop_chall, backend_nonce, expiry).await?;
+                    let client_dpop_token = test
+                        .create_dpop_token(&dpop_chall, backend_nonce, handle, team, expiry)
+                        .await?;
                     Ok((test, client_dpop_token))
                 })
             }),

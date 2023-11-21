@@ -203,7 +203,7 @@ impl WireIdentityBuilder {
         let handle = format!(
             "{}{}{}@{}",
             ClientId::URI_PREFIX,
-            ClientId::HANDLE_PREFIX,
+            Handle::PREFIX,
             self.handle,
             self.domain
         );

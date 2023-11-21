@@ -15,13 +15,13 @@ mod utils;
 fn e2e_api() {
     let prev_nonce = || utils::rand_base64_str(32);
     for (enrollment, backend_kp) in enrollments() {
-        let user_id = "yl-8A_wZSfaS2uV8VuMEBw";
-        let device_id = "7e79723a8bdc694f";
+        let (user_id, device_id) = ("yl-8A_wZSfaS2uV8VuMEBw", "7e79723a8bdc694f");
         let domain = "wire.org";
         let qualified_client_id = format!("{user_id}:{device_id}@{domain}");
 
-        let display_name = "Alice Smith".to_string();
-        let qualified_handle = "alice_wire";
+        let display_name = "Alice Smith";
+        let qualified_handle = Handle::from("alice_wire").to_qualified(domain);
+        let team = "wire";
 
         // GET http://acme-server/directory
         let directory = {
@@ -71,9 +71,9 @@ fn e2e_api() {
             let expiry = core::time::Duration::from_secs(3600); // 1h
             let _order_request = enrollment
                 .acme_new_order_request(
-                    &display_name,
+                    display_name,
                     &qualified_client_id,
-                    qualified_handle,
+                    qualified_handle.as_str(),
                     expiry,
                     &directory,
                     &account,
@@ -155,11 +155,14 @@ fn e2e_api() {
         // POST http://wire-server/client-dpop-token
         let access_token = {
             let expiry = Duration::from_days(1).into();
+            let handle = Handle::try_from(qualified_handle.clone()).unwrap();
             let client_dpop_token = enrollment
                 .new_dpop_token(
                     &qualified_client_id.clone(),
                     &dpop_chall,
                     backend_nonce.to_string(),
+                    handle.as_str(),
+                    Some(team.to_string()),
                     expiry,
                 )
                 .unwrap();
@@ -173,6 +176,8 @@ fn e2e_api() {
             let access_token = RustyJwtTools::generate_access_token(
                 client_dpop_token.as_str(),
                 &alice,
+                qualified_handle,
+                team.into(),
                 backend_nonce,
                 htu,
                 htm,

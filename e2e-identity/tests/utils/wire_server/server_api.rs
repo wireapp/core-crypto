@@ -60,12 +60,17 @@ fn generate_access_token(dpop: &str, client_id: ClientId, nonce: BackendNonce) -
     let backend_kp: Pem = ctx_get("backend-kp").unwrap().into();
     let hash_alg: HashAlgorithm = ctx_get("hash-alg").unwrap().parse().unwrap();
     let htu: Htu = ctx_get("wire-server-uri").unwrap().as_str().try_into().unwrap();
+    let handle: Handle = ctx_get("handle").unwrap().as_str().try_into().unwrap();
+    let handle = handle.to_qualified(&client_id.domain);
+    let team: Team = ctx_get("team").unwrap().as_str().try_into().unwrap();
 
     let leeway = 2;
     let max_expiry = 2082008461;
     let access_token = RustyJwtTools::generate_access_token(
         dpop,
         &client_id,
+        handle,
+        team,
         nonce,
         htu,
         Htm::Post,

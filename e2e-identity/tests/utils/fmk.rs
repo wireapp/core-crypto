@@ -47,7 +47,10 @@ impl E2eTest<'static> {
         let (t, (dpop_chall, oidc_chall)) = (f.extract_challenges)(t, authz.clone()).await?;
         let (t, backend_nonce) = (f.get_wire_server_nonce)(t, ()).await?;
         let expiry = core::time::Duration::from_secs(3600);
-        let (t, client_dpop_token) = (f.create_dpop_token)(t, (dpop_chall.clone(), backend_nonce, expiry)).await?;
+        let handle = Handle::from(t.handle.as_str()).to_qualified(t.domain.as_str());
+        let team = t.team.clone().into();
+        let (t, client_dpop_token) =
+            (f.create_dpop_token)(t, (dpop_chall.clone(), backend_nonce, handle, team, expiry)).await?;
         let (t, access_token) = (f.get_access_token)(t, (dpop_chall.clone(), client_dpop_token)).await?;
         let (t, previous_nonce) =
             (f.verify_dpop_challenge)(t, (account.clone(), dpop_chall, access_token, previous_nonce)).await?;
@@ -158,7 +161,7 @@ impl<'a> E2eTest<'a> {
         let order_request = RustyAcme::new_order_request(
             &self.display_name,
             self.sub.clone(),
-            &self.handle,
+            &self.handle.clone().into(),
             expiry,
             directory,
             account,
@@ -259,6 +262,8 @@ impl<'a> E2eTest<'a> {
         &mut self,
         dpop_chall: &AcmeChallenge,
         backend_nonce: BackendNonce,
+        handle: QualifiedHandle,
+        team: Team,
         expiry: core::time::Duration,
     ) -> TestResult<String> {
         self.display_step("create client DPoP token");
@@ -268,6 +273,8 @@ impl<'a> E2eTest<'a> {
             challenge: acme_nonce,
             htm: Htm::Post,
             htu,
+            handle,
+            team: team.0,
             extra_claims: None,
         };
         let client_dpop_token =
@@ -295,6 +302,8 @@ impl<'a> E2eTest<'a> {
         ctx_store("backend-kp", self.backend_kp.to_string());
         ctx_store("hash-alg", self.hash_alg.to_string());
         ctx_store("wire-server-uri", dpop_chall.target.as_ref().unwrap().as_str());
+        ctx_store("handle", self.handle.as_str());
+        ctx_store("team", self.team.as_ref().unwrap());
 
         let req = self
             .client

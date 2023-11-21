@@ -27,7 +27,7 @@ fn docker() -> &'static Cli {
 #[tokio::test]
 async fn demo_should_succeed() {
     let test = E2eTest::new_demo().start(docker()).await;
-    assert!(test.nominal_enrollment().await.is_ok());
+    test.nominal_enrollment().await.unwrap();
 }
 
 /// Tests the nominal case and prints the pretty output with the mermaid chart in this crate README.
@@ -160,10 +160,10 @@ mod acme_server {
                 })
             }),
             // undo the inversion here to verify that it fails on acme server side (we do not want to test wire-server here)
-            create_dpop_token: Box::new(|mut test, (_, nonce, expiry)| {
+            create_dpop_token: Box::new(|mut test, (_, nonce, handle, team, expiry)| {
                 Box::pin(async move {
                     let challenge = rc1.lock().unwrap().clone().unwrap();
-                    let dpop_token = test.create_dpop_token(&challenge, nonce, expiry).await?;
+                    let dpop_token = test.create_dpop_token(&challenge, nonce, handle, team, expiry).await?;
                     Ok((test, dpop_token))
                 })
             }),
@@ -251,13 +251,15 @@ mod dpop_challenge {
         let test = E2eTest::new().start(docker()).await;
 
         let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, expiry)| {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, handle, team, expiry)| {
                 Box::pin(async move {
                     // use a different nonce than the supplied one
                     let wrong_nonce = rand_base64_str(32).into();
                     assert_ne!(wrong_nonce, backend_nonce);
 
-                    let client_dpop_token = test.create_dpop_token(&dpop_chall, wrong_nonce, expiry).await?;
+                    let client_dpop_token = test
+                        .create_dpop_token(&dpop_chall, wrong_nonce, handle, team, expiry)
+                        .await?;
                     Ok((test, client_dpop_token))
                 })
             }),
@@ -293,14 +295,16 @@ mod dpop_challenge {
         let test = E2eTest::new().start(docker()).await;
 
         let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, expiry)| {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, handle, team, expiry)| {
                 Box::pin(async move {
                     // alter the 'token' of the valid challenge
                     let wrong_dpop_chall = AcmeChallenge {
                         token: rand_base64_str(32),
                         ..dpop_chall
                     };
-                    let client_dpop_token = test.create_dpop_token(&wrong_dpop_chall, backend_nonce, expiry).await?;
+                    let client_dpop_token = test
+                        .create_dpop_token(&wrong_dpop_chall, backend_nonce, handle, team, expiry)
+                        .await?;
                     Ok((test, client_dpop_token))
                 })
             }),
@@ -350,11 +354,13 @@ mod dpop_challenge {
         let test = E2eTest::new().start(docker()).await;
 
         let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, _expiry)| {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, handle, team, _expiry)| {
                 Box::pin(async move {
                     let leeway = 360;
                     let expiry = core::time::Duration::from_secs(0);
-                    let client_dpop_token = test.create_dpop_token(&dpop_chall, backend_nonce, expiry).await?;
+                    let client_dpop_token = test
+                        .create_dpop_token(&dpop_chall, backend_nonce, handle, team, expiry)
+                        .await?;
                     tokio::time::sleep(core::time::Duration::from_secs(leeway + 1)).await;
                     Ok((test, client_dpop_token))
                 })
@@ -379,12 +385,15 @@ mod dpop_challenge {
                     let htu: Htu = "https://unknown.io".try_into().unwrap();
                     let backend_nonce: BackendNonce = rand_base64_str(32).into();
                     let acme_nonce = rand_base64_str(32).into();
+                    let handle = Handle::from(test.handle.as_str()).to_qualified(&client_id.domain);
 
                     let client_dpop_token = RustyJwtTools::generate_dpop_token(
                         Dpop {
                             htm: Htm::Post,
                             htu: htu.clone(),
                             challenge: acme_nonce,
+                            handle: handle.clone(),
+                            team: test.team.clone(),
                             extra_claims: None,
                         },
                         &client_id,
@@ -399,6 +408,8 @@ mod dpop_challenge {
                     let access_token = RustyJwtTools::generate_access_token(
                         &client_dpop_token,
                         &client_id,
+                        handle,
+                        test.team.clone().into(),
                         backend_nonce,
                         htu,
                         Htm::Post,
@@ -444,12 +455,15 @@ mod dpop_challenge {
                         .unwrap();
                     let backend_nonce: BackendNonce = rand_base64_str(32).into();
                     let acme_nonce = rand_base64_str(32).into();
+                    let handle = Handle::from(test.handle.as_str()).to_qualified(&client_id.domain);
 
                     let client_dpop_token = RustyJwtTools::generate_dpop_token(
                         Dpop {
                             htm: Htm::Post,
                             htu: htu.clone(),
                             challenge: acme_nonce,
+                            handle: handle.clone(),
+                            team: test.team.clone(),
                             extra_claims: None,
                         },
                         &client_id,
@@ -464,6 +478,8 @@ mod dpop_challenge {
                     let access_token = RustyJwtTools::generate_access_token(
                         &client_dpop_token,
                         &client_id,
+                        handle,
+                        test.team.clone().into(),
                         backend_nonce,
                         htu,
                         Htm::Post,
@@ -484,6 +500,30 @@ mod dpop_challenge {
             test.enrollment(flow).await.unwrap_err(),
             TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
         ));
+    }
+
+    /// Demonstrates that the client possesses the handle. This handle is included in the DPoP token,
+    /// then verified and sealed in the access token which is finally verified by the ACME server
+    /// as part of the DPoP challenge.
+    /// Here we make the acme-server fail.
+    #[should_panic]
+    #[tokio::test]
+    async fn acme_should_fail_when_client_dpop_token_has_wrong_handle() {
+        let test = E2eTest::new().start(docker()).await;
+
+        let flow = EnrollmentFlow {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, _handle, team, expiry)| {
+                Box::pin(async move {
+                    let wrong_handle = Handle::from("other_wire").to_qualified("wire.com");
+                    let client_dpop_token = test
+                        .create_dpop_token(&dpop_chall, backend_nonce, wrong_handle, team, expiry)
+                        .await?;
+                    Ok((test, client_dpop_token))
+                })
+            }),
+            ..Default::default()
+        };
+        test.enrollment(flow).await.unwrap();
     }
 }
 
@@ -643,69 +683,5 @@ mod oidc_challenge {
                 "a challenge is not supposed to be pending at this point. It must either be 'valid' or 'processing'."
             ))
         ));
-    }
-}
-
-/// Further improvements
-#[cfg(not(ci))]
-mod optimize {
-    use super::*;
-
-    #[tokio::test]
-    async fn should_validate_challenges_in_parallel() {
-        let docker = Box::leak(Box::new(Cli::new::<testcontainers::core::env::Os>()));
-        let mut test = E2eTest::new().start(docker).await;
-        let directory = test.get_acme_directory().await.unwrap();
-        let previous_nonce = test.get_acme_nonce(&directory).await.unwrap();
-        let (account, previous_nonce) = test.new_account(&directory, previous_nonce).await.unwrap();
-        let (order, order_url, previous_nonce) = test.new_order(&directory, &account, previous_nonce).await.unwrap();
-        let (authz, previous_nonce) = test.new_authz(&account, order, previous_nonce).await.unwrap();
-        let (dpop_chall, oidc_chall) = test.extract_challenges(authz).unwrap();
-
-        let test = std::sync::Arc::new(tokio::sync::Mutex::new(test));
-        let t1 = test.clone();
-        let account = std::sync::Arc::new(account);
-        let acc1 = account.clone();
-
-        let previous_nonce = tokio::task::spawn(async move {
-            let mut test = t1.lock().await;
-            let backend_nonce = test.get_wire_server_nonce().await.unwrap();
-            let expiry = core::time::Duration::from_secs(3600);
-            let client_dpop_token = test
-                .create_dpop_token(&dpop_chall, backend_nonce, expiry)
-                .await
-                .unwrap();
-            let access_token = test.get_access_token(&dpop_chall, client_dpop_token).await.unwrap();
-            test.verify_dpop_challenge(&acc1, dpop_chall, access_token, previous_nonce)
-                .await
-                .unwrap()
-        })
-        .await
-        .unwrap();
-
-        let t2 = test.clone();
-        let acc2 = account.clone();
-
-        tokio::task::spawn(async move {
-            let mut test = t2.lock().await;
-            let previous_nonce = test.get_acme_nonce(&directory).await.unwrap();
-            let id_token = test.fetch_id_token(&oidc_chall).await.unwrap();
-            test.verify_oidc_challenge(&acc2, oidc_chall, id_token, previous_nonce)
-                .await
-                .unwrap();
-        })
-        .await
-        .unwrap();
-
-        let mut test = test.lock().await;
-        let (order, previous_nonce) = test
-            .verify_order_status(&account, order_url, previous_nonce)
-            .await
-            .unwrap();
-        let (finalize, previous_nonce) = test.finalize(&account, &order, previous_nonce).await.unwrap();
-        use std::ops::Deref as _;
-        test.get_x509_certificates(account.deref().clone(), finalize, order, previous_nonce)
-            .await
-            .unwrap();
     }
 }

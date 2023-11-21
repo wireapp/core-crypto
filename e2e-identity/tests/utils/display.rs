@@ -256,7 +256,10 @@ impl Event {
             Self::Step { number, title } => println!("{number}. {title}"),
             Self::Chapter { comment } => println!("----- {comment} -----\n"),
             Self::Token { label, token, .. } => println!("{label}: https://jwt.io/#id_token={token}\n"),
-            Self::Certificate { label, cert } => println!("{label}:\n{cert}\n"),
+            Self::Certificate { label, cert } => {
+                let (pretty, verify) = self.cert_pretty();
+                println!("{label}\n{verify}\n```\n{cert}\n```\n```\n{pretty}\n```\n")
+            }
             Self::Csr { label, cert } => println!("{label}:\n{cert}\n"),
             Self::Request { req: Some(req), .. } => println!("=> {req:?}\n"),
             Self::Response { resp: Some(resp), .. } => println!("<= {resp:?}"),
@@ -340,7 +343,7 @@ Decoded:
             }
             Self::Certificate { label, cert } => {
                 let (pretty, verify) = self.cert_pretty();
-                format!("###### {label}\n{verify}\n```\n{cert}\n```\n```\n{pretty}\n```\n",)
+                format!("###### {label}\n{verify}\n```\n{cert}\n```\n```\n{pretty}\n```\n")
             }
             Self::Csr { label, cert } => {
                 let (pretty, verify) = self.cert_pretty();
