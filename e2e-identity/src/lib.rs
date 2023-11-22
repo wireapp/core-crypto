@@ -14,9 +14,11 @@ mod types;
 
 pub mod prelude {
     pub use rusty_acme::prelude::{
-        AcmeDirectory, IdentityStatus, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader,
+        x509::IdentityStatus, AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader,
     };
     pub use rusty_jwt_tools::prelude::{ClientId as E2eiClientId, HashAlgorithm, JwsAlgorithm, RustyJwtError};
+
+    pub use rusty_acme::prelude::x509;
 
     #[cfg(feature = "identity-builder")]
     pub use super::builder::*;
