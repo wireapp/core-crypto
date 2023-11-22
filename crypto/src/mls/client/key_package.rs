@@ -233,7 +233,7 @@ impl Client {
             if all_to_delete {
                 // then delete this Credential
                 MlsCredential::delete_by_credential(&mut conn, credential.clone()).await?;
-                let credential = Credential::tls_deserialize_bytes(credential).map_err(MlsError::from)?;
+                let credential = Credential::tls_deserialize(&mut credential.as_slice()).map_err(MlsError::from)?;
                 self.identities.remove(&credential)?;
             }
         }

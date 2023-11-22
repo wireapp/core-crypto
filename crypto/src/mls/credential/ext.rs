@@ -48,7 +48,7 @@ impl CredentialExt for Credential {
 
 impl CredentialExt for openmls::prelude::Certificate {
     fn parse_leaf_cert(&self) -> CryptoResult<Option<Certificate>> {
-        let leaf = self.certificates.get(0).ok_or(CryptoError::InvalidIdentity)?;
+        let leaf = self.certificates.first().ok_or(CryptoError::InvalidIdentity)?;
         let leaf = Certificate::from_der(leaf.as_slice())?;
         Ok(Some(leaf))
     }
@@ -58,7 +58,7 @@ impl CredentialExt for openmls::prelude::Certificate {
     }
 
     fn extract_identity(&self) -> CryptoResult<Option<WireIdentity>> {
-        let leaf = self.certificates.get(0).ok_or(CryptoError::InvalidIdentity)?;
+        let leaf = self.certificates.first().ok_or(CryptoError::InvalidIdentity)?;
         let leaf = leaf.as_slice();
         use wire_e2e_identity::prelude::WireIdentityReader as _;
         let identity = leaf.extract_identity().map_err(|_| CryptoError::InvalidIdentity)?;
@@ -67,7 +67,7 @@ impl CredentialExt for openmls::prelude::Certificate {
     }
 
     fn extract_public_key(&self) -> CryptoResult<Option<Vec<u8>>> {
-        let leaf = self.certificates.get(0).ok_or(CryptoError::InvalidIdentity)?;
+        let leaf = self.certificates.first().ok_or(CryptoError::InvalidIdentity)?;
         use wire_e2e_identity::prelude::WireIdentityReader as _;
         let pk = leaf
             .as_slice()

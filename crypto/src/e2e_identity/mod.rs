@@ -429,10 +429,12 @@ impl E2eiEnrollment {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::prelude::INITIAL_KEYING_MATERIAL_COUNT;
     use crate::{
-        prelude::{CertificateBundle, ClientId, E2eIdentityError, E2eIdentityResult, E2eiEnrollment, MlsCentral},
-        test_utils::*,
+        prelude::{
+            CertificateBundle, ClientId, E2eIdentityError, E2eIdentityResult, E2eiEnrollment, MlsCentral,
+            INITIAL_KEYING_MATERIAL_COUNT,
+        },
+        test_utils::{central::TEAM, *},
     };
     use itertools::Itertools;
     use serde_json::json;

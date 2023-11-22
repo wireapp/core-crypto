@@ -121,7 +121,7 @@ pub mod tests {
 
         assert_eq!(keypair2.credential_id, credential2.id);
 
-        let keypair2 = SignatureKeyPair::tls_deserialize_bytes(&keypair2.keypair).unwrap();
+        let keypair2 = SignatureKeyPair::tls_deserialize(&mut keypair2.keypair.as_slice()).unwrap();
 
         let (b1_kp, b1_sk) = (keypair.to_public_vec(), keypair.private().to_vec());
         let (b2_kp, b2_sk) = (keypair2.to_public_vec(), keypair.private().to_vec());

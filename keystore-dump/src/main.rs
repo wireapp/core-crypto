@@ -45,7 +45,7 @@ async fn main() -> Result<()> {
         .await?
         .into_iter()
     {
-        let mls_credential = openmls::prelude::Credential::tls_deserialize_bytes(&cred.credential)?;
+        let mls_credential = openmls::prelude::Credential::tls_deserialize(&mut cred.credential.as_slice())?;
         let date = chrono::Utc
             .timestamp_opt(cred.created_at as i64, 0)
             .single()
@@ -65,7 +65,7 @@ async fn main() -> Result<()> {
         .await?
         .into_iter()
     {
-        let mls_keypair = openmls_basic_credential::SignatureKeyPair::tls_deserialize_bytes(&kp.keypair)?;
+        let mls_keypair = openmls_basic_credential::SignatureKeyPair::tls_deserialize(&mut kp.keypair.as_slice())?;
         signature_keypairs.push(serde_json::json!({
             "signature_scheme": kp.signature_scheme,
             "mls_keypair": mls_keypair,

@@ -33,9 +33,7 @@ pub mod x509;
 pub mod proteus_utils;
 
 use crate::prelude::{ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
-pub use central::*;
-pub use fixtures::TestCase;
-pub use fixtures::*;
+pub use fixtures::{TestCase, *};
 pub use message::*;
 
 // FIXME: This takes around 10 minutes on WASM

@@ -42,7 +42,7 @@ impl MlsGroupInfoBundle {
         use tls_codec::Deserialize as _;
         match &mut self.payload {
             GroupInfoPayload::Plaintext(gi) => {
-                openmls::prelude::MlsMessageIn::tls_deserialize_bytes(gi.as_slice()).unwrap()
+                openmls::prelude::MlsMessageIn::tls_deserialize(&mut gi.as_slice()).unwrap()
             }
         }
     }

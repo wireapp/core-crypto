@@ -147,9 +147,9 @@ window.cc.clientKeypackages(ciphersuite, window.credentialType, 1).then(([kp]) =
                 vec![serde_json::json!(ciphersuite)],
             )
             .await
-            .and_then(|value| Ok(serde_json::from_value(value)?))?;
+            .and_then(|value| Ok(serde_json::from_value::<Vec<u8>>(value)?))?;
 
-        let kp: KeyPackage = KeyPackageIn::tls_deserialize_bytes(&kp_raw)?.into();
+        let kp: KeyPackage = KeyPackageIn::tls_deserialize(&mut kp_raw.as_slice())?.into();
 
         log::info!(
             "KP Init Key [took {}ms]: Client {} [{}] - {}",

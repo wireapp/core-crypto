@@ -1792,7 +1792,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                let kp = KeyPackageIn::tls_deserialize_bytes(keypackage)
+                let kp = KeyPackageIn::tls_deserialize(keypackage)
                     .map_err(MlsError::from)
                     .map_err(CryptoError::from)
                     .map_err(CoreCryptoError::from)?;
@@ -1902,7 +1902,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                let group_info = VerifiableGroupInfo::tls_deserialize_bytes(&group_info)
+                let group_info = VerifiableGroupInfo::tls_deserialize(&group_info)
                     .map_err(MlsError::from)
                     .map_err(CryptoError::from)
                     .map_err(CoreCryptoError::from)?;

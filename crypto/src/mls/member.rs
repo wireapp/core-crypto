@@ -44,7 +44,7 @@ impl ConversationMember {
     /// # Errors
     /// Deserialization errors
     pub fn new_raw(client_id: ClientId, kp_ser: Vec<u8>, backend: &MlsCryptoProvider) -> CryptoResult<Self> {
-        let kp = KeyPackageIn::tls_deserialize_bytes(kp_ser).map_err(MlsError::from)?;
+        let kp = KeyPackageIn::tls_deserialize(&mut kp_ser.as_slice()).map_err(MlsError::from)?;
         let kp = kp
             .standalone_validate(backend.crypto(), openmls::versions::ProtocolVersion::Mls10)
             .map_err(MlsError::from)?;
@@ -103,7 +103,7 @@ impl ConversationMember {
     /// # Errors
     /// Deserialization errors
     pub fn add_keypackage(&mut self, kp: Vec<u8>, backend: &MlsCryptoProvider) -> CryptoResult<()> {
-        let kp = KeyPackageIn::tls_deserialize_bytes(kp).map_err(MlsError::from)?;
+        let kp = KeyPackageIn::tls_deserialize(&mut kp.as_slice()).map_err(MlsError::from)?;
         let kp = kp
             .standalone_validate(backend.crypto(), openmls::versions::ProtocolVersion::Mls10)
             .map_err(MlsError::from)?;

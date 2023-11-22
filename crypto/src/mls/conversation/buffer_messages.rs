@@ -84,7 +84,7 @@ impl MlsConversation {
             .into_iter()
             .filter(|pm| pm.id == group_id)
             .try_fold(vec![], |mut acc, m| {
-                let msg = MlsMessageIn::tls_deserialize_bytes(m.message.as_slice()).map_err(MlsError::from)?;
+                let msg = MlsMessageIn::tls_deserialize(&mut m.message.as_slice()).map_err(MlsError::from)?;
                 let ct = match msg.body_as_ref() {
                     MlsMessageInBody::PublicMessage(m) => Ok(m.content_type()),
                     MlsMessageInBody::PrivateMessage(m) => Ok(m.content_type()),

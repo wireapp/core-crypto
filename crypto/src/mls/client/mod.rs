@@ -83,7 +83,7 @@ impl Client {
             .into_iter()
             .filter(|c| &c.id[..] == id.as_slice())
             .try_fold(vec![], |mut acc, c| {
-                let credential = Credential::tls_deserialize_bytes(c.credential.as_slice()).map_err(MlsError::from)?;
+                let credential = Credential::tls_deserialize(&mut c.credential.as_slice()).map_err(MlsError::from)?;
                 acc.push((credential, c.created_at));
                 CryptoResult::Ok(acc)
             })?;
@@ -215,7 +215,7 @@ impl Client {
                 .await?;
 
             let signature_key =
-                SignatureKeyPair::tls_deserialize_bytes(&new_keypair.keypair).map_err(MlsError::from)?;
+                SignatureKeyPair::tls_deserialize(&mut new_keypair.keypair.as_slice()).map_err(MlsError::from)?;
             let cb = CredentialBundle {
                 credential: Credential::new_basic(new_credential.credential.clone()),
                 signature_key,
@@ -291,14 +291,14 @@ impl Client {
             let kp = store_skps.iter().find(|skp| skp.signature_scheme == (sc as u16));
 
             let signature_key = if let Some(kp) = kp {
-                SignatureKeyPair::tls_deserialize_bytes(&kp.keypair).map_err(MlsError::from)?
+                SignatureKeyPair::tls_deserialize(&mut kp.keypair.as_slice()).map_err(MlsError::from)?
             } else {
                 let (sk, pk) = backend.crypto().signature_key_gen(sc).map_err(MlsError::from)?;
                 let keypair = SignatureKeyPair::from_raw(sc, sk, pk.clone());
                 let raw_keypair = keypair.tls_serialize_detached().map_err(MlsError::from)?;
                 let store_keypair = MlsSignatureKeyPair::new(sc, pk, raw_keypair, id.as_slice().into());
                 backend.key_store().save(store_keypair.clone()).await?;
-                SignatureKeyPair::tls_deserialize_bytes(&store_keypair.keypair).map_err(MlsError::from)?
+                SignatureKeyPair::tls_deserialize(&mut store_keypair.keypair.as_slice()).map_err(MlsError::from)?
             };
 
             for (credential, created_at) in &credentials {
@@ -338,7 +338,8 @@ impl Client {
             .await?;
         let mut credentials = Vec::with_capacity(store_credentials.len());
         for store_credential in store_credentials.into_iter() {
-            let credential = Credential::tls_deserialize_bytes(&store_credential.credential).map_err(MlsError::from)?;
+            let credential =
+                Credential::tls_deserialize(&mut store_credential.credential.as_slice()).map_err(MlsError::from)?;
             if !matches!(credential.credential_type(), CredentialType::Basic) {
                 continue;
             }
