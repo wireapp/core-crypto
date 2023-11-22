@@ -1079,7 +1079,7 @@ impl CoreCrypto {
         conversation_id: Vec<u8>,
         keypackage: Vec<u8>,
     ) -> CoreCryptoResult<ProposalBundle> {
-        let kp = KeyPackageIn::tls_deserialize_bytes(keypackage)
+        let kp = KeyPackageIn::tls_deserialize(&mut keypackage.as_slice())
             .map_err(MlsError::from)
             .map_err(CryptoError::from)?;
         self.central
@@ -1145,7 +1145,7 @@ impl CoreCrypto {
         custom_configuration: CustomConfiguration,
         credential_type: MlsCredentialType,
     ) -> CoreCryptoResult<ConversationInitBundle> {
-        let group_info = VerifiableGroupInfo::tls_deserialize_bytes(group_info)
+        let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
             .map_err(MlsError::from)
             .map_err(CryptoError::from)?;
         self.central

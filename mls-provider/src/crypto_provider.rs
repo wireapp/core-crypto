@@ -68,7 +68,7 @@ impl OpenMlsCrypto for RustCrypto {
         hash_type: openmls_traits::types::HashType,
         salt: &[u8],
         ikm: &[u8],
-    ) -> Result<SecretVLBytes, openmls_traits::types::CryptoError> {
+    ) -> Result<SecretVLBytes, CryptoError> {
         match hash_type {
             HashType::Sha2_256 => Ok(Hkdf::<Sha256>::extract(Some(salt), ikm).0.as_slice().into()),
             HashType::Sha2_384 => Ok(Hkdf::<Sha384>::extract(Some(salt), ikm).0.as_slice().into()),
@@ -78,11 +78,11 @@ impl OpenMlsCrypto for RustCrypto {
 
     fn hkdf_expand(
         &self,
-        hash_type: openmls_traits::types::HashType,
+        hash_type: HashType,
         prk: &[u8],
         info: &[u8],
         okm_len: usize,
-    ) -> Result<SecretVLBytes, openmls_traits::types::CryptoError> {
+    ) -> Result<SecretVLBytes, CryptoError> {
         match hash_type {
             HashType::Sha2_256 => {
                 let hkdf = Hkdf::<Sha256>::from_prk(prk).map_err(|_| CryptoError::HkdfOutputLengthInvalid)?;
@@ -114,11 +114,7 @@ impl OpenMlsCrypto for RustCrypto {
         }
     }
 
-    fn hash(
-        &self,
-        hash_type: openmls_traits::types::HashType,
-        data: &[u8],
-    ) -> Result<Vec<u8>, openmls_traits::types::CryptoError> {
+    fn hash(&self, hash_type: HashType, data: &[u8]) -> Result<Vec<u8>, CryptoError> {
         match hash_type {
             HashType::Sha2_256 => Ok(Sha256::digest(data).as_slice().into()),
             HashType::Sha2_384 => Ok(Sha384::digest(data).as_slice().into()),
@@ -128,12 +124,12 @@ impl OpenMlsCrypto for RustCrypto {
 
     fn aead_encrypt(
         &self,
-        alg: openmls_traits::types::AeadType,
+        alg: AeadType,
         key: &[u8],
         data: &[u8],
         nonce: &[u8],
         aad: &[u8],
-    ) -> Result<Vec<u8>, openmls_traits::types::CryptoError> {
+    ) -> Result<Vec<u8>, CryptoError> {
         match alg {
             AeadType::Aes128Gcm => {
                 let aes = Aes128Gcm::new_from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
@@ -162,12 +158,12 @@ impl OpenMlsCrypto for RustCrypto {
 
     fn aead_decrypt(
         &self,
-        alg: openmls_traits::types::AeadType,
+        alg: AeadType,
         key: &[u8],
         ct_tag: &[u8],
         nonce: &[u8],
         aad: &[u8],
-    ) -> Result<Vec<u8>, openmls_traits::types::CryptoError> {
+    ) -> Result<Vec<u8>, CryptoError> {
         match alg {
             AeadType::Aes128Gcm => {
                 let aes = Aes128Gcm::new_from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
@@ -191,10 +187,7 @@ impl OpenMlsCrypto for RustCrypto {
         }
     }
 
-    fn signature_key_gen(
-        &self,
-        alg: openmls_traits::types::SignatureScheme,
-    ) -> Result<(Vec<u8>, Vec<u8>), openmls_traits::types::CryptoError> {
+    fn signature_key_gen(&self, alg: SignatureScheme) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
         let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
 
         match alg {
@@ -219,11 +212,11 @@ impl OpenMlsCrypto for RustCrypto {
 
     fn verify_signature(
         &self,
-        alg: openmls_traits::types::SignatureScheme,
+        alg: SignatureScheme,
         data: &[u8],
         pk: &[u8],
         signature: &[u8],
-    ) -> Result<(), openmls_traits::types::CryptoError> {
+    ) -> Result<(), CryptoError> {
         use signature::Verifier as _;
         match alg {
             SignatureScheme::ECDSA_SECP256R1_SHA256 => {
@@ -253,12 +246,7 @@ impl OpenMlsCrypto for RustCrypto {
         }
     }
 
-    fn sign(
-        &self,
-        alg: openmls_traits::types::SignatureScheme,
-        data: &[u8],
-        key: &[u8],
-    ) -> Result<Vec<u8>, openmls_traits::types::CryptoError> {
+    fn sign(&self, alg: SignatureScheme, data: &[u8], key: &[u8]) -> Result<Vec<u8>, CryptoError> {
         use signature::Signer as _;
 
         match alg {
@@ -404,7 +392,7 @@ impl OpenMlsCrypto for RustCrypto {
         info: &[u8],
         exporter_context: &[u8],
         exporter_length: usize,
-    ) -> Result<(Vec<u8>, ExporterSecret), openmls_traits::types::CryptoError> {
+    ) -> Result<(Vec<u8>, ExporterSecret), CryptoError> {
         let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
 
         let (kem_output, export) =
@@ -460,7 +448,7 @@ impl OpenMlsCrypto for RustCrypto {
         info: &[u8],
         exporter_context: &[u8],
         exporter_length: usize,
-    ) -> Result<ExporterSecret, openmls_traits::types::CryptoError> {
+    ) -> Result<ExporterSecret, CryptoError> {
         let export =
             match config {
                 HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {

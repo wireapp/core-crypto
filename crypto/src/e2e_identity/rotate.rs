@@ -276,6 +276,7 @@ pub mod tests {
 
     pub mod all {
         use super::*;
+        use crate::test_utils::central::TEAM;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -543,7 +544,7 @@ pub mod tests {
                         .into_iter()
                         .map(|c| {
                             let credential =
-                                openmls::prelude::Credential::tls_deserialize_bytes(c.credential.as_slice()).unwrap();
+                                openmls::prelude::Credential::tls_deserialize(&mut c.credential.as_slice()).unwrap();
                             (credential, c.created_at)
                         })
                         .collect::<Vec<_>>();

@@ -515,7 +515,7 @@ impl MlsCentral {
 
         // the keystore
         let credential = self.find_credential_from_keystore(&cb).await.unwrap();
-        let credential = Credential::tls_deserialize_bytes(credential.credential.as_slice()).unwrap();
+        let credential = Credential::tls_deserialize(&mut credential.credential.as_slice()).unwrap();
         assert_eq!(credential.identity(), &cid.0);
         let keystore_identity = credential.extract_identity().unwrap().unwrap();
         assert_eq!(keystore_identity.display_name, new_display_name);

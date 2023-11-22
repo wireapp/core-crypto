@@ -294,7 +294,7 @@ impl MlsCentral {
         id: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
-        let msg = MlsMessageIn::tls_deserialize_bytes(message.as_ref()).map_err(MlsError::from)?;
+        let msg = MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(MlsError::from)?;
         let Ok(conversation) = self.get_conversation(id).await else {
             return self.handle_when_group_is_pending(id, message).await;
         };

@@ -56,11 +56,10 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::prelude::INITIAL_KEYING_MATERIAL_COUNT;
     use crate::{
         e2e_identity::tests::*,
-        prelude::{E2eiEnrollment, MlsCentral},
-        test_utils::*,
+        prelude::{E2eiEnrollment, MlsCentral, INITIAL_KEYING_MATERIAL_COUNT},
+        test_utils::{central::TEAM, *},
     };
     use mls_crypto_provider::MlsCryptoProvider;
     use wasm_bindgen_test::*;
