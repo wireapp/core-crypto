@@ -18,7 +18,7 @@ rusty-acme = { version = "0.5.2", path = "../acme" }
 rusty-jwt-tools = { version = "0.5.2", path = "../jwt" }
 jwt-simple = "0.11.3"
 derive_more = { version = "0.99", features = ["deref", "from", "into"] }
-url = "2.3"
+url = "2.5"
 zeroize = "1.7"
 
 uuid = { version = "1.6", optional = true }
@@ -37,7 +37,7 @@ optional = true
 rusty-jwt-tools = { version = "0.5.2", path = "../jwt", features = ["test-utils"] }
 rand = "0.8"
 base64 = "0.21.0"
-url = "2.3"
+url = "2.5"
 itertools = "0.12"
 uuid = "1.6"
 wasm-bindgen-test = "0.3"
