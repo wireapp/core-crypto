@@ -1,4 +1,4 @@
-/*#![cfg(not(target_family = "wasm"))]
+#![cfg(not(target_family = "wasm"))]
 
 use jwt_simple::prelude::*;
 use serde_json::{json, Value};
@@ -685,4 +685,3 @@ mod oidc_challenge {
         ));
     }
 }
-*/
