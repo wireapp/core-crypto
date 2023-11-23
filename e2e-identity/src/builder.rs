@@ -200,14 +200,8 @@ impl WireIdentityBuilder {
         cert_params.distinguished_name = dn;
 
         let client_id = ClientId::try_from_qualified(&self.client_id).unwrap().to_uri();
-        let handle = format!(
-            "{}{}{}@{}",
-            ClientId::URI_PREFIX,
-            Handle::PREFIX,
-            self.handle,
-            self.domain
-        );
-        cert_params.subject_alt_names = vec![rcgen::SanType::URI(client_id), rcgen::SanType::URI(handle)];
+        let handle = Handle::from(self.handle.as_str()).to_qualified(&self.domain);
+        cert_params.subject_alt_names = vec![rcgen::SanType::URI(client_id), rcgen::SanType::URI(handle.to_string())];
 
         cert_params.extended_key_usages = vec![rcgen::ExtendedKeyUsagePurpose::ClientAuth];
         cert_params.key_usages = vec![rcgen::KeyUsagePurpose::DigitalSignature];
@@ -258,7 +252,7 @@ impl Default for WireIdentityBuilder {
         Self {
             alg: SignAlgorithm::Ed25519,
             client_id,
-            handle: format!("{firstname}_wire"),
+            handle: Handle::from("alice_wire").to_qualified("wire.com").to_string(),
             display_name: format!("{firstname} {lastname}"),
             domain,
             not_before: rcgen::date_time_ymd(1970, 1, 1),
@@ -297,7 +291,7 @@ pub mod tests {
     #[test]
     #[wasm_bindgen_test]
     fn should_have_expected_identity_claims() {
-        let client_id = "ZTNlZGQyZTE3YjVjNDcxYmExYzRlZDI3ZDc3OGM0MmM:6bf3531c4811b575@wire.com";
+        let client_id = "t6wRpI8BRSeviBwwiFp5MQ:6bf3531c4811b575@wire.com";
         let handle = "alice_wire";
         let display_name = "Alice Smith";
         let domain = "wire.com";
@@ -313,7 +307,10 @@ pub mod tests {
         let cert = cert_chain.get(0).unwrap();
         let identity = cert.extract_identity().unwrap();
         assert_eq!(&identity.client_id, client_id);
-        assert_eq!(&identity.handle, handle);
+        assert_eq!(
+            identity.handle.as_str(),
+            Handle::from(handle).to_qualified(domain).as_str()
+        );
         assert_eq!(&identity.display_name, display_name);
         assert_eq!(&identity.domain, domain);
     }
