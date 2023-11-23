@@ -1700,10 +1700,11 @@ export class CoreCrypto {
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
+     * @param team - name of the Wire team a user belongs to
      * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiMlsInitOnly}
      */
-    async e2eiNewEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<E2eiEnrollment> {
-        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
+    async e2eiNewEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite, team?: string): Promise<E2eiEnrollment> {
+        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_enrollment(clientId, displayName, handle, team, expiryDays, ciphersuite));
         return new E2eiEnrollment(e2ei);
     }
 
@@ -1716,10 +1717,11 @@ export class CoreCrypto {
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
+     * @param team - name of the Wire team a user belongs to
      * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
      */
-    async e2eiNewActivationEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite): Promise<E2eiEnrollment> {
-        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_activation_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
+    async e2eiNewActivationEnrollment(clientId: string, displayName: string, handle: string, expiryDays: number, ciphersuite: Ciphersuite, team?: string): Promise<E2eiEnrollment> {
+        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_activation_enrollment(clientId, displayName, handle, team, expiryDays, ciphersuite));
         return new E2eiEnrollment(e2ei);
     }
 
@@ -1734,10 +1736,11 @@ export class CoreCrypto {
      * @param ciphersuite - for generating signing key material
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
+     * @param team - name of the Wire team a user belongs to
      * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
      */
-    async e2eiNewRotateEnrollment(clientId: string, expiryDays: number, ciphersuite: Ciphersuite, displayName?: string, handle?: string,): Promise<E2eiEnrollment> {
-        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_rotate_enrollment(clientId, displayName, handle, expiryDays, ciphersuite));
+    async e2eiNewRotateEnrollment(clientId: string, expiryDays: number, ciphersuite: Ciphersuite, displayName?: string, handle?: string, team?: string): Promise<E2eiEnrollment> {
+        const e2ei = await CoreCryptoError.asyncMapErr(this.#cc.e2ei_new_rotate_enrollment(clientId, displayName, handle, team, expiryDays, ciphersuite));
         return new E2eiEnrollment(e2ei);
     }
 

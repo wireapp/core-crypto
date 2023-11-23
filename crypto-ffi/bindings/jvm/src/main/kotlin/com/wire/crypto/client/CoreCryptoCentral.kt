@@ -61,6 +61,7 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
      * @param handle user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays generated x509 certificate expiry
      * @param ciphersuite for generating signing key material
+     * @param team name of the Wire team a user belongs to
      * @return The new [E2EIEnrollment] enrollment to use with [e2eiMlsInitOnly]
      */
     suspend fun e2eiNewEnrollment(
@@ -69,8 +70,9 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
         handle: String,
         expiryDays: UInt,
         ciphersuite: Ciphersuite,
+        team: String? = null,
     ): E2EIEnrollment {
-        return E2EIEnrollment(cc.e2eiNewEnrollment(clientId, displayName, handle, expiryDays, ciphersuite.lower()))
+        return E2EIEnrollment(cc.e2eiNewEnrollment(clientId, displayName, handle, team, expiryDays, ciphersuite.lower()))
     }
 
     /**
@@ -82,6 +84,7 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
      * @param handle user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays generated x509 certificate expiry
      * @param ciphersuite for generating signing key material
+     * @param team name of the Wire team a user belongs to
      * @return The new [E2EIEnrollment] enrollment to use with [e2eiRotateAll]
      */
     suspend fun e2eiNewActivationEnrollment(
@@ -90,12 +93,14 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
         handle: String,
         expiryDays: UInt,
         ciphersuite: Ciphersuite,
+        team: String? = null,
     ): E2EIEnrollment {
         return E2EIEnrollment(
             cc.e2eiNewActivationEnrollment(
                 clientId,
                 displayName,
                 handle,
+                team,
                 expiryDays,
                 ciphersuite.lower()
             )
@@ -112,6 +117,7 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
      * @param ciphersuite for generating signing key material
      * @param displayName human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle user handle e.g. `alice.smith.qa@example.com`
+     * @param team name of the Wire team a user belongs to
      * @return The new [E2EIEnrollment] enrollment to use with [e2eiRotateAll]
      */
     suspend fun e2eiNewRotateEnrollment(
@@ -120,12 +126,14 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
         ciphersuite: Ciphersuite,
         displayName: String? = null,
         handle: String? = null,
+        team: String? = null,
     ): E2EIEnrollment {
         return E2EIEnrollment(
             cc.e2eiNewRotateEnrollment(
                 clientId,
                 displayName,
                 handle,
+                team,
                 expiryDays,
                 ciphersuite.lower()
             )

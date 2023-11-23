@@ -2443,6 +2443,7 @@ impl CoreCrypto {
         client_id: String,
         display_name: String,
         handle: String,
+        team: Option<String>,
         expiry_days: u32,
         ciphersuite: Ciphersuite,
     ) -> Promise {
@@ -2456,6 +2457,7 @@ impl CoreCrypto {
                         client_id.into_bytes().into(),
                         display_name,
                         handle,
+                        team,
                         expiry_days,
                         ciphersuite.into(),
                     )
@@ -2477,6 +2479,7 @@ impl CoreCrypto {
         client_id: String,
         display_name: String,
         handle: String,
+        team: Option<String>,
         expiry_days: u32,
         ciphersuite: Ciphersuite,
     ) -> Promise {
@@ -2490,6 +2493,7 @@ impl CoreCrypto {
                         client_id.into_bytes().into(),
                         display_name,
                         handle,
+                        team,
                         expiry_days,
                         ciphersuite.into(),
                     )
@@ -2511,6 +2515,7 @@ impl CoreCrypto {
         client_id: String,
         display_name: Option<String>,
         handle: Option<String>,
+        team: Option<String>,
         expiry_days: u32,
         ciphersuite: Ciphersuite,
     ) -> Promise {
@@ -2524,6 +2529,7 @@ impl CoreCrypto {
                         client_id.into_bytes().into(),
                         display_name,
                         handle,
+                        team,
                         expiry_days,
                         ciphersuite.into(),
                     )

@@ -1154,9 +1154,10 @@ public class CoreCryptoWrapper {
     /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
     /// - parameter expiryDays: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material.
+    /// - parameter team: name of the Wire team a user belongs to
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func e2eiNewEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16) async throws -> E2eiEnrollment {
-        let enrollment = try await self.coreCrypto.e2eiNewEnrollment(clientId: clientId, displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
+    public func e2eiNewEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16, handle: String? = nil) async throws -> E2eiEnrollment {
+        let enrollment = try await self.coreCrypto.e2eiNewEnrollment(clientId: clientId, displayName: displayName, handle: handle, team: team, expiryDays: expiryDays, ciphersuite: ciphersuite)
         return E2eiEnrollment(enrollment)
     }
 
@@ -1168,9 +1169,10 @@ public class CoreCryptoWrapper {
     /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
     /// - parameter expiryDays: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material.
+    /// - parameter team: name of the Wire team a user belongs to
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func e2eiNewActivationEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16) async throws -> E2eiEnrollment {
-        let enrollment = try await self.coreCrypto.e2eiNewActivationEnrollment(clientId: clientId, displayName: displayName, handle: handle, expiryDays: expiryDays, ciphersuite: ciphersuite)
+    public func e2eiNewActivationEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16, handle: String? = nil) async throws -> E2eiEnrollment {
+        let enrollment = try await self.coreCrypto.e2eiNewActivationEnrollment(clientId: clientId, displayName: displayName, handle: handle, team: team, expiryDays: expiryDays, ciphersuite: ciphersuite)
         return E2eiEnrollment(enrollment)
     }
 
@@ -1183,9 +1185,10 @@ public class CoreCryptoWrapper {
     /// - parameter ciphersuite: For generating signing key material.
     /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
+    /// - parameter team: name of the Wire team a user belongs to
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func e2eiNewRotateEnrollment(clientId: String, expiryDays: UInt32, ciphersuite: UInt16, displayName: String? = nil, handle: String? = nil) async throws -> E2eiEnrollment {
-        let enrollment = try await self.coreCrypto.e2eiNewRotateEnrollment(clientId: clientId, expiryDays: expiryDays, ciphersuite: ciphersuite, displayName: displayName, handle: handle)
+    public func e2eiNewRotateEnrollment(clientId: String, expiryDays: UInt32, ciphersuite: UInt16, displayName: String? = nil, handle: String? = nil, team: String? = nil) async throws -> E2eiEnrollment {
+        let enrollment = try await self.coreCrypto.e2eiNewRotateEnrollment(clientId: clientId, expiryDays: expiryDays, ciphersuite: ciphersuite, displayName: displayName, handle: handle, team: team)
         return E2eiEnrollment(enrollment)
     }
 
