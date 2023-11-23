@@ -77,6 +77,7 @@ pub mod tests {
                         E2EI_CLIENT_ID.into(),
                         E2EI_DISPLAY_NAME.to_string(),
                         E2EI_HANDLE.to_string(),
+                        Some(TEAM.to_string()),
                         E2EI_EXPIRY,
                         case.ciphersuite(),
                     )
@@ -110,6 +111,7 @@ pub mod tests {
                         E2EI_CLIENT_ID.into(),
                         E2EI_DISPLAY_NAME.to_string(),
                         E2EI_HANDLE.to_string(),
+                        Some(TEAM.to_string()),
                         E2EI_EXPIRY,
                         case.ciphersuite(),
                     )
@@ -122,6 +124,7 @@ pub mod tests {
                             e.client_id.as_str().into(),
                             e.display_name,
                             e.handle,
+                            e.team,
                             1,
                             &backend,
                             e.ciphersuite,

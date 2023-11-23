@@ -36,6 +36,7 @@ impl MlsCentral {
         client_id: ClientId,
         display_name: String,
         handle: String,
+        team: Option<String>,
         expiry_days: u32,
         ciphersuite: MlsCiphersuite,
     ) -> E2eIdentityResult<E2eiEnrollment> {
@@ -43,6 +44,7 @@ impl MlsCentral {
             client_id,
             display_name,
             handle,
+            team,
             expiry_days,
             &self.mls_backend,
             ciphersuite,
@@ -84,6 +86,7 @@ pub struct E2eiEnrollment {
     client_id: String,
     display_name: String,
     handle: String,
+    team: Option<String>,
     expiry: core::time::Duration,
     directory: Option<types::E2eiAcmeDirectory>,
     account: Option<wire_e2e_identity::prelude::E2eiAcmeAccount>,
@@ -110,10 +113,12 @@ impl E2eiEnrollment {
     /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
     /// * `expiry_days` - generated x509 certificate expiry in days
+    #[allow(clippy::too_many_arguments)]
     pub fn try_new(
         client_id: ClientId,
         display_name: String,
         handle: String,
+        team: Option<String>,
         expiry_days: u32,
         backend: &MlsCryptoProvider,
         ciphersuite: MlsCiphersuite,
@@ -134,6 +139,7 @@ impl E2eiEnrollment {
             client_id,
             display_name,
             handle,
+            team,
             expiry,
             directory: None,
             account: None,
@@ -270,7 +276,14 @@ impl E2eiEnrollment {
             .wire_dpop_challenge
             .as_ref()
             .ok_or(E2eIdentityError::ImplementationError)?;
-        Ok(self.new_dpop_token(&self.client_id, dpop_challenge, backend_nonce, expiry)?)
+        Ok(self.new_dpop_token(
+            &self.client_id,
+            dpop_challenge,
+            backend_nonce,
+            self.handle.as_str(),
+            self.team.clone(),
+            expiry,
+        )?)
     }
 
     /// Creates a new challenge request.
@@ -443,6 +456,7 @@ pub mod tests {
                         E2EI_CLIENT_ID.into(),
                         E2EI_DISPLAY_NAME.to_string(),
                         E2EI_HANDLE.to_string(),
+                        Some(TEAM.to_string()),
                         E2EI_EXPIRY,
                         case.ciphersuite(),
                     )

@@ -37,6 +37,9 @@ use core_crypto_keystore::entities::{
 use mls_crypto_provider::MlsCryptoProvider;
 use wire_e2e_identity::prelude::WireIdentityReader;
 
+#[allow(clippy::redundant_static_lifetimes)]
+pub const TEAM: &'static str = "wire";
+
 impl MlsCentral {
     pub async fn get_one_key_package(&self, case: &TestCase) -> KeyPackage {
         let kps = self
@@ -485,6 +488,7 @@ impl MlsCentral {
         new_handle: &str,
         new_display_name: &str,
     ) {
+        let new_handle = format!("im:wireapp=%40{new_handle}@wire.com");
         // verify the identity in..
         // the MLS group
         let cid = self.get_client_id();
@@ -535,7 +539,7 @@ impl MlsCentral {
             let decr_identity = decrypted.identity.as_ref().unwrap();
             assert_eq!(decr_identity.client_id, identity.client_id);
             assert_eq!(decr_identity.client_id.as_bytes(), dup_client_id.as_slice());
-            assert_eq!(decr_identity.handle, identity.handle);
+            assert_eq!(&decr_identity.handle, identity.handle.as_str());
             assert_eq!(decr_identity.display_name, identity.display_name);
             assert_eq!(decr_identity.domain, identity.domain);
             assert_eq!(decr_identity.status, identity.status.clone().into());

@@ -36,7 +36,7 @@ impl<'a> TryFrom<(wire_e2e_identity::prelude::WireIdentity, &'a [u8])> for WireI
         let certificate = document.to_pem("CERTIFICATE", LineEnding::LF)?;
         Ok(Self {
             client_id: i.client_id,
-            handle: i.handle,
+            handle: i.handle.to_string(),
             display_name: i.display_name,
             domain: i.domain,
             certificate,
@@ -123,8 +123,11 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
+    #[allow(clippy::redundant_static_lifetimes)]
     const ALICE_ANDROID: &'static str = "t6wRpI8BRSeviBwwiFp5MQ:a661e79735dc890f@wire.com";
+    #[allow(clippy::redundant_static_lifetimes)]
     const ALICE_IOS: &'static str = "t6wRpI8BRSeviBwwiFp5MQ:ce3c1921aacdbcfe@wire.com";
+    #[allow(clippy::redundant_static_lifetimes)]
     const BOB_ANDROID: &'static str = "wjoxZL5tTzi2-8iND-HimA:2af3cbe39aed8cc5@wire.com";
 
     #[async_std::test]
