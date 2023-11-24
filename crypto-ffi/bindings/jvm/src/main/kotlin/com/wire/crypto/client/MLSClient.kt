@@ -293,12 +293,11 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * It will "merge" the commit locally i.e. increment the local group epoch, use new encryption secrets etc...
      *
      * @param id conversation identifier
-     * @param members pairs of client identifier and its KeyPackage
+     * @param KeyPackages of the new clients to add
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
-    suspend fun addMember(id: MLSGroupId, members: Map<ClientId, MLSKeyPackage>): CommitBundle {
-        val invitees = members.map { (clientId, kp) -> com.wire.crypto.Invitee(clientId.lower(), kp.lower()) }
-        return cc.addClientsToConversation(id.lower(), invitees).lift()
+    suspend fun addMember(id: MLSGroupId, keyPackages: List<MLSKeyPackage>): CommitBundle {
+        return cc.addClientsToConversation(id.lower(), keyPackages.map { it.lower() }).lift()
     }
 
     /**

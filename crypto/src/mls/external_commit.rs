@@ -741,9 +741,9 @@ pub mod tests {
                         .await
                         .unwrap();
 
-                    let bob = bob_central.rand_member(&case).await;
+                    let bob = bob_central.rand_key_package(&case).await;
                     let welcome = alice_central
-                        .add_members_to_conversation(&id, &mut [bob])
+                        .add_members_to_conversation(&id, vec![bob])
                         .await
                         .unwrap()
                         .welcome;

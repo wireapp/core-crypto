@@ -4,8 +4,7 @@ use criterion::{
 };
 
 use core_crypto::prelude::{
-    ConversationMember, MlsConversationConfiguration, MlsConversationInitBundle, MlsCredentialType,
-    MlsCustomConfiguration,
+    MlsConversationConfiguration, MlsConversationInitBundle, MlsCredentialType, MlsCustomConfiguration,
 };
 
 use crate::utils::*;
@@ -64,9 +63,8 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                                 .await
                                 .unwrap();
                             let bob_kp = bob_kpbs.first().unwrap().clone();
-                            let bob_member = ConversationMember::new(bob_central.client_id().unwrap(), bob_kp);
                             let welcome = alice_central
-                                .add_members_to_conversation(&id, &mut [bob_member])
+                                .add_members_to_conversation(&id, vec![bob_kp.into()])
                                 .await
                                 .unwrap()
                                 .welcome;

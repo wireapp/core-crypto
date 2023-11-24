@@ -91,7 +91,6 @@ pub mod prelude {
             },
             credential::{trust_anchor::PerDomainTrustAnchor, typ::MlsCredentialType, x509::CertificateBundle},
             external_commit::MlsConversationInitBundle,
-            member::{ConversationMember, MemberId},
             proposal::{MlsProposal, MlsProposalRef},
             MlsCentral,
         },

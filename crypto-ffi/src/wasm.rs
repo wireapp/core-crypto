@@ -779,66 +779,6 @@ impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// see [core_crypto::prelude::ConversationMember]
-pub struct Invitee {
-    id: Vec<u8>,
-    kp: Vec<u8>,
-}
-
-#[wasm_bindgen]
-impl Invitee {
-    #[wasm_bindgen(constructor)]
-    pub fn new(id: Uint8Array, kp: Uint8Array) -> Self {
-        Self {
-            id: id.to_vec(),
-            kp: kp.to_vec(),
-        }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn id(&self) -> Uint8Array {
-        Uint8Array::from(&*self.id)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn kp(&self) -> Uint8Array {
-        Uint8Array::from(&*self.kp)
-    }
-}
-
-impl Invitee {
-    #[inline(always)]
-    fn group_to_conversation_member(
-        clients: Vec<Self>,
-        backend: &MlsCryptoProvider,
-    ) -> WasmCryptoResult<Vec<ConversationMember>> {
-        Ok(clients
-            .into_iter()
-            .try_fold(
-                HashMap::new(),
-                |mut acc, c| -> WasmCryptoResult<HashMap<ClientId, ConversationMember>> {
-                    let client_id: ClientId = c.id.into();
-                    if let Some(member) = acc.get_mut(&client_id) {
-                        member
-                            .add_keypackage(c.kp.to_vec(), backend)
-                            .map_err(CoreCryptoError::from)?;
-                    } else {
-                        acc.insert(
-                            client_id.clone(),
-                            ConversationMember::new_raw(client_id, c.kp.to_vec(), backend)
-                                .map_err(CoreCryptoError::from)?,
-                        );
-                    }
-                    Ok(acc)
-                },
-            )?
-            .into_values()
-            .collect::<Vec<ConversationMember>>())
-    }
-}
-
-#[wasm_bindgen]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// see [core_crypto::prelude::MlsConversationConfiguration]
 pub struct ConversationConfiguration {
     ciphersuite: Option<Ciphersuite>,
@@ -1566,22 +1506,26 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<Option<MemberAddedMessages>>`]
     ///
     /// see [core_crypto::mls::MlsCentral::add_members_to_conversation]
-    pub fn add_clients_to_conversation(&self, conversation_id: ConversationId, clients: Box<[JsValue]>) -> Promise {
+    pub fn add_clients_to_conversation(
+        &self,
+        conversation_id: ConversationId,
+        key_packages: Box<[Uint8Array]>,
+    ) -> Promise {
         let this = self.inner.clone();
 
         future_to_promise(
             async move {
-                let invitees = clients
+                let key_packages = key_packages
                     .iter()
-                    .cloned()
-                    .map(|js_client| Ok(serde_wasm_bindgen::from_value(js_client)?))
-                    .collect::<WasmCryptoResult<Vec<Invitee>>>()?;
+                    .map(|kp| {
+                        KeyPackageIn::tls_deserialize(&mut kp.to_vec().as_slice())
+                            .map_err(|e| CoreCryptoError(WasmError::CryptoError(CryptoError::MlsError(e.into()))))
+                    })
+                    .collect::<CoreCryptoResult<Vec<_>>>()?;
 
                 let mut central = this.write().await;
-                let backend = central.provider();
-                let mut members = Invitee::group_to_conversation_member(invitees, backend)?;
                 let commit = central
-                    .add_members_to_conversation(&conversation_id, &mut members)
+                    .add_members_to_conversation(&conversation_id, key_packages)
                     .await?;
                 let commit: MemberAddedMessages = commit.try_into()?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)

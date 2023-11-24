@@ -5,6 +5,7 @@
 #[cfg(test)]
 pub mod tests {
     use crate::CryptoError;
+    use openmls::prelude::KeyPackage;
     use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
 
@@ -27,13 +28,14 @@ pub mod tests {
                         .await
                         .unwrap();
 
-                    let bob = bob_central.rand_member(&case).await;
-                    let bob_kp = bob.clients.get(&bob_central.get_client_id()).unwrap().first().unwrap();
-                    let bob_kp_ref = bob_kp.hash_ref(bob_central.mls_backend.crypto()).unwrap();
+                    let bob = bob_central.rand_key_package(&case).await;
+                    let bob_kp_ref = KeyPackage::from(bob.clone())
+                        .hash_ref(bob_central.mls_backend.crypto())
+                        .unwrap();
 
                     // Alice invites Bob with a KeyPackage...
                     let welcome = alice_central
-                        .add_members_to_conversation(&id, &mut [bob])
+                        .add_members_to_conversation(&id, vec![bob])
                         .await
                         .unwrap()
                         .welcome;

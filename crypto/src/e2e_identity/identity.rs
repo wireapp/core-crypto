@@ -1,11 +1,13 @@
-use crate::{
-    e2e_identity::device_status::DeviceStatus,
-    mls::credential::ext::CredentialExt,
-    prelude::{user_id::UserId, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation},
-};
 use itertools::Itertools;
 use std::collections::HashMap;
+
 use x509_cert::der::pem::LineEnding;
+
+use crate::mls::credential::ext::CredentialExt;
+use crate::{
+    e2e_identity::device_status::DeviceStatus,
+    prelude::{user_id::UserId, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation},
+};
 
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group
@@ -88,7 +90,7 @@ impl MlsConversation {
         }
         self.members()
             .into_iter()
-            .filter(|(m, _)| device_ids.contains(&ClientId::from(&m[..])))
+            .filter(|(id, _)| device_ids.contains(&ClientId::from(id.as_slice())))
             .filter_map(|(_, c)| c.extract_identity().transpose())
             .collect::<CryptoResult<Vec<_>>>()
     }
@@ -100,7 +102,7 @@ impl MlsConversation {
         let user_ids = user_ids.iter().map(|uid| uid.as_bytes()).collect::<Vec<_>>();
         self.members()
             .iter()
-            .filter_map(|(m, c)| UserId::try_from(m).ok().zip(Some(c)))
+            .filter_map(|(id, c)| UserId::try_from(id.as_slice()).ok().zip(Some(c)))
             .filter(|(uid, _)| user_ids.contains(uid))
             .filter_map(|(uid, c)| Some(uid).zip(c.extract_identity().transpose()))
             .group_by(|(uid, _)| *uid)
@@ -117,9 +119,10 @@ impl MlsConversation {
 
 #[cfg(test)]
 pub mod tests {
+    use wasm_bindgen_test::*;
+
     use crate::test_utils::*;
     use crate::CryptoError;
-    use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 

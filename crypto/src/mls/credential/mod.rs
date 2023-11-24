@@ -447,9 +447,9 @@ pub mod tests {
         creator_central
             .new_conversation(&id, creator_ct, case.cfg.clone())
             .await?;
-        let guest_member = guest_central.rand_member_of_type(case, guest_ct).await;
+        let guest = guest_central.rand_key_package_of_type(case, guest_ct).await;
         creator_central
-            .invite_all_members(case, &id, [(&mut guest_central, guest_member)])
+            .invite_all_members(case, &id, [(&mut guest_central, guest)])
             .await?;
         creator_central.try_talk_to(&id, &mut guest_central).await?;
         Ok((creator_central, guest_central, id))

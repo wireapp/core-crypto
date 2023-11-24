@@ -162,9 +162,9 @@ pub mod tests {
                         .decrypt_message(&id, external_proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    let charlie = charlie_central.rand_member(&case).await;
+                    let charlie = charlie_central.rand_key_package(&case).await;
                     let commit = alice_central
-                        .add_members_to_conversation(&id, &mut [charlie])
+                        .add_members_to_conversation(&id, vec![charlie])
                         .await
                         .unwrap();
                     alice_central.commit_accepted(&id).await.unwrap();
@@ -274,9 +274,9 @@ pub mod tests {
                             .decrypt_message(&id, external_proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        let debbie = debbie_central.rand_member(&case).await;
+                        let debbie = debbie_central.rand_key_package(&case).await;
                         let commit = bob_central
-                            .add_members_to_conversation(&id, &mut [debbie])
+                            .add_members_to_conversation(&id, vec![debbie])
                             .await
                             .unwrap();
                         bob_central.commit_accepted(&id).await.unwrap();

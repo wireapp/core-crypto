@@ -17,8 +17,9 @@
 #![cfg_attr(target_family = "wasm", allow(dead_code, unused_imports))]
 
 use color_eyre::eyre::{eyre, Result};
-use core_crypto::prelude::CiphersuiteName;
 use tls_codec::Serialize;
+
+use core_crypto::prelude::CiphersuiteName;
 
 #[cfg(not(target_family = "wasm"))]
 mod build;
@@ -155,14 +156,12 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
 
     let spinner = util::RunningProcess::new("[MLS] Step 1: Fetching KeyPackages from clients...", true);
 
-    let mut members = vec![];
+    use tls_codec::Deserialize as _;
+    let mut key_packages = vec![];
     for c in clients.iter_mut() {
         let kp = c.get_keypackage().await?;
-        members.push(ConversationMember::new_raw(
-            c.client_id().into(),
-            kp,
-            master_client.provider(),
-        )?);
+        let kp = KeyPackageIn::tls_deserialize(&mut kp.as_slice())?;
+        key_packages.push(kp);
     }
 
     spinner.success("[MLS] Step 1: KeyPackages [OK]");
@@ -170,7 +169,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     let spinner = util::RunningProcess::new("[MLS] Step 2: Adding clients to conversation...", true);
 
     let conversation_add_msg = master_client
-        .add_members_to_conversation(&conversation_id, members.as_mut_slice())
+        .add_members_to_conversation(&conversation_id, key_packages)
         .await?;
 
     master_client.commit_accepted(&conversation_id).await?;

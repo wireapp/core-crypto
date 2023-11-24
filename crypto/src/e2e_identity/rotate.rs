@@ -452,9 +452,11 @@ pub mod tests {
                             .await
                             .unwrap();
                         // required because now Alice does not anymore have a Basic credential
-                        let alice_member = alice_central.rand_member_of_type(&case, MlsCredentialType::X509).await;
+                        let alice = alice_central
+                            .rand_key_package_of_type(&case, MlsCredentialType::X509)
+                            .await;
                         charlie_central
-                            .invite_all_members(&case, &id, [(&mut alice_central, alice_member)])
+                            .invite_all_members(&case, &id, [(&mut alice_central, alice)])
                             .await
                             .unwrap();
                     })

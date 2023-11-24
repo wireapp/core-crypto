@@ -18,12 +18,12 @@ fn commit_add_bench(c: &mut Criterion) {
                         async_std::task::block_on(async {
                             let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
                             add_clients(&mut central, &id, ciphersuite, *i).await;
-                            let member = rand_member(ciphersuite).await;
-                            (central, id, member)
+                            let (kp, _) = rand_key_package(ciphersuite).await;
+                            (central, id, vec![kp.into()])
                         })
                     },
-                    |(mut central, id, member)| async move {
-                        black_box(central.add_members_to_conversation(&id, &mut [member]).await.unwrap());
+                    |(mut central, id, kps)| async move {
+                        black_box(central.add_members_to_conversation(&id, kps).await.unwrap());
                         central.commit_accepted(&id).await.unwrap();
                         black_box(());
                     },
@@ -44,20 +44,16 @@ fn commit_add_n_clients_bench(c: &mut Criterion) {
                     || {
                         async_std::task::block_on(async {
                             let (central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
-                            let mut members = Vec::new();
+                            let mut kps = Vec::with_capacity(*i);
                             for _ in 0..*i {
-                                members.push(rand_member(ciphersuite).await);
+                                let (kp, _) = rand_key_package(ciphersuite).await;
+                                kps.push(kp.into());
                             }
-                            (central, id, members)
+                            (central, id, kps)
                         })
                     },
-                    |(mut central, id, mut members)| async move {
-                        black_box(
-                            central
-                                .add_members_to_conversation(&id, members.as_mut_slice())
-                                .await
-                                .unwrap(),
-                        );
+                    |(mut central, id, kps)| async move {
+                        black_box(central.add_members_to_conversation(&id, kps).await.unwrap());
                         central.commit_accepted(&id).await.unwrap();
                         black_box(());
                     },

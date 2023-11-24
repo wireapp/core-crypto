@@ -755,12 +755,10 @@ public class CoreCryptoWrapper {
     /// epoch, use new encryption secrets etc...
     ///
     /// - parameter conversationId: conversation identifier
-    /// - parameter clients: Array of ``Invitee`` (which are Client ID / KeyPackage pairs)
+    /// - parameter keyPackages: of the clients to add
     /// - returns: A ``CommitBundle`` byte array to fan out to the Delivery Service
-    public func addClientsToConversation(conversationId: ConversationId, clients: [Invitee]) async throws -> MemberAddedMessages {
-        return try await self.coreCrypto.addClientsToConversation(conversationId: conversationId, clients: clients.map({ (invitee) -> CoreCryptoSwift.Invitee in
-            return invitee.convert()
-        })).convertTo()
+    public func addClientsToConversation(conversationId: ConversationId, keyPackages: [[UInt8]]) async throws -> MemberAddedMessages {
+        return try await self.coreCrypto.addClientsToConversation(conversationId: conversationId, keyPackages: keyPackages).convertTo()
     }
 
     /// Removes the provided clients from a conversation; Assuming those clients exist and the current client is allowed

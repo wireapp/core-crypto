@@ -16,10 +16,10 @@ use openmls::{
     },
 };
 use openmls_traits::OpenMlsCryptoProvider;
+use tls_codec::Deserialize;
 
 use core_crypto_keystore::entities::MlsPendingMessage;
 use mls_crypto_provider::MlsCryptoProvider;
-use tls_codec::Deserialize;
 
 use crate::{
     group_store::GroupStoreValue,
@@ -327,17 +327,20 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
+    use std::time::Duration;
+
+    use openmls::prelude::{KeyPackageRef, ProcessMessageError};
+    use openmls_traits::OpenMlsCryptoProvider;
+    use wasm_bindgen_test::*;
+
     use crate::mls::conversation::config::MAX_PAST_EPOCHS;
     use crate::{
-        prelude::{handshake::MlsCommitBundle, MemberId, MlsWirePolicy},
+        prelude::{handshake::MlsCommitBundle, MlsWirePolicy},
         test_utils::{ValidationCallbacks, *},
         CryptoError,
     };
-    use openmls::prelude::{KeyPackageRef, ProcessMessageError};
-    use openmls_traits::OpenMlsCryptoProvider;
-    use std::time::Duration;
-    use wasm_bindgen_test::*;
+
+    use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -458,16 +461,16 @@ pub mod tests {
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // Alice creates a commit which will be superseded by Bob's one
-                        let charlie = charlie_central.rand_member(&case).await;
-                        let debbie = debbie_central.rand_member(&case).await;
+                        let charlie = charlie_central.rand_key_package(&case).await;
+                        let debbie = debbie_central.rand_key_package(&case).await;
                         alice_central
-                            .add_members_to_conversation(&id, &mut [charlie.clone()])
+                            .add_members_to_conversation(&id, vec![charlie.clone()])
                             .await
                             .unwrap();
                         assert!(alice_central.pending_commit(&id).await.is_some());
 
                         let add_debbie_commit = bob_central
-                            .add_members_to_conversation(&id, &mut [debbie.clone()])
+                            .add_members_to_conversation(&id, vec![debbie.clone()])
                             .await
                             .unwrap()
                             .commit;
@@ -476,18 +479,16 @@ pub mod tests {
                             .await
                             .unwrap();
                         // Now Debbie should be in members and not Charlie
-                        assert!(alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .get(&debbie.id)
-                            .is_some());
-                        assert!(alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .get(&charlie.id)
-                            .is_none());
+                        let members = alice_central.get_conversation_unchecked(&id).await.members();
+
+                        let dc = debbie.unverified_credential();
+                        let debbie_id = dc.credential.identity();
+                        assert!(members.get(debbie_id).is_some());
+
+                        let cc = charlie.unverified_credential();
+                        let charlie_id = cc.credential.identity();
+                        assert!(members.get(charlie_id).is_none());
+
                         // Previous commit to add Charlie has been discarded but its proposals will be renewed
                         assert!(alice_central.pending_commit(&id).await.is_none());
                         assert!(decrypted.has_epoch_changed)
@@ -515,15 +516,14 @@ pub mod tests {
                         // Alice will create a commit to add Charlie
                         // Bob will create a commit which will be accepted first by DS so Alice will decrypt it
                         // Then Alice will renew the proposal in her pending commit
-                        let charlie = charlie_central.rand_member(&case).await;
+                        let charlie = charlie_central.rand_key_package(&case).await;
 
                         let bob_commit = bob_central.update_keying_material(&id).await.unwrap().commit;
                         bob_central.commit_accepted(&id).await.unwrap();
-                        // let commit_epoch = bob_commit.epoch();
 
                         // Alice propose to add Charlie
                         alice_central
-                            .add_members_to_conversation(&id, &mut [charlie.clone()])
+                            .add_members_to_conversation(&id, vec![charlie.clone()])
                             .await
                             .unwrap();
                         assert!(alice_central.pending_commit(&id).await.is_some());
@@ -534,11 +534,13 @@ pub mod tests {
                             .await
                             .unwrap();
                         // So Charlie has not been added to the group
+                        let cc = charlie.unverified_credential();
+                        let charlie_id = cc.credential.identity();
                         assert!(alice_central
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get(&charlie.id)
+                            .get(charlie_id)
                             .is_none());
                         // Make sure we are suggesting a commit delay
                         assert!(delay.is_some());
@@ -547,10 +549,6 @@ pub mod tests {
                         assert!(!proposals.is_empty());
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         assert!(alice_central.pending_commit(&id).await.is_none());
-                        // assert_eq!(
-                        //     commit_epoch.as_u64() + 1,
-                        //     proposals.first().unwrap().proposal.epoch().as_u64()
-                        // );
 
                         // Let's commit this proposal to see if it works
                         for p in proposals {
@@ -569,7 +567,7 @@ pub mod tests {
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get(&charlie.id)
+                            .get(charlie_id)
                             .is_some());
 
                         let decrypted = bob_central
@@ -577,11 +575,13 @@ pub mod tests {
                             .await
                             .unwrap();
                         // Bob also has Charlie in the group
+                        let cc = charlie.unverified_credential();
+                        let charlie_id = cc.credential.identity();
                         assert!(bob_central
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get(&charlie.id)
+                            .get(charlie_id)
                             .is_some());
                         assert!(decrypted.has_epoch_changed);
 
@@ -713,7 +713,7 @@ pub mod tests {
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get::<MemberId>(&charlie_central.get_client_id().into())
+                            .get::<Vec<u8>>(&charlie_central.get_client_id().to_vec())
                             .is_some());
 
                         // Bob also has Charlie in the group
@@ -722,7 +722,7 @@ pub mod tests {
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get::<MemberId>(&charlie_central.get_client_id().into())
+                            .get::<Vec<u8>>(&charlie_central.get_client_id().to_vec())
                             .is_some());
                         assert!(decrypted.has_epoch_changed);
                     })

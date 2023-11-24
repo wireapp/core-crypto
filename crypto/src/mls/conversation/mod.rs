@@ -37,9 +37,9 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use config::MlsConversationConfiguration;
 
-use crate::group_store::GroupStoreValue;
 use crate::{
-    mls::{client::Client, member::MemberId, MlsCentral},
+    group_store::GroupStoreValue,
+    mls::{client::Client, MlsCentral},
     prelude::{CryptoError, CryptoResult, MlsCiphersuite, MlsCredentialType, MlsError},
 };
 
@@ -167,11 +167,11 @@ impl MlsConversation {
     }
 
     /// Returns all members credentials from the group/conversation
-    pub fn members(&self) -> HashMap<MemberId, Credential> {
+    pub fn members(&self) -> HashMap<Vec<u8>, Credential> {
         self.group.members().fold(HashMap::new(), |mut acc, kp| {
             let credential = kp.credential;
-            let member_id: MemberId = credential.identity().into();
-            acc.entry(member_id).or_insert(credential);
+            let id = credential.identity().to_vec();
+            acc.entry(id).or_insert(credential);
             acc
         })
     }
@@ -345,10 +345,9 @@ pub mod tests {
                         .await
                         .unwrap();
 
-                    let MlsConversationCreationMessage { welcome, .. } = alice_central
-                        .add_members_to_conversation(&id, &mut [bob_central.rand_member(&case).await])
-                        .await
-                        .unwrap();
+                    let bob = bob_central.rand_key_package(&case).await;
+                    let MlsConversationCreationMessage { welcome, .. } =
+                        alice_central.add_members_to_conversation(&id, vec![bob]).await.unwrap();
                     // before merging, commit is not applied
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                     alice_central.commit_accepted(&id).await.unwrap();
@@ -433,13 +432,13 @@ pub mod tests {
 
                 let number_of_friends = bob_and_friends.len();
 
-                let mut bob_and_friends_members = vec![];
+                let mut bob_and_friends_kps = vec![];
                 for c in &bob_and_friends {
-                    bob_and_friends_members.push(c.rand_member(&case).await);
+                    bob_and_friends_kps.push(c.rand_key_package(&case).await);
                 }
 
                 let MlsConversationCreationMessage { welcome, .. } = alice_central
-                    .add_members_to_conversation(&id, &mut bob_and_friends_members)
+                    .add_members_to_conversation(&id, bob_and_friends_kps)
                     .await
                     .unwrap();
                 // before merging, commit is not applied

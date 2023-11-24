@@ -2,11 +2,10 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
 
-use crate::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
 use crate::prelude::{
-    identifier::ClientIdentifier, Client, ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult,
-    MlsCentralConfiguration, MlsCiphersuite, MlsConversation, MlsConversationConfiguration, MlsCredentialType,
-    MlsError,
+    identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT, Client, ClientId, ConversationId,
+    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentralConfiguration, MlsCiphersuite, MlsConversation,
+    MlsConversationConfiguration, MlsCredentialType, MlsError,
 };
 
 pub(crate) mod buffer_external_commit;
@@ -16,7 +15,6 @@ pub(crate) mod conversation;
 pub(crate) mod credential;
 pub(crate) mod external_commit;
 pub(crate) mod external_proposal;
-pub(crate) mod member;
 pub(crate) mod proposal;
 pub(crate) mod restore;
 

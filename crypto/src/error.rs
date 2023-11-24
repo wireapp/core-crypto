@@ -66,9 +66,6 @@ pub enum CryptoError {
     /// We have done something terribly wrong
     #[error("We have done something terribly wrong and it needs to be fixed")]
     ImplementationError,
-    /// A conversation member is out of local stored keypackages - if it does happen something went wrong
-    #[error("Member #{0:x?} is out of keypackages")]
-    OutOfKeyPackage(crate::mls::member::MemberId),
     /// Errors that are sent by our MLS Provider
     #[error(transparent)]
     MlsProviderError(#[from] mls_crypto_provider::MlsProviderError),

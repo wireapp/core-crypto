@@ -386,8 +386,9 @@ pub mod tests {
                         alice_central.new_add_proposal(&id, charlie_kp).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
+                        let charlie = charlie_central.rand_key_package(&case).await;
                         let commit = bob_central
-                            .add_members_to_conversation(&id, &mut [charlie_central.rand_member(&case).await])
+                            .add_members_to_conversation(&id, vec![charlie])
                             .await
                             .unwrap()
                             .commit;
@@ -429,8 +430,9 @@ pub mod tests {
                         alice_central.commit_pending_proposals(&id).await.unwrap();
                         assert!(alice_central.pending_commit(&id).await.is_some());
 
+                        let charlie = charlie_central.rand_key_package(&case).await;
                         let commit = bob_central
-                            .add_members_to_conversation(&id, &mut [charlie_central.rand_member(&case).await])
+                            .add_members_to_conversation(&id, vec![charlie])
                             .await
                             .unwrap()
                             .commit;
@@ -559,8 +561,9 @@ pub mod tests {
                         alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                         // Alice commits adding Charlie
+                        let charlie = charlie_central.rand_key_package(&case).await;
                         alice_central
-                            .add_members_to_conversation(&id, &mut [charlie_central.rand_member(&case).await])
+                            .add_members_to_conversation(&id, vec![charlie])
                             .await
                             .unwrap();
                         assert!(alice_central.pending_commit(&id).await.is_some());

@@ -69,7 +69,7 @@ pub trait EmulatedClient {
 #[async_trait::async_trait(?Send)]
 pub trait EmulatedMlsClient: EmulatedClient {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>>;
-    async fn add_client(&mut self, conversation_id: &[u8], client_id: &[u8], kp: &[u8]) -> Result<Vec<u8>>;
+    async fn add_client(&mut self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>>;
     async fn kick_client(&mut self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>>;
     async fn process_welcome(&mut self, welcome: &[u8]) -> Result<Vec<u8>>;
     async fn encrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>>;

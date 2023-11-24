@@ -213,10 +213,8 @@ pub mod tests {
                             .await
                             .unwrap();
                         alice_central.new_update_proposal(&id).await.unwrap();
-                        alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rand_member(&case).await])
-                            .await
-                            .unwrap();
+                        let bob = bob_central.rand_key_package(&case).await;
+                        alice_central.add_members_to_conversation(&id, vec![bob]).await.unwrap();
                         assert!(!alice_central.pending_proposals(&id).await.is_empty());
                         assert!(alice_central.pending_commit(&id).await.is_some());
                         alice_central.commit_accepted(&id).await.unwrap();

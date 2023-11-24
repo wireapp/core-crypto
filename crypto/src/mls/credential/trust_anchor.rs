@@ -1686,9 +1686,9 @@ mod tests {
         alice_central.new_conversation(&id, credential_type, cfg).await?;
         assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
 
-        let MlsConversationCreationMessage { welcome, .. } = alice_central
-            .add_members_to_conversation(&id, &mut [bob_central.rand_member(test_case).await])
-            .await?;
+        let bob = bob_central.rand_key_package(test_case).await;
+        let MlsConversationCreationMessage { welcome, .. } =
+            alice_central.add_members_to_conversation(&id, vec![bob]).await?;
         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
         alice_central.commit_accepted(&id).await?;
         bob_central
