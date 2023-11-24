@@ -107,7 +107,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         Ok(kp.tls_serialize_detached()?)
     }
 
-    async fn add_client(&mut self, conversation_id: &[u8], client_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
+    async fn add_client(&mut self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
         let conversation_id = conversation_id.to_vec();
         if !self.cc.conversation_exists(&conversation_id).await {
             let config = MlsConversationConfiguration {
@@ -119,11 +119,10 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
                 .await?;
         }
 
-        let member = ConversationMember::new_raw(client_id.to_vec().into(), kp.to_vec(), self.cc.provider())?;
-        let welcome = self
-            .cc
-            .add_members_to_conversation(&conversation_id, &mut [member])
-            .await?;
+        use tls_codec::Deserialize as _;
+
+        let kp = KeyPackageIn::tls_deserialize(&mut &kp[..])?;
+        let welcome = self.cc.add_members_to_conversation(&conversation_id, vec![kp]).await?;
 
         Ok(welcome.welcome.tls_serialize_detached()?)
     }

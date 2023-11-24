@@ -5,7 +5,6 @@ pub mod tests {
     use openmls::prelude::Lifetime;
     use wasm_bindgen_test::*;
 
-    use crate::prelude::ConversationMember;
     use crate::test_utils::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -50,9 +49,8 @@ pub mod tests {
 
                         // should fail when creating Add commits
                         let invalid_kp = bob_central.new_invalid_keypackage(&case).await;
-                        let invalid_member = ConversationMember::new(bob_central.get_client_id(), invalid_kp);
                         let commit_creation = alice_central
-                            .add_members_to_conversation(&id, &mut [invalid_member])
+                            .add_members_to_conversation(&id, vec![invalid_kp.into()])
                             .await;
 
                         assert!(matches!(
@@ -141,10 +139,9 @@ pub mod tests {
                         let invalid_kp = charlie_central
                             .new_keypackage(&case, Lifetime::new(expiration_time))
                             .await;
-                        let invalid_member = ConversationMember::new(bob_central.get_client_id(), invalid_kp);
 
                         let commit = alice_central
-                            .add_members_to_conversation(&id, &mut [invalid_member])
+                            .add_members_to_conversation(&id, vec![invalid_kp.into()])
                             .await
                             .unwrap();
                         let commit = commit.commit.to_bytes().unwrap();
@@ -189,9 +186,8 @@ pub mod tests {
                             .unwrap();
 
                         let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
-                        let invalid_member = ConversationMember::new(bob_central.get_client_id(), invalid_kp);
                         let commit = alice_central
-                            .add_members_to_conversation(&id, &mut [invalid_member])
+                            .add_members_to_conversation(&id, vec![invalid_kp.into()])
                             .await
                             .unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();

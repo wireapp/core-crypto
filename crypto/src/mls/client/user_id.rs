@@ -1,4 +1,3 @@
-use crate::prelude::MemberId;
 use crate::{CryptoError, CryptoResult};
 
 /// Unique identifier of a User (human person holding some devices).
@@ -20,14 +19,6 @@ impl<'a> TryFrom<&'a str> for UserId<'a> {
 
     fn try_from(client_id: &'a str) -> CryptoResult<Self> {
         client_id.as_bytes().try_into()
-    }
-}
-
-impl<'a> TryFrom<&'a MemberId> for UserId<'a> {
-    type Error = CryptoError;
-
-    fn try_from(member_id: &'a MemberId) -> CryptoResult<Self> {
-        member_id.as_slice().try_into()
     }
 }
 
@@ -64,16 +55,16 @@ pub mod tests {
     #[async_std::test]
     #[wasm_bindgen_test]
     pub async fn should_parse_client_id() {
-        let user_id = "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@wire.com".as_bytes().to_vec();
-        let user_id = UserId::try_from(&user_id).unwrap();
+        let user_id = "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@wire.com";
+        let user_id = UserId::try_from(user_id).unwrap();
         assert_eq!(user_id, UserId("LcksJb74Tm6N12cDjFy7lQ".as_bytes()));
     }
 
     #[async_std::test]
     #[wasm_bindgen_test]
     pub async fn should_fail_when_invalid() {
-        let user_id = "LcksJb74Tm6N12cDjFy7lQ/8e6424430d3b28be@wire.com".as_bytes().to_vec();
-        let user_id = UserId::try_from(&user_id);
+        let user_id = "LcksJb74Tm6N12cDjFy7lQ/8e6424430d3b28be@wire.com";
+        let user_id = UserId::try_from(user_id);
         assert!(matches!(user_id.unwrap_err(), CryptoError::InvalidClientId));
     }
 }

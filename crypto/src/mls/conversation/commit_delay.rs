@@ -175,12 +175,10 @@ pub mod tests {
                         .await
                         .unwrap();
 
+                    let bob = bob_central.rand_key_package(&case).await;
                     let MlsConversationCreationMessage {
                         welcome: bob_welcome, ..
-                    } = alice_central
-                        .add_members_to_conversation(&id, &mut [bob_central.rand_member(&case).await])
-                        .await
-                        .unwrap();
+                    } = alice_central.add_members_to_conversation(&id, vec![bob]).await.unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                     alice_central.commit_accepted(&id).await.unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
@@ -190,12 +188,13 @@ pub mod tests {
                         .await
                         .unwrap();
 
+                    let charlie = charlie_central.rand_key_package(&case).await;
                     let MlsConversationCreationMessage {
                         welcome: charlie_welcome,
                         commit,
                         ..
                     } = alice_central
-                        .add_members_to_conversation(&id, &mut [charlie_central.rand_member(&case).await])
+                        .add_members_to_conversation(&id, vec![charlie])
                         .await
                         .unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);

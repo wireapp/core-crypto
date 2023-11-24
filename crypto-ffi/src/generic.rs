@@ -14,19 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::UniffiCustomTypeConverter;
-use core_crypto::prelude::{
-    ClientIdentifier, ConversationMember, CryptoError, E2eIdentityError, EntropySeed, KeyPackageIn, KeyPackageRef,
-    MlsBufferedConversationDecryptMessage, MlsCentral, MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle,
-    MlsConversationConfiguration, MlsConversationCreationMessage, MlsConversationDecryptMessage,
-    MlsConversationInitBundle, MlsCryptoProvider, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle,
-    MlsRotateBundle, VerifiableGroupInfo,
-};
-use core_crypto::MlsError;
 use std::collections::HashMap;
+
 use tls_codec::{Deserialize, Serialize};
 
-pub use core_crypto::prelude::{ConversationId, MemberId};
+pub use core_crypto::prelude::ConversationId;
+use core_crypto::{
+    prelude::{
+        ClientIdentifier, CryptoError, E2eIdentityError, EntropySeed, KeyPackageIn, KeyPackageRef,
+        MlsBufferedConversationDecryptMessage, MlsCentral, MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle,
+        MlsConversationConfiguration, MlsConversationCreationMessage, MlsConversationDecryptMessage,
+        MlsConversationInitBundle, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle, MlsRotateBundle,
+        VerifiableGroupInfo,
+    },
+    MlsError,
+};
+
+use crate::UniffiCustomTypeConverter;
 
 #[allow(dead_code)]
 pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -330,12 +334,6 @@ impl TryFrom<MlsRotateBundle> for RotateBundle {
     }
 }
 
-#[derive(Debug, Clone, uniffi::Record)]
-pub struct Invitee {
-    pub id: ClientId,
-    pub kp: Vec<u8>,
-}
-
 #[derive(Debug, uniffi::Record)]
 pub struct ProposalBundle {
     pub proposal: Vec<u8>,
@@ -496,30 +494,6 @@ impl From<core_crypto::prelude::DeviceStatus> for DeviceStatus {
             core_crypto::prelude::DeviceStatus::Expired => Self::Expired,
             core_crypto::prelude::DeviceStatus::Revoked => Self::Revoked,
         }
-    }
-}
-
-impl Invitee {
-    #[inline(always)]
-    fn group_to_conversation_member(
-        clients: Vec<Self>,
-        backend: &MlsCryptoProvider,
-    ) -> CoreCryptoResult<Vec<ConversationMember>> {
-        Ok(clients
-            .into_iter()
-            .try_fold(
-                HashMap::new(),
-                |mut acc, c| -> CoreCryptoResult<HashMap<ClientId, ConversationMember>> {
-                    if let Some(member) = acc.get_mut(&c.id) {
-                        member.add_keypackage(c.kp, backend)?;
-                    } else {
-                        acc.insert(c.id.clone(), ConversationMember::new_raw(c.id.0, c.kp, backend)?);
-                    }
-                    Ok(acc)
-                },
-            )?
-            .into_values()
-            .collect::<Vec<ConversationMember>>())
     }
 }
 
@@ -957,14 +931,21 @@ impl CoreCrypto {
     pub async fn add_clients_to_conversation(
         &self,
         conversation_id: Vec<u8>,
-        clients: Vec<Invitee>,
+        key_packages: Vec<Vec<u8>>,
     ) -> CoreCryptoResult<MemberAddedMessages> {
-        let mut members = Invitee::group_to_conversation_member(clients, self.central.lock().await.provider())?;
+        let key_packages = key_packages
+            .into_iter()
+            .map(|kp| {
+                KeyPackageIn::tls_deserialize(&mut kp.as_slice()).map_err(|e| CoreCryptoError::CryptoError {
+                    error: CryptoError::MlsError(e.into()),
+                })
+            })
+            .collect::<CoreCryptoResult<Vec<_>>>()?;
 
         self.central
             .lock()
             .await
-            .add_members_to_conversation(&conversation_id, &mut members)
+            .add_members_to_conversation(&conversation_id, key_packages)
             .await?
             .try_into()
     }

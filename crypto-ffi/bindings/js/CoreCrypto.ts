@@ -19,7 +19,6 @@ import initWasm, {
     CoreCrypto as CoreCryptoFfi,
     ConversationConfiguration as ConversationConfigurationFfi,
     CustomConfiguration as CustomConfigurationFfi,
-    Invitee as InviteeFfi,
     CoreCryptoWasmCallbacks,
     AcmeDirectory,
     NewAcmeOrder,
@@ -427,20 +426,6 @@ export interface CoreCryptoParams extends CoreCryptoDeferredParams {
      * This should stay consistent as it will be verified against the stored signature & identity to validate the persisted credential
      */
     clientId: ClientId;
-}
-
-/**
- * Data shape for adding clients to a conversation
- */
-export interface Invitee {
-    /**
-     * Client ID as a byte array
-     */
-    id: ClientId;
-    /**
-     * MLS KeyPackage belonging to the aforementioned client
-     */
-    kp: Uint8Array;
 }
 
 export interface ConversationInitBundle {
@@ -1139,25 +1124,19 @@ export class CoreCrypto {
      * epoch, use new encryption secrets etc...
      *
      * @param conversationId - The ID of the conversation
-     * @param clients - Array of {@link Invitee} (which are Client ID / KeyPackage pairs)
+     * @param keyPackages - KeyPackages of the new clients to add
      *
      * @returns A {@link CommitBundle}
      */
     async addClientsToConversation(
         conversationId: ConversationId,
-        clients: Invitee[]
+        keyPackages: Uint8Array[]
     ): Promise<MemberAddedMessages> {
         try {
-            const ffiClients = clients.map(
-                (invitee) => new InviteeFfi(invitee.id, invitee.kp)
-            );
-
             const ffiRet: CoreCryptoFfiTypes.MemberAddedMessages = await CoreCryptoError.asyncMapErr(this.#cc.add_clients_to_conversation(
                 conversationId,
-                ffiClients
+              keyPackages
             ));
-
-            ffiClients.forEach(c => c.free());
 
             const gi = ffiRet.group_info;
 

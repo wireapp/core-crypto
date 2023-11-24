@@ -162,21 +162,18 @@ pub mod tests {
 
                         assert!(alice_central.pending_commit(&id).await.is_none());
 
-                        let bob = bob_central.rand_member(&case).await;
-                        let charlie = charlie_central.rand_member(&case).await;
+                        let bob = bob_central.rand_key_package(&case).await;
+                        let charlie = charlie_central.rand_key_package(&case).await;
 
                         // create a first commit then discard it from the store to be able to create a second one
-                        let add_bob = alice_central
-                            .add_members_to_conversation(&id, &mut [bob])
-                            .await
-                            .unwrap();
+                        let add_bob = alice_central.add_members_to_conversation(&id, vec![bob]).await.unwrap();
                         assert!(alice_central.pending_commit(&id).await.is_some());
                         alice_central.clear_pending_commit(&id).await.unwrap();
                         assert!(alice_central.pending_commit(&id).await.is_none());
 
                         // create another commit for the sole purpose of having it in the store
                         let add_charlie = alice_central
-                            .add_members_to_conversation(&id, &mut [charlie])
+                            .add_members_to_conversation(&id, vec![charlie])
                             .await
                             .unwrap();
                         assert!(alice_central.pending_commit(&id).await.is_some());

@@ -10,12 +10,12 @@
 
 use openmls::prelude::{KeyPackage, KeyPackageIn, LeafNode, LeafNodeIndex, MlsMessageOut};
 
-use crate::mls::credential::CredentialBundle;
 use mls_crypto_provider::MlsCryptoProvider;
 
+use crate::mls::credential::CredentialBundle;
 use crate::prelude::{
-    Client, ClientId, ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral, MlsError,
-    MlsGroupInfoBundle, MlsProposalRef,
+    Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError, MlsGroupInfoBundle,
+    MlsProposalRef,
 };
 
 use super::MlsConversation;
@@ -202,17 +202,9 @@ impl MlsConversation {
     pub(crate) async fn add_members(
         &mut self,
         client: &Client,
-        members: &mut [ConversationMember],
+        key_packages: Vec<KeyPackageIn>,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsConversationCreationMessage> {
-        let cs = self.ciphersuite();
-
-        let keypackages = members
-            .iter_mut()
-            .flat_map(|member| member.keypackages_for_all_clients(&cs))
-            .filter_map(|(_, kps)| kps)
-            .collect::<Vec<KeyPackageIn>>();
-
         let signer = &self
             .find_most_recent_credential_bundle(client)?
             .ok_or(CryptoError::IdentityInitializationError)?
@@ -220,7 +212,7 @@ impl MlsConversation {
 
         let (commit, welcome, gi) = self
             .group
-            .add_members(backend, signer, keypackages)
+            .add_members(backend, signer, key_packages)
             .await
             .map_err(MlsError::from)?;
 
@@ -367,7 +359,7 @@ impl MlsCentral {
     pub async fn add_members_to_conversation(
         &mut self,
         id: &ConversationId,
-        members: &mut [ConversationMember],
+        key_packages: Vec<KeyPackageIn>,
     ) -> CryptoResult<MlsConversationCreationMessage> {
         if let Some(callbacks) = self.callbacks.as_ref() {
             let client_id = self.mls_client()?.id().clone();
@@ -375,12 +367,11 @@ impl MlsCentral {
                 return Err(CryptoError::Unauthorized);
             }
         }
-
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .add_members(self.mls_client()?, members, &self.mls_backend)
+            .add_members(self.mls_client()?, key_packages, &self.mls_backend)
             .await
     }
 
@@ -463,11 +454,11 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
+    use itertools::Itertools;
+    use openmls::prelude::SignaturePublicKey;
     use wasm_bindgen_test::*;
 
     use crate::test_utils::*;
-    use itertools::Itertools;
-    use openmls::prelude::SignaturePublicKey;
 
     use super::*;
 
@@ -490,10 +481,9 @@ pub mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        let MlsConversationCreationMessage { welcome, .. } = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rand_member(&case).await])
-                            .await
-                            .unwrap();
+                        let bob = bob_central.rand_key_package(&case).await;
+                        let MlsConversationCreationMessage { welcome, .. } =
+                            alice_central.add_members_to_conversation(&id, vec![bob]).await.unwrap();
 
                         // before merging, commit is not applied
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
@@ -541,8 +531,9 @@ pub mod tests {
                             .await
                             .unwrap();
 
+                        let bob = bob_central.rand_key_package(&case).await;
                         let welcome = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rand_member(&case).await])
+                            .add_members_to_conversation(&id, vec![bob])
                             .await
                             .unwrap()
                             .welcome;
@@ -573,10 +564,8 @@ pub mod tests {
                             .await
                             .unwrap();
 
-                        let commit_bundle = alice_central
-                            .add_members_to_conversation(&id, &mut [bob_central.rand_member(&case).await])
-                            .await
-                            .unwrap();
+                        let bob = bob_central.rand_key_package(&case).await;
+                        let commit_bundle = alice_central.add_members_to_conversation(&id, vec![bob]).await.unwrap();
                         let group_info = commit_bundle.group_info.get_group_info();
                         alice_central.commit_accepted(&id).await.unwrap();
 
@@ -1339,8 +1328,9 @@ pub mod tests {
     }
 
     pub mod delivery_semantics {
-        use super::*;
         use crate::prelude::MlsWirePolicy;
+
+        use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]

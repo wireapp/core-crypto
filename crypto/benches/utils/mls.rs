@@ -14,8 +14,8 @@ use openmls_traits::{random::OpenMlsRand, types::Ciphersuite, OpenMlsCryptoProvi
 use tls_codec::Deserialize;
 
 use core_crypto::prelude::{
-    CertificateBundle, ClientId, ConversationId, ConversationMember, MlsCentral, MlsCentralConfiguration,
-    MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
+    CertificateBundle, ClientId, ConversationId, MlsCentral, MlsCentralConfiguration, MlsCiphersuite,
+    MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
 };
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -203,17 +203,14 @@ pub async fn add_clients(
 ) -> (Vec<ClientId>, VerifiableGroupInfo) {
     let mut client_ids = vec![];
 
-    let mut members = vec![];
+    let mut key_packages = vec![];
     for _ in 0..nb_clients {
-        let member = rand_member(ciphersuite).await;
-        client_ids.push(member.id().as_slice().into());
-        members.push(member)
+        let (kp, id) = rand_key_package(ciphersuite).await;
+        client_ids.push(id.as_slice().into());
+        key_packages.push(kp.into())
     }
 
-    let commit_bundle = central
-        .add_members_to_conversation(id, members.as_mut_slice())
-        .await
-        .unwrap();
+    let commit_bundle = central.add_members_to_conversation(id, key_packages).await.unwrap();
 
     let group_info = commit_bundle.group_info.payload.bytes();
     let group_info = openmls::prelude::MlsMessageIn::tls_deserialize(&mut group_info.as_slice()).unwrap();
@@ -253,20 +250,14 @@ pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, Clien
     (kp, client_id.into())
 }
 
-pub async fn rand_member(ciphersuite: MlsCiphersuite) -> ConversationMember {
-    let (kp, client_id) = rand_key_package(ciphersuite).await;
-    ConversationMember::new(client_id, kp)
-}
-
 pub async fn invite(from: &mut MlsCentral, other: &mut MlsCentral, id: &ConversationId, ciphersuite: MlsCiphersuite) {
     let other_kps = other
         .get_or_create_client_keypackages(ciphersuite, MlsCredentialType::Basic, 1)
         .await
         .unwrap();
     let other_kp = other_kps.first().unwrap().clone();
-    let other_member = ConversationMember::new(other.client_id().unwrap(), other_kp);
     let welcome = from
-        .add_members_to_conversation(id, &mut [other_member])
+        .add_members_to_conversation(id, vec![other_kp.into()])
         .await
         .unwrap()
         .welcome;

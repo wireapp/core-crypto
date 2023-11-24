@@ -17,15 +17,16 @@
 use crate::{
     mls::credential::{ext::CredentialExt, trust_anchor::PerDomainTrustAnchor, CredentialBundle},
     prelude::{
-        CertificateBundle, Client, ClientId, ConversationId, ConversationMember, CryptoError, CryptoResult, MlsCentral,
-        MlsCiphersuite, MlsConversation, MlsConversationConfiguration, MlsConversationDecryptMessage,
-        MlsConversationInitBundle, MlsCredentialType, MlsCustomConfiguration, MlsError,
+        CertificateBundle, Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsCiphersuite,
+        MlsConversation, MlsConversationConfiguration, MlsConversationDecryptMessage, MlsConversationInitBundle,
+        MlsCredentialType, MlsCustomConfiguration, MlsError,
     },
     test_utils::{MessageExt, TestCase},
 };
 use openmls::prelude::{
     group_info::VerifiableGroupInfo, Capabilities, Credential, CredentialWithKey, CryptoConfig, HpkePublicKey,
-    KeyPackage, LeafNodeIndex, Lifetime, MlsMessageIn, MlsMessageOut, QueuedProposal, SignaturePublicKey, StagedCommit,
+    KeyPackage, KeyPackageIn, LeafNodeIndex, Lifetime, MlsMessageIn, MlsMessageOut, QueuedProposal, SignaturePublicKey,
+    StagedCommit,
 };
 use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
 use tls_codec::{Deserialize, Serialize};
@@ -116,26 +117,17 @@ impl MlsCentral {
             .count()
     }
 
-    pub async fn rand_member(&self, case: &TestCase) -> ConversationMember {
-        self.rand_member_of_type(case, case.credential_type).await
+    pub async fn rand_key_package(&self, case: &TestCase) -> KeyPackageIn {
+        self.rand_key_package_of_type(case, case.credential_type).await
     }
 
-    pub async fn rand_member_of_type(&self, case: &TestCase, ct: MlsCredentialType) -> ConversationMember {
+    pub async fn rand_key_package_of_type(&self, case: &TestCase, ct: MlsCredentialType) -> KeyPackageIn {
         let client = self.mls_client.as_ref().unwrap();
-        let id = client.id();
-
-        let kp = client
+        client
             .generate_one_keypackage(&self.mls_backend, case.ciphersuite(), ct)
             .await
-            .unwrap();
-
-        let clients = std::collections::HashMap::from([(id.clone(), vec![kp])]);
-
-        ConversationMember {
-            id: id.to_vec(),
-            clients,
-            local_client: Some(client.clone()),
-        }
+            .unwrap()
+            .into()
     }
 
     pub async fn pending_proposals(&mut self, id: &ConversationId) -> Vec<QueuedProposal> {
@@ -184,13 +176,12 @@ impl MlsCentral {
         id: &ConversationId,
         others: [&mut MlsCentral; N],
     ) -> CryptoResult<()> {
-        let mut members = vec![];
+        let mut kps = vec![];
         for cc in others {
-            let member = cc.rand_member(case).await;
-            members.push((cc, member));
+            let kp = cc.rand_key_package(case).await;
+            kps.push((cc, kp));
         }
-        self.invite_all_members::<N>(case, id, members.try_into().unwrap())
-            .await
+        self.invite_all_members::<N>(case, id, kps.try_into().unwrap()).await
     }
 
     /// Streamlines the ceremony of adding a client and process its welcome message
@@ -198,12 +189,12 @@ impl MlsCentral {
         &mut self,
         case: &TestCase,
         id: &ConversationId,
-        mut others: [(&mut MlsCentral, ConversationMember); N],
+        mut others: [(&mut MlsCentral, KeyPackageIn); N],
     ) -> CryptoResult<()> {
         let size_before = self.get_conversation_unchecked(id).await.members().len();
 
-        let mut members = others.iter().map(|(_, m)| m).cloned().collect::<Vec<_>>();
-        let welcome = self.add_members_to_conversation(id, &mut members[..]).await?.welcome;
+        let kps = others.iter().map(|(_, kp)| kp).cloned().collect::<Vec<_>>();
+        let welcome = self.add_members_to_conversation(id, kps).await?.welcome;
 
         for (other, ..) in others.as_mut() {
             other

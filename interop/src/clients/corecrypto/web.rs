@@ -162,21 +162,20 @@ window.cc.clientKeypackages(ciphersuite, window.credentialType, 1).then(([kp]) =
         Ok(kp_raw)
     }
 
-    async fn add_client(&mut self, conversation_id: &[u8], client_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
+    async fn add_client(&mut self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
         Ok(self
             .browser
             .execute_async(
                 r#"
-const [cId, clId, kp, callback] = arguments;
+const [cId, kp, callback] = arguments;
 const conversationId = Uint8Array.from(Object.values(cId));
-const clientId = Uint8Array.from(Object.values(clId));
 const keyPackage = Uint8Array.from(Object.values(kp));
 if (!window.cc.conversationExists(conversationId)) {
     await window.cc.createConversation(conversationId);
 }
-window.cc.addClientsToConversation(conversationId, [{ id: clientId, kp: keyPackage }])
+window.cc.addClientsToConversation(conversationId, [{ kp: keyPackage }])
     .then(({ welcome }) => callback(welcome));"#,
-                vec![conversation_id.into(), client_id.into(), kp.into()],
+                vec![conversation_id.into(), kp.into()],
             )
             .await
             .and_then(|value| Ok(serde_json::from_value(value)?))?)

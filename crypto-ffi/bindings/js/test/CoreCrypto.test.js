@@ -39,7 +39,7 @@ beforeAll(async () => {
       }
 
       return new Response(file);
-    }
+    },
   });
 });
 
@@ -55,13 +55,13 @@ async function initBrowser(args = { captureLogs: true }) {
   const context = await browser.createIncognitoBrowserContext();
   const page = await context.newPage();
   if (args.captureLogs) {
-    page.on('console', msg => {
+    page.on("console", msg => {
       const msgText = msg.text();
       if (msgText.includes("404 (Not Found)")) {
         return;
       }
 
-      console.log('PAGE LOG:', msgText);
+      console.log("PAGE LOG:", msgText);
     });
   }
 
@@ -87,20 +87,20 @@ test("tsc import of package", async () => {
     "-t es2020",
     "-m es2020",
     "--lib es2020",
-    "--noEmit"
+    "--noEmit",
   ];
 
   try {
     await execAsync(
-      `bunx typescript@latest ${args.join(' ')} ./bindings/js/test/tsc-import-test.ts`,
+      `bunx typescript@latest ${args.join(" ")} ./bindings/js/test/tsc-import-test.ts`,
     );
-  } catch(cause) {
+  } catch (cause) {
     throw new Error(`Couldn't build @wireapp/core-crypto import.
 
       tsc output:
       ${cause.stdout}
       ${cause.stderr}`, {
-      cause
+      cause,
     });
   }
 }, 10000);
@@ -132,7 +132,13 @@ test("can use groupInfo enums", async () => {
   const [ctx, page] = await initBrowser();
 
   const [GroupInfoEncryptionType, RatchetTreeType, CredentialType] = await page.evaluate(async () => {
-    const { CoreCrypto, Ciphersuite, CredentialType, GroupInfoEncryptionType, RatchetTreeType } = await import ("./corecrypto.js");
+    const {
+      CoreCrypto,
+      Ciphersuite,
+      CredentialType,
+      GroupInfoEncryptionType,
+      RatchetTreeType,
+    } = await import ("./corecrypto.js");
 
     window.GroupInfoEncryptionType = GroupInfoEncryptionType;
     window.RatchetTreeType = RatchetTreeType;
@@ -184,9 +190,7 @@ test("can use groupInfo enums", async () => {
 
     await cc.createConversation(conversationId, window.CredentialType.Basic);
 
-    const { groupInfo: groupInfo } = await cc.addClientsToConversation(conversationId, [
-      { id: encoder.encode(client2Config.clientId), kp },
-    ]);
+    const { groupInfo: groupInfo } = await cc.addClientsToConversation(conversationId, [kp]);
 
     return groupInfo;
   });
@@ -312,15 +316,13 @@ test("externally generated clients", async () => {
       clientId: "bob",
     });
 
-    const [bobKp, ] = await bob.clientKeypackages(ciphersuite, credentialType, 1);
+    const [bobKp] = await bob.clientKeypackages(ciphersuite, credentialType, 1);
 
     const conversationId = encoder.encode("testConversation");
 
     await alice.createConversation(conversationId, credentialType);
 
-    const memberAdded = await alice.addClientsToConversation(conversationId, [
-      { id: encoder.encode("bob"), kp: bobKp },
-    ]);
+    const memberAdded = await alice.addClientsToConversation(conversationId, [bobKp]);
 
     if (!memberAdded) {
       throw new Error("no welcome message was generated");
@@ -354,12 +356,12 @@ test("externally generated clients", async () => {
 
     const bobEncryptedMessage = await bob.encryptMessage(
       conversationId,
-      messageBuffer
+      messageBuffer,
     );
 
     const aliceDecryptedMessage = await alice.decryptMessage(
       conversationId,
-      bobEncryptedMessage
+      bobEncryptedMessage,
     );
 
     if (!aliceDecryptedMessage.message) {
@@ -369,7 +371,7 @@ test("externally generated clients", async () => {
     if (!aliceDecryptedMessage.message.every((val, i) => val === messageBuffer[i])) {
       throw new Error("bob -> alice message differs from alice's point of view");
     }
-  })
+  });
 
   await page.close();
   await ctx.close();
@@ -452,7 +454,7 @@ test("encrypt message", async () => {
 
     const encryptedMessage = await cc.encryptMessage(
       conversationId,
-      encoder.encode("Hello World!")
+      encoder.encode("Hello World!"),
     );
 
     const len = encryptedMessage.length;
@@ -482,10 +484,10 @@ test("roundtrip message", async () => {
     const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const credentialType = CredentialType.Basic;
     const config = {
-        databaseName: "roundtrip message test 2",
-        key: "test2",
-        clientId: clientId,
-        ciphersuites: [ciphersuite],
+      databaseName: "roundtrip message test 2",
+      key: "test2",
+      clientId: clientId,
+      ciphersuites: [ciphersuite],
     };
 
     const cc2 = await CoreCrypto.init(config);
@@ -503,10 +505,10 @@ test("roundtrip message", async () => {
     const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const credentialType = CredentialType.Basic;
     const config = {
-        databaseName: "roundtrip message test 1",
-        key: "test",
-        clientId: "test",
-        ciphersuites: [ciphersuite],
+      databaseName: "roundtrip message test 1",
+      key: "test",
+      clientId: "test",
+      ciphersuites: [ciphersuite],
     };
 
     const cc = await CoreCrypto.init(config);
@@ -517,9 +519,7 @@ test("roundtrip message", async () => {
 
     await cc.createConversation(conversationIdBuffer, credentialType);
 
-    const memberAdded = await cc.addClientsToConversation(conversationIdBuffer, [
-      { id: encoder.encode(clientId2), kp: Uint8Array.from(Object.values(kp)) },
-    ]);
+    const memberAdded = await cc.addClientsToConversation(conversationIdBuffer, [Uint8Array.from(Object.values(kp))]);
 
     await cc.commitAccepted(conversationIdBuffer);
 
@@ -529,7 +529,7 @@ test("roundtrip message", async () => {
 
     const message = await cc.encryptMessage(
       conversationIdBuffer,
-      encoder.encode(messageText)
+      encoder.encode(messageText),
     );
 
     return [memberAdded, message];
@@ -614,7 +614,7 @@ test("callbacks default to false when not async", async () => {
       },
       clientIsExistingGroupUser(conversationId, clientId, existingClients, parentConversationIds) {
         return true;
-      }
+      },
     };
 
     const cc = await CoreCrypto.init(client1Config);
@@ -631,10 +631,8 @@ test("callbacks default to false when not async", async () => {
     await cc.createConversation(conversationId, credentialType);
 
     try {
-      const creationMessage = await cc.addClientsToConversation(conversationId, [
-        { id: encoder.encode(client2Config.clientId), kp: cc2Kp },
-      ]);
-    } catch(e) {
+      const creationMessage = await cc.addClientsToConversation(conversationId, [cc2Kp]);
+    } catch (e) {
       return false;
     }
 
@@ -707,7 +705,7 @@ test("ext commits|proposals & callbacks", async () => {
       async clientIsExistingGroupUser(conversationId, clientId, existingClients) {
         callbacksResults.clientIsExistingGroupUser = true;
         return true;
-      }
+      },
     };
 
     const cc = await CoreCrypto.init(client1Config);
@@ -727,9 +725,7 @@ test("ext commits|proposals & callbacks", async () => {
     await cc.createConversation(conversationId, credentialType);
 
     // ! This should trigger the authorize callback
-    const creationMessage = await cc.addClientsToConversation(conversationId, [
-      { id: encoder.encode(client2Config.clientId), kp: cc2Kp },
-    ]);
+    const creationMessage = await cc.addClientsToConversation(conversationId, [cc2Kp]);
 
     await cc.commitAccepted(conversationId);
     await assertEpoch(conversationId, ++theoreticalEpoch, cc);
@@ -801,7 +797,7 @@ test("proteusError", async () => {
       errorName: "ErrorTest",
       message: "Hello world",
       rustStackTrace: "test",
-      proteusErrorCode: 22
+      proteusErrorCode: 22,
     };
 
     const testStr = `${richErrorJSON.message}\n\n${JSON.stringify(richErrorJSON)}`;
@@ -821,7 +817,7 @@ test("proteusError", async () => {
 
     try {
       throw ccErr;
-    } catch(e) {
+    } catch (e) {
       if (!e instanceof CoreCryptoError) {
         throw new Error("Error is of the incorrect class");
       }
@@ -949,10 +945,10 @@ test("end-to-end-identity", async () => {
     let enrollment = await cc.e2eiNewEnrollment(clientId, displayName, handle, expiryDays, ciphersuite);
 
     const directoryResp = {
-        "newNonce": "https://example.com/acme/new-nonce",
-        "newAccount": "https://example.com/acme/new-account",
-        "newOrder": "https://example.com/acme/new-order",
-        "revokeCert": "https://example.com/acme/revoke-cert"
+      "newNonce": "https://example.com/acme/new-nonce",
+      "newAccount": "https://example.com/acme/new-account",
+      "newOrder": "https://example.com/acme/new-order",
+      "revokeCert": "https://example.com/acme/revoke-cert",
     };
     enrollment.directoryResponse(jsonToByteArray(directoryResp));
 
@@ -960,28 +956,28 @@ test("end-to-end-identity", async () => {
     const accountReq = enrollment.newAccountRequest(previousNonce);
 
     const accountResp = {
-        "status": "valid",
-        "orders": "https://example.com/acme/acct/evOfKhNU60wg/orders"
+      "status": "valid",
+      "orders": "https://example.com/acme/acct/evOfKhNU60wg/orders",
     };
     enrollment.newAccountResponse(jsonToByteArray(accountResp));
 
     const newOrderReq = enrollment.newOrderRequest(previousNonce);
 
     const newOrderResp = {
-        "status": "pending",
-        "expires": "2037-01-05T14:09:07.99Z",
-        "notBefore": "2016-01-01T00:00:00Z",
-        "notAfter": "2037-01-08T00:00:00Z",
-        "identifiers": [
-            {
-                "type": "wireapp-id",
-                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
-            }
-        ],
-        "authorizations": [
-            "https://example.com/acme/authz/PAniVnsZcis",
-        ],
-        "finalize": "https://example.com/acme/order/TOlocE8rfgo/finalize"
+      "status": "pending",
+      "expires": "2037-01-05T14:09:07.99Z",
+      "notBefore": "2016-01-01T00:00:00Z",
+      "notAfter": "2037-01-08T00:00:00Z",
+      "identifiers": [
+        {
+          "type": "wireapp-id",
+          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}",
+        },
+      ],
+      "authorizations": [
+        "https://example.com/acme/authz/PAniVnsZcis",
+      ],
+      "finalize": "https://example.com/acme/order/TOlocE8rfgo/finalize",
     };
     const newOrder = enrollment.newOrderResponse(jsonToByteArray(newOrderResp));
 
@@ -989,28 +985,28 @@ test("end-to-end-identity", async () => {
     const authzReq = enrollment.newAuthzRequest(authzUrl, previousNonce);
 
     const authzResp = {
-        "status": "pending",
-        "expires": "2016-01-02T14:09:30Z",
-        "identifier": {
-            "type": "wireapp-id",
-            "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
+      "status": "pending",
+      "expires": "2016-01-02T14:09:30Z",
+      "identifier": {
+        "type": "wireapp-id",
+        "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}",
+      },
+      "challenges": [
+        {
+          "type": "wire-oidc-01",
+          "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/RNb3z6tvknq7vz2U5DoHsSOGiWQyVtAz",
+          "status": "pending",
+          "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
+          "target": "https://dex/dex",
         },
-        "challenges": [
-            {
-                "type": "wire-oidc-01",
-                "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/RNb3z6tvknq7vz2U5DoHsSOGiWQyVtAz",
-                "status": "pending",
-                "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
-                "target": "https://dex/dex"
-            },
-            {
-                "type": "wire-dpop-01",
-                "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
-                "status": "pending",
-                "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
-                "target": "https://wire.com/clients/4959bc6ab12f2846/access-token"
-            }
-        ]
+        {
+          "type": "wire-dpop-01",
+          "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
+          "status": "pending",
+          "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
+          "target": "https://wire.com/clients/4959bc6ab12f2846/access-token",
+        },
+      ],
     };
     const authz = enrollment.newAuthzResponse(jsonToByteArray(authzResp));
 
@@ -1021,10 +1017,10 @@ test("end-to-end-identity", async () => {
     const accessToken = "eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6InlldjZPWlVudWlwbmZrMHRWZFlLRnM5MWpSdjVoVmF6a2llTEhBTmN1UEUifX0.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY4MzczNzc1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjU5MzA3LyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjU5MzA3LyIsImp0aSI6Ijk4NGM1OTA0LWZhM2UtNDVhZi1iZGM1LTlhODMzNjkxOGUyYiIsIm5vbmNlIjoiYjNWSU9YTk9aVE4xVUV0b2FXSk9VM1owZFVWdWJFMDNZV1ZIUVdOb2NFMCIsImNoYWwiOiJTWTc0dEptQUlJaGR6UnRKdnB4Mzg5ZjZFS0hiWHV4USIsImNuZiI6eyJraWQiOiJocG9RV2xNUmtjUURKN2xNcDhaSHp4WVBNVDBJM0Vhc2VqUHZhWmlGUGpjIn0sInByb29mIjoiZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNkltUndiM0FyYW5kMElpd2lhbmRySWpwN0ltdDBlU0k2SWs5TFVDSXNJbU55ZGlJNklrVmtNalUxTVRraUxDSjRJam9pZVVGM1QxVmZTMXBpYUV0SFIxUjRaMGQ0WTJsa1VVZHFiMUpXWkdOdFlWQmpSblI0VG5Gd1gydzJTU0o5ZlEuZXlKcFlYUWlPakUyTnpVNU5qRTNOVFlzSW1WNGNDSTZNVFkzTmpBME9ERTFOaXdpYm1KbUlqb3hOamMxT1RZeE56VTJMQ0p6ZFdJaU9pSnBiWEJ3T25kcGNtVmhjSEE5VGtSRmVWcEhXWGRPYW1NeVRYcEdhMDVFUW1sT1ZHeHNXVzFXYlUxcVVYbGFWRWw2VGxSak5FNVhVUzgyTldNellXTXhZVEUyTXpGak1UTTJRR1Y0WVcxd2JHVXVZMjl0SWl3aWFuUnBJam9pTlRBM09HWmtaVEl0TlRCaU9DMDBabVZtTFdJeE5EQXRNekJrWVRrellqQmtZems1SWl3aWJtOXVZMlVpT2lKaU0xWkpUMWhPVDFwVVRqRlZSWFJ2WVZkS1QxVXpXakJrVlZaMVlrVXdNMWxYVmtoUlYwNXZZMFV3SWl3aWFIUnRJam9pVUU5VFZDSXNJbWgwZFNJNkltaDBkSEE2THk5c2IyTmhiR2h2YzNRNk5Ua3pNRGN2SWl3aVkyaGhiQ0k2SWxOWk56UjBTbTFCU1Vsb1pIcFNkRXAyY0hnek9EbG1Oa1ZMU0dKWWRYaFJJbjAuQk1MS1Y1OG43c1dITXkxMlUtTHlMc0ZJSkd0TVNKcXVoUkZvYnV6ZTlGNEpBN1NjdlFWSEdUTFF2ZVZfUXBfUTROZThyeU9GcEphUTc1VW5ORHR1RFEiLCJjbGllbnRfaWQiOiJpbXBwOndpcmVhcHA9TkRFeVpHWXdOamMyTXpGa05EQmlOVGxsWW1WbU1qUXlaVEl6TlRjNE5XUS82NWMzYWMxYTE2MzFjMTM2QGV4YW1wbGUuY29tIiwiYXBpX3ZlcnNpb24iOjMsInNjb3BlIjoid2lyZV9jbGllbnRfaWQifQ.Tf10dkKrNikGNgGhIdkrMHb0v6Jpde09MaIyBeuY6KORcxuglMGY7_V9Kd0LcVVPMDy1q4xbd39ZqosGz1NUBQ";
     const dpopChallengeReq = enrollment.newDpopChallengeRequest(accessToken, previousNonce);
     const dpopChallengeResp = {
-        "type": "wire-dpop-01",
-        "url": "https://example.com/acme/chall/prV_B7yEyA4",
-        "status": "valid",
-        "token": "LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0"
+      "type": "wire-dpop-01",
+      "url": "https://example.com/acme/chall/prV_B7yEyA4",
+      "status": "valid",
+      "token": "LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0",
     };
     enrollment.newChallengeResponse(jsonToByteArray(dpopChallengeResp));
 
@@ -1035,10 +1031,10 @@ test("end-to-end-identity", async () => {
     const idToken = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ";
     const oidcChallengeReq = enrollment.newOidcChallengeRequest(idToken, previousNonce);
     const oidcChallengeResp = {
-        "type": "wire-oidc-01",
-        "url": "https://localhost:55794/acme/acme/challenge/tR33VAzGrR93UnBV5mTV9nVdTZrG2Ln0/QXgyA324mTntfVAIJKw2cF23i4UFJltk",
-        "status": "valid",
-        "token": "2FpTOmNQvNfWDktNWt1oIJnjLE3MkyFb"
+      "type": "wire-oidc-01",
+      "url": "https://localhost:55794/acme/acme/challenge/tR33VAzGrR93UnBV5mTV9nVdTZrG2Ln0/QXgyA324mTntfVAIJKw2cF23i4UFJltk",
+      "status": "valid",
+      "token": "2FpTOmNQvNfWDktNWt1oIJnjLE3MkyFb",
     };
     enrollment.newChallengeResponse(jsonToByteArray(oidcChallengeResp));
 
@@ -1046,40 +1042,40 @@ test("end-to-end-identity", async () => {
     const checkOrderReq = enrollment.checkOrderRequest(orderUrl, previousNonce);
 
     const checkOrderResp = {
-        "status": "ready",
-        "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
-        "identifiers": [
-            {
-                "type": "wireapp-id",
-                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
-            }
-        ],
-        "authorizations": [
-            "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw"
-        ],
-        "expires": "2032-02-10T14:59:20Z",
-        "notBefore": "2013-02-09T14:59:20.442908Z",
-        "notAfter": "2032-02-09T15:59:20.442908Z"
+      "status": "ready",
+      "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
+      "identifiers": [
+        {
+          "type": "wireapp-id",
+          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}",
+        },
+      ],
+      "authorizations": [
+        "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw",
+      ],
+      "expires": "2032-02-10T14:59:20Z",
+      "notBefore": "2013-02-09T14:59:20.442908Z",
+      "notAfter": "2032-02-09T15:59:20.442908Z",
     };
     enrollment.checkOrderResponse(jsonToByteArray(checkOrderResp));
 
     const finalizeReq = enrollment.finalizeRequest(previousNonce);
     const finalizeResp = {
-        "certificate": "https://localhost:55170/acme/acme/certificate/rLhCIYygqzWhUmP1i5tmtZxFUvJPFxSL",
-        "status": "valid",
-        "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
-        "identifiers": [
-            {
-                "type": "wireapp-id",
-                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}"
-            }
-        ],
-        "authorizations": [
-            "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw"
-        ],
-        "expires": "2032-02-10T14:59:20Z",
-        "notBefore": "2013-02-09T14:59:20.442908Z",
-        "notAfter": "2032-02-09T15:59:20.442908Z"
+      "certificate": "https://localhost:55170/acme/acme/certificate/rLhCIYygqzWhUmP1i5tmtZxFUvJPFxSL",
+      "status": "valid",
+      "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
+      "identifiers": [
+        {
+          "type": "wireapp-id",
+          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}",
+        },
+      ],
+      "authorizations": [
+        "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw",
+      ],
+      "expires": "2032-02-10T14:59:20Z",
+      "notBefore": "2013-02-09T14:59:20.442908Z",
+      "notAfter": "2032-02-09T15:59:20.442908Z",
     };
     enrollment.finalizeResponse(jsonToByteArray(finalizeResp));
 
@@ -1112,7 +1108,7 @@ test("e2ei is conversation invalid", async () => {
     const state = await cc.e2eiConversationState(conversationId);
 
     await cc.wipe();
-    return E2eiConversationState[state]
+    return E2eiConversationState[state];
   });
 
   expect(state).toBe("NotEnabled");

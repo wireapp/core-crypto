@@ -134,7 +134,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     // has to be before the original key_package count because it creates one
-                    let bob = bob_central.rand_member(&case).await;
+                    let bob = bob_central.rand_key_package(&case).await;
                     // Keep track of the whatever amount was initially generated
                     let prev_count = bob_central.count_entities().await;
 
@@ -144,10 +144,8 @@ pub mod tests {
                         .await
                         .unwrap();
 
-                    let MlsConversationCreationMessage { welcome, .. } = alice_central
-                        .add_members_to_conversation(&id, &mut [bob])
-                        .await
-                        .unwrap();
+                    let MlsConversationCreationMessage { welcome, .. } =
+                        alice_central.add_members_to_conversation(&id, vec![bob]).await.unwrap();
 
                     // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
                     bob_central
@@ -179,9 +177,9 @@ pub mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    let bob = bob_central.rand_member(&case).await;
+                    let bob = bob_central.rand_key_package(&case).await;
                     let welcome = alice_central
-                        .add_members_to_conversation(&id, &mut [bob])
+                        .add_members_to_conversation(&id, vec![bob])
                         .await
                         .unwrap()
                         .welcome;
