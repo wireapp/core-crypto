@@ -274,7 +274,7 @@ impl<'a> E2eTest<'a> {
             htm: Htm::Post,
             htu,
             handle,
-            team: team.0,
+            team,
             extra_claims: None,
         };
         let client_dpop_token =

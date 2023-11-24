@@ -252,7 +252,7 @@ impl RustyE2eIdentity {
             htu: dpop_challenge.target.clone().into(),
             challenge: dpop_chall.token.into(),
             handle,
-            team,
+            team: team.into(),
             extra_claims: None,
         };
         Ok(RustyJwtTools::generate_dpop_token(
