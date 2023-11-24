@@ -4,7 +4,7 @@ use std::{collections::HashMap, path::PathBuf};
 use serde_json::json;
 use testcontainers::{clients::Cli, core::WaitFor, Container, Image, RunnableImage};
 
-use crate::utils::docker::{rand_str, NETWORK};
+use crate::utils::docker::{rand_str, NETWORK, SHM};
 
 pub struct AcmeServer<'a> {
     pub uri: String,
@@ -115,7 +115,10 @@ impl StepCaImage {
         let host_volume = builder.host_volume.clone();
 
         let builder_image: RunnableImage<Self> = builder.into();
-        let builder_image = builder_image.with_container_name(format!("{}.builder", ca_cfg.host));
+        let builder_image = builder_image
+            .with_container_name(format!("{}.builder", ca_cfg.host))
+            .with_privileged(true)
+            .with_shm_size(SHM);
         let builder_container = docker.run(builder_image);
         // now the configuration should have been generated and mapped to our host volume.
         // We can kill this container
@@ -132,7 +135,11 @@ impl StepCaImage {
             .insert("authority".to_string(), ca_cfg.cfg());
         std::fs::write(&cfg_file, serde_json::to_string_pretty(&cfg).unwrap()).unwrap();
 
-        let image = image.with_container_name(&ca_cfg.host).with_network(NETWORK);
+        let image = image
+            .with_container_name(&ca_cfg.host)
+            .with_network(NETWORK)
+            .with_privileged(true)
+            .with_shm_size(SHM);
         let node = docker.run(image);
         let port = node.get_host_port_ipv4(Self::PORT);
         let uri = format!("https://{}:{}", &ca_cfg.host, port);
@@ -191,7 +198,7 @@ impl Image for StepCaImage {
     }
 
     fn tag(&self) -> String {
-        Self::TAG.to_string()
+        std::env::var("STEPCA_VERSION").unwrap_or_else(|_| Self::TAG.to_string())
     }
 
     fn ready_conditions(&self) -> Vec<WaitFor> {

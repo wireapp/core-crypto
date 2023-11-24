@@ -1,6 +1,6 @@
 use std::{collections::HashMap, net::SocketAddr, path::PathBuf};
 
-use crate::utils::docker::{ldap::LdapCfg, rand_str};
+use crate::utils::docker::{ldap::LdapCfg, rand_str, SHM};
 use testcontainers::{clients::Cli, core::WaitFor, Container, Image, RunnableImage};
 
 pub struct DexServer<'a> {
@@ -27,7 +27,9 @@ impl DexImage {
         let image = image
             .with_container_name(&cfg.host)
             .with_network(super::NETWORK)
-            .with_mapped_port((cfg.host_port, Self::PORT));
+            .with_mapped_port((cfg.host_port, Self::PORT))
+            .with_privileged(true)
+            .with_shm_size(SHM);
         let node = docker.run(image);
         let port = node.get_host_port_ipv4(Self::PORT);
         let uri = format!("http://{}:{port}", cfg.host);
@@ -62,7 +64,7 @@ impl Image for DexImage {
     }
 
     fn tag(&self) -> String {
-        Self::TAG.to_string()
+        std::env::var("DEX_VERSION").unwrap_or_else(|_| Self::TAG.to_string())
     }
 
     fn ready_conditions(&self) -> Vec<WaitFor> {

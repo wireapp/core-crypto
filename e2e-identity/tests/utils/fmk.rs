@@ -2,6 +2,7 @@ use std::collections::{hash_map::RandomState, HashMap};
 
 use asserhttp::*;
 use base64::Engine;
+use http::StatusCode;
 use jwt_simple::prelude::*;
 use oauth2::{ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};
 use openidconnect::{
@@ -137,6 +138,11 @@ impl<'a> E2eTest<'a> {
         self.display_step("account created");
         let mut resp = self.client.execute(req).await?;
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
+
+        // TODO: improve when asserhttp implements fallible errors
+        if resp.status() != StatusCode::CREATED {
+            return Err(TestError::AccountCreationError);
+        }
         resp.expect_status_created()
             .has_replay_nonce()
             .has_location()
@@ -217,6 +223,12 @@ impl<'a> E2eTest<'a> {
         let mut resp = self.client.execute(req).await?;
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();
+
+        // TODO: improve when asserhttp implements fallible errors
+        if resp.status() != StatusCode::OK {
+            return Err(TestError::AuthzCreationError);
+        }
+
         resp.expect_status_ok()
             .has_replay_nonce()
             .has_location()
@@ -318,7 +330,8 @@ impl<'a> E2eTest<'a> {
         );
 
         self.display_step("get a Dpop access token from wire-server");
-        let mut resp = self.client.execute(req).await?;
+        let mut resp = self.client.execute(req).await.map_err(|_| TestError::WireServerError)?;
+        // .expect("wire-server failed to generate an access token");
         self.display_resp(Actor::WireServer, Actor::WireClient, Some(&resp));
         resp.expect_status_ok();
         let resp = resp.json::<Value>().await?;
@@ -370,6 +383,12 @@ impl<'a> E2eTest<'a> {
 
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();
+
+        // TODO: improve when asserhttp implements fallible errors
+        if resp.status() != StatusCode::OK {
+            return Err(TestError::DpopChallengeError);
+        }
+
         resp.expect_status_ok()
             .has_replay_nonce()
             .has_location()
@@ -421,6 +440,12 @@ impl<'a> E2eTest<'a> {
         let mut resp = self.client.execute(req).await?;
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();
+
+        // TODO: improve when asserhttp implements fallible errors
+        if resp.status() != StatusCode::OK {
+            return Err(TestError::OidcChallengeError);
+        }
+
         resp.expect_status_ok()
             .has_replay_nonce()
             .has_location()

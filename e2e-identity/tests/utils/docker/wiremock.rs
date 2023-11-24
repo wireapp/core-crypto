@@ -1,3 +1,4 @@
+use crate::utils::docker::SHM;
 use std::{collections::HashMap, path::PathBuf};
 use testcontainers::{clients::Cli, core::WaitFor, Container, Image, ImageArgs, RunnableImage};
 
@@ -26,7 +27,11 @@ impl WiremockImage {
         let instance = Self::default();
         instance.write_stubs(stubs);
         let image: RunnableImage<Self> = instance.into();
-        let image = image.with_container_name(host).with_network(super::NETWORK);
+        let image = image
+            .with_container_name(host)
+            .with_network(super::NETWORK)
+            .with_privileged(true)
+            .with_shm_size(SHM);
         docker.run(image)
     }
 

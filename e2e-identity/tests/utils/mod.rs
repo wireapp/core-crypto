@@ -54,6 +54,16 @@ pub enum TestError {
     Serde(#[from] serde_json::Error),
     #[error(transparent)]
     Utf8(#[from] std::str::Utf8Error),
+    #[error("wire-server error")]
+    WireServerError,
+    #[error("account creation error")]
+    AccountCreationError,
+    #[error("authorization creation error")]
+    AuthzCreationError,
+    #[error("dpop challenge verification error")]
+    DpopChallengeError,
+    #[error("oidc challenge verification error")]
+    OidcChallengeError,
     #[error("Test is not rightfully implemented")]
     Internal,
 }

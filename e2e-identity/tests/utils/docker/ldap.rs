@@ -1,4 +1,4 @@
-use crate::utils::docker::rand_str;
+use crate::utils::docker::{rand_str, SHM};
 use std::{collections::HashMap, net::SocketAddr};
 use testcontainers::{clients::Cli, core::WaitFor, Container, Image, ImageArgs, RunnableImage};
 
@@ -21,7 +21,11 @@ impl LdapImage {
     pub fn run(docker: &Cli, cfg: LdapCfg) -> LdapServer<'_> {
         let instance = Self::new(&cfg);
         let image: RunnableImage<Self> = instance.into();
-        let image = image.with_container_name(&cfg.host).with_network(super::NETWORK);
+        let image = image
+            .with_container_name(&cfg.host)
+            .with_network(super::NETWORK)
+            .with_privileged(true)
+            .with_shm_size(SHM);
         let node = docker.run(image);
 
         let port = node.get_host_port_ipv4(Self::PORT);
@@ -75,7 +79,7 @@ impl Image for LdapImage {
     }
 
     fn tag(&self) -> String {
-        Self::TAG.to_string()
+        std::env::var("OPENLDAP_VERSION").unwrap_or_else(|_| Self::TAG.to_string())
     }
 
     fn ready_conditions(&self) -> Vec<WaitFor> {

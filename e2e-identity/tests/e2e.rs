@@ -31,7 +31,7 @@ async fn demo_should_succeed() {
 }
 
 /// Tests the nominal case and prints the pretty output with the mermaid chart in this crate README.
-#[ignore] // needs manual actions. Uncomment to try it.
+#[ignore] // interactive test. Uncomment to try it.
 #[cfg(not(ci))]
 #[tokio::test]
 async fn google_demo_should_succeed() {
@@ -103,7 +103,6 @@ mod acme_server {
     use super::*;
 
     /// Challenges returned by ACME server are mixed up
-    #[should_panic]
     #[tokio::test]
     async fn should_fail_when_no_replay_nonce_requested() {
         let test = E2eTest::new().start(docker()).await;
@@ -118,11 +117,13 @@ mod acme_server {
             }),
             ..Default::default()
         };
-        test.enrollment(flow).await.unwrap();
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::AccountCreationError
+        ));
     }
 
     /// Replay nonce is reused by the client
-    #[should_panic]
     #[tokio::test]
     async fn should_fail_when_replay_nonce_reused() {
         let test = E2eTest::new().start(docker()).await;
@@ -139,7 +140,10 @@ mod acme_server {
             }),
             ..Default::default()
         };
-        test.enrollment(flow).await.unwrap();
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::AuthzCreationError
+        ));
     }
 
     /// Challenges returned by ACME server are mixed up
@@ -188,7 +192,6 @@ mod acme_server {
     /// request payloads must be signed by the same client key which created the acme account.
     ///
     /// This verifies the DPoP challenge verification method on the acme server
-    #[should_panic]
     #[tokio::test]
     async fn should_fail_when_dpop_challenge_signed_by_a_different_key() {
         let test = E2eTest::new().start(docker()).await;
@@ -208,14 +211,16 @@ mod acme_server {
             }),
             ..Default::default()
         };
-        test.enrollment(flow).await.unwrap();
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::DpopChallengeError
+        ));
     }
 
     /// Since this call a custom method on our acme server fork, verify we satisfy the invariant:
     /// request payloads must be signed by the same client key which created the acme account.
     ///
     /// This verifies the DPoP challenge verification method on the acme server
-    #[should_panic]
     #[tokio::test]
     async fn should_fail_when_oidc_challenge_signed_by_a_different_key() {
         let test = E2eTest::new().start(docker()).await;
@@ -235,7 +240,10 @@ mod acme_server {
             }),
             ..Default::default()
         };
-        test.enrollment(flow).await.unwrap();
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::OidcChallengeError
+        ));
     }
 }
 
@@ -245,7 +253,6 @@ mod dpop_challenge {
 
     /// Demonstrates that the client possesses the clientId. Client makes an authenticated request
     /// to wire-server, it delivers a nonce which the client seals in a signed DPoP JWT.
-    #[should_panic]
     #[tokio::test]
     async fn should_fail_when_client_dpop_token_has_wrong_backend_nonce() {
         let test = E2eTest::new().start(docker()).await;
@@ -265,7 +272,10 @@ mod dpop_challenge {
             }),
             ..Default::default()
         };
-        test.enrollment(flow).await.unwrap();
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::WireServerError
+        ));
     }
 
     /// Acme server should be configured with wire-server public key to verify the access tokens
@@ -506,7 +516,6 @@ mod dpop_challenge {
     /// then verified and sealed in the access token which is finally verified by the ACME server
     /// as part of the DPoP challenge.
     /// Here we make the acme-server fail.
-    #[should_panic]
     #[tokio::test]
     async fn acme_should_fail_when_client_dpop_token_has_wrong_handle() {
         let test = E2eTest::new().start(docker()).await;
@@ -523,7 +532,10 @@ mod dpop_challenge {
             }),
             ..Default::default()
         };
-        test.enrollment(flow).await.unwrap();
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::WireServerError
+        ));
     }
 }
 
