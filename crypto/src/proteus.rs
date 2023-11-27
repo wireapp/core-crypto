@@ -1012,10 +1012,10 @@ mod tests {
         // proteus is initialized, prekeys can be generated
         assert!(cc.proteus_new_prekey(1).await.is_ok());
         // 👇 and so a unique 'client_id' can be fetched from wire-server
-        let client_id = "alice".into();
+        let client_id = "alice";
         let identifier = match case.credential_type {
-            MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
-            MlsCredentialType::X509 => CertificateBundle::rand_identifier(&[case.signature_scheme()], client_id),
+            MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
+            MlsCredentialType::X509 => CertificateBundle::rand_identifier(client_id, &[case.signature_scheme()]),
         };
         cc.mls_init(
             identifier,

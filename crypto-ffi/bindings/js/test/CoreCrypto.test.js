@@ -937,7 +937,7 @@ test("end-to-end-identity", async () => {
     const encoder = new TextEncoder();
     const jsonToByteArray = json => encoder.encode(JSON.stringify(json, null, 0));
 
-    const clientId = "t6wRpI8BRSeviBwwiFp5MQ:4959bc6ab12f2846@wire.com";
+    const clientId = "b7ac11a4-8f01-4527-af88-1c30885a7931:4959bc6ab12f2846@wire.com";
     const displayName = "Alice Smith";
     const handle = "alice_wire";
     const expiryDays = 90;

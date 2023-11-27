@@ -172,8 +172,8 @@ pub mod tests {
     #[wasm_bindgen_test]
     async fn certificate_clients_can_send_messages(case: TestCase) {
         if case.is_x509() {
-            let alice_identifier = CertificateBundle::rand_identifier(&[case.signature_scheme()], "alice".into());
-            let bob_identifier = CertificateBundle::rand_identifier(&[case.signature_scheme()], "bob".into());
+            let alice_identifier = CertificateBundle::rand_identifier("alice", &[case.signature_scheme()]);
+            let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
             assert!(try_talk(&case, alice_identifier, bob_identifier).await.is_ok());
         }
     }
@@ -184,12 +184,12 @@ pub mod tests {
         // check that both credentials can initiate/join a group
         {
             let alice_identifier = ClientIdentifier::Basic("alice".into());
-            let bob_identifier = CertificateBundle::rand_identifier(&[case.signature_scheme()], "bob".into());
+            let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
             assert!(try_talk(&case, alice_identifier, bob_identifier).await.is_ok());
             // drop alice & bob key stores
         }
         {
-            let alice_identifier = CertificateBundle::rand_identifier(&[case.signature_scheme()], "alice".into());
+            let alice_identifier = CertificateBundle::rand_identifier("alice", &[case.signature_scheme()]);
             let bob_identifier = ClientIdentifier::Basic("bob".into());
             assert!(try_talk(&case, alice_identifier, bob_identifier).await.is_ok());
         }
@@ -202,7 +202,7 @@ pub mod tests {
         certs.certificate_chain = vec![];
         let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), certs)]));
 
-        let bob_identifier = CertificateBundle::rand_identifier(&[case.signature_scheme()], "bob".into());
+        let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
         assert!(matches!(
             try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err(),
             CryptoError::InvalidIdentity
@@ -217,7 +217,7 @@ pub mod tests {
         certs.certificate_chain = vec![root_ca];
         let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), certs)]));
 
-        let bob_identifier = CertificateBundle::rand_identifier(&[case.signature_scheme()], "bob".into());
+        let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
         assert!(matches!(
             try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err(),
             CryptoError::InvalidIdentity
@@ -234,7 +234,7 @@ pub mod tests {
             certs.certificate_chain = vec![leaf];
             let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), certs)]));
 
-            let bob_identifier = CertificateBundle::rand_identifier(&[case.signature_scheme()], "bob".into());
+            let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
 
             assert!(matches!(
                 try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err(),
@@ -253,7 +253,7 @@ pub mod tests {
         certs.certificate_chain.reverse();
         let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), certs)]));
 
-        let bob_identifier = CertificateBundle::rand_identifier(&[case.signature_scheme()], "bob".into());
+        let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
         assert!(matches!(
             try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err(),
             CryptoError::InvalidIdentity
@@ -272,7 +272,7 @@ pub mod tests {
             certs.certificate_chain.push(eve_ca.serialize_der().unwrap());
             let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), certs)]));
 
-            let bob_identifier = CertificateBundle::rand_identifier(&[case.signature_scheme()], "bob".into());
+            let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
 
             assert!(matches!(
                 try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err(),
@@ -299,7 +299,7 @@ pub mod tests {
             };
             let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
 
-            let bob_identifier = CertificateBundle::rand_identifier(&[case.signature_scheme()], "bob".into());
+            let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
 
             assert!(matches!(
                 try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err(),
@@ -330,7 +330,7 @@ pub mod tests {
             };
             let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
 
-            let bob_identifier = CertificateBundle::rand_identifier(&[case.signature_scheme()], "bob".into());
+            let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
             // this should work since the certificate is not yet expired
             let (mut alice_central, mut bob_central, id) =
                 try_talk(&case, alice_identifier, bob_identifier).await.unwrap();
@@ -372,7 +372,7 @@ pub mod tests {
             };
             let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
 
-            let bob_identifier = CertificateBundle::rand_identifier(&[case.signature_scheme()], "bob".into());
+            let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
 
             match try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err() {
                 CryptoError::MlsError(MlsError::MlsCryptoError(openmls::prelude::CryptoError::ExpiredCertificate)) => {}

@@ -60,5 +60,8 @@ cfg-if = "1.0"
 [target.wasm32-unknown-unknown.dev-dependencies]
 wasm-bindgen-test = "0.3"
 
+[package.metadata.wasm-pack.profile.dev]
+wasm-opt = false
+
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-Os", "--enable-mutable-globals", "--enable-threads", "--detect-features"]

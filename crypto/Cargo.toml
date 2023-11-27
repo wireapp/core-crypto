@@ -52,6 +52,8 @@ oid-registry = "0.6"
 async-recursion = "1"
 uniffi = { workspace = true, optional = true }
 itertools = "0.12"
+uuid = { version = "1.6", features = ["v4"] }
+base64 = "0.21"
 
 [dependencies.proteus-wasm]
 version = "2.1"
@@ -102,7 +104,6 @@ async-trait = "0.1"
 wire-e2e-identity = { version = "=0.6.1", features = ["identity-builder"] }
 fluvio-wasm-timer = "0.2"
 time = { version = "0.3", features = ["wasm-bindgen"] }
-base64 = "0.21"
 
 [dev-dependencies.rcgen]
 git = "https://github.com/wireapp/rcgen"

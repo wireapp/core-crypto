@@ -1,3 +1,11 @@
+use std::collections::HashMap;
+
+use openmls::prelude::{KeyPackage, KeyPackageRef, MlsCredentialType as OpenMlsCredential};
+use openmls_traits::OpenMlsCryptoProvider;
+
+use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
+use mls_crypto_provider::MlsCryptoProvider;
+
 use crate::prelude::ConversationId;
 use crate::{
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
@@ -7,11 +15,6 @@ use crate::{
     },
     MlsError,
 };
-use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
-use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::{KeyPackage, KeyPackageRef, MlsCredentialType as OpenMlsCredential};
-use openmls_traits::OpenMlsCryptoProvider;
-use std::collections::HashMap;
 
 /// Result returned after rotating the Credential of the current client in all the local conversations
 #[derive(Debug, Clone)]
@@ -257,8 +260,13 @@ impl MlsConversation {
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
+    use std::collections::HashSet;
+
+    use openmls::prelude::SignaturePublicKey;
     use tls_codec::Deserialize;
+    use wasm_bindgen_test::*;
+
+    use core_crypto_keystore::entities::{EntityFindParams, MlsCredential};
 
     use crate::{
         e2e_identity::tests::*,
@@ -267,24 +275,21 @@ pub mod tests {
         test_utils::*,
     };
 
-    use core_crypto_keystore::entities::{EntityFindParams, MlsCredential};
-    use openmls::prelude::SignaturePublicKey;
-    use std::collections::HashSet;
-    use wasm_bindgen_test::*;
+    use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
     pub mod all {
-        use super::*;
         use crate::test_utils::central::TEAM;
+
+        use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn enrollment_should_rotate_all(case: TestCase) {
-            let alice = "t6wRpI8BRSeviBwwiFp5MQ:a661e79735dc890f@wire.com";
             run_test_with_client_ids(
                 case.clone(),
-                [alice, "bob", "charlie"],
+                ["alice", "bob", "charlie"],
                 move |[mut alice_central, mut bob_central, mut charlie_central]| {
                     Box::pin(async move {
                         const N: usize = 50;
@@ -468,8 +473,7 @@ pub mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_restore_credentials_in_order(case: TestCase) {
-            let alice = "t6wRpI8BRSeviBwwiFp5MQ:a661e79735dc890f@wire.com";
-            run_test_with_client_ids(case.clone(), [alice], move |[mut alice_central]| {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -578,11 +582,9 @@ pub mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn rotate_should_roundtrip(case: TestCase) {
-            let alice = "t6wRpI8BRSeviBwwiFp5MQ:a661e79735dc890f@wire.com";
-            let bob = "t6wRpI8BRSeviBwwiFp5MQ:ef6a91a91d3337a@wire.com";
             run_test_with_client_ids(
                 case.clone(),
-                [alice, bob],
+                ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();

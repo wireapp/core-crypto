@@ -1674,7 +1674,7 @@ export class CoreCrypto {
      * Creates an enrollment instance with private key material you can use in order to fetch
      * a new x509 certificate from the acme server.
      *
-     * @param clientId - client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
+     * @param clientId - client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays - generated x509 certificate expiry
@@ -1691,7 +1691,7 @@ export class CoreCrypto {
      * Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
      * Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
      *
-     * @param clientId - client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
+     * @param clientId - client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays - generated x509 certificate expiry
@@ -1710,7 +1710,7 @@ export class CoreCrypto {
      * has been revoked. It lets you change the DisplayName or the handle
      * if you need to. Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
      *
-     * @param clientId - client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
+     * @param clientId - client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
      * @param expiryDays - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
@@ -1821,7 +1821,7 @@ export class CoreCrypto {
      * If no member has a x509 certificate, it will return an empty Vec.
      *
      * @param conversationId - identifier of the conversation
-     * @param userIds - user identifiers e.g. t6wRpI8BRSeviBwwiFp5MQ which is a base64UrlUnpadded UUIDv4
+     * @param userIds - user identifiers hyphenated UUIDv4 e.g. 'bd4c7053-1c5a-4020-9559-cd7bf7961954'
      * @returns a Map with all the identities for a given users. Consumers are then recommended to reduce those identities to determine the actual status of a user.
      */
     async getUserIdentities(conversationId: ConversationId, userIds: string[]): Promise<Map<string, WireIdentity[]>> {

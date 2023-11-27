@@ -32,11 +32,14 @@ use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
 use tls_codec::{Deserialize, Serialize};
 
 use crate::e2e_identity::device_status::DeviceStatus;
+use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
+use crate::prelude::WireIdentity;
 use core_crypto_keystore::entities::{
     EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
 };
 use mls_crypto_provider::MlsCryptoProvider;
 use wire_e2e_identity::prelude::WireIdentityReader;
+use x509_cert::der::Encode;
 
 #[allow(clippy::redundant_static_lifetimes)]
 pub const TEAM: &'static str = "wire";
@@ -348,6 +351,10 @@ impl MlsCentral {
         self.mls_client.as_ref().unwrap().id().clone()
     }
 
+    pub fn get_user_id(&self) -> String {
+        WireQualifiedClientId::from(self.get_client_id()).get_user_id()
+    }
+
     pub async fn new_credential_bundle(&mut self, case: &TestCase) -> CredentialBundle {
         let client = self.mls_client.as_mut().unwrap();
 
@@ -458,9 +465,9 @@ impl MlsCentral {
         display_name: &str,
         cert_kp: Option<Vec<u8>>,
     ) -> CredentialBundle {
-        let cid = &self.get_client_id();
+        let cid = QualifiedE2eiClientId::try_from(self.get_client_id().as_slice()).unwrap();
         let client = self.mls_client.as_mut().unwrap();
-        let new_cert = CertificateBundle::new(case.signature_scheme(), handle, display_name, Some(cid), cert_kp);
+        let new_cert = CertificateBundle::new(case.signature_scheme(), handle, display_name, Some(&cid), cert_kp);
         client
             .save_new_x509_credential_bundle(&self.mls_backend, case.signature_scheme(), new_cert)
             .await
@@ -470,7 +477,8 @@ impl MlsCentral {
     pub fn get_e2ei_client_id(&self) -> wire_e2e_identity::prelude::E2eiClientId {
         let cid = self.mls_client.as_ref().unwrap().id().clone();
         let cid = std::str::from_utf8(&cid.0).unwrap();
-        wire_e2e_identity::prelude::E2eiClientId::try_from_qualified(cid).unwrap()
+        let cid: String = cid.parse::<QualifiedE2eiClientId>().unwrap().try_into().unwrap();
+        wire_e2e_identity::prelude::E2eiClientId::try_from_qualified(&cid).unwrap()
     }
 
     pub async fn verify_local_credential_rotated(
@@ -520,33 +528,39 @@ impl MlsCentral {
         let (sc, ct) = (case.signature_scheme(), case.credential_type);
         let sender_cb = mls_client.find_most_recent_credential_bundle(sc, ct).unwrap();
 
-        if let openmls::prelude::MlsCredentialType::X509(openmls::prelude::Certificate {
-            identity: dup_client_id,
-            certificates,
-        }) = &sender_cb.credential().mls_credential()
-        {
-            let leaf: Vec<u8> = certificates.first().unwrap().clone().into();
+        if let openmls::prelude::MlsCredentialType::X509(certificate) = &sender_cb.credential().mls_credential() {
+            let mls_identity = certificate.extract_identity().unwrap().unwrap();
+            let mls_client_id = mls_identity.client_id.as_bytes();
+
+            let decrypted_identity = decrypted.identity.as_ref().unwrap();
+
+            let leaf: Vec<u8> = certificate.certificates.first().unwrap().clone().into();
             let identity = leaf.as_slice().extract_identity().unwrap();
-            let decr_identity = decrypted.identity.as_ref().unwrap();
-            assert_eq!(decr_identity.client_id, identity.client_id);
-            assert_eq!(decr_identity.client_id.as_bytes(), dup_client_id.as_slice());
-            assert_eq!(&decr_identity.handle, identity.handle.as_str());
-            assert_eq!(decr_identity.display_name, identity.display_name);
-            assert_eq!(decr_identity.domain, identity.domain);
-            assert_eq!(decr_identity.status, identity.status.clone().into());
-            assert_eq!(decr_identity.thumbprint, identity.thumbprint);
-            assert!(decr_identity.certificate.starts_with("-----BEGIN CERTIFICATE-----"));
-            assert!(decr_identity.certificate.ends_with("-----END CERTIFICATE-----\n"));
-            let chain = x509_cert::Certificate::load_pem_chain(decr_identity.certificate.as_bytes()).unwrap();
-            let cert = chain.first().unwrap();
-            let cert_identity = cert.extract_identity().unwrap();
+            let identity = WireIdentity::try_from((identity, leaf.as_slice())).unwrap();
+
+            assert_eq!(decrypted_identity.client_id, identity.client_id);
+            assert_eq!(decrypted_identity.client_id.as_bytes(), mls_client_id);
+            assert_eq!(&decrypted_identity.handle, identity.handle.as_str());
+            assert_eq!(decrypted_identity.display_name, identity.display_name);
+            assert_eq!(decrypted_identity.domain, identity.domain);
+            assert_eq!(decrypted_identity.status, identity.status);
+            assert_eq!(decrypted_identity.thumbprint, identity.thumbprint);
+            assert!(decrypted_identity
+                .certificate
+                .starts_with("-----BEGIN CERTIFICATE-----"));
+            assert!(decrypted_identity.certificate.ends_with("-----END CERTIFICATE-----\n"));
+            let chain = x509_cert::Certificate::load_pem_chain(decrypted_identity.certificate.as_bytes()).unwrap();
+            let leaf = chain.first().unwrap();
+            let cert_identity = leaf.extract_identity().unwrap();
+
+            let cert_identity = WireIdentity::try_from((cert_identity, leaf.to_der().unwrap().as_slice())).unwrap();
             assert_eq!(cert_identity.client_id, identity.client_id);
-            assert_eq!(cert_identity.handle, identity.handle);
+            assert_eq!(cert_identity.handle.as_str(), identity.handle.as_str());
             assert_eq!(cert_identity.display_name, identity.display_name);
             assert_eq!(cert_identity.domain, identity.domain);
             assert_eq!(cert_identity.status, identity.status);
             assert_eq!(cert_identity.thumbprint, identity.thumbprint);
-            assert_eq!(DeviceStatus::from(identity.status), DeviceStatus::Valid);
+            assert_eq!(identity.status, DeviceStatus::Valid);
             assert!(!identity.thumbprint.is_empty());
         }
     }

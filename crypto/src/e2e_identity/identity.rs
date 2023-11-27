@@ -1,8 +1,10 @@
-use itertools::Itertools;
 use std::collections::HashMap;
+use std::str::FromStr;
 
+use itertools::Itertools;
 use x509_cert::der::pem::LineEnding;
 
+use crate::e2e_identity::id::WireQualifiedClientId;
 use crate::mls::credential::ext::CredentialExt;
 use crate::{
     e2e_identity::device_status::DeviceStatus,
@@ -36,8 +38,12 @@ impl<'a> TryFrom<(wire_e2e_identity::prelude::WireIdentity, &'a [u8])> for WireI
         use x509_cert::der::Decode as _;
         let document = x509_cert::der::Document::from_der(cert)?;
         let certificate = document.to_pem("CERTIFICATE", LineEnding::LF)?;
+
+        let client_id = WireQualifiedClientId::from_str(&i.client_id)?;
+        let client_id = String::try_from(client_id)?;
+
         Ok(Self {
-            client_id: i.client_id,
+            client_id,
             handle: i.handle.to_string(),
             display_name: i.display_name,
             domain: i.domain,
@@ -121,17 +127,9 @@ impl MlsConversation {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::test_utils::*;
-    use crate::CryptoError;
+    use crate::{e2e_identity::id::QualifiedE2eiClientId, test_utils::*, CryptoError};
 
     wasm_bindgen_test_configure!(run_in_browser);
-
-    #[allow(clippy::redundant_static_lifetimes)]
-    const ALICE_ANDROID: &'static str = "t6wRpI8BRSeviBwwiFp5MQ:a661e79735dc890f@wire.com";
-    #[allow(clippy::redundant_static_lifetimes)]
-    const ALICE_IOS: &'static str = "t6wRpI8BRSeviBwwiFp5MQ:ce3c1921aacdbcfe@wire.com";
-    #[allow(clippy::redundant_static_lifetimes)]
-    const BOB_ANDROID: &'static str = "wjoxZL5tTzi2-8iND-HimA:2af3cbe39aed8cc5@wire.com";
 
     #[async_std::test]
     #[wasm_bindgen_test]
@@ -139,7 +137,7 @@ pub mod tests {
         let case = TestCase::default_x509();
         run_test_with_client_ids(
             case.clone(),
-            [ALICE_ANDROID, ALICE_IOS],
+            ["alice_android", "alice_ios"],
             move |[mut alice_android_central, mut alice_ios_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -204,7 +202,7 @@ pub mod tests {
         let case = TestCase::default();
         run_test_with_client_ids(
             case.clone(),
-            [ALICE_ANDROID, ALICE_IOS],
+            ["alice_android", "alice_ios"],
             move |[mut alice_android_central, mut alice_ios_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -241,12 +239,19 @@ pub mod tests {
     #[wasm_bindgen_test]
     pub async fn should_read_users() {
         let case = TestCase::default_x509();
+
+        let (alice_android, alice_ios) = (
+            "satICT30SbiIpjj1n-XQtA:7684f3f95a5e6848@wire.com",
+            "satICT30SbiIpjj1n-XQtA:7dfd976fc672c899@wire.com",
+        );
+        let bob_android = "I_7X5oRAToKy9z_kvhDKKQ:8b1fd601510d102a@wire.com";
+
         run_test_with_deterministic_client_ids(
             case.clone(),
             [
-                [ALICE_ANDROID, "alice_wire", "Alice Smith"],
-                [ALICE_IOS, "alice_wire", "Alice Smith"],
-                [BOB_ANDROID, "bob_wire", "Bob Doe"],
+                [alice_android, "alice_wire", "Alice Smith"],
+                [alice_ios, "alice_wire", "Alice Smith"],
+                [bob_android, "bob_wire", "Bob Doe"],
             ],
             move |[mut alice_android_central, mut alice_ios_central, mut bob_android_central]| {
                 Box::pin(async move {
@@ -267,39 +272,37 @@ pub mod tests {
                         .len();
                     assert_eq!(nb_members, 3);
 
+                    assert_eq!(alice_android_central.get_user_id(), alice_ios_central.get_user_id());
+
                     // Finds both Alice's devices
+                    let alice_user_id = alice_android_central.get_user_id();
                     let alice_identities = alice_android_central
-                        .get_user_identities(&id, &["t6wRpI8BRSeviBwwiFp5MQ".to_string()])
+                        .get_user_identities(&id, &[alice_user_id.clone()])
                         .await
                         .unwrap();
                     assert_eq!(alice_identities.len(), 1);
-                    let identities = alice_identities.get(&"t6wRpI8BRSeviBwwiFp5MQ".to_string()).unwrap();
+                    let identities = alice_identities.get(&alice_user_id).unwrap();
                     assert_eq!(identities.len(), 2);
 
                     // Finds Bob only device
+                    let bob_user_id = bob_android_central.get_user_id();
                     let bob_identities = alice_android_central
-                        .get_user_identities(&id, &["wjoxZL5tTzi2-8iND-HimA".to_string()])
+                        .get_user_identities(&id, &[bob_user_id.clone()])
                         .await
                         .unwrap();
                     assert_eq!(bob_identities.len(), 1);
-                    let identities = bob_identities.get(&"wjoxZL5tTzi2-8iND-HimA".to_string()).unwrap();
+                    let identities = bob_identities.get(&bob_user_id).unwrap();
                     assert_eq!(identities.len(), 1);
 
                     // Finds all devices
                     let all_identities = alice_android_central
-                        .get_user_identities(
-                            &id,
-                            &[
-                                "t6wRpI8BRSeviBwwiFp5MQ".to_string(),
-                                "wjoxZL5tTzi2-8iND-HimA".to_string(),
-                            ],
-                        )
+                        .get_user_identities(&id, &[alice_user_id.clone(), bob_user_id.clone()])
                         .await
                         .unwrap();
                     assert_eq!(all_identities.len(), 2);
-                    let alice_identities = alice_identities.get(&"t6wRpI8BRSeviBwwiFp5MQ".to_string()).unwrap();
+                    let alice_identities = alice_identities.get(&alice_user_id).unwrap();
                     assert_eq!(alice_identities.len(), 2);
-                    let bob_identities = bob_identities.get(&"wjoxZL5tTzi2-8iND-HimA".to_string()).unwrap();
+                    let bob_identities = bob_identities.get(&bob_user_id).unwrap();
                     assert_eq!(bob_identities.len(), 1);
 
                     // Not found

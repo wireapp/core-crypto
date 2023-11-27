@@ -638,11 +638,11 @@ pub mod tests {
                 let mut central = MlsCentral::try_new(configuration).await.unwrap();
                 assert!(central.mls_client.is_none());
                 // phase 2: init mls_client
-                let client_id = "alice".into();
+                let client_id = "alice";
                 let identifier = match case.credential_type {
-                    MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
+                    MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
                     MlsCredentialType::X509 => {
-                        CertificateBundle::rand_identifier(&[case.signature_scheme()], client_id)
+                        CertificateBundle::rand_identifier(client_id, &[case.signature_scheme()])
                     }
                 };
                 central

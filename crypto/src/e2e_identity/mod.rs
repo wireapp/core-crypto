@@ -1,10 +1,12 @@
 use std::collections::HashMap;
+
 use wire_e2e_identity::prelude::RustyE2eIdentity;
 
 use error::*;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::e2e_identity::crypto::E2eiSignatureKeypair;
+use crate::e2e_identity::id::QualifiedE2eiClientId;
 use crate::{
     mls::credential::x509::CertificatePrivateKey,
     prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCentral, MlsCiphersuite},
@@ -16,6 +18,7 @@ mod crypto;
 pub(crate) mod device_status;
 pub mod enabled;
 pub mod error;
+pub(crate) mod id;
 pub(crate) mod identity;
 pub(crate) mod rotate;
 pub(crate) mod stash;
@@ -28,7 +31,7 @@ impl MlsCentral {
     /// a new x509 certificate from the acme server.
     ///
     /// # Parameters
-    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
+    /// * `client_id` - client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
     /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
     /// * `expiry_days` - generated x509 certificate expiry in days
@@ -110,7 +113,7 @@ impl E2eiEnrollment {
     /// enrollment process then dropped to clear secret key material.
     ///
     /// # Parameters
-    /// * `client_id` - client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
+    /// * `client_id` - client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
     /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
     /// * `expiry_days` - generated x509 certificate expiry in days
@@ -132,7 +135,8 @@ impl E2eiEnrollment {
             Self::new_sign_key(ciphersuite, backend)?.0
         };
 
-        let client_id = std::str::from_utf8(&client_id[..])?.to_string();
+        let client_id = QualifiedE2eiClientId::try_from(client_id.as_slice())?;
+        let client_id = String::try_from(client_id)?;
         let expiry = core::time::Duration::from_secs(u64::from(expiry_days) * 24 * 3600);
         Ok(Self {
             delegate: RustyE2eIdentity::try_new(alg, sign_sk.clone()).map_err(E2eIdentityError::from)?,
@@ -466,24 +470,26 @@ impl E2eiEnrollment {
 
 #[cfg(test)]
 pub mod tests {
+    use itertools::Itertools;
+    use serde_json::json;
+    use wasm_bindgen_test::*;
+
     use crate::{
+        e2e_identity::id::QualifiedE2eiClientId,
         prelude::{
-            CertificateBundle, ClientId, E2eIdentityError, E2eIdentityResult, E2eiEnrollment, MlsCentral,
+            CertificateBundle, E2eIdentityError, E2eIdentityResult, E2eiEnrollment, MlsCentral,
             INITIAL_KEYING_MATERIAL_COUNT,
         },
         test_utils::{central::TEAM, *},
         CryptoResult,
     };
-    use itertools::Itertools;
-    use serde_json::json;
-    use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
     pub const E2EI_DISPLAY_NAME: &str = "Alice Smith";
     pub const E2EI_HANDLE: &str = "alice_wire";
-    pub const E2EI_CLIENT_ID: &str = "t6wRpI8BRSeviBwwiFp5MQ:4959bc6ab12f2846@wire.com";
-    pub const E2EI_CLIENT_ID_URI: &str = "t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com";
+    pub const E2EI_CLIENT_ID: &str = "bd4c7053-1c5a-4020-9559-cd7bf7961954:4959bc6ab12f2846@wire.com";
+    pub const E2EI_CLIENT_ID_URI: &str = "vUxwUxxaQCCVWc1795YZVA/4959bc6ab12f2846@wire.com";
     pub const E2EI_EXPIRY: u32 = 90;
 
     #[apply(all_cred_cipher)]
@@ -559,7 +565,7 @@ pub mod tests {
 
         let (enrollment, cc) = restore(enrollment, cc).await;
 
-        let _order_req = enrollment.new_order_request(previous_nonce.to_string())?;
+        let _order_req = enrollment.new_order_request(previous_nonce.to_string()).unwrap();
 
         let client_id = client_id
             .map(|c| format!("{}{c}", wire_e2e_identity::prelude::E2eiClientId::URI_PREFIX))
@@ -701,7 +707,8 @@ pub mod tests {
         let _certificate_req = enrollment.certificate_request(previous_nonce.to_string())?;
 
         let cert_kp = enrollment.sign_sk.clone();
-        let client_id = ClientId::from(enrollment.client_id.as_str());
+
+        let client_id = QualifiedE2eiClientId::from_str_unchecked(enrollment.client_id.as_str());
         let cert = CertificateBundle::new(
             enrollment.ciphersuite.signature_algorithm(),
             handle,

@@ -51,9 +51,10 @@ impl ClientIdentifier {
                 },
             ),
             ClientIdentifier::X509(certs) => {
+                let cap = certs.len();
                 certs
                     .into_iter()
-                    .try_fold(vec![], |mut acc, (sc, cert)| -> CryptoResult<_> {
+                    .try_fold(Vec::with_capacity(cap), |mut acc, (sc, cert)| -> CryptoResult<_> {
                         let id = cert.get_client_id()?;
                         let cb = Client::new_x509_credential_bundle(cert)?;
                         acc.push((sc, id, cb));

@@ -57,6 +57,7 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
+    use crate::e2e_identity::id::WireQualifiedClientId;
     use crate::{
         e2e_identity::tests::*,
         prelude::{E2eiEnrollment, MlsCentral, INITIAL_KEYING_MATERIAL_COUNT},
@@ -120,8 +121,9 @@ pub mod tests {
                     Box::pin(async move {
                         // this restore recreates a partial enrollment
                         let backend = MlsCryptoProvider::try_new_in_memory("new").await.unwrap();
+                        let client_id = e.client_id.parse::<WireQualifiedClientId>().unwrap();
                         let enrollment = E2eiEnrollment::try_new(
-                            e.client_id.as_str().into(),
+                            client_id.into(),
                             e.display_name,
                             e.handle,
                             e.team,
