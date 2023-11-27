@@ -1,4 +1,3 @@
-#![cfg(test)]
 // Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
@@ -14,6 +13,8 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
+
+#![cfg(test)]
 
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
@@ -32,6 +33,7 @@ pub mod x509;
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
 
+use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
 use crate::prelude::{ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
 pub use fixtures::{TestCase, *};
 pub use message::*;
@@ -54,7 +56,7 @@ pub async fn run_test_with_client_ids<const N: usize>(
     client_ids: [&'static str; N],
     test: impl FnOnce([MlsCentral; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
-    run_test_with_deterministic_client_ids(case, client_ids.map(|i| [i, "", ""]), test).await
+    run_test_with_deterministic_client_ids(case, client_ids.map(|_| ["", "", ""]), test).await
 }
 
 pub async fn run_test_with_deterministic_client_ids<const N: usize>(
@@ -78,23 +80,22 @@ pub async fn run_test_with_deterministic_client_ids<const N: usize>(
 
                 let identity = match case.credential_type {
                     MlsCredentialType::Basic => {
-                        let client_id: ClientId = client_ids[i][0].into();
+                        let client_id: ClientId = WireQualifiedClientId::generate().into();
                         ClientIdentifier::Basic(client_id)
                     }
                     MlsCredentialType::X509 => {
                         let sc = case.cfg.ciphersuite.signature_algorithm();
-                        let id = client_ids[i];
-                        let [client_id, handle, display_name] = id;
+                        let [client_id, handle, display_name] = client_ids[i];
 
-                        let cert = match (handle, display_name) {
-                            ("", "") => crate::prelude::CertificateBundle::rand(&client_id.into(), sc),
-                            _ => crate::prelude::CertificateBundle::new(
-                                sc,
-                                handle,
-                                display_name,
-                                Some(&client_id.into()),
-                                None,
-                            ),
+                        let cert = match (client_id, handle, display_name) {
+                            ("", "", "") => {
+                                let client_id = QualifiedE2eiClientId::generate();
+                                crate::prelude::CertificateBundle::rand(&client_id, sc)
+                            }
+                            _ => {
+                                let client_id = QualifiedE2eiClientId::from_str_unchecked(client_id);
+                                crate::prelude::CertificateBundle::new(sc, handle, display_name, Some(&client_id), None)
+                            }
                         };
                         ClientIdentifier::X509(HashMap::from([(sc, cert)]))
                     }

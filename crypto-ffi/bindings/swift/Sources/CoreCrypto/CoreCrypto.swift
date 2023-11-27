@@ -1147,7 +1147,7 @@ public class CoreCryptoWrapper {
     /// Creates an enrollment instance with private key material you can use in order to fetch
     /// a new x509 certificate from the acme server.
     ///
-    /// - parameter clientId: client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
+    /// - parameter clientId: client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
     /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
     /// - parameter expiryDays: generated x509 certificate expiry
@@ -1162,7 +1162,7 @@ public class CoreCryptoWrapper {
     /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
     /// Once the enrollment is finished, use the instance in ``CoreCrypto/e2eiRotateAll`` to do the rotation.
     ///
-    /// - parameter clientId: client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
+    /// - parameter clientId: client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
     /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
     /// - parameter expiryDays: generated x509 certificate expiry
@@ -1178,7 +1178,7 @@ public class CoreCryptoWrapper {
     /// their credential, either because the former one is expired or it has been revoked. It lets you change
     /// the DisplayName or the handle if you need to. Once the enrollment is finished, use the instance in ``CoreCrypto/e2eiRotateAll`` to do the rotation.
     ///
-    /// - parameter clientId: client identifier with user b64Url encoded & clientId hex encoded e.g. `t6wRpI8BRSeviBwwiFp5MQ:6add501bacd1d90e@example.com`
+    /// - parameter clientId: client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
     /// - parameter expiryDays: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material.
     /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
@@ -1258,7 +1258,7 @@ public class CoreCryptoWrapper {
     /// If no member has a x509 certificate, it will return an empty Vec.
     ///
     /// - parameter conversationId: conversation identifier
-    /// - parameter userIds: user identifiers e.g. t6wRpI8BRSeviBwwiFp5MQ which is a base64UrlUnpadded UUIDv4
+    /// - parameter userIds: user identifiers hyphenated UUIDv4 e.g. 'bd4c7053-1c5a-4020-9559-cd7bf7961954'
     /// - returns: a Map with all the identities for a given users. Consumers are then recommended to reduce those identities to determine the actual status of a user.
     public func getUserIdentities(conversationId: ConversationId, userIds: [String]) async throws -> [String: [WireIdentity]] {
         return try await self.coreCrypto.getUserIdentities(conversationId: conversationId, userIds: userIds)

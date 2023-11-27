@@ -453,14 +453,10 @@ impl Client {
     ) -> CryptoResult<Self> {
         let user_uuid = uuid::Uuid::new_v4();
         let rnd_id = rand::random::<usize>();
-        let client_id: ClientId = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated())
-            .as_bytes()
-            .into();
+        let client_id = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated());
         let identity = match case.credential_type {
-            MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
-            MlsCredentialType::X509 => {
-                crate::prelude::CertificateBundle::rand_identifier(&[case.signature_scheme()], client_id)
-            }
+            MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.as_str().into()),
+            MlsCredentialType::X509 => CertificateBundle::rand_identifier(&client_id, &[case.signature_scheme()]),
         };
         let nb_key_package = if provision {
             crate::prelude::INITIAL_KEYING_MATERIAL_COUNT

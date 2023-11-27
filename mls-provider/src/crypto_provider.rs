@@ -63,12 +63,7 @@ impl OpenMlsCrypto for RustCrypto {
         ]
     }
 
-    fn hkdf_extract(
-        &self,
-        hash_type: openmls_traits::types::HashType,
-        salt: &[u8],
-        ikm: &[u8],
-    ) -> Result<SecretVLBytes, CryptoError> {
+    fn hkdf_extract(&self, hash_type: HashType, salt: &[u8], ikm: &[u8]) -> Result<SecretVLBytes, CryptoError> {
         match hash_type {
             HashType::Sha2_256 => Ok(Hkdf::<Sha256>::extract(Some(salt), ikm).0.as_slice().into()),
             HashType::Sha2_384 => Ok(Hkdf::<Sha384>::extract(Some(salt), ikm).0.as_slice().into()),

@@ -466,7 +466,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * If no member has a x509 certificate, it will return an empty Vec.
      *
      * @param id conversation identifier
-     * @param userIds user identifiers e.g. t6wRpI8BRSeviBwwiFp5MQ which is a base64UrlUnpadded UUIDv4
+     * @param userIds user identifiers hyphenated UUIDv4 e.g. 'bd4c7053-1c5a-4020-9559-cd7bf7961954'
      * @returns a Map with all the identities for a given users. Consumers are then recommended to reduce those identities to determine the actual status of a user.
      */
     suspend fun getUserIdentities(id: MLSGroupId, userIds: List<String>): Map<String, List<WireIdentity>> {

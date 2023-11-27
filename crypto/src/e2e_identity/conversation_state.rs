@@ -199,7 +199,7 @@ pub mod tests {
                             not_after: expiration,
                             ..Default::default()
                         };
-                        let cert = CertificateBundle::new_from_builder(case.signature_scheme(), builder);
+                        let cert = CertificateBundle::new_from_builder(builder, case.signature_scheme());
                         let cb = Client::new_x509_credential_bundle(cert).unwrap();
                         let commit = alice_central.e2ei_rotate(&id, &cb).await.unwrap().commit;
                         alice_central.commit_accepted(&id).await.unwrap();
@@ -247,7 +247,7 @@ pub mod tests {
                         not_after: expiration,
                         ..Default::default()
                     };
-                    let cert = CertificateBundle::new_from_builder(case.signature_scheme(), builder);
+                    let cert = CertificateBundle::new_from_builder(builder, case.signature_scheme());
                     let cb = Client::new_x509_credential_bundle(cert).unwrap();
                     alice_central.e2ei_rotate(&id, &cb).await.unwrap();
                     alice_central.commit_accepted(&id).await.unwrap();
