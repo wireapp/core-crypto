@@ -216,7 +216,7 @@ pub async fn add_clients(
         .unwrap();
 
     let group_info = commit_bundle.group_info.payload.bytes();
-    let group_info = openmls::prelude::MlsMessageIn::tls_deserialize(&group_info[..]).unwrap();
+    let group_info = openmls::prelude::MlsMessageIn::tls_deserialize(&mut group_info.as_slice()).unwrap();
     let MlsMessageInBody::GroupInfo(group_info) = group_info.extract() else {
         panic!("error")
     };
