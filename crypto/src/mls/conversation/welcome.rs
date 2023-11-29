@@ -55,7 +55,7 @@ impl MlsCentral {
     ) -> CryptoResult<ConversationId> {
         let welcome = match welcome.extract() {
             MlsMessageInBody::Welcome(welcome) => welcome,
-            _ => return Err(CryptoError::ImplementationError),
+            _ => return Err(CryptoError::ConsumerError),
         };
         let cs = welcome.ciphersuite().into();
         let configuration = MlsConversationConfiguration {

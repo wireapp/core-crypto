@@ -1,6 +1,6 @@
 use super::error::*;
 use crate::prelude::MlsCiphersuite;
-use crate::CryptoError;
+use crate::{CryptoError, CryptoResult, MlsError};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{crypto::OpenMlsCrypto, types::Ciphersuite, OpenMlsCryptoProvider};
@@ -14,18 +14,20 @@ impl super::E2eiEnrollment {
     pub(super) fn new_sign_key(
         ciphersuite: MlsCiphersuite,
         backend: &MlsCryptoProvider,
-    ) -> E2eIdentityResult<E2eiSignatureKeypair> {
+    ) -> CryptoResult<E2eiSignatureKeypair> {
         let crypto = backend.crypto();
         let cs = openmls_traits::types::Ciphersuite::from(ciphersuite);
-        let (sk, pk) = crypto.signature_key_gen(cs.signature_algorithm())?;
+        let (sk, pk) = crypto
+            .signature_key_gen(cs.signature_algorithm())
+            .map_err(MlsError::from)?;
         Ok((sk, pk).into())
     }
 
-    pub(super) fn get_sign_key_for_mls(&self) -> E2eIdentityResult<Vec<u8>> {
+    pub(super) fn get_sign_key_for_mls(&self) -> CryptoResult<Vec<u8>> {
         let sk = match self.sign_sk.len() {
             SIGN_KEYPAIR_LENGTH => &self.sign_sk[..SIGN_KEY_LENGTH],
             SIGN_KEY_LENGTH => &self.sign_sk,
-            _ => return Err(E2eIdentityError::ImplementationError),
+            _ => return Err(E2eIdentityError::InvalidSignatureKey.into()),
         };
         Ok(sk.to_vec())
     }
@@ -67,7 +69,7 @@ impl TryFrom<SignatureKeyPair> for E2eiSignatureKeypair {
         let sk = match sk.len() {
             SIGN_KEY_LENGTH => sk,
             SIGN_KEYPAIR_LENGTH => &sk[..SIGN_KEY_LENGTH],
-            _ => return Err(CryptoError::ImplementationError),
+            _ => return Err(E2eIdentityError::InvalidSignatureKey.into()),
         };
         Ok((sk.to_vec(), kp.to_public_vec()).into())
     }

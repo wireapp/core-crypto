@@ -123,7 +123,7 @@ pub async fn run_test_wo_clients(
 ) {
     run_tests(move |paths: [String; 1]| {
         Box::pin(async move {
-            let p = paths.get(0).unwrap();
+            let p = paths.first().unwrap();
 
             let ciphersuites = vec![case.cfg.ciphersuite];
             let configuration = MlsCentralConfiguration::try_new(

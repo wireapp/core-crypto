@@ -86,7 +86,7 @@ impl MlsCentral {
 impl MlsConversation {
     fn get_device_identities(&self, device_ids: &[ClientId]) -> CryptoResult<Vec<WireIdentity>> {
         if device_ids.is_empty() {
-            return Err(CryptoError::ImplementationError);
+            return Err(CryptoError::ConsumerError);
         }
         self.members()
             .into_iter()
@@ -97,7 +97,7 @@ impl MlsConversation {
 
     fn get_user_identities(&self, user_ids: &[String]) -> CryptoResult<HashMap<String, Vec<WireIdentity>>> {
         if user_ids.is_empty() {
-            return Err(CryptoError::ImplementationError);
+            return Err(CryptoError::ConsumerError);
         }
         let user_ids = user_ids.iter().map(|uid| uid.as_bytes()).collect::<Vec<_>>();
         self.members()
@@ -191,7 +191,7 @@ pub mod tests {
                     );
 
                     let invalid = alice_android_central.get_device_identities(&id, &[]).await;
-                    assert!(matches!(invalid.unwrap_err(), CryptoError::ImplementationError));
+                    assert!(matches!(invalid.unwrap_err(), CryptoError::ConsumerError));
                 })
             },
         )
@@ -311,7 +311,7 @@ pub mod tests {
 
                     // Invalid usage
                     let invalid = alice_android_central.get_user_identities(&id, &[]).await;
-                    assert!(matches!(invalid.unwrap_err(), CryptoError::ImplementationError));
+                    assert!(matches!(invalid.unwrap_err(), CryptoError::ConsumerError));
                 })
             },
         )

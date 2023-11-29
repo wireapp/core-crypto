@@ -12,7 +12,7 @@ impl MlsCentral {
             None => {
                 client
                     .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::Basic)
-                    .ok_or(CryptoError::CredentialNotFound)?;
+                    .ok_or(CryptoError::CredentialNotFound(MlsCredentialType::Basic))?;
                 Ok(false)
             }
             Some(_) => Ok(true),
@@ -69,7 +69,7 @@ pub mod tests {
                 };
                 assert!(matches!(
                     cc.e2ei_is_enabled(other_sc).unwrap_err(),
-                    CryptoError::CredentialNotFound
+                    CryptoError::CredentialNotFound(_)
                 ));
             })
         })

@@ -243,7 +243,7 @@ impl MlsCentral {
     ) -> CryptoResult<()> {
         if self.mls_client.is_some() {
             // prevents wrong usage of the method instead of silently hiding the mistake
-            return Err(CryptoError::ImplementationError);
+            return Err(CryptoError::ConsumerError);
         }
         let nb_key_package = nb_init_key_packages.unwrap_or(INITIAL_KEYING_MATERIAL_COUNT);
         let mls_client = Client::init(identifier, &ciphersuites, &self.mls_backend, nb_key_package).await?;
@@ -259,7 +259,7 @@ impl MlsCentral {
     pub async fn mls_generate_keypairs(&self, ciphersuites: Vec<MlsCiphersuite>) -> CryptoResult<Vec<ClientId>> {
         if self.mls_client.is_some() {
             // prevents wrong usage of the method instead of silently hiding the mistake
-            return Err(CryptoError::ImplementationError);
+            return Err(CryptoError::ConsumerError);
         }
 
         Client::generate_raw_keypairs(&ciphersuites, &self.mls_backend).await
@@ -277,7 +277,7 @@ impl MlsCentral {
     ) -> CryptoResult<()> {
         if self.mls_client.is_some() {
             // prevents wrong usage of the method instead of silently hiding the mistake
-            return Err(CryptoError::ImplementationError);
+            return Err(CryptoError::ConsumerError);
         }
 
         let mls_client =

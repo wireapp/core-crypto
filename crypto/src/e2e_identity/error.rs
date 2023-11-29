@@ -1,6 +1,6 @@
 //! End to end identity errors
 
-use crate::CryptoError;
+use crate::prelude::MlsCredentialType;
 
 /// Wrapper over a [Result] of an end to end identity error
 pub type E2eIdentityResult<T> = Result<T, E2eIdentityError>;
@@ -16,6 +16,18 @@ pub enum E2eIdentityError {
     /// Incoming support
     #[error("Not yet supported")]
     NotYetSupported,
+    /// The required local MLS client was not initialized. It's likely a consumer error
+    #[error("Expected a MLS client with credential type {0:?} but none found")]
+    MissingExistingClient(MlsCredentialType),
+    /// Cannot read the identity in the EE certificate
+    #[error("Could not the identity information in the Credential's certificate")]
+    InvalidIdentity,
+    /// Failed converting the MLS signature key for the e2ei enrollment
+    #[error("Failed converting the MLS signature key for the e2ei enrollment")]
+    InvalidSignatureKey,
+    /// Enrollment methods are called out of order
+    #[error("Enrollment methods are called out of order: {0}")]
+    OutOfOrderEnrollment(&'static str),
     /// Error when an end-to-end-identity domain is not well-formed utf-16, which means it's out of spec
     #[error("The E2EI provided domain is invalid utf-16")]
     E2eiInvalidDomain,
@@ -34,9 +46,6 @@ pub enum E2eIdentityError {
     /// Utf8 error
     #[error(transparent)]
     Utf8Error(#[from] ::core::str::Utf8Error),
-    /// MLS error
-    #[error(transparent)]
-    MlsError(#[from] CryptoError),
     /// !!!! Something went very wrong and one of our locks has been poisoned by an in-thread panic !!!!
     #[error("One of the locks has been poisoned")]
     LockPoisonError,

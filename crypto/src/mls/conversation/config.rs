@@ -258,7 +258,7 @@ pub mod tests {
                     creator_capabilities.ciphersuites().to_vec(),
                     MlsConversationConfiguration::DEFAULT_SUPPORTED_CIPHERSUITES
                         .iter()
-                        .map(|c| VerifiableCiphersuite::try_from(*c).unwrap())
+                        .map(|c| VerifiableCiphersuite::from(*c))
                         .collect::<Vec<_>>()
                 );
 

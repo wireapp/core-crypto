@@ -88,7 +88,7 @@ impl MlsConversation {
                 let ct = match msg.body_as_ref() {
                     MlsMessageInBody::PublicMessage(m) => Ok(m.content_type()),
                     MlsMessageInBody::PrivateMessage(m) => Ok(m.content_type()),
-                    _ => Err(CryptoError::ImplementationError),
+                    _ => Err(CryptoError::ConsumerError),
                 }?;
                 acc.push((ct as u8, msg));
                 CryptoResult::Ok(acc)

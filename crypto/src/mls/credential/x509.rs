@@ -34,14 +34,14 @@ pub struct CertificateBundle {
 impl CertificateBundle {
     /// Reads the client_id from the leaf certificate
     pub fn get_client_id(&self) -> CryptoResult<ClientId> {
-        let leaf = self.certificate_chain.get(0).ok_or(CryptoError::InvalidIdentity)?;
+        let leaf = self.certificate_chain.first().ok_or(CryptoError::InvalidIdentity)?;
         let identity = leaf.extract_identity().map_err(|_| CryptoError::InvalidIdentity)?;
         Ok(identity.client_id.as_bytes().into())
     }
 
     /// Reads the 'Not Before' claim from the leaf certificate
     pub fn get_created_at(&self) -> CryptoResult<u64> {
-        let leaf = self.certificate_chain.get(0).ok_or(CryptoError::InvalidIdentity)?;
+        let leaf = self.certificate_chain.first().ok_or(CryptoError::InvalidIdentity)?;
         leaf.extract_created_at().map_err(|_| CryptoError::InvalidIdentity)
     }
 }

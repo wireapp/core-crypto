@@ -132,7 +132,7 @@ impl UniffiCustomTypeConverter for Ciphersuite {
     fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
         core_crypto::prelude::CiphersuiteName::try_from(val)
             .map(Into::into)
-            .map_err(|_| core_crypto::prelude::CryptoError::ImplementationError.into())
+            .map_err(|_| CryptoError::ImplementationError.into())
     }
 
     fn from_custom(obj: Self) -> Self::Builtin {
@@ -173,7 +173,7 @@ impl UniffiCustomTypeConverter for Ciphersuites {
         val.iter().try_fold(Self(vec![]), |mut acc, c| -> uniffi::Result<Self> {
             let cs = core_crypto::prelude::CiphersuiteName::try_from(*c)
                 .map(Into::into)
-                .map_err(|_| core_crypto::prelude::CryptoError::ImplementationError)?;
+                .map_err(|_| CryptoError::ImplementationError)?;
             acc.0.push(cs);
             Ok(acc)
         })
@@ -814,7 +814,7 @@ impl CoreCrypto {
             central.take().close().await?;
             Ok(())
         } else {
-            Err(core_crypto::prelude::CryptoError::LockPoisonError.into())
+            Err(CryptoError::LockPoisonError.into())
         }
     }
 
@@ -825,7 +825,7 @@ impl CoreCrypto {
             central.take().wipe().await?;
             Ok(())
         } else {
-            Err(core_crypto::prelude::CryptoError::LockPoisonError.into())
+            Err(CryptoError::LockPoisonError.into())
         }
     }
 
@@ -862,7 +862,7 @@ impl CoreCrypto {
                 Ok(kp
                     .tls_serialize_detached()
                     .map_err(MlsError::from)
-                    .map_err(core_crypto::prelude::CryptoError::from)?)
+                    .map_err(CryptoError::from)?)
             })
             .collect::<CoreCryptoResult<Vec<Vec<u8>>>>()
     }
@@ -1281,7 +1281,8 @@ impl CoreCrypto {
         expiry_days: u32,
         ciphersuite: Ciphersuite,
     ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
-        self.central
+        Ok(self
+            .central
             .lock()
             .await
             .e2ei_new_enrollment(
@@ -1295,8 +1296,7 @@ impl CoreCrypto {
             .map(async_lock::Mutex::new)
             .map(std::sync::Arc::new)
             .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)
-            .map_err(|_| core_crypto::prelude::CryptoError::ImplementationError.into())
+            .map(std::sync::Arc::new)?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_new_activation_enrollment]
@@ -1309,7 +1309,8 @@ impl CoreCrypto {
         expiry_days: u32,
         ciphersuite: Ciphersuite,
     ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
-        self.central
+        Ok(self
+            .central
             .lock()
             .await
             .e2ei_new_activation_enrollment(
@@ -1323,8 +1324,7 @@ impl CoreCrypto {
             .map(async_lock::Mutex::new)
             .map(std::sync::Arc::new)
             .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)
-            .map_err(|_| core_crypto::prelude::CryptoError::ImplementationError.into())
+            .map(std::sync::Arc::new)?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_new_rotate_enrollment]
@@ -1337,7 +1337,8 @@ impl CoreCrypto {
         expiry_days: u32,
         ciphersuite: Ciphersuite,
     ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
-        self.central
+        Ok(self
+            .central
             .lock()
             .await
             .e2ei_new_rotate_enrollment(
@@ -1351,8 +1352,7 @@ impl CoreCrypto {
             .map(async_lock::Mutex::new)
             .map(std::sync::Arc::new)
             .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)
-            .map_err(|_| core_crypto::prelude::CryptoError::ImplementationError.into())
+            .map(std::sync::Arc::new)?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
@@ -1370,10 +1370,9 @@ impl CoreCrypto {
                 std::sync::Arc::decrement_strong_count(std::sync::Arc::as_ptr(&enrollment));
             }
         }
-        let e2ei =
-            std::sync::Arc::into_inner(enrollment).ok_or_else(|| core_crypto::prelude::CryptoError::LockPoisonError)?;
+        let e2ei = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
         let e2ei = std::sync::Arc::into_inner(e2ei.0)
-            .ok_or_else(|| core_crypto::prelude::CryptoError::LockPoisonError)?
+            .ok_or_else(|| CryptoError::LockPoisonError)?
             .into_inner();
 
         let nb_key_package = nb_key_package
@@ -1381,12 +1380,12 @@ impl CoreCrypto {
             .transpose()
             .map_err(CryptoError::from)?;
 
-        self.central
+        Ok(self
+            .central
             .lock()
             .await
             .e2ei_mls_init_only(e2ei, certificate_chain, nb_key_package)
-            .await
-            .map_err(|_| core_crypto::prelude::CryptoError::ImplementationError.into())
+            .await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_rotate_all]
@@ -1404,36 +1403,27 @@ impl CoreCrypto {
                 std::sync::Arc::decrement_strong_count(std::sync::Arc::as_ptr(&enrollment));
             }
         }
-        let e2ei =
-            std::sync::Arc::into_inner(enrollment).ok_or_else(|| core_crypto::prelude::CryptoError::LockPoisonError)?;
+        let e2ei = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
         let e2ei = std::sync::Arc::into_inner(e2ei.0)
-            .ok_or_else(|| core_crypto::prelude::CryptoError::LockPoisonError)?
+            .ok_or_else(|| CryptoError::LockPoisonError)?
             .into_inner();
 
         self.central
             .lock()
             .await
             .e2ei_rotate_all(e2ei, certificate_chain, new_key_packages_count as usize)
-            .await
-            .map_err(|_| core_crypto::prelude::CryptoError::ImplementationError)?
+            .await?
             .try_into()
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash]
     pub async fn e2ei_enrollment_stash(&self, enrollment: std::sync::Arc<E2eiEnrollment>) -> CoreCryptoResult<Vec<u8>> {
-        let enrollment =
-            std::sync::Arc::into_inner(enrollment).ok_or_else(|| core_crypto::prelude::CryptoError::LockPoisonError)?;
+        let enrollment = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
         let enrollment = std::sync::Arc::into_inner(enrollment.0)
-            .ok_or_else(|| core_crypto::prelude::CryptoError::LockPoisonError)?
+            .ok_or_else(|| CryptoError::LockPoisonError)?
             .into_inner();
 
-        Ok(self
-            .central
-            .lock()
-            .await
-            .e2ei_enrollment_stash(enrollment)
-            .await
-            .map_err(|_| core_crypto::prelude::CryptoError::ImplementationError)?)
+        Ok(self.central.lock().await.e2ei_enrollment_stash(enrollment).await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash_pop]
@@ -1447,8 +1437,7 @@ impl CoreCrypto {
             .map(async_lock::Mutex::new)
             .map(std::sync::Arc::new)
             .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)
-            .map_err(|_| core_crypto::prelude::CryptoError::ImplementationError)?)
+            .map(std::sync::Arc::new)?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_conversation_state]

@@ -8,6 +8,7 @@ use crate::e2e_identity::crypto::E2eiSignatureKeypair;
 use crate::{
     mls::credential::x509::CertificatePrivateKey,
     prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCentral, MlsCiphersuite},
+    CryptoResult,
 };
 
 pub(crate) mod conversation_state;
@@ -39,7 +40,7 @@ impl MlsCentral {
         team: Option<String>,
         expiry_days: u32,
         ciphersuite: MlsCiphersuite,
-    ) -> E2eIdentityResult<E2eiEnrollment> {
+    ) -> CryptoResult<E2eiEnrollment> {
         E2eiEnrollment::try_new(
             client_id,
             display_name,
@@ -59,7 +60,7 @@ impl MlsCentral {
         enrollment: E2eiEnrollment,
         certificate_chain: String,
         nb_init_key_packages: Option<usize>,
-    ) -> E2eIdentityResult<()> {
+    ) -> CryptoResult<()> {
         let sk = enrollment.get_sign_key_for_mls()?;
         let cs = enrollment.ciphersuite;
         let certificate_chain = enrollment.certificate_response(certificate_chain).await?;
@@ -123,7 +124,7 @@ impl E2eiEnrollment {
         backend: &MlsCryptoProvider,
         ciphersuite: MlsCiphersuite,
         sign_keypair: Option<E2eiSignatureKeypair>,
-    ) -> E2eIdentityResult<Self> {
+    ) -> CryptoResult<Self> {
         let alg = ciphersuite.try_into()?;
         let sign_sk = if let Some(kp) = sign_keypair {
             kp.0
@@ -134,7 +135,7 @@ impl E2eiEnrollment {
         let client_id = std::str::from_utf8(&client_id[..])?.to_string();
         let expiry = core::time::Duration::from_secs(u64::from(expiry_days) * 24 * 3600);
         Ok(Self {
-            delegate: RustyE2eIdentity::try_new(alg, sign_sk.clone())?,
+            delegate: RustyE2eIdentity::try_new(alg, sign_sk.clone()).map_err(E2eIdentityError::from)?,
             sign_sk,
             client_id,
             display_name,
@@ -174,7 +175,9 @@ impl E2eiEnrollment {
     /// * `directory` - you got from [Self::directory_response]
     /// * `previous_nonce` - you got from calling `HEAD {directory.new_nonce}`
     pub fn new_account_request(&self, previous_nonce: String) -> E2eIdentityResult<Json> {
-        let directory = self.directory.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
+        let directory = self.directory.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'directoryResponse()'",
+        ))?;
         let account = self.acme_new_account_request(&directory.try_into()?, previous_nonce)?;
         let account = serde_json::to_vec(&account)?;
         Ok(account)
@@ -200,8 +203,12 @@ impl E2eiEnrollment {
     /// # Parameters
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-account`
     pub fn new_order_request(&self, previous_nonce: String) -> E2eIdentityResult<Json> {
-        let directory = self.directory.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
-        let account = self.account.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
+        let directory = self.directory.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'directoryResponse()'",
+        ))?;
+        let account = self.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'newAccountResponse()'",
+        ))?;
         let order = self.acme_new_order_request(
             &self.display_name,
             &self.client_id,
@@ -236,7 +243,9 @@ impl E2eiEnrollment {
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-order`
     /// (or from the previous to this method if you are creating the second authorization)
     pub fn new_authz_request(&self, url: String, previous_nonce: String) -> E2eIdentityResult<Json> {
-        let account = self.account.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
+        let account = self.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'newAccountResponse()'",
+        ))?;
         let authz = self.acme_new_authz_request(&url.parse()?, account, previous_nonce)?;
         let authz = serde_json::to_vec(&authz)?;
         Ok(authz)
@@ -271,11 +280,15 @@ impl E2eiEnrollment {
     #[allow(clippy::too_many_arguments)]
     pub fn create_dpop_token(&self, expiry_secs: u32, backend_nonce: String) -> E2eIdentityResult<String> {
         let expiry = core::time::Duration::from_secs(expiry_secs as u64);
-        let authz = self.authz.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
+        let authz = self.authz.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'newAuthzResponse()'",
+        ))?;
         let dpop_challenge = authz
             .wire_dpop_challenge
             .as_ref()
-            .ok_or(E2eIdentityError::ImplementationError)?;
+            .ok_or(E2eIdentityError::OutOfOrderEnrollment(
+                "You must first call 'newAuthzResponse()'",
+            ))?;
         Ok(self.new_dpop_token(
             &self.client_id,
             dpop_challenge,
@@ -296,12 +309,18 @@ impl E2eiEnrollment {
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
     pub fn new_dpop_challenge_request(&self, access_token: String, previous_nonce: String) -> E2eIdentityResult<Json> {
-        let authz = self.authz.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
+        let authz = self.authz.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'newAuthzResponse()'",
+        ))?;
         let dpop_challenge = authz
             .wire_dpop_challenge
             .as_ref()
-            .ok_or(E2eIdentityError::ImplementationError)?;
-        let account = self.account.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
+            .ok_or(E2eIdentityError::OutOfOrderEnrollment(
+                "You must first call 'createDpopToken()'",
+            ))?;
+        let account = self.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'newAccountResponse()'",
+        ))?;
         let challenge = self.acme_dpop_challenge_request(access_token, dpop_challenge, account, previous_nonce)?;
         let challenge = serde_json::to_vec(&challenge)?;
         Ok(challenge)
@@ -317,12 +336,18 @@ impl E2eiEnrollment {
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
     pub fn new_oidc_challenge_request(&self, id_token: String, previous_nonce: String) -> E2eIdentityResult<Json> {
-        let authz = self.authz.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
+        let authz = self.authz.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'newAuthzResponse()'",
+        ))?;
         let oidc_challenge = authz
             .wire_oidc_challenge
             .as_ref()
-            .ok_or(E2eIdentityError::ImplementationError)?;
-        let account = self.account.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
+            .ok_or(E2eIdentityError::OutOfOrderEnrollment(
+                "You must first call 'newAuthzResponse()'",
+            ))?;
+        let account = self.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'newAccountResponse()'",
+        ))?;
         let challenge = self.acme_oidc_challenge_request(id_token, oidc_challenge, account, previous_nonce)?;
         let challenge = serde_json::to_vec(&challenge)?;
         Ok(challenge)
@@ -348,7 +373,9 @@ impl E2eiEnrollment {
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/challenge/{challenge-id}`
     pub fn check_order_request(&self, order_url: String, previous_nonce: String) -> E2eIdentityResult<Json> {
-        let account = self.account.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
+        let account = self.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'newAccountResponse()'",
+        ))?;
         let order = self.acme_check_order_request(order_url.parse()?, account, previous_nonce)?;
         let order = serde_json::to_vec(&order)?;
         Ok(order)
@@ -381,8 +408,12 @@ impl E2eiEnrollment {
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
     pub fn finalize_request(&mut self, previous_nonce: String) -> E2eIdentityResult<Json> {
-        let account = self.account.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
-        let order = self.valid_order.as_ref().ok_or(E2eIdentityError::ImplementationError)?;
+        let account = self.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'newAccountResponse()'",
+        ))?;
+        let order = self.valid_order.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'checkOrderResponse()'",
+        ))?;
         let finalize = self.acme_finalize_request(order, account, previous_nonce)?;
         let finalize = serde_json::to_vec(&finalize)?;
         Ok(finalize)
@@ -414,15 +445,21 @@ impl E2eiEnrollment {
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}/finalize`
     pub fn certificate_request(&mut self, previous_nonce: String) -> E2eIdentityResult<Json> {
-        let account = self.account.take().ok_or(E2eIdentityError::ImplementationError)?;
-        let finalize = self.finalize.take().ok_or(E2eIdentityError::ImplementationError)?;
+        let account = self.account.take().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'newAccountResponse()'",
+        ))?;
+        let finalize = self.finalize.take().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'finalizeResponse()'",
+        ))?;
         let certificate = self.acme_x509_certificate_request(finalize, account, previous_nonce)?;
         let certificate = serde_json::to_vec(&certificate)?;
         Ok(certificate)
     }
 
     async fn certificate_response(mut self, certificate_chain: String) -> E2eIdentityResult<Vec<Vec<u8>>> {
-        let order = self.valid_order.take().ok_or(E2eIdentityError::ImplementationError)?;
+        let order = self.valid_order.take().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            "You must first call 'checkOrderResponse()'",
+        ))?;
         Ok(self.acme_x509_certificate_response(certificate_chain, order)?)
     }
 }
@@ -435,6 +472,7 @@ pub mod tests {
             INITIAL_KEYING_MATERIAL_COUNT,
         },
         test_utils::{central::TEAM, *},
+        CryptoResult,
     };
     use itertools::Itertools;
     use serde_json::json;
@@ -490,11 +528,11 @@ pub mod tests {
     pub async fn e2ei_enrollment<'a>(
         cc: MlsCentral,
         client_id: Option<&str>,
-        init: impl Fn(&MlsCentral) -> E2eIdentityResult<E2eiEnrollment>,
+        init: impl Fn(&MlsCentral) -> CryptoResult<E2eiEnrollment>,
         // used to verify persisting the instance actually does restore it entirely
         restore: impl Fn(E2eiEnrollment, MlsCentral) -> RestoreFnResult<'a> + 'a,
     ) -> E2eIdentityResult<(MlsCentral, E2eiEnrollment, String)> {
-        let mut enrollment = init(&cc)?;
+        let mut enrollment = init(&cc).map_err(|_| E2eIdentityError::ImplementationError)?;
 
         let (display_name, handle) = (enrollment.display_name.clone(), &enrollment.handle.clone());
 
@@ -552,7 +590,7 @@ pub mod tests {
 
         let authz_url = new_order
             .authorizations
-            .get(0)
+            .first()
             .ok_or(E2eIdentityError::ImplementationError)?;
         let _authz_req = enrollment.new_authz_request(authz_url.to_string(), previous_nonce.to_string())?;
 

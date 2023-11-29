@@ -15,12 +15,16 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::mls::conversation::config::MAX_PAST_EPOCHS;
+use crate::prelude::{E2eIdentityError, MlsCredentialType};
 
 /// CoreCrypto errors
 #[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
 #[cfg_attr(feature = "uniffi", uniffi(flat_error))]
 pub enum CryptoError {
+    /// End to end identity error
+    #[error("End to end identity error")]
+    E2eiError(#[from] E2eIdentityError),
     /// This error is emitted when the requested conversation couldn't be found in our store
     #[error("Couldn't find conversation")]
     ConversationNotFound(crate::prelude::ConversationId),
@@ -66,6 +70,12 @@ pub enum CryptoError {
     /// We have done something terribly wrong
     #[error("We have done something terribly wrong and it needs to be fixed")]
     ImplementationError,
+    /// Tried to insert an already existing CredentialBundle
+    #[error("Tried to insert an already existing CredentialBundle")]
+    CredentialBundleConflict,
+    /// The consumer of this library has misused it
+    #[error("The consumer of this library has misused it")]
+    ConsumerError,
     /// Errors that are sent by our MLS Provider
     #[error(transparent)]
     MlsProviderError(#[from] mls_crypto_provider::MlsProviderError),
@@ -158,8 +168,8 @@ pub enum CryptoError {
     #[error("End-to-end identity enrollment has not been done")]
     E2eiEnrollmentNotDone,
     /// A Credential was not found locally which is very likely an implementation error
-    #[error("A Credential was not found locally which is very likely an implementation error")]
-    CredentialNotFound,
+    #[error("A Credential of type {0:?} was not found locally which is very likely an implementation error")]
+    CredentialNotFound(MlsCredentialType),
     /// The MLS group is in an invalid state for an unknown reason
     #[error("The MLS group is in an invalid state for an unknown reason")]
     InternalMlsError,
@@ -224,6 +234,9 @@ pub enum CryptoError {
     /// The encountered ClientId does not match Wire's definition
     #[error("The encountered ClientId does not match Wire's definition")]
     InvalidClientId,
+    /// Json error
+    #[error(transparent)]
+    JsonError(#[from] serde_json::Error),
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

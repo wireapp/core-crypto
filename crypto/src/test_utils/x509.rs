@@ -42,7 +42,7 @@ impl From<PkiPath> for PerDomainTrustAnchor {
             .map(|c| pem::Pem::new("CERTIFICATE", c.to_der().unwrap()))
             .collect::<Vec<_>>();
         Self {
-            domain_name: domains.get(0).cloned().unwrap_or_default(),
+            domain_name: domains.first().cloned().unwrap_or_default(),
             intermediate_certificate_chain: pem::encode_many(&pems),
         }
     }
