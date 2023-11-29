@@ -52,7 +52,7 @@ impl ClientIdentities {
             Some(cbs) => {
                 let already_exists = !cbs.insert(cb);
                 if already_exists {
-                    return Err(CryptoError::ImplementationError);
+                    return Err(CryptoError::CredentialBundleConflict);
                 }
             }
             None => {
@@ -204,7 +204,10 @@ pub mod tests {
                     let cb = central.new_credential_bundle(&case).await;
                     let client = central.mls_client.as_mut().unwrap();
                     let push = client.identities.push_credential_bundle(case.signature_scheme(), cb);
-                    assert!(push.is_err());
+                    assert!(matches!(
+                        push.unwrap_err(),
+                        crate::CryptoError::CredentialBundleConflict
+                    ));
                 })
             })
             .await

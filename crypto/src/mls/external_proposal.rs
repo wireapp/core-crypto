@@ -127,7 +127,7 @@ impl MlsCentral {
 
                 self.mls_client()?
                     .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
-                    .ok_or(CryptoError::ImplementationError)?
+                    .ok_or(CryptoError::CredentialNotFound(credential_type))?
             }
             (None, MlsCredentialType::X509) => return Err(CryptoError::E2eiEnrollmentNotDone),
         };

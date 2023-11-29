@@ -27,6 +27,7 @@ use crate::{
         CryptoError, CryptoResult, MlsCentral, MlsCiphersuite, MlsCredentialType, MlsError,
     },
 };
+use core_crypto_keystore::CryptoKeystoreError;
 use openmls::prelude::{Credential, CredentialType};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{crypto::OpenMlsCrypto, types::SignatureScheme, OpenMlsCryptoProvider};
@@ -360,9 +361,10 @@ impl Client {
 
         let id = id.unwrap_or_else(|| self.id());
 
+        let credential = cb.credential.tls_serialize_detached().map_err(MlsError::from)?;
         let credential = MlsCredential {
             id: id.clone().into(),
-            credential: cb.credential.tls_serialize_detached().map_err(MlsError::from)?,
+            credential,
             created_at: 0,
         };
         let created_at = credential.insert(&mut conn).await?;
@@ -373,7 +375,10 @@ impl Client {
             cb.signature_key.tls_serialize_detached().map_err(MlsError::from)?,
             id.clone().into(),
         );
-        sign_kp.save(&mut conn).await?;
+        sign_kp.save(&mut conn).await.map_err(|e| match e {
+            CryptoKeystoreError::AlreadyExists => CryptoError::CredentialBundleConflict,
+            _ => e.into(),
+        })?;
 
         // set the creation date of the signature keypair which is the same for the CredentialBundle
         cb.created_at = created_at;
@@ -398,7 +403,7 @@ impl Client {
             MlsCredentialType::Basic => {
                 self.init_basic_credential_bundle_if_missing(backend, sc).await?;
                 self.find_most_recent_credential_bundle(sc, ct)
-                    .ok_or(CryptoError::ImplementationError)
+                    .ok_or(CryptoError::CredentialNotFound(ct))
             }
             MlsCredentialType::X509 => self
                 .find_most_recent_credential_bundle(sc, ct)

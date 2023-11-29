@@ -327,7 +327,7 @@ pub mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    let simple_ref = MlsProposalRef::try_from(vec![0; case.ciphersuite().hash_length()]).unwrap();
+                    let simple_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
                     let clear = alice_central.clear_pending_proposal(&id, simple_ref).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::ConversationNotFound(conv_id) if conv_id == id))
                 })
@@ -346,7 +346,7 @@ pub mod tests {
                         .await
                         .unwrap();
                     assert!(alice_central.pending_proposals(&id).await.is_empty());
-                    let any_ref = MlsProposalRef::try_from(vec![0; case.ciphersuite().hash_length()]).unwrap();
+                    let any_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
                     let clear = alice_central.clear_pending_proposal(&id, any_ref.clone()).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::PendingProposalNotFound(prop_ref) if prop_ref == any_ref))
                 })

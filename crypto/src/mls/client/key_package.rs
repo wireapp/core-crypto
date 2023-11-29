@@ -348,7 +348,7 @@ impl MlsCentral {
     #[cfg_attr(test, crate::dispotent)]
     pub async fn delete_keypackages(&mut self, refs: &[KeyPackageRef]) -> CryptoResult<()> {
         if refs.is_empty() {
-            return Err(CryptoError::ImplementationError);
+            return Err(CryptoError::ConsumerError);
         }
         let client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
         client.prune_keypackages_and_credential(&self.mls_backend, refs).await
@@ -557,7 +557,7 @@ pub mod tests {
                     kp.leaf_node().capabilities().ciphersuites().to_vec(),
                     MlsConversationConfiguration::DEFAULT_SUPPORTED_CIPHERSUITES
                         .iter()
-                        .map(|c| VerifiableCiphersuite::try_from(*c).unwrap())
+                        .map(|c| VerifiableCiphersuite::from(*c))
                         .collect::<Vec<_>>()
                 );
                 assert!(kp.leaf_node().capabilities().proposals().is_empty());

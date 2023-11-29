@@ -2,8 +2,8 @@ use crate::prelude::ConversationId;
 use crate::{
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
     prelude::{
-        CertificateBundle, Client, ClientId, CryptoError, CryptoResult, E2eIdentityError, E2eIdentityResult,
-        E2eiEnrollment, MlsCentral, MlsCiphersuite, MlsCommitBundle, MlsConversation, MlsCredentialType,
+        CertificateBundle, Client, ClientId, CryptoError, CryptoResult, E2eIdentityError, E2eiEnrollment, MlsCentral,
+        MlsCiphersuite, MlsCommitBundle, MlsConversation, MlsCredentialType,
     },
     MlsError,
 };
@@ -73,13 +73,13 @@ impl MlsCentral {
         team: Option<String>,
         expiry_days: u32,
         ciphersuite: MlsCiphersuite,
-    ) -> E2eIdentityResult<E2eiEnrollment> {
+    ) -> CryptoResult<E2eiEnrollment> {
         let client = self.mls_client()?;
 
         // look for existing credential of type basic. If there isn't, then this method has been misused
         let cb = client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
-            .ok_or(E2eIdentityError::ImplementationError)?;
+            .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::Basic))?;
 
         let sign_keypair = Some(cb.signature_key.clone().try_into()?);
 
@@ -108,18 +108,18 @@ impl MlsCentral {
         team: Option<String>,
         expiry_days: u32,
         ciphersuite: MlsCiphersuite,
-    ) -> E2eIdentityResult<E2eiEnrollment> {
+    ) -> CryptoResult<E2eiEnrollment> {
         let client = self.mls_client()?;
 
         // look for existing credential of type x509. If there isn't, then this method has been misused
         let cb = client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
-            .ok_or(E2eIdentityError::ImplementationError)?;
+            .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::X509))?;
         let sign_keypair = Some(cb.signature_key.clone().try_into()?);
         let existing_identity = cb
             .credential()
             .extract_identity()?
-            .ok_or(E2eIdentityError::ImplementationError)?;
+            .ok_or(E2eIdentityError::InvalidIdentity)?;
 
         let display_name = display_name.unwrap_or(existing_identity.display_name);
         let handle = handle.unwrap_or(existing_identity.handle);
@@ -144,7 +144,7 @@ impl MlsCentral {
         enrollment: E2eiEnrollment,
         certificate_chain: String,
         new_key_packages_count: usize,
-    ) -> E2eIdentityResult<MlsRotateBundle> {
+    ) -> CryptoResult<MlsRotateBundle> {
         let sk = enrollment.get_sign_key_for_mls()?;
         let cs = enrollment.ciphersuite;
         let certificate_chain = enrollment.certificate_response(certificate_chain).await?;
@@ -161,7 +161,7 @@ impl MlsCentral {
         let new_cb = self
             .mls_client
             .as_mut()
-            .ok_or(CryptoError::ImplementationError)?
+            .ok_or(CryptoError::MlsNotInitialized)?
             .save_new_x509_credential_bundle(&self.mls_backend, cs.signature_algorithm(), cert_bundle)
             .await?;
 
@@ -794,7 +794,7 @@ pub mod tests {
 
                             // Alice's previous rotate commit should have been renewed so that she can re-commit it
                             assert_eq!(decrypted.proposals.len(), 1);
-                            let renewed_proposal = decrypted.proposals.get(0).unwrap();
+                            let renewed_proposal = decrypted.proposals.first().unwrap();
                             bob_central
                                 .decrypt_message(&id, renewed_proposal.proposal.to_bytes().unwrap())
                                 .await

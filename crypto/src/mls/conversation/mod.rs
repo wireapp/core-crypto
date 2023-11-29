@@ -218,7 +218,7 @@ impl MlsConversation {
         Ok(self
             .group
             .own_leaf_node()
-            .ok_or(CryptoError::ImplementationError)?
+            .ok_or(CryptoError::InternalMlsError)?
             .credential()
             .credential_type()
             .into())

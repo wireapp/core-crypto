@@ -1,4 +1,5 @@
-use crate::prelude::{CryptoError, E2eIdentityResult, E2eiEnrollment, MlsCentral};
+use crate::prelude::{CryptoError, E2eiEnrollment, MlsCentral};
+use crate::CryptoResult;
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
@@ -8,7 +9,7 @@ use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
 pub(crate) type EnrollmentHandle = Vec<u8>;
 
 impl E2eiEnrollment {
-    pub(crate) async fn stash(self, backend: &MlsCryptoProvider) -> E2eIdentityResult<EnrollmentHandle> {
+    pub(crate) async fn stash(self, backend: &MlsCryptoProvider) -> CryptoResult<EnrollmentHandle> {
         // should be enough to prevent collisions
         const HANDLE_SIZE: usize = 32;
 
@@ -22,7 +23,7 @@ impl E2eiEnrollment {
         Ok(handle)
     }
 
-    pub(crate) async fn stash_pop(backend: &MlsCryptoProvider, handle: EnrollmentHandle) -> E2eIdentityResult<Self> {
+    pub(crate) async fn stash_pop(backend: &MlsCryptoProvider, handle: EnrollmentHandle) -> CryptoResult<Self> {
         let content = backend
             .key_store()
             .pop_e2ei_enrollment(&handle)
@@ -41,7 +42,7 @@ impl MlsCentral {
     ///
     /// # Returns
     /// A handle for retrieving the enrollment later on
-    pub async fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> E2eIdentityResult<EnrollmentHandle> {
+    pub async fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> CryptoResult<EnrollmentHandle> {
         enrollment.stash(&self.mls_backend).await
     }
 
@@ -49,7 +50,7 @@ impl MlsCentral {
     ///
     /// # Arguments
     /// * `handle` - returned by [MlsCentral::e2ei_enrollment_stash]
-    pub async fn e2ei_enrollment_stash_pop(&self, handle: EnrollmentHandle) -> E2eIdentityResult<E2eiEnrollment> {
+    pub async fn e2ei_enrollment_stash_pop(&self, handle: EnrollmentHandle) -> CryptoResult<E2eiEnrollment> {
         E2eiEnrollment::stash_pop(&self.mls_backend, handle).await
     }
 }

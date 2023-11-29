@@ -2406,7 +2406,6 @@ impl CoreCrypto {
                         ciphersuite.into(),
                     )
                     .map(E2eiEnrollment)
-                    .map_err(|_| CryptoError::ImplementationError)
                     .map_err(CoreCryptoError::from)?;
 
                 WasmCryptoResult::Ok(enrollment.into())
@@ -2442,7 +2441,6 @@ impl CoreCrypto {
                         ciphersuite.into(),
                     )
                     .map(E2eiEnrollment)
-                    .map_err(|_| CryptoError::ImplementationError)
                     .map_err(CoreCryptoError::from)?;
 
                 WasmCryptoResult::Ok(enrollment.into())
@@ -2478,7 +2476,6 @@ impl CoreCrypto {
                         ciphersuite.into(),
                     )
                     .map(E2eiEnrollment)
-                    .map_err(|_| CryptoError::ImplementationError)
                     .map_err(CoreCryptoError::from)?;
 
                 WasmCryptoResult::Ok(enrollment.into())
@@ -2554,7 +2551,6 @@ impl CoreCrypto {
                     .e2ei_enrollment_stash_pop(handle.to_vec())
                     .await
                     .map(E2eiEnrollment)
-                    .map_err(|_| CryptoError::ImplementationError)
                     .map_err(CoreCryptoError::from)?;
 
                 WasmCryptoResult::Ok(enrollment.into())
@@ -2633,7 +2629,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                let identities: HashMap<String, Vec<WireIdentity>> = this
+                let identities = this
                     .write()
                     .await
                     .get_user_identities(&conversation_id, user_ids.deref())
