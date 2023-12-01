@@ -39,6 +39,8 @@ pub enum MissingKeyErrorKind {
     MlsPendingMessages,
     #[error("End-to-end identity enrollment")]
     E2eiEnrollment,
+    #[error("OIDC refresh token")]
+    RefreshToken,
     #[cfg(feature = "proteus-keystore")]
     #[error("Proteus PreKey")]
     ProteusPrekey,

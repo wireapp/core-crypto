@@ -1267,233 +1267,6 @@ impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState
     }
 }
 
-// End-to-end identity methods
-#[allow(dead_code, unused_variables)]
-#[uniffi::export]
-impl CoreCrypto {
-    /// See [core_crypto::mls::MlsCentral::e2ei_new_enrollment]
-    pub async fn e2ei_new_enrollment(
-        &self,
-        client_id: String,
-        display_name: String,
-        handle: String,
-        team: Option<String>,
-        expiry_days: u32,
-        ciphersuite: Ciphersuite,
-    ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
-        Ok(self
-            .central
-            .lock()
-            .await
-            .e2ei_new_enrollment(
-                client_id.into_bytes().into(),
-                display_name,
-                handle,
-                team,
-                expiry_days,
-                ciphersuite.into(),
-            )
-            .map(async_lock::Mutex::new)
-            .map(std::sync::Arc::new)
-            .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)?)
-    }
-
-    /// See [core_crypto::mls::MlsCentral::e2ei_new_activation_enrollment]
-    pub async fn e2ei_new_activation_enrollment(
-        &self,
-        client_id: String,
-        display_name: String,
-        handle: String,
-        team: Option<String>,
-        expiry_days: u32,
-        ciphersuite: Ciphersuite,
-    ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
-        Ok(self
-            .central
-            .lock()
-            .await
-            .e2ei_new_activation_enrollment(
-                client_id.into_bytes().into(),
-                display_name,
-                handle,
-                team,
-                expiry_days,
-                ciphersuite.into(),
-            )
-            .map(async_lock::Mutex::new)
-            .map(std::sync::Arc::new)
-            .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)?)
-    }
-
-    /// See [core_crypto::mls::MlsCentral::e2ei_new_rotate_enrollment]
-    pub async fn e2ei_new_rotate_enrollment(
-        &self,
-        client_id: String,
-        display_name: Option<String>,
-        handle: Option<String>,
-        team: Option<String>,
-        expiry_days: u32,
-        ciphersuite: Ciphersuite,
-    ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
-        Ok(self
-            .central
-            .lock()
-            .await
-            .e2ei_new_rotate_enrollment(
-                client_id.into_bytes().into(),
-                display_name,
-                handle,
-                team,
-                expiry_days,
-                ciphersuite.into(),
-            )
-            .map(async_lock::Mutex::new)
-            .map(std::sync::Arc::new)
-            .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)?)
-    }
-
-    /// See [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
-    pub async fn e2ei_mls_init_only(
-        &self,
-        enrollment: std::sync::Arc<E2eiEnrollment>,
-        certificate_chain: String,
-        nb_key_package: Option<u32>,
-    ) -> CoreCryptoResult<()> {
-        if std::sync::Arc::strong_count(&enrollment) > 1 {
-            unsafe {
-                // it is required because in order to pass the enrollment to Rust, uniffi lowers it by cloning the Arc
-                // hence here the Arc has a strong_count of 2. We decrement it manually then drop it with `try_unwrap`.
-                // We have to do this since this instance contains private keys that have to be zeroed once dropped.
-                std::sync::Arc::decrement_strong_count(std::sync::Arc::as_ptr(&enrollment));
-            }
-        }
-        let e2ei = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
-        let e2ei = std::sync::Arc::into_inner(e2ei.0)
-            .ok_or_else(|| CryptoError::LockPoisonError)?
-            .into_inner();
-
-        let nb_key_package = nb_key_package
-            .map(usize::try_from)
-            .transpose()
-            .map_err(CryptoError::from)?;
-
-        Ok(self
-            .central
-            .lock()
-            .await
-            .e2ei_mls_init_only(e2ei, certificate_chain, nb_key_package)
-            .await?)
-    }
-
-    /// See [core_crypto::mls::MlsCentral::e2ei_rotate_all]
-    pub async fn e2ei_rotate_all(
-        &self,
-        enrollment: std::sync::Arc<E2eiEnrollment>,
-        certificate_chain: String,
-        new_key_packages_count: u32,
-    ) -> CoreCryptoResult<RotateBundle> {
-        if std::sync::Arc::strong_count(&enrollment) > 1 {
-            unsafe {
-                // it is required because in order to pass the enrollment to Rust, uniffi lowers it by cloning the Arc
-                // hence here the Arc has a strong_count of 2. We decrement it manually then drop it with `try_unwrap`.
-                // We have to do this since this instance contains private keys that have to be zeroed once dropped.
-                std::sync::Arc::decrement_strong_count(std::sync::Arc::as_ptr(&enrollment));
-            }
-        }
-        let e2ei = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
-        let e2ei = std::sync::Arc::into_inner(e2ei.0)
-            .ok_or_else(|| CryptoError::LockPoisonError)?
-            .into_inner();
-
-        self.central
-            .lock()
-            .await
-            .e2ei_rotate_all(e2ei, certificate_chain, new_key_packages_count as usize)
-            .await?
-            .try_into()
-    }
-
-    /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash]
-    pub async fn e2ei_enrollment_stash(&self, enrollment: std::sync::Arc<E2eiEnrollment>) -> CoreCryptoResult<Vec<u8>> {
-        let enrollment = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
-        let enrollment = std::sync::Arc::into_inner(enrollment.0)
-            .ok_or_else(|| CryptoError::LockPoisonError)?
-            .into_inner();
-
-        Ok(self.central.lock().await.e2ei_enrollment_stash(enrollment).await?)
-    }
-
-    /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash_pop]
-    pub async fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
-        Ok(self
-            .central
-            .lock()
-            .await
-            .e2ei_enrollment_stash_pop(handle)
-            .await
-            .map(async_lock::Mutex::new)
-            .map(std::sync::Arc::new)
-            .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)?)
-    }
-
-    /// See [core_crypto::mls::MlsCentral::e2ei_conversation_state]
-    pub async fn e2ei_conversation_state(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<E2eiConversationState> {
-        Ok(self
-            .central
-            .lock()
-            .await
-            .e2ei_conversation_state(&conversation_id)
-            .await
-            .map(Into::into)?)
-    }
-
-    /// See [core_crypto::mls::MlsCentral::e2ei_is_enabled]
-    pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
-        let sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
-            .signature_algorithm();
-        Ok(self.central.lock().await.e2ei_is_enabled(sc)?)
-    }
-
-    /// See [core_crypto::mls::MlsCentral::get_device_identities]
-    pub async fn get_device_identities(
-        &self,
-        conversation_id: Vec<u8>,
-        device_ids: Vec<ClientId>,
-    ) -> CoreCryptoResult<Vec<WireIdentity>> {
-        let device_ids = device_ids.into_iter().map(|cid| cid.0).collect::<Vec<_>>();
-        Ok(self
-            .central
-            .lock()
-            .await
-            .get_device_identities(&conversation_id, &device_ids[..])
-            .await?
-            .into_iter()
-            .map(Into::into)
-            .collect::<Vec<_>>())
-    }
-
-    /// See [core_crypto::mls::MlsCentral::get_user_identities]
-    pub async fn get_user_identities(
-        &self,
-        conversation_id: Vec<u8>,
-        user_ids: Vec<String>,
-    ) -> CoreCryptoResult<HashMap<String, Vec<WireIdentity>>> {
-        Ok(self
-            .central
-            .lock()
-            .await
-            .get_user_identities(&conversation_id, &user_ids[..])
-            .await?
-            .into_iter()
-            .map(|(k, v)| (k, v.into_iter().map(Into::into).collect()))
-            .collect::<HashMap<String, Vec<WireIdentity>>>())
-    }
-}
-
 #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
 #[uniffi::export]
 impl CoreCrypto {
@@ -1709,9 +1482,237 @@ impl CoreCrypto {
     }
 }
 
+// End-to-end identity methods
+#[allow(dead_code, unused_variables)]
+#[uniffi::export]
+impl CoreCrypto {
+    /// See [core_crypto::mls::MlsCentral::e2ei_new_enrollment]
+    pub async fn e2ei_new_enrollment(
+        &self,
+        client_id: String,
+        display_name: String,
+        handle: String,
+        team: Option<String>,
+        expiry_days: u32,
+        ciphersuite: Ciphersuite,
+    ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
+        Ok(self
+            .central
+            .lock()
+            .await
+            .e2ei_new_enrollment(
+                client_id.into_bytes().into(),
+                display_name,
+                handle,
+                team,
+                expiry_days,
+                ciphersuite.into(),
+            )
+            .map(async_lock::RwLock::new)
+            .map(std::sync::Arc::new)
+            .map(E2eiEnrollment)
+            .map(std::sync::Arc::new)?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_new_activation_enrollment]
+    pub async fn e2ei_new_activation_enrollment(
+        &self,
+        client_id: String,
+        display_name: String,
+        handle: String,
+        team: Option<String>,
+        expiry_days: u32,
+        ciphersuite: Ciphersuite,
+    ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
+        Ok(self
+            .central
+            .lock()
+            .await
+            .e2ei_new_activation_enrollment(
+                client_id.into_bytes().into(),
+                display_name,
+                handle,
+                team,
+                expiry_days,
+                ciphersuite.into(),
+            )
+            .map(async_lock::RwLock::new)
+            .map(std::sync::Arc::new)
+            .map(E2eiEnrollment)
+            .map(std::sync::Arc::new)?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_new_rotate_enrollment]
+    pub async fn e2ei_new_rotate_enrollment(
+        &self,
+        client_id: String,
+        display_name: Option<String>,
+        handle: Option<String>,
+        team: Option<String>,
+        expiry_days: u32,
+        ciphersuite: Ciphersuite,
+    ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
+        Ok(self
+            .central
+            .lock()
+            .await
+            .e2ei_new_rotate_enrollment(
+                client_id.into_bytes().into(),
+                display_name,
+                handle,
+                team,
+                expiry_days,
+                ciphersuite.into(),
+            )
+            .await
+            .map(async_lock::RwLock::new)
+            .map(std::sync::Arc::new)
+            .map(E2eiEnrollment)
+            .map(std::sync::Arc::new)?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
+    pub async fn e2ei_mls_init_only(
+        &self,
+        enrollment: std::sync::Arc<E2eiEnrollment>,
+        certificate_chain: String,
+        nb_key_package: Option<u32>,
+    ) -> CoreCryptoResult<()> {
+        if std::sync::Arc::strong_count(&enrollment) > 1 {
+            unsafe {
+                // it is required because in order to pass the enrollment to Rust, uniffi lowers it by cloning the Arc
+                // hence here the Arc has a strong_count of 2. We decrement it manually then drop it with `try_unwrap`.
+                // We have to do this since this instance contains private keys that have to be zeroed once dropped.
+                std::sync::Arc::decrement_strong_count(std::sync::Arc::as_ptr(&enrollment));
+            }
+        }
+        let e2ei = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
+        let e2ei = std::sync::Arc::into_inner(e2ei.0)
+            .ok_or_else(|| CryptoError::LockPoisonError)?
+            .into_inner();
+
+        let nb_key_package = nb_key_package
+            .map(usize::try_from)
+            .transpose()
+            .map_err(CryptoError::from)?;
+
+        Ok(self
+            .central
+            .lock()
+            .await
+            .e2ei_mls_init_only(e2ei, certificate_chain, nb_key_package)
+            .await?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_rotate_all]
+    pub async fn e2ei_rotate_all(
+        &self,
+        enrollment: std::sync::Arc<E2eiEnrollment>,
+        certificate_chain: String,
+        new_key_packages_count: u32,
+    ) -> CoreCryptoResult<RotateBundle> {
+        if std::sync::Arc::strong_count(&enrollment) > 1 {
+            unsafe {
+                // it is required because in order to pass the enrollment to Rust, uniffi lowers it by cloning the Arc
+                // hence here the Arc has a strong_count of 2. We decrement it manually then drop it with `try_unwrap`.
+                // We have to do this since this instance contains private keys that have to be zeroed once dropped.
+                std::sync::Arc::decrement_strong_count(std::sync::Arc::as_ptr(&enrollment));
+            }
+        }
+        let e2ei = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
+        let e2ei = std::sync::Arc::into_inner(e2ei.0)
+            .ok_or_else(|| CryptoError::LockPoisonError)?
+            .into_inner();
+
+        self.central
+            .lock()
+            .await
+            .e2ei_rotate_all(e2ei, certificate_chain, new_key_packages_count as usize)
+            .await?
+            .try_into()
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash]
+    pub async fn e2ei_enrollment_stash(&self, enrollment: std::sync::Arc<E2eiEnrollment>) -> CoreCryptoResult<Vec<u8>> {
+        let enrollment = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
+        let enrollment = std::sync::Arc::into_inner(enrollment.0)
+            .ok_or_else(|| CryptoError::LockPoisonError)?
+            .into_inner();
+
+        Ok(self.central.lock().await.e2ei_enrollment_stash(enrollment).await?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash_pop]
+    pub async fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
+        Ok(self
+            .central
+            .lock()
+            .await
+            .e2ei_enrollment_stash_pop(handle)
+            .await
+            .map(async_lock::RwLock::new)
+            .map(std::sync::Arc::new)
+            .map(E2eiEnrollment)
+            .map(std::sync::Arc::new)?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_conversation_state]
+    pub async fn e2ei_conversation_state(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<E2eiConversationState> {
+        Ok(self
+            .central
+            .lock()
+            .await
+            .e2ei_conversation_state(&conversation_id)
+            .await
+            .map(Into::into)?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_is_enabled]
+    pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
+        let sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
+            .signature_algorithm();
+        Ok(self.central.lock().await.e2ei_is_enabled(sc)?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::get_device_identities]
+    pub async fn get_device_identities(
+        &self,
+        conversation_id: Vec<u8>,
+        device_ids: Vec<ClientId>,
+    ) -> CoreCryptoResult<Vec<WireIdentity>> {
+        let device_ids = device_ids.into_iter().map(|cid| cid.0).collect::<Vec<_>>();
+        Ok(self
+            .central
+            .lock()
+            .await
+            .get_device_identities(&conversation_id, &device_ids[..])
+            .await?
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<_>>())
+    }
+
+    /// See [core_crypto::mls::MlsCentral::get_user_identities]
+    pub async fn get_user_identities(
+        &self,
+        conversation_id: Vec<u8>,
+        user_ids: Vec<String>,
+    ) -> CoreCryptoResult<HashMap<String, Vec<WireIdentity>>> {
+        Ok(self
+            .central
+            .lock()
+            .await
+            .get_user_identities(&conversation_id, &user_ids[..])
+            .await?
+            .into_iter()
+            .map(|(k, v)| (k, v.into_iter().map(Into::into).collect()))
+            .collect::<HashMap<String, Vec<WireIdentity>>>())
+    }
+}
+
 #[derive(Debug, uniffi::Object)]
 /// See [core_crypto::e2e_identity::WireE2eIdentity]
-pub struct E2eiEnrollment(std::sync::Arc<async_lock::Mutex<core_crypto::prelude::E2eiEnrollment>>);
+pub struct E2eiEnrollment(std::sync::Arc<async_lock::RwLock<core_crypto::prelude::E2eiEnrollment>>);
 
 #[uniffi::export]
 impl E2eiEnrollment {
@@ -1719,7 +1720,7 @@ impl E2eiEnrollment {
     pub async fn directory_response(&self, directory: Vec<u8>) -> CoreCryptoResult<AcmeDirectory> {
         Ok(self
             .0
-            .lock()
+            .write()
             .await
             .directory_response(directory)
             .map(AcmeDirectory::from)?)
@@ -1727,39 +1728,39 @@ impl E2eiEnrollment {
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_account_request]
     pub async fn new_account_request(&self, previous_nonce: String) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self.0.lock().await.new_account_request(previous_nonce)?)
+        Ok(self.0.read().await.new_account_request(previous_nonce)?)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_account_response]
     pub async fn new_account_response(&self, account: Vec<u8>) -> CoreCryptoResult<()> {
-        Ok(self.0.lock().await.new_account_response(account)?)
+        Ok(self.0.write().await.new_account_response(account)?)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_order_request]
     #[allow(clippy::too_many_arguments)]
     pub async fn new_order_request(&self, previous_nonce: String) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self.0.lock().await.new_order_request(previous_nonce)?)
+        Ok(self.0.read().await.new_order_request(previous_nonce)?)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_order_response]
     pub async fn new_order_response(&self, order: Vec<u8>) -> CoreCryptoResult<NewAcmeOrder> {
-        Ok(self.0.lock().await.new_order_response(order)?.into())
+        Ok(self.0.read().await.new_order_response(order)?.into())
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_authz_request]
     pub async fn new_authz_request(&self, url: String, previous_nonce: String) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self.0.lock().await.new_authz_request(url, previous_nonce)?)
+        Ok(self.0.read().await.new_authz_request(url, previous_nonce)?)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_authz_response]
     pub async fn new_authz_response(&self, authz: Vec<u8>) -> CoreCryptoResult<NewAcmeAuthz> {
-        Ok(self.0.lock().await.new_authz_response(authz)?.into())
+        Ok(self.0.write().await.new_authz_response(authz)?.into())
     }
 
     #[allow(clippy::too_many_arguments)]
     /// See [core_crypto::e2e_identity::E2eiEnrollment::create_dpop_token]
     pub async fn create_dpop_token(&self, expiry_secs: u32, backend_nonce: String) -> CoreCryptoResult<String> {
-        Ok(self.0.lock().await.create_dpop_token(expiry_secs, backend_nonce)?)
+        Ok(self.0.read().await.create_dpop_token(expiry_secs, backend_nonce)?)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_dpop_challenge_request]
@@ -1770,52 +1771,73 @@ impl E2eiEnrollment {
     ) -> CoreCryptoResult<Vec<u8>> {
         Ok(self
             .0
-            .lock()
+            .read()
             .await
             .new_dpop_challenge_request(access_token, previous_nonce)?)
+    }
+
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_dpop_challenge_response]
+    pub async fn new_dpop_challenge_response(&self, challenge: Vec<u8>) -> CoreCryptoResult<()> {
+        Ok(self.0.read().await.new_dpop_challenge_response(challenge)?)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_request]
     pub async fn new_oidc_challenge_request(
         &self,
         id_token: String,
+        refresh_token: String,
         previous_nonce: String,
     ) -> CoreCryptoResult<Vec<u8>> {
         Ok(self
             .0
-            .lock()
+            .write()
             .await
-            .new_oidc_challenge_request(id_token, previous_nonce)?)
+            .new_oidc_challenge_request(id_token, refresh_token, previous_nonce)?)
     }
 
-    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_challenge_response]
-    pub async fn new_challenge_response(&self, challenge: Vec<u8>) -> CoreCryptoResult<()> {
-        Ok(self.0.lock().await.new_challenge_response(challenge)?)
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_response]
+    pub async fn new_oidc_challenge_response(
+        &self,
+        cc: std::sync::Arc<CoreCrypto>,
+        challenge: Vec<u8>,
+    ) -> CoreCryptoResult<()> {
+        let cc = cc.central.lock().await;
+        Ok(self
+            .0
+            .write()
+            .await
+            .new_oidc_challenge_response(cc.provider(), challenge)
+            .await?)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::check_order_request]
     pub async fn check_order_request(&self, order_url: String, previous_nonce: String) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self.0.lock().await.check_order_request(order_url, previous_nonce)?)
+        Ok(self.0.read().await.check_order_request(order_url, previous_nonce)?)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::check_order_response]
     pub async fn check_order_response(&self, order: Vec<u8>) -> CoreCryptoResult<String> {
-        Ok(self.0.lock().await.check_order_response(order)?)
+        Ok(self.0.write().await.check_order_response(order)?)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::finalize_request]
     pub async fn finalize_request(&self, previous_nonce: String) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self.0.lock().await.finalize_request(previous_nonce)?)
+        Ok(self.0.write().await.finalize_request(previous_nonce)?)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::finalize_response]
     pub async fn finalize_response(&self, finalize: Vec<u8>) -> CoreCryptoResult<String> {
-        Ok(self.0.lock().await.finalize_response(finalize)?)
+        Ok(self.0.write().await.finalize_response(finalize)?)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::certificate_request]
     pub async fn certificate_request(&self, previous_nonce: String) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self.0.lock().await.certificate_request(previous_nonce)?)
+        Ok(self.0.write().await.certificate_request(previous_nonce)?)
+    }
+
+    /// See [core_crypto::e2e_identity::refresh_token::RefreshToken]
+    pub async fn get_refresh_token(&self) -> CoreCryptoResult<String> {
+        Ok(self.0.read().await.get_refresh_token().map(Into::into)?)
     }
 }
 

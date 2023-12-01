@@ -116,6 +116,11 @@ impl DatabaseConnection for WasmConnection {
                     .add_index(Index::new("id", "id").unique(true)),
             )
             .add_object_store(
+                ObjectStore::new("e2ei_refresh_token")
+                    .auto_increment(false)
+                    .add_index(Index::new("id", "id").unique(true)),
+            )
+            .add_object_store(
                 ObjectStore::new("proteus_prekeys")
                     .auto_increment(false)
                     .add_index(Index::new("id", "id").unique(true)),
