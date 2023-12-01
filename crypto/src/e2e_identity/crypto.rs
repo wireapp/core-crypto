@@ -5,6 +5,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{crypto::OpenMlsCrypto, types::Ciphersuite, OpenMlsCryptoProvider};
 use wire_e2e_identity::prelude::JwsAlgorithm;
+use zeroize::Zeroize;
 
 /// Length for all signature keys since there's not method to retrieve it from openmls
 const SIGN_KEY_LENGTH: usize = 32;
@@ -53,7 +54,9 @@ impl TryFrom<MlsCiphersuite> for JwsAlgorithm {
     }
 }
 
-pub struct E2eiSignatureKeypair(pub(crate) Vec<u8>);
+#[derive(Debug, serde::Serialize, serde::Deserialize, Zeroize, derive_more::From, derive_more::Deref)]
+#[zeroize(drop)]
+pub struct E2eiSignatureKeypair(Vec<u8>);
 
 impl From<(Vec<u8>, Vec<u8>)> for E2eiSignatureKeypair {
     fn from((sk, pk): (Vec<u8>, Vec<u8>)) -> Self {
@@ -64,7 +67,7 @@ impl From<(Vec<u8>, Vec<u8>)> for E2eiSignatureKeypair {
 impl TryFrom<SignatureKeyPair> for E2eiSignatureKeypair {
     type Error = CryptoError;
 
-    fn try_from(kp: SignatureKeyPair) -> Result<Self, Self::Error> {
+    fn try_from(kp: SignatureKeyPair) -> CryptoResult<Self> {
         let sk = kp.private();
         let sk = match sk.len() {
             SIGN_KEY_LENGTH => sk,

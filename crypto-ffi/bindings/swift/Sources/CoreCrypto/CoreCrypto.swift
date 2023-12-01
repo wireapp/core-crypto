@@ -1361,21 +1361,30 @@ public struct E2eiEnrollment: ConvertToInner {
         return try await self.delegate.newDpopChallengeRequest(url: url, previousNonce: previousNonce)
     }
 
-    /// Creates a new challenge request for Wire Oidc challenge.
-    /// - Parameter idToken: you get back from Identity Provider
-    /// - Parameter previousNonce: `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
-    /// - SeeAlso:
-    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
-    public func newOidcChallengeRequest(idToken: String, previousNonce: String) async throws -> JsonRawData {
-        return try await self.delegate.newOidcChallengeRequest(idToken: idToken, previousNonce: previousNonce)
-    }
-
-    /// Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}`.
+    /// Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}` for DPoP challenge.
     /// - Parameter challenge: HTTP response body
     /// - SeeAlso:
     /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
-    public func newChallengeResponse(challenge: JsonRawData) async throws {
-        return try await self.delegate.newChallengeResponse(challenge: challenge)
+    public func newDpopChallengeResponse(challenge: JsonRawData) async throws {
+        return try await self.delegate.newDpopChallengeResponse(challenge: challenge)
+    }
+
+    /// Creates a new challenge request for Wire Oidc challenge.
+    /// - Parameter idToken: you get back from Identity Provider
+    /// - Parameter refreshToken: you get back from Identity Provider to renew the access token
+    /// - Parameter previousNonce: `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
+    public func newOidcChallengeRequest(idToken: String, refreshToken: String, previousNonce: String) async throws -> JsonRawData {
+        return try await self.delegate.newOidcChallengeRequest(idToken: idToken, refreshToken: refreshToken, previousNonce: previousNonce)
+    }
+
+    /// Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}` for OIDC challenge.
+    /// - Parameter challenge: HTTP response body
+    /// - SeeAlso:
+    /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
+    public func newOidcChallengeResponse(cc: CoreCryptoWrapper, challenge: JsonRawData) async throws {
+        return try await self.delegate.newOidcChallengeResponse(cc: cc.coreCrypto, challenge: challenge)
     }
 
     /// Verifies that the previous challenge has been completed.
@@ -1419,6 +1428,13 @@ public struct E2eiEnrollment: ConvertToInner {
     /// https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2
     public func certificateRequest(previousNonce: String) async throws -> JsonRawData {
         return try await self.delegate.certificateRequest(previousNonce: previousNonce)
+    }
+
+    /// Lets clients retrieve the OIDC refresh token to try to renew the user's authorization.
+    /// If it's expired, the user needs to reauthenticate and they will update the refresh token
+    /// in ``E2eiEnrollment/newOidcChallengeRequest``
+    public func getRefreshToken() async throws -> String {
+        return try await self.delegate.getRefreshToken()
     }
 }
 

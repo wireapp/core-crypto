@@ -28,6 +28,8 @@ private class Callbacks : CoreCryptoCallbacks {
 class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private val rootDir: String) {
     suspend fun proteusClient(): ProteusClient = ProteusClientImpl(cc, rootDir)
 
+    internal fun lower() = cc
+
     /**
      * When you have a [ClientId], use this method to initialize your [MLSClient].
      * If you don't have a [ClientId], use [externallyGeneratedMlsClient]

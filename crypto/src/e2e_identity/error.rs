@@ -1,6 +1,7 @@
 //! End to end identity errors
 
 use crate::prelude::MlsCredentialType;
+use core_crypto_keystore::CryptoKeystoreError;
 
 /// Wrapper over a [Result] of an end to end identity error
 pub type E2eIdentityResult<T> = Result<T, E2eIdentityError>;
@@ -31,6 +32,12 @@ pub enum E2eIdentityError {
     /// Error when an end-to-end-identity domain is not well-formed utf-16, which means it's out of spec
     #[error("The E2EI provided domain is invalid utf-16")]
     E2eiInvalidDomain,
+    /// Invalid OIDC RefreshToken supplied
+    #[error("Invalid OIDC RefreshToken supplied")]
+    InvalidRefreshToken,
+    /// An error occurred while trying to persist the RefreshToken in the keystore
+    #[error("An error occurred while trying to persist the RefreshToken in the keystore")]
+    KeyStoreError(#[from] CryptoKeystoreError),
     /// Error generating keys
     #[error(transparent)]
     CryptoError(#[from] openmls_traits::types::CryptoError),
