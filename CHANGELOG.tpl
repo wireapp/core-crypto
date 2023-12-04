@@ -7,11 +7,23 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.20] - 2023-12-04
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.20" unreleased=true}}
+</details>
+
+* feat!: `addClientToConversation` API has been simplified. It just requires bare `KeyPackage`s without the `ClientId`
+* feat!(e2ei): better errors ; almost got rid of `ImplementationError` used too much so far. This should help debugging
+* feat!(e2ei): added `Team` and `Handle` in the client DPoP token
+* build: bumped tls_codec from 0.3.0 to 0.4.0
+
 ## [1.0.0-rc.19] - 2023-11-20
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.19" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.19"}}
 </details>
 
 * feat!(e2ei): ~~`get_user_identities`~~ becomes `get_device_identities` and a new `get_user_identities` added to list identities in a group belonging to the same user
