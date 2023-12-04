@@ -2,7 +2,7 @@
 name = "core-crypto"
 description = "Abstraction over OpenMLS with persistent keystore"
 repository = "https://github.com/wireapp/core-crypto"
-version = "1.0.0-rc.19"
+version = "1.0.0-rc.20"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
@@ -75,13 +75,13 @@ rexie = { version = "0.4", optional = true }
 base64 = { version = "0.21", optional = true }
 
 [target.'cfg(not(target_os = "ios"))'.dependencies]
-core-crypto-keystore = { version = "^1.0.0-rc.18", path = "../keystore" }
+core-crypto-keystore = { version = "^1.0.0-rc.19", path = "../keystore" }
 
 [target.'cfg(target_os = "ios")'.dependencies]
-core-crypto-keystore = { version = "^1.0.0-rc.19", path = "../keystore", features = ["ios-wal-compat"] }
+core-crypto-keystore = { version = "^1.0.0-rc.20", path = "../keystore", features = ["ios-wal-compat"] }
 
 [dependencies.mls-crypto-provider]
-version = "^1.0.0-rc.19"
+version = "^1.0.0-rc.20"
 path = "../mls-provider"
 
 [dev-dependencies]
@@ -110,7 +110,7 @@ tag = "v1.2.2-pre.core-crypto-0.7.0"
 version = "=0.9.2"
 
 [dev-dependencies.core-crypto-keystore]
-version = "^1.0.0-rc.19"
+version = "^1.0.0-rc.20"
 path = "../keystore"
 features = ["dummy-entity"]
 
@@ -123,7 +123,7 @@ version = "0.5"
 features = ["async_std", "html_reports"]
 
 [dev-dependencies.core-crypto-attributes]
-version = "^1.0.0-rc.19"
+version = "^1.0.0-rc.20"
 path = "../crypto-attributes"
 
 [package.metadata.wasm-pack.profile.release]

@@ -7,6 +7,28 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.20] - 2023-12-04
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Features
+
+- Better errors: 'ImplementationError' was way too often used as a fallback when the developer was too lazy to create a new error. This tries to cure that, especially with e2ei errors. It also tries to distinguish client errors from internal errors
+- [**breaking**] Simplify API of 'add_clients_to_conversation' by not requiring to repeat the ClientId of the new members alongside their KeyPackage when the former can now be extracted from the latter
+- [**breaking**] Introduce handle & team in the client dpop token
+
+### Testing
+
+- Test DB migration from 0.9.2
+
+</details>
+
+* feat!: `addClientToConversation` API has been simplified. It just requires bare `KeyPackage`s without the `ClientId`
+* feat!(e2ei): better errors ; almost got rid of `ImplementationError` used too much so far. This should help debugging
+* feat!(e2ei): added `Team` and `Handle` in the client DPoP token
+* build: bumped tls_codec from 0.3.0 to 0.4.0
+
 ## [1.0.0-rc.19] - 2023-11-20
 
 <details>
