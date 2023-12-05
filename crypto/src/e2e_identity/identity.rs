@@ -127,7 +127,7 @@ impl MlsConversation {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{e2e_identity::id::QualifiedE2eiClientId, test_utils::*, CryptoError};
+    use crate::{test_utils::*, CryptoError};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
