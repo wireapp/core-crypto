@@ -7,11 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.21] - 2023-12-05
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.21" unreleased=true}}
+</details>
+
+* feat!: canonicalize ClientId keeping only the regular version where the UserId portion is the hyphenated string representation of the UUID. Also apply this to `getUserIdentities()`
+
 ## [1.0.0-rc.20] - 2023-12-04
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.20" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.20"}}
 </details>
 
 * feat!: `addClientToConversation` API has been simplified. It just requires bare `KeyPackage`s without the `ClientId`
