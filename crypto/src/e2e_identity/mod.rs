@@ -474,10 +474,11 @@ pub mod tests {
     use serde_json::json;
     use wasm_bindgen_test::*;
 
+    use crate::prelude::MlsCredentialType;
     use crate::{
         e2e_identity::id::QualifiedE2eiClientId,
         prelude::{
-            CertificateBundle, E2eIdentityError, E2eIdentityResult, E2eiEnrollment, MlsCentral,
+            CertificateBundle, E2eIdentityError, E2eIdentityResult, E2eiConversationState, E2eiEnrollment, MlsCentral,
             INITIAL_KEYING_MATERIAL_COUNT,
         },
         test_utils::{central::TEAM, *},
@@ -519,10 +520,15 @@ pub mod tests {
 
                 // verify the created client can create a conversation
                 let id = conversation_id();
-                cc.new_conversation(&id, case.credential_type, case.cfg.clone())
+                cc.new_conversation(&id, MlsCredentialType::X509, case.cfg.clone())
                     .await
                     .unwrap();
                 cc.encrypt_message(&id, "Hello e2e identity !").await.unwrap();
+                assert_eq!(
+                    cc.e2ei_conversation_state(&id).await.unwrap(),
+                    E2eiConversationState::Verified
+                );
+                assert!(cc.e2ei_is_enabled(case.signature_scheme()).unwrap());
             })
         })
         .await
