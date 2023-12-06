@@ -236,57 +236,6 @@ impl WasmEncryptedStorage {
         }
     }
 
-    pub async fn get_many<R: Entity<ConnectionType = WasmConnection> + 'static>(
-        &self,
-        collection: impl AsRef<str>,
-        ids: &[&[u8]],
-    ) -> CryptoKeystoreResult<Vec<R>> {
-        match &self.storage {
-            WasmStorageWrapper::Persistent(rexie) => {
-                let collection = collection.as_ref();
-                let transaction = rexie.transaction(&[collection], TransactionMode::ReadOnly)?;
-                let store = transaction.store(collection)?;
-                let ids: Vec<Vec<u8>> = ids.iter().map(|id| id.to_vec()).collect();
-
-                let raw_data = store.get_all(None, None, None, None).await?;
-                let data = raw_data
-                    .into_iter()
-                    .filter_map(|(k, v)| {
-                        let js_key = js_sys::Uint8Array::from(k);
-                        let key = js_key.to_vec();
-                        if !ids.contains(&key) {
-                            return None;
-                        }
-
-                        if let Some(mut entity) = serde_wasm_bindgen::from_value::<Option<R>>(v).ok().flatten() {
-                            entity.decrypt(&self.cipher).ok()?;
-                            Some(entity)
-                        } else {
-                            None
-                        }
-                    })
-                    .collect::<Vec<R>>();
-
-                Ok(data)
-            }
-            WasmStorageWrapper::InMemory(map) => {
-                if let Some(store) = map.get(collection.as_ref()) {
-                    store
-                        .iter()
-                        .filter(|(k, _)| ids.contains(&k.as_slice()))
-                        .map(|(_k, v)| {
-                            let mut e: R = serde_wasm_bindgen::from_value(v.clone())?;
-                            e.decrypt(&self.cipher)?;
-                            Ok(e)
-                        })
-                        .collect::<CryptoKeystoreResult<Vec<R>>>()
-                } else {
-                    Ok(vec![])
-                }
-            }
-        }
-    }
-
     pub async fn count(&self, collection: impl AsRef<str>) -> CryptoKeystoreResult<usize> {
         match &self.storage {
             WasmStorageWrapper::Persistent(rexie) => {
