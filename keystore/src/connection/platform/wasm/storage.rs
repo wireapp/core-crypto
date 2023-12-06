@@ -97,12 +97,11 @@ impl WasmEncryptedStorage {
 
     pub async fn get<R: Entity<ConnectionType = WasmConnection> + 'static>(
         &self,
-        collection: impl AsRef<str>,
+        collection: &str,
         id: impl AsRef<[u8]>,
     ) -> CryptoKeystoreResult<Option<R>> {
         match &self.storage {
             WasmStorageWrapper::Persistent(rexie) => {
-                let collection = collection.as_ref();
                 let transaction = rexie.transaction(&[collection], TransactionMode::ReadOnly)?;
                 let store = transaction.store(collection)?;
                 let id = id.as_ref().to_vec();
@@ -118,7 +117,7 @@ impl WasmEncryptedStorage {
                 }
             }
             WasmStorageWrapper::InMemory(map) => {
-                if let Some(store) = map.get(collection.as_ref()) {
+                if let Some(store) = map.get(collection) {
                     if let Some(js_value) = store.get(id.as_ref()).cloned() {
                         if let Some(mut entity) = serde_wasm_bindgen::from_value::<Option<R>>(js_value)? {
                             entity.decrypt(&self.cipher)?;
@@ -135,13 +134,13 @@ impl WasmEncryptedStorage {
     /// Note: get_indexed only supports unencrypted indexes
     pub async fn get_indexed<R: Entity<ConnectionType = WasmConnection> + 'static>(
         &self,
-        collection: impl AsRef<str>,
+        collection: &str,
         index: impl AsRef<str>,
         id: &wasm_bindgen::JsValue,
     ) -> CryptoKeystoreResult<Option<R>> {
         match &self.storage {
             crate::connection::storage::WasmStorageWrapper::Persistent(rexie) => {
-                let transaction = rexie.transaction(&[collection.as_ref()], rexie::TransactionMode::ReadOnly)?;
+                let transaction = rexie.transaction(&[collection], rexie::TransactionMode::ReadOnly)?;
                 let store = transaction.store(collection.as_ref())?;
                 let store_index = store.index(index.as_ref())?;
 
@@ -154,7 +153,7 @@ impl WasmEncryptedStorage {
                 Ok(Some(entity))
             }
             crate::connection::storage::WasmStorageWrapper::InMemory(map) => {
-                if let Some(store) = map.get(collection.as_ref()) {
+                if let Some(store) = map.get(collection) {
                     Ok(store.iter().find_map(|(_k, v)| {
                         if !v.is_object() {
                             return None;
@@ -178,12 +177,11 @@ impl WasmEncryptedStorage {
 
     pub async fn get_all<R: Entity<ConnectionType = WasmConnection> + 'static>(
         &self,
-        collection: impl AsRef<str>,
+        collection: &str,
         params: Option<EntityFindParams>,
     ) -> CryptoKeystoreResult<Vec<R>> {
         match &self.storage {
             WasmStorageWrapper::Persistent(rexie) => {
-                let collection = collection.as_ref();
                 let transaction = rexie.transaction(&[collection], TransactionMode::ReadOnly)?;
                 let store = transaction.store(collection)?;
 
@@ -218,7 +216,7 @@ impl WasmEncryptedStorage {
                 Ok(data)
             }
             WasmStorageWrapper::InMemory(map) => Ok(map
-                .get(collection.as_ref())
+                .get(collection)
                 .map(|v| {
                     v.values()
                         .cloned()
@@ -236,32 +234,27 @@ impl WasmEncryptedStorage {
         }
     }
 
-    pub async fn count(&self, collection: impl AsRef<str>) -> CryptoKeystoreResult<usize> {
+    pub async fn count(&self, collection: &str) -> CryptoKeystoreResult<usize> {
         match &self.storage {
             WasmStorageWrapper::Persistent(rexie) => {
-                let collection = collection.as_ref();
                 let transaction = rexie.transaction(&[collection], TransactionMode::ReadOnly)?;
                 let store = transaction.store(collection)?;
                 let data = store.count(None).await?;
 
                 Ok(data as usize)
             }
-            WasmStorageWrapper::InMemory(map) => Ok(map
-                .get(collection.as_ref())
-                .map(|v| v.values().len())
-                .unwrap_or_default()),
+            WasmStorageWrapper::InMemory(map) => Ok(map.get(collection).map(|v| v.values().len()).unwrap_or_default()),
         }
     }
 
     pub async fn save<R: Entity<ConnectionType = WasmConnection> + 'static>(
         &mut self,
-        collection: impl AsRef<str>,
+        collection: &str,
         values: &mut [R],
     ) -> CryptoKeystoreResult<()> {
         let serializer = serde_wasm_bindgen::Serializer::json_compatible();
         match &mut self.storage {
             WasmStorageWrapper::Persistent(rexie) => {
-                let collection = collection.as_ref();
                 let transaction = rexie.transaction(&[collection], TransactionMode::ReadWrite)?;
                 let store = transaction.store(collection)?;
 
@@ -273,7 +266,7 @@ impl WasmEncryptedStorage {
                 }
             }
             WasmStorageWrapper::InMemory(map) => {
-                let entry = map.entry(collection.as_ref().into()).or_default();
+                let entry = map.entry(collection.into()).or_default();
                 for v in values {
                     let js_id = v.id()?;
                     let id = js_id
@@ -291,10 +284,9 @@ impl WasmEncryptedStorage {
         Ok(())
     }
 
-    pub async fn delete(&mut self, collection: impl AsRef<str>, ids: &[impl AsRef<[u8]>]) -> CryptoKeystoreResult<()> {
+    pub async fn delete(&mut self, collection: &str, ids: &[impl AsRef<[u8]>]) -> CryptoKeystoreResult<()> {
         match &mut self.storage {
             WasmStorageWrapper::Persistent(rexie) => {
-                let collection = collection.as_ref();
                 let transaction = rexie.transaction(&[collection], TransactionMode::ReadWrite)?;
                 let store = transaction.store(collection)?;
                 for k in ids {
@@ -303,7 +295,7 @@ impl WasmEncryptedStorage {
                 }
             }
             WasmStorageWrapper::InMemory(map) => {
-                map.entry(collection.as_ref().into()).and_modify(|store| {
+                map.entry(collection.into()).and_modify(|store| {
                     for k in ids {
                         let result = store.remove(k.as_ref());
                         debug_assert!(result.is_some());
