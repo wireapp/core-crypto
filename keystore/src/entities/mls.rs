@@ -133,16 +133,6 @@ impl MlsSignatureKeyPair {
     }
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait MlsSignatureKeyPairExt: Entity {
-    async fn keypair_for_signature_scheme(
-        conn: &mut Self::ConnectionType,
-        credential_id: &[u8],
-        signature_scheme: SignatureScheme,
-    ) -> CryptoKeystoreResult<Option<Self>>;
-}
-
 /// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]

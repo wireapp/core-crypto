@@ -16,11 +16,9 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, MlsSignatureKeyPair, MlsSignatureKeyPairExt, StringEntityId},
-    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
+    entities::{Entity, EntityBase, EntityFindParams, MlsSignatureKeyPair, StringEntityId},
+    CryptoKeystoreResult, MissingKeyErrorKind,
 };
-
-use openmls_traits::types::SignatureScheme;
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
@@ -78,32 +76,5 @@ impl Entity for MlsSignatureKeyPair {
         self.keypair = Self::decrypt_data(cipher, self.keypair.as_slice(), self.aad())?;
 
         Ok(())
-    }
-}
-
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl MlsSignatureKeyPairExt for MlsSignatureKeyPair {
-    async fn keypair_for_signature_scheme(
-        conn: &mut Self::ConnectionType,
-        credential_id: &[u8],
-        signature_scheme: SignatureScheme,
-    ) -> CryptoKeystoreResult<Option<Self>> {
-        let storage = conn.storage();
-        let sc = wasm_bindgen::JsValue::from_f64(signature_scheme as u16 as _);
-        let Some(keypair) = storage
-            .get_indexed::<Self>("mls_signature_keypairs", "signature_scheme", &sc)
-            .await?
-        else {
-            return Err(CryptoKeystoreError::MissingKeyInStore(
-                MissingKeyErrorKind::MlsSignatureKeyPair,
-            ));
-        };
-
-        if !keypair.credential_id.is_empty() && keypair.credential_id != credential_id {
-            return Err(CryptoKeystoreError::SignatureKeyPairDoesNotBelongToCredential);
-        }
-
-        Ok(Some(keypair))
     }
 }

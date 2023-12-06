@@ -131,50 +131,6 @@ impl WasmEncryptedStorage {
         }
     }
 
-    /// Note: get_indexed only supports unencrypted indexes
-    pub async fn get_indexed<R: Entity<ConnectionType = WasmConnection> + 'static>(
-        &self,
-        collection: &str,
-        index: impl AsRef<str>,
-        id: &wasm_bindgen::JsValue,
-    ) -> CryptoKeystoreResult<Option<R>> {
-        match &self.storage {
-            crate::connection::storage::WasmStorageWrapper::Persistent(rexie) => {
-                let transaction = rexie.transaction(&[collection], rexie::TransactionMode::ReadOnly)?;
-                let store = transaction.store(collection.as_ref())?;
-                let store_index = store.index(index.as_ref())?;
-
-                let Some(entity_raw) = store_index.get(id).await? else {
-                    return Ok(None);
-                };
-                let mut entity: R = serde_wasm_bindgen::from_value(entity_raw)?;
-                entity.decrypt(&self.cipher)?;
-
-                Ok(Some(entity))
-            }
-            crate::connection::storage::WasmStorageWrapper::InMemory(map) => {
-                if let Some(store) = map.get(collection) {
-                    Ok(store.iter().find_map(|(_k, v)| {
-                        if !v.is_object() {
-                            return None;
-                        }
-
-                        let entity_id = js_sys::Reflect::get(v, &index.as_ref().into()).ok()?;
-                        if id != &entity_id {
-                            return None;
-                        }
-
-                        let mut entity: R = serde_wasm_bindgen::from_value(v.clone()).ok()?;
-                        entity.decrypt(&self.cipher).ok()?;
-                        Some(entity)
-                    }))
-                } else {
-                    Ok(None)
-                }
-            }
-        }
-    }
-
     pub async fn get_all<R: Entity<ConnectionType = WasmConnection> + 'static>(
         &self,
         collection: &str,
