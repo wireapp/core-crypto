@@ -16,10 +16,9 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, MlsSignatureKeyPair, MlsSignatureKeyPairExt, StringEntityId},
+    entities::{Entity, EntityBase, EntityFindParams, MlsSignatureKeyPair, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
-use openmls_traits::types::SignatureScheme;
 use std::io::{Read, Write};
 
 impl Entity for MlsSignatureKeyPair {
@@ -251,76 +250,5 @@ impl EntityBase for MlsSignatureKeyPair {
         transaction.commit()?;
 
         Ok(())
-    }
-}
-
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl MlsSignatureKeyPairExt for MlsSignatureKeyPair {
-    async fn keypair_for_signature_scheme(
-        conn: &mut Self::ConnectionType,
-        credential_id: &[u8],
-        signature_scheme: SignatureScheme,
-    ) -> CryptoKeystoreResult<Option<Self>> {
-        let transaction = conn.transaction()?;
-
-        use rusqlite::{OptionalExtension as _, ToSql as _};
-
-        let signature_scheme = signature_scheme as u16;
-
-        let maybe_found = transaction
-            .query_row(
-                "SELECT rowid FROM mls_signature_keypairs WHERE signature_scheme = ? AND credential_id = ?",
-                [signature_scheme.to_sql()?, credential_id.to_sql()?],
-                |r| r.get::<_, i64>(0),
-            )
-            .optional()?;
-
-        if let Some(rowid) = maybe_found {
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_signature_keypairs",
-                "pk",
-                rowid,
-                true,
-            )?;
-
-            let mut pk = Vec::with_capacity(blob.len());
-            blob.read_to_end(&mut pk)?;
-            blob.close()?;
-
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_signature_keypairs",
-                "keypair",
-                rowid,
-                true,
-            )?;
-
-            let mut keypair = Vec::with_capacity(blob.len());
-            blob.read_to_end(&mut keypair)?;
-            blob.close()?;
-
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_signature_keypairs",
-                "credential_id",
-                rowid,
-                true,
-            )?;
-
-            let mut credential_id = Vec::with_capacity(blob.len());
-            blob.read_to_end(&mut credential_id)?;
-            blob.close()?;
-
-            Ok(Some(Self {
-                signature_scheme,
-                pk,
-                keypair,
-                credential_id,
-            }))
-        } else {
-            Ok(None)
-        }
     }
 }
