@@ -315,9 +315,8 @@ impl WasmEncryptedStorage {
                 let collection = collection.as_ref();
                 let transaction = rexie.transaction(&[collection], TransactionMode::ReadWrite)?;
                 let store = transaction.store(collection)?;
-                let values: Vec<R> = values.to_vec();
 
-                for mut value in values {
+                for value in values {
                     let key = value.id()?;
                     value.encrypt(&self.cipher)?;
                     let js_value = value.serialize(&serializer)?;
