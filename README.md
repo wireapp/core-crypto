@@ -92,7 +92,7 @@ cargo make "copy-jvm-resources"
 cargo make "copy-android-resources"
 
 # builds iOS framework
-cargo make "create-swift-package"
+cargo make "ios-create-xcframework"
 
 # builds wasm binary & TS bindings
 cargo make wasm
