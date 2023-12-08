@@ -2580,7 +2580,7 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns [`WasmCryptoResult<bool>`]
+    /// Returns [`WasmCryptoResult<u8>`]
     ///
     /// see [core_crypto::mls::MlsCentral::e2ei_conversation_state]
     pub fn e2ei_conversation_state(&self, conversation_id: ConversationId) -> Promise {
@@ -2666,6 +2666,32 @@ impl CoreCrypto {
                     js_obj.set(&uid, &identities);
                 }
                 WasmCryptoResult::Ok(js_obj.into())
+            }
+            .err_into(),
+        )
+    }
+
+    #[allow(clippy::boxed_local)]
+    /// Returns: [`WasmCryptoResult<u8>`]
+    ///
+    /// see [core_crypto::mls::MlsCentral::get_credential_in_use]
+    pub fn get_credential_in_use(&self, group_info: Box<[u8]>, credential_type: CredentialType) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_ref())
+                    .map_err(MlsError::from)
+                    .map_err(CryptoError::from)
+                    .map_err(CoreCryptoError::from)?;
+
+                let state: E2eiConversationState = this
+                    .write()
+                    .await
+                    .get_credential_in_use(group_info, credential_type.into())
+                    .map(Into::into)
+                    .map_err(CoreCryptoError::from)?;
+
+                WasmCryptoResult::Ok((state as u8).into())
             }
             .err_into(),
         )

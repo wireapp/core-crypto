@@ -1,8 +1,15 @@
-use crate::{
-    mls::credential::ext::CredentialExt,
-    prelude::{ConversationId, CryptoResult, MlsCentral, MlsConversation},
+use openmls::{
+    messages::group_info::VerifiableGroupInfo,
+    prelude::{Credential, Node},
+    treesync::RatchetTree,
 };
 use wire_e2e_identity::prelude::WireIdentityReader;
+
+use crate::{
+    mls::credential::ext::CredentialExt,
+    prelude::{ConversationId, CryptoResult, MlsCentral, MlsConversation, MlsCredentialType},
+    MlsError,
+};
 
 /// Indicates the state of a Conversation regarding end-to-end identity.
 /// Note: this does not check pending state (pending commit, pending proposals) so it does not
@@ -24,55 +31,94 @@ impl MlsCentral {
     pub async fn e2ei_conversation_state(&mut self, id: &ConversationId) -> CryptoResult<E2eiConversationState> {
         Ok(self.get_conversation(id).await?.read().await.e2ei_conversation_state())
     }
+
+    /// Gets the e2ei conversation state from a `GroupInfo`. Useful to check if the group has e2ei
+    /// turned on or not before joining it.
+    pub fn get_credential_in_use(
+        &self,
+        group_info: VerifiableGroupInfo,
+        credential_type: MlsCredentialType,
+    ) -> CryptoResult<E2eiConversationState> {
+        // Not verifying the supplied the GroupInfo here could let attackers lure the clients about
+        // the e2ei state of a conversation and as a consequence degrade this conversation for all
+        // participants once joining it.
+        // This 👇 verifies the GroupInfo and the RatchetTree btw
+        let rt = group_info
+            .take_ratchet_tree(&self.mls_backend)
+            .map_err(MlsError::from)?;
+        self.get_credential_in_use_in_ratchet_tree(rt, credential_type)
+    }
+
+    fn get_credential_in_use_in_ratchet_tree(
+        &self,
+        ratchet_tree: RatchetTree,
+        credential_type: MlsCredentialType,
+    ) -> CryptoResult<E2eiConversationState> {
+        let credentials = ratchet_tree.iter().filter_map(|n| match n {
+            Some(Node::LeafNode(ln)) => Some(ln.credential()),
+            _ => None,
+        });
+        Ok(compute_state(credentials, credential_type))
+    }
 }
 
 impl MlsConversation {
     fn e2ei_conversation_state(&self) -> E2eiConversationState {
-        let mut one_valid = false;
-        let mut all_expired = true;
+        compute_state(self.group.members_credentials(), MlsCredentialType::X509)
+    }
+}
 
-        let state = self
-            .group
-            .members()
-            .fold(E2eiConversationState::Verified, |mut state, kp| {
-                if let Ok(Some(cert)) = kp.credential.parse_leaf_cert() {
-                    let invalid_identity = cert.extract_identity().is_err();
+/// _credential_type will be used in the future to get the usage of VC Credentials, even Basics one.
+/// Right now though, we do not need anything other than X509 so let's keep things simple.
+fn compute_state<'a>(
+    credentials: impl Iterator<Item = &'a Credential>,
+    _credential_type: MlsCredentialType,
+) -> E2eiConversationState {
+    let mut one_valid = false;
+    let mut all_expired = true;
 
-                    use openmls_x509_credential::X509Ext as _;
-                    let is_time_valid = cert.is_time_valid().unwrap_or(false);
-                    let is_time_invalid = !is_time_valid;
-                    all_expired &= is_time_invalid;
+    let state = credentials.fold(E2eiConversationState::Verified, |mut state, credential| {
+        if let Ok(Some(cert)) = credential.parse_leaf_cert() {
+            let invalid_identity = cert.extract_identity().is_err();
 
-                    let is_invalid = invalid_identity || is_time_invalid;
-                    if is_invalid {
-                        state = E2eiConversationState::NotVerified;
-                    } else {
-                        one_valid = true
-                    }
-                } else {
-                    all_expired = false;
-                    state = E2eiConversationState::NotVerified;
-                };
-                state
-            });
+            use openmls_x509_credential::X509Ext as _;
 
-        match (one_valid, all_expired) {
-            (false, true) => E2eiConversationState::NotVerified,
-            (false, _) => E2eiConversationState::NotEnabled,
-            _ => state,
-        }
+            // TODO: this is incomplete and has to be applied to the whole cert chain
+            let is_time_valid = cert.is_time_valid().unwrap_or(false);
+            let is_time_invalid = !is_time_valid;
+            all_expired &= is_time_invalid;
+
+            let is_invalid = invalid_identity || is_time_invalid;
+            if is_invalid {
+                state = E2eiConversationState::NotVerified;
+            } else {
+                one_valid = true
+            }
+        } else {
+            all_expired = false;
+            state = E2eiConversationState::NotVerified;
+        };
+        state
+    });
+
+    match (one_valid, all_expired) {
+        (false, true) => E2eiConversationState::NotVerified,
+        (false, _) => E2eiConversationState::NotEnabled,
+        _ => state,
     }
 }
 
 #[cfg(test)]
 pub mod tests {
+    use wasm_bindgen_test::*;
+
     use crate::{
-        e2e_identity::conversation_state::E2eiConversationState,
         mls::credential::tests::now,
         prelude::{CertificateBundle, Client, MlsCredentialType},
         test_utils::*,
     };
-    use wasm_bindgen_test::*;
+
+    use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -101,12 +147,24 @@ pub mod tests {
                             let bob_state = bob_central.e2ei_conversation_state(&id).await.unwrap();
                             assert_eq!(alice_state, E2eiConversationState::NotEnabled);
                             assert_eq!(bob_state, E2eiConversationState::NotEnabled);
+
+                            let gi = alice_central.get_group_info(&id).await;
+                            let state = alice_central
+                                .get_credential_in_use(gi, MlsCredentialType::X509)
+                                .unwrap();
+                            assert_eq!(state, E2eiConversationState::NotEnabled);
                         }
                         MlsCredentialType::X509 => {
                             let alice_state = alice_central.e2ei_conversation_state(&id).await.unwrap();
                             let bob_state = bob_central.e2ei_conversation_state(&id).await.unwrap();
                             assert_eq!(alice_state, E2eiConversationState::Verified);
                             assert_eq!(bob_state, E2eiConversationState::Verified);
+
+                            let gi = alice_central.get_group_info(&id).await;
+                            let state = alice_central
+                                .get_credential_in_use(gi, MlsCredentialType::X509)
+                                .unwrap();
+                            assert_eq!(state, E2eiConversationState::Verified);
                         }
                     }
                 })
@@ -142,7 +200,6 @@ pub mod tests {
                                 )
                                 .await
                                 .unwrap();
-
                             MlsCredentialType::X509
                         }
                         MlsCredentialType::X509 => {
@@ -168,6 +225,12 @@ pub mod tests {
                     let bob_state = bob_central.e2ei_conversation_state(&id).await.unwrap();
                     assert_eq!(alice_state, E2eiConversationState::NotVerified);
                     assert_eq!(bob_state, E2eiConversationState::NotVerified);
+
+                    let gi = alice_central.get_group_info(&id).await;
+                    let state = alice_central
+                        .get_credential_in_use(gi, MlsCredentialType::X509)
+                        .unwrap();
+                    assert_eq!(state, E2eiConversationState::NotVerified);
                 })
             },
         )
@@ -200,13 +263,25 @@ pub mod tests {
                             ..Default::default()
                         };
                         let cert = CertificateBundle::new_from_builder(builder, case.signature_scheme());
-                        let cb = Client::new_x509_credential_bundle(cert).unwrap();
+                        let cb = Client::new_x509_credential_bundle(cert.clone()).unwrap();
                         let commit = alice_central.e2ei_rotate(&id, &cb).await.unwrap().commit;
                         alice_central.commit_accepted(&id).await.unwrap();
                         bob_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
+
+                        // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
+                        alice_central
+                            .mls_client
+                            .as_mut()
+                            .unwrap()
+                            .save_new_x509_credential_bundle(&alice_central.mls_backend, case.signature_scheme(), cert)
+                            .await
+                            .unwrap();
+
+                        // Need to fetch it before it becomes invalid & expires
+                        let gi = alice_central.get_group_info(&id).await;
 
                         let elapsed = start.elapsed();
                         // Give time to the certificate to expire
@@ -219,6 +294,11 @@ pub mod tests {
                         let bob_state = bob_central.e2ei_conversation_state(&id).await.unwrap();
                         assert_eq!(alice_state, E2eiConversationState::NotVerified);
                         assert_eq!(bob_state, E2eiConversationState::NotVerified);
+
+                        let state = alice_central
+                            .get_credential_in_use(gi, MlsCredentialType::X509)
+                            .unwrap();
+                        assert_eq!(state, E2eiConversationState::NotVerified);
                     })
                 },
             )
@@ -248,9 +328,18 @@ pub mod tests {
                         ..Default::default()
                     };
                     let cert = CertificateBundle::new_from_builder(builder, case.signature_scheme());
-                    let cb = Client::new_x509_credential_bundle(cert).unwrap();
+                    let cb = Client::new_x509_credential_bundle(cert.clone()).unwrap();
                     alice_central.e2ei_rotate(&id, &cb).await.unwrap();
                     alice_central.commit_accepted(&id).await.unwrap();
+
+                    // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
+                    alice_central
+                        .mls_client
+                        .as_mut()
+                        .unwrap()
+                        .save_new_x509_credential_bundle(&alice_central.mls_backend, case.signature_scheme(), cert)
+                        .await
+                        .unwrap();
 
                     let elapsed = start.elapsed();
                     // Give time to the certificate to expire
@@ -260,6 +349,14 @@ pub mod tests {
 
                     let alice_state = alice_central.e2ei_conversation_state(&id).await.unwrap();
                     assert_eq!(alice_state, E2eiConversationState::NotVerified);
+
+                    // Need to fetch it before it becomes invalid & expires
+                    let gi = alice_central.get_group_info(&id).await;
+
+                    let state = alice_central
+                        .get_credential_in_use(gi, MlsCredentialType::X509)
+                        .unwrap();
+                    assert_eq!(state, E2eiConversationState::NotVerified);
                 })
             })
             .await

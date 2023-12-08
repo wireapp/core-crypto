@@ -1708,6 +1708,23 @@ impl CoreCrypto {
             .map(|(k, v)| (k, v.into_iter().map(Into::into).collect()))
             .collect::<HashMap<String, Vec<WireIdentity>>>())
     }
+
+    /// See [core_crypto::mls::MlsCentral::get_credential_in_use]
+    pub async fn get_credential_in_use(
+        &self,
+        group_info: Vec<u8>,
+        credential_type: MlsCredentialType,
+    ) -> CoreCryptoResult<E2eiConversationState> {
+        let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)?;
+        Ok(self
+            .central
+            .lock()
+            .await
+            .get_credential_in_use(group_info, credential_type.into())
+            .map(Into::into)?)
+    }
 }
 
 #[derive(Debug, uniffi::Object)]
