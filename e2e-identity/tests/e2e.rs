@@ -199,13 +199,13 @@ mod acme_server {
         let flow = EnrollmentFlow {
             verify_dpop_challenge: Box::new(|mut test, (account, dpop_chall, access_token, previous_nonce)| {
                 Box::pin(async move {
-                    let old_kp = test.client_kp;
+                    let old_kp = test.acme_kp;
                     // use another key just for signing this request
-                    test.client_kp = Ed25519KeyPair::generate().to_pem().into();
+                    test.acme_kp = Ed25519KeyPair::generate().to_pem().into();
                     let previous_nonce = test
                         .verify_dpop_challenge(&account, dpop_chall, access_token, previous_nonce)
                         .await?;
-                    test.client_kp = old_kp;
+                    test.acme_kp = old_kp;
                     Ok((test, previous_nonce))
                 })
             }),
@@ -228,13 +228,13 @@ mod acme_server {
         let flow = EnrollmentFlow {
             verify_oidc_challenge: Box::new(|mut test, (account, oidc_chall, access_token, previous_nonce)| {
                 Box::pin(async move {
-                    let old_kp = test.client_kp;
+                    let old_kp = test.acme_kp;
                     // use another key just for signing this request
-                    test.client_kp = Ed25519KeyPair::generate().to_pem().into();
+                    test.acme_kp = Ed25519KeyPair::generate().to_pem().into();
                     let previous_nonce = test
                         .verify_oidc_challenge(&account, oidc_chall, access_token, previous_nonce)
                         .await?;
-                    test.client_kp = old_kp;
+                    test.acme_kp = old_kp;
                     Ok((test, previous_nonce))
                 })
             }),
@@ -388,13 +388,24 @@ mod dpop_challenge {
     async fn should_fail_when_access_token_iss_mismatches_target() {
         // "iss" in access token mismatches expected target
         let test = E2eTest::new().start(docker()).await;
+
+        let nonce_arc = std::sync::Arc::new(std::sync::Mutex::new(None));
+        let (nonce_w, nonce_r) = (nonce_arc.clone(), nonce_arc.clone());
+
         let flow = EnrollmentFlow {
-            get_access_token: Box::new(|test, _| {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, nonce, handle, team, expiry)| {
+                Box::pin(async move {
+                    *nonce_w.lock().unwrap() = Some(nonce.clone());
+                    let client_dpop_token = test.create_dpop_token(&dpop_chall, nonce, handle, team, expiry).await?;
+                    Ok((test, client_dpop_token))
+                })
+            }),
+            get_access_token: Box::new(|test, (dpop_chall, _)| {
                 Box::pin(async move {
                     let client_id = test.sub.clone();
                     let htu: Htu = "https://unknown.io".try_into().unwrap();
-                    let backend_nonce: BackendNonce = rand_base64_str(32).into();
-                    let acme_nonce = rand_base64_str(32).into();
+                    let backend_nonce: BackendNonce = nonce_r.lock().unwrap().clone().unwrap();
+                    let acme_nonce: AcmeNonce = dpop_chall.token.as_str().into();
                     let handle = Handle::from(test.handle.as_str()).to_qualified(&client_id.domain);
 
                     let client_dpop_token = RustyJwtTools::generate_dpop_token(
@@ -410,7 +421,7 @@ mod dpop_challenge {
                         backend_nonce.clone(),
                         core::time::Duration::from_secs(3600),
                         test.alg,
-                        &test.client_kp,
+                        &test.acme_kp,
                     )
                     .unwrap();
 
@@ -447,24 +458,28 @@ mod dpop_challenge {
     async fn should_fail_when_access_token_device_id_mismatches_target() {
         // "iss" deviceId mismatches the actual deviceId
         let test = E2eTest::new().start(docker()).await;
+
+        let nonce_arc = std::sync::Arc::new(std::sync::Mutex::new(None));
+        let (nonce_w, nonce_r) = (nonce_arc.clone(), nonce_arc.clone());
+
         let flow = EnrollmentFlow {
-            get_access_token: Box::new(|test, _| {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, nonce, handle, team, expiry)| {
+                Box::pin(async move {
+                    *nonce_w.lock().unwrap() = Some(nonce.clone());
+                    let client_dpop_token = test.create_dpop_token(&dpop_chall, nonce, handle, team, expiry).await?;
+                    Ok((test, client_dpop_token))
+                })
+            }),
+            get_access_token: Box::new(|test, (dpop_chall, _)| {
                 Box::pin(async move {
                     // here the DeviceId will be different in "sub" than in "iss" (in the access token)
                     let client_id = ClientId {
                         device_id: 42,
                         ..test.sub.clone()
                     };
-                    let htu: Htu = test
-                        .ca_cfg
-                        .dpop_target_uri
-                        .as_ref()
-                        .unwrap()
-                        .as_str()
-                        .try_into()
-                        .unwrap();
-                    let backend_nonce: BackendNonce = rand_base64_str(32).into();
-                    let acme_nonce = rand_base64_str(32).into();
+                    let htu: Htu = dpop_chall.target.unwrap().try_into().unwrap();
+                    let backend_nonce: BackendNonce = nonce_r.lock().unwrap().clone().unwrap();
+                    let acme_nonce: AcmeNonce = dpop_chall.token.as_str().into();
                     let handle = Handle::from(test.handle.as_str()).to_qualified(&client_id.domain);
 
                     let client_dpop_token = RustyJwtTools::generate_dpop_token(
@@ -480,7 +495,7 @@ mod dpop_challenge {
                         backend_nonce.clone(),
                         core::time::Duration::from_secs(3600),
                         test.alg,
-                        &test.client_kp,
+                        &test.acme_kp,
                     )
                     .unwrap();
 
@@ -537,11 +552,88 @@ mod dpop_challenge {
             TestError::WireServerError
         ));
     }
+
+    /// The access token (forged by wire-server) contains a 'kid' claim which is the JWK thumbprint of the public part
+    /// of the keypair used in the ACME account. This constrains the ACME client to be the issuer of the DPoP token.
+    ///
+    /// In this attack, a malicious server forges an access token with a forged proof (the client DPoP token). Since it
+    /// does not know the keypair used by the client it will use a random one. This should fail since the acme-server
+    /// will verify the 'cnf.kid' and verify that it is indeed the JWK thumbprint of the ACME client.
+    #[tokio::test]
+    async fn acme_should_fail_when_client_dpop_token_has_wrong_kid() {
+        let test = E2eTest::new().start(docker()).await;
+
+        let nonce_arc = std::sync::Arc::new(std::sync::Mutex::new(None));
+        let (nonce_w, nonce_r) = (nonce_arc.clone(), nonce_arc.clone());
+
+        let flow = EnrollmentFlow {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, nonce, handle, team, expiry)| {
+                Box::pin(async move {
+                    *nonce_w.lock().unwrap() = Some(nonce.clone());
+                    let client_dpop_token = test.create_dpop_token(&dpop_chall, nonce, handle, team, expiry).await?;
+                    Ok((test, client_dpop_token))
+                })
+            }),
+            get_access_token: Box::new(|test, (dpop_chall, _)| {
+                Box::pin(async move {
+                    let client_id = test.sub.clone();
+                    let htu: Htu = dpop_chall.target.unwrap().try_into().unwrap();
+                    let backend_nonce: BackendNonce = nonce_r.lock().unwrap().clone().unwrap();
+                    let handle = Handle::from(test.handle.as_str()).to_qualified(&client_id.domain);
+                    let acme_nonce: AcmeNonce = dpop_chall.token.as_str().into();
+
+                    // use the MLS keypair instead of the ACME one, should make the validation fail on the acme-server
+                    let keypair = test.client_kp.clone();
+                    let client_dpop_token = RustyJwtTools::generate_dpop_token(
+                        Dpop {
+                            htm: Htm::Post,
+                            htu: htu.clone(),
+                            challenge: acme_nonce,
+                            handle: handle.clone(),
+                            team: test.team.clone().into(),
+                            extra_claims: None,
+                        },
+                        &test.sub,
+                        backend_nonce.clone(),
+                        core::time::Duration::from_secs(3600),
+                        test.alg,
+                        &keypair,
+                    )
+                    .unwrap();
+
+                    let backend_kp: Pem = test.backend_kp.clone();
+                    let access_token = RustyJwtTools::generate_access_token(
+                        &client_dpop_token,
+                        &client_id,
+                        handle,
+                        test.team.clone().into(),
+                        backend_nonce,
+                        htu,
+                        Htm::Post,
+                        360,
+                        2136351646,
+                        backend_kp,
+                        test.hash_alg,
+                        5,
+                        core::time::Duration::from_secs(360),
+                    )
+                    .unwrap();
+                    Ok((test, access_token))
+                })
+            }),
+            ..Default::default()
+        };
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
+        ));
+    }
 }
 
 #[cfg(not(ci))]
 mod oidc_challenge {
     use super::*;
+    use rusty_jwt_tools::jwk::TryIntoJwk;
 
     /// Authorization Server (Dex in our case) exposes an endpoint for clients to fetch its public keys.
     /// It is used to validate the signature of the id token we supply to this challenge.
@@ -694,6 +786,53 @@ mod oidc_challenge {
             TestError::Acme(RustyAcmeError::ClientImplementationError(
                 "a challenge is not supposed to be pending at this point. It must either be 'valid' or 'processing'."
             ))
+        ));
+    }
+
+    /// TODO
+    #[tokio::test]
+    async fn should_fail_when_invalid_keyauth_because_invalid_challenge() {
+        let test = E2eTest::new().start(docker()).await;
+
+        let flow = EnrollmentFlow {
+            verify_oidc_challenge: Box::new(|mut test, (account, mut oidc_chall, access_token, previous_nonce)| {
+                Box::pin(async move {
+                    oidc_chall.token = rand_base64_str(32); // an unknown challenge will be used to compute 'keyauth'
+                    let previous_nonce = test
+                        .verify_oidc_challenge(&account, oidc_chall, access_token, previous_nonce)
+                        .await?;
+                    Ok((test, previous_nonce))
+                })
+            }),
+            ..Default::default()
+        };
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
+        ));
+    }
+
+    /// TODO
+    #[tokio::test]
+    async fn should_fail_when_invalid_keyauth_because_invalid_jwk_thumbprint() {
+        let test = E2eTest::new().start(docker()).await;
+
+        let flow = EnrollmentFlow {
+            verify_oidc_challenge: Box::new(|mut test, (account, oidc_chall, access_token, previous_nonce)| {
+                Box::pin(async move {
+                    // invalid JWK used to compute 'keyauth'
+                    test.acme_jwk = Ed25519KeyPair::generate().public_key().try_into_jwk().unwrap();
+                    let previous_nonce = test
+                        .verify_oidc_challenge(&account, oidc_chall, access_token, previous_nonce)
+                        .await?;
+                    Ok((test, previous_nonce))
+                })
+            }),
+            ..Default::default()
+        };
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
         ));
     }
 }

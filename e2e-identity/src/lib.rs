@@ -34,6 +34,7 @@ pub struct RustyE2eIdentity {
     sign_alg: JwsAlgorithm,
     sign_kp: Pem,
     pub hash_alg: HashAlgorithm,
+    acme_kp: Pem,
     jwk: Jwk,
 }
 
@@ -60,12 +61,19 @@ impl RustyE2eIdentity {
                 (kp.to_pem()?, kp.public_key().try_into_jwk()?)
             }
         };
+        let acme_kp = match sign_alg {
+            JwsAlgorithm::Ed25519 => Ed25519KeyPair::generate().to_pem(),
+            JwsAlgorithm::P256 => ES256KeyPair::generate().to_pem()?,
+            JwsAlgorithm::P384 => ES384KeyPair::generate().to_pem()?,
+        }
+        .into();
         // drop the private immediately since it already has been copied
         raw_sign_key.zeroize();
         Ok(Self {
             sign_alg,
             sign_kp: sign_kp.into(),
             hash_alg: HashAlgorithm::from(sign_alg),
+            acme_kp,
             jwk,
         })
     }
@@ -96,7 +104,7 @@ impl RustyE2eIdentity {
         directory: &AcmeDirectory,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
-        let acct_req = RustyAcme::new_account_request(directory, self.sign_alg, &self.sign_kp, previous_nonce)?;
+        let acct_req = RustyAcme::new_account_request(directory, self.sign_alg, &self.acme_kp, previous_nonce)?;
         Ok(serde_json::to_value(acct_req)?)
     }
 
@@ -144,7 +152,7 @@ impl RustyE2eIdentity {
             directory,
             &account,
             self.sign_alg,
-            &self.sign_kp,
+            &self.acme_kp,
             previous_nonce,
         )?;
         Ok(serde_json::to_value(order_req)?)
@@ -182,7 +190,7 @@ impl RustyE2eIdentity {
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
         let account = account.clone().try_into()?;
-        let authz_req = RustyAcme::new_authz_request(url, &account, self.sign_alg, &self.sign_kp, previous_nonce)?;
+        let authz_req = RustyAcme::new_authz_request(url, &account, self.sign_alg, &self.acme_kp, previous_nonce)?;
         Ok(serde_json::to_value(authz_req)?)
     }
 
@@ -288,7 +296,7 @@ impl RustyE2eIdentity {
             dpop_challenge,
             &account,
             self.sign_alg,
-            &self.sign_kp,
+            &self.acme_kp,
             previous_nonce,
         )?;
         Ok(serde_json::to_value(new_challenge_req)?)
@@ -318,7 +326,7 @@ impl RustyE2eIdentity {
             &account,
             self.sign_alg,
             self.hash_alg,
-            &self.sign_kp,
+            &self.acme_kp,
             &self.jwk,
             previous_nonce,
         )?;
@@ -353,7 +361,7 @@ impl RustyE2eIdentity {
     ) -> E2eIdentityResult<Json> {
         let account = account.clone().try_into()?;
         let check_order_req =
-            RustyAcme::check_order_request(order_url, &account, self.sign_alg, &self.sign_kp, previous_nonce)?;
+            RustyAcme::check_order_request(order_url, &account, self.sign_alg, &self.acme_kp, previous_nonce)?;
         Ok(serde_json::to_value(check_order_req)?)
     }
 
@@ -384,7 +392,14 @@ impl RustyE2eIdentity {
     ) -> E2eIdentityResult<Json> {
         let order = order.clone().try_into()?;
         let account = account.clone().try_into()?;
-        let finalize_req = RustyAcme::finalize_req(&order, &account, self.sign_alg, &self.sign_kp, previous_nonce)?;
+        let finalize_req = RustyAcme::finalize_req(
+            &order,
+            &account,
+            self.sign_alg,
+            &self.acme_kp,
+            &self.sign_kp,
+            previous_nonce,
+        )?;
         Ok(serde_json::to_value(finalize_req)?)
     }
 
@@ -416,7 +431,7 @@ impl RustyE2eIdentity {
         let finalize = finalize.try_into()?;
         let account = account.try_into()?;
         let certificate_req =
-            RustyAcme::certificate_req(finalize, account, self.sign_alg, &self.sign_kp, previous_nonce)?;
+            RustyAcme::certificate_req(finalize, account, self.sign_alg, &self.acme_kp, previous_nonce)?;
         Ok(serde_json::to_value(certificate_req)?)
     }
 

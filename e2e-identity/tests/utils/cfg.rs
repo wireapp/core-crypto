@@ -27,7 +27,7 @@ pub struct E2eTest<'a> {
     pub display_name: String,
     pub domain: String,
     pub team: Option<String>,
-    pub wire_client_id: u64,
+    pub device_id: u64,
     pub sub: ClientId,
     pub handle: String,
     pub ldap_cfg: LdapCfg,
@@ -37,8 +37,9 @@ pub struct E2eTest<'a> {
     pub backend_kp: Pem,
     pub alg: JwsAlgorithm,
     pub hash_alg: HashAlgorithm,
+    pub acme_kp: Pem,
     pub client_kp: Pem,
-    pub client_jwk: Jwk,
+    pub acme_jwk: Jwk,
     pub is_demo: bool,
     pub display: TestDisplay,
     pub wire_server: Option<WireServer>,
@@ -111,35 +112,41 @@ impl<'a> E2eTest<'a> {
         // TODO: support https for jwks uri
         let jwks_uri = format!("http://{dex_host}:{}/dex/keys", DexImage::PORT);
 
-        let (client_kp, client_jwk, sign_key, backend_kp) = match alg {
+        let (client_kp, sign_key, backend_kp, acme_kp, acme_jwk) = match alg {
             JwsAlgorithm::Ed25519 => {
                 let client_kp = Ed25519KeyPair::generate();
                 let backend_kp = Ed25519KeyPair::generate();
+                let acme_kp = Ed25519KeyPair::generate();
                 (
                     Pem::from(client_kp.to_pem()),
-                    client_kp.public_key().try_into_jwk().unwrap(),
                     backend_kp.public_key().to_pem(),
                     Pem::from(backend_kp.to_pem()),
+                    Pem::from(acme_kp.to_pem()),
+                    acme_kp.public_key().try_into_jwk().unwrap(),
                 )
             }
             JwsAlgorithm::P256 => {
                 let client_kp = ES256KeyPair::generate();
                 let backend_kp = ES256KeyPair::generate();
+                let acme_kp = ES256KeyPair::generate();
                 (
                     Pem::from(client_kp.to_pem().unwrap()),
-                    client_kp.public_key().try_into_jwk().unwrap(),
                     backend_kp.public_key().to_pem().unwrap(),
                     Pem::from(backend_kp.to_pem().unwrap()),
+                    Pem::from(acme_kp.to_pem().unwrap()),
+                    acme_kp.public_key().try_into_jwk().unwrap(),
                 )
             }
             JwsAlgorithm::P384 => {
                 let client_kp = ES384KeyPair::generate();
                 let backend_kp = ES384KeyPair::generate();
+                let acme_kp = ES384KeyPair::generate();
                 (
                     Pem::from(client_kp.to_pem().unwrap()),
-                    client_kp.public_key().try_into_jwk().unwrap(),
                     backend_kp.public_key().to_pem().unwrap(),
                     Pem::from(backend_kp.to_pem().unwrap()),
+                    Pem::from(acme_kp.to_pem().unwrap()),
+                    acme_kp.public_key().try_into_jwk().unwrap(),
                 )
             }
         };
@@ -151,7 +158,7 @@ impl<'a> E2eTest<'a> {
         Self {
             domain: domain.to_string(),
             display_name: display_name.to_string(),
-            wire_client_id,
+            device_id: wire_client_id,
             sub: sub.clone(),
             handle: handle.to_string(),
             team: Some(team.to_string()),
@@ -191,7 +198,8 @@ impl<'a> E2eTest<'a> {
             alg,
             hash_alg,
             client_kp,
-            client_jwk,
+            acme_kp,
+            acme_jwk,
             backend_kp,
             display,
             wire_server: None,

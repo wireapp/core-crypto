@@ -126,7 +126,7 @@ impl<'a> E2eTest<'a> {
     ) -> TestResult<(AcmeAccount, String)> {
         // see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
         self.display_step("create a new account");
-        let account_req = RustyAcme::new_account_request(directory, self.alg, &self.client_kp, previous_nonce)?;
+        let account_req = RustyAcme::new_account_request(directory, self.alg, &self.acme_kp, previous_nonce)?;
         let req = self.client.acme_req(&directory.new_account, &account_req)?;
         self.display_req(
             Actor::WireClient,
@@ -173,7 +173,7 @@ impl<'a> E2eTest<'a> {
             directory,
             account,
             self.alg,
-            &self.client_kp,
+            &self.acme_kp,
             previous_nonce,
         )?;
         let req = self.client.acme_req(&directory.new_order, &order_request)?;
@@ -210,7 +210,7 @@ impl<'a> E2eTest<'a> {
         self.display_chapter("Display-name and handle already authorized");
         self.display_step("create authorization and fetch challenges");
         let authz_url = order.authorizations.get(0).unwrap();
-        let authz_req = RustyAcme::new_authz_request(authz_url, account, self.alg, &self.client_kp, previous_nonce)?;
+        let authz_req = RustyAcme::new_authz_request(authz_url, account, self.alg, &self.acme_kp, previous_nonce)?;
         let req = self.client.acme_req(authz_url, &authz_req)?;
         self.display_req(
             Actor::WireClient,
@@ -291,9 +291,9 @@ impl<'a> E2eTest<'a> {
             extra_claims: None,
         };
         let client_dpop_token =
-            RustyJwtTools::generate_dpop_token(dpop, &self.sub, backend_nonce, expiry, self.alg, &self.client_kp)?;
+            RustyJwtTools::generate_dpop_token(dpop, &self.sub, backend_nonce, expiry, self.alg, &self.acme_kp)?;
         let alg = self.alg;
-        let client_kp = self.client_kp.to_string();
+        let client_kp = self.acme_kp.to_string();
         self.display_operation(Actor::WireClient, "create DPoP token");
         self.display_token("Dpop token", &client_dpop_token, Some(alg), client_kp);
         Ok(client_dpop_token)
@@ -314,7 +314,7 @@ impl<'a> E2eTest<'a> {
         ctx_store("client-id", self.sub.to_uri());
         ctx_store("backend-kp", self.backend_kp.to_string());
         ctx_store("hash-alg", self.hash_alg.to_string());
-        ctx_store("wire-server-uri", dpop_chall.target.as_ref().unwrap().as_str());
+        ctx_store("wire-server-uri", dpop_url.clone());
         ctx_store("handle", self.handle.as_str());
         ctx_store("team", self.team.as_ref().unwrap());
 
@@ -367,7 +367,7 @@ impl<'a> E2eTest<'a> {
             dpop_chall,
             account,
             self.alg,
-            &self.client_kp,
+            &self.acme_kp,
             previous_nonce,
         )?;
         let req = self.client.acme_req(&dpop_chall_url, &dpop_chall_req)?;
@@ -424,8 +424,8 @@ impl<'a> E2eTest<'a> {
             account,
             self.alg,
             self.hash_alg,
-            &self.client_kp,
-            &self.client_jwk,
+            &self.acme_kp,
+            &self.acme_jwk,
             previous_nonce,
         )?;
         let req = self.client.acme_req(&oidc_chall_url, &oidc_chall_req)?;
@@ -645,7 +645,7 @@ impl<'a> E2eTest<'a> {
         self.display_step("verify the status of the order");
         let order_req_url = order_url.clone();
         let get_order_req =
-            RustyAcme::check_order_request(order_url, account, self.alg, &self.client_kp, previous_nonce)?;
+            RustyAcme::check_order_request(order_url, account, self.alg, &self.acme_kp, previous_nonce)?;
         let req = self.client.acme_req(&order_req_url, &get_order_req)?;
         self.display_req(
             Actor::WireClient,
@@ -678,7 +678,8 @@ impl<'a> E2eTest<'a> {
     ) -> TestResult<(AcmeFinalize, String)> {
         self.display_step("create a CSR and call finalize url");
         let finalize_url = order.finalize.clone();
-        let finalize_req = RustyAcme::finalize_req(order, account, self.alg, &self.client_kp, previous_nonce)?;
+        let finalize_req =
+            RustyAcme::finalize_req(order, account, self.alg, &self.acme_kp, &self.client_kp, previous_nonce)?;
         let req = self.client.acme_req(&finalize_url, &finalize_req)?;
         self.display_req(
             Actor::WireClient,
@@ -718,7 +719,7 @@ impl<'a> E2eTest<'a> {
     ) -> TestResult<Vec<Vec<u8>>> {
         self.display_step("fetch the certificate");
         let certificate_url = finalize.certificate.clone();
-        let certificate_req = RustyAcme::certificate_req(finalize, account, self.alg, &self.client_kp, previous_nonce)?;
+        let certificate_req = RustyAcme::certificate_req(finalize, account, self.alg, &self.acme_kp, previous_nonce)?;
         let req = self.client.acme_req(&certificate_url, &certificate_req)?;
         self.display_req(
             Actor::WireClient,
