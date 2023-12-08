@@ -166,7 +166,7 @@ internal class E2EITest {
     }
 
     @Test
-    fun `conversation should be degraded when at least 1 of the members uses a Basic credential`() = runTest {
+    fun `conversation should be not verified when at least 1 of the members uses a Basic credential`() = runTest {
         val (alice, bob) = newClients(aliceId, bobId)
 
         bob.createConversation(id)

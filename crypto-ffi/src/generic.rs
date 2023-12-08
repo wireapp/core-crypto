@@ -1252,8 +1252,8 @@ pub enum E2eiConversationState {
     /// All clients have a valid E2EI certificate
     Verified = core_crypto::prelude::E2eiConversationState::Verified as u8,
     /// Some clients are either still Basic or their certificate is expired
-    Degraded = core_crypto::prelude::E2eiConversationState::Degraded as u8,
-    /// All clients are still Basic. If all client have expired certificates, [E2eiConversationState::Degraded] is returned.
+    NotVerified = core_crypto::prelude::E2eiConversationState::NotVerified as u8,
+    /// All clients are still Basic. If all client have expired certificates, [E2eiConversationState::NotVerified] is returned.
     NotEnabled = core_crypto::prelude::E2eiConversationState::NotEnabled as u8,
 }
 
@@ -1261,7 +1261,7 @@ impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState
     fn from(value: core_crypto::prelude::E2eiConversationState) -> Self {
         match value {
             core_crypto::prelude::E2eiConversationState::Verified => Self::Verified,
-            core_crypto::prelude::E2eiConversationState::Degraded => Self::Degraded,
+            core_crypto::prelude::E2eiConversationState::NotVerified => Self::NotVerified,
             core_crypto::prelude::E2eiConversationState::NotEnabled => Self::NotEnabled,
         }
     }
