@@ -472,4 +472,15 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
     suspend fun getUserIdentities(id: MLSGroupId, userIds: List<String>): Map<String, List<WireIdentity>> {
         return cc.getUserIdentities(id.lower(), userIds).mapValues { (_, v) -> v.map { it.lift() } }
     }
+
+    /**
+     * Gets the e2ei conversation state from a `GroupInfo`. Useful to check if the group has e2ei
+     * turned on or not before joining it.
+     *
+     * @param groupInfo a TLS encoded GroupInfo fetched from the Delivery Service
+     * @param credentialType kind of Credential to check usage of. Defaults to X509 for now as no other value will give any result.
+     */
+    suspend fun getCredentialInUse(groupInfo: GroupInfo, credentialType: CredentialType = CredentialType.X509): com.wire.crypto.E2eiConversationState {
+        return cc.getCredentialInUse(groupInfo.lower(), credentialType.lower())
+    }
 }

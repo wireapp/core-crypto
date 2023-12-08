@@ -357,6 +357,12 @@ pub enum MlsError {
     /// OpenMLS LeafNode validation error
     #[error(transparent)]
     MlsLeafNodeValidationError(#[from] openmls::prelude::LeafNodeValidationError),
+    /// OpenMLS LeafNode validation error
+    #[error(transparent)]
+    RatchetTreeError(#[from] openmls::treesync::RatchetTreeError),
+    /// OpenMLS GroupInfo error
+    #[error(transparent)]
+    GroupInfoError(#[from] openmls::messages::group_info::GroupInfoError),
 }
 
 #[derive(Debug, thiserror::Error, strum::IntoStaticStr)]

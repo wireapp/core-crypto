@@ -2167,6 +2167,20 @@ export class CoreCrypto {
     }
 
     /**
+     * Gets the e2ei conversation state from a `GroupInfo`. Useful to check if the group has e2ei
+     * turned on or not before joining it.
+     *
+     * @param groupInfo - a TLS encoded GroupInfo fetched from the Delivery Service
+     * @param credentialType - kind of Credential to check usage of. Defaults to X509 for now as no other value will give any result.
+     * @returns see {@link E2eiConversationState}
+     */
+    async getCredentialInUse(groupInfo: Uint8Array, credentialType: CredentialType = CredentialType.X509): Promise<E2eiConversationState> {
+        let state = await CoreCryptoError.asyncMapErr(this.#cc.get_credential_in_use(groupInfo, credentialType));
+        // @ts-ignore
+        return E2eiConversationState[E2eiConversationState[state]];
+    }
+
+    /**
      * Returns the current version of {@link CoreCrypto}
      *
      * @returns The `core-crypto-ffi` version as defined in its `Cargo.toml` file

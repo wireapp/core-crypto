@@ -1264,6 +1264,15 @@ public class CoreCryptoWrapper {
         return try await self.coreCrypto.getUserIdentities(conversationId: conversationId, userIds: userIds)
     }
 
+    /// Gets the e2ei conversation state from a `GroupInfo`. Useful to check if the group has e2ei turned on or not
+    /// before joining it.
+    ///
+    /// - parameter groupInfo: a TLS encoded `GroupInfo` fetched from the Delivery Service
+    /// - parameter credentialType: kind of Credential to check usage of. Defaults to X509 for now as no other value will give any result.
+    public func getCredentialInUse(groupInfo: [UInt8], credentialType: MlsCredentialType) async throws -> E2eiConversationState {
+        try await self.coreCrypto.getCredentialInUse(groupInfo: groupInfo, credentialType: credentialType.convert()).convertTo()
+    }
+
     /// - returns: The CoreCrypto version
     public static func version() -> String {
         return CoreCryptoSwift.version()
