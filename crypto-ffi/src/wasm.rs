@@ -3088,8 +3088,8 @@ impl From<AcmeChallenge> for core_crypto::prelude::E2eiAcmeChallenge {
 enum E2eiConversationState {
     Verified = 1,
     /// Some clients are either still Basic or their certificate is expired
-    Degraded = 2,
-    /// All clients are still Basic. If all client have expired certificates, [E2eiConversationState::Degraded] is returned.
+    NotVerified = 2,
+    /// All clients are still Basic. If all client have expired certificates, [E2eiConversationState::NotVerified] is returned.
     NotEnabled = 3,
 }
 
@@ -3097,7 +3097,7 @@ impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState
     fn from(state: core_crypto::prelude::E2eiConversationState) -> Self {
         match state {
             core_crypto::prelude::E2eiConversationState::Verified => Self::Verified,
-            core_crypto::prelude::E2eiConversationState::Degraded => Self::Degraded,
+            core_crypto::prelude::E2eiConversationState::NotVerified => Self::NotVerified,
             core_crypto::prelude::E2eiConversationState::NotEnabled => Self::NotEnabled,
         }
     }
