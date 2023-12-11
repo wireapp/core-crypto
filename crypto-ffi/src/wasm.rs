@@ -2395,6 +2395,46 @@ impl CoreCrypto {
         )
     }
 
+    /// See [core_crypto::mls::MlsCentral::e2ei_register_acme_ca]
+    pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                let mut this = this.write().await;
+                this.e2ei_register_acme_ca(trust_anchor_pem).await?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
+        )
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_register_intermediate_ca]
+    pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                let mut this = this.write().await;
+                this.e2ei_register_intermediate_ca(cert_pem).await?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
+        )
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_register_crl]
+    pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Box<[u8]>) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                let mut this = this.write().await;
+                let cc_registration = this.e2ei_register_crl(crl_dp, crl_der.to_vec()).await?;
+                let registration: CrlRegistration = cc_registration.into();
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&registration)?)
+            }
+            .err_into(),
+        )
+    }
+
     /// see [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
     pub fn e2ei_mls_init_only(
         &self,
@@ -3052,6 +3092,25 @@ impl From<core_crypto::prelude::DeviceStatus> for DeviceStatus {
             core_crypto::prelude::DeviceStatus::Valid => Self::Valid,
             core_crypto::prelude::DeviceStatus::Expired => Self::Expired,
             core_crypto::prelude::DeviceStatus::Revoked => Self::Revoked,
+        }
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+/// Supporting struct for CRL registration result
+pub struct CrlRegistration {
+    /// Whether this CRL modifies the old CRL (i.e. has a different revocated cert list)
+    pub dirty: bool,
+    /// Optional expiration timestamp
+    pub expiration: Option<u64>,
+}
+
+impl From<core_crypto::e2e_identity::CrlRegistration> for CrlRegistration {
+    fn from(value: core_crypto::e2e_identity::CrlRegistration) -> Self {
+        Self {
+            dirty: value.dirty,
+            expiration: value.expiration,
         }
     }
 }

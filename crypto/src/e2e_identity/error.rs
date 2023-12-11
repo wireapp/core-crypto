@@ -41,9 +41,12 @@ pub enum E2eIdentityError {
     /// Error generating keys
     #[error(transparent)]
     CryptoError(#[from] openmls_traits::types::CryptoError),
-    /// Error creating client Dpop token or acne error
+    /// Error creating client Dpop token or acme error
     #[error(transparent)]
     IdentityError(#[from] wire_e2e_identity::prelude::E2eIdentityError),
+    /// Error validating X509 parameters
+    #[error(transparent)]
+    X509Error(#[from] wire_e2e_identity::prelude::x509::RustyX509CheckError),
     /// Error parsing a URL
     #[error(transparent)]
     UrlError(#[from] url::ParseError),

@@ -14,14 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use openmls::prelude::{group_info::VerifiableGroupInfo, MlsGroup, MlsMessageOut, Proposal, Sender, StagedCommit};
+use openmls::prelude::{
+    group_info::VerifiableGroupInfo, CredentialType, MlsGroup, MlsMessageOut, Proposal, Sender, StagedCommit,
+};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use core_crypto_keystore::entities::MlsPendingMessage;
 use core_crypto_keystore::{entities::PersistedMlsPendingGroup, CryptoKeystoreMls};
 use tls_codec::Serialize;
+use wire_e2e_identity::prelude::x509::revocation::PkiEnvironment;
 
-use crate::prelude::decrypt::MlsBufferedConversationDecryptMessage;
+use crate::{
+    e2e_identity::conversation_state::compute_state,
+    prelude::{decrypt::MlsBufferedConversationDecryptMessage, E2eiConversationState},
+};
 use crate::{
     group_store::GroupStoreValue,
     prelude::{
@@ -217,6 +223,7 @@ impl MlsConversation {
         commit: &StagedCommit,
         sender: ClientId,
         parent_conversation: Option<&GroupStoreValue<MlsConversation>>,
+        pki_env: Option<&PkiEnvironment>,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
     ) -> CryptoResult<()> {
         // i.e. has this commit been created by [MlsCentral::join_by_external_commit] ?
@@ -259,6 +266,22 @@ impl MlsConversation {
                 .await
             {
                 return Err(CryptoError::UnauthorizedExternalCommit);
+            }
+        }
+
+        if let Some(pki_env) = pki_env {
+            let credentials: Vec<_> = commit
+                .add_proposals()
+                .filter_map(|add_proposal| {
+                    let credential = add_proposal.add_proposal().key_package().leaf_node().credential();
+
+                    matches!(credential.credential_type(), CredentialType::X509).then(|| credential.clone())
+                })
+                .collect();
+            let state = compute_state(credentials.iter(), Some(pki_env), MlsCredentialType::X509);
+            if state != E2eiConversationState::Verified {
+                // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and impact of the validations
+                // return Err(CryptoError::InvalidCertificateChain);
             }
         }
 

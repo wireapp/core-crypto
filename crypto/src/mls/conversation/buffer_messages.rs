@@ -14,6 +14,7 @@ use core_crypto_keystore::entities::{EntityFindParams, MlsPendingMessage};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize;
+use wire_e2e_identity::prelude::x509::revocation::PkiEnvironment;
 
 impl MlsCentral {
     pub(crate) async fn handle_future_message(
@@ -45,6 +46,7 @@ impl MlsCentral {
             .restore_pending_messages(
                 self.mls_client()?,
                 &self.mls_backend,
+                self.e2ei_pki_env.as_ref(),
                 callbacks,
                 parent_conversation.as_ref(),
                 is_rejoin,
@@ -60,6 +62,7 @@ impl MlsConversation {
         &'a mut self,
         client: &'a Client,
         backend: &'a MlsCryptoProvider,
+        pki_env: Option<&'a PkiEnvironment>,
         callbacks: Option<&'a dyn CoreCryptoCallbacks>,
         parent_conversation: Option<&'a GroupStoreValue<Self>>,
         is_rejoin: bool,
@@ -106,7 +109,15 @@ impl MlsConversation {
             };
             let restore_pending = false; // to prevent infinite recursion
             let decrypted = self
-                .decrypt_message(m, parent_conversation, client, backend, callbacks, restore_pending)
+                .decrypt_message(
+                    m,
+                    parent_conversation,
+                    client,
+                    backend,
+                    pki_env,
+                    callbacks,
+                    restore_pending,
+                )
                 .await?;
             decrypted_messages.push(decrypted.into());
         }

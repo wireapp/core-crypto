@@ -4,7 +4,7 @@ use crate::{
     CryptoError, CryptoResult,
 };
 use core_crypto_keystore::{
-    entities::{MlsRefreshTokenExt, RefreshTokenEntity},
+    entities::{E2eiRefreshToken, UniqueEntity},
     CryptoKeystoreResult,
 };
 use mls_crypto_provider::MlsCryptoProvider;
@@ -35,7 +35,7 @@ impl E2eiEnrollment {
         rt: RefreshToken,
     ) -> CryptoKeystoreResult<()> {
         let mut conn = backend.key_store().borrow_conn().await?;
-        let rt = RefreshTokenEntity::from(rt);
+        let rt = E2eiRefreshToken::from(rt);
         rt.replace(&mut conn).await
     }
 }
@@ -43,20 +43,20 @@ impl E2eiEnrollment {
 impl MlsCentral {
     pub(crate) async fn find_refresh_token(&self) -> CryptoResult<RefreshToken> {
         let mut conn = self.mls_backend.key_store().borrow_conn().await?;
-        RefreshTokenEntity::find_unique(&mut conn).await?.try_into()
+        E2eiRefreshToken::find_unique(&mut conn).await?.try_into()
     }
 }
 
-impl TryFrom<RefreshTokenEntity> for RefreshToken {
+impl TryFrom<E2eiRefreshToken> for RefreshToken {
     type Error = CryptoError;
 
-    fn try_from(mut entity: RefreshTokenEntity) -> CryptoResult<Self> {
+    fn try_from(mut entity: E2eiRefreshToken) -> CryptoResult<Self> {
         let content = std::mem::take(&mut entity.content);
         Ok(Self(String::from_utf8(content)?))
     }
 }
 
-impl From<RefreshToken> for RefreshTokenEntity {
+impl From<RefreshToken> for E2eiRefreshToken {
     fn from(mut rt: RefreshToken) -> Self {
         let content = std::mem::take(&mut rt.0);
         Self {

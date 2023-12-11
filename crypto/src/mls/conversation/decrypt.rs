@@ -20,6 +20,7 @@ use tls_codec::Deserialize;
 
 use core_crypto_keystore::entities::MlsPendingMessage;
 use mls_crypto_provider::MlsCryptoProvider;
+use wire_e2e_identity::prelude::x509::revocation::PkiEnvironment;
 
 use crate::{
     group_store::GroupStoreValue,
@@ -58,6 +59,8 @@ pub struct MlsConversationDecryptMessage {
     /// Contains buffered messages for next epoch which were received before the commit creating the epoch
     /// because the DS did not fan them out in order.
     pub buffered_messages: Option<Vec<MlsBufferedConversationDecryptMessage>>,
+    /// TODO: make this
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 /// Type safe recursion of [MlsConversationDecryptMessage]
@@ -77,6 +80,8 @@ pub struct MlsBufferedConversationDecryptMessage {
     pub has_epoch_changed: bool,
     /// see [MlsConversationDecryptMessage]
     pub identity: Option<WireIdentity>,
+    /// see [MlsConversationDecryptMessage]
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessage {
@@ -89,6 +94,7 @@ impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessa
             sender_client_id: from.sender_client_id,
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity,
+            crl_new_distribution_points: from.crl_new_distribution_points,
         }
     }
 }
@@ -96,6 +102,7 @@ impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessa
 /// Abstraction over a MLS group capable of decrypting a MLS message
 impl MlsConversation {
     /// see [MlsCentral::decrypt_message]
+    #[allow(clippy::too_many_arguments)]
     #[cfg_attr(test, crate::durable)]
     pub async fn decrypt_message(
         &mut self,
@@ -103,6 +110,7 @@ impl MlsConversation {
         parent_conv: Option<&GroupStoreValue<MlsConversation>>,
         client: &Client,
         backend: &MlsCryptoProvider,
+        pki_env: Option<&PkiEnvironment>,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
         restore_pending: bool,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
@@ -129,6 +137,7 @@ impl MlsConversation {
                 has_epoch_changed: false,
                 identity,
                 buffered_messages: None,
+                crl_new_distribution_points: None,
             },
             ProcessedMessageContent::ProposalMessage(proposal) => {
                 self.group.store_pending_proposal(*proposal);
@@ -141,14 +150,18 @@ impl MlsConversation {
                     has_epoch_changed: false,
                     identity,
                     buffered_messages: None,
+                    // TODO: Compute CRL DPs from proposal if Add or Update
+                    crl_new_distribution_points: None,
                 }
             }
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
-                self.validate_external_commit(&staged_commit, sender_client_id, parent_conv, callbacks)
+                self.validate_external_commit(&staged_commit, sender_client_id, parent_conv, pki_env, callbacks)
                     .await?;
 
                 #[allow(clippy::needless_collect)] // false positive
                 let pending_proposals = self.self_pending_proposals().cloned().collect::<Vec<_>>();
+
+                // TODO: Compute CRL DPs from proposals if Add or Update
 
                 // getting the pending has to be done before `merge_staged_commit` otherwise it's wiped out
                 let pending_commit = self.group.pending_commit().cloned();
@@ -170,7 +183,7 @@ impl MlsConversation {
 
                 let buffered_messages = if restore_pending {
                     if let Some(pm) = self
-                        .restore_pending_messages(client, backend, callbacks, parent_conv, false)
+                        .restore_pending_messages(client, backend, pki_env, callbacks, parent_conv, false)
                         .await?
                     {
                         backend.key_store().remove::<MlsPendingMessage, _>(self.id()).await?;
@@ -191,6 +204,7 @@ impl MlsConversation {
                     has_epoch_changed: true,
                     identity,
                     buffered_messages,
+                    crl_new_distribution_points: None,
                 }
             }
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
@@ -207,6 +221,7 @@ impl MlsConversation {
                     has_epoch_changed: false,
                     identity,
                     buffered_messages: None,
+                    crl_new_distribution_points: None,
                 }
             }
         };
@@ -304,6 +319,7 @@ impl MlsCentral {
                 parent_conversation.as_ref(),
                 self.mls_client()?,
                 &self.mls_backend,
+                self.e2ei_pki_env.as_ref(),
                 callbacks,
                 true,
             )
