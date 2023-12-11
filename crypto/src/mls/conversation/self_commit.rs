@@ -85,6 +85,7 @@ impl MlsConversation {
             has_epoch_changed: true,
             identity,
             buffered_messages: None,
+            crl_new_distribution_points: None,
         })
     }
 }

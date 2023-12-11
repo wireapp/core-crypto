@@ -203,6 +203,13 @@ pub struct E2eiEnrollment {
     pub content: Vec<u8>,
 }
 
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+pub trait UniqueEntity: Entity {
+    async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self>;
+    async fn replace(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()>;
+}
+
 /// OIDC refresh token used in E2EI
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
@@ -210,13 +217,39 @@ pub struct E2eiEnrollment {
     any(target_family = "wasm", feature = "serde"),
     derive(serde::Serialize, serde::Deserialize)
 )]
-pub struct RefreshTokenEntity {
+pub struct E2eiRefreshToken {
     pub content: Vec<u8>,
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait MlsRefreshTokenExt: Entity {
-    async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self>;
-    async fn replace(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()>;
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[zeroize(drop)]
+#[cfg_attr(
+    any(target_family = "wasm", feature = "serde"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
+pub struct E2eiAcmeCA {
+    pub content: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[zeroize(drop)]
+#[cfg_attr(
+    any(target_family = "wasm", feature = "serde"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
+pub struct E2eiIntermediateCert {
+    // key to identify the CA cert; Using a combination of SKI & AKI extensions concatenated like so is suitable: `SKI[+AKI]`
+    pub ski_aki_pair: String,
+    pub content: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[zeroize(drop)]
+#[cfg_attr(
+    any(target_family = "wasm", feature = "serde"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
+pub struct E2eiCrl {
+    pub distribution_point: String,
+    pub content: Vec<u8>,
 }

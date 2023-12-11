@@ -121,6 +121,21 @@ impl DatabaseConnection for WasmConnection {
                     .add_index(Index::new("id", "id").unique(true)),
             )
             .add_object_store(
+                ObjectStore::new("e2ei_acme_ca")
+                    .auto_increment(false)
+                    .add_index(Index::new("id", "id").unique(true)),
+            )
+            .add_object_store(
+                ObjectStore::new("e2ei_intermediate_certs")
+                    .auto_increment(false)
+                    .add_index(Index::new("ski_aki_pair", "ski_aki_pair").unique(true)),
+            )
+            .add_object_store(
+                ObjectStore::new("e2ei_crls")
+                    .auto_increment(false)
+                    .add_index(Index::new("distribution_point", "distribution_point").unique(true)),
+            )
+            .add_object_store(
                 ObjectStore::new("proteus_prekeys")
                     .auto_increment(false)
                     .add_index(Index::new("id", "id").unique(true)),

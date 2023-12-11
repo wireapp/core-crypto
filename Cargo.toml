@@ -75,8 +75,9 @@ branch = "wire/unstable-pq-xyber"
 
 [patch.crates-io.wire-e2e-identity]
 git = "https://github.com/wireapp/rusty-jwt-tools"
+branch = "otak/crl"
 package = "wire-e2e-identity"
-tag = "v0.8.0"
+# tag = "v0.8.0"
 
 # aarch64-apple-ios-sim target support has not yet been released
 [patch.crates-io.openssl-src]

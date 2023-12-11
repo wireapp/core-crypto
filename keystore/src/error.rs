@@ -40,7 +40,13 @@ pub enum MissingKeyErrorKind {
     #[error("End-to-end identity enrollment")]
     E2eiEnrollment,
     #[error("OIDC refresh token")]
-    RefreshToken,
+    E2eiRefreshToken,
+    #[error("End-to-end identity root trust anchor CA cert")]
+    E2eiAcmeCA,
+    #[error("End-to-end identity intermediate CA cert")]
+    E2eiIntermediateCert,
+    #[error("End-to-end identity CRL")]
+    E2eiCrl,
     #[cfg(feature = "proteus-keystore")]
     #[error("Proteus PreKey")]
     ProteusPrekey,

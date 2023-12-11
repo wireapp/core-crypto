@@ -581,9 +581,15 @@ pub mod tests {
                         .collect::<Vec<_>>();
                     assert_eq!(all_credentials.len(), 2);
 
-                    let client = Client::load(&alice_central.mls_backend, &cid, all_credentials, scs)
-                        .await
-                        .unwrap();
+                    let client = Client::load(
+                        &alice_central.mls_backend,
+                        &cid,
+                        all_credentials,
+                        scs,
+                        matches!(case.credential_type, MlsCredentialType::X509),
+                    )
+                    .await
+                    .unwrap();
                     alice_central.mls_client = Some(client);
 
                     // Verify that Alice has the same credentials
