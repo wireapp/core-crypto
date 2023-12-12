@@ -81,7 +81,6 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
      * Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
      * Once the enrollment is finished, use the instance in [e2eiRotateAll] to do the rotation.
      *
-     * @param clientId client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
      * @param displayName human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays generated x509 certificate expiry
@@ -90,7 +89,6 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
      * @return The new [E2EIEnrollment] enrollment to use with [e2eiRotateAll]
      */
     suspend fun e2eiNewActivationEnrollment(
-        clientId: String,
         displayName: String,
         handle: String,
         expiryDays: UInt,
@@ -99,7 +97,6 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
     ): E2EIEnrollment {
         return E2EIEnrollment(
             cc.e2eiNewActivationEnrollment(
-                clientId,
                 displayName,
                 handle,
                 team,
@@ -114,7 +111,6 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
      * their credential, either because the former one is expired or it has been revoked. It lets you change the DisplayName
      * or the handle if you need to. Once the enrollment is finished, use the instance in [e2eiRotateAll] to do the rotation.
      *
-     * @param clientId client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
      * @param expiryDays generated x509 certificate expiry
      * @param ciphersuite for generating signing key material
      * @param displayName human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
@@ -123,7 +119,6 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
      * @return The new [E2EIEnrollment] enrollment to use with [e2eiRotateAll]
      */
     suspend fun e2eiNewRotateEnrollment(
-        clientId: String,
         expiryDays: UInt,
         ciphersuite: Ciphersuite,
         displayName: String? = null,
@@ -132,7 +127,6 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
     ): E2EIEnrollment {
         return E2EIEnrollment(
             cc.e2eiNewRotateEnrollment(
-                clientId,
                 displayName,
                 handle,
                 team,

@@ -1958,7 +1958,6 @@ export class CoreCrypto {
      * Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
      * Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
      *
-     * @param clientId - client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
      * @param expiryDays - generated x509 certificate expiry
@@ -1967,7 +1966,6 @@ export class CoreCrypto {
      * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
      */
     async e2eiNewActivationEnrollment(
-        clientId: string,
         displayName: string,
         handle: string,
         expiryDays: number,
@@ -1976,7 +1974,6 @@ export class CoreCrypto {
     ): Promise<E2eiEnrollment> {
         const e2ei = await CoreCryptoError.asyncMapErr(
             this.#cc.e2ei_new_activation_enrollment(
-                clientId,
                 displayName,
                 handle,
                 team,
@@ -1993,7 +1990,6 @@ export class CoreCrypto {
      * has been revoked. It lets you change the DisplayName or the handle
      * if you need to. Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
      *
-     * @param clientId - client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
      * @param expiryDays - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
@@ -2002,7 +1998,6 @@ export class CoreCrypto {
      * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
      */
     async e2eiNewRotateEnrollment(
-        clientId: string,
         expiryDays: number,
         ciphersuite: Ciphersuite,
         displayName?: string,
@@ -2011,7 +2006,6 @@ export class CoreCrypto {
     ): Promise<E2eiEnrollment> {
         const e2ei = await CoreCryptoError.asyncMapErr(
             this.#cc.e2ei_new_rotate_enrollment(
-                clientId,
                 displayName,
                 handle,
                 team,

@@ -6,12 +6,11 @@ use openmls_traits::OpenMlsCryptoProvider;
 use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::prelude::ConversationId;
 use crate::{
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
     prelude::{
-        CertificateBundle, Client, ClientId, CryptoError, CryptoResult, E2eIdentityError, E2eiEnrollment, MlsCentral,
-        MlsCiphersuite, MlsCommitBundle, MlsConversation, MlsCredentialType,
+        CertificateBundle, Client, ConversationId, CryptoError, CryptoResult, E2eIdentityError, E2eiEnrollment,
+        MlsCentral, MlsCiphersuite, MlsCommitBundle, MlsConversation, MlsCredentialType,
     },
     MlsError,
 };
@@ -70,7 +69,6 @@ impl MlsCentral {
     /// the rotation.
     pub fn e2ei_new_activation_enrollment(
         &self,
-        client_id: ClientId,
         display_name: String,
         handle: String,
         team: Option<String>,
@@ -83,6 +81,7 @@ impl MlsCentral {
         let cb = client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
             .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::Basic))?;
+        let client_id = cb.credential().identity().into();
 
         let sign_keypair = Some(cb.signature_key.clone().try_into()?);
 
@@ -107,7 +106,6 @@ impl MlsCentral {
     /// if you need to. Once the enrollment is finished, use the instance in [MlsCentral::e2ei_rotate_all] to do the rotation.
     pub async fn e2ei_new_rotate_enrollment(
         &self,
-        client_id: ClientId,
         display_name: Option<String>,
         handle: Option<String>,
         team: Option<String>,
@@ -120,6 +118,7 @@ impl MlsCentral {
         let cb = client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
             .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::X509))?;
+        let client_id = cb.credential().identity().into();
         let sign_keypair = Some(cb.signature_key.clone().try_into()?);
         let existing_identity = cb
             .credential()
@@ -335,11 +334,9 @@ pub mod tests {
                         fn init(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
                             Box::pin(async move {
                                 let E2eiInitWrapper { cc, case } = wrapper;
-                                let cid = cc.get_client_id();
                                 let cs = case.ciphersuite();
                                 match case.credential_type {
                                     MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
-                                        cid,
                                         NEW_DISPLAY_NAME.to_string(),
                                         NEW_HANDLE.to_string(),
                                         Some(TEAM.to_string()),
@@ -348,7 +345,6 @@ pub mod tests {
                                     ),
                                     MlsCredentialType::X509 => {
                                         cc.e2ei_new_rotate_enrollment(
-                                            cid,
                                             Some(NEW_DISPLAY_NAME.to_string()),
                                             Some(NEW_HANDLE.to_string()),
                                             Some(TEAM.to_string()),
@@ -516,11 +512,9 @@ pub mod tests {
                     fn init(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
                         Box::pin(async move {
                             let E2eiInitWrapper { cc, case } = wrapper;
-                            let cid = cc.get_client_id();
                             let cs = case.ciphersuite();
                             match case.credential_type {
                                 MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
-                                    cid,
                                     NEW_DISPLAY_NAME.to_string(),
                                     NEW_HANDLE.to_string(),
                                     Some(TEAM.to_string()),
@@ -529,7 +523,6 @@ pub mod tests {
                                 ),
                                 MlsCredentialType::X509 => {
                                     cc.e2ei_new_rotate_enrollment(
-                                        cid,
                                         Some(NEW_DISPLAY_NAME.to_string()),
                                         Some(NEW_HANDLE.to_string()),
                                         Some(TEAM.to_string()),
@@ -633,11 +626,9 @@ pub mod tests {
                         fn init_alice(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
                             Box::pin(async move {
                                 let E2eiInitWrapper { cc, case } = wrapper;
-                                let cid = cc.get_client_id();
                                 let cs = case.ciphersuite();
                                 match case.credential_type {
                                     MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
-                                        cid,
                                         ALICE_NEW_DISPLAY_NAME.to_string(),
                                         ALICE_NEW_HANDLE.to_string(),
                                         Some(TEAM.to_string()),
@@ -646,7 +637,6 @@ pub mod tests {
                                     ),
                                     MlsCredentialType::X509 => {
                                         cc.e2ei_new_rotate_enrollment(
-                                            cid,
                                             Some(ALICE_NEW_DISPLAY_NAME.to_string()),
                                             Some(ALICE_NEW_HANDLE.to_string()),
                                             Some(TEAM.to_string()),
@@ -687,11 +677,9 @@ pub mod tests {
                         fn init_bob(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
                             Box::pin(async move {
                                 let E2eiInitWrapper { cc, case } = wrapper;
-                                let cid = cc.get_client_id();
                                 let cs = case.ciphersuite();
                                 match case.credential_type {
                                     MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
-                                        cid,
                                         BOB_NEW_DISPLAY_NAME.to_string(),
                                         BOB_NEW_HANDLE.to_string(),
                                         Some(TEAM.to_string()),
@@ -700,7 +688,6 @@ pub mod tests {
                                     ),
                                     MlsCredentialType::X509 => {
                                         cc.e2ei_new_rotate_enrollment(
-                                            cid,
                                             Some(BOB_NEW_DISPLAY_NAME.to_string()),
                                             Some(BOB_NEW_HANDLE.to_string()),
                                             Some(TEAM.to_string()),
