@@ -7,6 +7,41 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+
+## [1.0.0-rc.22] - 2023-12-13
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- README mentions a task which doesn't exist ([#445](https://github.com/wireapp/core-crypto/issues/445))
+- Remove unnecessary boxing of values before persisting them in IndexedDb
+
+### Features
+
+- [**breaking**] Remove 'clientId' from activation & rotate enrollment now that we expect a specific ClientId format
+- [**breaking**] Add `get_credential_in_use()` to check the e2ei state from a GroupInfo
+- [**breaking**] Rename `E2eiConversationState::Degraded` in to `E2eiConversationState::NotVerified`
+- [**breaking**] Managed OIDC refreshToken (wpb-5012)
+
+### Miscellaneous Tasks
+
+- Remove unused 'MlsSignatureKeyPairExt' trait and 'get_indexed' method
+- Streamline "collection" in wasm storage
+- WasmEncryptedStorage::get_many was not used
+
+### Testing
+
+- Verify that clients can create conversation with x509 credentials
+
+</details>
+
+* feat(e2ei)!: manage OIDC refreshToken in CoreCrypto's encrypted-at-rest store. As a consequence, some methods went async (all the enrollment ones in WASM). The refreshToken has to be supplied in `newOidcChallengeRequest()` and is persisted in `newOidcChallengeResponse()`. Clients should fetch it back from an `Enrollment` created by `newRotateEnrollment()` with the new `getRefreshToken()` method.
+* feat(e2ei)!: remove 'clientId' from `newActivationEnrollment()` & `newRotateEnrollment()`. We can do this now that we expect a specific ClientId format.
+* feat(e2ei): add `getCredentialInUse(GroupInfo)` to check the e2ei state from a GroupInfo. This allows verifying the state of a conversation before joining it (and potentially degrading the e2ei state).
+* feat(e2ei)!: rename `E2eiConversationState::Degraded` in to `E2eiConversationState::NotVerified`
+
 ## [1.0.0-rc.21] - 2023-12-05
 
 <details>

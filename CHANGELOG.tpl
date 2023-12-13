@@ -7,11 +7,24 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+
+## [1.0.0-rc.22] - 2023-12-13
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.22" unreleased=true}}
+</details>
+
+* feat(e2ei)!: manage OIDC refreshToken in CoreCrypto's encrypted-at-rest store. As a consequence, some methods went async (all the enrollment ones in WASM). The refreshToken has to be supplied in `newOidcChallengeRequest()` and is persisted in `newOidcChallengeResponse()`. Clients should fetch it back from an `Enrollment` created by `newRotateEnrollment()` with the new `getRefreshToken()` method.
+* feat(e2ei)!: remove 'clientId' from `newActivationEnrollment()` & `newRotateEnrollment()`. We can do this now that we expect a specific ClientId format.
+* feat(e2ei): add `getCredentialInUse(GroupInfo)` to check the e2ei state from a GroupInfo. This allows verifying the state of a conversation before joining it (and potentially degrading the e2ei state).
+* feat(e2ei)!: rename `E2eiConversationState::Degraded` in to `E2eiConversationState::NotVerified`
+
 ## [1.0.0-rc.21] - 2023-12-05
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.21" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.21"}}
 </details>
 
 * feat!: canonicalize ClientId keeping only the regular version where the UserId portion is the hyphenated string representation of the UUID. Also apply this to `getUserIdentities()`
