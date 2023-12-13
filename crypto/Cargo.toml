@@ -22,7 +22,6 @@ test-pq-cipher = []
 bench-in-db = []
 uniffi = ["dep:uniffi"]
 
-
 [dependencies]
 thiserror = "1.0"
 derive_more = { version = "0.99", features = ["from", "into", "deref"] }

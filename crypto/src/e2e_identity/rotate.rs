@@ -752,7 +752,7 @@ pub mod tests {
                             let alice_cid = alice_central.get_client_id();
                             let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                             let cb = alice_central
-                                .rotate_credential(&case, new_handle, new_display_name, None)
+                                .rotate_credential(&case, new_handle, new_display_name, None, None)
                                 .await;
 
                             // Verify old identity is still there in the MLS group
@@ -818,7 +818,7 @@ pub mod tests {
                             // Alice creates a new Credential, updating her handle/display_name
                             let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                             let cb = alice_central
-                                .rotate_credential(&case, new_handle, new_display_name, None)
+                                .rotate_credential(&case, new_handle, new_display_name, None, None)
                                 .await;
 
                             // Alice issues an Update commit to replace her current identity

@@ -61,7 +61,7 @@ impl Client {
         cs: MlsCiphersuite,
         cb: &CredentialBundle,
     ) -> CryptoResult<KeyPackage> {
-        let keypackage = KeyPackage::builder()
+        Ok(KeyPackage::builder()
             .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
             .key_package_lifetime(Lifetime::new(self.keypackage_lifetime.as_secs()))
             .build(
@@ -77,9 +77,7 @@ impl Client {
                 },
             )
             .await
-            .map_err(MlsError::from)?;
-
-        Ok(keypackage)
+            .map_err(MlsError::from)?)
     }
 
     /// Requests `count` keying material to be present and returns

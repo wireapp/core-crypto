@@ -62,7 +62,7 @@ impl CertificateBundle {
         // and not a real client_id, instead we'll generate a random one
         let handle = format!("{name}_wire");
         let display_name = format!("{name} Smith");
-        Self::new(sc, &handle, &display_name, None, None)
+        Self::new(sc, &handle, &display_name, None, None, None)
     }
 
     /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
@@ -72,6 +72,7 @@ impl CertificateBundle {
         display_name: &str,
         client_id: Option<&crate::e2e_identity::id::QualifiedE2eiClientId>,
         cert_kp: Option<Vec<u8>>,
+        not_after: Option<time::OffsetDateTime>,
     ) -> Self {
         // here in our tests client_id is generally just "alice" or "bob"
         // so we will use it to augment handle & display_name
@@ -84,7 +85,7 @@ impl CertificateBundle {
             })
             .unwrap_or_else(|| WireIdentityBuilder::new_rand_client(Some(domain.to_string())));
 
-        let builder = WireIdentityBuilder {
+        let mut builder = WireIdentityBuilder {
             handle: handle.to_string(),
             display_name: display_name.to_string(),
             client_id,
@@ -95,6 +96,9 @@ impl CertificateBundle {
             })),
             ..Default::default()
         };
+        if let Some(naf) = not_after {
+            builder.not_after = naf;
+        }
         Self::new_from_builder(builder, sc)
     }
 

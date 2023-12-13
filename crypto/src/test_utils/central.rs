@@ -124,6 +124,20 @@ impl MlsCentral {
         self.rand_key_package_of_type(case, case.credential_type).await
     }
 
+    pub async fn rand_soon_to_expire_key_package(
+        &mut self,
+        case: &TestCase,
+        duration: core::time::Duration,
+    ) -> KeyPackageIn {
+        let client = self.mls_client.as_mut().unwrap();
+        client.set_keypackage_lifetime(duration);
+        client
+            .generate_one_keypackage(&self.mls_backend, case.ciphersuite(), case.credential_type)
+            .await
+            .unwrap()
+            .into()
+    }
+
     pub async fn rand_key_package_of_type(&self, case: &TestCase, ct: MlsCredentialType) -> KeyPackageIn {
         let client = self.mls_client.as_ref().unwrap();
         client
@@ -464,10 +478,11 @@ impl MlsCentral {
         handle: &str,
         display_name: &str,
         cert_kp: Option<Vec<u8>>,
+        not_after: Option<time::OffsetDateTime>,
     ) -> CredentialBundle {
         let cid = QualifiedE2eiClientId::try_from(self.get_client_id().as_slice()).unwrap();
         let client = self.mls_client.as_mut().unwrap();
-        let new_cert = CertificateBundle::new(case.signature_scheme(), handle, display_name, Some(&cid), cert_kp);
+        let new_cert = CertificateBundle::new(case.signature_scheme(), handle, display_name, Some(&cid), cert_kp, not_after);
         client
             .save_new_x509_credential_bundle(&self.mls_backend, case.signature_scheme(), new_cert)
             .await
@@ -578,6 +593,7 @@ impl MlsCentral {
             .add_per_domain_trust_anchor_unchecked(trust_anchor, self.mls_client().unwrap(), &self.mls_backend)
             .await
     }
+    
 }
 
 impl MlsConversation {

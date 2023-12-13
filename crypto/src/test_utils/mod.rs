@@ -94,7 +94,14 @@ pub async fn run_test_with_deterministic_client_ids<const N: usize>(
                             }
                             _ => {
                                 let client_id = QualifiedE2eiClientId::from_str_unchecked(client_id);
-                                crate::prelude::CertificateBundle::new(sc, handle, display_name, Some(&client_id), None)
+                                crate::prelude::CertificateBundle::new(
+                                    sc,
+                                    handle,
+                                    display_name,
+                                    Some(&client_id),
+                                    None,
+                                    None,
+                                )
                             }
                         };
                         ClientIdentifier::X509(HashMap::from([(sc, cert)]))

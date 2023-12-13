@@ -815,6 +815,7 @@ pub mod tests {
             &display_name,
             Some(&client_id),
             Some(cert_kp),
+            None,
         );
 
         let cert_chain = cert

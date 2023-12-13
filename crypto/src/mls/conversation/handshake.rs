@@ -578,6 +578,43 @@ pub mod tests {
             )
             .await
         }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_fail_when_key_package_expired(case: TestCase) {
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let expiration_time = core::time::Duration::from_secs(14);
+                        let start = fluvio_wasm_timer::Instant::now();
+
+                        let id = conversation_id();
+
+                        let bob = bob_central
+                            .rand_soon_to_expire_key_package(&case, expiration_time)
+                            .await;
+
+                        let elapsed = start.elapsed();
+                        if expiration_time > elapsed {
+                            async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1))
+                                .await;
+                        }
+                        // Bob is now expired
+
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+
+                        let add_expired = alice_central.add_members_to_conversation(&id, vec![bob]).await;
+                        assert!(add_expired.is_err());
+                    })
+                },
+            )
+            .await
+        }
     }
 
     pub mod propose_add_members {
@@ -629,6 +666,43 @@ pub mod tests {
                             .await
                             .unwrap();
                         assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
+                    })
+                },
+            )
+            .await
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_fail_when_key_package_expired(case: TestCase) {
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob"],
+                move |[mut alice_central, mut bob_central]| {
+                    Box::pin(async move {
+                        let expiration_time = core::time::Duration::from_secs(14);
+                        let start = fluvio_wasm_timer::Instant::now();
+
+                        let id = conversation_id();
+
+                        let bob = bob_central
+                            .rand_soon_to_expire_key_package(&case, expiration_time)
+                            .await;
+
+                        let elapsed = start.elapsed();
+                        if expiration_time > elapsed {
+                            async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1))
+                                .await;
+                        }
+                        // Bob is now expired
+
+                        alice_central
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+
+                        let add_expired = alice_central.new_add_proposal(&id, bob.into()).await;
+                        assert!(add_expired.is_err());
                     })
                 },
             )
