@@ -46,28 +46,32 @@ git = "https://github.com/wireapp/proteus"
 branch = "2.x"
 
 [patch.crates-io.openmls]
-package = "openmls"
-git = "https://github.com/wireapp/openmls"
+#package = "openmls"
+#git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "feat/rfc9420"
+#branch = "feat/rfc9420"
+path = "../openmls/openmls"
 
 [patch.crates-io.openmls_traits]
-package = "openmls_traits"
-git = "https://github.com/wireapp/openmls"
+#package = "openmls_traits"
+#git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "feat/rfc9420"
+#branch = "feat/rfc9420"
+path = "../openmls/traits"
 
 [patch.crates-io.openmls_basic_credential]
-package = "openmls_basic_credential"
-git = "https://github.com/wireapp/openmls"
+#package = "openmls_basic_credential"
+#git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "feat/rfc9420"
+#branch = "feat/rfc9420"
+path = "../openmls/basic_credential"
 
 [patch.crates-io.openmls_x509_credential]
-package = "openmls_x509_credential"
-git = "https://github.com/wireapp/openmls"
+#package = "openmls_x509_credential"
+#git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "feat/rfc9420"
+#branch = "feat/rfc9420"
+path = "../openmls/x509_credential"
 
 [patch.crates-io.hpke]
 git = "https://github.com/wireapp/rust-hpke.git"
