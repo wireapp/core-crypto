@@ -1,3 +1,5 @@
+use openmls::messages::group_info::GroupInfoError;
+use openmls::treesync::errors::TreeSyncFromNodesError;
 use openmls::{
     messages::group_info::VerifiableGroupInfo,
     prelude::{Credential, Node},
@@ -43,9 +45,13 @@ impl MlsCentral {
         // the e2ei state of a conversation and as a consequence degrade this conversation for all
         // participants once joining it.
         // This 👇 verifies the GroupInfo and the RatchetTree btw
-        let rt = group_info
-            .take_ratchet_tree(&self.mls_backend)
-            .map_err(MlsError::from)?;
+        let rt = match group_info.take_ratchet_tree(&self.mls_backend) {
+            Ok(rt) => rt,
+            Err(GroupInfoError::TreeSyncFromNodesError(TreeSyncFromNodesError::LeafNodeValidationError(_))) => {
+                return Ok(E2eiConversationState::NotVerified)
+            }
+            Err(e) => return Err(MlsError::from(e).into()),
+        };
         self.get_credential_in_use_in_ratchet_tree(rt, credential_type)
     }
 
