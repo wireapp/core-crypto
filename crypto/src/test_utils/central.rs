@@ -482,7 +482,14 @@ impl MlsCentral {
     ) -> CredentialBundle {
         let cid = QualifiedE2eiClientId::try_from(self.get_client_id().as_slice()).unwrap();
         let client = self.mls_client.as_mut().unwrap();
-        let new_cert = CertificateBundle::new(case.signature_scheme(), handle, display_name, Some(&cid), cert_kp, not_after);
+        let new_cert = CertificateBundle::new(
+            case.signature_scheme(),
+            handle,
+            display_name,
+            Some(&cid),
+            cert_kp,
+            not_after,
+        );
         client
             .save_new_x509_credential_bundle(&self.mls_backend, case.signature_scheme(), new_cert)
             .await
@@ -593,7 +600,6 @@ impl MlsCentral {
             .add_per_domain_trust_anchor_unchecked(trust_anchor, self.mls_client().unwrap(), &self.mls_backend)
             .await
     }
-    
 }
 
 impl MlsConversation {

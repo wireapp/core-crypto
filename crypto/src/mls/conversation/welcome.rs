@@ -118,7 +118,10 @@ impl MlsConversation {
 
 #[cfg(test)]
 pub mod tests {
-    use openmls::prelude::{CreationFromExternalError, KeyPackageIn, KeyPackageVerifyError, LeafNodeValidationError, ProtocolVersion, WelcomeError};
+    use openmls::prelude::{
+        CreationFromExternalError, KeyPackageIn, KeyPackageVerifyError, LeafNodeValidationError, ProtocolVersion,
+        WelcomeError,
+    };
     use openmls::treesync::errors::{LifetimeError, TreeSyncFromNodesError};
     use wasm_bindgen_test::*;
 
@@ -166,7 +169,7 @@ pub mod tests {
                 })
             },
         )
-            .await;
+        .await;
     }
 
     #[apply(all_cred_cipher)]
@@ -201,7 +204,7 @@ pub mod tests {
                 })
             },
         )
-            .await;
+        .await;
     }
 
     #[apply(all_cred_cipher)]
@@ -226,7 +229,10 @@ pub mod tests {
                         .await
                         .unwrap();
 
-                    let add_bob_commit = alice_central.add_members_to_conversation(&id, vec![bob]).await.unwrap();
+                    let add_bob_commit = alice_central
+                        .add_members_to_conversation(&id, vec![bob.clone()])
+                        .await
+                        .unwrap();
                     alice_central.commit_accepted(&id).await.unwrap();
 
                     let elapsed = start.elapsed();
@@ -235,21 +241,34 @@ pub mod tests {
                     }
                     // Bob is now expired
 
+                    assert!(matches!(
+                        bob.standalone_validate(alice_central.mls_backend.crypto(), ProtocolVersion::default())
+                            .unwrap_err(),
+                        KeyPackageVerifyError::InvalidLeafNode(LeafNodeValidationError::Lifetime(
+                            LifetimeError::NotCurrent
+                        ))
+                    ));
+
                     let process_welcome = bob_central
                         .process_welcome_message(add_bob_commit.welcome.into(), case.custom_cfg())
                         .await;
-                    assert!(process_welcome.is_err());
+                    assert!(matches!(
+                        process_welcome.unwrap_err(),
+                        CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::PublicGroupError(
+                            CreationFromExternalError::TreeSyncError(TreeSyncFromNodesError::LeafNodeValidationError(
+                                LeafNodeValidationError::Lifetime(LifetimeError::NotCurrent)
+                            ))
+                        )))
+                    ));
                 })
             },
         )
-            .await;
+        .await;
     }
 
-    // #[apply(all_cred_cipher)]
-    // #[wasm_bindgen_test]
-    #[async_std::test]
-    pub async fn process_welcome_should_fail_when_other_member_expired(/*case: TestCase*/) {
-        let case = TestCase::default();
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn process_welcome_should_fail_when_other_member_expired(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "charlie"],
@@ -257,10 +276,10 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
 
-                    let expiration_time = core::time::Duration::from_secs(2);
+                    let expiration_time = core::time::Duration::from_secs(14);
                     let start = fluvio_wasm_timer::Instant::now();
 
-                    let bob: KeyPackageIn = bob_central
+                    let bob = bob_central
                         .rand_soon_to_expire_key_package(&case, expiration_time)
                         .await;
                     let charlie = charlie_central.rand_key_package(&case).await;
@@ -283,13 +302,16 @@ pub mod tests {
 
                     let elapsed = start.elapsed();
                     if expiration_time > elapsed {
-                        async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(5)).await;
+                        async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
                     }
                     // Bob is now expired
 
                     assert!(matches!(
-                        bob.standalone_validate(alice_central.mls_backend.crypto(), ProtocolVersion::default()).unwrap_err(),
-                        KeyPackageVerifyError::InvalidLeafNode(LeafNodeValidationError::Lifetime(LifetimeError::NotCurrent))
+                        bob.standalone_validate(alice_central.mls_backend.crypto(), ProtocolVersion::default())
+                            .unwrap_err(),
+                        KeyPackageVerifyError::InvalidLeafNode(LeafNodeValidationError::Lifetime(
+                            LifetimeError::NotCurrent
+                        ))
                     ));
 
                     let process_welcome = charlie_central
@@ -297,12 +319,16 @@ pub mod tests {
                         .await;
                     assert!(matches!(
                         process_welcome.unwrap_err(),
-                        CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::PublicGroupError(CreationFromExternalError::TreeSyncError(TreeSyncFromNodesError::LeafNodeValidationError(LeafNodeValidationError::Lifetime(LifetimeError::NotCurrent))))))
+                        CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::PublicGroupError(
+                            CreationFromExternalError::TreeSyncError(TreeSyncFromNodesError::LeafNodeValidationError(
+                                LeafNodeValidationError::Lifetime(LifetimeError::NotCurrent)
+                            ))
+                        )))
                     ));
                 })
             },
         )
-            .await;
+        .await;
     }
 
     #[apply(all_cred_cipher)]
@@ -349,7 +375,7 @@ pub mod tests {
                     })
                 },
             )
-                .await;
+            .await;
         }
     }
 }

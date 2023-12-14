@@ -455,7 +455,14 @@ impl MlsCentral {
 #[cfg(test)]
 pub mod tests {
     use itertools::Itertools;
-    use openmls::prelude::SignaturePublicKey;
+    use openmls::{
+        prelude::{
+            KeyPackageVerifyError, LeafNodeValidationError, ProposeAddMemberError, ProtocolVersion, SignaturePublicKey,
+        },
+        treesync::errors::LifetimeError,
+    };
+
+    use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
 
     use crate::test_utils::*;
@@ -466,6 +473,7 @@ pub mod tests {
 
     pub mod add_members {
         use super::*;
+        use openmls::prelude::AddMembersError;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -602,6 +610,14 @@ pub mod tests {
                                 .await;
                         }
                         // Bob is now expired
+                        assert!(matches!(
+                            bob.clone()
+                                .standalone_validate(alice_central.mls_backend.crypto(), ProtocolVersion::default())
+                                .unwrap_err(),
+                            KeyPackageVerifyError::InvalidLeafNode(LeafNodeValidationError::Lifetime(
+                                LifetimeError::NotCurrent
+                            ))
+                        ));
 
                         alice_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
@@ -609,7 +625,14 @@ pub mod tests {
                             .unwrap();
 
                         let add_expired = alice_central.add_members_to_conversation(&id, vec![bob]).await;
-                        assert!(add_expired.is_err());
+                        assert!(matches!(
+                            add_expired.unwrap_err(),
+                            CryptoError::MlsError(MlsError::MlsAddMembersError(
+                                AddMembersError::KeyPackageVerifyError(KeyPackageVerifyError::InvalidLeafNode(
+                                    LeafNodeValidationError::Lifetime(LifetimeError::NotCurrent)
+                                ))
+                            ))
+                        ));
                     })
                 },
             )
@@ -695,6 +718,14 @@ pub mod tests {
                                 .await;
                         }
                         // Bob is now expired
+                        assert!(matches!(
+                            bob.clone()
+                                .standalone_validate(alice_central.mls_backend.crypto(), ProtocolVersion::default())
+                                .unwrap_err(),
+                            KeyPackageVerifyError::InvalidLeafNode(LeafNodeValidationError::Lifetime(
+                                LifetimeError::NotCurrent
+                            ))
+                        ));
 
                         alice_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
@@ -702,7 +733,14 @@ pub mod tests {
                             .unwrap();
 
                         let add_expired = alice_central.new_add_proposal(&id, bob.into()).await;
-                        assert!(add_expired.is_err());
+                        assert!(matches!(
+                            add_expired.unwrap_err(),
+                            CryptoError::MlsError(MlsError::ProposeAddMemberError(
+                                ProposeAddMemberError::KeyPackageVerifyError(KeyPackageVerifyError::InvalidLeafNode(
+                                    LeafNodeValidationError::Lifetime(LifetimeError::NotCurrent)
+                                ))
+                            ))
+                        ));
                     })
                 },
             )
@@ -794,7 +832,7 @@ pub mod tests {
                                 &id,
                                 welcome.unwrap().into(),
                                 case.custom_cfg(),
-                                vec![&mut alice_central]
+                                vec![&mut alice_central],
                             )
                             .await
                             .is_ok());
@@ -1121,7 +1159,7 @@ pub mod tests {
                                 &id,
                                 welcome.unwrap().into(),
                                 case.custom_cfg(),
-                                vec![&mut alice_central, &mut bob_central]
+                                vec![&mut alice_central, &mut bob_central],
                             )
                             .await
                             .is_ok());
