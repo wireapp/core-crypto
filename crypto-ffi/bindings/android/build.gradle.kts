@@ -19,14 +19,14 @@ val copyBindings by tasks.register<Copy>("copyBindings") {
 }
 
 dependencies {
-    api(platform(kotlin("bom")))
-    api(platform(libs.coroutines.bom))
-    api(kotlin("stdlib-jdk7"))
-    api("${libs.jna.get()}@aar")
-    api(libs.appCompat)
-    api(libs.ktx.core)
-    api(libs.coroutines.core)
-    api(libs.slf4j)
+    implementation(platform(kotlin("bom")))
+    implementation(platform(libs.coroutines.bom))
+    implementation(kotlin("stdlib-jdk7"))
+    implementation("${libs.jna.get()}@aar")
+    implementation(libs.appCompat)
+    implementation(libs.ktx.core)
+    implementation(libs.coroutines.core)
+    implementation(libs.slf4j)
     testImplementation(kotlin("test"))
     testImplementation(libs.android.logback)
     testImplementation(libs.android.junit)
