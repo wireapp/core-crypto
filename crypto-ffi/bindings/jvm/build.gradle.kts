@@ -13,11 +13,11 @@ java {
 }
 
 dependencies {
-    api(platform(kotlin("bom")))
-    api(platform(libs.coroutines.bom))
-    api(kotlin("stdlib-jdk7"))
-    api(libs.jna)
-    api(libs.coroutines.core)
+    implementation(platform(kotlin("bom")))
+    implementation(platform(libs.coroutines.bom))
+    implementation(kotlin("stdlib-jdk7"))
+    implementation(libs.jna)
+    implementation(libs.coroutines.core)
     testImplementation(kotlin("test"))
     testImplementation(libs.coroutines.test)
     testImplementation(libs.assertj.core)
