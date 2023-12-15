@@ -16,7 +16,7 @@ serde_json = "1.0"
 thiserror = "1.0"
 rusty-acme = { version = "0.6.1", path = "../acme" }
 rusty-jwt-tools = { version = "0.6.1", path = "../jwt" }
-jwt-simple = "0.11.3"
+jwt-simple = { workspace = true }
 derive_more = { version = "0.99", features = ["deref", "from", "into"] }
 url = "2.5"
 zeroize = "1.7"
