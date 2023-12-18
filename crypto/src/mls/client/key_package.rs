@@ -357,7 +357,7 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
-    use openmls::prelude::{ExtensionType, KeyPackage, KeyPackageIn, KeyPackageRef, ProtocolVersion};
+    use openmls::prelude::{KeyPackage, KeyPackageIn, KeyPackageRef, ProtocolVersion};
     use openmls_traits::types::VerifiableCiphersuite;
     use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
@@ -561,10 +561,7 @@ pub mod tests {
                         .collect::<Vec<_>>()
                 );
                 assert!(kp.leaf_node().capabilities().proposals().is_empty());
-                assert_eq!(
-                    kp.leaf_node().capabilities().extensions(),
-                    &[ExtensionType::PerDomainTrustAnchor]
-                );
+                assert!(kp.leaf_node().capabilities().extensions().is_empty());
                 assert_eq!(
                     kp.leaf_node().capabilities().credentials(),
                     MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS

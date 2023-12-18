@@ -2,12 +2,7 @@ use std::time::Duration;
 
 use openmls_traits::types::SignatureScheme;
 use time::OffsetDateTime;
-use x509_cert::{
-    der::{Decode, Encode},
-    Certificate, PkiPath,
-};
-
-use crate::mls::credential::trust_anchor::{extract_domain_names, PerDomainTrustAnchor};
+use x509_cert::{der::Decode, Certificate, PkiPath};
 
 /// Params for generating the Certificate chain
 #[derive(Debug, Clone)]
@@ -16,47 +11,6 @@ pub struct CertificateParams {
     pub common_name: Option<String>,
     pub domain: Option<String>,
     pub expiration: Duration,
-}
-
-impl PerDomainTrustAnchor {
-    pub fn into_mls_unchecked(self) -> openmls::extensions::PerDomainTrustAnchor {
-        let certificate_chain = pem::parse_many(&self.intermediate_certificate_chain)
-            .unwrap()
-            .into_iter()
-            .map(|p| p.into_contents())
-            .collect();
-        openmls::extensions::PerDomainTrustAnchor::new(
-            self.domain_name.into(),
-            openmls::prelude::CredentialType::X509,
-            certificate_chain,
-        )
-        .unwrap()
-    }
-}
-
-impl From<PkiPath> for PerDomainTrustAnchor {
-    fn from(chain: PkiPath) -> Self {
-        let domains = extract_domain_names(&chain[0]).unwrap_or_default();
-        let pems = chain
-            .iter()
-            .map(|c| pem::Pem::new("CERTIFICATE", c.to_der().unwrap()))
-            .collect::<Vec<_>>();
-        Self {
-            domain_name: domains.first().cloned().unwrap_or_default(),
-            intermediate_certificate_chain: pem::encode_many(&pems),
-        }
-    }
-}
-
-impl From<Certificate> for PerDomainTrustAnchor {
-    fn from(cert: Certificate) -> Self {
-        let mut domains = extract_domain_names(&cert).unwrap_or_default();
-        let pem = pem::Pem::new("CERTIFICATE", cert.to_der().unwrap());
-        Self {
-            domain_name: domains.remove(0),
-            intermediate_certificate_chain: pem::encode(&pem),
-        }
-    }
 }
 
 /// Create a certificate chain with a CA and a Leaf for usage with the certificate trust anchors

@@ -20,16 +20,13 @@
 //! when joining one by Welcome or external commit
 
 use openmls::prelude::{
-    Capabilities, Credential, CredentialType, ExtensionType, ExternalSender, ProtocolVersion,
-    RequiredCapabilitiesExtension, SenderRatchetConfiguration, SignaturePublicKey, WireFormatPolicy,
-    PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
+    Capabilities, Credential, CredentialType, ExternalSender, ProtocolVersion, RequiredCapabilitiesExtension,
+    SenderRatchetConfiguration, SignaturePublicKey, WireFormatPolicy, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
+    PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
 };
 use openmls_traits::types::Ciphersuite;
 use serde::{Deserialize, Serialize};
 
-use mls_crypto_provider::MlsCryptoProvider;
-
-use crate::mls::credential::trust_anchor::PerDomainTrustAnchor;
 use crate::prelude::{CryptoResult, MlsCiphersuite};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
@@ -51,8 +48,6 @@ pub struct MlsConversationConfiguration {
     pub external_senders: Vec<ExternalSender>,
     /// Implementation specific configuration
     pub custom: MlsCustomConfiguration,
-    /// Domain trust anchors to set in the conversation's extensions
-    pub per_domain_trust_anchors: Vec<PerDomainTrustAnchor>,
 }
 
 impl MlsConversationConfiguration {
@@ -82,17 +77,7 @@ impl MlsConversationConfiguration {
 
     /// Generates an `MlsGroupConfig` from this configuration
     #[inline(always)]
-    pub fn as_openmls_default_configuration(
-        &self,
-        backend: &MlsCryptoProvider,
-    ) -> CryptoResult<openmls::group::MlsGroupConfig> {
-        let trust_certificates = self.per_domain_trust_anchors.clone().into_iter().try_fold(
-            vec![],
-            |mut acc, c| -> CryptoResult<Vec<_>> {
-                acc.push(c.try_as_checked_openmls_trust_anchor(backend, None)?);
-                Ok(acc)
-            },
-        )?;
+    pub fn as_openmls_default_configuration(&self) -> CryptoResult<openmls::group::MlsGroupConfig> {
         let crypto_config = openmls::prelude::CryptoConfig {
             version: Self::DEFAULT_PROTOCOL_VERSION,
             ciphersuite: self.ciphersuite.into(),
@@ -109,7 +94,6 @@ impl MlsConversationConfiguration {
                 self.custom.maximum_forward_distance,
             ))
             .use_ratchet_tree_extension(true)
-            .trust_certificates(trust_certificates)
             .external_senders(self.external_senders.clone())
             .crypto_config(crypto_config)
             .build())
@@ -120,18 +104,14 @@ impl MlsConversationConfiguration {
         Capabilities::new(
             Some(&[Self::DEFAULT_PROTOCOL_VERSION]),
             Some(Self::DEFAULT_SUPPORTED_CIPHERSUITES),
-            Some(&[ExtensionType::PerDomainTrustAnchor]),
+            Some(&[]),
             Some(&[]),
             Some(Self::DEFAULT_SUPPORTED_CREDENTIALS),
         )
     }
 
     fn default_required_capabilities(&self) -> RequiredCapabilitiesExtension {
-        RequiredCapabilitiesExtension::new(
-            &[ExtensionType::PerDomainTrustAnchor],
-            &[],
-            Self::DEFAULT_SUPPORTED_CREDENTIALS,
-        )
+        RequiredCapabilitiesExtension::new(&[], &[], Self::DEFAULT_SUPPORTED_CREDENTIALS)
     }
 
     /// Parses supplied key from Delivery Service in order to build back an [ExternalSender]
@@ -201,7 +181,7 @@ impl From<MlsWirePolicy> for WireFormatPolicy {
 #[cfg(test)]
 pub mod tests {
     use crate::{prelude::MlsConversationConfiguration, test_utils::*};
-    use openmls::{prelude::ExtensionType, prelude::ProtocolVersion};
+    use openmls::prelude::ProtocolVersion;
     use openmls_traits::types::VerifiableCiphersuite;
     use wasm_bindgen_test::*;
 
@@ -223,7 +203,7 @@ pub mod tests {
                 let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
 
                 // see https://www.rfc-editor.org/rfc/rfc9420.html#section-11.1
-                assert_eq!(capabilities.extension_types(), &[ExtensionType::PerDomainTrustAnchor]);
+                assert!(capabilities.extension_types().is_empty());
                 assert!(capabilities.proposal_types().is_empty());
                 assert_eq!(
                     capabilities.credential_types(),
@@ -265,11 +245,8 @@ pub mod tests {
                 // Proposals MUST be empty since we support all the default ones
                 assert!(creator_capabilities.proposals().is_empty());
 
-                // Extensions MUST only contain our custom 'PerDomainTrustAnchor' extension
-                assert_eq!(
-                    creator_capabilities.extensions(),
-                    &[ExtensionType::PerDomainTrustAnchor]
-                );
+                // Extensions MUST only contain non-default extension (i.e. empty for now)
+                assert!(creator_capabilities.extensions().is_empty(),);
 
                 // To prevent downgrade attacks, Credentials should just contain the current
                 assert_eq!(

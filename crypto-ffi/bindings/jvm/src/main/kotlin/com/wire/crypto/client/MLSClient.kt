@@ -206,20 +206,17 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param ciphersuite of the conversation. A credential for the given ciphersuite must already have been created
      * @param creatorCredentialType kind of credential the creator wants to create the group with
      * @param externalSenders keys fetched from backend for validating external remove proposals
-     * @param perDomainTrustAnchors 🚧 in progress. Leave empty for now
      */
     suspend fun createConversation(
         id: MLSGroupId,
         ciphersuite: Ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
         creatorCredentialType: CredentialType = CredentialType.Basic,
         externalSenders: List<ExternalSenderKey> = emptyList(),
-        perDomainTrustAnchors: List<com.wire.crypto.PerDomainTrustAnchor> = emptyList(),
     ) {
         val cfg = com.wire.crypto.ConversationConfiguration(
             ciphersuite.lower(),
             externalSenders.map { it.lower() },
             defaultGroupConfiguration,
-            perDomainTrustAnchors
         )
 
         cc.createConversation(id.lower(), creatorCredentialType.lower(), cfg)
@@ -257,23 +254,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      */
     suspend fun encryptMessage(id: MLSGroupId, message: PlaintextMessage): MlsMessage {
         return cc.encryptMessage(id.lower(), message.lower()).toMlsMessage()
-    }
-
-    /**
-     * Creates a Commit with a GroupContextExtension Proposal for updating the TrustAnchors of the group
-     *
-     * 🚧 Work in progress
-     *
-     * @param id conversation identifier
-     * @param removeDomainNames domains to remove, can intersect [addTrustAnchors]]
-     * @param addTrustAnchors new Anchors to add
-     */
-    suspend fun updateTrustAnchorsFromConversation(
-        id: MLSGroupId,
-        removeDomainNames: List<String>,
-        addTrustAnchors: List<com.wire.crypto.PerDomainTrustAnchor>,
-    ): CommitBundle {
-        return cc.updateTrustAnchorsFromConversation(id.lower(), removeDomainNames, addTrustAnchors).lift()
     }
 
     /**
