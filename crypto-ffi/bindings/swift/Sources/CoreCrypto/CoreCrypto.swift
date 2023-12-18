@@ -1155,8 +1155,7 @@ public class CoreCryptoWrapper {
     /// - parameter team: name of the Wire team a user belongs to
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
     public func e2eiNewEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16, handle: String? = nil) async throws -> E2eiEnrollment {
-        let enrollment = try await self.coreCrypto.e2eiNewEnrollment(clientId: clientId, displayName: displayName, handle: handle, team: team, expiryDays: expiryDays, ciphersuite: ciphersuite)
-        return E2eiEnrollment(enrollment)
+        return try await self.coreCrypto.e2eiNewEnrollment(clientId: clientId, displayName: displayName, handle: handle, team: team, expiryDays: expiryDays, ciphersuite: ciphersuite).lift()
     }
 
     /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
@@ -1169,8 +1168,7 @@ public class CoreCryptoWrapper {
     /// - parameter team: name of the Wire team a user belongs to
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
     public func e2eiNewActivationEnrollment(displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16, handle: String? = nil) async throws -> E2eiEnrollment {
-        let enrollment = try await self.coreCrypto.e2eiNewActivationEnrollment(displayName: displayName, handle: handle, team: team, expiryDays: expiryDays, ciphersuite: ciphersuite)
-        return E2eiEnrollment(enrollment)
+        return try await self.coreCrypto.e2eiNewActivationEnrollment(displayName: displayName, handle: handle, team: team, expiryDays: expiryDays, ciphersuite: ciphersuite).lift()
     }
 
     /// Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)having to change/rotate
@@ -1184,8 +1182,7 @@ public class CoreCryptoWrapper {
     /// - parameter team: name of the Wire team a user belongs to
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
     public func e2eiNewRotateEnrollment(expiryDays: UInt32, ciphersuite: UInt16, displayName: String? = nil, handle: String? = nil, team: String? = nil) async throws -> E2eiEnrollment {
-        let enrollment = try await self.coreCrypto.e2eiNewRotateEnrollment(expiryDays: expiryDays, ciphersuite: ciphersuite, displayName: displayName, handle: handle, team: team)
-        return E2eiEnrollment(enrollment)
+        return try await self.coreCrypto.e2eiNewRotateEnrollment(expiryDays: expiryDays, ciphersuite: ciphersuite, displayName: displayName, handle: handle, team: team).lift()
     }
 
     /// Use this method to initialize end-to-end identity when a client signs up and the grace period is already expired ; that means he cannot initialize with a Basic credential
@@ -1193,8 +1190,8 @@ public class CoreCryptoWrapper {
     /// - parameter e2ei: the enrollment instance used to fetch the certificates
     /// - parameter certificateChain: the raw response from ACME server
     /// - parameter nbKeyPackage: number of initial KeyPackage to create when initializing the client
-    public func e2eiMlsInitOnly(enrollment: CoreCryptoSwift.WireE2eIdentity, certificateChain: String, nbKeyPackage: UInt32 = 100) async throws {
-        return try await self.coreCrypto.e2eiMlsInitOnly(enrollment: enrollment, certificateChain: certificateChain, nbKeyPackage: nbKeyPackage)
+    public func e2eiMlsInitOnly(enrollment: E2eiEnrollment, certificateChain: String, nbKeyPackage: UInt32 = 100) async throws {
+        return try await self.coreCrypto.e2eiMlsInitOnly(enrollment: enrollment.lower(), certificateChain: certificateChain, nbKeyPackage: nbKeyPackage)
     }
 
     /// Creates a commit in all local conversations for changing the credential. Requires first having enrolled a new
@@ -1203,8 +1200,8 @@ public class CoreCryptoWrapper {
     /// - parameter e2ei: the enrollment instance used to fetch the certificates
     /// - parameter certificateChain: the raw response from ACME server
     /// - parameter newKeyPackageCount: number of KeyPackages with new identity to generate
-    public func e2eiRotateAll(enrollment: CoreCryptoSwift.WireE2eIdentity, certificateChain: String, newKeyPackageCount: UInt32) async throws -> RotateBundle {
-        return try await self.coreCrypto.e2eiRotateAll(enrollment: enrollment, certificateChain: certificateChain, newKeyPackageCount: newKeyPackageCount)
+    public func e2eiRotateAll(enrollment: E2eiEnrollment, certificateChain: String, newKeyPackageCount: UInt32) async throws -> RotateBundle {
+        return try await self.coreCrypto.e2eiRotateAll(enrollment: enrollment.lower(), certificateChain: certificateChain, newKeyPackageCount: newKeyPackageCount)
     }
 
     /// Allows persisting an active enrollment (for example while redirecting the user during OAuth) in order to resume
@@ -1212,16 +1209,16 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter e2ei: the enrollment instance to persist
     /// - returns: a handle to fetch the enrollment later with [MlsCentral::e2eiEnrollmentStashPop]
-    public func e2eiEnrollmentStash(enrollment: CoreCryptoSwift.WireE2eIdentity) async throws -> [UInt8] {
-        return try await self.coreCrypto.e2eiEnrollmentStash(enrollment: enrollment)
+    public func e2eiEnrollmentStash(enrollment: E2eiEnrollment) async throws -> [UInt8] {
+        return try await self.coreCrypto.e2eiEnrollmentStash(enrollment: enrollment.lower())
     }
 
     /// Fetches the persisted enrollment and deletes it from the keystore
     ///
     /// - parameter handle: returned by [MlsCentral::e2eiEnrollmentStash]
     /// - returns: the persisted enrollment instance
-    public func e2eiEnrollmentStashPop(handle: [UInt8]) async throws -> CoreCryptoSwift.WireE2eIdentity {
-        return try await self.coreCrypto.e2eiEnrollmentStashPop(handle: handle)
+    public func e2eiEnrollmentStashPop(handle: [UInt8]) async throws -> E2eiEnrollment {
+        return try await self.coreCrypto.e2eiEnrollmentStashPop(handle: handle).lift()
     }
 
     /// Indicates when to mark a conversation as not verified i.e. when not all its members have a X509.
@@ -1286,7 +1283,7 @@ public struct E2eiEnrollment: ConvertToInner {
     }
     typealias Inner = CoreCryptoSwift.WireE2eIdentity
 
-    func convert() -> Inner {
+    func lower() -> Inner {
         return CoreCryptoSwift.WireE2eIdentity(delegate: self.delegate)
     }
 
@@ -1442,6 +1439,12 @@ public struct E2eiEnrollment: ConvertToInner {
     /// in ``E2eiEnrollment/newOidcChallengeRequest``
     public func getRefreshToken() async throws -> String {
         return try await self.delegate.getRefreshToken()
+    }
+}
+
+extension CoreCryptoSwift.WireE2eIdentity {
+    func lift() -> CommitBundle {
+        return E2eiEnrollment.init(delegate: self)
     }
 }
 
