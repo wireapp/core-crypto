@@ -153,10 +153,6 @@ impl MlsConversation {
                 // getting the pending has to be done before `merge_staged_commit` otherwise it's wiped out
                 let pending_commit = self.group.pending_commit().cloned();
 
-                let old_group_context = self.group.export_group_context();
-                let commit_group_context = staged_commit.staged_context();
-                Self::validate_received_trust_anchors(old_group_context, commit_group_context, backend)?;
-
                 self.group
                     .merge_staged_commit(backend, *staged_commit.clone())
                     .await

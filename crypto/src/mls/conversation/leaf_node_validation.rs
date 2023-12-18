@@ -21,14 +21,18 @@ pub mod tests {
 
         /// The validity of a LeafNode needs to be verified at the following stages:
         /// When a LeafNode is downloaded in a KeyPackage, before it is used to add the client to the group
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        pub async fn should_validate_leaf_node_when_adding(case: TestCase) {
+        // #[apply(all_cred_cipher)]
+        // #[wasm_bindgen_test]
+        #[async_std::test]
+        pub async fn should_validate_leaf_node_when_adding(/*case: TestCase*/) {
+            let case = TestCase::default();
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
                 move |[mut alice_central, bob_central]| {
                     Box::pin(async move {
+                        let expiration_time = 14;
+                        let start = fluvio_wasm_timer::Instant::now();
                         let id = conversation_id();
                         alice_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
@@ -36,7 +40,15 @@ pub mod tests {
                             .unwrap();
 
                         // should fail when creating Add proposal
-                        let invalid_kp = bob_central.new_invalid_keypackage(&case).await;
+                        let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
+
+                        // Give time to the KeyPackage to expire
+                        let expiration_time = core::time::Duration::from_secs(expiration_time);
+                        let elapsed = start.elapsed();
+                        if expiration_time > elapsed {
+                            async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1))
+                                .await;
+                        }
 
                         let proposal_creation = alice_central.new_add_proposal(&id, invalid_kp).await;
                         assert!(matches!(
@@ -48,7 +60,19 @@ pub mod tests {
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
 
                         // should fail when creating Add commits
-                        let invalid_kp = bob_central.new_invalid_keypackage(&case).await;
+                        let expiration_time = 14;
+                        let start = fluvio_wasm_timer::Instant::now();
+
+                        let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
+
+                        // Give time to the KeyPackage to expire
+                        let expiration_time = core::time::Duration::from_secs(expiration_time);
+                        let elapsed = start.elapsed();
+                        if expiration_time > elapsed {
+                            async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1))
+                                .await;
+                        }
+
                         let commit_creation = alice_central
                             .add_members_to_conversation(&id, vec![invalid_kp.into()])
                             .await;

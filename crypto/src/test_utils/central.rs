@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
-    mls::credential::{ext::CredentialExt, trust_anchor::PerDomainTrustAnchor, CredentialBundle},
+    mls::credential::{ext::CredentialExt, CredentialBundle},
     prelude::{
         CertificateBundle, Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsCiphersuite,
         MlsConversation, MlsConversationConfiguration, MlsConversationDecryptMessage, MlsConversationInitBundle,
@@ -25,8 +25,7 @@ use crate::{
 };
 use openmls::prelude::{
     group_info::VerifiableGroupInfo, Capabilities, Credential, CredentialWithKey, CryptoConfig, HpkePublicKey,
-    KeyPackage, KeyPackageIn, LeafNodeIndex, Lifetime, MlsMessageIn, MlsMessageOut, QueuedProposal, SignaturePublicKey,
-    StagedCommit,
+    KeyPackage, KeyPackageIn, LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit,
 };
 use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
 use tls_codec::{Deserialize, Serialize};
@@ -61,33 +60,6 @@ impl MlsCentral {
         KeyPackage::builder()
             .key_package_lifetime(lifetime)
             .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
-            .build(
-                CryptoConfig {
-                    ciphersuite: case.ciphersuite().into(),
-                    version: openmls::versions::ProtocolVersion::default(),
-                },
-                &self.mls_backend,
-                &cb.signature_key,
-                CredentialWithKey {
-                    credential: cb.credential.clone(),
-                    signature_key: cb.signature_key.public().into(),
-                },
-            )
-            .await
-            .unwrap()
-    }
-
-    pub async fn new_invalid_keypackage(&self, case: &TestCase) -> KeyPackage {
-        let cb = self
-            .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
-            .await
-            .unwrap();
-        let capabilities = Capabilities {
-            extensions: vec![],
-            ..MlsConversationConfiguration::default_leaf_capabilities()
-        };
-        KeyPackage::builder()
-            .leaf_node_capabilities(capabilities)
             .build(
                 CryptoConfig {
                     ciphersuite: case.ciphersuite().into(),
@@ -564,20 +536,6 @@ impl MlsCentral {
             assert!(!identity.thumbprint.is_empty());
         }
     }
-
-    pub async fn add_per_domain_trust_anchor_unchecked(
-        &mut self,
-        id: &ConversationId,
-        trust_anchor: PerDomainTrustAnchor,
-    ) -> MlsMessageOut {
-        self.get_conversation(id)
-            .await
-            .unwrap()
-            .write()
-            .await
-            .add_per_domain_trust_anchor_unchecked(trust_anchor, self.mls_client().unwrap(), &self.mls_backend)
-            .await
-    }
 }
 
 impl MlsConversation {
@@ -594,38 +552,6 @@ impl MlsConversation {
 
     pub fn extensions(&self) -> &openmls::prelude::Extensions {
         self.group.export_group_context().extensions()
-    }
-
-    pub fn per_domain_trust_anchors(&self) -> Vec<PerDomainTrustAnchor> {
-        self.extensions()
-            .per_domain_trust_anchors()
-            .unwrap()
-            .iter()
-            .map(|a| PerDomainTrustAnchor::try_from(a).unwrap())
-            .collect()
-    }
-
-    pub async fn add_per_domain_trust_anchor_unchecked(
-        &mut self,
-        trust_anchor: PerDomainTrustAnchor,
-        client: &Client,
-        backend: &MlsCryptoProvider,
-    ) -> MlsMessageOut {
-        let context = self.group.export_group_context();
-        let mut extensions = context.extensions().clone();
-        let mls_trust_anchor = trust_anchor.into_mls_unchecked();
-        extensions.add_or_replace(openmls::prelude::Extension::PerDomainTrustAnchor(vec![
-            mls_trust_anchor,
-        ]));
-        let cs = self.ciphersuite();
-        let ct = self.own_credential_type().unwrap();
-        let signer = &client
-            .find_most_recent_credential_bundle(cs.signature_algorithm(), ct)
-            .unwrap()
-            .signature_key;
-        let (commit, _, _) = self.group.update_extensions(backend, signer, extensions).await.unwrap();
-        self.persist_group_when_changed(backend, false).await.unwrap();
-        commit
     }
 }
 

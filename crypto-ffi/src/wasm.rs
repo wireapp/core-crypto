@@ -784,25 +784,6 @@ pub struct ConversationConfiguration {
     ciphersuite: Option<Ciphersuite>,
     external_senders: Vec<Vec<u8>>,
     custom: CustomConfiguration,
-    per_domain_trust_anchors: Vec<PerDomainTrustAnchor>,
-}
-
-#[wasm_bindgen]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct PerDomainTrustAnchor {
-    domain_name: String,
-    intermediate_certificate_chain: String,
-}
-
-#[wasm_bindgen]
-impl PerDomainTrustAnchor {
-    #[wasm_bindgen(constructor)]
-    pub fn new(domain_name: String, intermediate_certificate_chain: String) -> Self {
-        Self {
-            domain_name,
-            intermediate_certificate_chain,
-        }
-    }
 }
 
 #[wasm_bindgen]
@@ -813,7 +794,6 @@ impl ConversationConfiguration {
         external_senders: Option<Vec<Uint8Array>>,
         key_rotation_span: Option<u32>,
         wire_policy: Option<WirePolicy>,
-        per_domain_trust_anchors: js_sys::Array,
     ) -> WasmCryptoResult<ConversationConfiguration> {
         let external_senders = external_senders
             .map(|exs| exs.iter().cloned().map(|jsv| jsv.to_vec()).collect())
@@ -822,24 +802,7 @@ impl ConversationConfiguration {
             ciphersuite,
             external_senders,
             custom: CustomConfiguration::new(key_rotation_span, wire_policy),
-            per_domain_trust_anchors: if per_domain_trust_anchors.is_null() {
-                vec![]
-            } else {
-                per_domain_trust_anchors
-                    .into_iter()
-                    .map(|js_anchor| Ok(serde_wasm_bindgen::from_value(js_anchor)?))
-                    .collect::<WasmCryptoResult<Vec<_>>>()?
-            },
         })
-    }
-}
-
-impl From<PerDomainTrustAnchor> for core_crypto::prelude::PerDomainTrustAnchor {
-    fn from(wasm_cfg: PerDomainTrustAnchor) -> Self {
-        Self {
-            domain_name: wasm_cfg.domain_name,
-            intermediate_certificate_chain: wasm_cfg.intermediate_certificate_chain,
-        }
     }
 }
 
@@ -857,8 +820,6 @@ impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
             let mls_ciphersuite: CiphersuiteName = ciphersuite.into();
             cfg.ciphersuite = mls_ciphersuite.into();
         }
-
-        cfg.per_domain_trust_anchors = self.per_domain_trust_anchors.into_iter().map(|a| a.into()).collect();
 
         Ok(cfg)
     }
@@ -1683,47 +1644,6 @@ impl CoreCrypto {
                     .map_err(CoreCryptoError::from)?;
 
                 WasmCryptoResult::Ok(ciphertext.into())
-            }
-            .err_into(),
-        )
-    }
-
-    /// Returns: [`WasmCryptoResult<CommitBundle>`]
-    ///
-    /// see [core_crypto::mls::MlsCentral::update_trust_anchors_from_conversation]
-    pub fn update_trust_anchors_from_conversation(
-        &self,
-        conversation_id: ConversationId,
-        remove_domain_names: Box<[js_sys::JsString]>,
-        add_trust_anchors: js_sys::Array,
-    ) -> Promise {
-        let this = self.inner.clone();
-        future_to_promise(
-            async move {
-                let add_trust_anchors = if add_trust_anchors.is_null() {
-                    vec![]
-                } else {
-                    add_trust_anchors
-                        .into_iter()
-                        .map(|js_anchor| -> WasmCryptoResult<PerDomainTrustAnchor> {
-                            Ok(serde_wasm_bindgen::from_value(js_anchor)?)
-                        })
-                        .map(|result| Ok(result?.into()))
-                        .collect::<WasmCryptoResult<Vec<_>>>()?
-                };
-                let commit = this
-                    .write()
-                    .await
-                    .update_trust_anchors_from_conversation(
-                        &conversation_id.to_vec(),
-                        remove_domain_names.iter().map(String::from).collect(),
-                        add_trust_anchors,
-                    )
-                    .await
-                    .map_err(CoreCryptoError::from)?;
-                let commit: CommitBundle = commit.try_into()?;
-
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
             .err_into(),
         )

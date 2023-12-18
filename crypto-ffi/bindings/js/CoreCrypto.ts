@@ -187,25 +187,6 @@ export interface ConversationConfiguration {
      * Implementation specific configuration
      */
     custom?: CustomConfiguration;
-    /**
-     * Trust anchors to be added in the group's context extensions
-     */
-    perDomainTrustAnchors?: PerDomainTrustAnchor[];
-}
-
-/**
- * A wrapper containing the configuration for trust anchors to be added in the group's context
- * extensions
- */
-export interface PerDomainTrustAnchor {
-    /**
-     * Domain name of the owning backend this anchor refers to. One of the certificate in the chain has to have this domain in its SANs
-     */
-    domain_name: string;
-    /**
-     * PEM encoded (partial) certificate chain. This contains the certificate chain for the CA certificate issuing the E2E Identity certificates
-     */
-    intermediate_certificate_chain: string;
 }
 
 /**
@@ -1017,14 +998,12 @@ export class CoreCrypto {
                 ciphersuite,
                 externalSenders,
                 custom = {},
-                perDomainTrustAnchors = [],
             } = configuration || {};
             const config = new ConversationConfigurationFfi(
                 ciphersuite,
                 externalSenders,
                 custom?.keyRotationSpan,
                 custom?.wirePolicy,
-                perDomainTrustAnchors as any[]
             );
             const ret = await CoreCryptoError.asyncMapErr(
                 this.#cc.create_conversation(
@@ -1115,54 +1094,6 @@ export class CoreCrypto {
         return await CoreCryptoError.asyncMapErr(
             this.#cc.encrypt_message(conversationId, message)
         );
-    }
-
-    /**
-     * Updates the trust anchors for a conversation. This should be called when a federated event happens (new team added/removed).
-     * Clients should add and/or remove trust anchors from the new backend to the conversation. The method will check
-     * for duplicated domains and the validity of the certificate chain.
-     *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     * @param removeDomainNames - Domains to remove from the trust anchors
-     * @param addTrustAnchors - New trust anchors to add to the conversation
-     *
-     * @returns A {@link CommitBundle}
-     */
-    async updateTrustAnchorsFromConversation(
-        conversationId: ConversationId,
-        removeDomainNames: string[],
-        addTrustAnchors: PerDomainTrustAnchor[]
-    ): Promise<CommitBundle> {
-        try {
-            const ffiRet: CoreCryptoFfiTypes.CommitBundle =
-                await CoreCryptoError.asyncMapErr(
-                    this.#cc.update_trust_anchors_from_conversation(
-                        conversationId,
-                        removeDomainNames,
-                        addTrustAnchors
-                    )
-                );
-
-            const gi = ffiRet.group_info;
-
-            const ret: CommitBundle = {
-                welcome: ffiRet.welcome,
-                commit: ffiRet.commit,
-                groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload,
-                },
-            };
-
-            return ret;
-        } catch (e) {
-            throw CoreCryptoError.fromStdError(e as Error);
-        }
     }
 
     /**

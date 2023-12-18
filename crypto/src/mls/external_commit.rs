@@ -107,7 +107,7 @@ impl MlsCentral {
             &cb.signature_key,
             None,
             group_info,
-            &configuration.as_openmls_default_configuration(&self.mls_backend)?,
+            &configuration.as_openmls_default_configuration()?,
             &[],
             cb.to_mls_credential_with_key(),
         )
@@ -787,7 +787,7 @@ pub mod tests {
                     let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
 
                     // see https://www.rfc-editor.org/rfc/rfc9420.html#section-11.1
-                    assert_eq!(capabilities.extension_types(), &[ExtensionType::PerDomainTrustAnchor]);
+                    assert!(capabilities.extension_types().is_empty());
                     assert!(capabilities.proposal_types().is_empty());
                     assert_eq!(
                         capabilities.credential_types(),
