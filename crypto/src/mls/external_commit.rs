@@ -301,12 +301,13 @@ impl MlsConversation {
 #[cfg(test)]
 pub mod tests {
     use openmls::prelude::*;
+    use openmls::treesync::errors::{LifetimeError, TreeSyncFromNodesError};
     use wasm_bindgen_test::*;
 
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
 
     use crate::prelude::MlsConversationConfiguration;
-    use crate::{prelude::MlsConversationInitBundle, test_utils::*, CryptoError};
+    use crate::{prelude::MlsConversationInitBundle, test_utils::*, CryptoError, MlsError};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -966,6 +967,61 @@ pub mod tests {
                     assert!(
                         matches!(conflict_welcome.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id)
                     );
+                })
+            },
+        )
+        .await
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn should_fail_when_invalid_group_info(case: TestCase) {
+        run_test_with_client_ids(
+            case.clone(),
+            ["alice", "bob", "guest"],
+            move |[mut alice_central, bob_central, mut guest_central]| {
+                Box::pin(async move {
+                    let expiration_time = 14;
+                    let start = fluvio_wasm_timer::Instant::now();
+                    let id = conversation_id();
+                    alice_central
+                        .mls_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+
+                    let invalid_kp = bob_central
+                        .mls_central
+                        .new_keypackage(&case, Lifetime::new(expiration_time))
+                        .await;
+                    alice_central
+                        .mls_central
+                        .add_members_to_conversation(&id, vec![invalid_kp.into()])
+                        .await
+                        .unwrap();
+                    alice_central.mls_central.commit_accepted(&id).await.unwrap();
+
+                    let elapsed = start.elapsed();
+                    // Give time to the certificate to expire
+                    let expiration_time = core::time::Duration::from_secs(expiration_time);
+                    if expiration_time > elapsed {
+                        async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
+                    }
+
+                    let group_info = alice_central.mls_central.get_group_info(&id).await;
+
+                    let join_ext_commit = guest_central
+                        .mls_central
+                        .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
+                        .await;
+                    assert!(matches!(
+                        join_ext_commit.unwrap_err(),
+                        CryptoError::MlsError(MlsError::MlsExternalCommitError(ExternalCommitError::PublicGroupError(
+                            CreationFromExternalError::TreeSyncError(TreeSyncFromNodesError::LeafNodeValidationError(
+                                LeafNodeValidationError::Lifetime(LifetimeError::NotCurrent),
+                            )),
+                        )))
+                    ))
                 })
             },
         )

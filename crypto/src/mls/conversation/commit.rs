@@ -686,8 +686,9 @@ pub mod tests {
                             .remove_members_from_conversation(&id, &[bob_central.mls_central.get_client_id()])
                             .await
                             .unwrap();
-                        let group_info = commit_bundle.group_info.get_group_info();
+
                         alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                        let group_info = commit_bundle.group_info.get_group_info();
 
                         assert!(guest_central
                             .mls_central

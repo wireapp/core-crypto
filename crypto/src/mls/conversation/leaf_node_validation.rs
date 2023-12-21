@@ -10,9 +10,12 @@ pub mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     mod stages {
-        use openmls::prelude::{
-            AddMembersError, KeyPackageVerifyError, LeafNodeValidationError, ProcessMessageError,
-            ProposeAddMemberError, ValidationError, WelcomeError,
+        use openmls::{
+            prelude::{
+                AddMembersError, CreationFromExternalError, KeyPackageVerifyError, LeafNodeValidationError,
+                ProcessMessageError, ProposeAddMemberError, ValidationError, WelcomeError,
+            },
+            treesync::errors::TreeSyncFromNodesError,
         };
 
         use crate::{CryptoError, MlsError};
@@ -21,11 +24,9 @@ pub mod tests {
 
         /// The validity of a LeafNode needs to be verified at the following stages:
         /// When a LeafNode is downloaded in a KeyPackage, before it is used to add the client to the group
-        // #[apply(all_cred_cipher)]
-        // #[wasm_bindgen_test]
-        #[async_std::test]
-        pub async fn should_validate_leaf_node_when_adding(/*case: TestCase*/) {
-            let case = TestCase::default();
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_validate_leaf_node_when_adding(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -254,14 +255,22 @@ pub mod tests {
                                 .await;
                         }
 
-                        let process_welcome = bob_central
+                        let process_welcome_err = bob_central
                             .mls_central
                             .process_welcome_message(commit.welcome.into(), case.custom_cfg())
-                            .await;
+                            .await
+                            .unwrap_err();
+
+                        dbg!(&process_welcome_err);
+
                         assert!(matches!(
-                            process_welcome.unwrap_err(),
-                            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::KeyPackageVerifyError(
-                                KeyPackageVerifyError::InvalidLeafNode(LeafNodeValidationError::Lifetime(_))
+                            process_welcome_err,
+                            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::PublicGroupError(
+                                CreationFromExternalError::TreeSyncError(
+                                    TreeSyncFromNodesError::LeafNodeValidationError(LeafNodeValidationError::Lifetime(
+                                        _
+                                    ))
+                                )
                             )))
                         ));
                     })
