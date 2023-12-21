@@ -1,9 +1,8 @@
 use std::collections::HashSet;
 
-use openmls::prelude::{JoinProposal, LeafNodeIndex};
 use openmls::{
     group::QueuedProposal,
-    prelude::{GroupEpoch, GroupId, MlsMessageOut, Proposal, Sender},
+    prelude::{GroupEpoch, GroupId, JoinProposal, LeafNodeIndex, MlsMessageOut, Proposal, Sender},
 };
 
 use crate::{
@@ -136,8 +135,7 @@ impl MlsCentral {
             .generate_one_keypackage_from_credential_bundle(&self.mls_backend, ciphersuite, cb)
             .await?;
 
-        let ext_proposal = JoinProposal::new(kp, group_id, epoch, &cb.signature_key).map_err(MlsError::from)?;
-        Ok(ext_proposal)
+        Ok(JoinProposal::new(kp, group_id, epoch, &cb.signature_key).map_err(MlsError::from)?)
     }
 }
 

@@ -2732,6 +2732,7 @@ impl CoreCrypto {
                     .write()
                     .await
                     .get_credential_in_use(group_info, credential_type.into())
+                    .await
                     .map(Into::into)
                     .map_err(CoreCryptoError::from)?;
 

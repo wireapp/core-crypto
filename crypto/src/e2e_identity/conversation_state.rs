@@ -41,7 +41,7 @@ impl MlsCentral {
 
     /// Gets the e2ei conversation state from a `GroupInfo`. Useful to check if the group has e2ei
     /// turned on or not before joining it.
-    pub fn get_credential_in_use(
+    pub async fn get_credential_in_use(
         &self,
         group_info: VerifiableGroupInfo,
         credential_type: MlsCredentialType,
@@ -52,6 +52,7 @@ impl MlsCentral {
         // This 👇 verifies the GroupInfo and the RatchetTree btw
         let rt = group_info
             .take_ratchet_tree(&self.mls_backend)
+            .await
             .map_err(MlsError::from)?;
         self.get_credential_in_use_in_ratchet_tree(rt, credential_type)
     }
@@ -172,6 +173,7 @@ pub mod tests {
                             let state = alice_central
                                 .mls_central
                                 .get_credential_in_use(gi, MlsCredentialType::X509)
+                                .await
                                 .unwrap();
                             assert_eq!(state, E2eiConversationState::NotEnabled);
                         }
@@ -185,6 +187,7 @@ pub mod tests {
                             let state = alice_central
                                 .mls_central
                                 .get_credential_in_use(gi, MlsCredentialType::X509)
+                                .await
                                 .unwrap();
                             assert_eq!(state, E2eiConversationState::Verified);
                         }
@@ -259,6 +262,7 @@ pub mod tests {
                     let state = alice_central
                         .mls_central
                         .get_credential_in_use(gi, MlsCredentialType::X509)
+                        .await
                         .unwrap();
                     assert_eq!(state, E2eiConversationState::NotVerified);
                 })
@@ -342,6 +346,7 @@ pub mod tests {
                         let state = alice_central
                             .mls_central
                             .get_credential_in_use(gi, MlsCredentialType::X509)
+                            .await
                             .unwrap();
                         assert_eq!(state, E2eiConversationState::NotVerified);
                     })
@@ -411,6 +416,7 @@ pub mod tests {
                     let state = alice_central
                         .mls_central
                         .get_credential_in_use(gi, MlsCredentialType::X509)
+                        .await
                         .unwrap();
                     assert_eq!(state, E2eiConversationState::NotVerified);
                 })

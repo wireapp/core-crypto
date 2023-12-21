@@ -729,8 +729,8 @@ pub mod tests {
             .await
         }
 
-        // #[apply(all_cred_cipher)]
-        // #[wasm_bindgen_test]
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
         pub async fn rotate_should_roundtrip(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),

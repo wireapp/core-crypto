@@ -28,17 +28,18 @@ use core_crypto_keystore::entities::{
 };
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
-use crate::prelude::WireIdentity;
-use crate::{e2e_identity::device_status::DeviceStatus, test_utils::x509::X509Certificate};
 use crate::{
+    e2e_identity::{
+        device_status::DeviceStatus,
+        id::{QualifiedE2eiClientId, WireQualifiedClientId},
+    },
     mls::credential::{ext::CredentialExt, CredentialBundle},
     prelude::{
         CertificateBundle, Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsCiphersuite,
         MlsConversation, MlsConversationConfiguration, MlsConversationDecryptMessage, MlsConversationInitBundle,
-        MlsCredentialType, MlsCustomConfiguration, MlsError,
+        MlsCredentialType, MlsCustomConfiguration, MlsError, WireIdentity,
     },
-    test_utils::{MessageExt, TestCase},
+    test_utils::{x509::X509Certificate, MessageExt, TestCase},
 };
 
 #[allow(clippy::redundant_static_lifetimes)]
@@ -547,6 +548,10 @@ impl MlsCentral {
             assert_eq!(identity.status, DeviceStatus::Valid);
             assert!(!identity.thumbprint.is_empty());
         }
+    }
+
+    pub async fn members_count(&mut self, id: &ConversationId) -> u32 {
+        self.get_conversation_unchecked(id).await.members().len() as u32
     }
 }
 

@@ -1756,7 +1756,8 @@ impl CoreCrypto {
             .lock()
             .await
             .get_credential_in_use(group_info, credential_type.into())
-            .map(Into::into)?)
+            .await?
+            .into())
     }
 }
 
