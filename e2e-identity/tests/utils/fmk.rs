@@ -11,6 +11,7 @@ use openidconnect::{
 };
 use serde_json::Value;
 use url::Url;
+use x509_cert::der::{DecodePem, Encode};
 
 use rusty_acme::prelude::*;
 use rusty_jwt_tools::{
@@ -736,10 +737,14 @@ impl<'a> E2eTest<'a> {
             .expect_header("content-type", "application/pem-certificate-chain");
         let resp = resp.text().await?;
         self.display_body(&resp);
-        let certificates = RustyAcme::certificate_response(resp, order)?;
+        let mut certificates = RustyAcme::certificate_response(resp, order)?;
+        let root_ca = self.fetch_acme_root_ca().await;
+        let root_ca_der = x509_cert::Certificate::from_pem(root_ca).unwrap().to_der().unwrap();
+        certificates.push(root_ca_der);
         for (i, cert) in certificates.iter().enumerate() {
             self.display_cert(&format!("Certificate #{}", i + 1), cert, false);
         }
+        self.verify_cert_chain();
         Ok(certificates)
     }
 }

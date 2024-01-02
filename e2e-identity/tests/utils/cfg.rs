@@ -311,6 +311,19 @@ impl<'a> E2eTest<'a> {
     pub fn authorization_server_uri(&self) -> String {
         self.dex_server.as_ref().unwrap().uri.clone()
     }
+
+    pub async fn fetch_acme_root_ca(&self) -> String {
+        #[derive(serde::Deserialize)]
+        struct SmallStepRootsResponse {
+            crts: Vec<String>,
+        }
+
+        let base_url = &self.acme_server.as_ref().unwrap().uri;
+        let url = format!("{base_url}/roots");
+        let resp = self.client.get(&url).send().await.unwrap();
+        let certs = resp.json::<SmallStepRootsResponse>().await.unwrap();
+        certs.crts.first().unwrap().to_string()
+    }
 }
 
 impl std::ops::Deref for E2eTest<'_> {

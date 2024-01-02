@@ -194,6 +194,38 @@ impl TestDisplay {
         }
     }
 
+    pub fn verify_cert_chain(&mut self) {
+        let mut chain = self
+            .events
+            .iter()
+            .filter_map(|e| match e {
+                Event::Certificate { cert, .. } => Some(cert.to_string()),
+                _ => None,
+            })
+            .collect::<Vec<String>>();
+
+        let ee = chain.remove(0);
+        let ee = Event::cert_to_file("pem", &ee);
+
+        // openssl needs the upper chain in a single file so we merge them
+        let chain = chain.join("");
+        let chain = Event::cert_to_file("pem", &chain);
+
+        let out = Command::new("openssl")
+            .args(["verify", "-CAfile", &chain, &ee])
+            .output()
+            .unwrap();
+        let status = if out.status.success() {
+            "✅".to_string()
+        } else {
+            let reason = std::str::from_utf8(&out.stderr).unwrap();
+            format!("❌ {reason}")
+        };
+        let text = format!("openssl verify chain {status}");
+        println!("{text}");
+        self.markdown.push(text);
+    }
+
     fn readme() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("README.md")
     }
@@ -388,35 +420,44 @@ Decoded:
 
     fn cert_pretty(&self) -> (String, String) {
         let (extension, cert, mut pretty_args, mut verify_args) = match self {
-            Event::Certificate { cert, .. } => (
-                "pem",
-                cert.to_string(),
-                vec!["x509", "-text", "-noout", "-in"],
-                vec!["x509", "-verify", "-in"],
-            ),
+            Event::Certificate { cert, .. } => ("pem", cert.to_string(), vec!["x509", "-text", "-noout", "-in"], None),
             Event::Csr { cert, .. } => (
                 "csr",
                 cert.to_string(),
                 vec!["req", "-text", "-noout", "-in"],
-                vec!["req", "-verify", "-in"],
+                Some(vec!["req", "-verify", "-in"]),
             ),
             _ => unreachable!(),
         };
-        let path = std::env::temp_dir().join(format!("cert-{}.{extension}", rand_base64_str(12)));
-        std::fs::write(&path, cert).unwrap();
-        let path_str = path.to_str().unwrap();
+        let path_str = Self::cert_to_file(extension, &cert);
 
-        pretty_args.push(path_str);
-        verify_args.push(path_str);
+        pretty_args.push(&path_str);
 
         let out = Command::new("openssl").args(pretty_args).output().unwrap();
         let pretty_out = String::from_utf8(out.stdout).unwrap();
 
-        let out = Command::new("openssl").args(verify_args).output().unwrap();
-        let verify = if out.status.success() { "✅" } else { "❌" };
-        let verify = format!("openssl -verify {verify}");
+        let verify = if let Some(verify_args) = verify_args.as_mut() {
+            verify_args.push(&path_str);
+            let out = Command::new("openssl").args(verify_args).output().unwrap();
+            let verify = if out.status.success() {
+                "✅".to_string()
+            } else {
+                let reason = std::str::from_utf8(&out.stderr).unwrap();
+                format!("❌{reason}")
+            };
+            format!("openssl -verify {verify}")
+        } else {
+            "".to_string()
+        };
 
         (pretty_out, verify)
+    }
+
+    fn cert_to_file(extension: &str, cert: &str) -> String {
+        let path = std::env::temp_dir().join(format!("cert-{}.{extension}", rand_base64_str(12)));
+        std::fs::write(&path, cert).unwrap();
+        let path_str = path.to_str().unwrap();
+        path_str.to_string()
     }
 }
 
