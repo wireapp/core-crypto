@@ -200,7 +200,9 @@ impl WireIdentityBuilder {
         cert_params.distinguished_name = dn;
 
         let client_id = ClientId::try_from_qualified(&self.client_id).unwrap().to_uri();
-        let handle = Handle::from(self.handle.as_str()).to_qualified(&self.domain);
+        let handle = Handle::from(self.handle.as_str())
+            .try_to_qualified(&self.domain)
+            .unwrap();
         cert_params.subject_alt_names = vec![rcgen::SanType::URI(client_id), rcgen::SanType::URI(handle.to_string())];
 
         cert_params.extended_key_usages = vec![rcgen::ExtendedKeyUsagePurpose::ClientAuth];
@@ -252,7 +254,10 @@ impl Default for WireIdentityBuilder {
         Self {
             alg: SignAlgorithm::Ed25519,
             client_id,
-            handle: Handle::from("alice_wire").to_qualified("wire.com").to_string(),
+            handle: Handle::from("alice_wire")
+                .try_to_qualified("wire.com")
+                .unwrap()
+                .to_string(),
             display_name: format!("{firstname} {lastname}"),
             domain,
             not_before: rcgen::date_time_ymd(1970, 1, 1),
@@ -304,12 +309,12 @@ pub mod tests {
             ..Default::default()
         };
         let (cert_chain, ..) = builder.build_x509();
-        let cert = cert_chain.get(0).unwrap();
+        let cert = cert_chain.first().unwrap();
         let identity = cert.extract_identity().unwrap();
         assert_eq!(&identity.client_id, client_id);
         assert_eq!(
             identity.handle.as_str(),
-            Handle::from(handle).to_qualified(domain).as_str()
+            Handle::from(handle).try_to_qualified(domain).unwrap().as_str()
         );
         assert_eq!(&identity.display_name, display_name);
         assert_eq!(&identity.domain, domain);
@@ -319,7 +324,7 @@ pub mod tests {
     #[wasm_bindgen_test]
     fn default_should_be_valid() {
         let (cert_chain, ..) = WireIdentityBuilder::default().build_x509();
-        let cert = cert_chain.get(0).unwrap();
+        let cert = cert_chain.first().unwrap();
         assert!(cert.extract_identity().is_ok());
     }
 }

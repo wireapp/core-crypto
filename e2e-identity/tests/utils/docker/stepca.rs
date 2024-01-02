@@ -49,6 +49,7 @@ impl CaCfg {
                     "claims": {
                         "disableRenewal": false,
                         "allowRenewalAfterExpiry": false,
+                        "minTLSCertDuration": "60s",
                         "maxTLSCertDuration": "87600h",
                         "defaultTLSCertDuration": "87600h"
                     },
@@ -100,7 +101,7 @@ pub struct StepCaImage {
 
 impl StepCaImage {
     const NAME: &'static str = "quay.io/wire/smallstep-acme";
-    const TAG: &'static str = "0.0.42-test.99";
+    const TAG: &'static str = "0.0.42-test.106";
     const CA_NAME: &'static str = "wire";
     pub const ACME_PROVISIONER: &'static str = "wire";
     pub const PORT: u16 = 9000;

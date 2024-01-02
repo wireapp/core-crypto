@@ -406,7 +406,9 @@ mod dpop_challenge {
                     let htu: Htu = "https://unknown.io".try_into().unwrap();
                     let backend_nonce: BackendNonce = nonce_r.lock().unwrap().clone().unwrap();
                     let acme_nonce: AcmeNonce = dpop_chall.token.as_str().into();
-                    let handle = Handle::from(test.handle.as_str()).to_qualified(&client_id.domain);
+                    let handle = Handle::from(test.handle.as_str())
+                        .try_to_qualified(&client_id.domain)
+                        .unwrap();
 
                     let client_dpop_token = RustyJwtTools::generate_dpop_token(
                         Dpop {
@@ -480,7 +482,9 @@ mod dpop_challenge {
                     let htu: Htu = dpop_chall.target.unwrap().try_into().unwrap();
                     let backend_nonce: BackendNonce = nonce_r.lock().unwrap().clone().unwrap();
                     let acme_nonce: AcmeNonce = dpop_chall.token.as_str().into();
-                    let handle = Handle::from(test.handle.as_str()).to_qualified(&client_id.domain);
+                    let handle = Handle::from(test.handle.as_str())
+                        .try_to_qualified(&client_id.domain)
+                        .unwrap();
 
                     let client_dpop_token = RustyJwtTools::generate_dpop_token(
                         Dpop {
@@ -538,7 +542,7 @@ mod dpop_challenge {
         let flow = EnrollmentFlow {
             create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, _handle, team, expiry)| {
                 Box::pin(async move {
-                    let wrong_handle = Handle::from("other_wire").to_qualified("wire.com");
+                    let wrong_handle = Handle::from("other_wire").try_to_qualified("wire.com").unwrap();
                     let client_dpop_token = test
                         .create_dpop_token(&dpop_chall, backend_nonce, wrong_handle, team, expiry)
                         .await?;
@@ -579,7 +583,9 @@ mod dpop_challenge {
                     let client_id = test.sub.clone();
                     let htu: Htu = dpop_chall.target.unwrap().try_into().unwrap();
                     let backend_nonce: BackendNonce = nonce_r.lock().unwrap().clone().unwrap();
-                    let handle = Handle::from(test.handle.as_str()).to_qualified(&client_id.domain);
+                    let handle = Handle::from(test.handle.as_str())
+                        .try_to_qualified(&client_id.domain)
+                        .unwrap();
                     let acme_nonce: AcmeNonce = dpop_chall.token.as_str().into();
 
                     // use the MLS keypair instead of the ACME one, should make the validation fail on the acme-server
@@ -705,7 +711,7 @@ mod oidc_challenge {
                     let id_token = test.fetch_id_token(&oidc_chall).await?;
 
                     let change_handle = |mut claims: JWTClaims<Value>| {
-                        let wrong_handle = format!("{}john.doe.qa@wire.com", ClientId::URI_PREFIX);
+                        let wrong_handle = format!("{}john.doe.qa@wire.com", ClientId::URI_SCHEME);
                         *claims.custom.get_mut("name").unwrap() = json!(wrong_handle);
                         claims
                     };

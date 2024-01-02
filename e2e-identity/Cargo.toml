@@ -44,6 +44,7 @@ uuid = "1.6"
 wasm-bindgen-test = "0.3"
 hex = "0.4"
 webbrowser = "0.8"
+rusty-jwt-cli = { version = "0.7.1", path = "../cli" }
 
 openidconnect = "3.0.0-alpha.1"
 html_parser = "0.6"

@@ -102,7 +102,7 @@ impl<'a> E2eTest<'a> {
         let wire_client_id = random::<u64>();
         let sub = ClientId::try_new(wire_user_id.to_string(), wire_client_id, &domain).unwrap();
         let (handle, team, password) = ("alice_wire", "wire", "foo");
-        let qualified_handle = Handle::from(handle).to_qualified(&domain);
+        let qualified_handle = Handle::from(handle).try_to_qualified(&domain).unwrap();
         let email = format!("alicesmith@{domain}");
         let audience = "wireapp";
         let client_secret = rand_base64_str(24);

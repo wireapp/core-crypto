@@ -49,7 +49,9 @@ impl E2eTest<'static> {
         let (t, (dpop_chall, oidc_chall)) = (f.extract_challenges)(t, authz.clone()).await?;
         let (t, backend_nonce) = (f.get_wire_server_nonce)(t, ()).await?;
         let expiry = core::time::Duration::from_secs(3600);
-        let handle = Handle::from(t.handle.as_str()).to_qualified(t.domain.as_str());
+        let handle = Handle::from(t.handle.as_str())
+            .try_to_qualified(t.domain.as_str())
+            .unwrap();
         let team = t.team.clone().into();
         let (t, client_dpop_token) =
             (f.create_dpop_token)(t, (dpop_chall.clone(), backend_nonce, handle, team, expiry)).await?;
@@ -209,7 +211,7 @@ impl<'a> E2eTest<'a> {
     ) -> TestResult<(AcmeAuthz, String)> {
         self.display_chapter("Display-name and handle already authorized");
         self.display_step("create authorization and fetch challenges");
-        let authz_url = order.authorizations.get(0).unwrap();
+        let authz_url = order.authorizations.first().unwrap();
         let authz_req = RustyAcme::new_authz_request(authz_url, account, self.alg, &self.acme_kp, previous_nonce)?;
         let req = self.client.acme_req(authz_url, &authz_req)?;
         self.display_req(
@@ -381,7 +383,6 @@ impl<'a> E2eTest<'a> {
 
         self.display_step("DPoP challenge is valid");
         let mut resp = self.client.execute(req).await?;
-
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();
 
@@ -755,7 +756,7 @@ impl E2eTest<'_> {
         let jwks_uri = self.oidc_cfg.as_ref().unwrap().jwks_uri.clone();
         let jwks_req = self.client.get(jwks_uri);
         let jwks = jwks_req.send().await.unwrap().json::<Value>().await.unwrap();
-        let jwk = jwks.get("keys").unwrap().as_array().unwrap().get(0).unwrap();
+        let jwk = jwks.get("keys").unwrap().as_array().unwrap().first().unwrap();
         let jwk = serde_json::from_value::<Jwk>(jwk.clone()).unwrap();
         match &jwk.algorithm {
             AlgorithmParameters::RSA(_) => RS256PublicKey::try_from_jwk(&jwk).unwrap().to_pem().unwrap(),

@@ -14,13 +14,14 @@ mod utils;
 #[wasm_bindgen_test]
 fn e2e_api() {
     let prev_nonce = || utils::rand_base64_str(32);
-    for (enrollment, backend_kp) in enrollments() {
-        let (user_id, device_id) = ("yl-8A_wZSfaS2uV8VuMEBw", "7e79723a8bdc694f");
+    for (enrollment, backend_kp, backend_pk, hash_algorithm) in enrollments() {
+        let (user_id, device_id) = ("obakjPOHQ2CkNb0rOrNM3A", "ba54e8ace8b4c90d");
         let domain = "wire.org";
         let qualified_client_id = format!("{user_id}:{device_id}@{domain}");
 
         let display_name = "Alice Smith";
-        let qualified_handle = Handle::from("alice_wire").to_qualified(domain);
+        let handle = Handle::from("alice_wire");
+        let qualified_handle = handle.try_to_qualified(domain).unwrap();
         let team = "wire";
 
         // GET http://acme-server/directory
@@ -87,7 +88,7 @@ fn e2e_api() {
               "identifiers": [
                 {
                   "type": "wireapp-id",
-                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=yl-8A_wZSfaS2uV8VuMEBw/7e79723a8bdc694f@wire.com\",\"handle\":\"im:wireapp=%40alice_wire@wire.com\"}"
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://obakjPOHQ2CkNb0rOrNM3A!ba54e8ace8b4c90d@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
                 }
               ],
               "authorizations": [
@@ -107,8 +108,9 @@ fn e2e_api() {
         };
 
         // POST http://acme-server/authz
+        let dpop_acme_token = "b1vGm3jV7dbKz84C1XpZTLQQKQWcFFmg";
         let (authz, previous_nonce) = {
-            let authz_url = order.authorizations.get(0).unwrap();
+            let authz_url = order.authorizations.first().unwrap();
             let _authz_req = enrollment
                 .acme_new_authz_request(authz_url, &account, previous_nonce)
                 .unwrap();
@@ -121,20 +123,20 @@ fn e2e_api() {
                   "type": "wire-oidc-01",
                   "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/RNb3z6tvknq7vz2U5DoHsSOGiWQyVtAz",
                   "status": "pending",
-                  "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
+                  "token": "Fvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
                   "target": "https://dex/dex"
                 },
                 {
                   "type": "wire-dpop-01",
                   "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
                   "status": "pending",
-                  "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
-                  "target": "https://wire.com/clients/7e79723a8bdc694f/access-token"
+                  "token": dpop_acme_token,
+                  "target": "https://wire.com/clients/ba54e8ace8b4c90d/access-token"
                 }
               ],
               "identifier": {
                 "type": "wireapp-id",
-                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=yl-8A_wZSfaS2uV8VuMEBw/7e79723a8bdc694f@wire.com\",\"handle\":\"im:wireapp=%40alice_wire@wire.com\"}"
+                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://obakjPOHQ2CkNb0rOrNM3A!ba54e8ace8b4c90d@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
               }
             });
             let authz = enrollment.acme_new_authz_response(resp).unwrap();
@@ -176,14 +178,14 @@ fn e2e_api() {
             let access_token = RustyJwtTools::generate_access_token(
                 client_dpop_token.as_str(),
                 &alice,
-                qualified_handle,
+                qualified_handle.clone(),
                 team.into(),
                 backend_nonce,
                 htu,
                 htm,
                 leeway,
                 max_expiration,
-                backend_kp,
+                backend_kp.clone(),
                 enrollment.hash_alg,
                 5,
                 core::time::Duration::from_secs(360),
@@ -196,8 +198,40 @@ fn e2e_api() {
         let previous_nonce = {
             // see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
             let _handle_chall_req = enrollment
-                .acme_dpop_challenge_request(access_token, &dpop_chall, &account, previous_nonce)
+                .acme_dpop_challenge_request(access_token.clone(), &dpop_chall, &account, previous_nonce)
                 .unwrap();
+
+            #[cfg(not(target_family = "wasm"))]
+            {
+                let access_token_file = std::env::temp_dir().join("access-token.txt");
+                std::fs::write(&access_token_file, &access_token).unwrap();
+
+                let backend_pk_file = std::env::temp_dir().join("backend-pk.txt");
+                std::fs::write(&backend_pk_file, backend_pk.as_str()).unwrap();
+
+                let client_id = ClientId::try_from_qualified(&qualified_client_id).unwrap();
+                let issuer = dpop_chall.target.to_string();
+
+                let (leeway, max_expiry) = (3600, 2136351646);
+
+                let kid = JwkThumbprint::generate(&enrollment.jwk, hash_algorithm).unwrap().kid;
+
+                rusty_jwt_cli::access_verify::AccessVerify {
+                    access_token: Some(access_token_file),
+                    client_id: client_id.to_uri(),
+                    handle: qualified_handle.to_string(),
+                    challenge: dpop_acme_token.to_string(),
+                    leeway,
+                    max_expiry,
+                    issuer,
+                    hash_algorithm,
+                    kid,
+                    key: backend_pk_file,
+                    api_version: 5,
+                }
+                .execute()
+                .unwrap();
+            }
 
             let resp = json!({
               "type": "wire-dpop-01",
@@ -239,7 +273,7 @@ fn e2e_api() {
               "identifiers": [
                 {
                   "type": "wireapp-id",
-                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=yl-8A_wZSfaS2uV8VuMEBw/7e79723a8bdc694f@wire.com\",\"handle\":\"im:wireapp=%40alice_wire@wire.com\"}"
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://obakjPOHQ2CkNb0rOrNM3A!ba54e8ace8b4c90d@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
                 }
               ],
               "authorizations": [
@@ -267,7 +301,7 @@ fn e2e_api() {
               "identifiers": [
                 {
                   "type": "wireapp-id",
-                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=yl-8A_wZSfaS2uV8VuMEBw/7e79723a8bdc694f@wire.com\",\"handle\":\"im:wireapp=%40alice_wire@wire.com\"}"
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://obakjPOHQ2CkNb0rOrNM3A!ba54e8ace8b4c90d@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
                 }
               ],
               "authorizations": [
@@ -288,30 +322,30 @@ fn e2e_api() {
                 .unwrap();
 
             let resp = r#"-----BEGIN CERTIFICATE-----
-MIICGDCCAb+gAwIBAgIQHhoe3LLRoHP+EPY4KOTgATAKBggqhkjOPQQDAjAuMQ0w
-CwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3aXJlIEludGVybWVkaWF0ZSBDQTAeFw0y
-MzExMTYxMDM3MjZaFw0zMzExMTMxMDM3MjZaMCkxETAPBgNVBAoTCHdpcmUuY29t
-MRQwEgYDVQQDEwtBbGljZSBTbWl0aDAqMAUGAytlcAMhANmHK7rIOLVhj/vmKmK1
-qei8Dor8Lu/FPOnXmKLZGKrfo4HyMIHvMA4GA1UdDwEB/wQEAwIHgDATBgNVHSUE
-DDAKBggrBgEFBQcDAjAdBgNVHQ4EFgQUFlquvWRvc3MxFaLrNgzv+UdGoaswHwYD
-VR0jBBgwFoAUz40pQ/qEp4eFDfctCF0jmJB+5xswaQYDVR0RBGIwYIYhaW06d2ly
-ZWFwcD0lNDBhbGljZV93aXJlQHdpcmUuY29thjtpbTp3aXJlYXBwPXlsLThBX3da
-U2ZhUzJ1VjhWdU1FQncvN2U3OTcyM2E4YmRjNjk0ZkB3aXJlLmNvbTAdBgwrBgEE
-AYKkZMYoQAEEDTALAgEGBAR3aXJlBAAwCgYIKoZIzj0EAwIDRwAwRAIgRqbsOAF7
-OseMTgkjrKe3UO/UjDUGzW+jlDWOGLZsh5ECIDdNastqkvwOGfbWaeh+IuM6/oBz
-flIOs9TQGOVc0YL1
+MIICGjCCAcCgAwIBAgIRAJaZdl+hZDl9qSSju5kmWNAwCgYIKoZIzj0EAwIwLjEN
+MAsGA1UEChMEd2lyZTEdMBsGA1UEAxMUd2lyZSBJbnRlcm1lZGlhdGUgQ0EwHhcN
+MjQwMTA1MTQ1MzAyWhcNMzQwMTAyMTQ1MzAyWjApMREwDwYDVQQKEwh3aXJlLmNv
+bTEUMBIGA1UEAxMLQWxpY2UgU21pdGgwKjAFBgMrZXADIQChy/GdWnVyNKWvsB+D
+BoxYb+qpVN9QIBXeYdmp1hobOqOB8jCB7zAOBgNVHQ8BAf8EBAMCB4AwEwYDVR0l
+BAwwCgYIKwYBBQUHAwIwHQYDVR0OBBYEFOM5yRKA3dHSlYnjEzcuWoiMWm+TMB8G
+A1UdIwQYMBaAFBP7HtkE3WdbqzE6Ll4aIB2jFM2LMGkGA1UdEQRiMGCGIHdpcmVh
+cHA6Ly8lNDBhbGljZV93aXJlQHdpcmUuY29thjx3aXJlYXBwOi8vb2Jha2pQT0hR
+MkNrTmIwck9yTk0zQSUyMWJhNTRlOGFjZThiNGM5MGRAd2lyZS5jb20wHQYMKwYB
+BAGCpGTGKEABBA0wCwIBBgQEd2lyZQQAMAoGCCqGSM49BAMCA0gAMEUCIDRaadkt
+pPSLrZ+qy07VJOhE/ypOS6oDItpaq/HPxoTUAiEA7EKzmAFv+/zIEA7lAZjNJ+x4
+dHnOydGcC6TZ9zo0pIM=
 -----END CERTIFICATE-----
 -----BEGIN CERTIFICATE-----
-MIIBuTCCAV+gAwIBAgIRALZ7S0CrN0AU7he5I5RE7kUwCgYIKoZIzj0EAwIwJjEN
-MAsGA1UEChMEd2lyZTEVMBMGA1UEAxMMd2lyZSBSb290IENBMB4XDTIzMTExNjEw
-MzcyNFoXDTMzMTExMzEwMzcyNFowLjENMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMU
-d2lyZSBJbnRlcm1lZGlhdGUgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAARX
-N+Bn/11sYUO48us2X+JrOBMXf/Gn9kV1D+fp1SQ3JzQl/KEwmtG3OJHB6ljtQiIF
-QTKP2xV8Zu9vK1Z8zD43o2YwZDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgw
-BgEB/wIBADAdBgNVHQ4EFgQUz40pQ/qEp4eFDfctCF0jmJB+5xswHwYDVR0jBBgw
-FoAUCseuIlZpBnsVzFcCJvAXBodYgo0wCgYIKoZIzj0EAwIDSAAwRQIgfR0sHfuG
-N2EBypbVEz5g7zRMQsbKCUxUAW5cNiEc9IICIQDCDymSCXPFRw1QNv/7WQXATH1L
-hQc4PK0oC9I4QpceyA==
+MIIBuTCCAV+gAwIBAgIRAJw/A4JJsAkUUg7yNCc/JW0wCgYIKoZIzj0EAwIwJjEN
+MAsGA1UEChMEd2lyZTEVMBMGA1UEAxMMd2lyZSBSb290IENBMB4XDTI0MDEwNTE0
+NTMwMVoXDTM0MDEwMjE0NTMwMVowLjENMAsGA1UEChMEd2lyZTEdMBsGA1UEAxMU
+d2lyZSBJbnRlcm1lZGlhdGUgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQW
+Tnwl7P5cet1ZJFi2IE9tWytcRYihWMIa9qMYE/a2155RWGcQ7Svxx3j4wOHktnfY
+XFGFhJoLUX12uiyHICzio2YwZDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgw
+BgEB/wIBADAdBgNVHQ4EFgQUE/se2QTdZ1urMTouXhogHaMUzYswHwYDVR0jBBgw
+FoAUya+rFyef/ata3yF3TknFEeyqFGgwCgYIKoZIzj0EAwIDSAAwRQIgQcCFklhN
+VkihH+lXehb6MJ3nbsiyRpbekCwYmUB9vykCIQCkIi/orr5qTGgs/YZlC6uofDFj
+ySz3I+2cUu+6ShJhdQ==
 -----END CERTIFICATE-----"#;
             enrollment
                 .acme_x509_certificate_response(resp.to_string(), order)

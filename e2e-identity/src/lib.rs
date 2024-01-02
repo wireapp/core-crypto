@@ -35,7 +35,7 @@ pub struct RustyE2eIdentity {
     sign_kp: Pem,
     pub hash_alg: HashAlgorithm,
     acme_kp: Pem,
-    jwk: Jwk,
+    pub jwk: Jwk,
 }
 
 // enrollment/refresh flow
@@ -254,7 +254,7 @@ impl RustyE2eIdentity {
     ) -> E2eIdentityResult<String> {
         let dpop_chall: AcmeChallenge = dpop_challenge.clone().try_into()?;
         let client_id = ClientId::try_from_qualified(client_id)?;
-        let handle = Handle::from(handle).to_qualified(&client_id.domain);
+        let handle = Handle::from(handle).try_to_qualified(&client_id.domain)?;
         let dpop = Dpop {
             htm: Htm::Post,
             htu: dpop_challenge.target.clone().into(),
