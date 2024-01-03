@@ -44,7 +44,7 @@ async-trait = "0.1"
 async-lock = "3.0"
 schnellru = "0.2"
 zeroize = "1.5"
-wire-e2e-identity = { version = "=0.6.1", default-features = false }
+wire-e2e-identity = { version = "=0.8.0", default-features = false }
 indexmap = "2"
 x509-cert = "0.2"
 pem = "3.0"
@@ -101,7 +101,7 @@ async-std = { version = "1.12", features = ["attributes"] }
 futures-util = { version = "0.3", features = ["std", "alloc"] }
 proteus-traits = "2.0"
 async-trait = "0.1"
-wire-e2e-identity = { version = "=0.6.1", features = ["identity-builder"] }
+wire-e2e-identity = { version = "=0.8.0", features = ["identity-builder"] }
 fluvio-wasm-timer = "0.2"
 time = { version = "0.3", features = ["wasm-bindgen"] }
 

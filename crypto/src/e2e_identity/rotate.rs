@@ -397,7 +397,7 @@ pub mod tests {
                             assert_eq!(c.credential_type(), openmls::prelude::CredentialType::X509);
                             let identity = c.extract_identity().unwrap().unwrap();
                             assert_eq!(identity.display_name, NEW_DISPLAY_NAME);
-                            assert_eq!(identity.handle, format!("im:wireapp=%40{NEW_HANDLE}@wire.com"));
+                            assert_eq!(identity.handle, format!("wireapp://%40{NEW_HANDLE}@wire.com"));
                         }
 
                         // Alice has to delete her old KeyPackages
@@ -552,7 +552,7 @@ pub mod tests {
                         .unwrap();
                     let identity = cb.credential().extract_identity().unwrap().unwrap();
                     assert_eq!(identity.display_name, NEW_DISPLAY_NAME);
-                    assert_eq!(identity.handle, format!("im:wireapp=%40{NEW_HANDLE}@wire.com"));
+                    assert_eq!(identity.handle, format!("wireapp://%40{NEW_HANDLE}@wire.com"));
 
                     // but keeps her old one since it's referenced from some KeyPackages
                     let old_spk = SignaturePublicKey::from(old_cb.signature_key.public());
@@ -593,7 +593,7 @@ pub mod tests {
                         .unwrap();
                     let identity = cb.credential().extract_identity().unwrap().unwrap();
                     assert_eq!(identity.display_name, NEW_DISPLAY_NAME);
-                    assert_eq!(identity.handle, format!("im:wireapp=%40{NEW_HANDLE}@wire.com"));
+                    assert_eq!(identity.handle, format!("wireapp://%40{NEW_HANDLE}@wire.com"));
 
                     assert_eq!(
                         alice_central.mls_client().unwrap().identities.iter().count(),

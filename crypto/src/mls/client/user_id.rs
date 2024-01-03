@@ -6,7 +6,7 @@ use crate::{CryptoError, CryptoResult};
 /// End-to-end Identity re-shuffled that... But we still want to keep this isolated from the rest
 /// of the crate that's why this should remain here and be used cautiously, having the context quoted
 /// above in mind.
-/// For example in `im:wireapp=LcksJb74Tm6N12cDjFy7lQ/8e6424430d3b28be@wire.com` the [UserId] is `LcksJb74Tm6N12cDjFy7lQ`
+/// For example in `wireapp://LcksJb74Tm6N12cDjFy7lQ!8e6424430d3b28be@wire.com` the [UserId] is `LcksJb74Tm6N12cDjFy7lQ`
 #[derive(Debug, Clone, Copy, Eq, PartialEq, derive_more::Deref)]
 pub struct UserId<'a>(&'a [u8]);
 

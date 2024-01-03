@@ -532,7 +532,7 @@ pub mod tests {
     pub const E2EI_DISPLAY_NAME: &str = "Alice Smith";
     pub const E2EI_HANDLE: &str = "alice_wire";
     pub const E2EI_CLIENT_ID: &str = "bd4c7053-1c5a-4020-9559-cd7bf7961954:4959bc6ab12f2846@wire.com";
-    pub const E2EI_CLIENT_ID_URI: &str = "vUxwUxxaQCCVWc1795YZVA/4959bc6ab12f2846@wire.com";
+    pub const E2EI_CLIENT_ID_URI: &str = "vUxwUxxaQCCVWc1795YZVA!4959bc6ab12f2846@wire.com";
     pub const E2EI_EXPIRY: u32 = 90;
 
     #[apply(all_cred_cipher)]
@@ -653,9 +653,9 @@ pub mod tests {
         let _order_req = enrollment.new_order_request(previous_nonce.to_string()).unwrap();
 
         let client_id = client_id
-            .map(|c| format!("{}{c}", wire_e2e_identity::prelude::E2eiClientId::URI_PREFIX))
+            .map(|c| format!("{}{c}", wire_e2e_identity::prelude::E2eiClientId::URI_SCHEME))
             .unwrap_or_else(|| cc.get_e2ei_client_id().to_uri());
-        let identifier_value = format!("{{\"name\":\"{display_name}\",\"domain\":\"wire.com\",\"client-id\":\"{client_id}\",\"handle\":\"im:wireapp=%40{handle}@wire.com\"}}");
+        let identifier_value = format!("{{\"name\":\"{display_name}\",\"domain\":\"wire.com\",\"client-id\":\"{client_id}\",\"handle\":\"wireapp://%40{handle}@wire.com\"}}");
         let order_resp = json!({
             "status": "pending",
             "expires": "2037-01-05T14:09:07.99Z",
