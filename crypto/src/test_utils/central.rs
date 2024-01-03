@@ -14,6 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use openmls::prelude::{
+    group_info::VerifiableGroupInfo, Credential, CredentialWithKey, CryptoConfig, HpkePublicKey, KeyPackage,
+    KeyPackageIn, LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit,
+};
+use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
+use tls_codec::{Deserialize, Serialize};
+use wire_e2e_identity::prelude::WireIdentityReader;
+use x509_cert::der::Encode;
+
+use core_crypto_keystore::entities::{
+    EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
+};
+use mls_crypto_provider::MlsCryptoProvider;
+
+use crate::e2e_identity::device_status::DeviceStatus;
+use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
+use crate::prelude::WireIdentity;
 use crate::{
     mls::credential::{ext::CredentialExt, CredentialBundle},
     prelude::{
@@ -23,22 +40,6 @@ use crate::{
     },
     test_utils::{MessageExt, TestCase},
 };
-use openmls::prelude::{
-    group_info::VerifiableGroupInfo, Capabilities, Credential, CredentialWithKey, CryptoConfig, HpkePublicKey,
-    KeyPackage, KeyPackageIn, LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit,
-};
-use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
-use tls_codec::{Deserialize, Serialize};
-
-use crate::e2e_identity::device_status::DeviceStatus;
-use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
-use crate::prelude::WireIdentity;
-use core_crypto_keystore::entities::{
-    EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
-};
-use mls_crypto_provider::MlsCryptoProvider;
-use wire_e2e_identity::prelude::WireIdentityReader;
-use x509_cert::der::Encode;
 
 #[allow(clippy::redundant_static_lifetimes)]
 pub const TEAM: &'static str = "wire";
@@ -459,7 +460,7 @@ impl MlsCentral {
         new_handle: &str,
         new_display_name: &str,
     ) {
-        let new_handle = format!("im:wireapp=%40{new_handle}@wire.com");
+        let new_handle = format!("wireapp://%40{new_handle}@wire.com");
         // verify the identity in..
         // the MLS group
         let cid = self.get_client_id();

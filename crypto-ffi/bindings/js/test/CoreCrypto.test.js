@@ -971,7 +971,7 @@ test("end-to-end-identity", async () => {
       "identifiers": [
         {
           "type": "wireapp-id",
-          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}",
+          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!4959bc6ab12f2846@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
         },
       ],
       "authorizations": [
@@ -989,7 +989,7 @@ test("end-to-end-identity", async () => {
       "expires": "2016-01-02T14:09:30Z",
       "identifier": {
         "type": "wireapp-id",
-        "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}",
+        "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!4959bc6ab12f2846@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
       },
       "challenges": [
         {
@@ -1050,7 +1050,7 @@ test("end-to-end-identity", async () => {
       "identifiers": [
         {
           "type": "wireapp-id",
-          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}",
+          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!4959bc6ab12f2846@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
         },
       ],
       "authorizations": [
@@ -1070,7 +1070,7 @@ test("end-to-end-identity", async () => {
       "identifiers": [
         {
           "type": "wireapp-id",
-          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"im:wireapp=t6wRpI8BRSeviBwwiFp5MQ/4959bc6ab12f2846@wire.com\",\"handle\":\"im:wireapp=alice_wire\"}",
+          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!4959bc6ab12f2846@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
         },
       ],
       "authorizations": [

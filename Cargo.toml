@@ -76,7 +76,7 @@ branch = "wire/unstable-pq-xyber"
 [patch.crates-io.wire-e2e-identity]
 git = "https://github.com/wireapp/rusty-jwt-tools"
 package = "wire-e2e-identity"
-tag = "v0.6.1"
+tag = "v0.8.0"
 
 # aarch64-apple-ios-sim target support has not yet been released
 [patch.crates-io.openssl-src]
@@ -86,7 +86,7 @@ package = "openssl-src"
 
 [patch.crates-io.jwt-simple]
 git = "https://github.com/wireapp/rust-jwt-simple"
-tag = "v0.11.4-pre.core-crypto-0.7.0"
+tag = "v0.12.1-pre.core-crypto-1.0.0"
 
 [profile.release]
 lto = true
