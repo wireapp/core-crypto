@@ -2758,7 +2758,7 @@ impl E2eiEnrollment {
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_oidc_challenge_response]
-    pub fn new_oidc_challenge_response(&mut self, cc: CoreCrypto, challenge: Uint8Array) -> Promise {
+    pub fn new_oidc_challenge_response(&mut self, cc: &CoreCrypto, challenge: Uint8Array) -> Promise {
         let cc = cc.inner.clone();
         let this = self.0.clone();
         future_to_promise(
