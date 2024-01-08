@@ -7,12 +7,23 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.23] - 2024-01-08
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.23" unreleased=true}}
+</details>
+
+* feat(mls)!: remove `PerDomainTrustAnchor` extension from required capabilities. Backward incompatible changes ! If you ever migrate from a previous version to this one take care of deleting all your groups
+* fix(e2ei): fix a null pointer in the Javascript API
+* fix(e2ei): Swift wrapper for E2eiEnrollment was not used in other methods
+* fix: use 'implementation' Gradle configuration not to enforce dependencies version into consumers
 
 ## [1.0.0-rc.22] - 2023-12-13
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.22" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.22"}}
 </details>
 
 * feat(e2ei)!: manage OIDC refreshToken in CoreCrypto's encrypted-at-rest store. As a consequence, some methods went async (all the enrollment ones in WASM). The refreshToken has to be supplied in `newOidcChallengeRequest()` and is persisted in `newOidcChallengeResponse()`. Clients should fetch it back from an `Enrollment` created by `newRotateEnrollment()` with the new `getRefreshToken()` method.
