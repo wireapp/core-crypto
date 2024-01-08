@@ -7,6 +7,27 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.23] - 2024-01-08
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Null pointer in Javascript when calling 'new_oidc_challenge_response'
+- Swift wrapper for E2eiEnrollment was not used in other methods
+- Use 'implementation' Gradle configuration not to enforce dependencies version into consumers. Fixes #451
+
+### Features
+
+- [**breaking**] Remove PerDomainTrustAnchor extension altogether. Backward incompatible changes !
+
+</details>
+
+* feat(mls)!: remove `PerDomainTrustAnchor` extension from required capabilities. Backward incompatible changes ! If you ever migrate from a previous version to this one take care of deleting all your groups
+* fix(e2ei): fix a null pointer in the Javascript API
+* fix(e2ei): Swift wrapper for E2eiEnrollment was not used in other methods
+* fix: use 'implementation' Gradle configuration not to enforce dependencies version into consumers
 
 ## [1.0.0-rc.22] - 2023-12-13
 
