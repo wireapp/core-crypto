@@ -194,7 +194,7 @@ impl Image for StepCaImage {
     type Args = ();
 
     fn name(&self) -> String {
-        Self::NAME.to_string()
+        std::env::var("STEPCA_NAME").unwrap_or_else(|_| Self::NAME.to_string())
     }
 
     fn tag(&self) -> String {
