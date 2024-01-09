@@ -447,6 +447,24 @@ export interface ConversationInitBundle {
 }
 
 /**
+ *  Supporting struct for CRL registration result
+ */
+export interface CRLRegistration {
+    /**
+     * Whether this CRL modifies the old CRL (i.e. has a different revocated cert list)
+     *
+     * @readonly
+     */
+    dirty: boolean;
+    /**
+     * Optional expiration timestamp
+     *
+     * @readonly
+     */
+    expiration?: number;
+}
+
+/**
  * This is a wrapper for all the possible outcomes you can get after decrypting a message
  */
 export interface DecryptedMessage {
@@ -1966,6 +1984,47 @@ export class CoreCrypto {
             certificateChain,
             nbKeyPackage
         );
+    }
+
+    /**
+    * Registers a Root Trust Anchor CA for the use in E2EI processing.
+    *
+    * Please note that without a Root Trust Anchor, all validations *will* fail;
+    * So this is the first step to perform after initializing your E2EI client
+    *
+    * @param trustAnchorPEM - PEM certificate to anchor as a Trust Root
+    */
+    async e2eiRegisterAcmeCA(trustAnchorPEM: string): Promise<void> {
+        return await this.#cc.e2ei_register_acme_ca(trustAnchorPEM);
+    }
+
+
+    /**
+    * Registers an Intermediate CA for the use in E2EI processing.
+    *
+    * Please note that a Root Trust Anchor CA is needed to validate Intermediate CAs;
+    * You **need** to have a Root CA registered before calling this
+    *
+    * @param certPEM - PEM certificate to register as an Intermediate CA
+    */
+    async e2eiRegisterIntermediateCA(certPEM: string): Promise<void> {
+        return await this.#cc.e2ei_register_intermediate_ca(certPEM);
+    }
+
+
+    /**
+    * Registers a CRL for the use in E2EI processing.
+    *
+    * Please note that a Root Trust Anchor CA is needed to validate CRLs;
+    * You **need** to have a Root CA registered before calling this
+    *
+    * @param crlDP - CRL Distribution Point; Basically the URL you fetched it from
+    * @param crlDER - DER representation of the CRL
+    *
+    * @returns a {@link CRLRegistration} with the dirty state of the new CRL (see struct) and its expiration timestamp
+    */
+    async e2eiRegisterCRL(crlDP: string, crlDER: Uint8Array): Promise<CRLRegistration> {
+        return await this.#cc.e2ei_register_crl(crlDP, crlDER);
     }
 
     /**

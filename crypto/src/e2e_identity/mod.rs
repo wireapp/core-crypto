@@ -237,7 +237,7 @@ impl MlsCentral {
     /// * `crl_der` - DER representation of the CRL
     ///
     /// # Returns
-    /// The timestamp at which this CRL will expire
+    /// A [CrlRegistration] with the dirty state of the new CRL (see struct) and its expiration timestamp
     pub async fn e2ei_register_crl(&mut self, crl_dp: String, crl_der: Vec<u8>) -> CryptoResult<CrlRegistration> {
         let Some(pki_env) = self.e2ei_pki_env.as_ref() else {
             return Err(CryptoError::ConsumerError);
