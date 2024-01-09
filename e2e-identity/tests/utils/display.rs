@@ -59,12 +59,12 @@ impl TestDisplay {
         self.events.push(event);
     }
 
-    pub fn display_token(&mut self, label: &str, token: &str, alg: Option<JwsAlgorithm>, keypair: String) {
+    pub fn display_token(&mut self, label: &str, token: &str, alg: Option<JwsAlgorithm>, keypair: &str) {
         let event = Event::Token {
             label: label.to_string(),
             token: token.to_string(),
             alg,
-            pk: keypair,
+            pk: keypair.to_string(),
         };
         event.println();
         self.markdown.push(event.markdown());

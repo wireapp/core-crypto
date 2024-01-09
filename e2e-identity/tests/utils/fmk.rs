@@ -3,13 +3,14 @@ use std::collections::{hash_map::RandomState, HashMap};
 use asserhttp::*;
 use base64::Engine;
 use http::StatusCode;
+use itertools::Itertools;
 use jwt_simple::prelude::*;
 use oauth2::{ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};
 use openidconnect::{
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
-    IssuerUrl, Nonce, TokenResponse,
+    IssuerUrl, Nonce,
 };
-use serde_json::Value;
+use serde_json::{json, Value};
 use url::Url;
 use x509_cert::der::{DecodePem, Encode};
 
@@ -47,6 +48,11 @@ impl E2eTest<'static> {
             (f.new_order)(t, (directory.clone(), account.clone(), previous_nonce)).await?;
         let (t, (authz, previous_nonce)) = (f.new_authz)(t, (account.clone(), order, previous_nonce)).await?;
         let (t, (dpop_chall, oidc_chall)) = (f.extract_challenges)(t, authz.clone()).await?;
+
+        let thumbprint = JwkThumbprint::generate(&t.acme_jwk, t.hash_alg)?.kid;
+        let oidc_chall_token = &oidc_chall.token;
+        let keyauth = format!("{oidc_chall_token}.{thumbprint}");
+
         let (t, backend_nonce) = (f.get_wire_server_nonce)(t, ()).await?;
         let expiry = core::time::Duration::from_secs(3600);
         let handle = Handle::from(t.handle.as_str())
@@ -58,7 +64,7 @@ impl E2eTest<'static> {
         let (t, access_token) = (f.get_access_token)(t, (dpop_chall.clone(), client_dpop_token)).await?;
         let (t, previous_nonce) =
             (f.verify_dpop_challenge)(t, (account.clone(), dpop_chall, access_token, previous_nonce)).await?;
-        let (t, id_token) = (f.fetch_id_token)(t, oidc_chall.clone()).await?;
+        let (t, id_token) = (f.fetch_id_token)(t, (oidc_chall.clone(), keyauth)).await?;
         let (t, previous_nonce) =
             (f.verify_oidc_challenge)(t, (account.clone(), oidc_chall, id_token, previous_nonce)).await?;
         let (t, (order, previous_nonce)) =
@@ -297,7 +303,7 @@ impl<'a> E2eTest<'a> {
         let alg = self.alg;
         let client_kp = self.acme_kp.to_string();
         self.display_operation(Actor::WireClient, "create DPoP token");
-        self.display_token("Dpop token", &client_dpop_token, Some(alg), client_kp);
+        self.display_token("Dpop token", &client_dpop_token, Some(alg), &client_kp);
         Ok(client_dpop_token)
     }
 
@@ -347,7 +353,7 @@ impl<'a> E2eTest<'a> {
             .ok_or(TestError::Internal)?;
         let alg = self.alg;
         let backend_kp = self.backend_kp.to_string();
-        self.display_token("Access token", &access_token, Some(alg), backend_kp);
+        self.display_token("Access token", &access_token, Some(alg), &backend_kp);
         Ok(access_token)
     }
 
@@ -414,21 +420,13 @@ impl<'a> E2eTest<'a> {
         self.display_step("validate oidc challenge (userId + displayName)");
 
         let oidc_chall_url = oidc_chall.url.clone();
-        let dex_pk = self.fetch_dex_public_key().await;
-        self.display_token("Id token", &id_token, None, dex_pk);
+        let dex_pk = self.fetch_idp_public_key().await;
+        self.display_token("OIDC Id token", &id_token, None, &dex_pk);
 
         self.display_note("The ACME provisioner is configured with rules for transforming values received in the token into a Wire handle and display name.");
 
-        let oidc_chall_req = RustyAcme::oidc_chall_request(
-            id_token,
-            oidc_chall,
-            account,
-            self.alg,
-            self.hash_alg,
-            &self.acme_kp,
-            &self.acme_jwk,
-            previous_nonce,
-        )?;
+        let oidc_chall_req =
+            RustyAcme::oidc_chall_request(id_token, oidc_chall, account, self.alg, &self.acme_kp, previous_nonce)?;
         let req = self.client.acme_req(&oidc_chall_url, &oidc_chall_req)?;
         self.display_req(
             Actor::WireClient,
@@ -440,6 +438,7 @@ impl<'a> E2eTest<'a> {
 
         self.display_step("OIDC challenge is valid");
         let mut resp = self.client.execute(req).await?;
+
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();
 
@@ -458,16 +457,16 @@ impl<'a> E2eTest<'a> {
         Ok(previous_nonce)
     }
 
-    pub async fn fetch_id_token(&mut self, oidc_chall: &AcmeChallenge) -> TestResult<String> {
+    pub async fn fetch_id_token(&mut self, oidc_chall: &AcmeChallenge, keyauth: String) -> TestResult<String> {
         match self.oidc_provider {
-            OidcProvider::Dex => self.fetch_id_token_from_dex(oidc_chall).await,
+            OidcProvider::Dex => self.fetch_id_token_from_dex(oidc_chall, keyauth).await,
+            OidcProvider::Keycloak => self.fetch_id_token_from_keycloak(oidc_chall, keyauth).await,
             OidcProvider::Google => self.fetch_id_token_from_google().await,
         }
     }
 
-    pub async fn fetch_id_token_from_dex(&mut self, oidc_chall: &AcmeChallenge) -> TestResult<String> {
+    pub async fn fetch_id_token_from_dex(&mut self, oidc_chall: &AcmeChallenge, keyauth: String) -> TestResult<String> {
         self.display_chapter("Authenticate end user using OIDC Authorization Code with PKCE flow");
-        // let issuer_url = IssuerUrl::new(self.oauth_cfg.issuer_uri.clone()).unwrap();
         let issuer_url = IssuerUrl::new(oidc_chall.target.as_ref().unwrap().to_string()).unwrap();
         let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), move |r| {
             custom_oauth_client("discovery", ctx_get_http_client(), r)
@@ -501,29 +500,26 @@ impl<'a> E2eTest<'a> {
         let authz_req = self.client.get(authz_url.as_str()).build().unwrap();
         self.display_req(Actor::WireClient, Actor::IdentityProvider, Some(&authz_req), None);
 
-        // self.display_step("Authorization Server redirects to login prompt");
+        // Authorization Server redirects to login prompt
         let resp = self.client.execute(authz_req).await.unwrap();
         let html = resp.text().await.unwrap();
         self.display_resp(Actor::IdentityProvider, Actor::WireClient, None);
-        // self.display_str(&html, false);
         let action = scrap_login(html.to_string());
 
         // client signs in
-        let authz_server_uri = self.authorization_server_uri();
+        let authz_server_uri = self.dex_authorization_server_uri();
         let form_uri = Url::parse(&format!("{authz_server_uri}{action}")).unwrap();
         let form_body = HashMap::<&str, String, RandomState>::from_iter(vec![
             ("login", self.ldap_cfg.email.clone()),
             ("password", self.ldap_cfg.password.clone()),
         ]);
 
-        // self.display_step("Client submits login form");
+        // Client submits login form
         let login_form_req = self.client.post(form_uri).form(&form_body).build().unwrap();
-        // self.display_req(Actor::WireClient, Actor::OidcProvider, Some(&login_form_req), None);
-        // self.display_str(Self::req_body_str(&login_form_req)?.unwrap(), false);
         let resp = self.client.execute(login_form_req).await.unwrap();
 
         // and gets an approval form which he fills
-        // self.display_step("Authorization Server presents consent form to client");
+        // Authorization Server presents consent form to client
         let hmac = resp
             .url()
             .query_pairs()
@@ -532,18 +528,14 @@ impl<'a> E2eTest<'a> {
                 _ => None,
             })
             .unwrap();
-        // self.display_resp(Actor::OidcProvider, Actor::WireClient, Some(&resp));
         let html = resp.text().await.unwrap();
-        // self.display_str(&html, false);
         let code = scrap_grant(html);
 
-        // self.display_step("Client submits consent form");
+        // Client submits consent form
         let form_uri = Url::parse(&format!("{authz_server_uri}/dex/approval?req={code}&hmac={hmac}")).unwrap();
         let form_body =
             HashMap::<&str, &str, RandomState>::from_iter(vec![("req", code.as_str()), ("approval", "approve")]);
         let consent_req = self.client.post(form_uri).form(&form_body).build().unwrap();
-        // self.display_req(Actor::WireClient, Actor::OidcProvider, Some(&consent_req), None);
-        // self.display_str(Self::req_body_str(&consent_req)?.unwrap(), false);
 
         self.display_step("OAUTH authorization code");
         let resp = self.client.execute(consent_req).await.unwrap();
@@ -553,12 +545,13 @@ impl<'a> E2eTest<'a> {
         self.display_operation(Actor::WireClient, "OAUTH authorization code");
 
         self.display_step("OAUTH authorization code + verifier (token endpoint)");
-        let id_token = client
+        let oauth_token_response = client
             .exchange_code(openidconnect::AuthorizationCode::new(authz_code))
+            .add_extra_param("keyauth", keyauth)
             .set_pkce_verifier(pkce_verifier)
             .request_async(move |r| custom_oauth_client("exchange-code", ctx_get_http_client(), r))
-            .await
-            .unwrap();
+            .await;
+        let oauth_token_response = oauth_token_response.unwrap();
         let exchange_code_req = ctx_get_request("exchange-code");
         self.display_req(
             Actor::WireClient,
@@ -568,10 +561,9 @@ impl<'a> E2eTest<'a> {
         );
         self.display_str(Self::req_body_str(&exchange_code_req)?.unwrap(), false);
 
-        // self.display_step("Authorization server validates Verifier & Challenge Codes");
-        // self.display_operation(Actor::OidcProvider, "verify verifier & challenge codes");
-        // self.display_str(&cv_cc_msg, false);
+        // Authorization server validates Verifier & Challenge Codes
 
+        // Get OAuth access token
         self.display_step("OAUTH access token");
         let exchange_code_resp = ctx_get_resp("exchange-code", false);
         self.display_resp(Actor::IdentityProvider, Actor::WireClient, None);
@@ -579,8 +571,139 @@ impl<'a> E2eTest<'a> {
         let exchange_code_resp = serde_json::to_string_pretty(&exchange_code_resp).unwrap();
         self.display_str(&exchange_code_resp, false);
 
-        let id_token = id_token.id_token().unwrap().to_string();
-        self.display_str(&id_token, false);
+        use oauth2::TokenResponse as _;
+        let dex_pk = self.fetch_idp_public_key().await;
+        let access_token = oauth_token_response.access_token().secret();
+        self.display_token("OAuth Access token", access_token, None, &dex_pk);
+
+        if let Some(refresh_token) = oauth_token_response.refresh_token() {
+            self.display_token("OAuth Refresh token", refresh_token.secret(), None, &dex_pk);
+        }
+
+        use openidconnect::TokenResponse as _;
+        let id_token = oauth_token_response.id_token().unwrap().to_string();
+        Ok(id_token)
+    }
+
+    pub async fn fetch_id_token_from_keycloak(
+        &mut self,
+        oidc_chall: &AcmeChallenge,
+        keyauth: String,
+    ) -> TestResult<String> {
+        self.display_chapter("Authenticate end user using OIDC Authorization Code with PKCE flow");
+        let oidc_target = oidc_chall.target.as_ref().unwrap().to_string();
+        let issuer_url = IssuerUrl::new(oidc_target).unwrap();
+        let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), move |r| {
+            custom_oauth_client("discovery", ctx_get_http_client(), r)
+        })
+        .await
+        .unwrap();
+
+        let client_id = openidconnect::ClientId::new(self.oauth_cfg.client_id.clone());
+        let redirect_url = RedirectUrl::new(self.oauth_cfg.redirect_uri.clone()).unwrap();
+        let client =
+            CoreClient::from_provider_metadata(provider_metadata, client_id, None).set_redirect_uri(redirect_url);
+
+        self.display_step("OAUTH authorization request");
+        self.display_operation(Actor::WireClient, "OAUTH authorization request");
+        let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
+        let (code_verifier, code_challenge) = (pkce_verifier.secret(), pkce_challenge.as_str());
+        let cv_cc_msg = format!("code_verifier={code_verifier}&code_challenge={code_challenge}");
+        self.display_str(&cv_cc_msg, false);
+
+        // A variant of https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter
+        let extra = json!({
+            "id_token":{
+                "keyauth": { "essential": true, "value": keyauth },
+            }
+        })
+        .to_string();
+
+        let (authz_url, ..) = client
+            .authorize_url(
+                CoreAuthenticationFlow::AuthorizationCode,
+                CsrfToken::new_random,
+                Nonce::new_random,
+            )
+            .add_scope(Scope::new("profile".to_string()))
+            .add_extra_param("claims", extra)
+            .set_pkce_challenge(pkce_challenge)
+            .url();
+
+        self.display_step("OAUTH authorization request (auth code endpoint)");
+        let authz_req = self.client.get(authz_url.as_str()).build().unwrap();
+        self.display_req(Actor::WireClient, Actor::IdentityProvider, Some(&authz_req), None);
+
+        // Authorization Server redirects to login prompt
+        let resp = self.client.execute(authz_req).await.unwrap();
+
+        let cookies = resp.cookies().map(|c| format!("{}={}", c.name(), c.value())).join("; ");
+
+        let html = resp.text().await.unwrap();
+        self.display_resp(Actor::IdentityProvider, Actor::WireClient, None);
+        let action = scrap_login(html);
+
+        // client signs in
+        let mut form_uri = Url::parse(&action).unwrap();
+        form_uri.set_host(Some("127.0.0.1")).unwrap();
+        let form_body = HashMap::<&str, String, RandomState>::from_iter(vec![
+            ("username", self.keycloak_cfg.username.clone()),
+            ("password", self.keycloak_cfg.password.clone()),
+            ("credentialId", "".to_string()),
+        ]);
+
+        // Client submits login form
+        let login_form_req = self
+            .client
+            .post(form_uri)
+            .form(&form_body)
+            .header(http::header::COOKIE, cookies)
+            .build()
+            .unwrap();
+        let resp = self.client.execute(login_form_req).await.unwrap();
+        let authz_code = resp.text().await.unwrap();
+
+        self.display_step("OAUTH authorization code + verifier (token endpoint)");
+        let token_request = client
+            .exchange_code(openidconnect::AuthorizationCode::new(authz_code))
+            // .add_extra_param("toto", "toto")
+            .set_pkce_verifier(pkce_verifier);
+
+        let oauth_token_response = token_request
+            .request_async(move |r| custom_oauth_client("exchange-code", ctx_get_http_client(), r))
+            .await;
+
+        let oauth_token_response = oauth_token_response.unwrap();
+        let exchange_code_req = ctx_get_request("exchange-code");
+        self.display_req(
+            Actor::WireClient,
+            Actor::IdentityProvider,
+            Some(&exchange_code_req),
+            None,
+        );
+        self.display_str(Self::req_body_str(&exchange_code_req)?.unwrap(), false);
+
+        // Authorization server validates Verifier & Challenge Codes
+
+        // Get OAuth access token
+        self.display_step("OAUTH access token");
+        let exchange_code_resp = ctx_get_resp("exchange-code", false);
+        self.display_resp(Actor::IdentityProvider, Actor::WireClient, None);
+        let exchange_code_resp = serde_json::from_str::<Value>(&exchange_code_resp).unwrap();
+        let exchange_code_resp = serde_json::to_string_pretty(&exchange_code_resp).unwrap();
+        self.display_str(&exchange_code_resp, false);
+
+        use oauth2::TokenResponse as _;
+        let dex_pk = self.fetch_idp_public_key().await;
+        let access_token = oauth_token_response.access_token().secret();
+        self.display_token("OAuth Access token", access_token, None, &dex_pk);
+
+        if let Some(refresh_token) = oauth_token_response.refresh_token() {
+            self.display_token("OAuth Refresh token", refresh_token.secret(), None, &dex_pk);
+        }
+
+        use openidconnect::TokenResponse as _;
+        let id_token = oauth_token_response.id_token().unwrap().to_string();
 
         Ok(id_token)
     }
@@ -752,7 +875,7 @@ impl<'a> E2eTest<'a> {
 }
 
 impl E2eTest<'_> {
-    pub async fn fetch_dex_public_key(&self) -> String {
+    pub async fn fetch_idp_public_key(&self) -> String {
         let jwks_uri = self.oidc_cfg.as_ref().unwrap().jwks_uri.clone();
         let jwks_req = self.client.get(jwks_uri);
         let jwks = jwks_req.send().await.unwrap().json::<Value>().await.unwrap();
@@ -795,7 +918,7 @@ impl E2eTest<'_> {
         let stub = serde_json::json!({
             "request": {
                 "method": "GET",
-                "urlPath": "/oauth2/jwks"
+                "urlPath": "/realms/master/protocol/openid-connect/certs"
             },
             "response": {
                 "jsonBody": {

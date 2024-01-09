@@ -5,6 +5,7 @@ use error::*;
 use prelude::*;
 use rusty_acme::prelude::{AcmeChallenge, AcmeChallengeType};
 use rusty_jwt_tools::jwk::TryIntoJwk;
+use rusty_jwt_tools::jwk_thumbprint::JwkThumbprint;
 use rusty_jwt_tools::prelude::{ClientId, Dpop, Handle, Htm, Pem, RustyJwtTools};
 
 #[cfg(feature = "identity-builder")]
@@ -33,8 +34,8 @@ pub type Json = serde_json::Value;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct RustyE2eIdentity {
-    sign_alg: JwsAlgorithm,
-    sign_kp: Pem,
+    pub sign_alg: JwsAlgorithm,
+    pub sign_kp: Pem,
     pub hash_alg: HashAlgorithm,
     acme_kp: Pem,
     pub acme_jwk: Jwk,
@@ -214,16 +215,21 @@ impl RustyE2eIdentity {
         let wire_dpop_challenge = new_authz
             .take_challenge(AcmeChallengeType::WireDpop01)
             .map(TryInto::try_into)
-            .transpose()?;
+            .transpose()?
+            .ok_or(RustyAcmeError::SmallstepImplementationError("Missing DPoP challenge"))?;
         let wire_oidc_challenge = new_authz
             .take_challenge(AcmeChallengeType::WireOidc01)
-            .map(TryInto::try_into)
-            .transpose()?;
+            .ok_or(RustyAcmeError::SmallstepImplementationError("Missing OIDC challenge"))?;
+
+        let thumbprint = JwkThumbprint::generate(&self.acme_jwk, self.hash_alg)?.kid;
+        let oidc_chall_token = &wire_oidc_challenge.token;
+        let keyauth = format!("{oidc_chall_token}.{thumbprint}");
 
         Ok(E2eiNewAcmeAuthz {
             identifier,
+            keyauth,
             wire_dpop_challenge,
-            wire_oidc_challenge,
+            wire_oidc_challenge: wire_oidc_challenge.try_into()?,
         })
     }
 
@@ -326,9 +332,7 @@ impl RustyE2eIdentity {
             oidc_chall,
             &account,
             self.sign_alg,
-            self.hash_alg,
             &self.acme_kp,
-            &self.acme_jwk,
             previous_nonce,
         )?;
         Ok(serde_json::to_value(new_challenge_req)?)

@@ -1,7 +1,8 @@
-use std::{collections::HashMap, net::SocketAddr, path::PathBuf};
+use std::{collections::HashMap, net::SocketAddr};
+
+use testcontainers::{clients::Cli, core::WaitFor, Container, Image, RunnableImage};
 
 use crate::utils::docker::{ldap::LdapCfg, rand_str, SHM};
-use testcontainers::{clients::Cli, core::WaitFor, Container, Image, RunnableImage};
 
 pub struct DexServer<'a> {
     pub uri: String,
@@ -13,7 +14,6 @@ pub struct DexServer<'a> {
 pub struct DexImage {
     pub volumes: HashMap<String, String>,
     pub env_vars: HashMap<String, String>,
-    pub cfg_file: PathBuf,
 }
 
 impl DexImage {
@@ -51,7 +51,6 @@ impl DexImage {
         Self {
             volumes: HashMap::from_iter(vec![(host_vol_str, "/etc/dex/config.docker.yaml".to_string())]),
             env_vars: HashMap::new(),
-            cfg_file: host_cfg_file,
         }
     }
 }

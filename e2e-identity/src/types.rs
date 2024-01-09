@@ -37,10 +37,9 @@ pub struct E2eiNewAcmeOrder {
 #[serde(rename_all = "camelCase")]
 pub struct E2eiNewAcmeAuthz {
     pub identifier: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub wire_dpop_challenge: Option<E2eiAcmeChall>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub wire_oidc_challenge: Option<E2eiAcmeChall>,
+    pub keyauth: String,
+    pub wire_dpop_challenge: E2eiAcmeChall,
+    pub wire_oidc_challenge: E2eiAcmeChall,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

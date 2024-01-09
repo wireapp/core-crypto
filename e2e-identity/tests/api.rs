@@ -144,12 +144,7 @@ fn e2e_api() {
         };
 
         // extract challenges
-        let (dpop_chall, oidc_chall) = {
-            (
-                authz.wire_dpop_challenge.clone().unwrap(),
-                authz.wire_oidc_challenge.clone().unwrap(),
-            )
-        };
+        let (dpop_chall, oidc_chall) = { (authz.wire_dpop_challenge.clone(), authz.wire_oidc_challenge.clone()) };
 
         // HEAD http://wire-server/nonce
         let backend_nonce = { BackendNonce::from(utils::rand_base64_str(32)) };
