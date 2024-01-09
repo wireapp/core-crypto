@@ -151,6 +151,46 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
     }
 
     /**
+    * Registers a Root Trust Anchor CA for the use in E2EI processing.
+    *
+    * Please note that without a Root Trust Anchor, all validations *will* fail;
+    * So this is the first step to perform after initializing your E2EI client
+    *
+    * @param trustAnchorPEM - PEM certificate to anchor as a Trust Root
+    */
+    suspend fun e2eiRegisterAcmeCA(trustAnchorPEM: String) {
+        return cc.e2eiRegisterAcmeCa(trustAnchorPEM)
+    }
+
+
+    /**
+    * Registers an Intermediate CA for the use in E2EI processing.
+    *
+    * Please note that a Root Trust Anchor CA is needed to validate Intermediate CAs;
+    * You **need** to have a Root CA registered before calling this
+    *
+    * @param certPEM PEM certificate to register as an Intermediate CA
+    */
+    suspend fun e2eiRegisterIntermediateCA(certPEM: String) {
+        return cc.e2eiRegisterIntermediateCa(certPEM)
+    }
+
+
+    /**
+    * Registers a CRL for the use in E2EI processing.
+    *
+    * Please note that a Root Trust Anchor CA is needed to validate CRLs;
+    * You **need** to have a Root CA registered before calling this
+    *
+    * @param crlDP CRL Distribution Point; Basically the URL you fetched it from
+    * @param crlDER DER representation of the CRL
+    * @return A [CrlRegistration] with the dirty state of the new CRL (see struct) and its expiration timestamp
+    */
+    suspend fun e2eiRegisterCRL(crlDP: String, crlDER: ByteArray): CRLRegistration {
+        return cc.e2eiRegisterCrl(crlDP, crlDER).lift()
+    }
+
+    /**
      * Creates a commit in all local conversations for changing the credential. Requires first having enrolled a new X509
      * certificate with either [e2eiNewActivationEnrollment] or []e2eiNewRotateEnrollment]
      *

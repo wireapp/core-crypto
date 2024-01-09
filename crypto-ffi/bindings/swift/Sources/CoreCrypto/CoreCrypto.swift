@@ -35,6 +35,12 @@ extension CoreCryptoSwift.RotateBundle {
     }
 }
 
+extension CoreCryptoSwift.CrlRegistration {
+    func convertTo() -> CRLRegistration {
+        return CRLRegistration(dirty: self.dirty, expiration: self.expiration)
+    }
+}
+
 extension CoreCryptoSwift.MemberAddedMessages {
     func convertTo() -> MemberAddedMessages {
         return MemberAddedMessages(commit: self.commit, welcome: self.welcome, groupInfo: self.groupInfo.convertTo())
@@ -592,6 +598,24 @@ public struct RotateBundle: ConvertToInner {
 
     func convert() -> Inner {
         return CoreCryptoSwift.RotateBundle(commits: self.commits, newKeyPackages: self.newKeyPackages, keyPackageRefsToRemove: self.keyPackageRefsToRemove)
+    }
+}
+
+/// Supporting struct for CRL registration result
+public struct CRLRegistration: ConvertToInner {
+    /// Whether this CRL modifies the old CRL (i.e. has a different revocated cert list)
+    public var dirty: Bool
+    /// Optional expiration timestamp
+    public var expiration: UInt64?
+
+    public init(dirty: Bool, expiration: UInt64?) {
+        self.dirty = dirty
+        self.expiration = expiration
+    }
+    typealias Inner = CoreCryptoSwift.CrlRegistration
+
+    func convert() -> Inner {
+        return CoreCryptoSwift.CrlRegistration(dirty: self.dirty, expiration: self.expiration)
     }
 }
 
@@ -1159,6 +1183,39 @@ public class CoreCryptoWrapper {
     public func e2eiMlsInitOnly(enrollment: E2eiEnrollment, certificateChain: String, nbKeyPackage: UInt32 = 100) async throws {
         return try await self.coreCrypto.e2eiMlsInitOnly(enrollment: enrollment.lower(), certificateChain: certificateChain, nbKeyPackage: nbKeyPackage)
     }
+
+    /// Registers a Root Trust Anchor CA for the use in E2EI processing.
+    ///
+    /// Please note that without a Root Trust Anchor, all validations *will* fail;
+    /// So this is the first step to perform after initializing your E2EI client
+    ///
+    /// - parameter trustAnchorPEM: PEM certificate to anchor as a Trust Root
+    public func e2eiRegisterAcmeCA(trustAnchorPEM: String) async throws {
+        return try await self.coreCrypto.e2eiRegisterAcmeCa(trustAnchorPem: trustAnchorPEM)
+    }
+
+    /// Registers an Intermediate CA for the use in E2EI processing.
+    ///
+    /// Please note that a Root Trust Anchor CA is needed to validate Intermediate CAs;
+    /// You **need** to have a Root CA registered before calling this
+    ///
+    /// - parameter cert_pem: PEM certificate to register as an Intermediate CA
+    public func e2eiRegisterIntermediateCA(certPEM: String) async throws {
+        return try await self.coreCrypto.e2eiRegisterIntermediateCa(certPem: certPEM)
+    }
+
+    /// Registers a CRL for the use in E2EI processing.
+    ///
+    /// Please note that a Root Trust Anchor CA is needed to validate CRLs;
+    /// You **need** to have a Root CA registered before calling this
+    ///
+    /// - parameter: crlDP: CRL Distribution Point; Basically the URL you fetched it from
+    /// - parameter crlDER: DER representation of the CRL
+    /// - returns: A [CrlRegistration] with the dirty state of the new CRL (see struct) and its expiration timestamp
+    public func e2eiRegisterCRL(crlDP: String, crlDER: [UInt8]) async throws -> CRLRegistration {
+        return try await self.coreCrypto.e2eiRegisterCrl(crlDp: crlDP, crlDer: crlDER).convertTo()
+    }
+
 
     /// Creates a commit in all local conversations for changing the credential. Requires first having enrolled a new
     /// X509 certificate with either ``CoreCrypto/e2eiNewActivationEnrollment`` or ``CoreCrypto/e2eiNewRotateEnrollment``
