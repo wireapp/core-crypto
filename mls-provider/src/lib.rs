@@ -20,10 +20,14 @@ pub use core_crypto_keystore::Connection as CryptoKeystore;
 
 mod crypto_provider;
 mod error;
+mod pki;
 
 pub use error::{MlsProviderError, MlsProviderResult};
 
 pub use crypto_provider::RustCrypto;
+
+pub use pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
+
 pub mod reexports {
     pub use rand_core;
 }

@@ -105,11 +105,6 @@ wire-e2e-identity = { version = "0.8", features = ["identity-builder"] }
 fluvio-wasm-timer = "0.2"
 time = { version = "0.3", features = ["wasm-bindgen"] }
 
-[dev-dependencies.rcgen]
-git = "https://github.com/wireapp/rcgen"
-tag = "v1.2.2-pre.core-crypto-0.7.0"
-version = "=0.9.2"
-
 [dev-dependencies.core-crypto-keystore]
 version = "^1.0.0-rc.31"
 path = "../keystore"
