@@ -46,6 +46,7 @@ impl CaCfg {
                     "type": "ACME",
                     "name": provisioner,
                     "forceCN": true,
+                    "challenges": ["wire-oidc-01", "wire-dpop-01"],
                     "claims": {
                         "disableRenewal": false,
                         "allowRenewalAfterExpiry": false,
