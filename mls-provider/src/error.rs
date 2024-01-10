@@ -24,6 +24,12 @@ pub enum MlsProviderError {
     RngLockPoison,
     #[error("Unable to collect enough randomness.")]
     UnsufficientEntropy,
+    #[error("An error occured while generating a X509 certificate")]
+    CertificateGenerationError,
+    #[error("This ciphersuite isn't supported as of now")]
+    UnsupportedSignatureScheme,
+    #[error(transparent)]
+    SignatureError(#[from] signature::Error),
     #[error("{0}")]
     StringError(String),
 }
@@ -48,8 +54,7 @@ impl Clone for MlsProviderError {
 impl PartialEq for MlsProviderError {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (MlsProviderError::KeystoreError(_), MlsProviderError::KeystoreError(_)) => todo!(),
-            (MlsProviderError::KeystoreError(_), _) => false,
+            // (MlsProviderError::KeystoreError(kse), MlsProviderError::KeystoreError(kse2)) => kse == kse2,
             (
                 MlsProviderError::EntropySeedLengthError { expected, actual },
                 MlsProviderError::EntropySeedLengthError {
@@ -57,13 +62,12 @@ impl PartialEq for MlsProviderError {
                     actual: actual2,
                 },
             ) => expected == expected2 && actual == actual2,
-            (MlsProviderError::EntropySeedLengthError { .. }, _) => false,
             (MlsProviderError::StringError(s), MlsProviderError::StringError(s2)) => s == s2,
-            (MlsProviderError::StringError(_), _) => false,
             (MlsProviderError::RngLockPoison, MlsProviderError::RngLockPoison) => true,
-            (MlsProviderError::RngLockPoison, _) => false,
             (MlsProviderError::UnsufficientEntropy, MlsProviderError::UnsufficientEntropy) => true,
-            (MlsProviderError::UnsufficientEntropy, _) => false,
+            (MlsProviderError::CertificateGenerationError, MlsProviderError::CertificateGenerationError) => true,
+            (MlsProviderError::UnsupportedSignatureScheme, MlsProviderError::UnsupportedSignatureScheme) => true,
+            _ => false,
         }
     }
 }

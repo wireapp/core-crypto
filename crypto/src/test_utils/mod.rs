@@ -22,6 +22,7 @@ use std::collections::HashMap;
 
 use crate::{
     prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration},
+    test_utils::x509::{CertificateParams, X509TestChain, X509TestChainArgs},
     CoreCryptoCallbacks,
 };
 
@@ -66,51 +67,109 @@ pub async fn run_test_with_deterministic_client_ids<const N: usize>(
 ) {
     run_tests(move |paths: [String; N]| {
         Box::pin(async move {
-            let stream = paths.into_iter().enumerate().map(|(i, p)| async move {
-                let configuration = MlsCentralConfiguration::try_new(
-                    p,
-                    "test".into(),
-                    None,
-                    vec![case.cfg.ciphersuite],
-                    None,
-                    Some(INITIAL_KEYING_MATERIAL_COUNT),
-                )
-                .unwrap();
-                let mut central = MlsCentral::try_new(configuration).await.unwrap();
+            let x509_test_chain = std::sync::Arc::new(case.is_x509().then(|| {
+                X509TestChain::init(X509TestChainArgs {
+                    local_params: CertificateParams::default(),
+                    signature_scheme: case.signature_scheme(),
+                    federated_test_chains: &[],
+                    revoked_certs: &[],
+                    local_actors: client_ids
+                        .iter()
+                        .map(|[client_id, _, display_name]| (display_name.to_string(), client_id.to_string()))
+                        .collect(),
+                })
+            }));
 
-                let identity = match case.credential_type {
-                    MlsCredentialType::Basic => {
-                        let client_id: ClientId = WireQualifiedClientId::generate().into();
-                        ClientIdentifier::Basic(client_id)
-                    }
-                    MlsCredentialType::X509 => {
-                        let sc = case.cfg.ciphersuite.signature_algorithm();
-                        let [client_id, handle, display_name] = client_ids[i];
+            let path_x509_chains: Vec<std::sync::Arc<Option<X509TestChain>>> =
+                (0..paths.len()).map(|_| x509_test_chain.clone()).collect();
 
-                        let cert = match (client_id, handle, display_name) {
-                            ("", "", "") => {
-                                let client_id = QualifiedE2eiClientId::generate();
-                                crate::prelude::CertificateBundle::rand(&client_id, sc)
-                            }
-                            _ => {
-                                let client_id = QualifiedE2eiClientId::from_str_unchecked(client_id);
-                                crate::prelude::CertificateBundle::new(sc, handle, display_name, Some(&client_id), None)
-                            }
-                        };
-                        ClientIdentifier::X509(HashMap::from([(sc, cert)]))
-                    }
-                };
-                central
-                    .mls_init(
-                        identity,
+            let stream = paths.into_iter().enumerate().zip(path_x509_chains.into_iter()).map(
+                |((i, p), x509_test_chain)| async move {
+                    let configuration = MlsCentralConfiguration::try_new(
+                        p,
+                        "test".into(),
+                        None,
                         vec![case.cfg.ciphersuite],
+                        None,
                         Some(INITIAL_KEYING_MATERIAL_COUNT),
                     )
-                    .await
                     .unwrap();
-                central.callbacks(Box::<ValidationCallbacks>::default());
-                central
-            });
+                    let mut central = MlsCentral::try_new(configuration).await.unwrap();
+
+                    // Setup the X509 PKI environment
+                    if let Some(x509_test_chain) = x509_test_chain.as_ref() {
+                        use x509_cert::der::{Encode as _, EncodePem as _};
+                        central
+                            .e2ei_register_acme_ca(
+                                x509_test_chain
+                                    .trust_anchor
+                                    .certificate
+                                    .to_pem(x509_cert::der::pem::LineEnding::LF)
+                                    .unwrap(),
+                            )
+                            .await
+                            .unwrap();
+
+                        for intermediate in &x509_test_chain.intermediates {
+                            central
+                                .e2ei_register_intermediate_ca(
+                                    intermediate
+                                        .certificate
+                                        .to_pem(x509_cert::der::pem::LineEnding::LF)
+                                        .unwrap(),
+                                )
+                                .await
+                                .unwrap();
+                        }
+
+                        for (crl_dp, crl) in &x509_test_chain.crls {
+                            central
+                                .e2ei_register_crl(crl_dp.clone(), crl.to_der().unwrap())
+                                .await
+                                .unwrap();
+                        }
+                    }
+
+                    let identity = match case.credential_type {
+                        MlsCredentialType::Basic => {
+                            let client_id: ClientId = WireQualifiedClientId::generate().into();
+                            ClientIdentifier::Basic(client_id)
+                        }
+                        MlsCredentialType::X509 => {
+                            let sc = case.cfg.ciphersuite.signature_algorithm();
+                            let [client_id, handle, display_name] = client_ids[i];
+
+                            let cert = match (client_id, handle, display_name) {
+                                ("", "", "") => {
+                                    let client_id = QualifiedE2eiClientId::generate();
+                                    crate::prelude::CertificateBundle::rand(&client_id, sc)
+                                }
+                                _ => {
+                                    let client_id = QualifiedE2eiClientId::from_str_unchecked(client_id);
+                                    crate::prelude::CertificateBundle::new(
+                                        sc,
+                                        handle,
+                                        display_name,
+                                        Some(&client_id),
+                                        None,
+                                    )
+                                }
+                            };
+                            ClientIdentifier::X509(HashMap::from([(sc, cert)]))
+                        }
+                    };
+                    central
+                        .mls_init(
+                            identity,
+                            vec![case.cfg.ciphersuite],
+                            Some(INITIAL_KEYING_MATERIAL_COUNT),
+                        )
+                        .await
+                        .unwrap();
+                    central.callbacks(Box::<ValidationCallbacks>::default());
+                    central
+                },
+            );
             let centrals: [MlsCentral; N] = futures_util::future::join_all(stream).await.try_into().unwrap();
             test(centrals).await;
         })
