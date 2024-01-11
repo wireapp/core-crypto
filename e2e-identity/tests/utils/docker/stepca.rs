@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 use std::{collections::HashMap, path::PathBuf};
+use base64::prelude::*;
 
 use serde_json::json;
 use testcontainers::{clients::Cli, core::WaitFor, Container, Image, RunnableImage};
@@ -39,6 +40,8 @@ impl CaCfg {
         } = self;
         let dpop_target_uri = dpop_target_uri.as_ref().unwrap();
         let x509 = template.clone();
+        let b64_sign_key = BASE64_STANDARD.encode(sign_key);
+
         // TODO: remove RS256 when EcDSA & EdDSA are supported in Dex
         json!({
             "provisioners": [
@@ -82,7 +85,7 @@ impl CaCfg {
                                 }
                             },
                             "dpop": {
-                                "key": sign_key,
+                                "key": b64_sign_key,
                                 "target": dpop_target_uri
                             }
                         }
