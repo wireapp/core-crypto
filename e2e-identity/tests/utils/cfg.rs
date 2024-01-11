@@ -296,7 +296,7 @@ impl<'a> E2eTest<'a> {
         }
 
         // start ACME server
-        let template = r#"{{.DeviceId}}"#;
+        let template = r#"{{.DeviceID}}"#;
         let dpop_target_uri = format!("{wire_server_uri}/clients/{template}/access-token");
         self.ca_cfg.dpop_target_uri = Some(dpop_target_uri);
         // Acme server
