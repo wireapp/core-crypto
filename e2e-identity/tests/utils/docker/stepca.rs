@@ -55,35 +55,36 @@ impl CaCfg {
                         "defaultTLSCertDuration": "87600h"
                     },
                     "options": {
-                        "oidc": {
-                            "provider": {
-                                "issuer": issuer,
-                                "authorization_endpoint": "https://authorization_endpoint.com",
-                                "token_endpoint": "https://token_endpoint.com",
-                                "jwks_uri": jwks_uri,
-                                "userinfo_endpoint": "https://userinfo_endpoint.com",
-                                "id_token_signing_alg_values_supported": [
-                                    "RS256",
-                                    "ES256",
-                                    "ES384",
-                                    "EdDSA"
-                                ]
-                            },
-                            "config": {
-                                "client-id": audience,
-                                "support-signing-algs": [
-                                    "RS256",
-                                    "ES256",
-                                    "ES384",
-                                    "EdDSA"
-                                ]
-                            }
-                        },
                         "x509": x509,
-                        "dpop": {
-                            "key": sign_key,
-                            "dpop-target": dpop_target_uri,
-                            "validation-exec-path": "/usr/local/bin/rusty-jwt-cli"
+                        "wire": {
+                            "oidc": {
+                                "provider": {
+                                    "issuer": issuer,
+                                    "authorization_endpoint": "https://authorization_endpoint.com",
+                                    "token_endpoint": "https://token_endpoint.com",
+                                    "jwks_uri": jwks_uri,
+                                    "userinfo_endpoint": "https://userinfo_endpoint.com",
+                                    "id_token_signing_alg_values_supported": [
+                                        "RS256",
+                                        "ES256",
+                                        "ES384",
+                                        "EdDSA"
+                                    ]
+                                },
+                                "config": {
+                                    "client-id": audience,
+                                    "support-signing-algs": [
+                                        "RS256",
+                                        "ES256",
+                                        "ES384",
+                                        "EdDSA"
+                                    ]
+                                }
+                            },
+                            "dpop": {
+                                "key": sign_key,
+                                "dpop-target": dpop_target_uri
+                            }
                         }
                     }
                 }
