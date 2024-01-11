@@ -72,8 +72,8 @@ impl CaCfg {
                                     ]
                                 },
                                 "config": {
-                                    "client-id": audience,
-                                    "support-signing-algs": [
+                                    "client_id": audience,
+                                    "supported_signing_algs": [
                                         "RS256",
                                         "ES256",
                                         "ES384",
@@ -83,7 +83,7 @@ impl CaCfg {
                             },
                             "dpop": {
                                 "key": sign_key,
-                                "dpop-target": dpop_target_uri
+                                "target": dpop_target_uri
                             }
                         }
                     }
