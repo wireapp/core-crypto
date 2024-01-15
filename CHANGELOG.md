@@ -7,6 +7,19 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.25] - 2024-01-15
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- E2ei keystore method 'find_all' was unimplemented on WASM for intermediate CAs & CRLs
+
+</details>
+
+* fix(e2ei): e2ei keystore method 'find_all' was unimplemented on WASM for intermediate CAs & CRLs
+
 ## [1.0.0-rc.24] - 2024-01-15
 
 <details>
