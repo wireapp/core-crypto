@@ -7,6 +7,26 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.24] - 2024-01-15
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Pin e2ei package tag
+- Add PKI API to bindings
+
+### Features
+
+- Added support for PKI environment
+- Change ClientId & Handle format to URIs
+
+</details>
+
+* feat(e2ei): add methods to register root/intermediate certificates and CRLs. Also checks revocation status when asking for a conversation/user/device state.
+* feat(e2ei): change ClientId & Handle to URIs with the scheme 'wireapp://'. Use '!' as delimiter in the ClientId
+
 ## [1.0.0-rc.23] - 2024-01-08
 
 <details>
