@@ -7,11 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.27] - 2024-01-15
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.27" unreleased=true}}
+</details>
+
+* fix(e2ei): issue related to invalid 'keyauth'
+
 ## [1.0.0-rc.26] - 2024-01-15
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.26" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.26"}}
 </details>
 
 * fix(e2ei): e2ei keystore method 'find_all' was unimplemented on WASM for intermediate CAs & CRLs
