@@ -31,7 +31,8 @@ impl EntityBase for E2eiIntermediateCert {
     }
 
     async fn find_all(_conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
-        Err(CryptoKeystoreError::ImplementationError)
+        let storage = conn.storage();
+        storage.get_all("e2ei_intermediate_certs", Some(params)).await
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()> {
