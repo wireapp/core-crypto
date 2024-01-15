@@ -7,14 +7,14 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
-## [1.0.0-rc.27] - 2024-01-15
+## [1.0.0-rc.28] - 2024-01-15
 
 <details>
     <summary>git-conventional changelog</summary>
 
 ### Bug Fixes
 
-- Use rusty-jwt-tools v0.8.1 which fixes the keyauth issue
+- Actually fix keyauth issue
 
 </details>
 
