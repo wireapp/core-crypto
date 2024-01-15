@@ -37,7 +37,7 @@ pub struct RustyE2eIdentity {
     sign_kp: Pem,
     pub hash_alg: HashAlgorithm,
     acme_kp: Pem,
-    pub jwk: Jwk,
+    pub acme_jwk: Jwk,
 }
 
 // enrollment/refresh flow
@@ -49,26 +49,25 @@ impl RustyE2eIdentity {
     /// * `sign_alg` - Signature algorithm (only Ed25519 for now)
     /// * `raw_sign_key` - Raw signature key as bytes
     pub fn try_new(sign_alg: JwsAlgorithm, mut raw_sign_key: Vec<u8>) -> E2eIdentityResult<Self> {
-        let (sign_kp, jwk) = match sign_alg {
+        let sign_kp = match sign_alg {
+            JwsAlgorithm::Ed25519 => Ed25519KeyPair::from_bytes(&raw_sign_key[..])?.to_pem(),
+            JwsAlgorithm::P256 => ES256KeyPair::from_bytes(&raw_sign_key[..])?.to_pem()?,
+            JwsAlgorithm::P384 => ES384KeyPair::from_bytes(&raw_sign_key[..])?.to_pem()?,
+        };
+        let (acme_kp, acme_jwk) = match sign_alg {
             JwsAlgorithm::Ed25519 => {
-                let kp = Ed25519KeyPair::from_bytes(&raw_sign_key[..])?;
-                (kp.to_pem(), kp.public_key().try_into_jwk()?)
+                let kp = Ed25519KeyPair::generate();
+                (kp.to_pem().into(), kp.public_key().try_into_jwk()?)
             }
             JwsAlgorithm::P256 => {
-                let kp = ES256KeyPair::from_bytes(&raw_sign_key[..])?;
-                (kp.to_pem()?, kp.public_key().try_into_jwk()?)
+                let kp = ES256KeyPair::generate();
+                (kp.to_pem()?.into(), kp.public_key().try_into_jwk()?)
             }
             JwsAlgorithm::P384 => {
-                let kp = ES384KeyPair::from_bytes(&raw_sign_key[..])?;
-                (kp.to_pem()?, kp.public_key().try_into_jwk()?)
+                let kp = ES384KeyPair::generate();
+                (kp.to_pem()?.into(), kp.public_key().try_into_jwk()?)
             }
         };
-        let acme_kp = match sign_alg {
-            JwsAlgorithm::Ed25519 => Ed25519KeyPair::generate().to_pem(),
-            JwsAlgorithm::P256 => ES256KeyPair::generate().to_pem()?,
-            JwsAlgorithm::P384 => ES384KeyPair::generate().to_pem()?,
-        }
-        .into();
         // drop the private immediately since it already has been copied
         raw_sign_key.zeroize();
         Ok(Self {
@@ -76,7 +75,7 @@ impl RustyE2eIdentity {
             sign_kp: sign_kp.into(),
             hash_alg: HashAlgorithm::from(sign_alg),
             acme_kp,
-            jwk,
+            acme_jwk,
         })
     }
 
@@ -329,7 +328,7 @@ impl RustyE2eIdentity {
             self.sign_alg,
             self.hash_alg,
             &self.acme_kp,
-            &self.jwk,
+            &self.acme_jwk,
             previous_nonce,
         )?;
         Ok(serde_json::to_value(new_challenge_req)?)
