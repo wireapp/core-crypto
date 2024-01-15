@@ -41,6 +41,7 @@ impl CaCfg {
         let dpop_target_uri = dpop_target_uri.as_ref().unwrap();
         let x509 = template.clone();
         let b64_sign_key = BASE64_STANDARD.encode(sign_key);
+        let transform = r#"{"name": "{{ .preferred_username }}", "handle": "{{ .name }}"}"#;
 
         // TODO: remove RS256 when EcDSA & EdDSA are supported in Dex
         json!({
@@ -75,14 +76,15 @@ impl CaCfg {
                                     ]
                                 },
                                 "config": {
-                                    "client_id": audience,
-                                    "supported_signing_algs": [
+                                    "clientId": audience,
+                                    "signatureAlgorithms": [
                                         "RS256",
                                         "ES256",
                                         "ES384",
                                         "EdDSA"
                                     ]
-                                }
+                                },
+                                "transform": transform
                             },
                             "dpop": {
                                 "key": b64_sign_key,
