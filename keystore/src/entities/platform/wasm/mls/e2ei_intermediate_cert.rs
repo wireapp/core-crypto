@@ -17,7 +17,7 @@
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{E2eiIntermediateCert, Entity, EntityBase, EntityFindParams, StringEntityId},
-    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
+    CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -30,7 +30,7 @@ impl EntityBase for E2eiIntermediateCert {
         MissingKeyErrorKind::E2eiIntermediateCert
     }
 
-    async fn find_all(_conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
         storage.get_all("e2ei_intermediate_certs", Some(params)).await
     }
