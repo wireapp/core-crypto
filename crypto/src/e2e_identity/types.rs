@@ -86,12 +86,12 @@ impl TryFrom<E2eiNewAcmeOrder> for wire_e2e_identity::prelude::E2eiNewAcmeOrder 
 pub struct E2eiNewAcmeAuthz {
     /// DNS entry associated with those challenge
     pub identifier: String,
+    /// ACME challenge + ACME key thumbprint
+    pub keyauth: String,
     /// Challenge for the clientId
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub wire_dpop_challenge: Option<E2eiAcmeChallenge>,
+    pub wire_dpop_challenge: E2eiAcmeChallenge,
     /// Challenge for the handle + display name
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub wire_oidc_challenge: Option<E2eiAcmeChallenge>,
+    pub wire_oidc_challenge: E2eiAcmeChallenge,
 }
 
 impl TryFrom<wire_e2e_identity::prelude::E2eiNewAcmeAuthz> for E2eiNewAcmeAuthz {
@@ -100,8 +100,9 @@ impl TryFrom<wire_e2e_identity::prelude::E2eiNewAcmeAuthz> for E2eiNewAcmeAuthz 
     fn try_from(authz: wire_e2e_identity::prelude::E2eiNewAcmeAuthz) -> E2eIdentityResult<Self> {
         Ok(Self {
             identifier: authz.identifier,
-            wire_dpop_challenge: authz.wire_dpop_challenge.map(TryFrom::try_from).transpose()?,
-            wire_oidc_challenge: authz.wire_oidc_challenge.map(TryFrom::try_from).transpose()?,
+            keyauth: authz.keyauth,
+            wire_dpop_challenge: authz.wire_dpop_challenge.try_into()?,
+            wire_oidc_challenge: authz.wire_oidc_challenge.try_into()?,
         })
     }
 }
@@ -112,8 +113,9 @@ impl TryFrom<&E2eiNewAcmeAuthz> for wire_e2e_identity::prelude::E2eiNewAcmeAuthz
     fn try_from(authz: &E2eiNewAcmeAuthz) -> E2eIdentityResult<Self> {
         Ok(Self {
             identifier: authz.identifier.clone(),
-            wire_dpop_challenge: authz.wire_dpop_challenge.as_ref().map(TryFrom::try_from).transpose()?,
-            wire_oidc_challenge: authz.wire_oidc_challenge.as_ref().map(TryFrom::try_from).transpose()?,
+            keyauth: authz.keyauth.clone(),
+            wire_dpop_challenge: (&authz.wire_dpop_challenge).try_into()?,
+            wire_oidc_challenge: (&authz.wire_oidc_challenge).try_into()?,
         })
     }
 }

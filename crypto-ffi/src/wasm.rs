@@ -2987,20 +2987,24 @@ pub struct NewAcmeAuthz {
     /// DNS entry associated with those challenge
     #[wasm_bindgen(readonly, js_name = "identifier")]
     pub identifier: String,
+    /// ACME challenge + ACME key thumbprint
+    #[wasm_bindgen(readonly, js_name = "keyauth")]
+    pub keyauth: String,
     /// Challenge for the deviceId owned by wire-server
     #[wasm_bindgen(readonly, js_name = "wireDpopChallenge")]
-    pub wire_dpop_challenge: Option<AcmeChallenge>,
+    pub wire_dpop_challenge: AcmeChallenge,
     /// Challenge for the userId and displayName owned by the identity provider
     #[wasm_bindgen(readonly, js_name = "wireOidcChallenge")]
-    pub wire_oidc_challenge: Option<AcmeChallenge>,
+    pub wire_oidc_challenge: AcmeChallenge,
 }
 
 impl From<core_crypto::prelude::E2eiNewAcmeAuthz> for NewAcmeAuthz {
     fn from(authz: core_crypto::prelude::E2eiNewAcmeAuthz) -> Self {
         Self {
             identifier: authz.identifier,
-            wire_dpop_challenge: authz.wire_dpop_challenge.map(Into::into),
-            wire_oidc_challenge: authz.wire_oidc_challenge.map(Into::into),
+            keyauth: authz.keyauth,
+            wire_dpop_challenge: authz.wire_dpop_challenge.into(),
+            wire_oidc_challenge: authz.wire_oidc_challenge.into(),
         }
     }
 }
@@ -3009,8 +3013,9 @@ impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
     fn from(authz: NewAcmeAuthz) -> Self {
         Self {
             identifier: authz.identifier,
-            wire_dpop_challenge: authz.wire_dpop_challenge.map(Into::into),
-            wire_oidc_challenge: authz.wire_oidc_challenge.map(Into::into),
+            keyauth: authz.keyauth,
+            wire_dpop_challenge: authz.wire_dpop_challenge.into(),
+            wire_oidc_challenge: authz.wire_oidc_challenge.into(),
         }
     }
 }

@@ -484,12 +484,7 @@ impl E2eiEnrollment {
         let authz = self.authz.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'newAuthzResponse()'",
         ))?;
-        let dpop_challenge = authz
-            .wire_dpop_challenge
-            .as_ref()
-            .ok_or(E2eIdentityError::OutOfOrderEnrollment(
-                "You must first call 'newAuthzResponse()'",
-            ))?;
+        let dpop_challenge = &authz.wire_dpop_challenge;
         Ok(self.new_dpop_token(
             &self.client_id,
             dpop_challenge,
@@ -513,12 +508,7 @@ impl E2eiEnrollment {
         let authz = self.authz.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'newAuthzResponse()'",
         ))?;
-        let dpop_challenge = authz
-            .wire_dpop_challenge
-            .as_ref()
-            .ok_or(E2eIdentityError::OutOfOrderEnrollment(
-                "You must first call 'createDpopToken()'",
-            ))?;
+        let dpop_challenge = &authz.wire_dpop_challenge;
         let account = self.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'newAccountResponse()'",
         ))?;
@@ -560,12 +550,7 @@ impl E2eiEnrollment {
         let authz = self.authz.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'newAuthzResponse()'",
         ))?;
-        let oidc_challenge = authz
-            .wire_oidc_challenge
-            .as_ref()
-            .ok_or(E2eIdentityError::OutOfOrderEnrollment(
-                "You must first call 'newAuthzResponse()'",
-            ))?;
+        let oidc_challenge = &authz.wire_oidc_challenge;
         let account = self.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'newAccountResponse()'",
         ))?;
