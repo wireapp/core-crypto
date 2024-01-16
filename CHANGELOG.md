@@ -7,6 +7,19 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.30] - 2024-01-16
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Features
+
+- [**breaking**] Expose keyauth in ACME authz
+
+</details>
+
+* fix(e2ei): include "keyauth" in the ACME authorization, turn challenge non-optional in ACME authorization and stop including keyauth in the ACME challenge request. This version only works with IdP supporting extra OAuth claims (and by consequence only work with Keycloak and not Dex)
+
 ## [1.0.0-rc.29] - 2024-01-16
 
 <details>
