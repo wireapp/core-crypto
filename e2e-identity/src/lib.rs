@@ -270,7 +270,7 @@ impl RustyE2eIdentity {
             backend_nonce.into(),
             expiry,
             self.sign_alg,
-            &self.sign_kp,
+            &self.acme_kp,
         )?)
     }
 
