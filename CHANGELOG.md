@@ -7,6 +7,19 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.29] - 2024-01-16
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Pin rusty-jwt-tools v0.8.4 fixing an issue with the wrong signature key being used for the client DPoP token
+
+</details>
+
+* fix(e2ei): issue with the wrong signature key being used for the client DPoP token
+
 ## [1.0.0-rc.28] - 2024-01-15
 
 <details>
