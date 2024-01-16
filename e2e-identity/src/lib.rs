@@ -260,6 +260,7 @@ impl RustyE2eIdentity {
         expiry: core::time::Duration,
     ) -> E2eIdentityResult<String> {
         let dpop_chall: AcmeChallenge = dpop_challenge.clone().try_into()?;
+        let audience = dpop_chall.url;
         let client_id = ClientId::try_from_qualified(client_id)?;
         let handle = Handle::from(handle).try_to_qualified(&client_id.domain)?;
         let dpop = Dpop {
@@ -274,6 +275,7 @@ impl RustyE2eIdentity {
             dpop,
             &client_id,
             backend_nonce.into(),
+            audience,
             expiry,
             self.sign_alg,
             &self.acme_kp,

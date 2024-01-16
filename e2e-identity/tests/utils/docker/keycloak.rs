@@ -143,7 +143,7 @@ impl KeycloakImage {
 
         // Then register this protocol mapper for this scope
         let scope_id = profile_scope.id.clone().unwrap();
-        let protocol_mapper = ProtocolMapperRepresentation {
+        let keyauth_protocol_mapper = ProtocolMapperRepresentation {
             config: Some(HashMap::from_iter([
                 ("claim.name".to_string(), json!("keyauth")),
                 ("id.token.claim".to_string(), json!("true")),
@@ -154,7 +154,21 @@ impl KeycloakImage {
             ..Default::default()
         };
         admin
-            .realm_client_scopes_with_id_protocol_mappers_models_post(Self::REALM, &scope_id, protocol_mapper)
+            .realm_client_scopes_with_id_protocol_mappers_models_post(Self::REALM, &scope_id, keyauth_protocol_mapper)
+            .await
+            .unwrap();
+        let audience_protocol_mapper = ProtocolMapperRepresentation {
+            config: Some(HashMap::from_iter([
+                ("claim.name".to_string(), json!("acme_aud")),
+                ("id.token.claim".to_string(), json!("true")),
+            ])),
+            name: Some("wire-acme-audience-id-token-mapper".to_string()),
+            protocol: Some("openid-connect".to_string()),
+            protocol_mapper: Some("oidc-claims-param-value-idtoken-mapper".to_string()),
+            ..Default::default()
+        };
+        admin
+            .realm_client_scopes_with_id_protocol_mappers_models_post(Self::REALM, &scope_id, audience_protocol_mapper)
             .await
             .unwrap();
     }

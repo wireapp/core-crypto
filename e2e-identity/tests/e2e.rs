@@ -421,6 +421,7 @@ mod dpop_challenge {
                     let handle = Handle::from(test.handle.as_str())
                         .try_to_qualified(&client_id.domain)
                         .unwrap();
+                    let audience = dpop_chall.url.clone();
 
                     let client_dpop_token = RustyJwtTools::generate_dpop_token(
                         Dpop {
@@ -433,6 +434,7 @@ mod dpop_challenge {
                         },
                         &client_id,
                         backend_nonce.clone(),
+                        audience,
                         core::time::Duration::from_secs(3600),
                         test.alg,
                         &test.acme_kp,
@@ -497,6 +499,7 @@ mod dpop_challenge {
                     let handle = Handle::from(test.handle.as_str())
                         .try_to_qualified(&client_id.domain)
                         .unwrap();
+                    let audience = dpop_chall.url.clone();
 
                     let client_dpop_token = RustyJwtTools::generate_dpop_token(
                         Dpop {
@@ -509,6 +512,7 @@ mod dpop_challenge {
                         },
                         &client_id,
                         backend_nonce.clone(),
+                        audience,
                         core::time::Duration::from_secs(3600),
                         test.alg,
                         &test.acme_kp,
@@ -599,6 +603,7 @@ mod dpop_challenge {
                         .try_to_qualified(&client_id.domain)
                         .unwrap();
                     let acme_nonce: AcmeNonce = dpop_chall.token.as_str().into();
+                    let audience = dpop_chall.url.clone();
 
                     // use the MLS keypair instead of the ACME one, should make the validation fail on the acme-server
                     let keypair = test.client_kp.clone();
@@ -613,6 +618,7 @@ mod dpop_challenge {
                         },
                         &test.sub,
                         backend_nonce.clone(),
+                        audience,
                         core::time::Duration::from_secs(3600),
                         test.alg,
                         &keypair,

@@ -289,6 +289,7 @@ impl<'a> E2eTest<'a> {
     ) -> TestResult<String> {
         self.display_step("create client DPoP token");
         let htu: Htu = dpop_chall.target.as_ref().unwrap().clone().into();
+        let audience = dpop_chall.url.clone();
         let acme_nonce: AcmeNonce = dpop_chall.token.as_str().into();
         let dpop = Dpop {
             challenge: acme_nonce,
@@ -298,8 +299,15 @@ impl<'a> E2eTest<'a> {
             team,
             extra_claims: None,
         };
-        let client_dpop_token =
-            RustyJwtTools::generate_dpop_token(dpop, &self.sub, backend_nonce, expiry, self.alg, &self.acme_kp)?;
+        let client_dpop_token = RustyJwtTools::generate_dpop_token(
+            dpop,
+            &self.sub,
+            backend_nonce,
+            audience,
+            expiry,
+            self.alg,
+            &self.acme_kp,
+        )?;
         let alg = self.alg;
         let client_kp = self.acme_kp.to_string();
         self.display_operation(Actor::WireClient, "create DPoP token");
@@ -564,7 +572,7 @@ impl<'a> E2eTest<'a> {
         // Authorization server validates Verifier & Challenge Codes
 
         // Get OAuth access token
-        self.display_step("OAUTH access token");
+        self.display_step("OIDC id token");
         let exchange_code_resp = ctx_get_resp("exchange-code", false);
         self.display_resp(Actor::IdentityProvider, Actor::WireClient, None);
         let exchange_code_resp = serde_json::from_str::<Value>(&exchange_code_resp).unwrap();
@@ -612,9 +620,11 @@ impl<'a> E2eTest<'a> {
         self.display_str(&cv_cc_msg, false);
 
         // A variant of https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter
+        let acme_audience = oidc_chall.url.clone();
         let extra = json!({
             "id_token":{
                 "keyauth": { "essential": true, "value": keyauth },
+                "acme_aud": { "essential": true, "value": acme_audience }
             }
         })
         .to_string();
