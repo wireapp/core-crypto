@@ -1550,13 +1550,16 @@ public struct NewAcmeOrder: ConvertToInner {
 public struct NewAcmeAuthz: ConvertToInner {
     /// DNS entry associated with those challenge
     public var identifier: String
+    /// To use in the OAuth authorization request
+    public var keyauth: String
     /// Challenge for the deviceId owned by wire-server
-    public var wireDpopChallenge: AcmeChallenge?
+    public var wireDpopChallenge: AcmeChallenge
     /// Challenge for the userId and displayName owned by the identity provider
-    public var wireOidcChallenge: AcmeChallenge?
+    public var wireOidcChallenge: AcmeChallenge
 
-    public init(identifier: String, wireDpopChallenge: AcmeChallenge?, wireOidcChallenge: AcmeChallenge?) {
+    public init(identifier: String, keyauth: String, wireDpopChallenge: AcmeChallenge, wireOidcChallenge: AcmeChallenge) {
         self.identifier = identifier
+        self.keyauth = keyauth
         self.wireDpopChallenge = wireDpopChallenge
         self.wireOidcChallenge = wireOidcChallenge
     }
@@ -1564,7 +1567,7 @@ public struct NewAcmeAuthz: ConvertToInner {
     typealias Inner = CoreCryptoSwift.NewAcmeAuthz
 
     func convert() -> Inner {
-        return CoreCryptoSwift.NewAcmeAuthz(identifier: self.identifier, wireDpopChallenge: self.wireDpopChallenge, wireOidcChallenge: self.wireOidcChallenge)
+        return CoreCryptoSwift.NewAcmeAuthz(identifier: self.identifier, keyauth: self.keyauth, wireDpopChallenge: self.wireDpopChallenge, wireOidcChallenge: self.wireOidcChallenge)
     }
 }
 

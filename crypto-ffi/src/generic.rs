@@ -1911,16 +1911,18 @@ impl From<NewAcmeOrder> for core_crypto::prelude::E2eiNewAcmeOrder {
 /// See [core_crypto::e2e_identity::types::E2eiNewAcmeAuthz]
 pub struct NewAcmeAuthz {
     pub identifier: String,
-    pub wire_dpop_challenge: Option<AcmeChallenge>,
-    pub wire_oidc_challenge: Option<AcmeChallenge>,
+    pub keyauth: String,
+    pub wire_dpop_challenge: AcmeChallenge,
+    pub wire_oidc_challenge: AcmeChallenge,
 }
 
 impl From<core_crypto::prelude::E2eiNewAcmeAuthz> for NewAcmeAuthz {
     fn from(new_authz: core_crypto::prelude::E2eiNewAcmeAuthz) -> Self {
         Self {
             identifier: new_authz.identifier,
-            wire_dpop_challenge: new_authz.wire_dpop_challenge.map(Into::into),
-            wire_oidc_challenge: new_authz.wire_oidc_challenge.map(Into::into),
+            keyauth: new_authz.keyauth,
+            wire_dpop_challenge: new_authz.wire_dpop_challenge.into(),
+            wire_oidc_challenge: new_authz.wire_oidc_challenge.into(),
         }
     }
 }
@@ -1929,8 +1931,9 @@ impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
     fn from(new_authz: NewAcmeAuthz) -> Self {
         Self {
             identifier: new_authz.identifier,
-            wire_dpop_challenge: new_authz.wire_dpop_challenge.map(Into::into),
-            wire_oidc_challenge: new_authz.wire_oidc_challenge.map(Into::into),
+            keyauth: new_authz.keyauth,
+            wire_dpop_challenge: new_authz.wire_dpop_challenge.into(),
+            wire_oidc_challenge: new_authz.wire_oidc_challenge.into(),
         }
     }
 }
