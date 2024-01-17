@@ -63,7 +63,8 @@ extension CoreCryptoSwift.DecryptedMessage {
             senderClientId: self.senderClientId,
             hasEpochChanged: self.hasEpochChanged,
             identity: self.identity?.convertTo(),
-            bufferedMessages: self.bufferedMessages.map({ (bm) -> BufferedDecryptedMessage in return bm.convertTo() })
+            bufferedMessages: self.bufferedMessages.map({ (bm) -> BufferedDecryptedMessage in return bm.convertTo() }),
+            crlNewDistributionPoints: self.crlNewDistributionPoints,
         )
     }
 }
@@ -77,7 +78,8 @@ extension CoreCryptoSwift.BufferedDecryptedMessage {
             commitDelay: self.commitDelay,
             senderClientId: self.senderClientId,
             hasEpochChanged: self.hasEpochChanged,
-            identity: self.identity?.convertTo()
+            identity: self.identity?.convertTo(),
+            crlNewDistributionPoints: self.crlNewDistributionPoints,
         )
     }
 }
@@ -333,8 +335,10 @@ public struct DecryptedMessage: ConvertToInner {
     /// Contains buffered messages for next epoch which were received before the commit creating the epoch
     /// because the DS did not fan them out in order.
     public var bufferedMessages: [BufferedDecryptedMessage]?
+    /// New CRL distribution points that appeared by the introduction of a new credential
+    public var crlNewDistributionPoints: [String]?
 
-    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?, hasEpochChanged: Bool, identity: WireIdentity?, bufferedMessages: [BufferedDecryptedMessage]?) {
+    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?, hasEpochChanged: Bool, identity: WireIdentity?, bufferedMessages: [BufferedDecryptedMessage]?, crlNewDistributionPoints: [String]?) {
         self.message = message
         self.proposals = proposals
         self.isActive = isActive
@@ -343,6 +347,7 @@ public struct DecryptedMessage: ConvertToInner {
         self.hasEpochChanged = hasEpochChanged
         self.identity = identity
         self.bufferedMessages = bufferedMessages
+        self.crlNewDistributionPoints = crlNewDistributionPoints
     }
 
     func convert() -> Inner {
@@ -355,6 +360,7 @@ public struct DecryptedMessage: ConvertToInner {
             hasEpochChanged: self.hasEpochChanged,
             identity: self.identity?.convert(),
             bufferedMessages: self.bufferedMessages.map({ (bm) -> CoreCryptoSwift.DecryptedMessage in bm.convert() })
+            crlNewDistributionPoints: self.crlNewDistributionPoints,
         )
     }
 }
@@ -376,8 +382,11 @@ public struct BufferedDecryptedMessage: ConvertToInner {
     public var hasEpochChanged: Bool
     /// see ```DecryptedMessage.identity```
     public var identity: WireIdentity?
+    /// see ```DecryptedMessage.crlNewDistributionPoints```
+    public var crlNewDistributionPoints: [String]?
 
-    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?, hasEpochChanged: Bool, identity: WireIdentity?) {
+
+    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?, hasEpochChanged: Bool, identity: WireIdentity?, crlNewDistributionPoints: [String]?) {
         self.message = message
         self.proposals = proposals
         self.isActive = isActive
@@ -385,6 +394,7 @@ public struct BufferedDecryptedMessage: ConvertToInner {
         self.senderClientId = senderClientId
         self.hasEpochChanged = hasEpochChanged
         self.identity = identity
+        self.crlNewDistributionPoints = crlNewDistributionPoints
     }
 
     func convert() -> Inner {
@@ -395,7 +405,8 @@ public struct BufferedDecryptedMessage: ConvertToInner {
             commitDelay: self.commitDelay,
             senderClientId: self.senderClientId,
             hasEpochChanged: self.hasEpochChanged,
-            identity: self.identity?.convert()
+            identity: self.identity?.convert(),
+            crlNewDistributionPoints: self.crlNewDistributionPoints
         )
     }
 }

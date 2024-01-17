@@ -399,6 +399,7 @@ pub struct DecryptedMessage {
     pub has_epoch_changed: bool,
     pub identity: Option<WireIdentity>,
     pub buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 #[derive(Debug, uniffi::Record)]
@@ -411,6 +412,7 @@ pub struct BufferedDecryptedMessage {
     pub sender_client_id: Option<ClientId>,
     pub has_epoch_changed: bool,
     pub identity: Option<WireIdentity>,
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
@@ -442,6 +444,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.map(Into::into),
             buffered_messages,
+            crl_new_distribution_points: from.crl_new_distribution_points,
         })
     }
 }
@@ -464,6 +467,7 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
             sender_client_id: from.sender_client_id.map(ClientId),
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.map(Into::into),
+            crl_new_distribution_points: from.crl_new_distribution_points,
         })
     }
 }

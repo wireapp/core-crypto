@@ -238,6 +238,10 @@ data class DecryptedMessage(
      * Present for all messages
      */
     val bufferedMessages: List<BufferedDecryptedMessage>?,
+    /**
+     * New CRL distribution points that appeared by the introduction of a new credential
+     */
+    val crlNewDistributionPoints: List<String>?,
 ) {
 
     override fun equals(other: Any?): Boolean {
@@ -256,6 +260,7 @@ data class DecryptedMessage(
         if (senderClientId != other.senderClientId) return false
         if (hasEpochChanged != other.hasEpochChanged) return false
         if (identity != other.identity) return false
+        if (crlNewDistributionPoints != other.crlNewDistributionPoints) return false
 
         return true
     }
@@ -268,6 +273,7 @@ data class DecryptedMessage(
         result = 31 * result + (senderClientId?.hashCode() ?: 0)
         result = 31 * result + hasEpochChanged.hashCode()
         result = 31 * result + (identity?.hashCode() ?: 0)
+        result = 31 * result + (crlNewDistributionPoints?.hashCode() ?: 0)
         return result
     }
 }
@@ -280,7 +286,8 @@ fun com.wire.crypto.DecryptedMessage.lift() = DecryptedMessage(
     senderClientId?.toClientId(),
     hasEpochChanged,
     identity?.lift(),
-    bufferedMessages?.map { it.lift() }
+    bufferedMessages?.map { it.lift() },
+    crlNewDistributionPoints
 )
 
 /**
@@ -301,6 +308,8 @@ data class BufferedDecryptedMessage(
     val hasEpochChanged: Boolean,
     /** @see DecryptedMessage.identity */
     val identity: WireIdentity?,
+    /** @see DecryptedMessage.crlNewDistributionPoints */
+    val crlNewDistributionPoints: List<String>?,
 ) {
 
     override fun equals(other: Any?): Boolean {
@@ -319,6 +328,7 @@ data class BufferedDecryptedMessage(
         if (senderClientId != other.senderClientId) return false
         if (hasEpochChanged != other.hasEpochChanged) return false
         if (identity != other.identity) return false
+        if (crlNewDistributionPoints != other.crlNewDistributionPoints) return false
 
         return true
     }
@@ -331,6 +341,7 @@ data class BufferedDecryptedMessage(
         result = 31 * result + (senderClientId?.hashCode() ?: 0)
         result = 31 * result + hasEpochChanged.hashCode()
         result = 31 * result + (identity?.hashCode() ?: 0)
+        result = 31 * result + (crlNewDistributionPoints?.hashCode() ?: 0)
         return result
     }
 }
@@ -342,7 +353,8 @@ fun com.wire.crypto.BufferedDecryptedMessage.lift() = BufferedDecryptedMessage(
     commitDelay?.toLong(),
     senderClientId?.toClientId(),
     hasEpochChanged,
-    identity?.lift()
+    identity?.lift(),
+    crlNewDistributionPoints
 )
 
 /**

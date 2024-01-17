@@ -507,6 +507,10 @@ export interface DecryptedMessage {
      * because the DS did not fan them out in order.
      */
     bufferedMessages?: BufferedDecryptedMessage[];
+    /**
+     * New CRL distribution points that appeared by the introduction of a new credential
+     */
+    crlNewDistributionPoints?: string[];
 }
 
 /**
@@ -541,6 +545,10 @@ export interface BufferedDecryptedMessage {
      * see {@link DecryptedMessage.identity}
      */
     identity?: WireIdentity;
+    /**
+     * see {@link DecryptedMessage.crlNewDistributionPoints}
+     */
+    crlNewDistributionPoints?: string[];
 }
 
 /**
@@ -1086,9 +1094,11 @@ export class CoreCrypto {
                             senderClientId: m.sender_client_id,
                             commitDelay: m.commit_delay,
                             hasEpochChanged: m.has_epoch_changed,
+                            crlNewDistributionPoints: m.crl_new_distribution_points,
                         };
                     }
                 ),
+                crlNewDistributionPoints: ffiDecryptedMessage.crl_new_distribution_points,
             };
 
             return ret;

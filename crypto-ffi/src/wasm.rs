@@ -546,6 +546,7 @@ pub struct DecryptedMessage {
     has_epoch_changed: bool,
     identity: Option<WireIdentity>,
     buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
+    crl_new_distribution_points: Option<Vec<String>>,
 }
 
 impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
@@ -583,6 +584,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.map(Into::into),
             buffered_messages,
+            crl_new_distribution_points: from.crl_new_distribution_points,
         })
     }
 }
@@ -642,6 +644,13 @@ impl DecryptedMessage {
             .clone()
             .map(|bm| bm.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
     }
+
+    #[wasm_bindgen(getter)]
+    pub fn crl_new_distribution_points(&self) -> Option<js_sys::Array> {
+        self.crl_new_distribution_points
+            .clone()
+            .map(|crl_dp| crl_dp.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
+    }
 }
 
 #[wasm_bindgen]
@@ -655,6 +664,7 @@ pub struct BufferedDecryptedMessage {
     sender_client_id: Option<Vec<u8>>,
     has_epoch_changed: bool,
     identity: Option<WireIdentity>,
+    crl_new_distribution_points: Option<Vec<String>>,
 }
 
 impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage {
@@ -681,6 +691,7 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
             sender_client_id: from.sender_client_id.map(ClientId::into),
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.map(Into::into),
+            crl_new_distribution_points: from.crl_new_distribution_points,
         })
     }
 }
@@ -732,6 +743,13 @@ impl BufferedDecryptedMessage {
     #[wasm_bindgen(getter)]
     pub fn identity(&self) -> Option<WireIdentity> {
         self.identity.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn crl_new_distribution_points(&self) -> Option<js_sys::Array> {
+        self.crl_new_distribution_points
+            .clone()
+            .map(|crl_dp| crl_dp.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
     }
 }
 
