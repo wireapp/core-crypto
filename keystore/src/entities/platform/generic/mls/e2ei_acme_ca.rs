@@ -61,7 +61,7 @@ impl UniqueEntity for E2eiAcmeCA {
 
         let params: [rusqlite::types::ToSqlOutput; 2] = [ID.to_sql()?, zb_content.to_sql()?];
 
-        transaction.execute("INSERT e2ei_acme_ca (id, content) VALUES (?, ?)", params)?;
+        transaction.execute("INSERT INTO e2ei_acme_ca (id, content) VALUES (?, ?)", params)?;
         let row_id = transaction.last_insert_rowid();
 
         let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "e2ei_acme_ca", "content", row_id, false)?;
