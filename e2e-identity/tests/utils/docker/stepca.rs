@@ -41,7 +41,7 @@ impl CaCfg {
         let dpop_target_uri = dpop_target_uri.as_ref().unwrap();
         let x509 = template.clone();
         let b64_sign_key = BASE64_STANDARD.encode(sign_key);
-        let transform = r#"{"name": "{{ .preferred_username }}", "handle": "{{ .name }}"}"#;
+        let transform = r#"{"name": "{{ .name }}", "preferred_username": "{{ .preferred_username }}"}"#; // same as (current) default template
 
         // TODO: remove RS256 when EcDSA & EdDSA are supported in Dex
         json!({
@@ -168,7 +168,7 @@ impl StepCaImage {
         // we need to call step-ca over https so we need to fetch its self-signed CA
         let ca_cert = host_volume.join("certs").join("root_ca.crt");
         let ca_pem = std::fs::read(ca_cert).unwrap();
-        reqwest::tls::Certificate::from_pem(ca_pem.as_slice()).expect("SmallStep issued an invalid certificate")
+        reqwest::tls::Certificate::from_pem(ca_pem.as_slice()).expect("Smallstep issued an invalid certificate")
     }
 }
 
