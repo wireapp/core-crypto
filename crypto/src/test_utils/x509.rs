@@ -20,7 +20,7 @@ impl Default for CertificateParams {
             org: "World Domination Inc".into(),
             common_name: Some("World Domination".into()),
             domain: Some("world.com".into()),
-            expiration: std::time::Duration::MAX,
+            expiration: std::time::Duration::from_secs(86400),
         }
     }
 }
@@ -193,7 +193,7 @@ impl X509Certificate {
                     path_len_constraint: None,
                 },
                 serial: serial as _,
-                validity_from_now: std::time::Duration::MAX,
+                validity_from_now: params.expiration,
                 org: &params.org,
                 common_name: params.common_name.as_deref(),
                 domain: params.domain.as_deref(),
@@ -245,7 +245,7 @@ impl X509Certificate {
                     enable_key_encipherment: false,
                 },
                 serial: serial as _,
-                validity_from_now: std::time::Duration::MAX,
+                validity_from_now: params.expiration,
                 org: &params.org,
                 common_name: params.common_name.as_deref(),
                 domain: params.domain.as_deref(),
