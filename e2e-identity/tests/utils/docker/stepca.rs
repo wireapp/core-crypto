@@ -1,6 +1,6 @@
+use base64::prelude::*;
 use std::net::SocketAddr;
 use std::{collections::HashMap, path::PathBuf};
-use base64::prelude::*;
 
 use serde_json::json;
 use testcontainers::{clients::Cli, core::WaitFor, Container, Image, RunnableImage};
@@ -107,8 +107,8 @@ pub struct StepCaImage {
 }
 
 impl StepCaImage {
-    const NAME: &'static str = "quay.io/wire/smallstep-acme";
-    const TAG: &'static str = "0.0.42-test.109";
+    const NAME: &'static str = "smallstep/step-ca";
+    const TAG: &'static str = "0.25.3-rc3";
     const CA_NAME: &'static str = "wire";
     pub const ACME_PROVISIONER: &'static str = "wire";
     pub const PORT: u16 = 9000;
