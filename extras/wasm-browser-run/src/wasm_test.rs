@@ -391,7 +391,7 @@ setTimeout(() => window.runTests(args), 2000);"#,
             tracing::debug!("Progress bar should be visible");
 
             while let Some(event) = stream.try_next().await? {
-                dbg!(&event);
+                // dbg!(&event);
                 match event.data {
                     EventData::BrowsingContextEvent(data) => {
                         tracing::warn!("Unimplemented event handling: {:?}", data);

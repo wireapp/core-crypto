@@ -10,6 +10,8 @@ const DEFAULT_CRL_DOMAIN: &'static str = "localhost";
 pub struct CertificateParams {
     pub org: String,
     pub common_name: Option<String>,
+    pub handle: Option<String>,
+    pub client_id: Option<String>,
     pub domain: Option<String>,
     pub expiration: Duration,
 }
@@ -17,8 +19,10 @@ pub struct CertificateParams {
 impl Default for CertificateParams {
     fn default() -> Self {
         Self {
-            org: "World Domination Inc".into(),
+            org: "world.com".into(),
             common_name: Some("World Domination".into()),
+            handle: None,
+            client_id: None,
             domain: Some("world.com".into()),
             expiration: std::time::Duration::from_secs(86400),
         }
@@ -37,84 +41,150 @@ impl CertificateParams {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct X509TestChainActor {
     pub name: String,
+    pub handle: String,
     pub client_id: String,
+    pub is_revoked: bool,
     pub certificate: X509Certificate,
 }
 
+#[derive(Debug, Clone)]
+pub struct X509TestChainActorArg {
+    pub name: String,
+    pub handle: String,
+    pub client_id: String,
+    pub is_revoked: bool,
+}
+
+#[derive(Debug)]
 pub struct X509TestChain {
     pub trust_anchor: X509Certificate,
     pub intermediates: Vec<X509Certificate>,
     pub crls: std::collections::HashMap<String, x509_cert::crl::CertificateList>,
-    pub actors: std::collections::HashMap<String, X509TestChainActor>,
+    pub actors: Vec<X509TestChainActor>,
 }
 
+#[derive(Debug)]
 pub struct X509TestChainArgs<'a> {
-    pub local_params: CertificateParams,
+    pub root_params: CertificateParams,
+    pub local_ca_params: CertificateParams,
     pub signature_scheme: SignatureScheme,
     pub federated_test_chains: &'a [X509TestChain],
-    pub revoked_certs: &'a [X509Certificate],
-    /// List of (name, clientID); name is "alice" for example
-    pub local_actors: Vec<(String, String)>,
+    pub local_actors: Vec<X509TestChainActorArg>,
+    pub dump_pem_certs: bool,
 }
 
 impl X509TestChain {
     pub fn init(args: X509TestChainArgs) -> Self {
-        let trust_anchor = X509Certificate::create_root_cert_ta(args.local_params.clone(), args.signature_scheme);
-        let local_intermediate = trust_anchor.create_and_sign_intermediate(args.local_params.clone());
+        let trust_anchor = X509Certificate::create_root_cert_ta(args.root_params.clone(), args.signature_scheme);
+        let local_intermediate = trust_anchor.create_and_sign_intermediate(args.local_ca_params.clone());
 
-        let mut actors =
-            args.local_actors
-                .into_iter()
-                .fold(std::collections::HashMap::new(), |mut acc, (name, client_id)| {
-                    let certificate = local_intermediate.create_and_sign_end_identity(CertificateParams {
-                        org: args.local_params.org.clone(),
-                        common_name: Some(client_id.clone()),
-                        domain: args.local_params.domain.clone(),
-                        expiration: args.local_params.expiration,
-                    });
-                    let actor = X509TestChainActor {
-                        name: name.clone(),
-                        client_id,
-                        certificate,
-                    };
-                    acc.insert(name, actor);
-                    acc
+        if args.dump_pem_certs {
+            use x509_cert::der::EncodePem as _;
+            println!(
+                "Trust Anchor => \n{}",
+                trust_anchor
+                    .certificate
+                    .to_pem(x509_cert::der::pem::LineEnding::LF)
+                    .unwrap()
+            );
+            println!(
+                "Local Intermediate CA => \n{}",
+                local_intermediate
+                    .certificate
+                    .to_pem(x509_cert::der::pem::LineEnding::LF)
+                    .unwrap()
+            );
+        }
+
+        let mut actors: Vec<_> = args
+            .local_actors
+            .into_iter()
+            .map(|actor| {
+                let certificate = local_intermediate.create_and_sign_end_identity(CertificateParams {
+                    org: args.local_ca_params.org.clone(),
+                    common_name: Some(actor.name.clone()),
+                    handle: Some(actor.handle.clone()),
+                    client_id: Some(actor.client_id.clone()),
+                    domain: args.local_ca_params.domain.clone(),
+                    expiration: args.local_ca_params.expiration,
                 });
 
+                if args.dump_pem_certs {
+                    use x509_cert::der::EncodePem as _;
+                    println!(
+                        "{} [{}] | {} => \n{}",
+                        actor.name,
+                        actor.handle,
+                        actor.client_id,
+                        certificate
+                            .certificate
+                            .to_pem(x509_cert::der::pem::LineEnding::LF)
+                            .unwrap()
+                    );
+                }
+
+                X509TestChainActor {
+                    name: actor.name,
+                    handle: actor.handle,
+                    client_id: actor.client_id,
+                    certificate,
+                    is_revoked: actor.is_revoked,
+                }
+            })
+            .collect();
+
         let mut crls = std::collections::HashMap::new();
+
+        let revoked_serial_numbers: Vec<u32> = actors
+            .iter()
+            .filter(|actor| actor.is_revoked)
+            .map(|actor| {
+                let mut bytes = [0u8; 4];
+                bytes.copy_from_slice(actor.certificate.certificate.tbs_certificate.serial_number.as_bytes());
+                u32::from_le_bytes(bytes)
+            })
+            .collect();
+
+        let local_crl_dp = local_intermediate.crl_dps.first().unwrap().clone();
+
+        let crl = local_intermediate
+            .pki_keypair
+            .revoke_certs(&local_intermediate.certificate, revoked_serial_numbers)
+            .unwrap();
+
+        crls.insert(local_crl_dp, crl);
 
         let mut intermediates = vec![local_intermediate];
         for federated_chain in args.federated_test_chains {
             crls.extend(federated_chain.crls.clone());
 
             for fed_intermediate in &federated_chain.intermediates {
-                intermediates.push(trust_anchor.cross_sign_intermediate(fed_intermediate));
+                let cross_signed_intermediate = trust_anchor.cross_sign_intermediate(fed_intermediate);
+
+                if args.dump_pem_certs {
+                    use x509_cert::der::EncodePem as _;
+                    println!(
+                        "{} => \n{}",
+                        cross_signed_intermediate
+                            .certificate
+                            .tbs_certificate
+                            .subject
+                            .to_string(),
+                        cross_signed_intermediate
+                            .certificate
+                            .to_pem(x509_cert::der::pem::LineEnding::LF)
+                            .unwrap()
+                    );
+                }
+
+                intermediates.push(cross_signed_intermediate);
             }
 
             actors.extend(federated_chain.actors.clone());
         }
-
-        let revoked_serial_numbers: Vec<u32> = args
-            .revoked_certs
-            .iter()
-            .map(|cert| {
-                let mut bytes = [0u8; 4];
-                bytes.copy_from_slice(cert.certificate.tbs_certificate.serial_number.as_bytes());
-                u32::from_le_bytes(bytes)
-            })
-            .collect();
-
-        let local_crl_dp = trust_anchor.crl_dps.first().unwrap().clone();
-
-        let crl = trust_anchor
-            .pki_keypair
-            .revoke_certs(&trust_anchor.certificate, revoked_serial_numbers)
-            .unwrap();
-
-        crls.insert(local_crl_dp, crl);
 
         Self {
             trust_anchor,
@@ -133,7 +203,7 @@ pub enum X509CertificateType {
     EndIdentity,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct X509Certificate {
     pub pki_keypair: PkiKeypair,
     pub signature_scheme: SignatureScheme,
@@ -161,9 +231,11 @@ impl X509Certificate {
                 org: &params.org,
                 common_name: params.common_name.as_deref(),
                 domain: params.domain.as_deref(),
+                alternative_names: None,
                 crl_dps: Some(&[&crl_dps[0]]),
                 signer: None,
                 is_ca: true,
+                is_root: true,
             })
             .unwrap();
 
@@ -190,16 +262,18 @@ impl X509Certificate {
                 signature_scheme,
                 profile: CertProfile::SubCA {
                     issuer: self.certificate.tbs_certificate.subject.clone(),
-                    path_len_constraint: None,
+                    path_len_constraint: Some(1),
                 },
                 serial: serial as _,
                 validity_from_now: params.expiration,
                 org: &params.org,
                 common_name: params.common_name.as_deref(),
                 domain: params.domain.as_deref(),
+                alternative_names: None,
                 crl_dps: Some(&[&crl_dps[0]]),
                 signer: Some(&self.pki_keypair),
                 is_ca: true,
+                is_root: false,
             })
             .unwrap();
 
@@ -236,11 +310,34 @@ impl X509Certificate {
 
         let crl_dps = vec![params.get_crl_dp()];
 
+        let mut alternative_names = vec![];
+        if let Some(handle) = &params.handle {
+            if let Some(domain) = &params.domain {
+                let qualified_handle = wire_e2e_identity::prelude::Handle::from(handle.as_str())
+                    .try_to_qualified(domain.as_str())
+                    .unwrap();
+
+                alternative_names.push(qualified_handle.to_string());
+            } else {
+                alternative_names.push(handle.clone());
+            }
+        }
+
+        if let Some(client_id) = &params.client_id {
+            let qualified_client_id = wire_e2e_identity::prelude::E2eiClientId::try_from_qualified(&client_id)
+                .unwrap()
+                .to_uri();
+
+            alternative_names.push(qualified_client_id);
+        }
+
+        let alternative_names_ref: Vec<_> = alternative_names.iter().map(String::as_str).collect();
+
         let certificate = pki_keypair
             .generate_cert(CertificateGenerationArgs {
                 signature_scheme,
                 profile: CertProfile::Leaf {
-                    issuer: self.certificate.tbs_certificate.issuer.clone(),
+                    issuer: self.certificate.tbs_certificate.subject.clone(),
                     enable_key_agreement: false,
                     enable_key_encipherment: false,
                 },
@@ -249,9 +346,11 @@ impl X509Certificate {
                 org: &params.org,
                 common_name: params.common_name.as_deref(),
                 domain: params.domain.as_deref(),
+                alternative_names: Some(&alternative_names_ref),
                 crl_dps: Some(&[&crl_dps[0]]),
                 signer: Some(&self.pki_keypair),
                 is_ca: false,
+                is_root: false,
             })
             .unwrap();
 

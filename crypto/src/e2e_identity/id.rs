@@ -78,13 +78,21 @@ impl QualifiedE2eiClientId {
         Self::generate_from_user_id(&uuid::Uuid::new_v4())
     }
 
+    pub fn generate_with_domain(domain: &str) -> Self {
+        Self::generate_from_user_id_and_domain(&uuid::Uuid::new_v4(), domain)
+    }
+
     pub fn generate_from_user_id(user_id: &uuid::Uuid) -> Self {
+        Self::generate_from_user_id_and_domain(user_id, DOMAIN)
+    }
+
+    pub fn generate_from_user_id_and_domain(user_id: &uuid::Uuid, domain: &str) -> Self {
         use base64::Engine as _;
 
         let user_id = base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(user_id.as_bytes());
 
         let device_id = rand::random::<u64>();
-        let client_id = format!("{user_id}:{device_id:x}@{DOMAIN}");
+        let client_id = format!("{user_id}:{device_id:x}@{domain}");
         Self(client_id.into_bytes().into())
     }
 

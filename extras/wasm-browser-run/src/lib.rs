@@ -414,7 +414,7 @@ window.__wbr__jsCall().then(callback);"#,
         let debug = self.debug;
 
         let wrapped_stream = ws_client_rx.filter_map(move |msg| {
-            dbg!(&msg);
+            // dbg!(&msg);
             let tx_inner = tx.clone();
             async move {
                 if debug {

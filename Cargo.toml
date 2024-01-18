@@ -49,34 +49,35 @@ branch = "2.x"
 package = "openmls"
 git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "feat/rfc9420"
+branch = "feat/x509-allow-single-cert"
 
 [patch.crates-io.openmls_traits]
 package = "openmls_traits"
 git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "feat/rfc9420"
+branch = "feat/x509-allow-single-cert"
 
 [patch.crates-io.openmls_basic_credential]
 package = "openmls_basic_credential"
 git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "feat/rfc9420"
+branch = "feat/x509-allow-single-cert"
 
 [patch.crates-io.openmls_x509_credential]
 package = "openmls_x509_credential"
 git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "feat/rfc9420"
+branch = "feat/x509-allow-single-cert"
 
 [patch.crates-io.hpke]
 git = "https://github.com/wireapp/rust-hpke.git"
 branch = "wire/unstable-pq-xyber"
 
 [patch.crates-io.wire-e2e-identity]
-git = "https://github.com/wireapp/rusty-jwt-tools"
 package = "wire-e2e-identity"
-tag = "v0.8.6"
+# tag = "v0.8.6"
+git = "https://github.com/wireapp/rusty-jwt-tools"
+branch = "feat/x509-id-ed25519"
 
 # aarch64-apple-ios-sim target support has not yet been released
 [patch.crates-io.openssl-src]
