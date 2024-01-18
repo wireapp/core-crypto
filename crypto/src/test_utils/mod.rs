@@ -22,7 +22,7 @@ use std::collections::HashMap;
 
 use crate::{
     prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration},
-    test_utils::x509::{CertificateParams, X509TestChain, X509TestChainArgs},
+    test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     CoreCryptoCallbacks,
 };
 
@@ -57,7 +57,7 @@ pub async fn run_test_with_client_ids<const N: usize>(
     client_ids: [&'static str; N],
     test: impl FnOnce([MlsCentral; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
-    run_test_with_deterministic_client_ids(case, client_ids.map(|_| ["", "", ""]), test).await
+    run_test_with_deterministic_client_ids(case, client_ids.map(|display_name| ["", "", display_name]), test).await
 }
 
 pub async fn run_test_with_deterministic_client_ids<const N: usize>(
@@ -68,15 +68,49 @@ pub async fn run_test_with_deterministic_client_ids<const N: usize>(
     run_tests(move |paths: [String; N]| {
         Box::pin(async move {
             let x509_test_chain = std::sync::Arc::new(case.is_x509().then(|| {
+                let default_params = CertificateParams::default();
+                let root_params = {
+                    let mut params = default_params.clone();
+                    if let Some(root_cn) = &default_params.common_name {
+                        params.common_name.replace(format!("{} Root CA", root_cn));
+                    }
+                    params
+                };
+                let local_ca_params = {
+                    let mut params = default_params.clone();
+                    if let Some(root_cn) = &default_params.common_name {
+                        params.common_name.replace(format!("{} Intermediate CA", root_cn));
+                    }
+                    params
+                };
+
+                let local_actors = client_ids
+                    .iter()
+                    .map(|[client_id, handle, display_name]| X509TestChainActorArg {
+                        name: display_name.to_string(),
+                        handle: if handle.is_empty() {
+                            format!("{display_name}_wire")
+                        } else {
+                            handle.to_string()
+                        },
+                        client_id: if client_id.is_empty() {
+                            QualifiedE2eiClientId::generate_with_domain(&local_ca_params.domain.as_ref().unwrap())
+                                .try_into()
+                                .unwrap()
+                        } else {
+                            client_id.to_string()
+                        },
+                        is_revoked: false, // TODO: Add tests for revocation
+                    })
+                    .collect();
+
                 X509TestChain::init(X509TestChainArgs {
-                    local_params: CertificateParams::default(),
+                    root_params,
+                    local_ca_params,
                     signature_scheme: case.signature_scheme(),
                     federated_test_chains: &[],
-                    revoked_certs: &[],
-                    local_actors: client_ids
-                        .iter()
-                        .map(|[client_id, _, display_name]| (display_name.to_string(), client_id.to_string()))
-                        .collect(),
+                    local_actors,
+                    dump_pem_certs: false,
                 })
             }));
 
@@ -85,6 +119,7 @@ pub async fn run_test_with_deterministic_client_ids<const N: usize>(
 
             let stream = paths.into_iter().enumerate().zip(path_x509_chains.into_iter()).map(
                 |((i, p), x509_test_chain)| async move {
+                    use x509_cert::der::{Encode as _, EncodePem as _};
                     let configuration = MlsCentralConfiguration::try_new(
                         p,
                         "test".into(),
@@ -98,7 +133,6 @@ pub async fn run_test_with_deterministic_client_ids<const N: usize>(
 
                     // Setup the X509 PKI environment
                     if let Some(x509_test_chain) = x509_test_chain.as_ref() {
-                        use x509_cert::der::{Encode as _, EncodePem as _};
                         central
                             .e2ei_register_acme_ca(
                                 x509_test_chain
@@ -137,25 +171,17 @@ pub async fn run_test_with_deterministic_client_ids<const N: usize>(
                         }
                         MlsCredentialType::X509 => {
                             let sc = case.cfg.ciphersuite.signature_algorithm();
-                            let [client_id, handle, display_name] = client_ids[i];
-
-                            let cert = match (client_id, handle, display_name) {
-                                ("", "", "") => {
-                                    let client_id = QualifiedE2eiClientId::generate();
-                                    crate::prelude::CertificateBundle::rand(&client_id, sc)
-                                }
-                                _ => {
-                                    let client_id = QualifiedE2eiClientId::from_str_unchecked(client_id);
-                                    crate::prelude::CertificateBundle::new(
-                                        sc,
-                                        handle,
-                                        display_name,
-                                        Some(&client_id),
-                                        None,
-                                    )
-                                }
+                            let actor_cert = &x509_test_chain.as_ref().as_ref().unwrap().actors[i];
+                            let cert_der = actor_cert.certificate.certificate.to_der().unwrap();
+                            let bundle = crate::prelude::CertificateBundle {
+                                certificate_chain: vec![cert_der],
+                                private_key: crate::mls::credential::x509::CertificatePrivateKey {
+                                    signature_scheme: sc,
+                                    value: actor_cert.certificate.pki_keypair.signing_key_bytes(),
+                                },
                             };
-                            ClientIdentifier::X509(HashMap::from([(sc, cert)]))
+
+                            ClientIdentifier::X509(HashMap::from([(sc, bundle)]))
                         }
                     };
                     central

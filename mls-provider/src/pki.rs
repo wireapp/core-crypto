@@ -36,6 +36,26 @@ pub enum PkiKeypair {
     Ed25519(Ed25519PkiKeypair),
 }
 
+impl PkiKeypair {
+    pub fn signing_key_bytes(&self) -> Vec<u8> {
+        match self {
+            Self::P256(sk) => sk.to_bytes().to_vec(),
+            Self::P384(sk) => sk.to_bytes().to_vec(),
+            Self::Ed25519(sk) => sk.0.to_bytes().to_vec(),
+        }
+    }
+
+    pub fn public_key_identifier(&self) -> Vec<u8> {
+        let pk_bytes = match self {
+            Self::P256(sk) => sk.verifying_key().to_sec1_bytes().to_vec(),
+            Self::P384(sk) => sk.verifying_key().to_sec1_bytes().to_vec(),
+            Self::Ed25519(sk) => sk.0.verifying_key().to_bytes().to_vec(),
+        };
+        use sha1::Digest as _;
+        sha1::Sha1::digest(pk_bytes).to_vec()
+    }
+}
+
 pub use x509_cert::builder::Profile as CertProfile;
 
 pub struct CertificateGenerationArgs<'a> {
@@ -45,31 +65,37 @@ pub struct CertificateGenerationArgs<'a> {
     pub validity_from_now: std::time::Duration,
     pub org: &'a str,
     pub common_name: Option<&'a str>,
+    pub alternative_names: Option<&'a [&'a str]>,
     pub domain: Option<&'a str>,
     pub crl_dps: Option<&'a [&'a str]>,
     pub signer: Option<&'a PkiKeypair>,
     pub is_ca: bool,
+    pub is_root: bool,
 }
 
-fn get_keyusage(is_ca: bool) -> x509_cert::ext::pkix::KeyUsage {
-    let mut flags = x509_cert::der::flagset::FlagSet::default();
-    flags |= x509_cert::ext::pkix::KeyUsages::DigitalSignature;
-    flags |= x509_cert::ext::pkix::KeyUsages::NonRepudiation;
-    flags |= x509_cert::ext::pkix::KeyUsages::KeyEncipherment;
-    flags |= x509_cert::ext::pkix::KeyUsages::KeyAgreement;
-    if is_ca {
-        flags |= x509_cert::ext::pkix::KeyUsages::KeyCertSign;
-        flags |= x509_cert::ext::pkix::KeyUsages::CRLSign;
+// fn get_ca_keyusage() -> x509_cert::ext::pkix::KeyUsage {
+//     let mut flags = x509_cert::der::flagset::FlagSet::default();
+//     flags |= x509_cert::ext::pkix::KeyUsages::KeyCertSign;
+//     flags |= x509_cert::ext::pkix::KeyUsages::CRLSign;
+//     x509_cert::ext::pkix::KeyUsage(flags)
+// }
+
+fn get_extended_keyusage(is_ca: bool) -> x509_cert::ext::pkix::ExtendedKeyUsage {
+    let mut ext_keyusages = vec![];
+    if !is_ca {
+        // ID_KP_CLIENT_AUTH
+        ext_keyusages.push(spki::ObjectIdentifier::new_unwrap("1.3.6.1.5.5.7.3.2"));
     }
-    x509_cert::ext::pkix::KeyUsage(flags)
+
+    x509_cert::ext::pkix::ExtendedKeyUsage(ext_keyusages)
 }
 
 macro_rules! impl_certgen {
     (
         $signer:expr, $signer_keypair:expr, $sig_type:path,
-        $skid:expr, $profile:expr, $own_spki:expr,
-        $serial:expr, $subject:expr, $domain:expr, $validity:expr,
-        $crl_dps:expr, $is_ca:expr
+        $profile:expr, $own_spki:expr, $serial:expr,
+        $subject:expr, $org:expr, $domain:expr, $validity:expr, $alt_names:expr,
+        $crl_dps:expr, $is_ca:expr, $is_root:expr
     ) => {{
         let mut builder = x509_cert::builder::CertificateBuilder::new(
             $profile,
@@ -81,28 +107,82 @@ macro_rules! impl_certgen {
         )
         .map_err(|_| MlsProviderError::CertificateGenerationError)?;
 
-        builder
-            .add_extension(&$skid)
-            .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+        // builder
+        //     .add_extension(&$skid)
+        //     .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+
+        // if $is_ca {
+        //     builder
+        //         .add_extension(&get_ca_keyusage())
+        //         .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+        // }
 
         builder
-            .add_extension(&get_keyusage($is_ca))
+            .add_extension(&get_extended_keyusage($is_ca))
             .map_err(|_| MlsProviderError::CertificateGenerationError)?;
 
-        builder
-            .add_extension(&$signer.akid()?)
-            .map_err(|_| MlsProviderError::CertificateGenerationError)?;
-
-        if let Some(san) = $domain {
-            builder
-                .add_extension(&x509_cert::ext::pkix::SubjectAltName(vec![
-                    x509_cert::ext::pkix::name::GeneralName::DnsName(
-                        san.to_string()
+        if !$is_ca {
+            if let Some(alt_names) = $alt_names {
+                let mut alt_names_list = vec![];
+                for alt_name in alt_names {
+                    alt_names_list.push(x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
+                        alt_name
+                            .to_string()
                             .try_into()
                             .map_err(|_| MlsProviderError::CertificateGenerationError)?,
-                    ),
-                ]))
-                .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+                    ));
+                }
+
+                builder
+                    .add_extension(&x509_cert::ext::pkix::SubjectAltName(alt_names_list))
+                    .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+            }
+        } else {
+            let mut permitted_subtrees = vec![x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
+                format!(".{}", $org)
+                    .try_into()
+                    .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+            )];
+
+            if let Some(domain) = $domain {
+                // Add Domain DNS SAN
+                builder
+                    .add_extension(&x509_cert::ext::pkix::SubjectAltName(vec![
+                        x509_cert::ext::pkix::name::GeneralName::DnsName(
+                            domain
+                                .to_string()
+                                .try_into()
+                                .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                        ),
+                    ]))
+                    .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+
+                permitted_subtrees.push(x509_cert::ext::pkix::name::GeneralName::DnsName(
+                    domain
+                        .to_string()
+                        .try_into()
+                        .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                ));
+            }
+
+            if !$is_root {
+                builder
+                    .add_extension(&x509_cert::ext::pkix::NameConstraints {
+                        permitted_subtrees: Some(
+                            permitted_subtrees
+                                .into_iter()
+                                .map(|base| x509_cert::ext::pkix::constraints::name::GeneralSubtree {
+                                    base,
+                                    minimum: 0,
+                                    maximum: None,
+                                })
+                                .collect(),
+                        ),
+
+                        excluded_subtrees: None,
+                    })
+                    .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+            }
         }
 
         if let Some(crl_dps) = $crl_dps {
@@ -162,14 +242,9 @@ impl PkiKeypair {
     }
 
     pub fn akid(&self) -> MlsProviderResult<x509_cert::ext::pkix::AuthorityKeyIdentifier> {
-        let spki = self.spki()?;
-        let spki_fingerprint = spki
-            .fingerprint_bytes()
-            .map_err(|_| MlsProviderError::CertificateGenerationError)?;
-
         Ok(x509_cert::ext::pkix::AuthorityKeyIdentifier {
             key_identifier: Some(
-                spki::der::asn1::OctetString::new(spki_fingerprint)
+                spki::der::asn1::OctetString::new(self.public_key_identifier())
                     .map_err(|_| MlsProviderError::CertificateGenerationError)?,
             ),
             authority_cert_issuer: None,
@@ -293,7 +368,7 @@ impl PkiKeypair {
         use x509_cert::builder::Builder as _;
         let mut subject_fmt = format!("O={}", args.org);
         if let Some(cn) = args.common_name {
-            subject_fmt.push_str(&format!("CN={}", cn));
+            subject_fmt.push_str(&format!(",CN={}", cn));
         }
 
         let subject =
@@ -302,13 +377,6 @@ impl PkiKeypair {
             .map_err(|_| MlsProviderError::CertificateGenerationError)?;
         let serial_number = x509_cert::serial_number::SerialNumber::from(args.serial);
         let spki = self.spki()?;
-        let spki_fingerprint = spki
-            .fingerprint_bytes()
-            .map_err(|_| MlsProviderError::CertificateGenerationError)?;
-        let skid = x509_cert::ext::pkix::SubjectKeyIdentifier(
-            spki::der::asn1::OctetString::new(spki_fingerprint)
-                .map_err(|_| MlsProviderError::CertificateGenerationError)?,
-        );
 
         let signer = args.signer.unwrap_or(self);
 
@@ -318,15 +386,17 @@ impl PkiKeypair {
                     signer,
                     kp,
                     p256::ecdsa::DerSignature,
-                    skid,
                     args.profile,
                     spki,
                     serial_number,
                     subject,
+                    args.org,
                     args.domain,
                     validity,
+                    args.alternative_names,
                     args.crl_dps,
-                    args.is_ca
+                    args.is_ca,
+                    args.is_root
                 )
             }
             PkiKeypair::P384(kp) => {
@@ -334,15 +404,17 @@ impl PkiKeypair {
                     signer,
                     kp,
                     p384::ecdsa::DerSignature,
-                    skid,
                     args.profile,
                     spki,
                     serial_number,
                     subject,
+                    args.org,
                     args.domain,
                     validity,
+                    args.alternative_names,
                     args.crl_dps,
-                    args.is_ca
+                    args.is_ca,
+                    args.is_root
                 )
             }
             PkiKeypair::Ed25519(kp) => {
@@ -350,15 +422,17 @@ impl PkiKeypair {
                     signer,
                     kp,
                     Ed25519PkiSignature,
-                    skid,
                     args.profile,
                     spki,
                     serial_number,
                     subject,
+                    args.org,
                     args.domain,
                     validity,
+                    args.alternative_names,
                     args.crl_dps,
-                    args.is_ca
+                    args.is_ca,
+                    args.is_root
                 )
             }
         };
