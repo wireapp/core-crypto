@@ -4,6 +4,7 @@ use wasm_bindgen_test::*;
 
 use rusty_jwt_tools::prelude::*;
 use utils::keys::enrollments;
+use wire_e2e_identity::prelude::E2eiAcmeAuthorization;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -87,12 +88,17 @@ fn e2e_api() {
               "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
               "identifiers": [
                 {
-                  "type": "wireapp-id",
+                  "type": "wireapp-user",
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
+                },
+                {
+                  "type": "wireapp-device",
                   "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://obakjPOHQ2CkNb0rOrNM3A!ba54e8ace8b4c90d@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
                 }
               ],
               "authorizations": [
-                "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw"
+                "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw",
+                "https://stepca:33016/acme/wire/authz/A0ThZnpZZBpO8quUcdjSMk77dpZVn9Fj"
               ],
               "expires": "2032-02-10T14:59:20Z",
               "notBefore": "2013-02-09T14:59:20.442908Z",
@@ -108,16 +114,18 @@ fn e2e_api() {
         };
 
         // POST http://acme-server/authz
-        let dpop_acme_token = "b1vGm3jV7dbKz84C1XpZTLQQKQWcFFmg";
-        let (authz, previous_nonce) = {
-            let authz_url = order.authorizations.first().unwrap();
+        let dpop_challenge_token = "b1vGm3jV7dbKz84C1XpZTLQQKQWcFFmg";
+        let (authz_user, authz_device, previous_nonce) = {
+            let [ref authz_user_url, ref authz_device_url] = order.authorizations[..] else {
+                unreachable!()
+            };
             let _authz_req = enrollment
-                .acme_new_authz_request(authz_url, &account, previous_nonce)
+                .acme_new_authz_request(authz_user_url, &account, previous_nonce.clone())
                 .unwrap();
 
             let resp = json!({
               "status": "pending",
-              "expires": "2023-02-10T14:59:20Z",
+              "expires": "2032-02-10T14:59:20Z",
               "challenges": [
                 {
                   "type": "wire-oidc-01",
@@ -125,26 +133,50 @@ fn e2e_api() {
                   "status": "pending",
                   "token": "Fvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
                   "target": "https://dex/dex"
-                },
+                }
+              ],
+              "identifier": {
+                "type": "wireapp-user",
+                "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
+              }
+            });
+            let authz_user = enrollment.acme_new_authz_response(resp).unwrap();
+
+            let _authz_req = enrollment
+                .acme_new_authz_request(authz_device_url, &account, previous_nonce)
+                .unwrap();
+
+            let resp = json!({
+              "status": "pending",
+              "expires": "2032-02-10T14:59:20Z",
+              "challenges": [
                 {
                   "type": "wire-dpop-01",
                   "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
                   "status": "pending",
-                  "token": dpop_acme_token,
+                  "token": dpop_challenge_token,
                   "target": "https://wire.com/clients/ba54e8ace8b4c90d/access-token"
                 }
               ],
               "identifier": {
-                "type": "wireapp-id",
+                "type": "wireapp-device",
                 "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://obakjPOHQ2CkNb0rOrNM3A!ba54e8ace8b4c90d@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
               }
             });
-            let authz = enrollment.acme_new_authz_response(resp).unwrap();
-            (authz, prev_nonce())
+            let authz_device = enrollment.acme_new_authz_response(resp).unwrap();
+
+            (authz_user, authz_device, prev_nonce())
         };
 
         // extract challenges
-        let (dpop_chall, oidc_chall) = { (authz.wire_dpop_challenge.clone(), authz.wire_oidc_challenge.clone()) };
+        let oidc_chall = match authz_user {
+            E2eiAcmeAuthorization::User { challenge, .. } => challenge,
+            _ => unreachable!(),
+        };
+        let dpop_chall = match authz_device {
+            E2eiAcmeAuthorization::Device { challenge, .. } => challenge,
+            _ => unreachable!(),
+        };
 
         // HEAD http://wire-server/nonce
         let backend_nonce = { BackendNonce::from(utils::rand_base64_str(32)) };
@@ -217,7 +249,7 @@ fn e2e_api() {
                     access_token: Some(access_token_file),
                     client_id: client_id.to_uri(),
                     handle: qualified_handle.to_string(),
-                    challenge: dpop_acme_token.to_string(),
+                    challenge: dpop_challenge_token.to_string(),
                     leeway,
                     max_expiry,
                     issuer,
@@ -234,7 +266,8 @@ fn e2e_api() {
               "type": "wire-dpop-01",
               "url": "https://localhost:55794/acme/acme/challenge/tR33VAzGrR93UnBV5mTV9nVdTZrG2Ln0/xfEE0yEYAoce4yoTKg9HoNj9fGllbWhj",
               "status": "valid",
-              "token": "2FpTOmNQvNfWDktNWt1oIJnjLE3MkyFb"
+              "token": "2FpTOmNQvNfWDktNWt1oIJnjLE3MkyFb",
+              "target": "http://example.com/target"
             });
             enrollment.acme_new_challenge_response(resp).unwrap();
             prev_nonce()
@@ -252,7 +285,8 @@ fn e2e_api() {
               "type": "wire-oidc-01",
               "url": "https://localhost:55794/acme/acme/challenge/tR33VAzGrR93UnBV5mTV9nVdTZrG2Ln0/QXgyA324mTntfVAIJKw2cF23i4UFJltk",
               "status": "valid",
-              "token": "2FpTOmNQvNfWDktNWt1oIJnjLE3MkyFb"
+              "token": "2FpTOmNQvNfWDktNWt1oIJnjLE3MkyFb",
+              "target": "http://example.com/target"
             });
             enrollment.acme_new_challenge_response(resp).unwrap();
             prev_nonce()
@@ -269,12 +303,17 @@ fn e2e_api() {
               "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
               "identifiers": [
                 {
-                  "type": "wireapp-id",
+                  "type": "wireapp-user",
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
+                },
+                {
+                  "type": "wireapp-device",
                   "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://obakjPOHQ2CkNb0rOrNM3A!ba54e8ace8b4c90d@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
                 }
               ],
               "authorizations": [
-                "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw"
+                "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw",
+                "https://stepca:33016/acme/wire/authz/A0ThZnpZZBpO8quUcdjSMk77dpZVn9Fj"
               ],
               "expires": "2032-02-10T14:59:20Z",
               "notBefore": "2013-02-09T14:59:20.442908Z",
@@ -297,12 +336,17 @@ fn e2e_api() {
               "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
               "identifiers": [
                 {
-                  "type": "wireapp-id",
+                  "type": "wireapp-user",
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
+                },
+                {
+                  "type": "wireapp-device",
                   "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://obakjPOHQ2CkNb0rOrNM3A!ba54e8ace8b4c90d@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
                 }
               ],
               "authorizations": [
-                "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw"
+                "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw",
+                "https://stepca:33016/acme/wire/authz/A0ThZnpZZBpO8quUcdjSMk77dpZVn9Fj"
               ],
               "expires": "2032-02-10T14:59:20Z",
               "notBefore": "2013-02-09T14:59:20.442908Z",

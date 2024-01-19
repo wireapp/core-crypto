@@ -46,8 +46,9 @@ impl E2eTest<'static> {
         let (t, (account, previous_nonce)) = (f.new_account)(t, (directory.clone(), previous_nonce)).await?;
         let (t, (order, order_url, previous_nonce)) =
             (f.new_order)(t, (directory.clone(), account.clone(), previous_nonce)).await?;
-        let (t, (authz, previous_nonce)) = (f.new_authz)(t, (account.clone(), order, previous_nonce)).await?;
-        let (t, (dpop_chall, oidc_chall)) = (f.extract_challenges)(t, authz.clone()).await?;
+        let (t, (authz_a, authz_b, previous_nonce)) =
+            (f.new_authorization)(t, (account.clone(), order, previous_nonce)).await?;
+        let (t, (dpop_chall, oidc_chall)) = (f.extract_challenges)(t, (authz_a.clone(), authz_b.clone())).await?;
 
         let thumbprint = JwkThumbprint::generate(&t.acme_jwk, t.hash_alg)?.kid;
         let oidc_chall_token = &oidc_chall.token;
@@ -209,55 +210,66 @@ impl<'a> E2eTest<'a> {
     }
 
     /// POST http://acme-server/authz
-    pub async fn new_authz(
+    pub async fn new_authorization(
         &mut self,
         account: &AcmeAccount,
         order: AcmeOrder,
-        previous_nonce: String,
-    ) -> TestResult<(AcmeAuthz, String)> {
+        mut previous_nonce: String,
+    ) -> TestResult<(AcmeAuthz, AcmeAuthz, String)> {
         self.display_chapter("Display-name and handle already authorized");
         self.display_step("create authorization and fetch challenges");
-        let authz_url = order.authorizations.first().unwrap();
-        let authz_req = RustyAcme::new_authz_request(authz_url, account, self.alg, &self.acme_kp, previous_nonce)?;
-        let req = self.client.acme_req(authz_url, &authz_req)?;
-        self.display_req(
-            Actor::WireClient,
-            Actor::AcmeServer,
-            Some(&req),
-            Some("/acme/{acme-provisioner}/authz/{authz-id}"),
-        );
-        self.display_body(&authz_req);
 
-        self.display_step("get back challenges");
-        let mut resp = self.client.execute(req).await?;
-        self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
-        let previous_nonce = resp.replay_nonce();
+        let mut first_authz = None;
 
-        // TODO: improve when asserhttp implements fallible errors
-        if resp.status() != StatusCode::OK {
-            return Err(TestError::AuthzCreationError);
+        for (i, authz_url) in order.authorizations.iter().enumerate() {
+            let authz_req =
+                RustyAcme::new_authz_request(authz_url, account, self.alg, &self.acme_kp, previous_nonce.clone())?;
+            let req = self.client.acme_req(authz_url, &authz_req)?;
+            self.display_req(
+                Actor::WireClient,
+                Actor::AcmeServer,
+                Some(&req),
+                Some("/acme/{acme-provisioner}/authz/{authz-id}"),
+            );
+            self.display_body(&authz_req);
+
+            self.display_step("get back challenges");
+            let mut resp = self.client.execute(req).await?;
+            self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
+            let local_previous_nonce = resp.replay_nonce();
+
+            // TODO: improve when asserhttp implements fallible errors
+            if resp.status() != StatusCode::OK {
+                return Err(TestError::AuthzCreationError);
+            }
+
+            resp.expect_status_ok()
+                .has_replay_nonce()
+                .has_location()
+                .expect_content_type_json();
+            let resp = resp.json().await?;
+            let authz = RustyAcme::new_authz_response(resp)?;
+            self.display_body(&authz);
+
+            if i == 0 {
+                first_authz = Some(authz);
+                previous_nonce = local_previous_nonce;
+            } else {
+                return Ok((first_authz.unwrap(), authz, local_previous_nonce));
+            }
         }
-
-        resp.expect_status_ok()
-            .has_replay_nonce()
-            .has_location()
-            .expect_content_type_json();
-        let resp = resp.json().await?;
-        let authz = RustyAcme::new_authz_response(resp)?;
-        self.display_body(&authz);
-        Ok((authz, previous_nonce))
+        unreachable!()
     }
 
     /// extract challenges
-    pub fn extract_challenges(&mut self, mut authz: AcmeAuthz) -> TestResult<(AcmeChallenge, AcmeChallenge)> {
-        Ok((
-            authz
-                .take_challenge(AcmeChallengeType::WireDpop01)
-                .ok_or(TestError::Internal)?,
-            authz
-                .take_challenge(AcmeChallengeType::WireOidc01)
-                .ok_or(TestError::Internal)?,
-        ))
+    pub fn extract_challenges(
+        &mut self,
+        authz_a: AcmeAuthz,
+        authz_b: AcmeAuthz,
+    ) -> TestResult<(AcmeChallenge, AcmeChallenge)> {
+        let [challenge_a] = authz_a.challenges;
+        let [challenge_b] = authz_b.challenges;
+        Ok((challenge_a, challenge_b))
     }
 
     /// HEAD http://wire-server/nonce
@@ -288,7 +300,7 @@ impl<'a> E2eTest<'a> {
         expiry: core::time::Duration,
     ) -> TestResult<String> {
         self.display_step("create client DPoP token");
-        let htu: Htu = dpop_chall.target.as_ref().unwrap().clone().into();
+        let htu: Htu = dpop_chall.target.clone().into();
         let audience = dpop_chall.url.clone();
         let acme_nonce: AcmeNonce = dpop_chall.token.as_str().into();
         let dpop = Dpop {
@@ -323,7 +335,7 @@ impl<'a> E2eTest<'a> {
     ) -> TestResult<String> {
         self.display_step("trade client DPoP token for an access token");
 
-        let dpop_url = dpop_chall.target.as_ref().unwrap().to_string();
+        let dpop_url = dpop_chall.target.to_string();
         let b64 = |v: &str| base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(v);
 
         // cheat to share test context
@@ -475,7 +487,7 @@ impl<'a> E2eTest<'a> {
 
     pub async fn fetch_id_token_from_dex(&mut self, oidc_chall: &AcmeChallenge, keyauth: String) -> TestResult<String> {
         self.display_chapter("Authenticate end user using OIDC Authorization Code with PKCE flow");
-        let issuer_url = IssuerUrl::new(oidc_chall.target.as_ref().unwrap().to_string()).unwrap();
+        let issuer_url = IssuerUrl::new(oidc_chall.target.to_string()).unwrap();
         let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), move |r| {
             custom_oauth_client("discovery", ctx_get_http_client(), r)
         })
@@ -599,7 +611,7 @@ impl<'a> E2eTest<'a> {
         keyauth: String,
     ) -> TestResult<String> {
         self.display_chapter("Authenticate end user using OIDC Authorization Code with PKCE flow");
-        let oidc_target = oidc_chall.target.as_ref().unwrap().to_string();
+        let oidc_target = oidc_chall.target.to_string();
         let issuer_url = IssuerUrl::new(oidc_target).unwrap();
         let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), move |r| {
             custom_oauth_client("discovery", ctx_get_http_client(), r)
@@ -831,6 +843,9 @@ impl<'a> E2eTest<'a> {
 
         self.display_step("get back a url for fetching the certificate");
         let mut resp = self.client.execute(req).await?;
+
+        // tokio::time::sleep(core::time::Duration::from_secs(20)).await;
+
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();
         resp.expect_status_ok()

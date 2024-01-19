@@ -3,10 +3,12 @@ use zeroize::Zeroize;
 
 use error::*;
 use prelude::*;
-use rusty_acme::prelude::{AcmeChallenge, AcmeChallengeType};
-use rusty_jwt_tools::jwk::TryIntoJwk;
-use rusty_jwt_tools::jwk_thumbprint::JwkThumbprint;
-use rusty_jwt_tools::prelude::{ClientId, Dpop, Handle, Htm, Pem, RustyJwtTools};
+use rusty_acme::prelude::{AcmeChallenge, AcmeIdentifier};
+use rusty_jwt_tools::{
+    jwk::TryIntoJwk,
+    jwk_thumbprint::JwkThumbprint,
+    prelude::{ClientId, Dpop, Handle, Htm, Pem, RustyJwtTools},
+};
 
 #[cfg(feature = "identity-builder")]
 mod builder;
@@ -14,18 +16,17 @@ mod error;
 mod types;
 
 pub mod prelude {
+    pub use rusty_acme::prelude::x509;
     pub use rusty_acme::prelude::{
         x509::IdentityStatus, AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader,
     };
     pub use rusty_jwt_tools::prelude::{ClientId as E2eiClientId, HashAlgorithm, JwsAlgorithm, RustyJwtError};
 
-    pub use rusty_acme::prelude::x509;
-
     #[cfg(feature = "identity-builder")]
     pub use super::builder::*;
     pub use super::error::{E2eIdentityError, E2eIdentityResult};
     pub use super::types::{
-        E2eiAcmeAccount, E2eiAcmeChall, E2eiAcmeFinalize, E2eiAcmeOrder, E2eiNewAcmeAuthz, E2eiNewAcmeOrder,
+        E2eiAcmeAccount, E2eiAcmeAuthorization, E2eiAcmeChallenge, E2eiAcmeFinalize, E2eiAcmeOrder, E2eiNewAcmeOrder,
     };
     pub use super::RustyE2eIdentity;
 }
@@ -168,11 +169,10 @@ impl RustyE2eIdentity {
     /// * `new_order` - http response body
     pub fn acme_new_order_response(&self, new_order: Json) -> E2eIdentityResult<E2eiNewAcmeOrder> {
         let new_order = RustyAcme::new_order_response(new_order)?;
-        let authorizations = new_order.authorizations.clone();
-        let new_order = serde_json::to_vec(&new_order)?.into();
+        let json_new_order = serde_json::to_vec(&new_order)?.into();
         Ok(E2eiNewAcmeOrder {
-            delegate: new_order,
-            authorizations,
+            delegate: json_new_order,
+            authorizations: new_order.authorizations,
         })
     }
 
@@ -206,30 +206,26 @@ impl RustyE2eIdentity {
     ///
     /// # Parameters
     /// * `new_authz` - http response body
-    pub fn acme_new_authz_response(&self, new_authz: Json) -> E2eIdentityResult<E2eiNewAcmeAuthz> {
-        let new_authz = serde_json::from_value(new_authz)?;
-        let mut new_authz = RustyAcme::new_authz_response(new_authz)?;
+    pub fn acme_new_authz_response(&self, new_authz: Json) -> E2eIdentityResult<E2eiAcmeAuthorization> {
+        let authz = serde_json::from_value(new_authz)?;
+        let authz = RustyAcme::new_authz_response(authz)?;
 
-        let identifier = new_authz.identifier.to_json()?;
-
-        let wire_dpop_challenge = new_authz
-            .take_challenge(AcmeChallengeType::WireDpop01)
-            .map(TryInto::try_into)
-            .transpose()?
-            .ok_or(RustyAcmeError::SmallstepImplementationError("Missing DPoP challenge"))?;
-        let wire_oidc_challenge = new_authz
-            .take_challenge(AcmeChallengeType::WireOidc01)
-            .ok_or(RustyAcmeError::SmallstepImplementationError("Missing OIDC challenge"))?;
-
-        let thumbprint = JwkThumbprint::generate(&self.acme_jwk, self.hash_alg)?.kid;
-        let oidc_chall_token = &wire_oidc_challenge.token;
-        let keyauth = format!("{oidc_chall_token}.{thumbprint}");
-
-        Ok(E2eiNewAcmeAuthz {
-            identifier,
-            keyauth,
-            wire_dpop_challenge,
-            wire_oidc_challenge: wire_oidc_challenge.try_into()?,
+        let [challenge] = authz.challenges;
+        Ok(match authz.identifier {
+            AcmeIdentifier::WireappUser(_) => {
+                let thumbprint = JwkThumbprint::generate(&self.acme_jwk, self.hash_alg)?.kid;
+                let oidc_chall_token = &challenge.token;
+                let keyauth = format!("{oidc_chall_token}.{thumbprint}");
+                E2eiAcmeAuthorization::User {
+                    identifier: authz.identifier.to_json()?,
+                    challenge: challenge.try_into()?,
+                    keyauth,
+                }
+            }
+            AcmeIdentifier::WireappDevice(_) => E2eiAcmeAuthorization::Device {
+                identifier: authz.identifier.to_json()?,
+                challenge: challenge.try_into()?,
+            },
         })
     }
 
@@ -253,7 +249,7 @@ impl RustyE2eIdentity {
     pub fn new_dpop_token(
         &self,
         client_id: &str,
-        dpop_challenge: &E2eiAcmeChall,
+        dpop_challenge: &E2eiAcmeChallenge,
         backend_nonce: String,
         handle: &str,
         team: Option<String>,
@@ -294,7 +290,7 @@ impl RustyE2eIdentity {
     pub fn acme_dpop_challenge_request(
         &self,
         access_token: String,
-        dpop_challenge: &E2eiAcmeChall,
+        dpop_challenge: &E2eiAcmeChallenge,
         account: &E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
@@ -323,7 +319,7 @@ impl RustyE2eIdentity {
     pub fn acme_oidc_challenge_request(
         &self,
         id_token: String,
-        oidc_challenge: &E2eiAcmeChall,
+        oidc_challenge: &E2eiAcmeChallenge,
         account: &E2eiAcmeAccount,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {

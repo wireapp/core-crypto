@@ -424,8 +424,8 @@ pub struct EnrollmentFlow {
     pub get_acme_nonce: Flow<AcmeDirectory, String>,
     pub new_account: Flow<(AcmeDirectory, String), (AcmeAccount, String)>,
     pub new_order: Flow<(AcmeDirectory, AcmeAccount, String), (AcmeOrder, url::Url, String)>,
-    pub new_authz: Flow<(AcmeAccount, AcmeOrder, String), (AcmeAuthz, String)>,
-    pub extract_challenges: Flow<AcmeAuthz, (AcmeChallenge, AcmeChallenge)>,
+    pub new_authorization: Flow<(AcmeAccount, AcmeOrder, String), (AcmeAuthz, AcmeAuthz, String)>,
+    pub extract_challenges: Flow<(AcmeAuthz, AcmeAuthz), (AcmeChallenge, AcmeChallenge)>,
     pub get_wire_server_nonce: Flow<(), BackendNonce>,
     pub create_dpop_token: Flow<(AcmeChallenge, BackendNonce, QualifiedHandle, Team, core::time::Duration), String>,
     pub get_access_token: Flow<(AcmeChallenge, String), String>,
@@ -465,15 +465,16 @@ impl Default for EnrollmentFlow {
                     Ok((test, (order, order_url, previous_nonce)))
                 })
             }),
-            new_authz: Box::new(|mut test, (account, order, previous_nonce)| {
+            new_authorization: Box::new(|mut test, (account, order, previous_nonce)| {
                 Box::pin(async move {
-                    let (authz, previous_nonce) = test.new_authz(&account, order, previous_nonce).await?;
-                    Ok((test, (authz, previous_nonce)))
+                    let (authz_a, authz_b, previous_nonce) =
+                        test.new_authorization(&account, order, previous_nonce).await?;
+                    Ok((test, (authz_a, authz_b, previous_nonce)))
                 })
             }),
-            extract_challenges: Box::new(|mut test, authz| {
+            extract_challenges: Box::new(|mut test, (authz_a, authz_b)| {
                 Box::pin(async move {
-                    let (dpop_chall, oidc_chall) = test.extract_challenges(authz)?;
+                    let (dpop_chall, oidc_chall) = test.extract_challenges(authz_a, authz_b)?;
                     Ok((test, (dpop_chall, oidc_chall)))
                 })
             }),

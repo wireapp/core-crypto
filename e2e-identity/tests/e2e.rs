@@ -147,7 +147,8 @@ mod acme_server {
                     // same nonce is used for both 'new_order' & 'new_authz'
                     let (order, order_url, _previous_nonce) =
                         test.new_order(&directory, &account, previous_nonce.clone()).await?;
-                    let (_, previous_nonce) = test.new_authz(&account, order.clone(), previous_nonce).await?;
+                    let (_, _, previous_nonce) =
+                        test.new_authorization(&account, order.clone(), previous_nonce).await?;
                     Ok((test, (order, order_url, previous_nonce)))
                 })
             }),
@@ -168,9 +169,9 @@ mod acme_server {
         let (real_chall_setter, rc1, rc2) = (real_chall.clone(), real_chall.clone(), real_chall.clone());
 
         let flow = EnrollmentFlow {
-            extract_challenges: Box::new(|mut test, authz| {
+            extract_challenges: Box::new(|mut test, (authz_a, authz_b)| {
                 Box::pin(async move {
-                    let (dpop_chall, oidc_chall) = test.extract_challenges(authz)?;
+                    let (dpop_chall, oidc_chall) = test.extract_challenges(authz_b, authz_a)?;
                     *real_chall_setter.lock().unwrap() = Some(dpop_chall.clone());
                     // let's invert those challenges for the rest of the flow
                     Ok((test, (oidc_chall, dpop_chall)))
@@ -492,7 +493,7 @@ mod dpop_challenge {
                         device_id: 42,
                         ..test.sub.clone()
                     };
-                    let htu: Htu = dpop_chall.target.unwrap().into();
+                    let htu: Htu = dpop_chall.target.into();
                     let backend_nonce: BackendNonce = nonce_r.lock().unwrap().clone().unwrap();
                     let acme_nonce: AcmeNonce = dpop_chall.token.as_str().into();
                     let handle = Handle::from(test.handle.as_str())
@@ -596,7 +597,7 @@ mod dpop_challenge {
             get_access_token: Box::new(|test, (dpop_chall, _)| {
                 Box::pin(async move {
                     let client_id = test.sub.clone();
-                    let htu: Htu = dpop_chall.target.unwrap().into();
+                    let htu: Htu = dpop_chall.target.into();
                     let backend_nonce: BackendNonce = nonce_r.lock().unwrap().clone().unwrap();
                     let handle = Handle::from(test.handle.as_str())
                         .try_to_qualified(&client_id.domain)

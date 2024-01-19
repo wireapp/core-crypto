@@ -107,8 +107,10 @@ pub struct StepCaImage {
 }
 
 impl StepCaImage {
-    const NAME: &'static str = "smallstep/step-ca";
-    const TAG: &'static str = "0.25.3-rc3";
+    // const NAME: &'static str = "smallstep/step-ca";
+    const NAME: &'static str = "wire-smallstep-stepca";
+    // const TAG: &'static str = "0.25.3-rc3";
+    const TAG: &'static str = "latest";
     const CA_NAME: &'static str = "wire";
     pub const ACME_PROVISIONER: &'static str = "wire";
     pub const PORT: u16 = 9000;

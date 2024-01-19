@@ -1,4 +1,4 @@
-use rusty_acme::prelude::{AcmeChallenge, RustyAcmeError};
+use rusty_acme::prelude::AcmeChallenge;
 
 use crate::prelude::{E2eIdentityError, E2eIdentityResult};
 
@@ -30,48 +30,48 @@ impl TryFrom<rusty_acme::prelude::AcmeAccount> for E2eiAcmeAccount {
 #[serde(rename_all = "camelCase")]
 pub struct E2eiNewAcmeOrder {
     pub delegate: Json,
-    pub authorizations: Vec<url::Url>,
+    pub authorizations: [url::Url; 2],
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct E2eiNewAcmeAuthz {
-    pub identifier: String,
-    pub keyauth: String,
-    pub wire_dpop_challenge: E2eiAcmeChall,
-    pub wire_oidc_challenge: E2eiAcmeChall,
+pub enum E2eiAcmeAuthorization {
+    User {
+        identifier: String,
+        keyauth: String,
+        challenge: E2eiAcmeChallenge,
+    },
+    Device {
+        identifier: String,
+        challenge: E2eiAcmeChallenge,
+    },
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct E2eiAcmeChall {
+pub struct E2eiAcmeChallenge {
     pub delegate: Json,
     pub url: url::Url,
     pub target: url::Url,
 }
 
-impl TryFrom<AcmeChallenge> for E2eiAcmeChall {
+impl TryFrom<AcmeChallenge> for E2eiAcmeChallenge {
     type Error = E2eIdentityError;
 
     fn try_from(challenge: AcmeChallenge) -> E2eIdentityResult<Self> {
         let chall = serde_json::to_value(&challenge)?;
-        let target = challenge.target.ok_or(E2eIdentityError::AcmeError(
-            RustyAcmeError::SmallstepImplementationError(
-                "Wire's fork of smallstep ACME server is supposed to always add a 'target' field to challenges",
-            ),
-        ))?;
         Ok(Self {
             delegate: chall,
             url: challenge.url,
-            target,
+            target: challenge.target,
         })
     }
 }
 
-impl TryFrom<E2eiAcmeChall> for AcmeChallenge {
+impl TryFrom<E2eiAcmeChallenge> for AcmeChallenge {
     type Error = E2eIdentityError;
 
-    fn try_from(chall: E2eiAcmeChall) -> E2eIdentityResult<Self> {
+    fn try_from(chall: E2eiAcmeChallenge) -> E2eIdentityResult<Self> {
         Ok(serde_json::from_value(chall.delegate)?)
     }
 }
