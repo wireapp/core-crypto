@@ -66,26 +66,32 @@ internal class E2EITest {
             "notAfter": "2037-01-08T00:00:00Z",
             "identifiers": [
                 {
-                  "type": "wireapp-id",
+                  "type": "wireapp-user",
+                  "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
+                },
+                {
+                  "type": "wireapp-device",
                   "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!6c1866f567616f31@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
                 }
             ],
             "authorizations": [
-                "https://example.com/acme/authz/PAniVnsZcis"
+              "https://example.com/acme/authz/6SDQFoXfk1UT75qRfzurqxWCMEatapiL",
+              "https://example.com/acme/authz/d2sJyM0MaV6wTX4ClP8eUQ8TF4ZKk7jz"
             ],
             "finalize": "https://example.com/acme/order/TOlocE8rfgo/finalize"
         }""".trimIndent().toByteArray()
         val newOrder = enrollment.newOrderResponse(orderResponse)
 
-        val orderUrl = "https://example.com/acme/wire-acme/order/C7uOXEgg5KPMPtbdE3aVMzv7cJjwUVth"
-        val authzUrl = newOrder.authorizations[0]
-        enrollment.newAuthzRequest(authzUrl, previousNonce)
-        val authzResponse = """{
+        val orderUrl = "https://example.com/acme/wire-acme/order/6SDQFoXfk1UT75qRfzurqxWCMEatapiL"
+
+        val userAuthzUrl = newOrder.authorizations[0]
+        enrollment.newAuthzRequest(userAuthzUrl, previousNonce)
+        val userAuthzResponse = """{
             "status": "pending",
-            "expires": "2016-01-02T14:09:30Z",
+            "expires": "2037-01-02T14:09:30Z",
             "identifier": {
-              "type": "wireapp-id",
-              "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!6c1866f567616f31@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
+              "type": "wireapp-user",
+              "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
             },
             "challenges": [
               {
@@ -93,8 +99,22 @@ internal class E2EITest {
                 "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/RNb3z6tvknq7vz2U5DoHsSOGiWQyVtAz",
                 "status": "pending",
                 "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
-                "target": "https://dex/dex"
-              },
+                "target": "http://example.com/target"
+              }
+            ]
+        }""".toByteArray()
+        enrollment.authzResponse(userAuthzResponse)
+
+        val deviceAuthzUrl = newOrder.authorizations[0]
+        enrollment.newAuthzRequest(deviceAuthzUrl, previousNonce)
+        val deviceAuthzResponse = """{
+            "status": "pending",
+            "expires": "2037-01-02T14:09:30Z",
+            "identifier": {
+              "type": "wireapp-device",
+              "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!6c1866f567616f31@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
+            },
+            "challenges": [
               {
                 "type": "wire-dpop-01",
                 "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
@@ -104,7 +124,7 @@ internal class E2EITest {
               }
             ]
         }""".toByteArray()
-        enrollment.authzResponse(authzResponse)
+        enrollment.authzResponse(deviceAuthzResponse)
 
         val backendNonce = "U09ZR0tnWE5QS1ozS2d3bkF2eWJyR3ZVUHppSTJsMnU"
         enrollment.createDpopToken(30U, backendNonce)
@@ -115,7 +135,8 @@ internal class E2EITest {
             "type": "wire-dpop-01",
             "url": "https://example.com/acme/chall/prV_B7yEyA4",
             "status": "valid",
-            "token": "LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0"
+            "token": "LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0",
+            "target": "http://example.com/target"
         }""".toByteArray()
         enrollment.challengeResponse(dpopChallengeResponse)
 
@@ -125,12 +146,17 @@ internal class E2EITest {
           "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
           "identifiers": [
             {
-              "type": "wireapp-id",
+              "type": "wireapp-user",
+              "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
+            },
+            {
+              "type": "wireapp-device",
               "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!6c1866f567616f31@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
             }
           ],
           "authorizations": [
-            "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw"
+            "https://example.com/acme/authz/6SDQFoXfk1UT75qRfzurqxWCMEatapiL",
+            "https://example.com/acme/authz/d2sJyM0MaV6wTX4ClP8eUQ8TF4ZKk7jz"
           ],
           "expires": "2032-02-10T14:59:20Z",
           "notBefore": "2013-02-09T14:59:20.442908Z",
@@ -145,12 +171,17 @@ internal class E2EITest {
           "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
           "identifiers": [
             {
-              "type": "wireapp-id",
+              "type": "wireapp-user",
+              "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
+            },
+            {
+              "type": "wireapp-device",
               "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!6c1866f567616f31@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}"
             }
           ],
           "authorizations": [
-            "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw"
+            "https://example.com/acme/authz/6SDQFoXfk1UT75qRfzurqxWCMEatapiL",
+            "https://example.com/acme/authz/d2sJyM0MaV6wTX4ClP8eUQ8TF4ZKk7jz"
           ],
           "expires": "2032-02-10T14:59:20Z",
           "notBefore": "2013-02-09T14:59:20.442908Z",

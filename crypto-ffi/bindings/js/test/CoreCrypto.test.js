@@ -970,26 +970,31 @@ test("end-to-end-identity", async () => {
       "notAfter": "2037-01-08T00:00:00Z",
       "identifiers": [
         {
-          "type": "wireapp-id",
-          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!4959bc6ab12f2846@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
+          "type": "wireapp-user",
+          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
         },
+        {
+          "type": "wireapp-device",
+          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!4959bc6ab12f2846@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
+        }
       ],
       "authorizations": [
-        "https://example.com/acme/authz/PAniVnsZcis",
+          "https://example.com/acme/authz/6SDQFoXfk1UT75qRfzurqxWCMEatapiL",
+          "https://example.com/acme/authz/d2sJyM0MaV6wTX4ClP8eUQ8TF4ZKk7jz"
       ],
       "finalize": "https://example.com/acme/order/TOlocE8rfgo/finalize",
     };
     const newOrder = await enrollment.newOrderResponse(jsonToByteArray(newOrderResp));
 
-    const authzUrl = "https://example.com/acme/wire-acme/authz/1Mw1NcVgu1cusB9RTdtFVdEo6UQDueZm";
-    const authzReq = await enrollment.newAuthzRequest(authzUrl, previousNonce);
+    const userAuthzUrl = "https://example.com/acme/wire-acme/authz/6SDQFoXfk1UT75qRfzurqxWCMEatapiL";
+    const userAuthzReq = await enrollment.newAuthzRequest(userAuthzUrl, previousNonce);
 
-    const authzResp = {
+    const userAuthzResp = {
       "status": "pending",
-      "expires": "2016-01-02T14:09:30Z",
+      "expires": "2037-01-02T14:09:30Z",
       "identifier": {
-        "type": "wireapp-id",
-        "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!4959bc6ab12f2846@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
+        "type": "wireapp-user",
+        "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
       },
       "challenges": [
         {
@@ -998,7 +1003,22 @@ test("end-to-end-identity", async () => {
           "status": "pending",
           "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
           "target": "https://dex/dex",
-        },
+        }
+      ],
+    };
+    const userAuthz = await enrollment.newAuthzResponse(jsonToByteArray(userAuthzResp));
+
+    const deviceAuthzUrl = "https://example.com/acme/wire-acme/authz/d2sJyM0MaV6wTX4ClP8eUQ8TF4ZKk7jz";
+    const deviceAuthzReq = await enrollment.newAuthzRequest(deviceAuthzUrl, previousNonce);
+
+    const deviceAuthzResp = {
+      "status": "pending",
+      "expires": "2037-01-02T14:09:30Z",
+      "identifier": {
+        "type": "wireapp-device",
+        "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!4959bc6ab12f2846@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
+      },
+      "challenges": [
         {
           "type": "wire-dpop-01",
           "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
@@ -1008,7 +1028,7 @@ test("end-to-end-identity", async () => {
         },
       ],
     };
-    const authz = await enrollment.newAuthzResponse(jsonToByteArray(authzResp));
+    const deviceAuthz = await enrollment.newAuthzResponse(jsonToByteArray(deviceAuthzResp));
 
     const backendNonce = "U09ZR0tnWE5QS1ozS2d3bkF2eWJyR3ZVUHppSTJsMnU";
     const dpopTokenExpirySecs = 3600;
@@ -1021,6 +1041,7 @@ test("end-to-end-identity", async () => {
       "url": "https://example.com/acme/chall/prV_B7yEyA4",
       "status": "valid",
       "token": "LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0",
+      "target": "http://example.com/target"
     };
       await enrollment.newDpopChallengeResponse(jsonToByteArray(dpopChallengeResp));
 
@@ -1038,6 +1059,7 @@ test("end-to-end-identity", async () => {
       "url": "https://localhost:55794/acme/acme/challenge/tR33VAzGrR93UnBV5mTV9nVdTZrG2Ln0/QXgyA324mTntfVAIJKw2cF23i4UFJltk",
       "status": "valid",
       "token": "2FpTOmNQvNfWDktNWt1oIJnjLE3MkyFb",
+      "target": "http://example.com/target"
     };
     await enrollment.newOidcChallengeResponse(cc, jsonToByteArray(oidcChallengeResp));
 
@@ -1049,18 +1071,23 @@ test("end-to-end-identity", async () => {
       "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
       "identifiers": [
         {
-          "type": "wireapp-id",
+          "type": "wireapp-user",
+          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
+        },
+        {
+          "type": "wireapp-device",
           "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!4959bc6ab12f2846@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
         },
       ],
       "authorizations": [
-        "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw",
+          "https://example.com/acme/authz/6SDQFoXfk1UT75qRfzurqxWCMEatapiL",
+          "https://example.com/acme/authz/d2sJyM0MaV6wTX4ClP8eUQ8TF4ZKk7jz"
       ],
       "expires": "2032-02-10T14:59:20Z",
       "notBefore": "2013-02-09T14:59:20.442908Z",
       "notAfter": "2032-02-09T15:59:20.442908Z",
     };
-      await enrollment.checkOrderResponse(jsonToByteArray(checkOrderResp));
+    await enrollment.checkOrderResponse(jsonToByteArray(checkOrderResp));
 
     const finalizeReq = await enrollment.finalizeRequest(previousNonce);
     const finalizeResp = {
@@ -1069,12 +1096,17 @@ test("end-to-end-identity", async () => {
       "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
       "identifiers": [
         {
-          "type": "wireapp-id",
-          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!4959bc6ab12f2846@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
+          "type": "wireapp-user",
+          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
         },
+        {
+          "type": "wireapp-device",
+          "value": "{\"name\":\"Alice Smith\",\"domain\":\"wire.com\",\"client-id\":\"wireapp://t6wRpI8BRSeviBwwiFp5MQ!4959bc6ab12f2846@wire.com\",\"handle\":\"wireapp://%40alice_wire@wire.com\"}",
+        }
       ],
       "authorizations": [
-        "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw",
+          "https://example.com/acme/authz/6SDQFoXfk1UT75qRfzurqxWCMEatapiL",
+          "https://example.com/acme/authz/d2sJyM0MaV6wTX4ClP8eUQ8TF4ZKk7jz"
       ],
       "expires": "2032-02-10T14:59:20Z",
       "notBefore": "2013-02-09T14:59:20.442908Z",

@@ -37,9 +37,8 @@ fun com.wire.crypto.AcmeChallenge.toAcmeChallenge() = AcmeChallenge(this)
 
 data class NewAcmeAuthz(private val delegate: com.wire.crypto.NewAcmeAuthz) {
     val identifier: String get() = delegate.identifier
-    val keyauth: String get() = delegate.keyauth
-    val wireOidcChallenge: AcmeChallenge get() = delegate.wireOidcChallenge.toAcmeChallenge()
-    val wireDpopChallenge: AcmeChallenge get() = delegate.wireDpopChallenge.toAcmeChallenge()
+    val keyauth: String? get() = delegate.keyauth
+    val challenge: AcmeChallenge get() = delegate.challenge.toAcmeChallenge()
 
     fun lower() = delegate
 }

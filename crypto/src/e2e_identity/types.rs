@@ -66,14 +66,16 @@ impl TryFrom<E2eiNewAcmeOrder> for wire_e2e_identity::prelude::E2eiNewAcmeOrder 
     type Error = E2eIdentityError;
 
     fn try_from(new_order: E2eiNewAcmeOrder) -> E2eIdentityResult<Self> {
+        let authorizations = new_order
+            .authorizations
+            .iter()
+            .map(|a| a.parse())
+            .collect::<Result<Vec<url::Url>, url::ParseError>>()?
+            .try_into()
+            .map_err(|_| E2eIdentityError::ImplementationError)?;
+
         Ok(Self {
-            authorizations: new_order.authorizations.iter().try_fold(
-                vec![],
-                |mut acc, u| -> E2eIdentityResult<Vec<url::Url>> {
-                    acc.push(u.parse()?);
-                    Ok(acc)
-                },
-            )?,
+            authorizations,
             delegate: serde_json::to_value(new_order.delegate)?,
         })
     }
@@ -87,35 +89,48 @@ pub struct E2eiNewAcmeAuthz {
     /// DNS entry associated with those challenge
     pub identifier: String,
     /// ACME challenge + ACME key thumbprint
-    pub keyauth: String,
-    /// Challenge for the clientId
-    pub wire_dpop_challenge: E2eiAcmeChallenge,
-    /// Challenge for the handle + display name
-    pub wire_oidc_challenge: E2eiAcmeChallenge,
+    pub keyauth: Option<String>,
+    /// ACME Challenge
+    pub challenge: E2eiAcmeChallenge,
 }
 
-impl TryFrom<wire_e2e_identity::prelude::E2eiNewAcmeAuthz> for E2eiNewAcmeAuthz {
+impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeAuthorization> for E2eiNewAcmeAuthz {
     type Error = E2eIdentityError;
 
-    fn try_from(authz: wire_e2e_identity::prelude::E2eiNewAcmeAuthz) -> E2eIdentityResult<Self> {
-        Ok(Self {
-            identifier: authz.identifier,
-            keyauth: authz.keyauth,
-            wire_dpop_challenge: authz.wire_dpop_challenge.try_into()?,
-            wire_oidc_challenge: authz.wire_oidc_challenge.try_into()?,
+    fn try_from(authz: wire_e2e_identity::prelude::E2eiAcmeAuthorization) -> E2eIdentityResult<Self> {
+        Ok(match authz {
+            wire_e2e_identity::prelude::E2eiAcmeAuthorization::User {
+                identifier,
+                keyauth,
+                challenge,
+            } => Self {
+                identifier,
+                keyauth: Some(keyauth),
+                challenge: challenge.try_into()?,
+            },
+            wire_e2e_identity::prelude::E2eiAcmeAuthorization::Device { identifier, challenge } => Self {
+                identifier,
+                keyauth: None,
+                challenge: challenge.try_into()?,
+            },
         })
     }
 }
 
-impl TryFrom<&E2eiNewAcmeAuthz> for wire_e2e_identity::prelude::E2eiNewAcmeAuthz {
+impl TryFrom<&E2eiNewAcmeAuthz> for wire_e2e_identity::prelude::E2eiAcmeAuthorization {
     type Error = E2eIdentityError;
 
     fn try_from(authz: &E2eiNewAcmeAuthz) -> E2eIdentityResult<Self> {
-        Ok(Self {
-            identifier: authz.identifier.clone(),
-            keyauth: authz.keyauth.clone(),
-            wire_dpop_challenge: (&authz.wire_dpop_challenge).try_into()?,
-            wire_oidc_challenge: (&authz.wire_oidc_challenge).try_into()?,
+        Ok(match &authz.keyauth {
+            None => Self::Device {
+                identifier: authz.identifier.clone(),
+                challenge: (&authz.challenge).try_into()?,
+            },
+            Some(keyauth) => Self::User {
+                identifier: authz.identifier.clone(),
+                keyauth: keyauth.clone(),
+                challenge: (&authz.challenge).try_into()?,
+            },
         })
     }
 }
@@ -135,10 +150,10 @@ pub struct E2eiAcmeChallenge {
     pub target: String,
 }
 
-impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeChall> for E2eiAcmeChallenge {
+impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeChallenge> for E2eiAcmeChallenge {
     type Error = E2eIdentityError;
 
-    fn try_from(chall: wire_e2e_identity::prelude::E2eiAcmeChall) -> E2eIdentityResult<Self> {
+    fn try_from(chall: wire_e2e_identity::prelude::E2eiAcmeChallenge) -> E2eIdentityResult<Self> {
         Ok(Self {
             delegate: serde_json::to_vec(&chall.delegate)?,
             url: chall.url.to_string(),
@@ -147,7 +162,7 @@ impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeChall> for E2eiAcmeChallenge {
     }
 }
 
-impl TryFrom<&E2eiAcmeChallenge> for wire_e2e_identity::prelude::E2eiAcmeChall {
+impl TryFrom<&E2eiAcmeChallenge> for wire_e2e_identity::prelude::E2eiAcmeChallenge {
     type Error = E2eIdentityError;
 
     fn try_from(chall: &E2eiAcmeChallenge) -> E2eIdentityResult<Self> {

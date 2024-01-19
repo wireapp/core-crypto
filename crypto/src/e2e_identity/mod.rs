@@ -7,7 +7,7 @@ use wire_e2e_identity::prelude::{
         extract_expiration_from_crl,
         revocation::{PkiEnvironment, PkiEnvironmentParams},
     },
-    RustyE2eIdentity,
+    E2eiAcmeAuthorization, RustyE2eIdentity,
 };
 
 use error::*;
@@ -289,7 +289,8 @@ pub struct E2eiEnrollment {
     expiry: core::time::Duration,
     directory: Option<types::E2eiAcmeDirectory>,
     account: Option<wire_e2e_identity::prelude::E2eiAcmeAccount>,
-    authz: Option<wire_e2e_identity::prelude::E2eiNewAcmeAuthz>,
+    user_authz: Option<wire_e2e_identity::prelude::E2eiAcmeAuthorization>,
+    device_authz: Option<wire_e2e_identity::prelude::E2eiAcmeAuthorization>,
     valid_order: Option<wire_e2e_identity::prelude::E2eiAcmeOrder>,
     finalize: Option<wire_e2e_identity::prelude::E2eiAcmeFinalize>,
     ciphersuite: MlsCiphersuite,
@@ -344,7 +345,8 @@ impl E2eiEnrollment {
             expiry,
             directory: None,
             account: None,
-            authz: None,
+            user_authz: None,
+            device_authz: None,
             valid_order: None,
             finalize: None,
             ciphersuite,
@@ -461,7 +463,10 @@ impl E2eiEnrollment {
     pub fn new_authz_response(&mut self, authz: Json) -> E2eIdentityResult<types::E2eiNewAcmeAuthz> {
         let authz = serde_json::from_slice(&authz[..])?;
         let authz = self.acme_new_authz_response(authz)?;
-        self.authz = Some(authz.clone());
+        match &authz {
+            E2eiAcmeAuthorization::User { .. } => self.user_authz = Some(authz.clone()),
+            E2eiAcmeAuthorization::Device { .. } => self.device_authz = Some(authz.clone()),
+        };
         authz.try_into()
     }
 
@@ -481,13 +486,19 @@ impl E2eiEnrollment {
     #[allow(clippy::too_many_arguments)]
     pub fn create_dpop_token(&self, expiry_secs: u32, backend_nonce: String) -> E2eIdentityResult<String> {
         let expiry = core::time::Duration::from_secs(expiry_secs as u64);
-        let authz = self.authz.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
-            "You must first call 'newAuthzResponse()'",
-        ))?;
-        let dpop_challenge = &authz.wire_dpop_challenge;
+        let authz = self
+            .device_authz
+            .as_ref()
+            .ok_or(E2eIdentityError::OutOfOrderEnrollment(
+                "You must first call 'newAuthzResponse()'",
+            ))?;
+        let challenge = match authz {
+            E2eiAcmeAuthorization::Device { challenge, .. } => challenge,
+            E2eiAcmeAuthorization::User { .. } => return Err(E2eIdentityError::ImplementationError),
+        };
         Ok(self.new_dpop_token(
             &self.client_id,
-            dpop_challenge,
+            challenge,
             backend_nonce,
             self.handle.as_str(),
             self.team.clone(),
@@ -505,14 +516,20 @@ impl E2eiEnrollment {
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
     pub fn new_dpop_challenge_request(&self, access_token: String, previous_nonce: String) -> E2eIdentityResult<Json> {
-        let authz = self.authz.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
-            "You must first call 'newAuthzResponse()'",
-        ))?;
-        let dpop_challenge = &authz.wire_dpop_challenge;
+        let authz = self
+            .device_authz
+            .as_ref()
+            .ok_or(E2eIdentityError::OutOfOrderEnrollment(
+                "You must first call 'newAuthzResponse()'",
+            ))?;
+        let challenge = match authz {
+            E2eiAcmeAuthorization::Device { challenge, .. } => challenge,
+            E2eiAcmeAuthorization::User { .. } => return Err(E2eIdentityError::ImplementationError),
+        };
         let account = self.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'newAccountResponse()'",
         ))?;
-        let challenge = self.acme_dpop_challenge_request(access_token, dpop_challenge, account, previous_nonce)?;
+        let challenge = self.acme_dpop_challenge_request(access_token, challenge, account, previous_nonce)?;
         let challenge = serde_json::to_vec(&challenge)?;
         Ok(challenge)
     }
@@ -547,14 +564,17 @@ impl E2eiEnrollment {
         if refresh_token.is_empty() {
             return Err(E2eIdentityError::InvalidRefreshToken);
         }
-        let authz = self.authz.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+        let authz = self.user_authz.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'newAuthzResponse()'",
         ))?;
-        let oidc_challenge = &authz.wire_oidc_challenge;
+        let challenge = match authz {
+            E2eiAcmeAuthorization::User { challenge, .. } => challenge,
+            E2eiAcmeAuthorization::Device { .. } => return Err(E2eIdentityError::ImplementationError),
+        };
         let account = self.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'newAccountResponse()'",
         ))?;
-        let challenge = self.acme_oidc_challenge_request(id_token, oidc_challenge, account, previous_nonce)?;
+        let challenge = self.acme_oidc_challenge_request(id_token, challenge, account, previous_nonce)?;
         let challenge = serde_json::to_vec(&challenge)?;
         self.refresh_token.replace(refresh_token.into());
         Ok(challenge)
@@ -832,7 +852,10 @@ pub mod tests {
         let client_id = client_id
             .map(|c| format!("{}{c}", wire_e2e_identity::prelude::E2eiClientId::URI_SCHEME))
             .unwrap_or_else(|| cc.get_e2ei_client_id().to_uri());
-        let identifier_value = format!("{{\"name\":\"{display_name}\",\"domain\":\"wire.com\",\"client-id\":\"{client_id}\",\"handle\":\"wireapp://%40{handle}@wire.com\"}}");
+        let device_identifier = format!("{{\"name\":\"{display_name}\",\"domain\":\"wire.com\",\"client-id\":\"{client_id}\",\"handle\":\"wireapp://%40{handle}@wire.com\"}}");
+        let user_identifier = format!(
+            "{{\"name\":\"{display_name}\",\"domain\":\"wire.com\",\"handle\":\"wireapp://%40{handle}@wire.com\"}}"
+        );
         let order_resp = json!({
             "status": "pending",
             "expires": "2037-01-05T14:09:07.99Z",
@@ -840,12 +863,17 @@ pub mod tests {
             "notAfter": "2037-01-08T00:00:00Z",
             "identifiers": [
                 {
-                  "type": "wireapp-id",
-                  "value": identifier_value
+                  "type": "wireapp-user",
+                  "value": user_identifier
+                },
+                {
+                  "type": "wireapp-device",
+                  "value": device_identifier
                 }
             ],
             "authorizations": [
-                "https://example.com/acme/authz/PAniVnsZcis",
+                "https://example.com/acme/authz/6SDQFoXfk1UT75qRfzurqxWCMEatapiL",
+                "https://example.com/acme/authz/d2sJyM0MaV6wTX4ClP8eUQ8TF4ZKk7jz"
             ],
             "finalize": "https://example.com/acme/order/TOlocE8rfgo/finalize"
         });
@@ -856,18 +884,18 @@ pub mod tests {
 
         let order_url = "https://example.com/acme/wire-acme/order/C7uOXEgg5KPMPtbdE3aVMzv7cJjwUVth";
 
-        let authz_url = new_order
-            .authorizations
-            .first()
-            .ok_or(E2eIdentityError::ImplementationError)?;
-        let _authz_req = enrollment.new_authz_request(authz_url.to_string(), previous_nonce.to_string())?;
+        let [user_authz_url, device_authz_url] = new_order.authorizations.as_slice() else {
+            unreachable!()
+        };
 
-        let authz_resp = json!({
+        let _user_authz_req = enrollment.new_authz_request(user_authz_url.to_string(), previous_nonce.to_string())?;
+
+        let user_authz_resp = json!({
             "status": "pending",
-            "expires": "2016-01-02T14:09:30Z",
+            "expires": "2037-01-02T14:09:30Z",
             "identifier": {
-              "type": "wireapp-id",
-              "value": identifier_value
+              "type": "wireapp-user",
+              "value": user_identifier
             },
             "challenges": [
               {
@@ -875,8 +903,24 @@ pub mod tests {
                 "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/RNb3z6tvknq7vz2U5DoHsSOGiWQyVtAz",
                 "status": "pending",
                 "token": "Gvg5AyOaw0uIQOWKE8lCSIP9nIYwcQiY",
-                "target": "https://dex/dex"
-              },
+                "target": "http://example.com/target"
+              }
+            ]
+        });
+        let user_authz_resp = serde_json::to_vec(&user_authz_resp)?;
+        enrollment.new_authz_response(user_authz_resp)?;
+
+        let _device_authz_req =
+            enrollment.new_authz_request(device_authz_url.to_string(), previous_nonce.to_string())?;
+
+        let device_authz_resp = json!({
+            "status": "pending",
+            "expires": "2037-01-02T14:09:30Z",
+            "identifier": {
+              "type": "wireapp-device",
+              "value": device_identifier
+            },
+            "challenges": [
               {
                 "type": "wire-dpop-01",
                 "url": "https://localhost:55170/acme/acme/challenge/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw/0y6hLM0TTOVUkawDhQcw5RB7ONwuhooW",
@@ -886,8 +930,8 @@ pub mod tests {
               }
             ]
         });
-        let authz_resp = serde_json::to_vec(&authz_resp)?;
-        enrollment.new_authz_response(authz_resp)?;
+        let device_authz_resp = serde_json::to_vec(&device_authz_resp)?;
+        enrollment.new_authz_response(device_authz_resp)?;
 
         let (enrollment, cc) = restore(enrollment, cc).await;
 
@@ -900,7 +944,8 @@ pub mod tests {
             "type": "wire-dpop-01",
             "url": "https://example.com/acme/chall/prV_B7yEyA4",
             "status": "valid",
-            "token": "LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0"
+            "token": "LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0",
+            "target": "http://example.com/target"
         });
         let dpop_chall_resp = serde_json::to_vec(&dpop_chall_resp)?;
         enrollment.new_dpop_challenge_response(dpop_chall_resp)?;
@@ -921,7 +966,8 @@ pub mod tests {
             "type": "wire-oidc-01",
             "url": "https://localhost:55794/acme/acme/challenge/tR33VAzGrR93UnBV5mTV9nVdTZrG2Ln0/QXgyA324mTntfVAIJKw2cF23i4UFJltk",
             "status": "valid",
-            "token": "2FpTOmNQvNfWDktNWt1oIJnjLE3MkyFb"
+            "token": "2FpTOmNQvNfWDktNWt1oIJnjLE3MkyFb",
+            "target": "http://example.com/target"
         });
         let oidc_chall_resp = serde_json::to_vec(&oidc_chall_resp)?;
         enrollment
@@ -942,16 +988,21 @@ pub mod tests {
           "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
           "identifiers": [
             {
-              "type": "wireapp-id",
-              "value": identifier_value
+              "type": "wireapp-user",
+              "value": user_identifier
+            },
+            {
+              "type": "wireapp-device",
+              "value": device_identifier
             }
           ],
           "authorizations": [
-            "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw"
+            "https://example.com/acme/authz/6SDQFoXfk1UT75qRfzurqxWCMEatapiL",
+            "https://example.com/acme/authz/d2sJyM0MaV6wTX4ClP8eUQ8TF4ZKk7jz"
           ],
-          "expires": "2032-02-10T14:59:20Z",
+          "expires": "2037-02-10T14:59:20Z",
           "notBefore": "2013-02-09T14:59:20.442908Z",
-          "notAfter": "2032-02-09T15:59:20.442908Z"
+          "notAfter": "2037-02-09T15:59:20.442908Z"
         });
         let order_resp = serde_json::to_vec(&order_resp)?;
         enrollment.check_order_response(order_resp)?;
@@ -965,16 +1016,21 @@ pub mod tests {
           "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
           "identifiers": [
             {
-              "type": "wireapp-id",
-              "value": identifier_value
+              "type": "wireapp-user",
+              "value": user_identifier
+            },
+            {
+              "type": "wireapp-device",
+              "value": device_identifier
             }
           ],
           "authorizations": [
-            "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw"
+            "https://example.com/acme/authz/6SDQFoXfk1UT75qRfzurqxWCMEatapiL",
+            "https://example.com/acme/authz/d2sJyM0MaV6wTX4ClP8eUQ8TF4ZKk7jz"
           ],
-          "expires": "2032-02-10T14:59:20Z",
+          "expires": "2037-02-10T14:59:20Z",
           "notBefore": "2013-02-09T14:59:20.442908Z",
-          "notAfter": "2032-02-09T15:59:20.442908Z"
+          "notAfter": "2037-02-09T15:59:20.442908Z"
         });
         let finalize_resp = serde_json::to_vec(&finalize_resp)?;
         enrollment.finalize_response(finalize_resp)?;
