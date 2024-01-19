@@ -2989,13 +2989,10 @@ pub struct NewAcmeAuthz {
     pub identifier: String,
     /// ACME challenge + ACME key thumbprint
     #[wasm_bindgen(readonly, js_name = "keyauth")]
-    pub keyauth: String,
-    /// Challenge for the deviceId owned by wire-server
-    #[wasm_bindgen(readonly, js_name = "wireDpopChallenge")]
-    pub wire_dpop_challenge: AcmeChallenge,
-    /// Challenge for the userId and displayName owned by the identity provider
-    #[wasm_bindgen(readonly, js_name = "wireOidcChallenge")]
-    pub wire_oidc_challenge: AcmeChallenge,
+    pub keyauth: Option<String>,
+    /// Associated ACME Challenge
+    #[wasm_bindgen(readonly, js_name = "challenge")]
+    pub challenge: AcmeChallenge,
 }
 
 impl From<core_crypto::prelude::E2eiNewAcmeAuthz> for NewAcmeAuthz {
@@ -3003,8 +3000,7 @@ impl From<core_crypto::prelude::E2eiNewAcmeAuthz> for NewAcmeAuthz {
         Self {
             identifier: authz.identifier,
             keyauth: authz.keyauth,
-            wire_dpop_challenge: authz.wire_dpop_challenge.into(),
-            wire_oidc_challenge: authz.wire_oidc_challenge.into(),
+            challenge: authz.challenge.into(),
         }
     }
 }
@@ -3014,8 +3010,7 @@ impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
         Self {
             identifier: authz.identifier,
             keyauth: authz.keyauth,
-            wire_dpop_challenge: authz.wire_dpop_challenge.into(),
-            wire_oidc_challenge: authz.wire_oidc_challenge.into(),
+            challenge: authz.challenge.into(),
         }
     }
 }

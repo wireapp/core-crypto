@@ -1911,9 +1911,8 @@ impl From<NewAcmeOrder> for core_crypto::prelude::E2eiNewAcmeOrder {
 /// See [core_crypto::e2e_identity::types::E2eiNewAcmeAuthz]
 pub struct NewAcmeAuthz {
     pub identifier: String,
-    pub keyauth: String,
-    pub wire_dpop_challenge: AcmeChallenge,
-    pub wire_oidc_challenge: AcmeChallenge,
+    pub keyauth: Option<String>,
+    pub challenge: AcmeChallenge,
 }
 
 impl From<core_crypto::prelude::E2eiNewAcmeAuthz> for NewAcmeAuthz {
@@ -1921,8 +1920,7 @@ impl From<core_crypto::prelude::E2eiNewAcmeAuthz> for NewAcmeAuthz {
         Self {
             identifier: new_authz.identifier,
             keyauth: new_authz.keyauth,
-            wire_dpop_challenge: new_authz.wire_dpop_challenge.into(),
-            wire_oidc_challenge: new_authz.wire_oidc_challenge.into(),
+            challenge: new_authz.challenge.into(),
         }
     }
 }
@@ -1932,8 +1930,7 @@ impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
         Self {
             identifier: new_authz.identifier,
             keyauth: new_authz.keyauth,
-            wire_dpop_challenge: new_authz.wire_dpop_challenge.into(),
-            wire_oidc_challenge: new_authz.wire_oidc_challenge.into(),
+            challenge: new_authz.challenge.into(),
         }
     }
 }

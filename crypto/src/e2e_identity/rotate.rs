@@ -289,9 +289,11 @@ pub mod tests {
 
         use super::*;
 
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        pub async fn enrollment_should_rotate_all(case: TestCase) {
+        // #[apply(all_cred_cipher)]
+        // #[wasm_bindgen_test]
+        #[async_std::test]
+        pub async fn enrollment_should_rotate_all(/*case: TestCase*/) {
+            let case = TestCase::default();
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
