@@ -7,10 +7,27 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.31] - 2024-01-22
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Use 2 acme authorizations instead of 1
+
+</details>
+
+* fix(e2ei): use 2 ACME authorizations instead of 1
+
 ## [1.0.0-rc.30] - 2024-01-16
 
 <details>
     <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Wrong rusty-jwt-tools pinned in rc30
 
 ### Features
 
