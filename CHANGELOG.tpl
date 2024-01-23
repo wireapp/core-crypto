@@ -7,11 +7,29 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+
+## [1.0.0-rc.32] - 2024-01-23
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.32" unreleased=true}}
+</details>
+
+* E2EI:
+    * Fixed a bug with Root CA Trust Anchor registration that wasn't working on native platforms (non-WASM)
+    * Fixed a bug with the initialization of our Intermediate CA store causing CRL & End-Identity certificate validation to fail
+    * Fixed a missing field in the FFI (CRL distribution-points) and added the logic to fill up the field
+    * Fixed an integer overflow in the X.509 expiration setting
+* MLS:
+    * Fixed errors when a single certificate is contained in a Credential (obsolete check)
+* Misc:
+    * Updated dependencies in many libraries
+
 ## [1.0.0-rc.31] - 2024-01-22
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.31" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.31"}}
 </details>
 
 * fix(e2ei): use 2 ACME authorizations instead of 1
