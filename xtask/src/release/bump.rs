@@ -105,12 +105,14 @@ fn bump_gradle_version(file: &str, bump_version: BumpLevel, dry_run: bool) -> Re
     let Some((start_idx, end_idx)) = gradle_build_file
         .find(SEARCH_STR)
         .map(|idx| idx + SEARCH_STR.len())
-        .and_then(|idx| gradle_build_file[idx..]
-            .find('\n')
-            .map(move |end_idx| (idx, end_idx + idx))
-        ) else {
-            return Err(eyre!("Could not find version in {}", file));
-        };
+        .and_then(|idx| {
+            gradle_build_file[idx..]
+                .find('\n')
+                .map(move |end_idx| (idx, end_idx + idx))
+        })
+    else {
+        return Err(eyre!("Could not find version in {}", file));
+    };
 
     let semver_version = semver::Version::parse(&gradle_build_file[start_idx..end_idx])?;
 
@@ -160,7 +162,7 @@ fn bump_deps(
                 continue;
             }
             // Otherwise extract the requirement
-            OptVersionReq::Req(req) | OptVersionReq::Locked(_, req) => req,
+            OptVersionReq::Req(req) | OptVersionReq::Locked(_, req) | OptVersionReq::UpdatePrecise(_, req) => req,
         };
 
         if required_version.comparators.is_empty() {
