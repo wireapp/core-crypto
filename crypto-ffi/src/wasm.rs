@@ -256,26 +256,20 @@ impl From<core_crypto::prelude::MlsCredentialType> for CredentialType {
 
 pub type FfiClientId = Box<[u8]>;
 
-#[wasm_bindgen]
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 /// see [core_crypto::prelude::MlsConversationCreationMessage]
 pub struct MemberAddedMessages {
     welcome: Vec<u8>,
     commit: Vec<u8>,
     group_info: GroupInfoBundle,
+    /// New CRL Distribution of members of this group
+    #[wasm_bindgen(readonly, js_name = "crlNewDistributionPoints")]
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 #[wasm_bindgen]
 impl MemberAddedMessages {
-    #[wasm_bindgen(constructor)]
-    pub fn new(welcome: Uint8Array, commit: Uint8Array, group_info: GroupInfoBundle) -> Self {
-        Self {
-            welcome: welcome.to_vec(),
-            commit: commit.to_vec(),
-            group_info,
-        }
-    }
-
     #[wasm_bindgen(getter)]
     pub fn welcome(&self) -> Uint8Array {
         Uint8Array::from(&*self.welcome)
@@ -296,15 +290,14 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     type Error = CoreCryptoError;
 
     fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, commit, pgs) = msg
-            .to_bytes_triple()
-            .map_err(CryptoError::from)
-            .map_err(Self::Error::from)?;
+        let (welcome, commit, pgs, crl_new_distribution_points) =
+            msg.to_bytes().map_err(CryptoError::from).map_err(Self::Error::from)?;
 
         Ok(Self {
             welcome,
             commit,
             group_info: pgs.into(),
+            crl_new_distribution_points,
         })
     }
 }
@@ -396,12 +389,15 @@ impl From<MlsGroupInfoBundle> for GroupInfoBundle {
     }
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RotateBundle {
     commits: HashMap<String, CommitBundle>,
     new_key_packages: Vec<Vec<u8>>,
     key_package_refs_to_remove: Vec<Vec<u8>>,
+    /// New CRL Distribution of members of this group
+    #[wasm_bindgen(readonly, js_name = "crlNewDistributionPoints")]
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 #[wasm_bindgen]
@@ -438,7 +434,7 @@ impl TryFrom<MlsRotateBundle> for RotateBundle {
     type Error = CoreCryptoError;
 
     fn try_from(msg: MlsRotateBundle) -> Result<Self, Self::Error> {
-        let (commits, new_key_packages, key_package_refs_to_remove) =
+        let (commits, new_key_packages, key_package_refs_to_remove, crl_new_distribution_points) =
             msg.to_bytes().map_err(CryptoError::from).map_err(Self::Error::from)?;
 
         let commits_size = commits.len();
@@ -453,49 +449,49 @@ impl TryFrom<MlsRotateBundle> for RotateBundle {
             commits,
             new_key_packages,
             key_package_refs_to_remove,
+            crl_new_distribution_points,
         })
     }
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ProposalBundle {
-    proposal: Vec<u8>,
-    proposal_ref: Vec<u8>,
-}
-
-#[wasm_bindgen]
-impl ProposalBundle {
-    #[wasm_bindgen(getter)]
-    pub fn proposal(&self) -> Uint8Array {
-        Uint8Array::from(&*self.proposal)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn proposal_ref(&self) -> Uint8Array {
-        Uint8Array::from(&*self.proposal_ref)
-    }
+    /// TLS-serialized MLS proposal that needs to be fanned out to other (existing) members of the conversation
+    #[wasm_bindgen(readonly, js_name = "proposal")]
+    pub proposal: Vec<u8>,
+    /// Unique identifier of a proposal. Use this in {@link CoreCrypto.clearPendingProposal} to roll back (delete) the proposal
+    #[wasm_bindgen(readonly, js_name = "proposalRef")]
+    pub proposal_ref: Vec<u8>,
+    /// New CRL Distribution of members of this group
+    #[wasm_bindgen(readonly, js_name = "crlNewDistributionPoints")]
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 impl TryFrom<MlsProposalBundle> for ProposalBundle {
     type Error = CoreCryptoError;
 
     fn try_from(msg: MlsProposalBundle) -> Result<Self, Self::Error> {
-        let (proposal, proposal_ref) = msg
-            .to_bytes_pair()
-            .map_err(CryptoError::from)
-            .map_err(Self::Error::from)?;
+        let (proposal, proposal_ref, crl_new_distribution_points) =
+            msg.to_bytes().map_err(CryptoError::from).map_err(Self::Error::from)?;
 
-        Ok(Self { proposal, proposal_ref })
+        Ok(Self {
+            proposal,
+            proposal_ref,
+            crl_new_distribution_points,
+        })
     }
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ConversationInitBundle {
     conversation_id: ConversationId,
     commit: Vec<u8>,
     group_info: GroupInfoBundle,
+    /// New CRL Distribution of members of this group
+    #[wasm_bindgen(readonly, js_name = "crlNewDistributionPoints")]
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 #[wasm_bindgen]
@@ -521,32 +517,60 @@ impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
 
     fn try_from(mut from: MlsConversationInitBundle) -> Result<Self, Self::Error> {
         let conversation_id = std::mem::take(&mut from.conversation_id);
-        let (commit, pgs) = from
-            .to_bytes_pair()
-            .map_err(CryptoError::from)
-            .map_err(Self::Error::from)?;
+        let (commit, pgs, crl_new_distribution_points) =
+            from.to_bytes().map_err(CryptoError::from).map_err(Self::Error::from)?;
 
         Ok(Self {
             conversation_id,
             commit,
             group_info: pgs.into(),
+            crl_new_distribution_points,
         })
     }
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+/// see [core_crypto::prelude::WelcomeBundle]
+pub struct WelcomeBundle {
+    /// Identifier of the joined conversation
+    #[wasm_bindgen(readonly, js_name = "id")]
+    pub id: ConversationId,
+    /// New CRL Distribution of members of this group
+    #[wasm_bindgen(readonly, js_name = "crlNewDistributionPoints")]
+    pub crl_new_distribution_points: Option<Vec<String>>,
+}
+
+impl From<core_crypto::prelude::WelcomeBundle> for WelcomeBundle {
+    fn from(w: core_crypto::prelude::WelcomeBundle) -> Self {
+        Self {
+            id: w.id,
+            crl_new_distribution_points: w.crl_new_distribution_points,
+        }
+    }
+}
+
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// see [core_crypto::prelude::decrypt::MlsConversationDecryptMessage]
 pub struct DecryptedMessage {
     message: Option<Vec<u8>>,
     proposals: Vec<ProposalBundle>,
-    is_active: bool,
-    commit_delay: Option<u32>,
+    /// It is set to false if ingesting this MLS message has resulted in the client being removed from the group (i.e. a Remove commit)
+    #[wasm_bindgen(readonly, js_name = "isActive")]
+    pub is_active: bool,
+    /// Commit delay hint (in milliseconds) to prevent clients from hammering the server with epoch changes
+    #[wasm_bindgen(readonly, js_name = "commitDelay")]
+    pub commit_delay: Option<u32>,
     sender_client_id: Option<Vec<u8>>,
-    has_epoch_changed: bool,
+    /// true when the decrypted message resulted in an epoch change i.e. it was a commit
+    #[wasm_bindgen(readonly, js_name = "hasEpochChanged")]
+    pub has_epoch_changed: bool,
     identity: Option<WireIdentity>,
     buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
-    crl_new_distribution_points: Option<Vec<String>>,
+    /// New CRL Distribution of members of this group
+    #[wasm_bindgen(readonly, js_name = "crlNewDistributionPoints")]
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
@@ -610,27 +634,12 @@ impl DecryptedMessage {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn is_active(&self) -> bool {
-        self.is_active
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn commit_delay(&self) -> Option<u32> {
-        self.commit_delay
-    }
-
-    #[wasm_bindgen(getter)]
     pub fn sender_client_id(&self) -> JsValue {
         if let Some(cid) = &self.sender_client_id {
             Uint8Array::from(cid.as_slice()).into()
         } else {
             JsValue::NULL
         }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn has_epoch_changed(&self) -> bool {
-        self.has_epoch_changed
     }
 
     #[wasm_bindgen(getter)]
@@ -644,16 +653,9 @@ impl DecryptedMessage {
             .clone()
             .map(|bm| bm.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
     }
-
-    #[wasm_bindgen(getter)]
-    pub fn crl_new_distribution_points(&self) -> Option<js_sys::Array> {
-        self.crl_new_distribution_points
-            .clone()
-            .map(|crl_dp| crl_dp.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
-    }
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// to avoid recursion
 pub struct BufferedDecryptedMessage {
@@ -664,7 +666,9 @@ pub struct BufferedDecryptedMessage {
     sender_client_id: Option<Vec<u8>>,
     has_epoch_changed: bool,
     identity: Option<WireIdentity>,
-    crl_new_distribution_points: Option<Vec<String>>,
+    /// New CRL Distribution of members of this group
+    #[wasm_bindgen(readonly, js_name = "crlNewDistributionPoints")]
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage {
@@ -743,13 +747,6 @@ impl BufferedDecryptedMessage {
     #[wasm_bindgen(getter)]
     pub fn identity(&self) -> Option<WireIdentity> {
         self.identity.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn crl_new_distribution_points(&self) -> Option<js_sys::Array> {
-        self.crl_new_distribution_points
-            .clone()
-            .map(|crl_dp| crl_dp.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
     }
 }
 
@@ -1470,13 +1467,14 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                let conversation_id = this
+                let bundle = this
                     .write()
                     .await
                     .process_raw_welcome_message(welcome_message.into(), custom_configuration.into())
                     .await
                     .map_err(CoreCryptoError::from)?;
-                WasmCryptoResult::Ok(Uint8Array::from(conversation_id.as_slice()).into())
+                let bundle: WelcomeBundle = bundle.into();
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&bundle)?)
             }
             .err_into(),
         )

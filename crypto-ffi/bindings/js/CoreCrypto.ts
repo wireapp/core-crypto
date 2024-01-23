@@ -26,6 +26,8 @@ import initWasm, {
     AcmeChallenge,
     WireIdentity,
     DeviceStatus,
+    WelcomeBundle,
+    ProposalBundle,
 } from "./wasm";
 
 // re-exports
@@ -36,6 +38,8 @@ export {
     AcmeChallenge,
     WireIdentity,
     DeviceStatus,
+    WelcomeBundle,
+    ProposalBundle,
 };
 
 interface CoreCryptoRichError {
@@ -276,6 +280,10 @@ export interface MemberAddedMessages {
      * @readonly
      */
     groupInfo: GroupInfoBundle;
+    /**
+     * New CRL distribution points that appeared by the introduction of a new credential
+     */
+    crlNewDistributionPoints?: string[];
 }
 
 /**
@@ -377,6 +385,10 @@ export interface RotateBundle {
      * @readonly
      */
     keyPackageRefsToRemove: Uint8Array[];
+    /**
+     * New CRL distribution points that appeared by the introduction of a new credential
+     */
+    crlNewDistributionPoints?: string[];
 }
 
 /**
@@ -444,6 +456,10 @@ export interface ConversationInitBundle {
      * @readonly
      */
     groupInfo: GroupInfoBundle;
+    /**
+     * New CRL distribution points that appeared by the introduction of a new credential
+     */
+    crlNewDistributionPoints?: string[];
 }
 
 /**
@@ -549,24 +565,6 @@ export interface BufferedDecryptedMessage {
      * see {@link DecryptedMessage.crlNewDistributionPoints}
      */
     crlNewDistributionPoints?: string[];
-}
-
-/**
- * Returned by all methods creating proposals. Contains a proposal message and an identifier to roll back the proposal
- */
-export interface ProposalBundle {
-    /**
-     * TLS-serialized MLS proposal that needs to be fanned out to other (existing) members of the conversation
-     *
-     * @readonly
-     */
-    proposal: Uint8Array;
-    /**
-     * Unique identifier of a proposal. Use this in {@link CoreCrypto.clearPendingProposal} to roll back (delete) the proposal
-     *
-     * @readonly
-     */
-    proposalRef: ProposalRef;
 }
 
 /**
@@ -1071,7 +1069,7 @@ export class CoreCrypto {
                     this.#cc.decrypt_message(conversationId, payload)
                 );
 
-            const ffiCommitDelay = ffiDecryptedMessage.commit_delay;
+            const ffiCommitDelay = ffiDecryptedMessage.commitDelay;
 
             let commitDelay = undefined;
             if (typeof ffiCommitDelay === "number" && ffiCommitDelay >= 0) {
@@ -1081,10 +1079,10 @@ export class CoreCrypto {
             const ret: DecryptedMessage = {
                 message: ffiDecryptedMessage.message,
                 proposals: ffiDecryptedMessage.proposals,
-                isActive: ffiDecryptedMessage.is_active,
+                isActive: ffiDecryptedMessage.isActive,
                 senderClientId: ffiDecryptedMessage.sender_client_id,
                 commitDelay,
-                hasEpochChanged: ffiDecryptedMessage.has_epoch_changed,
+                hasEpochChanged: ffiDecryptedMessage.hasEpochChanged,
                 bufferedMessages: ffiDecryptedMessage.buffered_messages?.map(
                     (m) => {
                         return {
@@ -1094,11 +1092,11 @@ export class CoreCrypto {
                             senderClientId: m.sender_client_id,
                             commitDelay: m.commit_delay,
                             hasEpochChanged: m.has_epoch_changed,
-                            crlNewDistributionPoints: m.crl_new_distribution_points,
+                            crlNewDistributionPoints: m.crlNewDistributionPoints,
                         };
                     }
                 ),
-                crlNewDistributionPoints: ffiDecryptedMessage.crl_new_distribution_points,
+                crlNewDistributionPoints: ffiDecryptedMessage.crlNewDistributionPoints,
             };
 
             return ret;
@@ -1138,7 +1136,7 @@ export class CoreCrypto {
     async processWelcomeMessage(
         welcomeMessage: Uint8Array,
         configuration: CustomConfiguration = {}
-    ): Promise<ConversationId> {
+    ): Promise<WelcomeBundle> {
         try {
             const { keyRotationSpan, wirePolicy } = configuration || {};
             const config = new CustomConfigurationFfi(
@@ -1249,6 +1247,7 @@ export class CoreCrypto {
                     ratchetTreeType: gi.ratchet_tree_type,
                     payload: gi.payload,
                 },
+                crlNewDistributionPoints: ffiRet.crlNewDistributionPoints
             };
 
             return ret;
@@ -1499,6 +1498,7 @@ export class CoreCrypto {
                     ratchetTreeType: gi.ratchet_tree_type,
                     payload: gi.payload,
                 },
+                crlNewDistributionPoints: ffiInitMessage.crlNewDistributionPoints,
             };
 
             return ret;
@@ -2063,6 +2063,7 @@ export class CoreCrypto {
             commits: ffiRet.commits,
             newKeyPackages: ffiRet.new_key_packages,
             keyPackageRefsToRemove: ffiRet.key_package_refs_to_remove,
+            crlNewDistributionPoints: ffiRet.crlNewDistributionPoints,
         };
 
         return ret;

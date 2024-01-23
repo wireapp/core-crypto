@@ -241,8 +241,8 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
     suspend fun processWelcomeMessage(
         welcome: Welcome,
         configuration: com.wire.crypto.CustomConfiguration = defaultGroupConfiguration
-    ): MLSGroupId {
-        return cc.processWelcomeMessage(welcome.lower(), configuration).toGroupId()
+    ): WelcomeBundle {
+        return cc.processWelcomeMessage(welcome.lower(), configuration).lift()
     }
 
     /**

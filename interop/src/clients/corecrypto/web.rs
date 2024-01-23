@@ -205,7 +205,7 @@ window.cc.removeClientsFromConversation(conversationId, [clientId])
 const [welcome, callback] = arguments;
 const welcomeMessage = Uint8Array.from(Object.values(welcome));
 window.cc.processWelcomeMessage(welcomeMessage)
-    .then(callback);"#,
+    .then(({ id }) => callback(id));"#,
                 vec![welcome.into()],
             )
             .await

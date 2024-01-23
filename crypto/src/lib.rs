@@ -83,10 +83,12 @@ pub mod prelude {
             client::*,
             config::MlsCentralConfiguration,
             conversation::{
+                commit::{MlsCommitBundle, MlsConversationCreationMessage},
                 config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
                 decrypt::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
                 group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
-                handshake::{MlsCommitBundle, MlsConversationCreationMessage, MlsProposalBundle},
+                proposal::MlsProposalBundle,
+                welcome::WelcomeBundle,
                 *,
             },
             credential::{typ::MlsCredentialType, x509::CertificateBundle},

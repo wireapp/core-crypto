@@ -87,7 +87,7 @@ impl MlsConversation {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{mls::conversation::handshake::MlsConversationCreationMessage, test_utils::*};
+    use crate::{prelude::MlsConversationCreationMessage, test_utils::*};
     use tls_codec::Serialize as _;
     use wasm_bindgen_test::*;
 

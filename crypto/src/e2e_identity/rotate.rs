@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use openmls::prelude::{KeyPackage, KeyPackageRef, MlsCredentialType as OpenMlsCredential};
 use openmls_traits::OpenMlsCryptoProvider;
+use wire_e2e_identity::prelude::x509::extract_crl_uris;
 
 use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
 use mls_crypto_provider::MlsCryptoProvider;
@@ -14,52 +15,6 @@ use crate::{
     },
     MlsError,
 };
-
-/// Result returned after rotating the Credential of the current client in all the local conversations
-#[derive(Debug, Clone)]
-pub struct MlsRotateBundle {
-    /// An Update commit for each conversation
-    pub commits: HashMap<ConversationId, MlsCommitBundle>,
-    /// Fresh KeyPackages with the new Credential
-    pub new_key_packages: Vec<KeyPackage>,
-    /// All the now deprecated KeyPackages. Once deleted remotely, delete them locally with [MlsCentral::delete_keypackages]
-    pub key_package_refs_to_remove: Vec<KeyPackageRef>,
-}
-
-impl MlsRotateBundle {
-    /// Lower through the FFI
-    #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> CryptoResult<(HashMap<String, MlsCommitBundle>, Vec<Vec<u8>>, Vec<Vec<u8>>)> {
-        use openmls::prelude::TlsSerializeTrait as _;
-
-        let commits_size = self.commits.len();
-        let commits = self
-            .commits
-            .into_iter()
-            .try_fold(HashMap::with_capacity(commits_size), |mut acc, (id, c)| {
-                // because uniffi ONLY supports HashMap<String, T>
-                let id = hex::encode(id);
-                let _ = acc.insert(id, c);
-                CryptoResult::Ok(acc)
-            })?;
-
-        let kp_size = self.new_key_packages.len();
-        let new_key_packages =
-            self.new_key_packages
-                .into_iter()
-                .try_fold(Vec::with_capacity(kp_size), |mut acc, kp| {
-                    acc.push(kp.tls_serialize_detached().map_err(MlsError::from)?);
-                    CryptoResult::Ok(acc)
-                })?;
-        let key_package_refs_to_remove = self
-            .key_package_refs_to_remove
-            .into_iter()
-            // TODO: add a method for taking ownership in HashReference
-            .map(|r| r.as_slice().to_vec())
-            .collect::<Vec<_>>();
-        Ok((commits, new_key_packages, key_package_refs_to_remove))
-    }
-}
 
 impl MlsCentral {
     /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential)
@@ -159,6 +114,14 @@ impl MlsCentral {
             signature_scheme: cs.signature_algorithm(),
         };
 
+        let ee = certificate_chain.first().ok_or(CryptoError::InvalidCertificateChain)?;
+
+        use x509_cert::der::Decode as _;
+        let ee = x509_cert::Certificate::from_der(ee)?;
+        let crl_new_distribution_points = extract_crl_uris(&ee)
+            .map_err(|e| CryptoError::E2eiError(e.into()))?
+            .map(|s| s.into_iter().collect());
+
         let cert_bundle = CertificateBundle {
             certificate_chain,
             private_key,
@@ -184,6 +147,7 @@ impl MlsCentral {
             commits,
             new_key_packages,
             key_package_refs_to_remove,
+            crl_new_distribution_points,
         })
     }
 
@@ -258,6 +222,66 @@ impl MlsConversation {
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
         self.update_keying_material(client, backend, Some(cb), Some(leaf_node))
             .await
+    }
+}
+
+/// Result returned after rotating the Credential of the current client in all the local conversations
+#[derive(Debug, Clone)]
+pub struct MlsRotateBundle {
+    /// An Update commit for each conversation
+    pub commits: HashMap<ConversationId, MlsCommitBundle>,
+    /// Fresh KeyPackages with the new Credential
+    pub new_key_packages: Vec<KeyPackage>,
+    /// All the now deprecated KeyPackages. Once deleted remotely, delete them locally with [MlsCentral::delete_keypackages]
+    pub key_package_refs_to_remove: Vec<KeyPackageRef>,
+    /// New CRL distribution points that appeared by the introduction of a new credential
+    pub crl_new_distribution_points: Option<Vec<String>>,
+}
+
+impl MlsRotateBundle {
+    /// Lower through the FFI
+    #[allow(clippy::type_complexity)]
+    pub fn to_bytes(
+        self,
+    ) -> CryptoResult<(
+        HashMap<String, MlsCommitBundle>,
+        Vec<Vec<u8>>,
+        Vec<Vec<u8>>,
+        Option<Vec<String>>,
+    )> {
+        use openmls::prelude::TlsSerializeTrait as _;
+
+        let commits_size = self.commits.len();
+        let commits = self
+            .commits
+            .into_iter()
+            .try_fold(HashMap::with_capacity(commits_size), |mut acc, (id, c)| {
+                // because uniffi ONLY supports HashMap<String, T>
+                let id = hex::encode(id);
+                let _ = acc.insert(id, c);
+                CryptoResult::Ok(acc)
+            })?;
+
+        let kp_size = self.new_key_packages.len();
+        let new_key_packages =
+            self.new_key_packages
+                .into_iter()
+                .try_fold(Vec::with_capacity(kp_size), |mut acc, kp| {
+                    acc.push(kp.tls_serialize_detached().map_err(MlsError::from)?);
+                    CryptoResult::Ok(acc)
+                })?;
+        let key_package_refs_to_remove = self
+            .key_package_refs_to_remove
+            .into_iter()
+            // TODO: add a method for taking ownership in HashReference
+            .map(|r| r.as_slice().to_vec())
+            .collect::<Vec<_>>();
+        Ok((
+            commits,
+            new_key_packages,
+            key_package_refs_to_remove,
+            self.crl_new_distribution_points,
+        ))
     }
 }
 

@@ -8,10 +8,13 @@ value class RotateBundle(private val value: com.wire.crypto.RotateBundle) {
         get() = value.commits.asSequence().map { (clientId, commit) -> clientId.toClientId() to commit.lift() }.toMap()
     val newKeyPackages: List<MLSKeyPackage> get() = value.newKeyPackages.map { MLSKeyPackage(it) }
     val keyPackageRefsToRemove: List<MLSKeyPackageRef> get() = value.keyPackageRefsToRemove.map { MLSKeyPackageRef(it) }
+    /**
+     * New CRL distribution points that appeared by the introduction of a new credential
+     */
+    val crlNewDistributionPoints: List<String>? get() = value.crlNewDistributionPoints
 }
 
 fun com.wire.crypto.RotateBundle.toRotateBundle() = RotateBundle(this)
-
 
 /**
  * Supporting struct for CRL registration result
@@ -39,7 +42,7 @@ data class CRLRegistration(
     }
 
     override fun hashCode(): Int {
-        var result = dirty.hashCode() ?: 0
+        var result = dirty.hashCode()
         result = 31 * result + (expiration?.hashCode() ?: 0)
         return result
     }
