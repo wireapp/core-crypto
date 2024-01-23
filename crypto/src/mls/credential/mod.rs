@@ -223,27 +223,6 @@ pub mod tests {
         ));
     }
 
-    // #[apply(all_cred_cipher)]
-    // #[wasm_bindgen_test]
-    // async fn should_fail_when_certificate_is_orphan(case: TestCase) {
-    //     if case.is_x509() {
-    //         // remove root_ca from the chain
-    //         let mut certs = CertificateBundle::rand(&"alice".into(), case.signature_scheme());
-    //         let leaf = certs.certificate_chain.first().unwrap().to_owned();
-    //         certs.certificate_chain = vec![leaf];
-    //         let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), certs)]));
-
-    //         let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
-
-    //         assert!(matches!(
-    //             try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err(),
-    //             CryptoError::MlsError(MlsError::MlsCryptoError(
-    //                 openmls::prelude::CryptoError::IncompleteCertificateChain
-    //             ))
-    //         ));
-    //     }
-    // }
-
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_is_unordered(case: TestCase) {
