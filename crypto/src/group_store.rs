@@ -295,8 +295,7 @@ impl HybridMemoryLimiter {
                 if #[cfg(target_family = "wasm")] {
                     None
                 } else {
-                    use sysinfo::SystemExt as _;
-                    let system = sysinfo::System::new_with_specifics(sysinfo::RefreshKind::new().with_memory());
+                    let system = sysinfo::System::new_with_specifics(sysinfo::RefreshKind::new().with_memory(sysinfo::MemoryRefreshKind::new().with_ram()));
                     let available_sys_memory = system.available_memory();
                     if available_sys_memory > 0 {
                         Some(available_sys_memory as usize)
