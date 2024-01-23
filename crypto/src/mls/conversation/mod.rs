@@ -44,6 +44,7 @@ use crate::{
 };
 
 mod buffer_messages;
+pub mod commit;
 mod commit_delay;
 pub mod config;
 #[cfg(test)]
@@ -55,10 +56,10 @@ mod durability;
 pub mod encrypt;
 pub mod export;
 pub(crate) mod group_info;
-pub mod handshake;
 mod leaf_node_validation;
 pub mod merge;
 mod orphan_welcome;
+pub mod proposal;
 mod renew;
 mod self_commit;
 pub(crate) mod welcome;

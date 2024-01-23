@@ -145,7 +145,7 @@ impl MlsCentral {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{prelude::handshake::MlsCommitBundle, test_utils::*};
+    use crate::{prelude::MlsCommitBundle, test_utils::*};
 
     wasm_bindgen_test_configure!(run_in_browser);
 

@@ -140,7 +140,8 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         Ok(self
             .cc
             .process_raw_welcome_message(welcome.into(), MlsCustomConfiguration::default())
-            .await?)
+            .await?
+            .id)
     }
 
     async fn encrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {

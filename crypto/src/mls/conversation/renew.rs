@@ -4,7 +4,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::prelude::{handshake::MlsProposalBundle, Client, CryptoError, CryptoResult, MlsConversation};
+use crate::prelude::{Client, CryptoError, CryptoResult, MlsConversation, MlsProposalBundle};
 
 /// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)
 /// in case another commit has been accepted by the backend instead of ours
@@ -107,7 +107,7 @@ impl MlsConversation {
         let proposals = proposals.filter(|p| !is_external(p));
         for proposal in proposals {
             let msg = match proposal.proposal {
-                Proposal::Add(add) => self.propose_add_member(client, backend, add.key_package).await?,
+                Proposal::Add(add) => self.propose_add_member(client, backend, add.key_package.into()).await?,
                 Proposal::Remove(remove) => self.propose_remove_member(client, backend, remove.removed()).await?,
                 Proposal::Update(update) => self.renew_update(client, backend, Some(update.leaf_node())).await?,
                 _ => return Err(CryptoError::ImplementationError),

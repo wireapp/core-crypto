@@ -291,7 +291,7 @@ test("externally generated clients", async () => {
   const [ctx, page] = await initBrowser();
 
   await page.evaluate(async () => {
-    const { CoreCrypto, Ciphersuite, CredentialType } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite, CredentialType, WelcomeBundle } = await import("./corecrypto.js");
 
     const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const credentialType = CredentialType.Basic;
@@ -330,7 +330,8 @@ test("externally generated clients", async () => {
 
     await alice.commitAccepted(conversationId);
 
-    const welcomeConversationId = await bob.processWelcomeMessage(memberAdded.welcome);
+    const welcome = await bob.processWelcomeMessage(memberAdded.welcome);
+    const welcomeConversationId = welcome.id;
 
     if (!conversationId.every((val, i) => val === welcomeConversationId[i])) {
       throw new Error(`conversationId mismatch, got ${welcomeConversationId}, expected ${conversationId}`);
@@ -561,7 +562,8 @@ test("roundtrip message", async () => {
 
     const conversationIdBuffer = encoder.encode(conversationId);
 
-    const welcomeConversationId = await cc2.processWelcomeMessage(welcomeMessage);
+    const welcome2 = await cc2.processWelcomeMessage(welcomeMessage);
+    const welcomeConversationId = welcome2.id;
     if (!conversationIdBuffer.every((val, i) => val === welcomeConversationId[i])) {
       throw new Error(`conversationId mismatch, got ${welcomeConversationId}, expected ${conversationIdBuffer}`);
     }
@@ -735,7 +737,6 @@ test("ext commits|proposals & callbacks", async () => {
     }
 
     await cc2.processWelcomeMessage(creationMessage.welcome);
-
 
     const extProposal = await ccExternalProposal.newExternalProposal(ExternalProposalType.Add, {
       conversationId,

@@ -1,3 +1,4 @@
+use crate::mls::credential::crl::extract_dp;
 use crate::{
     group_store::GroupStore,
     prelude::{
@@ -10,6 +11,15 @@ use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize;
+
+/// Contains everything client needs to know after decrypting an (encrypted) Welcome message
+#[derive(Debug)]
+pub struct WelcomeBundle {
+    /// MLS Group Id
+    pub id: ConversationId,
+    /// New CRL distribution points that appeared by the introduction of a new credential
+    pub crl_new_distribution_points: Option<Vec<String>>,
+}
 
 impl MlsCentral {
     /// Create a conversation from a TLS serialized MLS Welcome message. The `MlsConversationConfiguration` used in this function will be the default implementation.
@@ -28,7 +38,7 @@ impl MlsCentral {
         &mut self,
         welcome: Vec<u8>,
         custom_cfg: MlsCustomConfiguration,
-    ) -> CryptoResult<ConversationId> {
+    ) -> CryptoResult<WelcomeBundle> {
         let mut cursor = std::io::Cursor::new(welcome);
         let welcome = MlsMessageIn::tls_deserialize(&mut cursor).map_err(MlsError::from)?;
         self.process_welcome_message(welcome, custom_cfg).await
@@ -52,7 +62,7 @@ impl MlsCentral {
         &mut self,
         welcome: MlsMessageIn,
         custom_cfg: MlsCustomConfiguration,
-    ) -> CryptoResult<ConversationId> {
+    ) -> CryptoResult<WelcomeBundle> {
         let welcome = match welcome.extract() {
             MlsMessageInBody::Welcome(welcome) => welcome,
             _ => return Err(CryptoError::ConsumerError),
@@ -67,9 +77,31 @@ impl MlsCentral {
             MlsConversation::from_welcome_message(welcome, configuration, &mut self.mls_backend, &mut self.mls_groups)
                 .await?;
 
-        let conversation_id = conversation.id.clone();
-        self.mls_groups.insert(conversation_id.clone(), conversation);
-        Ok(conversation_id)
+        // We wait for the group to be created then we iterate through all members
+        let crl_new_distribution_points = conversation
+            .group
+            .members_credentials()
+            .filter_map(|c| match c.mls_credential() {
+                openmls::prelude::MlsCredentialType::X509(cert) => Some(cert),
+                _ => None,
+            })
+            .try_fold(vec![], |mut acc, c| {
+                acc.extend(extract_dp(c)?);
+                CryptoResult::Ok(acc)
+            })?;
+        let crl_new_distribution_points = if crl_new_distribution_points.is_empty() {
+            None
+        } else {
+            Some(crl_new_distribution_points)
+        };
+
+        let id = conversation.id.clone();
+        self.mls_groups.insert(id.clone(), conversation);
+
+        Ok(WelcomeBundle {
+            id,
+            crl_new_distribution_points,
+        })
     }
 }
 
@@ -118,7 +150,7 @@ impl MlsConversation {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{mls::conversation::handshake::MlsConversationCreationMessage, test_utils::*};
+    use crate::{prelude::MlsConversationCreationMessage, test_utils::*};
 
     use super::*;
 

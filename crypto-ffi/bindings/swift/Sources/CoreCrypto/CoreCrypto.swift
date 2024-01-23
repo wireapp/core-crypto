@@ -31,7 +31,7 @@ extension CoreCryptoSwift.CommitBundle {
 
 extension CoreCryptoSwift.RotateBundle {
     func convertTo() -> RotateBundle {
-        return RotateBundle(commits: self.commits, newKeyPackages: self.newKeyPackages, keyPackageRefsToRemove: self.keyPackageRefsToRemove)
+        return RotateBundle(commits: self.commits, newKeyPackages: self.newKeyPackages, keyPackageRefsToRemove: self.keyPackageRefsToRemove, crlNewDistributionPoints: self.crlNewDistributionPoints)
     }
 }
 
@@ -43,13 +43,19 @@ extension CoreCryptoSwift.CrlRegistration {
 
 extension CoreCryptoSwift.MemberAddedMessages {
     func convertTo() -> MemberAddedMessages {
-        return MemberAddedMessages(commit: self.commit, welcome: self.welcome, groupInfo: self.groupInfo.convertTo())
+        return MemberAddedMessages(commit: self.commit, welcome: self.welcome, groupInfo: self.groupInfo.convertTo(), crlNewDistributionPoints: self.crlNewDistributionPoints)
+    }
+}
+
+extension CoreCryptoSwift.WelcomeBundle {
+    func convertTo() -> WelcomeBundle {
+        return WelcomeBundle(id: self.id, crlNewDistributionPoints: self.crlNewDistributionPoints)
     }
 }
 
 extension CoreCryptoSwift.ConversationInitBundle {
     func convertTo() -> ConversationInitBundle {
-        return ConversationInitBundle(conversationId: self.conversationId, commit: self.commit, groupInfo: self.groupInfo.convertTo())
+        return ConversationInitBundle(conversationId: self.conversationId, commit: self.commit, groupInfo: self.groupInfo.convertTo(), crlNewDistributionPoints: self.crlNewDistributionPoints)
     }
 }
 
@@ -64,7 +70,7 @@ extension CoreCryptoSwift.DecryptedMessage {
             hasEpochChanged: self.hasEpochChanged,
             identity: self.identity?.convertTo(),
             bufferedMessages: self.bufferedMessages.map({ (bm) -> BufferedDecryptedMessage in return bm.convertTo() }),
-            crlNewDistributionPoints: self.crlNewDistributionPoints,
+            crlNewDistributionPoints: self.crlNewDistributionPoints
         )
     }
 }
@@ -79,7 +85,7 @@ extension CoreCryptoSwift.BufferedDecryptedMessage {
             senderClientId: self.senderClientId,
             hasEpochChanged: self.hasEpochChanged,
             identity: self.identity?.convertTo(),
-            crlNewDistributionPoints: self.crlNewDistributionPoints,
+            crlNewDistributionPoints: self.crlNewDistributionPoints
         )
     }
 }
@@ -92,7 +98,7 @@ extension CoreCryptoSwift.WireIdentity {
 
 extension CoreCryptoSwift.ProposalBundle {
     func convertTo() -> ProposalBundle {
-        return ProposalBundle(proposal: self.proposal, proposalRef: self.proposalRef)
+        return ProposalBundle(proposal: self.proposal, proposalRef: self.proposalRef, crlNewDistributionPoints: self.crlNewDistributionPoints)
     }
 }
 
@@ -268,24 +274,6 @@ public struct CustomConfiguration: ConvertToInner {
     }
 }
 
-/// Data shape for adding clients to a conversation
-public struct Invitee: ConvertToInner {
-    typealias Inner = CoreCryptoSwift.Invitee
-    /// Client ID as a byte array
-    public var id: ClientId
-    /// MLS KeyPackage belonging to the aforementioned client
-    public var kp: [UInt8]
-
-    public init(id: ClientId, kp: [UInt8]) {
-        self.id = id
-        self.kp = kp
-    }
-
-    func convert() -> Inner {
-        return CoreCryptoSwift.Invitee(id: self.id, kp: self.kp)
-    }
-}
-
 /// Data shape for the returned MLS commit & welcome message tuple upon adding clients to a conversation
 public struct MemberAddedMessages: ConvertToInner {
     typealias Inner = CoreCryptoSwift.MemberAddedMessages
@@ -295,15 +283,36 @@ public struct MemberAddedMessages: ConvertToInner {
     public var welcome: [UInt8]
     /// The current group state
     public var groupInfo: GroupInfoBundle
+    /// New CRL distribution points that appeared by the introduction of a new credential
+    public var crlNewDistributionPoints: [String]?
 
-    public init(commit: [UInt8], welcome: [UInt8], groupInfo: GroupInfoBundle) {
+    public init(commit: [UInt8], welcome: [UInt8], groupInfo: GroupInfoBundle, crlNewDistributionPoints: [String]?) {
         self.commit = commit
         self.welcome = welcome
         self.groupInfo = groupInfo
+        self.crlNewDistributionPoints = crlNewDistributionPoints
     }
 
     func convert() -> Inner {
-        return CoreCryptoSwift.MemberAddedMessages(commit: self.commit, welcome: self.welcome, groupInfo: self.groupInfo.convert())
+        return CoreCryptoSwift.MemberAddedMessages(commit: self.commit, welcome: self.welcome, groupInfo: self.groupInfo.convert(), crlNewDistributionPoints: self.crlNewDistributionPoints)
+    }
+}
+
+/// Contains everything client needs to know after decrypting an (encrypted) Welcome message
+public struct WelcomeBundle: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.WelcomeBundle
+    /// MLS Group Id
+    public var id: ConversationId
+    /// New CRL distribution points that appeared by the introduction of a new credential
+    public var crlNewDistributionPoints: [String]?
+
+    public init(id: ConversationId, crlNewDistributionPoints: [String]?) {
+        self.id = id
+        self.crlNewDistributionPoints = crlNewDistributionPoints
+    }
+
+    func convert() -> Inner {
+        return CoreCryptoSwift.MemberAddedMessages(id: self.id, crlNewDistributionPoints: self.crlNewDistributionPoints)
     }
 }
 
@@ -359,8 +368,8 @@ public struct DecryptedMessage: ConvertToInner {
             senderClientId: self.senderClientId,
             hasEpochChanged: self.hasEpochChanged,
             identity: self.identity?.convert(),
-            bufferedMessages: self.bufferedMessages.map({ (bm) -> CoreCryptoSwift.DecryptedMessage in bm.convert() })
-            crlNewDistributionPoints: self.crlNewDistributionPoints,
+            bufferedMessages: self.bufferedMessages.map({ (bm) -> CoreCryptoSwift.DecryptedMessage in bm.convert() }),
+            crlNewDistributionPoints: self.crlNewDistributionPoints
         )
     }
 }
@@ -472,14 +481,17 @@ public struct ProposalBundle: ConvertToInner {
     public var proposal: [UInt8]
     /// An identifier of the proposal to rollback it later if required
     public var proposalRef: [UInt8]
+    /// New CRL distribution points that appeared by the introduction of a new credential
+    public var crlNewDistributionPoints: [String]?
 
-    public init(proposal: [UInt8], proposalRef: [UInt8]) {
+    public init(proposal: [UInt8], proposalRef: [UInt8], crlNewDistributionPoints: [String]?) {
         self.proposal = proposal
         self.proposalRef = proposalRef
+        self.crlNewDistributionPoints = crlNewDistributionPoints
     }
 
     func convert() -> Inner {
-        return CoreCryptoSwift.ProposalBundle(proposal: self.proposal, proposalRef: self.proposalRef)
+        return CoreCryptoSwift.ProposalBundle(proposal: self.proposal, proposalRef: self.proposalRef, crlNewDistributionPoints: self.crlNewDistributionPoints)
     }
 }
 
@@ -492,17 +504,20 @@ public struct ConversationInitBundle: ConvertToInner {
     public var commit: [UInt8]
     /// TLS-serialized GroupInfo (aka GroupInfo) which becomes valid when the external commit is accepted by the Delivery Service
     public var groupInfo: GroupInfoBundle
+    /// New CRL distribution points that appeared by the introduction of a new credential
+    public var crlNewDistributionPoints: [String]?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(conversationId: ConversationId, commit: [UInt8], groupInfo: GroupInfoBundle) {
+    public init(conversationId: ConversationId, commit: [UInt8], groupInfo: GroupInfoBundle, crlNewDistributionPoints: [String]?) {
         self.conversationId = conversationId
         self.commit = commit
         self.groupInfo = groupInfo
+        self.crlNewDistributionPoints = crlNewDistributionPoints
     }
 
     func convert() -> Inner {
-        return CoreCryptoSwift.ConversationInitBundle(conversationId: self.conversationId, commit: self.commit, groupInfo: self.groupInfo.convert())
+        return CoreCryptoSwift.ConversationInitBundle(conversationId: self.conversationId, commit: self.commit, groupInfo: self.groupInfo.convert(), crlNewDistributionPoints: self.crlNewDistributionPoints)
     }
 }
 
@@ -593,22 +608,26 @@ private extension RatchetTreeType {
 
 /// Result returned after rotating the Credential of the current client in all the local conversations
 public struct RotateBundle: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.RotateBundle
+
     /// An Update commit for each conversation
     public var commits: [String : CommitBundle]
     /// Fresh KeyPackages with the new Credential
     public var newKeyPackages: [[UInt8]]
     /// All the now deprecated KeyPackages. Once deleted remotely, delete them locally with ``CoreCrypto/deleteKeypackages``
     public var keyPackageRefsToRemove: [[UInt8]]
+    /// New CRL distribution points that appeared by the introduction of a new credential
+    public var crlNewDistributionPoints: [String]?
 
-    public init(commits: [String : CommitBundle], newKeyPackages: [[UInt8]], keyPackageRefsToRemove: [[UInt8]]) {
+    public init(commits: [String : CommitBundle], newKeyPackages: [[UInt8]], keyPackageRefsToRemove: [[UInt8]], crlNewDistributionPoints: [String]?) {
         self.commits = commits
         self.newKeyPackages = newKeyPackages
         self.keyPackageRefsToRemove = keyPackageRefsToRemove
+        self.crlNewDistributionPoints = crlNewDistributionPoints
     }
-    typealias Inner = CoreCryptoSwift.RotateBundle
 
     func convert() -> Inner {
-        return CoreCryptoSwift.RotateBundle(commits: self.commits, newKeyPackages: self.newKeyPackages, keyPackageRefsToRemove: self.keyPackageRefsToRemove)
+        return CoreCryptoSwift.RotateBundle(commits: self.commits, newKeyPackages: self.newKeyPackages, keyPackageRefsToRemove: self.keyPackageRefsToRemove, crlNewDistributionPoints: self.crlNewDistributionPoints)
     }
 }
 

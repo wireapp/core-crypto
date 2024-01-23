@@ -20,7 +20,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
     mls::{ClientId, ConversationId, MlsCentral, MlsConversation},
-    prelude::{handshake::MlsProposalBundle, Client, CryptoError, CryptoResult},
+    prelude::{Client, CryptoError, CryptoResult, MlsProposalBundle},
 };
 
 /// Abstraction over a [openmls::prelude::hash_ref::ProposalRef] to deal with conversions
@@ -71,7 +71,11 @@ impl MlsProposal {
         mut conversation: impl std::ops::DerefMut<Target = MlsConversation>,
     ) -> CryptoResult<MlsProposalBundle> {
         let proposal = match self {
-            MlsProposal::Add(key_package) => (*conversation).propose_add_member(client, backend, key_package).await,
+            MlsProposal::Add(key_package) => {
+                (*conversation)
+                    .propose_add_member(client, backend, key_package.into())
+                    .await
+            }
             MlsProposal::Update => (*conversation).propose_self_update(client, backend).await,
             MlsProposal::Remove(client_id) => {
                 let index = conversation
@@ -139,7 +143,7 @@ impl MlsCentral {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{prelude::handshake::MlsCommitBundle, prelude::*, test_utils::*};
+    use crate::{prelude::MlsCommitBundle, prelude::*, test_utils::*};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -168,7 +172,8 @@ pub mod tests {
                         let new_id = bob_central
                             .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
                             .await
-                            .unwrap();
+                            .unwrap()
+                            .id;
                         assert_eq!(id, new_id);
                         assert!(bob_central.try_talk_to(&id, &mut alice_central).await.is_ok());
                     })

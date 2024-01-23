@@ -14,26 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use openmls::prelude::{
-    group_info::VerifiableGroupInfo, CredentialType, MlsGroup, MlsMessageOut, Proposal, Sender, StagedCommit,
-};
+use openmls::prelude::{group_info::VerifiableGroupInfo, MlsGroup, MlsMessageOut, Proposal, Sender, StagedCommit};
 use openmls_traits::OpenMlsCryptoProvider;
-
-use core_crypto_keystore::entities::MlsPendingMessage;
-use core_crypto_keystore::{entities::PersistedMlsPendingGroup, CryptoKeystoreMls};
 use tls_codec::Serialize;
-use wire_e2e_identity::prelude::x509::revocation::PkiEnvironment;
 
-use crate::{
-    e2e_identity::conversation_state::compute_state,
-    prelude::{decrypt::MlsBufferedConversationDecryptMessage, E2eiConversationState},
+use core_crypto_keystore::{
+    entities::{MlsPendingMessage, PersistedMlsPendingGroup},
+    CryptoKeystoreMls,
 };
+
+use crate::mls::credential::crl::extract_dp;
 use crate::{
     group_store::GroupStoreValue,
     prelude::{
-        id::ClientId, ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentral, MlsCiphersuite,
-        MlsConversation, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsError,
-        MlsGroupInfoBundle,
+        decrypt::MlsBufferedConversationDecryptMessage, id::ClientId, ConversationId, CoreCryptoCallbacks, CryptoError,
+        CryptoResult, MlsCentral, MlsCiphersuite, MlsConversation, MlsConversationConfiguration, MlsCredentialType,
+        MlsCustomConfiguration, MlsError, MlsGroupInfoBundle,
     },
 };
 
@@ -46,6 +42,8 @@ pub struct MlsConversationInitBundle {
     pub commit: MlsMessageOut,
     /// [`GroupInfo`] (aka GroupInfo) which becomes valid when the external commit is accepted by the Delivery Service
     pub group_info: MlsGroupInfoBundle,
+    /// New CRL distribution points that appeared by the introduction of a new credential
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 impl MlsConversationInitBundle {
@@ -53,9 +51,9 @@ impl MlsConversationInitBundle {
     /// 0 -> external commit
     /// 1 -> public group state
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes_pair(self) -> CryptoResult<(Vec<u8>, MlsGroupInfoBundle)> {
+    pub fn to_bytes(self) -> CryptoResult<(Vec<u8>, MlsGroupInfoBundle, Option<Vec<String>>)> {
         let commit = self.commit.tls_serialize_detached().map_err(MlsError::from)?;
-        Ok((commit, self.group_info))
+        Ok((commit, self.group_info, self.crl_new_distribution_points))
     }
 }
 
@@ -120,6 +118,15 @@ impl MlsCentral {
         .await
         .map_err(MlsError::from)?;
 
+        // We should always have ratchet tree extension turned on hence GroupInfo should always be present
+        let group_info = group_info.ok_or(CryptoError::ImplementationError)?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
+
+        let crl_new_distribution_points = match cb.credential.mls_credential() {
+            openmls::prelude::MlsCredentialType::X509(cert) => Some(extract_dp(cert)?),
+            _ => None,
+        };
+
         self.mls_backend
             .key_store()
             .mls_pending_groups_save(
@@ -130,13 +137,11 @@ impl MlsCentral {
             )
             .await?;
 
-        // We should always have ratchet tree extension turned on hence GroupInfo should always be present
-        let group_info = group_info.ok_or(CryptoError::ImplementationError)?;
-
         Ok(MlsConversationInitBundle {
             conversation_id: group.group_id().to_vec(),
             commit,
-            group_info: MlsGroupInfoBundle::try_new_full_plaintext(group_info)?,
+            group_info,
+            crl_new_distribution_points,
         })
     }
 
@@ -223,7 +228,6 @@ impl MlsConversation {
         commit: &StagedCommit,
         sender: ClientId,
         parent_conversation: Option<&GroupStoreValue<MlsConversation>>,
-        pki_env: Option<&PkiEnvironment>,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
     ) -> CryptoResult<()> {
         // i.e. has this commit been created by [MlsCentral::join_by_external_commit] ?
@@ -269,34 +273,19 @@ impl MlsConversation {
             }
         }
 
-        if let Some(pki_env) = pki_env {
-            let credentials: Vec<_> = commit
-                .add_proposals()
-                .filter_map(|add_proposal| {
-                    let credential = add_proposal.add_proposal().key_package().leaf_node().credential();
-
-                    matches!(credential.credential_type(), CredentialType::X509).then(|| credential.clone())
-                })
-                .collect();
-            let state = compute_state(credentials.iter(), Some(pki_env), MlsCredentialType::X509);
-            if state != E2eiConversationState::Verified {
-                // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and impact of the validations
-                // return Err(CryptoError::InvalidCertificateChain);
-            }
-        }
-
         Ok(())
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{prelude::MlsConversationInitBundle, test_utils::*, CryptoError};
     use openmls::prelude::*;
     use wasm_bindgen_test::*;
 
-    use crate::prelude::MlsConversationConfiguration;
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
+
+    use crate::prelude::MlsConversationConfiguration;
+    use crate::{prelude::MlsConversationInitBundle, test_utils::*, CryptoError};
 
     wasm_bindgen_test_configure!(run_in_browser);
 

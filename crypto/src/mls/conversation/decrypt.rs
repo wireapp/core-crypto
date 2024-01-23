@@ -10,25 +10,32 @@
 
 use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
+    group::StagedCommit,
     prelude::{
-        MlsCredentialType, MlsMessageIn, MlsMessageInBody, ProcessMessageError, ProcessedMessage,
-        ProcessedMessageContent, Proposal, ProtocolMessage, ValidationError,
+        CredentialType, MlsMessageIn, MlsMessageInBody, ProcessMessageError, ProcessedMessage, ProcessedMessageContent,
+        Proposal, ProtocolMessage, ValidationError,
     },
 };
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize;
+use wire_e2e_identity::prelude::x509::revocation::PkiEnvironment;
 
-use core_crypto_keystore::entities::{E2eiCrl, MlsPendingMessage};
+use core_crypto_keystore::entities::MlsPendingMessage;
 use mls_crypto_provider::MlsCryptoProvider;
-use wire_e2e_identity::prelude::x509::{extract_crl_uris, revocation::PkiEnvironment};
 
 use crate::{
+    e2e_identity::conversation_state::compute_state,
     group_store::GroupStoreValue,
     mls::{
-        client::Client, conversation::renew::Renew, credential::ext::CredentialExt, ClientId, ConversationId,
-        MlsCentral, MlsConversation,
+        client::Client,
+        conversation::renew::Renew,
+        credential::crl::{
+            extract_crl_uris_from_proposals, extract_crl_uris_from_update_path, get_new_crl_distribution_points,
+        },
+        credential::ext::CredentialExt,
+        ClientId, ConversationId, MlsCentral, MlsConversation,
     },
-    prelude::{MlsProposalBundle, WireIdentity},
+    prelude::{E2eiConversationState, MlsProposalBundle, WireIdentity},
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };
 
@@ -99,64 +106,6 @@ impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessa
     }
 }
 
-fn extract_crl_uris_from_proposals(proposals: &[Proposal]) -> CryptoResult<Vec<String>> {
-    use x509_cert::der::Decode as _;
-
-    let mut crl_dps = std::collections::HashSet::new();
-
-    for proposal in proposals {
-        let mut maybe_certs = match proposal {
-            Proposal::Add(add_proposal) => {
-                if let MlsCredentialType::X509(certs) =
-                    add_proposal.key_package().leaf_node().credential().mls_credential()
-                {
-                    Some(&certs.certificates)
-                } else {
-                    None
-                }
-            }
-            Proposal::Update(update_proposal) => {
-                if let MlsCredentialType::X509(certs) = update_proposal.leaf_node().credential().mls_credential() {
-                    Some(&certs.certificates)
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        };
-
-        if let Some(certs) = maybe_certs.take() {
-            for cert in certs {
-                let cert = x509_cert::Certificate::from_der(cert.as_slice())?;
-                if let Some(crl_uris) = extract_crl_uris(&cert).map_err(|e| CryptoError::E2eiError(e.into()))? {
-                    crl_dps.extend(crl_uris);
-                }
-            }
-        }
-    }
-
-    Ok(crl_dps.into_iter().collect())
-}
-
-async fn get_new_crl_distribution_points(
-    backend: &MlsCryptoProvider,
-    crl_dps: Vec<String>,
-) -> CryptoResult<Option<Vec<String>>> {
-    if !crl_dps.is_empty() {
-        let stored_crls = backend.key_store().find_all::<E2eiCrl>(Default::default()).await?;
-        let stored_crl_dps: Vec<&str> = stored_crls.iter().map(|crl| crl.distribution_point.as_str()).collect();
-
-        Ok(Some(
-            crl_dps
-                .into_iter()
-                .filter(|dp| stored_crl_dps.contains(&dp.as_str()))
-                .collect(),
-        ))
-    } else {
-        Ok(None)
-    }
-}
-
 /// Abstraction over a MLS group capable of decrypting a MLS message
 impl MlsConversation {
     /// see [MlsCentral::decrypt_message]
@@ -198,11 +147,8 @@ impl MlsConversation {
                 crl_new_distribution_points: None,
             },
             ProcessedMessageContent::ProposalMessage(proposal) => {
-                let crl_new_distribution_points = get_new_crl_distribution_points(
-                    backend,
-                    extract_crl_uris_from_proposals(&[proposal.proposal().clone()])?,
-                )
-                .await?;
+                let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])?;
+                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps).await?;
 
                 self.group.store_pending_proposal(*proposal);
 
@@ -219,8 +165,10 @@ impl MlsConversation {
                 }
             }
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
-                self.validate_external_commit(&staged_commit, sender_client_id, parent_conv, pki_env, callbacks)
+                self.validate_external_commit(&staged_commit, sender_client_id, parent_conv, callbacks)
                     .await?;
+
+                self.validate_commit(&staged_commit, pki_env)?;
 
                 #[allow(clippy::needless_collect)] // false positive
                 let pending_proposals = self.self_pending_proposals().cloned().collect::<Vec<_>>();
@@ -240,11 +188,14 @@ impl MlsConversation {
                     )
                     .collect();
 
-                // TODO: Fetch UpdatePath from `staged_commit` as it's much like an Update proposal and can introduce new credentials
                 // - This requires a change in OpenMLS to get access to it
-                let crl_new_distribution_points =
-                    get_new_crl_distribution_points(backend, extract_crl_uris_from_proposals(proposal_refs.as_ref())?)
-                        .await?;
+                let crl_dps_from_proposals = extract_crl_uris_from_proposals(proposal_refs.as_ref())?;
+                let crl_dps_from_update_path = extract_crl_uris_from_update_path(&staged_commit)?;
+                let crl_new_distribution_points = get_new_crl_distribution_points(
+                    backend,
+                    [crl_dps_from_proposals, crl_dps_from_update_path].concat(),
+                )
+                .await?;
 
                 // getting the pending has to be done before `merge_staged_commit` otherwise it's wiped out
                 let pending_commit = self.group.pending_commit().cloned();
@@ -293,11 +244,8 @@ impl MlsConversation {
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
                 self.validate_external_proposal(&proposal, parent_conv, callbacks)
                     .await?;
-                let crl_new_distribution_points = get_new_crl_distribution_points(
-                    backend,
-                    extract_crl_uris_from_proposals(&[proposal.proposal().clone()])?,
-                )
-                .await?;
+                let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])?;
+                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps).await?;
                 self.group.store_pending_proposal(*proposal);
 
                 MlsConversationDecryptMessage {
@@ -370,6 +318,29 @@ impl MlsConversation {
         }
         Ok(processed_msg)
     }
+
+    fn validate_commit(&self, commit: &StagedCommit, pki_env: Option<&PkiEnvironment>) -> CryptoResult<()> {
+        if let Some(pki_env) = pki_env {
+            let credentials: Vec<_> = commit
+                .add_proposals()
+                .filter_map(|add_proposal| {
+                    let credential = add_proposal.add_proposal().key_package().leaf_node().credential();
+
+                    matches!(credential.credential_type(), CredentialType::X509).then(|| credential.clone())
+                })
+                .collect();
+            let state = compute_state(
+                credentials.iter(),
+                Some(pki_env),
+                crate::prelude::MlsCredentialType::X509,
+            );
+            if state != E2eiConversationState::Verified {
+                // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and impact of the validations
+                // return Err(CryptoError::InvalidCertificateChain);
+            }
+        }
+        Ok(())
+    }
 }
 
 impl MlsCentral {
@@ -435,7 +406,7 @@ pub mod tests {
 
     use crate::mls::conversation::config::MAX_PAST_EPOCHS;
     use crate::{
-        prelude::{handshake::MlsCommitBundle, MlsWirePolicy},
+        prelude::{MlsCommitBundle, MlsWirePolicy},
         test_utils::{ValidationCallbacks, *},
         CryptoError,
     };
@@ -689,7 +660,8 @@ pub mod tests {
                         let id = charlie_central
                             .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
                             .await
-                            .unwrap();
+                            .unwrap()
+                            .id;
                         assert!(charlie_central.try_talk_to(&id, &mut alice_central).await.is_ok());
                     })
                 },

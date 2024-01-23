@@ -148,6 +148,17 @@ value class ExternallyGeneratedHandle(override val value: List<ByteArray>) :
 fun List<ByteArray>.toExternallyGeneratedHandle() = ExternallyGeneratedHandle(map { it })
 
 @JvmInline
+value class CrlDistributionPoint(override val value: Set<java.net.URI>) :
+    FfiType<Set<java.net.URI>, List<String>> {
+    override fun lower(): List<String> = value.asSequence().map { it.toString() }.toList()
+
+    override fun toString() = value.joinToString(", ") { it.toString() }
+}
+
+fun List<String>.toCrlDistributionPoint() = CrlDistributionPoint(asSequence().map { java.net.URI(it) }.toSet())
+
+
+@JvmInline
 value class GroupInfo(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
@@ -164,19 +175,32 @@ fun com.wire.crypto.GroupInfoBundle.lift() =
     GroupInfoBundle(encryptionType, ratchetTreeType, payload.toGroupInfo())
 
 data class CommitBundle(
+    /**
+     * TLS serialized commit wrapped in a MLS message
+     */
     val commit: MlsMessage,
+    /**
+     * TLS serialized welcome NOT wrapped in a MLS message
+     */
     val welcome: Welcome?,
+    /**
+     * TLS serialized GroupInfo NOT wrapped in a MLS message
+     */
     val groupInfoBundle: GroupInfoBundle,
+    /**
+     * New CRL distribution points that appeared by the introduction of a new credential
+     */
+    val crlNewDistributionPoints: CrlDistributionPoint?,
 )
 
 fun com.wire.crypto.CommitBundle.lift() =
-    CommitBundle(commit.toMlsMessage(), welcome?.toWelcome(), groupInfo.lift())
+    CommitBundle(commit.toMlsMessage(), welcome?.toWelcome(), groupInfo.lift(), null)
 
 fun com.wire.crypto.ConversationInitBundle.lift() =
-    CommitBundle(commit.toMlsMessage(), null, groupInfo.lift())
+    CommitBundle(commit.toMlsMessage(), null, groupInfo.lift(), crlNewDistributionPoints?.toCrlDistributionPoint())
 
 fun com.wire.crypto.MemberAddedMessages.lift() =
-    CommitBundle(commit.toMlsMessage(), welcome.toWelcome(), groupInfo.lift())
+    CommitBundle(commit.toMlsMessage(), welcome.toWelcome(), groupInfo.lift(), crlNewDistributionPoints?.toCrlDistributionPoint())
 
 /**
  * Returned when a Proposal is created. Helps roll backing a local proposal
@@ -189,11 +213,54 @@ data class ProposalBundle(
     /**
      * A unique identifier of the proposal to rollback it later if required with [MlsClient.clearPendingProposal]
      */
-    val proposalRef: ProposalRef
+    val proposalRef: ProposalRef,
+    /**
+     * New CRL distribution points that appeared by the introduction of a new credential
+     */
+    val crlNewDistributionPoints: CrlDistributionPoint?,
 )
 
 fun com.wire.crypto.ProposalBundle.lift() =
-    ProposalBundle(proposal.toMlsMessage(), proposalRef.toProposalRef())
+    ProposalBundle(
+        proposal.toMlsMessage(),
+        proposalRef.toProposalRef(),
+        crlNewDistributionPoints?.toCrlDistributionPoint()
+    )
+
+/**
+ * Contains everything client needs to know after decrypting an (encrypted) Welcome message
+ */
+data class WelcomeBundle(
+    /**
+     * MLS Group Id
+     */
+    val id: MLSGroupId,
+    /**
+     * New CRL distribution points that appeared by the introduction of a new credential
+     */
+    val crlNewDistributionPoints: CrlDistributionPoint?,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as WelcomeBundle
+
+        if (id != other.id) return false
+        if (crlNewDistributionPoints != other.crlNewDistributionPoints) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + (crlNewDistributionPoints?.hashCode() ?: 0)
+        return result
+    }
+}
+
+fun com.wire.crypto.WelcomeBundle.lift() =
+    WelcomeBundle(id.toGroupId(), crlNewDistributionPoints?.toCrlDistributionPoint())
 
 /**
  * Represents the potential items a consumer might require after passing us an encrypted message we have decrypted for him
@@ -241,7 +308,7 @@ data class DecryptedMessage(
     /**
      * New CRL distribution points that appeared by the introduction of a new credential
      */
-    val crlNewDistributionPoints: List<String>?,
+    val crlNewDistributionPoints: CrlDistributionPoint?,
 ) {
 
     override fun equals(other: Any?): Boolean {
@@ -287,7 +354,7 @@ fun com.wire.crypto.DecryptedMessage.lift() = DecryptedMessage(
     hasEpochChanged,
     identity?.lift(),
     bufferedMessages?.map { it.lift() },
-    crlNewDistributionPoints
+    crlNewDistributionPoints?.toCrlDistributionPoint()
 )
 
 /**
@@ -309,7 +376,7 @@ data class BufferedDecryptedMessage(
     /** @see DecryptedMessage.identity */
     val identity: WireIdentity?,
     /** @see DecryptedMessage.crlNewDistributionPoints */
-    val crlNewDistributionPoints: List<String>?,
+    val crlNewDistributionPoints: CrlDistributionPoint?,
 ) {
 
     override fun equals(other: Any?): Boolean {
@@ -354,7 +421,7 @@ fun com.wire.crypto.BufferedDecryptedMessage.lift() = BufferedDecryptedMessage(
     senderClientId?.toClientId(),
     hasEpochChanged,
     identity?.lift(),
-    crlNewDistributionPoints
+    crlNewDistributionPoints?.toCrlDistributionPoint()
 )
 
 /**

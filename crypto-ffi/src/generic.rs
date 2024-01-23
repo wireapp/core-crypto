@@ -214,18 +214,36 @@ pub struct MemberAddedMessages {
     pub welcome: Vec<u8>,
     pub commit: Vec<u8>,
     pub group_info: GroupInfoBundle,
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     type Error = CoreCryptoError;
 
     fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, commit, group_info) = msg.to_bytes_triple()?;
+        let (welcome, commit, group_info, crl_new_distribution_points) = msg.to_bytes()?;
         Ok(Self {
             welcome,
             commit,
             group_info: group_info.into(),
+            crl_new_distribution_points,
         })
+    }
+}
+
+#[derive(Debug, uniffi::Record)]
+/// see [core_crypto::prelude::MlsConversationCreationMessage]
+pub struct WelcomeBundle {
+    pub id: ConversationId,
+    pub crl_new_distribution_points: Option<Vec<String>>,
+}
+
+impl From<core_crypto::prelude::WelcomeBundle> for WelcomeBundle {
+    fn from(w: core_crypto::prelude::WelcomeBundle) -> Self {
+        Self {
+            id: w.id,
+            crl_new_distribution_points: w.crl_new_distribution_points,
+        }
     }
 }
 
@@ -330,13 +348,14 @@ pub struct RotateBundle {
     pub commits: HashMap<String, CommitBundle>,
     pub new_key_packages: Vec<Vec<u8>>,
     pub key_package_refs_to_remove: Vec<Vec<u8>>,
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 impl TryFrom<MlsRotateBundle> for RotateBundle {
     type Error = CoreCryptoError;
 
     fn try_from(bundle: MlsRotateBundle) -> Result<Self, Self::Error> {
-        let (commits, new_key_packages, key_package_refs_to_remove) = bundle.to_bytes()?;
+        let (commits, new_key_packages, key_package_refs_to_remove, crl_new_distribution_points) = bundle.to_bytes()?;
         let commits_size = commits.len();
         let commits = commits
             .into_iter()
@@ -348,6 +367,7 @@ impl TryFrom<MlsRotateBundle> for RotateBundle {
             commits,
             new_key_packages,
             key_package_refs_to_remove,
+            crl_new_distribution_points,
         })
     }
 }
@@ -356,14 +376,19 @@ impl TryFrom<MlsRotateBundle> for RotateBundle {
 pub struct ProposalBundle {
     pub proposal: Vec<u8>,
     pub proposal_ref: Vec<u8>,
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 impl TryFrom<MlsProposalBundle> for ProposalBundle {
     type Error = CoreCryptoError;
 
     fn try_from(msg: MlsProposalBundle) -> Result<Self, Self::Error> {
-        let (proposal, proposal_ref) = msg.to_bytes_pair()?;
-        Ok(Self { proposal, proposal_ref })
+        let (proposal, proposal_ref, crl_new_distribution_points) = msg.to_bytes()?;
+        Ok(Self {
+            proposal,
+            proposal_ref,
+            crl_new_distribution_points,
+        })
     }
 }
 
@@ -372,6 +397,7 @@ pub struct ConversationInitBundle {
     pub conversation_id: Vec<u8>,
     pub commit: Vec<u8>,
     pub group_info: GroupInfoBundle,
+    pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
 impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
@@ -379,11 +405,12 @@ impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
 
     fn try_from(mut from: MlsConversationInitBundle) -> Result<Self, Self::Error> {
         let conversation_id = std::mem::take(&mut from.conversation_id);
-        let (commit, gi) = from.to_bytes_pair()?;
+        let (commit, gi, crl_new_distribution_points) = from.to_bytes()?;
         Ok(Self {
             conversation_id,
             commit,
             group_info: gi.into(),
+            crl_new_distribution_points,
         })
     }
 }
@@ -919,13 +946,14 @@ impl CoreCrypto {
         &self,
         welcome_message: Vec<u8>,
         custom_configuration: CustomConfiguration,
-    ) -> CoreCryptoResult<Vec<u8>> {
+    ) -> CoreCryptoResult<WelcomeBundle> {
         Ok(self
             .central
             .lock()
             .await
             .process_raw_welcome_message(welcome_message, custom_configuration.into())
-            .await?)
+            .await?
+            .into())
     }
 
     /// See [core_crypto::mls::MlsCentral::add_members_to_conversation]

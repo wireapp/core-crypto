@@ -77,7 +77,7 @@ branch = "wire/unstable-pq-xyber"
 package = "wire-e2e-identity"
 # tag = "v0.8.6"
 git = "https://github.com/wireapp/rusty-jwt-tools"
-branch = "feat/x509-id-ed25519"
+branch = "main"
 
 [patch.crates-io.x509-cert]
 git = "https://github.com/otak/formats"

@@ -138,7 +138,7 @@ impl<'a> EmulatedMlsClient for CoreCryptoFfiClient<'a> {
             key_rotation_span: None,
             wire_policy: None,
         };
-        Ok(self.cc.process_welcome_message(welcome, cfg)?)
+        Ok(self.cc.process_welcome_message(welcome, cfg)?.id)
     }
 
     async fn encrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
