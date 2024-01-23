@@ -79,6 +79,10 @@ package = "wire-e2e-identity"
 git = "https://github.com/wireapp/rusty-jwt-tools"
 branch = "feat/x509-id-ed25519"
 
+[patch.crates-io.x509-cert]
+git = "https://github.com/otak/formats"
+branch = "otak/x509-cert-wasm"
+
 # aarch64-apple-ios-sim target support has not yet been released
 [patch.crates-io.openssl-src]
 git = "https://github.com/alexcrichton/openssl-src-rs.git"
