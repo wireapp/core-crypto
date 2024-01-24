@@ -17,7 +17,7 @@
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{E2eiIntermediateCert, Entity, EntityBase, EntityFindParams, StringEntityId},
-    CryptoKeystoreError, MissingKeyErrorKind,
+    MissingKeyErrorKind,
 };
 
 impl Entity for E2eiIntermediateCert {
@@ -87,10 +87,19 @@ impl EntityBase for E2eiIntermediateCert {
             )
             .optional()?;
 
-        let row_id = if existing_rowid.is_some() {
-            return Err(CryptoKeystoreError::AlreadyExists);
+        let zb = rusqlite::blob::ZeroBlob(self.content.len() as i32);
+
+        let row_id = if let Some(row_id) = existing_rowid {
+            let params: [rusqlite::types::ToSqlOutput; 3] =
+                [self.ski_aki_pair.to_sql()?, zb.to_sql()?, row_id.to_sql()?];
+
+            transaction.execute(
+                "UPDATE e2ei_intermediate_certs SET ski_aki_pair = ?, content = ? WHERE rowid = ?",
+                params,
+            )?;
+
+            row_id
         } else {
-            let zb = rusqlite::blob::ZeroBlob(self.content.len() as i32);
             let params: [rusqlite::types::ToSqlOutput; 2] = [self.ski_aki_pair.to_sql()?, zb.to_sql()?];
             transaction.execute(
                 "INSERT INTO e2ei_intermediate_certs (ski_aki_pair, content) VALUES (?, ?)",

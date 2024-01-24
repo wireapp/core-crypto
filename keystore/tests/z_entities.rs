@@ -161,6 +161,8 @@ pub mod tests {
             test_for_entity!(test_mls_psk_bundle, MlsPskBundle);
             test_for_entity!(test_mls_encryption_keypair, MlsEncryptionKeyPair);
             test_for_entity!(test_mls_hpke_private_key, MlsHpkePrivateKey);
+            test_for_entity!(test_e2ei_intermediate_cert, E2eiIntermediateCert);
+            test_for_entity!(test_e2ei_crl, E2eiCrl);
         }
     }
     cfg_if::cfg_if! {
@@ -482,6 +484,59 @@ pub mod utils {
 
                     self.session = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut self.session[..]);
+                }
+            }
+
+            impl EntityTestExt for core_crypto_keystore::entities::E2eiIntermediateCert {
+                fn random() -> Self {
+                    let mut rng = rand::thread_rng();
+
+                    let ski_aki_pair = rng.clone()
+                        .sample_iter(rand::distributions::Alphanumeric)
+                        .take(rng.gen_range(MAX_BLOB_SIZE))
+                        .map(char::from)
+                        .collect::<String>();
+
+                    let mut content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut content[..]);
+
+                    Self {
+                        ski_aki_pair,
+                        content,
+                    }
+                }
+
+                fn random_update(&mut self) {
+                    let mut rng = rand::thread_rng();
+                    self.content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut self.content[..]);
+                }
+            }
+
+            impl EntityTestExt for core_crypto_keystore::entities::E2eiCrl {
+                fn random() -> Self {
+                    let mut rng = rand::thread_rng();
+
+                    let host = rng.clone()
+                        .sample_iter(rand::distributions::Alphanumeric)
+                        .take(rng.gen_range(10..20))
+                        .map(char::from)
+                        .collect::<String>();
+                    let distribution_point = format!("https://{host}.com");
+
+                    let mut content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut content[..]);
+
+                    Self {
+                        distribution_point,
+                        content,
+                    }
+                }
+
+                fn random_update(&mut self) {
+                    let mut rng = rand::thread_rng();
+                    self.content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut self.content[..]);
                 }
             }
         }

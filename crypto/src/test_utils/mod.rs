@@ -94,7 +94,7 @@ pub async fn run_test_with_deterministic_client_ids<const N: usize>(
                             handle.to_string()
                         },
                         client_id: if client_id.is_empty() {
-                            QualifiedE2eiClientId::generate_with_domain(&local_ca_params.domain.as_ref().unwrap())
+                            QualifiedE2eiClientId::generate_with_domain(local_ca_params.domain.as_ref().unwrap())
                                 .try_into()
                                 .unwrap()
                         } else {
