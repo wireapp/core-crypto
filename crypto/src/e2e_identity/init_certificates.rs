@@ -1,5 +1,6 @@
 use crate::{e2e_identity::CrlRegistration, prelude::MlsCentral, CryptoError, CryptoResult};
-use core_crypto_keystore::entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, UniqueEntity};
+use core_crypto_keystore::entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, EntityBase, UniqueEntity};
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 use std::ops::DerefMut;
 use wire_e2e_identity::prelude::x509::{
@@ -17,11 +18,6 @@ impl MlsCentral {
     /// # Parameters
     /// * `trust_anchor_pem` - PEM certificate to anchor as a Trust Root
     pub async fn e2ei_register_acme_ca(&mut self, trust_anchor_pem: String) -> CryptoResult<()> {
-        // Bail if we have an environment already setup
-        if self.e2ei_pki_env.is_some() {
-            return Err(CryptoError::ConsumerError);
-        };
-
         let pki_env = PkiEnvironment::init(PkiEnvironmentParams {
             intermediates: Default::default(),
             trust_roots: Default::default(),
@@ -150,7 +146,13 @@ impl MlsCentral {
     }
 
     pub(crate) async fn init_pki_env(&mut self) -> CryptoResult<()> {
-        let keystore = self.mls_backend.key_store();
+        self.e2ei_pki_env
+            .replace(Self::restore_pki_env(&self.mls_backend).await?);
+        Ok(())
+    }
+
+    pub(crate) async fn restore_pki_env(backend: &MlsCryptoProvider) -> CryptoResult<PkiEnvironment> {
+        let keystore = backend.key_store();
         let mut conn = keystore.borrow_conn().await?;
 
         let mut trust_roots = vec![];
@@ -161,10 +163,7 @@ impl MlsCentral {
             );
         }
 
-        drop(conn);
-
-        let intermediates = keystore
-            .find_all::<E2eiIntermediateCert>(Default::default())
+        let intermediates = E2eiIntermediateCert::find_all(&mut conn, Default::default())
             .await?
             .into_iter()
             .try_fold(vec![], |mut acc, inter| {
@@ -172,8 +171,7 @@ impl MlsCentral {
                 CryptoResult::Ok(acc)
             })?;
 
-        let crls = keystore
-            .find_all::<E2eiCrl>(Default::default())
+        let crls = E2eiCrl::find_all(&mut conn, Default::default())
             .await?
             .into_iter()
             .try_fold(vec![], |mut acc, crl| {
@@ -188,9 +186,6 @@ impl MlsCentral {
             time_of_interest: None,
         };
 
-        let pki_env = PkiEnvironment::init(params).map_err(|e| CryptoError::E2eiError(e.into()))?;
-        self.e2ei_pki_env.replace(pki_env);
-
-        Ok(())
+        PkiEnvironment::init(params).map_err(|e| CryptoError::E2eiError(e.into()))
     }
 }

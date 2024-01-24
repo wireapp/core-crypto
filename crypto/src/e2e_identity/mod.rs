@@ -19,8 +19,8 @@ pub mod enabled;
 pub mod error;
 pub(crate) mod id;
 pub(crate) mod identity;
-#[cfg(not(target_family = "wasm"))]
 pub(crate) mod init_certificates;
+#[cfg(not(target_family = "wasm"))]
 pub(crate) mod refresh_token;
 pub(crate) mod rotate;
 pub(crate) mod stash;
@@ -634,8 +634,10 @@ pub mod tests {
             if is_renewal {
                 let initial_refresh_token =
                     crate::e2e_identity::refresh_token::RefreshToken::from("initial-refresh-token".to_string());
-                let initial_refresh_token = E2eiRefreshToken::from(initial_refresh_token);
+                let initial_refresh_token =
+                    core_crypto_keystore::entities::E2eiRefreshToken::from(initial_refresh_token);
                 let mut conn = cc.mls_backend.key_store().borrow_conn().await?;
+                use core_crypto_keystore::entities::UniqueEntity as _;
                 initial_refresh_token.replace(&mut conn).await.unwrap();
             }
         }
