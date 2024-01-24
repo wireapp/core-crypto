@@ -924,7 +924,7 @@ test("proteus", async () => {
 test("end-to-end-identity", async () => {
   const [ctx, page] = await initBrowser();
 
-  let refreshToken = await page.evaluate(async () => {
+  await page.evaluate(async () => {
     const { CoreCrypto, Ciphersuite, CoreCryptoError } = await import("./corecrypto.js");
 
     const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
@@ -1050,9 +1050,7 @@ test("end-to-end-identity", async () => {
     enrollment = await cc.e2eiEnrollmentStashPop(storeHandle);
 
     const idToken = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ";
-    const refreshToken = "refresh-token";
-    const oidcChallengeReq = await enrollment.newOidcChallengeRequest(idToken, refreshToken, previousNonce);
-    const storedRefreshToken = await enrollment.getRefreshToken();
+    const oidcChallengeReq = await enrollment.newOidcChallengeRequest(idToken, previousNonce);
 
     const oidcChallengeResp = {
       "type": "wire-oidc-01",
@@ -1061,7 +1059,7 @@ test("end-to-end-identity", async () => {
       "token": "2FpTOmNQvNfWDktNWt1oIJnjLE3MkyFb",
       "target": "http://example.com/target"
     };
-    await enrollment.newOidcChallengeResponse(cc, jsonToByteArray(oidcChallengeResp));
+    await enrollment.newOidcChallengeResponse(jsonToByteArray(oidcChallengeResp));
 
     const orderUrl = "https://example.com/acme/wire-acme/order/C7uOXEgg5KPMPtbdE3aVMzv7cJjwUVth";
     const checkOrderReq = await enrollment.checkOrderRequest(orderUrl, previousNonce);
@@ -1115,10 +1113,7 @@ test("end-to-end-identity", async () => {
       await enrollment.finalizeResponse(jsonToByteArray(finalizeResp));
 
     const certificateReq = await enrollment.certificateRequest(previousNonce);
-    return storedRefreshToken;
   });
-
-  expect(refreshToken).toBe("refresh-token");
 
   await page.close();
   await ctx.close();

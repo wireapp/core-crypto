@@ -146,6 +146,7 @@ pub mod tests {
                             &backend,
                             e.ciphersuite,
                             None,
+                            #[cfg(not(target_family = "wasm"))]
                             None,
                         )
                         .unwrap();
