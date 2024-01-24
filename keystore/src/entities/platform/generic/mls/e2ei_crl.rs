@@ -17,7 +17,7 @@
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{E2eiCrl, Entity, EntityBase, EntityFindParams, StringEntityId},
-    CryptoKeystoreError, MissingKeyErrorKind,
+    MissingKeyErrorKind,
 };
 
 impl Entity for E2eiCrl {
@@ -81,10 +81,19 @@ impl EntityBase for E2eiCrl {
             )
             .optional()?;
 
-        let row_id = if existing_rowid.is_some() {
-            return Err(CryptoKeystoreError::AlreadyExists);
+        let zb = rusqlite::blob::ZeroBlob(self.content.len() as i32);
+
+        let row_id = if let Some(row_id) = existing_rowid {
+            let params: [rusqlite::types::ToSqlOutput; 3] =
+                [self.distribution_point.to_sql()?, zb.to_sql()?, row_id.to_sql()?];
+
+            transaction.execute(
+                "UPDATE e2ei_crls SET distribution_point = ?, content = ? WHERE rowid = ?",
+                params,
+            )?;
+
+            row_id
         } else {
-            let zb = rusqlite::blob::ZeroBlob(self.content.len() as i32);
             let params: [rusqlite::types::ToSqlOutput; 2] = [self.distribution_point.to_sql()?, zb.to_sql()?];
             transaction.execute(
                 "INSERT INTO e2ei_crls (distribution_point, content) VALUES (?, ?)",

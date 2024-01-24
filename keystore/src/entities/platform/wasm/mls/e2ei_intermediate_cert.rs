@@ -37,8 +37,7 @@ impl EntityBase for E2eiIntermediateCert {
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()> {
         let storage = conn.storage_mut();
-        storage.save("e2ei_intermediate_certs", &mut [self.clone()]).await?;
-        Ok(())
+        storage.save("e2ei_intermediate_certs", &mut [self.clone()]).await
     }
 
     async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {

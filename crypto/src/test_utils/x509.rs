@@ -3,7 +3,7 @@ use std::time::Duration;
 use mls_crypto_provider::{CertProfile, CertificateGenerationArgs, PkiKeypair, RustCrypto};
 use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
 
-const DEFAULT_CRL_DOMAIN: &'static str = "localhost";
+const DEFAULT_CRL_DOMAIN: &str = "localhost";
 
 /// Params for generating the Certificate chain
 #[derive(Debug, Clone)]
@@ -168,11 +168,7 @@ impl X509TestChain {
                     use x509_cert::der::EncodePem as _;
                     println!(
                         "{} => \n{}",
-                        cross_signed_intermediate
-                            .certificate
-                            .tbs_certificate
-                            .subject
-                            .to_string(),
+                        cross_signed_intermediate.certificate.tbs_certificate.subject,
                         cross_signed_intermediate
                             .certificate
                             .to_pem(x509_cert::der::pem::LineEnding::LF)
@@ -324,7 +320,7 @@ impl X509Certificate {
         }
 
         if let Some(client_id) = &params.client_id {
-            let qualified_client_id = wire_e2e_identity::prelude::E2eiClientId::try_from_qualified(&client_id)
+            let qualified_client_id = wire_e2e_identity::prelude::E2eiClientId::try_from_qualified(client_id)
                 .unwrap()
                 .to_uri();
 
