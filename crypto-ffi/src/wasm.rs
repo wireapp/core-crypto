@@ -2798,17 +2798,12 @@ impl E2eiEnrollment {
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_oidc_challenge_request]
-    pub fn new_oidc_challenge_request(
-        &mut self,
-        id_token: String,
-        refresh_token: String,
-        previous_nonce: String,
-    ) -> Promise {
+    pub fn new_oidc_challenge_request(&mut self, id_token: String, previous_nonce: String) -> Promise {
         let this = self.0.clone();
         future_to_promise(
             async move {
                 let mut this = this.write().await;
-                let chall = this.new_oidc_challenge_request(id_token, refresh_token, previous_nonce)?;
+                let chall = this.new_oidc_challenge_request(id_token, previous_nonce)?;
                 WasmCryptoResult::Ok(Uint8Array::from(chall.as_slice()).into())
             }
             .err_into(),
@@ -2816,15 +2811,12 @@ impl E2eiEnrollment {
     }
 
     /// See [core_crypto::e2e_identity::WireE2eIdentity::new_oidc_challenge_response]
-    pub fn new_oidc_challenge_response(&mut self, cc: &CoreCrypto, challenge: Uint8Array) -> Promise {
-        let cc = cc.inner.clone();
+    pub fn new_oidc_challenge_response(&mut self, challenge: Uint8Array) -> Promise {
         let this = self.0.clone();
         future_to_promise(
             async move {
-                let cc = cc.write().await;
                 let mut this = this.write().await;
-                this.new_oidc_challenge_response(cc.provider(), challenge.to_vec())
-                    .await?;
+                this.new_oidc_challenge_response(challenge.to_vec()).await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -2889,18 +2881,6 @@ impl E2eiEnrollment {
                 let mut this = this.write().await;
                 let certificate_req = this.certificate_request(previous_nonce)?;
                 WasmCryptoResult::Ok(Uint8Array::from(certificate_req.as_slice()).into())
-            }
-            .err_into(),
-        )
-    }
-
-    /// See [core_crypto::e2e_identity::WireE2eIdentity::get_refresh_token]
-    pub fn get_refresh_token(&mut self) -> Promise {
-        let this = self.0.clone();
-        future_to_promise(
-            async move {
-                let this = this.read().await;
-                WasmCryptoResult::Ok(this.get_refresh_token()?.to_string().into())
             }
             .err_into(),
         )

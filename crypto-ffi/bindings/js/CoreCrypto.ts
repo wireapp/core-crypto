@@ -2353,19 +2353,16 @@ export class E2eiEnrollment {
      * Creates a new challenge request for Wire Oidc challenge.
      *
      * @param idToken you get back from Identity Provider
-     * @param refreshToken you get back from Identity Provider to renew the access token
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
     async newOidcChallengeRequest(
         idToken: string,
-        refreshToken: string,
         previousNonce: string
     ): Promise<JsonRawData> {
         return await CoreCryptoError.asyncMapErr(
             this.#enrollment.new_oidc_challenge_request(
                 idToken,
-                refreshToken,
                 previousNonce
             )
         );
@@ -2378,15 +2375,9 @@ export class E2eiEnrollment {
      * @param challenge HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
-    async newOidcChallengeResponse(
-        cc: CoreCrypto,
-        challenge: JsonRawData
-    ): Promise<void> {
+    async newOidcChallengeResponse(challenge: JsonRawData): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
-            this.#enrollment.new_oidc_challenge_response(
-                cc.inner() as CoreCryptoFfiTypes.CoreCrypto,
-                challenge
-            )
+            this.#enrollment.new_oidc_challenge_response(challenge)
         );
     }
 
@@ -2453,17 +2444,6 @@ export class E2eiEnrollment {
     async certificateRequest(previousNonce: string): Promise<JsonRawData> {
         return await CoreCryptoError.asyncMapErr(
             this.#enrollment.certificate_request(previousNonce)
-        );
-    }
-
-    /**
-     * Lets clients retrieve the OIDC refresh token to try to renew the user's authorization.
-     * If it's expired, the user needs to reauthenticate and they will update the refresh token
-     * in {@link newOidcChallengeRequest}
-     */
-    async getRefreshToken(): Promise<String> {
-        return await CoreCryptoError.asyncMapErr(
-            this.#enrollment.get_refresh_token()
         );
     }
 }

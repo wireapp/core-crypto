@@ -85,7 +85,6 @@ impl MlsCentral {
 
         let sign_keypair = Some(cb.signature_key.clone().try_into()?);
 
-        let refresh_token = None; // no x509 credential yet at this point so no OIDC authn yet so no refresh token to restore
         E2eiEnrollment::try_new(
             client_id,
             display_name,
@@ -95,7 +94,8 @@ impl MlsCentral {
             &self.mls_backend,
             ciphersuite,
             sign_keypair,
-            refresh_token,
+            #[cfg(not(target_family = "wasm"))]
+            None, // no x509 credential yet at this point so no OIDC authn yet so no refresh token to restore
         )
     }
 
@@ -128,11 +128,6 @@ impl MlsCentral {
         let display_name = display_name.unwrap_or(existing_identity.display_name);
         let handle = handle.unwrap_or(existing_identity.handle);
 
-        // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST
-        // already have done an OIDC authn and gotten a refresh token from it we also MUST have stored
-        // in CoreCrypto
-        let refresh_token = self.find_refresh_token().await?;
-
         E2eiEnrollment::try_new(
             client_id,
             display_name,
@@ -142,7 +137,8 @@ impl MlsCentral {
             &self.mls_backend,
             ciphersuite,
             sign_keypair,
-            Some(refresh_token),
+            #[cfg(not(target_family = "wasm"))]
+            Some(self.find_refresh_token().await?), // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST already have done an OIDC authn and gotten a refresh token from it we also MUST have stored in CoreCrypto
         )
     }
 

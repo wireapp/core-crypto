@@ -14,7 +14,7 @@ use error::*;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
-    e2e_identity::{crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, refresh_token::RefreshToken},
+    e2e_identity::{crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId},
     mls::credential::x509::CertificatePrivateKey,
     prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCentral, MlsCiphersuite},
     CryptoError, CryptoResult,
@@ -27,6 +27,7 @@ pub mod enabled;
 pub mod error;
 pub(crate) mod id;
 pub(crate) mod identity;
+#[cfg(not(target_family = "wasm"))]
 pub(crate) mod refresh_token;
 pub(crate) mod rotate;
 pub(crate) mod stash;
@@ -62,7 +63,6 @@ impl MlsCentral {
         ciphersuite: MlsCiphersuite,
     ) -> CryptoResult<E2eiEnrollment> {
         let signature_keypair = None; // fresh install without a Basic client. Supplying None will generate a new keypair
-        let refresh_token = None; // fresh install so no refresh token registered yet
         E2eiEnrollment::try_new(
             client_id,
             display_name,
@@ -72,7 +72,8 @@ impl MlsCentral {
             &self.mls_backend,
             ciphersuite,
             signature_keypair,
-            refresh_token,
+            #[cfg(not(target_family = "wasm"))]
+            None, // fresh install so no refresh token registered yet
         )
     }
 
@@ -289,12 +290,13 @@ pub struct E2eiEnrollment {
     expiry: core::time::Duration,
     directory: Option<types::E2eiAcmeDirectory>,
     account: Option<wire_e2e_identity::prelude::E2eiAcmeAccount>,
-    user_authz: Option<wire_e2e_identity::prelude::E2eiAcmeAuthorization>,
-    device_authz: Option<wire_e2e_identity::prelude::E2eiAcmeAuthorization>,
+    user_authz: Option<E2eiAcmeAuthorization>,
+    device_authz: Option<E2eiAcmeAuthorization>,
     valid_order: Option<wire_e2e_identity::prelude::E2eiAcmeOrder>,
     finalize: Option<wire_e2e_identity::prelude::E2eiAcmeFinalize>,
     ciphersuite: MlsCiphersuite,
-    refresh_token: Option<RefreshToken>,
+    #[cfg(not(target_family = "wasm"))]
+    refresh_token: Option<refresh_token::RefreshToken>,
 }
 
 impl std::ops::Deref for E2eiEnrollment {
@@ -324,7 +326,7 @@ impl E2eiEnrollment {
         backend: &MlsCryptoProvider,
         ciphersuite: MlsCiphersuite,
         sign_keypair: Option<E2eiSignatureKeypair>,
-        refresh_token: Option<RefreshToken>,
+        #[cfg(not(target_family = "wasm"))] refresh_token: Option<refresh_token::RefreshToken>,
     ) -> CryptoResult<Self> {
         let alg = ciphersuite.try_into()?;
         let sign_sk = match sign_keypair {
@@ -350,6 +352,7 @@ impl E2eiEnrollment {
             valid_order: None,
             finalize: None,
             ciphersuite,
+            #[cfg(not(target_family = "wasm"))]
             refresh_token,
         })
     }
@@ -558,11 +561,14 @@ impl E2eiEnrollment {
     pub fn new_oidc_challenge_request(
         &mut self,
         id_token: String,
-        refresh_token: String,
+        #[cfg(not(target_family = "wasm"))] refresh_token: String,
         previous_nonce: String,
     ) -> E2eIdentityResult<Json> {
-        if refresh_token.is_empty() {
-            return Err(E2eIdentityError::InvalidRefreshToken);
+        #[cfg(not(target_family = "wasm"))]
+        {
+            if refresh_token.is_empty() {
+                return Err(E2eIdentityError::InvalidRefreshToken);
+            }
         }
         let authz = self.user_authz.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'newAuthzResponse()'",
@@ -576,7 +582,10 @@ impl E2eiEnrollment {
         ))?;
         let challenge = self.acme_oidc_challenge_request(id_token, challenge, account, previous_nonce)?;
         let challenge = serde_json::to_vec(&challenge)?;
-        self.refresh_token.replace(refresh_token.into());
+        #[cfg(not(target_family = "wasm"))]
+        {
+            self.refresh_token.replace(refresh_token.into());
+        }
         Ok(challenge)
     }
 
@@ -588,19 +597,23 @@ impl E2eiEnrollment {
     /// * `challenge` - http response body
     pub async fn new_oidc_challenge_response(
         &mut self,
-        backend: &MlsCryptoProvider,
+        #[cfg(not(target_family = "wasm"))] backend: &MlsCryptoProvider,
         challenge: Json,
     ) -> E2eIdentityResult<()> {
         let challenge = serde_json::from_slice(&challenge[..])?;
         self.acme_new_challenge_response(challenge)?;
-        // Now that the OIDC challenge is valid, we can store the refresh token for future uses. Note
-        // that we could have persisted it at the end of the enrollment but what if the next enrollment
-        // steps fail ? Is it a reason good enough not to persist the token and ask the user to
-        // authenticate again: probably not.
-        let refresh_token = self.refresh_token.take().ok_or(E2eIdentityError::OutOfOrderEnrollment(
-            "You must first call 'new_oidc_challenge_request()'",
-        ))?;
-        self.replace_refresh_token(backend, refresh_token).await?;
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            // Now that the OIDC challenge is valid, we can store the refresh token for future uses. Note
+            // that we could have persisted it at the end of the enrollment but what if the next enrollment
+            // steps fail ? Is it a reason good enough not to persist the token and ask the user to
+            // authenticate again: probably not.
+            let refresh_token = self.refresh_token.take().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+                "You must first call 'new_oidc_challenge_request()'",
+            ))?;
+            self.replace_refresh_token(backend, refresh_token).await?;
+        }
         Ok(())
     }
 
@@ -712,13 +725,11 @@ pub mod tests {
     use serde_json::json;
     use wasm_bindgen_test::*;
 
-    use crate::e2e_identity::refresh_token::RefreshToken;
-    use crate::prelude::MlsCredentialType;
     use crate::{
         e2e_identity::id::QualifiedE2eiClientId,
         prelude::{
             CertificateBundle, E2eIdentityError, E2eIdentityResult, E2eiConversationState, E2eiEnrollment, MlsCentral,
-            INITIAL_KEYING_MATERIAL_COUNT,
+            MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT,
         },
         test_utils::{central::TEAM, *},
         CryptoResult,
@@ -801,25 +812,32 @@ pub mod tests {
         // used to verify persisting the instance actually does restore it entirely
         restore: impl Fn(E2eiEnrollment, MlsCentral) -> RestoreFnReturn<'a>,
     ) -> E2eIdentityResult<(MlsCentral, E2eiEnrollment, String)> {
-        if is_renewal {
-            let initial_refresh_token = RefreshToken::from("initial-refresh-token".to_string());
-            let initial_refresh_token = E2eiRefreshToken::from(initial_refresh_token);
-            let mut conn = cc.mls_backend.key_store().borrow_conn().await?;
-            initial_refresh_token.replace(&mut conn).await.unwrap();
+        #[cfg(not(target_family = "wasm"))]
+        {
+            if is_renewal {
+                let initial_refresh_token =
+                    crate::e2e_identity::refresh_token::RefreshToken::from("initial-refresh-token".to_string());
+                let initial_refresh_token = E2eiRefreshToken::from(initial_refresh_token);
+                let mut conn = cc.mls_backend.key_store().borrow_conn().await?;
+                initial_refresh_token.replace(&mut conn).await.unwrap();
+            }
         }
 
         let wrapper = E2eiInitWrapper { cc: &cc, case };
         let mut enrollment = init(wrapper).await.map_err(|_| E2eIdentityError::ImplementationError)?;
 
-        if is_renewal {
-            assert!(enrollment.refresh_token.is_some());
-            assert!(cc.find_refresh_token().await.is_ok());
-        } else {
-            assert!(matches!(
-                enrollment.get_refresh_token().unwrap_err(),
-                E2eIdentityError::OutOfOrderEnrollment(_)
-            ));
-            assert!(cc.find_refresh_token().await.is_err());
+        #[cfg(not(target_family = "wasm"))]
+        {
+            if is_renewal {
+                assert!(enrollment.refresh_token.is_some());
+                assert!(cc.find_refresh_token().await.is_ok());
+            } else {
+                assert!(matches!(
+                    enrollment.get_refresh_token().unwrap_err(),
+                    E2eIdentityError::OutOfOrderEnrollment(_)
+                ));
+                assert!(cc.find_refresh_token().await.is_err());
+            }
         }
 
         let (display_name, handle) = (enrollment.display_name.clone(), &enrollment.handle.clone());
@@ -953,13 +971,16 @@ pub mod tests {
         let (mut enrollment, cc) = restore(enrollment, cc).await;
 
         let id_token = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ".to_string();
+        #[cfg(not(target_family = "wasm"))]
         let new_refresh_token = "new-refresh-token";
         let _oidc_chall_req = enrollment.new_oidc_challenge_request(
             id_token,
+            #[cfg(not(target_family = "wasm"))]
             new_refresh_token.to_string(),
             previous_nonce.to_string(),
         )?;
 
+        #[cfg(not(target_family = "wasm"))]
         assert!(enrollment.get_refresh_token().is_ok());
 
         let oidc_chall_resp = json!({
@@ -970,14 +991,20 @@ pub mod tests {
             "target": "http://example.com/target"
         });
         let oidc_chall_resp = serde_json::to_vec(&oidc_chall_resp)?;
-        enrollment
-            .new_oidc_challenge_response(&cc.mls_backend, oidc_chall_resp)
-            .await?;
 
-        // Now Refresh token is persisted in the keystore
-        assert_eq!(cc.find_refresh_token().await.unwrap().as_str(), new_refresh_token);
-        // No reason at this point to have the refresh token in memory
-        assert!(enrollment.get_refresh_token().is_err());
+        #[cfg(not(target_family = "wasm"))]
+        {
+            enrollment
+                .new_oidc_challenge_response(&cc.mls_backend, oidc_chall_resp)
+                .await?;
+            // Now Refresh token is persisted in the keystore
+            assert_eq!(cc.find_refresh_token().await.unwrap().as_str(), new_refresh_token);
+            // No reason at this point to have the refresh token in memory
+            assert!(enrollment.get_refresh_token().is_err());
+        }
+
+        #[cfg(target_family = "wasm")]
+        enrollment.new_oidc_challenge_response(oidc_chall_resp).await?;
 
         let (mut enrollment, cc) = restore(enrollment, cc).await;
 
