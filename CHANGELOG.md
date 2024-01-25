@@ -7,6 +7,27 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.34] - 2024-01-25
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Features
+
+- [**breaking**] Change certificate expiry from days to seconds in the public API
+
+</details>
+
+* E2EI:
+    * **BREAKING CHANGE** change certificate expiry from days to seconds in the public API
+    * **BREAKING CHANGE** add the potential new CRL Distribution points to:
+        * `decryptMessage`
+        * `processWelcomeMessage`
+        * `joinByExternalCommit`
+        * `addClientsToConversation`
+        * `newAddProposal`
+        * `e2eiRotateAll`
+
 ## [1.0.0-rc.33] - 2024-01-24
 
 <details>
