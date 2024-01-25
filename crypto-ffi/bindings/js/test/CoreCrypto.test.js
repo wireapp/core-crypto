@@ -941,9 +941,9 @@ test("end-to-end-identity", async () => {
     const clientId = "b7ac11a4-8f01-4527-af88-1c30885a7931:4959bc6ab12f2846@wire.com";
     const displayName = "Alice Smith";
     const handle = "alice_wire";
-    const expiryDays = 90;
+    const expirySec = 90 * 24 * 3600;
 
-    let enrollment = await cc.e2eiNewEnrollment(clientId, displayName, handle, expiryDays, ciphersuite);
+    let enrollment = await cc.e2eiNewEnrollment(clientId, displayName, handle, expirySec, ciphersuite);
 
     const directoryResp = {
       "newNonce": "https://example.com/acme/new-nonce",

@@ -27,7 +27,7 @@ impl MlsCentral {
         display_name: String,
         handle: String,
         team: Option<String>,
-        expiry_days: u32,
+        expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> CryptoResult<E2eiEnrollment> {
         let client = self.mls_client()?;
@@ -45,7 +45,7 @@ impl MlsCentral {
             display_name,
             handle,
             team,
-            expiry_days,
+            expiry_sec,
             &self.mls_backend,
             ciphersuite,
             sign_keypair,
@@ -64,7 +64,7 @@ impl MlsCentral {
         display_name: Option<String>,
         handle: Option<String>,
         team: Option<String>,
-        expiry_days: u32,
+        expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> CryptoResult<E2eiEnrollment> {
         let client = self.mls_client()?;
@@ -88,7 +88,7 @@ impl MlsCentral {
             display_name,
             handle,
             team,
-            expiry_days,
+            expiry_sec,
             &self.mls_backend,
             ciphersuite,
             sign_keypair,

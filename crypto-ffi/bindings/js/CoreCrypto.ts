@@ -1887,7 +1887,7 @@ export class CoreCrypto {
      * @param clientId - client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
-     * @param expiryDays - generated x509 certificate expiry
+     * @param expirySec - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
      * @param team - name of the Wire team a user belongs to
      * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiMlsInitOnly}
@@ -1896,7 +1896,7 @@ export class CoreCrypto {
         clientId: string,
         displayName: string,
         handle: string,
-        expiryDays: number,
+        expirySec: number,
         ciphersuite: Ciphersuite,
         team?: string
     ): Promise<E2eiEnrollment> {
@@ -1906,7 +1906,7 @@ export class CoreCrypto {
                 displayName,
                 handle,
                 team,
-                expiryDays,
+                expirySec,
                 ciphersuite
             )
         );
@@ -1919,7 +1919,7 @@ export class CoreCrypto {
      *
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
-     * @param expiryDays - generated x509 certificate expiry
+     * @param expirySec - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
      * @param team - name of the Wire team a user belongs to
      * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
@@ -1927,7 +1927,7 @@ export class CoreCrypto {
     async e2eiNewActivationEnrollment(
         displayName: string,
         handle: string,
-        expiryDays: number,
+        expirySec: number,
         ciphersuite: Ciphersuite,
         team?: string
     ): Promise<E2eiEnrollment> {
@@ -1936,7 +1936,7 @@ export class CoreCrypto {
                 displayName,
                 handle,
                 team,
-                expiryDays,
+                expirySec,
                 ciphersuite
             )
         );
@@ -1949,7 +1949,7 @@ export class CoreCrypto {
      * has been revoked. It lets you change the DisplayName or the handle
      * if you need to. Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
      *
-     * @param expiryDays - generated x509 certificate expiry
+     * @param expirySec - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
@@ -1957,7 +1957,7 @@ export class CoreCrypto {
      * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
      */
     async e2eiNewRotateEnrollment(
-        expiryDays: number,
+        expirySec: number,
         ciphersuite: Ciphersuite,
         displayName?: string,
         handle?: string,
@@ -1968,7 +1968,7 @@ export class CoreCrypto {
                 displayName,
                 handle,
                 team,
-                expiryDays,
+                expirySec,
                 ciphersuite
             )
         );

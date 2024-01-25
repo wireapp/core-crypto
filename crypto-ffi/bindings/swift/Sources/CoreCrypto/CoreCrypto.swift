@@ -1170,12 +1170,12 @@ public class CoreCryptoWrapper {
     /// - parameter clientId: client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
     /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
-    /// - parameter expiryDays: generated x509 certificate expiry
+    /// - parameter expirySec: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material.
     /// - parameter team: name of the Wire team a user belongs to
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func e2eiNewEnrollment(clientId: String, displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16, handle: String? = nil) async throws -> E2eiEnrollment {
-        return try await self.coreCrypto.e2eiNewEnrollment(clientId: clientId, displayName: displayName, handle: handle, team: team, expiryDays: expiryDays, ciphersuite: ciphersuite).lift()
+    public func e2eiNewEnrollment(clientId: String, displayName: String, handle: String, expirySec: UInt32, ciphersuite: UInt16, handle: String? = nil) async throws -> E2eiEnrollment {
+        return try await self.coreCrypto.e2eiNewEnrollment(clientId: clientId, displayName: displayName, handle: handle, team: team, expirySec: expirySec, ciphersuite: ciphersuite).lift()
     }
 
     /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
@@ -1183,26 +1183,26 @@ public class CoreCryptoWrapper {
     ///
     /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
-    /// - parameter expiryDays: generated x509 certificate expiry
+    /// - parameter expirySec: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material.
     /// - parameter team: name of the Wire team a user belongs to
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func e2eiNewActivationEnrollment(displayName: String, handle: String, expiryDays: UInt32, ciphersuite: UInt16, handle: String? = nil) async throws -> E2eiEnrollment {
-        return try await self.coreCrypto.e2eiNewActivationEnrollment(displayName: displayName, handle: handle, team: team, expiryDays: expiryDays, ciphersuite: ciphersuite).lift()
+    public func e2eiNewActivationEnrollment(displayName: String, handle: String, expirySec: UInt32, ciphersuite: UInt16, handle: String? = nil) async throws -> E2eiEnrollment {
+        return try await self.coreCrypto.e2eiNewActivationEnrollment(displayName: displayName, handle: handle, team: team, expirySec: expirySec, ciphersuite: ciphersuite).lift()
     }
 
     /// Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)having to change/rotate
     /// their credential, either because the former one is expired or it has been revoked. It lets you change
     /// the DisplayName or the handle if you need to. Once the enrollment is finished, use the instance in ``CoreCrypto/e2eiRotateAll`` to do the rotation.
     ///
-    /// - parameter expiryDays: generated x509 certificate expiry
+    /// - parameter expirySec: generated x509 certificate expiry
     /// - parameter ciphersuite: For generating signing key material.
     /// - parameter displayName: human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// - parameter handle: user handle e.g. `alice.smith.qa@example.com`
     /// - parameter team: name of the Wire team a user belongs to
     /// - returns: The new ``CoreCryptoSwift.WireE2eIdentity`` object
-    public func e2eiNewRotateEnrollment(expiryDays: UInt32, ciphersuite: UInt16, displayName: String? = nil, handle: String? = nil, team: String? = nil) async throws -> E2eiEnrollment {
-        return try await self.coreCrypto.e2eiNewRotateEnrollment(expiryDays: expiryDays, ciphersuite: ciphersuite, displayName: displayName, handle: handle, team: team).lift()
+    public func e2eiNewRotateEnrollment(expirySec: UInt32, ciphersuite: UInt16, displayName: String? = nil, handle: String? = nil, team: String? = nil) async throws -> E2eiEnrollment {
+        return try await self.coreCrypto.e2eiNewRotateEnrollment(expirySec: expirySec, ciphersuite: ciphersuite, displayName: displayName, handle: handle, team: team).lift()
     }
 
     /// Use this method to initialize end-to-end identity when a client signs up and the grace period is already expired ; that means he cannot initialize with a Basic credential
