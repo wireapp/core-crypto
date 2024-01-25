@@ -28,6 +28,8 @@ pub use crypto_provider::RustCrypto;
 
 pub use pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
 
+use crate::pki::PkiEnvironmentProvider;
+
 pub mod reexports {
     pub use rand_core;
 }
@@ -91,6 +93,7 @@ pub struct MlsCryptoProviderConfiguration<'a> {
 pub struct MlsCryptoProvider {
     crypto: RustCrypto,
     key_store: CryptoKeystore,
+    pki_env: PkiEnvironmentProvider,
 }
 
 impl MlsCryptoProvider {
@@ -102,25 +105,48 @@ impl MlsCryptoProvider {
         } else {
             CryptoKeystore::open_with_key(config.db_path, config.identity_key).await?
         };
-        Ok(Self { crypto, key_store })
+        Ok(Self {
+            crypto,
+            key_store,
+            pki_env: PkiEnvironmentProvider::default(),
+        })
     }
 
     pub async fn try_new(db_path: impl AsRef<str>, identity_key: impl AsRef<str>) -> MlsProviderResult<Self> {
         let crypto = RustCrypto::default();
         let key_store = CryptoKeystore::open_with_key(db_path, identity_key.as_ref()).await?;
-        Ok(Self { crypto, key_store })
+        Ok(Self {
+            crypto,
+            key_store,
+            pki_env: PkiEnvironmentProvider::default(),
+        })
     }
 
     pub async fn try_new_in_memory(identity_key: impl AsRef<str>) -> MlsProviderResult<Self> {
         let crypto = RustCrypto::default();
         let key_store = CryptoKeystore::open_in_memory_with_key("", identity_key.as_ref()).await?;
-        Ok(Self { crypto, key_store })
+        Ok(Self {
+            crypto,
+            key_store,
+            pki_env: PkiEnvironmentProvider::default(),
+        })
     }
 
     /// Initialize a CryptoProvided with an already-configured backing store
     pub fn new_with_store(key_store: CryptoKeystore, entropy_seed: Option<EntropySeed>) -> Self {
         let crypto = entropy_seed.map(RustCrypto::new_with_seed).unwrap_or_default();
-        Self { crypto, key_store }
+        Self {
+            crypto,
+            key_store,
+            pki_env: PkiEnvironmentProvider::default(),
+        }
+    }
+
+    pub fn update_pki_env(
+        &mut self,
+        pki_env: wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
+    ) -> MlsProviderResult<()> {
+        self.pki_env.update_env(pki_env)
     }
 
     /// Reseeds the internal CSPRNG entropy pool with a brand new one.
@@ -163,6 +189,7 @@ impl openmls_traits::OpenMlsCryptoProvider for MlsCryptoProvider {
     type CryptoProvider = RustCrypto;
     type RandProvider = RustCrypto;
     type KeyStoreProvider = CryptoKeystore;
+    type AuthenticationServiceProvider = PkiEnvironmentProvider;
 
     fn crypto(&self) -> &Self::CryptoProvider {
         &self.crypto
@@ -174,5 +201,9 @@ impl openmls_traits::OpenMlsCryptoProvider for MlsCryptoProvider {
 
     fn key_store(&self) -> &Self::KeyStoreProvider {
         &self.key_store
+    }
+
+    fn authentication_service(&self) -> &Self::AuthenticationServiceProvider {
+        &self.pki_env
     }
 }

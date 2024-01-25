@@ -1,5 +1,111 @@
 use crate::error::{MlsProviderError, MlsProviderResult};
-use openmls_traits::types::SignatureScheme;
+use openmls_traits::{
+    authentication_service::{CredentialAuthenticationStatus, CredentialRef},
+    types::SignatureScheme,
+};
+use std::sync::RwLockReadGuard;
+use std::sync::{Arc, RwLock};
+
+#[derive(Debug, Clone, Default)]
+pub struct PkiEnvironmentProvider(Arc<RwLock<Option<wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>>>);
+
+impl From<wire_e2e_identity::prelude::x509::revocation::PkiEnvironment> for PkiEnvironmentProvider {
+    fn from(value: wire_e2e_identity::prelude::x509::revocation::PkiEnvironment) -> Self {
+        Self(Arc::new(Some(value).into()))
+    }
+}
+
+impl PkiEnvironmentProvider {
+    pub fn refresh_time_of_interest(&self) {
+        if let Ok(mut lock) = self.0.write() {
+            if let Some(pki) = &mut *lock {
+                let _ = pki.refresh_time_of_interest();
+            }
+        }
+    }
+
+    pub fn borrow(
+        &self,
+    ) -> MlsProviderResult<RwLockReadGuard<Option<wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>>> {
+        self.0.read().map_err(|_| MlsProviderError::RngLockPoison)
+    }
+
+    pub fn is_env_setup(&self) -> bool {
+        self.0.read().is_ok_and(|value| value.is_some())
+    }
+
+    pub fn update_env(
+        &self,
+        env: wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
+    ) -> MlsProviderResult<()> {
+        self.0
+            .write()
+            .map_err(|_| MlsProviderError::RngLockPoison)?
+            .replace(env);
+        Ok(())
+    }
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl openmls_traits::authentication_service::AuthenticationServiceDelegate for PkiEnvironmentProvider {
+    async fn validate_credential<'a>(&'a self, credential: CredentialRef<'a>) -> CredentialAuthenticationStatus {
+        match credential {
+            // ? Do we assume that Basic credentials are always valid?
+            CredentialRef::Basic { identity: _ } => CredentialAuthenticationStatus::Valid,
+
+            CredentialRef::X509 { certificates } => {
+                self.refresh_time_of_interest();
+
+                let Ok(pki_env_lock) = self.0.read() else {
+                    return CredentialAuthenticationStatus::Unknown;
+                };
+                let Some(pki_env) = &*pki_env_lock else {
+                    return CredentialAuthenticationStatus::Unknown;
+                };
+
+                use x509_cert::der::Decode as _;
+                for cert_raw in certificates {
+                    let Ok(cert) = x509_cert::Certificate::from_der(cert_raw) else {
+                        return CredentialAuthenticationStatus::Invalid;
+                    };
+
+                    if let Err(validation_error) = pki_env.validate_cert_and_revocation(&cert) {
+                        use wire_e2e_identity::prelude::x509::{
+                            reexports::certval::{Error as CertvalError, PathValidationStatus},
+                            RustyX509CheckError,
+                        };
+                        if let RustyX509CheckError::CertValError(CertvalError::PathValidation(
+                            certificate_validation_error,
+                        )) = validation_error
+                        {
+                            match certificate_validation_error {
+                                PathValidationStatus::Valid
+                                | PathValidationStatus::RevocationStatusNotAvailable
+                                | PathValidationStatus::RevocationStatusNotDetermined => {
+                                    continue;
+                                }
+                                PathValidationStatus::CertificateRevoked
+                                | PathValidationStatus::CertificateRevokedEndEntity
+                                | PathValidationStatus::CertificateRevokedIntermediateCa => {
+                                    return CredentialAuthenticationStatus::Revoked;
+                                }
+                                PathValidationStatus::InvalidNotAfterDate => {
+                                    return CredentialAuthenticationStatus::Expired;
+                                }
+                                _ => return CredentialAuthenticationStatus::Invalid,
+                            }
+                        } else {
+                            return CredentialAuthenticationStatus::Unknown;
+                        }
+                    }
+                }
+
+                CredentialAuthenticationStatus::Valid
+            }
+        }
+    }
+}
 
 pub struct Ed25519PkiSignature(ed25519_dalek::Signature);
 impl spki::SignatureBitStringEncoding for Ed25519PkiSignature {

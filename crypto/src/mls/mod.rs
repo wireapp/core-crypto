@@ -1,7 +1,6 @@
 use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
-use wire_e2e_identity::prelude::x509::revocation::PkiEnvironment;
 
 use crate::prelude::{
     identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT, Client, ClientId, ConversationId,
@@ -142,7 +141,6 @@ pub struct MlsCentral {
     pub(crate) mls_client: Option<Client>,
     pub(crate) mls_backend: MlsCryptoProvider,
     pub(crate) mls_groups: crate::group_store::GroupStore<MlsConversation>,
-    pub(crate) e2ei_pki_env: Option<PkiEnvironment>,
     pub(crate) callbacks: Option<Box<dyn CoreCryptoCallbacks + 'static>>,
 }
 
@@ -196,7 +194,6 @@ impl MlsCentral {
             mls_backend,
             mls_client,
             mls_groups,
-            e2ei_pki_env,
             callbacks: None,
         })
     }
@@ -232,7 +229,6 @@ impl MlsCentral {
             mls_backend,
             mls_client,
             mls_groups,
-            e2ei_pki_env,
             callbacks: None,
         })
     }

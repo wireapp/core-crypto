@@ -4,7 +4,9 @@ use crate::{
     MlsError,
 };
 
-use wire_e2e_identity::prelude::{x509::revocation::PkiEnvironment, WireIdentityReader};
+use mls_crypto_provider::MlsCryptoProvider;
+use openmls_traits::OpenMlsCryptoProvider;
+use wire_e2e_identity::prelude::WireIdentityReader;
 
 use openmls::{
     messages::group_info::VerifiableGroupInfo,
@@ -34,7 +36,7 @@ impl MlsCentral {
 
         let conversation_lock = conversation.read().await;
 
-        Ok(conversation_lock.e2ei_conversation_state(self.e2ei_pki_env.as_ref()))
+        Ok(conversation_lock.e2ei_conversation_state(&self.mls_backend))
     }
 
     /// Gets the e2ei conversation state from a `GroupInfo`. Useful to check if the group has e2ei
@@ -63,13 +65,13 @@ impl MlsCentral {
             Some(Node::LeafNode(ln)) => Some(ln.credential()),
             _ => None,
         });
-        Ok(compute_state(credentials, self.e2ei_pki_env.as_ref(), credential_type))
+        Ok(compute_state(credentials, &self.mls_backend, credential_type))
     }
 }
 
 impl MlsConversation {
-    fn e2ei_conversation_state(&self, pki_env: Option<&PkiEnvironment>) -> E2eiConversationState {
-        compute_state(self.group.members_credentials(), pki_env, MlsCredentialType::X509)
+    fn e2ei_conversation_state(&self, backend: &MlsCryptoProvider) -> E2eiConversationState {
+        compute_state(self.group.members_credentials(), backend, MlsCredentialType::X509)
     }
 }
 
@@ -77,7 +79,7 @@ impl MlsConversation {
 /// Right now though, we do not need anything other than X509 so let's keep things simple.
 pub(crate) fn compute_state<'a>(
     credentials: impl Iterator<Item = &'a Credential>,
-    pki_env: Option<&PkiEnvironment>,
+    backend: &MlsCryptoProvider,
     _credential_type: MlsCredentialType,
 ) -> E2eiConversationState {
     let mut one_valid = false;
@@ -91,8 +93,16 @@ pub(crate) fn compute_state<'a>(
             use openmls_x509_credential::X509Ext as _;
             let is_time_valid = cert.is_time_valid().unwrap_or(false);
             let is_time_invalid = !is_time_valid;
-            let is_revoked_or_invalid = pki_env
-                .map(|pki_env| pki_env.validate_cert_and_revocation(&cert).is_err())
+            let is_revoked_or_invalid = backend
+                .authentication_service()
+                .borrow()
+                .map(|pki_env| {
+                    if let Some(pki_env) = &*pki_env {
+                        pki_env.validate_cert_and_revocation(&cert).is_err()
+                    } else {
+                        false
+                    }
+                })
                 .unwrap_or_default();
 
             all_expired &= is_time_invalid;

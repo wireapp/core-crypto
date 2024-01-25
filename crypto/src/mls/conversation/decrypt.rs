@@ -117,7 +117,6 @@ impl MlsConversation {
         parent_conv: Option<&GroupStoreValue<MlsConversation>>,
         client: &Client,
         backend: &MlsCryptoProvider,
-        pki_env: Option<&PkiEnvironment>,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
         restore_pending: bool,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
@@ -165,7 +164,7 @@ impl MlsConversation {
                 }
             }
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
-                self.validate_external_commit(&staged_commit, sender_client_id, parent_conv, callbacks)
+                self.validate_external_commit(&staged_commit, sender_client_id, parent_conv, backend, callbacks)
                     .await?;
 
                 self.validate_commit(&staged_commit, pki_env)?;
@@ -217,7 +216,7 @@ impl MlsConversation {
 
                 let buffered_messages = if restore_pending {
                     if let Some(pm) = self
-                        .restore_pending_messages(client, backend, pki_env, callbacks, parent_conv, false)
+                        .restore_pending_messages(client, backend, callbacks, parent_conv, false)
                         .await?
                     {
                         backend.key_store().remove::<MlsPendingMessage, _>(self.id()).await?;
@@ -378,7 +377,6 @@ impl MlsCentral {
                 parent_conversation.as_ref(),
                 self.mls_client()?,
                 &self.mls_backend,
-                self.e2ei_pki_env.as_ref(),
                 callbacks,
                 true,
             )
