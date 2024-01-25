@@ -17,6 +17,7 @@ raw-rand-access = [] # TESTING ONLY
 
 [dependencies]
 openmls_traits = "0.2"
+async-trait = "0.1"
 tls_codec = { workspace = true }
 aes-gcm = "0.10"
 sha1 = "0.10"
@@ -33,6 +34,7 @@ p384 = { version = "0.13", features = ["pkcs8"] }
 hkdf = "0.12"
 spki = { version = "0.7", features = ["pem", "fingerprint"] }
 x509-cert = { version = "0.2", features = ["builder"] }
+wire-e2e-identity = { version = "0.8", default-features = false }
 fluvio-wasm-timer = "0.2"
 rand = { version = "0.8", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }

@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use openmls::prelude::{group_info::VerifiableGroupInfo, MlsGroup, MlsMessageOut, Proposal, Sender, StagedCommit};
+use mls_crypto_provider::MlsCryptoProvider;
+use openmls::prelude::{
+    group_info::VerifiableGroupInfo, CredentialType, MlsGroup, MlsMessageOut, Proposal, Sender, StagedCommit,
+};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Serialize;
 
@@ -228,6 +231,7 @@ impl MlsConversation {
         commit: &StagedCommit,
         sender: ClientId,
         parent_conversation: Option<&GroupStoreValue<MlsConversation>>,
+        backend: &MlsCryptoProvider,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
     ) -> CryptoResult<()> {
         // i.e. has this commit been created by [MlsCentral::join_by_external_commit] ?
@@ -270,6 +274,22 @@ impl MlsConversation {
                 .await
             {
                 return Err(CryptoError::UnauthorizedExternalCommit);
+            }
+        }
+
+        if backend.authentication_service().is_env_setup() {
+            let credentials: Vec<_> = commit
+                .add_proposals()
+                .filter_map(|add_proposal| {
+                    let credential = add_proposal.add_proposal().key_package().leaf_node().credential();
+
+                    matches!(credential.credential_type(), CredentialType::X509).then(|| credential.clone())
+                })
+                .collect();
+            let state = compute_state(credentials.iter(), backend, MlsCredentialType::X509);
+            if state != E2eiConversationState::Verified {
+                // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and impact of the validations
+                // return Err(CryptoError::InvalidCertificateChain);
             }
         }
 

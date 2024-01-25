@@ -73,10 +73,6 @@ impl MlsCentral {
         &mut self,
         inter_ca: x509_cert::Certificate,
     ) -> CryptoResult<Option<Vec<String>>> {
-        let Some(pki_env) = self.e2ei_pki_env.as_ref() else {
-            return Err(CryptoError::ConsumerError);
-        };
-
         // TrustAnchor must have been registered at this point
         let ta = E2eiAcmeCA::find_unique(self.mls_backend.key_store().borrow_conn().await?.deref_mut()).await?;
         let ta = x509_cert::Certificate::from_der(&ta.content)?;
@@ -97,9 +93,16 @@ impl MlsCentral {
         let ski_aki_pair = format!("{ski}:{}", aki.unwrap_or_default());
 
         // Validate it
-        pki_env
-            .validate_cert_and_revocation(&inter_ca)
-            .map_err(|e| CryptoError::E2eiError(e.into()))?;
+        {
+            let auth_service_arc = self.mls_backend.authentication_service().clone();
+            let auth_service = auth_service_arc.borrow()?;
+            let Some(pki_env) = auth_service.as_ref() else {
+                return Err(CryptoError::ConsumerError);
+            };
+            pki_env
+                .validate_cert_and_revocation(&inter_ca)
+                .map_err(|e| CryptoError::E2eiError(e.into()))?;
+        }
 
         // Save DER repr in keystore
         let cert_der = PkiEnvironment::encode_cert_to_der(&inter_ca).map_err(|e| CryptoError::E2eiError(e.into()))?;
@@ -126,17 +129,20 @@ impl MlsCentral {
     /// # Returns
     /// A [CrlRegistration] with the dirty state of the new CRL (see struct) and its expiration timestamp
     pub async fn e2ei_register_crl(&mut self, crl_dp: String, crl_der: Vec<u8>) -> CryptoResult<CrlRegistration> {
-        let Some(pki_env) = self.e2ei_pki_env.as_ref() else {
-            return Err(CryptoError::ConsumerError);
-        };
-
         // Parse/decode DER CRL
         let crl = PkiEnvironment::decode_der_crl(crl_der).map_err(|e| CryptoError::E2eiError(e.into()))?;
 
         // Validate CRL
-        pki_env
-            .validate_crl(&crl)
-            .map_err(|e| CryptoError::E2eiError(e.into()))?;
+        {
+            let auth_service_arc = self.mls_backend.authentication_service().clone();
+            let auth_service = auth_service_arc.borrow()?;
+            let Some(pki_env) = auth_service.as_ref() else {
+                return Err(CryptoError::ConsumerError);
+            };
+            pki_env
+                .validate_crl(&crl)
+                .map_err(|e| CryptoError::E2eiError(e.into()))?;
+        }
 
         let expiration = extract_expiration_from_crl(&crl);
 
@@ -164,8 +170,10 @@ impl MlsCentral {
     }
 
     pub(crate) async fn init_pki_env(&mut self) -> CryptoResult<()> {
-        self.e2ei_pki_env
-            .replace(Self::restore_pki_env(&self.mls_backend).await?);
+        self.mls_backend
+            .authentication_service()
+            .update_env(Self::restore_pki_env(&self.mls_backend).await?)?;
+
         Ok(())
     }
 
