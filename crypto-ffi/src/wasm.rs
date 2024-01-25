@@ -2324,7 +2324,7 @@ impl CoreCrypto {
         display_name: String,
         handle: String,
         team: Option<String>,
-        expiry_days: u32,
+        expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> Promise {
         let this = self.inner.clone();
@@ -2338,7 +2338,7 @@ impl CoreCrypto {
                         display_name,
                         handle,
                         team,
-                        expiry_days,
+                        expiry_sec,
                         ciphersuite.into(),
                     )
                     .map(async_lock::RwLock::new)
@@ -2360,7 +2360,7 @@ impl CoreCrypto {
         display_name: String,
         handle: String,
         team: Option<String>,
-        expiry_days: u32,
+        expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> Promise {
         let this = self.inner.clone();
@@ -2369,7 +2369,7 @@ impl CoreCrypto {
             async move {
                 let this = this.read().await;
                 let enrollment = this
-                    .e2ei_new_activation_enrollment(display_name, handle, team, expiry_days, ciphersuite.into())
+                    .e2ei_new_activation_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
                     .map(async_lock::RwLock::new)
                     .map(std::sync::Arc::new)
                     .map(E2eiEnrollment)
@@ -2389,7 +2389,7 @@ impl CoreCrypto {
         display_name: Option<String>,
         handle: Option<String>,
         team: Option<String>,
-        expiry_days: u32,
+        expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> Promise {
         let this = self.inner.clone();
@@ -2398,7 +2398,7 @@ impl CoreCrypto {
             async move {
                 let this = this.read().await;
                 let enrollment = this
-                    .e2ei_new_rotate_enrollment(display_name, handle, team, expiry_days, ciphersuite.into())
+                    .e2ei_new_rotate_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
                     .await
                     .map(async_lock::RwLock::new)
                     .map(std::sync::Arc::new)

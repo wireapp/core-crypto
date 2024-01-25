@@ -473,12 +473,12 @@ public protocol CoreCryptoProtocol {
     func `proteusFingerprintPrekeybundle`(`prekey`: [UInt8]) throws -> String
     func `proteusCryptoboxMigrate`(`path`: String) throws
     func `proteusLastErrorCode`()  -> UInt32
-    func `e2eiNewEnrollment`(`clientId`: String, `displayName`: String, `handle`: String, `expiryDays`: UInt32, `ciphersuite`: Ciphersuite) throws -> WireE2eIdentity
+    func `e2eiNewEnrollment`(`clientId`: String, `displayName`: String, `handle`: String, `expirySec`: UInt32, `ciphersuite`: Ciphersuite) throws -> WireE2eIdentity
     func `e2eiMlsInit`(`enrollment`: WireE2eIdentity, `certificateChain`: String) throws
     func `e2eiEnrollmentStash`(`enrollment`: WireE2eIdentity) throws -> [UInt8]
     func `e2eiEnrollmentStashPop`(`handle`: [UInt8]) throws -> WireE2eIdentity
     func `e2eiIsDegraded`(`conversationId`: ConversationId) throws -> Bool
-    
+
 }
 
 public class CoreCrypto: CoreCryptoProtocol {
@@ -492,13 +492,13 @@ public class CoreCrypto: CoreCryptoProtocol {
     }
     public convenience init(`path`: String, `key`: String, `clientId`: ClientId, `ciphersuites`: Ciphersuites) throws {
         self.init(unsafeFromRawPointer: try
-    
+
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    
+
     CoreCrypto_105c_CoreCrypto_new(
-        FfiConverterString.lower(`path`), 
-        FfiConverterString.lower(`key`), 
-        FfiConverterTypeClientId.lower(`clientId`), 
+        FfiConverterString.lower(`path`),
+        FfiConverterString.lower(`key`),
+        FfiConverterTypeClientId.lower(`clientId`),
         FfiConverterTypeCiphersuites.lower(`ciphersuites`), $0)
 })
     }
@@ -507,26 +507,26 @@ public class CoreCrypto: CoreCryptoProtocol {
         try! rustCall { ffi_CoreCrypto_105c_CoreCrypto_object_free(pointer, $0) }
     }
 
-    
+
     public static func `deferredInit`(`path`: String, `key`: String, `ciphersuites`: Ciphersuites) throws -> CoreCrypto {
         return CoreCrypto(unsafeFromRawPointer: try
-    
+
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    
+
     CoreCrypto_105c_CoreCrypto_deferred_init(
-        FfiConverterString.lower(`path`), 
-        FfiConverterString.lower(`key`), 
+        FfiConverterString.lower(`path`),
+        FfiConverterString.lower(`key`),
         FfiConverterTypeCiphersuites.lower(`ciphersuites`), $0)
 })
     }
-    
 
-    
+
+
     public func `mlsInit`(`clientId`: ClientId, `ciphersuites`: Ciphersuites) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_mls_init(self.pointer, 
-        FfiConverterTypeClientId.lower(`clientId`), 
+    CoreCrypto_105c_CoreCrypto_mls_init(self.pointer,
+        FfiConverterTypeClientId.lower(`clientId`),
         FfiConverterTypeCiphersuites.lower(`ciphersuites`), $0
     )
 }
@@ -535,7 +535,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_mls_generate_keypairs(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_mls_generate_keypairs(self.pointer,
         FfiConverterTypeCiphersuites.lower(`ciphersuites`), $0
     )
 }
@@ -544,9 +544,9 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `mlsInitWithClientId`(`clientId`: ClientId, `signaturePublicKeys`: [[UInt8]], `ciphersuites`: Ciphersuites) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_mls_init_with_client_id(self.pointer, 
-        FfiConverterTypeClientId.lower(`clientId`), 
-        FfiConverterSequenceSequenceUInt8.lower(`signaturePublicKeys`), 
+    CoreCrypto_105c_CoreCrypto_mls_init_with_client_id(self.pointer,
+        FfiConverterTypeClientId.lower(`clientId`),
+        FfiConverterSequenceSequenceUInt8.lower(`signaturePublicKeys`),
         FfiConverterTypeCiphersuites.lower(`ciphersuites`), $0
     )
 }
@@ -561,7 +561,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `setCallbacks`(`callbacks`: CoreCryptoCallbacks) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_set_callbacks(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_set_callbacks(self.pointer,
         FfiConverterCallbackInterfaceCoreCryptoCallbacks.lower(`callbacks`), $0
     )
 }
@@ -570,7 +570,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_client_public_key(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_client_public_key(self.pointer,
         FfiConverterTypeCiphersuite.lower(`ciphersuite`), $0
     )
 }
@@ -580,8 +580,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_client_keypackages(self.pointer, 
-        FfiConverterTypeCiphersuite.lower(`ciphersuite`), 
+    CoreCrypto_105c_CoreCrypto_client_keypackages(self.pointer,
+        FfiConverterTypeCiphersuite.lower(`ciphersuite`),
         FfiConverterUInt32.lower(`amountRequested`), $0
     )
 }
@@ -591,7 +591,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterUInt64.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_client_valid_keypackages_count(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_client_valid_keypackages_count(self.pointer,
         FfiConverterTypeCiphersuite.lower(`ciphersuite`), $0
     )
 }
@@ -600,9 +600,9 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `createConversation`(`conversationId`: ConversationId, `creatorCredentialType`: MlsCredentialType, `config`: ConversationConfiguration) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_create_conversation(self.pointer, 
-        FfiConverterTypeConversationId.lower(`conversationId`), 
-        FfiConverterTypeMlsCredentialType.lower(`creatorCredentialType`), 
+    CoreCrypto_105c_CoreCrypto_create_conversation(self.pointer,
+        FfiConverterTypeConversationId.lower(`conversationId`),
+        FfiConverterTypeMlsCredentialType.lower(`creatorCredentialType`),
         FfiConverterTypeConversationConfiguration.lower(`config`), $0
     )
 }
@@ -611,7 +611,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterUInt64.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_conversation_epoch(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_conversation_epoch(self.pointer,
         FfiConverterTypeConversationId.lower(`conversationId`), $0
     )
 }
@@ -621,8 +621,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try! FfiConverterBool.lift(
             try!
     rustCall() {
-    
-    CoreCrypto_105c_CoreCrypto_conversation_exists(self.pointer, 
+
+    CoreCrypto_105c_CoreCrypto_conversation_exists(self.pointer,
         FfiConverterTypeConversationId.lower(`conversationId`), $0
     )
 }
@@ -632,8 +632,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeConversationId.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_process_welcome_message(self.pointer, 
-        FfiConverterSequenceUInt8.lower(`welcomeMessage`), 
+    CoreCrypto_105c_CoreCrypto_process_welcome_message(self.pointer,
+        FfiConverterSequenceUInt8.lower(`welcomeMessage`),
         FfiConverterTypeCustomConfiguration.lower(`customConfiguration`), $0
     )
 }
@@ -643,8 +643,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeMemberAddedMessages.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_add_clients_to_conversation(self.pointer, 
-        FfiConverterTypeConversationId.lower(`conversationId`), 
+    CoreCrypto_105c_CoreCrypto_add_clients_to_conversation(self.pointer,
+        FfiConverterTypeConversationId.lower(`conversationId`),
         FfiConverterSequenceTypeInvitee.lower(`clients`), $0
     )
 }
@@ -654,8 +654,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeCommitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_remove_clients_from_conversation(self.pointer, 
-        FfiConverterTypeConversationId.lower(`conversationId`), 
+    CoreCrypto_105c_CoreCrypto_remove_clients_from_conversation(self.pointer,
+        FfiConverterTypeConversationId.lower(`conversationId`),
         FfiConverterSequenceTypeClientId.lower(`clients`), $0
     )
 }
@@ -664,8 +664,8 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `markConversationAsChildOf`(`childId`: ConversationId, `parentId`: ConversationId) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_mark_conversation_as_child_of(self.pointer, 
-        FfiConverterTypeConversationId.lower(`childId`), 
+    CoreCrypto_105c_CoreCrypto_mark_conversation_as_child_of(self.pointer,
+        FfiConverterTypeConversationId.lower(`childId`),
         FfiConverterTypeConversationId.lower(`parentId`), $0
     )
 }
@@ -674,7 +674,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeCommitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_update_keying_material(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_update_keying_material(self.pointer,
         FfiConverterTypeConversationId.lower(`conversationId`), $0
     )
 }
@@ -684,7 +684,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterOptionTypeCommitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_commit_pending_proposals(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_commit_pending_proposals(self.pointer,
         FfiConverterTypeConversationId.lower(`conversationId`), $0
     )
 }
@@ -693,7 +693,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `wipeConversation`(`conversationId`: ConversationId) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_wipe_conversation(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_wipe_conversation(self.pointer,
         FfiConverterTypeConversationId.lower(`conversationId`), $0
     )
 }
@@ -702,8 +702,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeDecryptedMessage.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_decrypt_message(self.pointer, 
-        FfiConverterTypeConversationId.lower(`conversationId`), 
+    CoreCrypto_105c_CoreCrypto_decrypt_message(self.pointer,
+        FfiConverterTypeConversationId.lower(`conversationId`),
         FfiConverterSequenceUInt8.lower(`payload`), $0
     )
 }
@@ -713,8 +713,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_encrypt_message(self.pointer, 
-        FfiConverterTypeConversationId.lower(`conversationId`), 
+    CoreCrypto_105c_CoreCrypto_encrypt_message(self.pointer,
+        FfiConverterTypeConversationId.lower(`conversationId`),
         FfiConverterSequenceUInt8.lower(`message`), $0
     )
 }
@@ -724,8 +724,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeProposalBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_new_add_proposal(self.pointer, 
-        FfiConverterTypeConversationId.lower(`conversationId`), 
+    CoreCrypto_105c_CoreCrypto_new_add_proposal(self.pointer,
+        FfiConverterTypeConversationId.lower(`conversationId`),
         FfiConverterSequenceUInt8.lower(`keyPackage`), $0
     )
 }
@@ -735,7 +735,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeProposalBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_new_update_proposal(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_new_update_proposal(self.pointer,
         FfiConverterTypeConversationId.lower(`conversationId`), $0
     )
 }
@@ -745,8 +745,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeProposalBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_new_remove_proposal(self.pointer, 
-        FfiConverterTypeConversationId.lower(`conversationId`), 
+    CoreCrypto_105c_CoreCrypto_new_remove_proposal(self.pointer,
+        FfiConverterTypeConversationId.lower(`conversationId`),
         FfiConverterTypeClientId.lower(`clientId`), $0
     )
 }
@@ -756,10 +756,10 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_new_external_add_proposal(self.pointer, 
-        FfiConverterTypeConversationId.lower(`conversationId`), 
-        FfiConverterUInt64.lower(`epoch`), 
-        FfiConverterTypeCiphersuite.lower(`ciphersuite`), 
+    CoreCrypto_105c_CoreCrypto_new_external_add_proposal(self.pointer,
+        FfiConverterTypeConversationId.lower(`conversationId`),
+        FfiConverterUInt64.lower(`epoch`),
+        FfiConverterTypeCiphersuite.lower(`ciphersuite`),
         FfiConverterTypeMlsCredentialType.lower(`credentialType`), $0
     )
 }
@@ -769,9 +769,9 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_new_external_remove_proposal(self.pointer, 
-        FfiConverterTypeConversationId.lower(`conversationId`), 
-        FfiConverterUInt64.lower(`epoch`), 
+    CoreCrypto_105c_CoreCrypto_new_external_remove_proposal(self.pointer,
+        FfiConverterTypeConversationId.lower(`conversationId`),
+        FfiConverterUInt64.lower(`epoch`),
         FfiConverterSequenceUInt8.lower(`keyPackageRef`), $0
     )
 }
@@ -781,9 +781,9 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeConversationInitBundle.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_join_by_external_commit(self.pointer, 
-        FfiConverterSequenceUInt8.lower(`publicGroupState`), 
-        FfiConverterTypeCustomConfiguration.lower(`customConfiguration`), 
+    CoreCrypto_105c_CoreCrypto_join_by_external_commit(self.pointer,
+        FfiConverterSequenceUInt8.lower(`publicGroupState`),
+        FfiConverterTypeCustomConfiguration.lower(`customConfiguration`),
         FfiConverterTypeMlsCredentialType.lower(`credentialType`), $0
     )
 }
@@ -792,7 +792,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `mergePendingGroupFromExternalCommit`(`conversationId`: ConversationId) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_merge_pending_group_from_external_commit(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_merge_pending_group_from_external_commit(self.pointer,
         FfiConverterTypeConversationId.lower(`conversationId`), $0
     )
 }
@@ -800,7 +800,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `clearPendingGroupFromExternalCommit`(`conversationId`: ConversationId) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_clear_pending_group_from_external_commit(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_clear_pending_group_from_external_commit(self.pointer,
         FfiConverterTypeConversationId.lower(`conversationId`), $0
     )
 }
@@ -809,7 +809,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_export_group_state(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_export_group_state(self.pointer,
         FfiConverterTypeConversationId.lower(`conversationId`), $0
     )
 }
@@ -819,8 +819,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_export_secret_key(self.pointer, 
-        FfiConverterTypeConversationId.lower(`conversationId`), 
+    CoreCrypto_105c_CoreCrypto_export_secret_key(self.pointer,
+        FfiConverterTypeConversationId.lower(`conversationId`),
         FfiConverterUInt32.lower(`keyLength`), $0
     )
 }
@@ -830,7 +830,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceTypeClientId.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_get_client_ids(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_get_client_ids(self.pointer,
         FfiConverterTypeConversationId.lower(`conversationId`), $0
     )
 }
@@ -840,7 +840,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_random_bytes(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_random_bytes(self.pointer,
         FfiConverterUInt32.lower(`length`), $0
     )
 }
@@ -849,7 +849,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `reseedRng`(`seed`: [UInt8]) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_reseed_rng(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_reseed_rng(self.pointer,
         FfiConverterSequenceUInt8.lower(`seed`), $0
     )
 }
@@ -857,7 +857,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `commitAccepted`(`conversationId`: ConversationId) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_commit_accepted(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_commit_accepted(self.pointer,
         FfiConverterTypeConversationId.lower(`conversationId`), $0
     )
 }
@@ -865,8 +865,8 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `clearPendingProposal`(`conversationId`: ConversationId, `proposalRef`: [UInt8]) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_clear_pending_proposal(self.pointer, 
-        FfiConverterTypeConversationId.lower(`conversationId`), 
+    CoreCrypto_105c_CoreCrypto_clear_pending_proposal(self.pointer,
+        FfiConverterTypeConversationId.lower(`conversationId`),
         FfiConverterSequenceUInt8.lower(`proposalRef`), $0
     )
 }
@@ -874,7 +874,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `clearPendingCommit`(`conversationId`: ConversationId) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_clear_pending_commit(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_clear_pending_commit(self.pointer,
         FfiConverterTypeConversationId.lower(`conversationId`), $0
     )
 }
@@ -889,8 +889,8 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `proteusSessionFromPrekey`(`sessionId`: String, `prekey`: [UInt8]) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_proteus_session_from_prekey(self.pointer, 
-        FfiConverterString.lower(`sessionId`), 
+    CoreCrypto_105c_CoreCrypto_proteus_session_from_prekey(self.pointer,
+        FfiConverterString.lower(`sessionId`),
         FfiConverterSequenceUInt8.lower(`prekey`), $0
     )
 }
@@ -899,8 +899,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_proteus_session_from_message(self.pointer, 
-        FfiConverterString.lower(`sessionId`), 
+    CoreCrypto_105c_CoreCrypto_proteus_session_from_message(self.pointer,
+        FfiConverterString.lower(`sessionId`),
         FfiConverterSequenceUInt8.lower(`envelope`), $0
     )
 }
@@ -909,7 +909,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `proteusSessionSave`(`sessionId`: String) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_proteus_session_save(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_proteus_session_save(self.pointer,
         FfiConverterString.lower(`sessionId`), $0
     )
 }
@@ -917,7 +917,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `proteusSessionDelete`(`sessionId`: String) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_proteus_session_delete(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_proteus_session_delete(self.pointer,
         FfiConverterString.lower(`sessionId`), $0
     )
 }
@@ -926,7 +926,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterBool.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_proteus_session_exists(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_proteus_session_exists(self.pointer,
         FfiConverterString.lower(`sessionId`), $0
     )
 }
@@ -936,8 +936,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_proteus_decrypt(self.pointer, 
-        FfiConverterString.lower(`sessionId`), 
+    CoreCrypto_105c_CoreCrypto_proteus_decrypt(self.pointer,
+        FfiConverterString.lower(`sessionId`),
         FfiConverterSequenceUInt8.lower(`ciphertext`), $0
     )
 }
@@ -947,8 +947,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_proteus_encrypt(self.pointer, 
-        FfiConverterString.lower(`sessionId`), 
+    CoreCrypto_105c_CoreCrypto_proteus_encrypt(self.pointer,
+        FfiConverterString.lower(`sessionId`),
         FfiConverterSequenceUInt8.lower(`plaintext`), $0
     )
 }
@@ -958,8 +958,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterDictionaryStringSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_proteus_encrypt_batched(self.pointer, 
-        FfiConverterSequenceString.lower(`sessionId`), 
+    CoreCrypto_105c_CoreCrypto_proteus_encrypt_batched(self.pointer,
+        FfiConverterSequenceString.lower(`sessionId`),
         FfiConverterSequenceUInt8.lower(`plaintext`), $0
     )
 }
@@ -969,7 +969,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_proteus_new_prekey(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_proteus_new_prekey(self.pointer,
         FfiConverterUInt16.lower(`prekeyId`), $0
     )
 }
@@ -1015,7 +1015,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterString.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_proteus_fingerprint_local(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_proteus_fingerprint_local(self.pointer,
         FfiConverterString.lower(`sessionId`), $0
     )
 }
@@ -1025,7 +1025,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterString.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_proteus_fingerprint_remote(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_proteus_fingerprint_remote(self.pointer,
         FfiConverterString.lower(`sessionId`), $0
     )
 }
@@ -1035,7 +1035,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterString.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_proteus_fingerprint_prekeybundle(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_proteus_fingerprint_prekeybundle(self.pointer,
         FfiConverterSequenceUInt8.lower(`prekey`), $0
     )
 }
@@ -1044,7 +1044,7 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `proteusCryptoboxMigrate`(`path`: String) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_proteus_cryptobox_migrate(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_proteus_cryptobox_migrate(self.pointer,
         FfiConverterString.lower(`path`), $0
     )
 }
@@ -1053,21 +1053,21 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try! FfiConverterUInt32.lift(
             try!
     rustCall() {
-    
+
     CoreCrypto_105c_CoreCrypto_proteus_last_error_code(self.pointer, $0
     )
 }
         )
     }
-    public func `e2eiNewEnrollment`(`clientId`: String, `displayName`: String, `handle`: String, `expiryDays`: UInt32, `ciphersuite`: Ciphersuite) throws -> WireE2eIdentity {
+    public func `e2eiNewEnrollment`(`clientId`: String, `displayName`: String, `handle`: String, `expirySec`: UInt32, `ciphersuite`: Ciphersuite) throws -> WireE2eIdentity {
         return try FfiConverterTypeWireE2eIdentity.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_e2ei_new_enrollment(self.pointer, 
-        FfiConverterString.lower(`clientId`), 
-        FfiConverterString.lower(`displayName`), 
-        FfiConverterString.lower(`handle`), 
-        FfiConverterUInt32.lower(`expiryDays`), 
+    CoreCrypto_105c_CoreCrypto_e2ei_new_enrollment(self.pointer,
+        FfiConverterString.lower(`clientId`),
+        FfiConverterString.lower(`displayName`),
+        FfiConverterString.lower(`handle`),
+        FfiConverterUInt32.lower(`expirySec`),
         FfiConverterTypeCiphersuite.lower(`ciphersuite`), $0
     )
 }
@@ -1076,8 +1076,8 @@ public class CoreCrypto: CoreCryptoProtocol {
     public func `e2eiMlsInit`(`enrollment`: WireE2eIdentity, `certificateChain`: String) throws {
         try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_e2ei_mls_init(self.pointer, 
-        FfiConverterTypeWireE2eIdentity.lower(`enrollment`), 
+    CoreCrypto_105c_CoreCrypto_e2ei_mls_init(self.pointer,
+        FfiConverterTypeWireE2eIdentity.lower(`enrollment`),
         FfiConverterString.lower(`certificateChain`), $0
     )
 }
@@ -1086,7 +1086,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_e2ei_enrollment_stash(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_e2ei_enrollment_stash(self.pointer,
         FfiConverterTypeWireE2eIdentity.lower(`enrollment`), $0
     )
 }
@@ -1096,7 +1096,7 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterTypeWireE2eIdentity.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_e2ei_enrollment_stash_pop(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_e2ei_enrollment_stash_pop(self.pointer,
         FfiConverterSequenceUInt8.lower(`handle`), $0
     )
 }
@@ -1106,13 +1106,13 @@ public class CoreCrypto: CoreCryptoProtocol {
         return try FfiConverterBool.lift(
             try
     rustCallWithError(FfiConverterTypeCryptoError.self) {
-    CoreCrypto_105c_CoreCrypto_e2ei_is_degraded(self.pointer, 
+    CoreCrypto_105c_CoreCrypto_e2ei_is_degraded(self.pointer,
         FfiConverterTypeConversationId.lower(`conversationId`), $0
     )
 }
         )
     }
-    
+
 }
 
 
@@ -1164,7 +1164,7 @@ public protocol WireE2eIdentityProtocol {
     func `finalizeRequest`(`previousNonce`: String) throws -> [UInt8]
     func `finalizeResponse`(`finalize`: [UInt8]) throws -> String
     func `certificateRequest`(`previousNonce`: String) throws -> [UInt8]
-    
+
 }
 
 public class WireE2eIdentity: WireE2eIdentityProtocol {
@@ -1181,14 +1181,14 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
         try! rustCall { ffi_CoreCrypto_105c_WireE2eIdentity_object_free(pointer, $0) }
     }
 
-    
 
-    
+
+
     public func `directoryResponse`(`directory`: [UInt8]) throws -> AcmeDirectory {
         return try FfiConverterTypeAcmeDirectory.lift(
             try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_directory_response(self.pointer, 
+    CoreCrypto_105c_WireE2eIdentity_directory_response(self.pointer,
         FfiConverterSequenceUInt8.lower(`directory`), $0
     )
 }
@@ -1198,7 +1198,7 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_new_account_request(self.pointer, 
+    CoreCrypto_105c_WireE2eIdentity_new_account_request(self.pointer,
         FfiConverterString.lower(`previousNonce`), $0
     )
 }
@@ -1207,7 +1207,7 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
     public func `newAccountResponse`(`account`: [UInt8]) throws {
         try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_new_account_response(self.pointer, 
+    CoreCrypto_105c_WireE2eIdentity_new_account_response(self.pointer,
         FfiConverterSequenceUInt8.lower(`account`), $0
     )
 }
@@ -1216,7 +1216,7 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_new_order_request(self.pointer, 
+    CoreCrypto_105c_WireE2eIdentity_new_order_request(self.pointer,
         FfiConverterString.lower(`previousNonce`), $0
     )
 }
@@ -1226,7 +1226,7 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
         return try FfiConverterTypeNewAcmeOrder.lift(
             try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_new_order_response(self.pointer, 
+    CoreCrypto_105c_WireE2eIdentity_new_order_response(self.pointer,
         FfiConverterSequenceUInt8.lower(`order`), $0
     )
 }
@@ -1236,8 +1236,8 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_new_authz_request(self.pointer, 
-        FfiConverterString.lower(`url`), 
+    CoreCrypto_105c_WireE2eIdentity_new_authz_request(self.pointer,
+        FfiConverterString.lower(`url`),
         FfiConverterString.lower(`previousNonce`), $0
     )
 }
@@ -1247,7 +1247,7 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
         return try FfiConverterTypeNewAcmeAuthz.lift(
             try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_new_authz_response(self.pointer, 
+    CoreCrypto_105c_WireE2eIdentity_new_authz_response(self.pointer,
         FfiConverterSequenceUInt8.lower(`authz`), $0
     )
 }
@@ -1257,8 +1257,8 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
         return try FfiConverterString.lift(
             try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_create_dpop_token(self.pointer, 
-        FfiConverterUInt32.lower(`expirySecs`), 
+    CoreCrypto_105c_WireE2eIdentity_create_dpop_token(self.pointer,
+        FfiConverterUInt32.lower(`expirySecs`),
         FfiConverterString.lower(`backendNonce`), $0
     )
 }
@@ -1268,8 +1268,8 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_new_dpop_challenge_request(self.pointer, 
-        FfiConverterString.lower(`accessToken`), 
+    CoreCrypto_105c_WireE2eIdentity_new_dpop_challenge_request(self.pointer,
+        FfiConverterString.lower(`accessToken`),
         FfiConverterString.lower(`previousNonce`), $0
     )
 }
@@ -1279,8 +1279,8 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_new_oidc_challenge_request(self.pointer, 
-        FfiConverterString.lower(`idToken`), 
+    CoreCrypto_105c_WireE2eIdentity_new_oidc_challenge_request(self.pointer,
+        FfiConverterString.lower(`idToken`),
         FfiConverterString.lower(`previousNonce`), $0
     )
 }
@@ -1289,7 +1289,7 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
     public func `newChallengeResponse`(`challenge`: [UInt8]) throws {
         try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_new_challenge_response(self.pointer, 
+    CoreCrypto_105c_WireE2eIdentity_new_challenge_response(self.pointer,
         FfiConverterSequenceUInt8.lower(`challenge`), $0
     )
 }
@@ -1298,8 +1298,8 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_check_order_request(self.pointer, 
-        FfiConverterString.lower(`orderUrl`), 
+    CoreCrypto_105c_WireE2eIdentity_check_order_request(self.pointer,
+        FfiConverterString.lower(`orderUrl`),
         FfiConverterString.lower(`previousNonce`), $0
     )
 }
@@ -1309,7 +1309,7 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
         return try FfiConverterString.lift(
             try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_check_order_response(self.pointer, 
+    CoreCrypto_105c_WireE2eIdentity_check_order_response(self.pointer,
         FfiConverterSequenceUInt8.lower(`order`), $0
     )
 }
@@ -1319,7 +1319,7 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_finalize_request(self.pointer, 
+    CoreCrypto_105c_WireE2eIdentity_finalize_request(self.pointer,
         FfiConverterString.lower(`previousNonce`), $0
     )
 }
@@ -1329,7 +1329,7 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
         return try FfiConverterString.lift(
             try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_finalize_response(self.pointer, 
+    CoreCrypto_105c_WireE2eIdentity_finalize_response(self.pointer,
         FfiConverterSequenceUInt8.lower(`finalize`), $0
     )
 }
@@ -1339,13 +1339,13 @@ public class WireE2eIdentity: WireE2eIdentityProtocol {
         return try FfiConverterSequenceUInt8.lift(
             try
     rustCallWithError(FfiConverterTypeE2eIdentityError.self) {
-    CoreCrypto_105c_WireE2eIdentity_certificate_request(self.pointer, 
+    CoreCrypto_105c_WireE2eIdentity_certificate_request(self.pointer,
         FfiConverterString.lower(`previousNonce`), $0
     )
 }
         )
     }
-    
+
 }
 
 
@@ -1420,8 +1420,8 @@ extension AcmeChallenge: Equatable, Hashable {
 public struct FfiConverterTypeAcmeChallenge: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AcmeChallenge {
         return try AcmeChallenge(
-            `delegate`: FfiConverterSequenceUInt8.read(from: &buf), 
-            `url`: FfiConverterString.read(from: &buf), 
+            `delegate`: FfiConverterSequenceUInt8.read(from: &buf),
+            `url`: FfiConverterString.read(from: &buf),
             `target`: FfiConverterString.read(from: &buf)
         )
     }
@@ -1483,8 +1483,8 @@ extension AcmeDirectory: Equatable, Hashable {
 public struct FfiConverterTypeAcmeDirectory: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AcmeDirectory {
         return try AcmeDirectory(
-            `newNonce`: FfiConverterString.read(from: &buf), 
-            `newAccount`: FfiConverterString.read(from: &buf), 
+            `newNonce`: FfiConverterString.read(from: &buf),
+            `newAccount`: FfiConverterString.read(from: &buf),
             `newOrder`: FfiConverterString.read(from: &buf)
         )
     }
@@ -1546,8 +1546,8 @@ extension CommitBundle: Equatable, Hashable {
 public struct FfiConverterTypeCommitBundle: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CommitBundle {
         return try CommitBundle(
-            `welcome`: FfiConverterOptionSequenceUInt8.read(from: &buf), 
-            `commit`: FfiConverterSequenceUInt8.read(from: &buf), 
+            `welcome`: FfiConverterOptionSequenceUInt8.read(from: &buf),
+            `commit`: FfiConverterSequenceUInt8.read(from: &buf),
             `publicGroupState`: FfiConverterTypePublicGroupStateBundle.read(from: &buf)
         )
     }
@@ -1609,8 +1609,8 @@ extension ConversationConfiguration: Equatable, Hashable {
 public struct FfiConverterTypeConversationConfiguration: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConversationConfiguration {
         return try ConversationConfiguration(
-            `ciphersuite`: FfiConverterTypeCiphersuite.read(from: &buf), 
-            `externalSenders`: FfiConverterSequenceSequenceUInt8.read(from: &buf), 
+            `ciphersuite`: FfiConverterTypeCiphersuite.read(from: &buf),
+            `externalSenders`: FfiConverterSequenceSequenceUInt8.read(from: &buf),
             `custom`: FfiConverterTypeCustomConfiguration.read(from: &buf)
         )
     }
@@ -1672,8 +1672,8 @@ extension ConversationInitBundle: Equatable, Hashable {
 public struct FfiConverterTypeConversationInitBundle: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConversationInitBundle {
         return try ConversationInitBundle(
-            `conversationId`: FfiConverterSequenceUInt8.read(from: &buf), 
-            `commit`: FfiConverterSequenceUInt8.read(from: &buf), 
+            `conversationId`: FfiConverterSequenceUInt8.read(from: &buf),
+            `commit`: FfiConverterSequenceUInt8.read(from: &buf),
             `publicGroupState`: FfiConverterTypePublicGroupStateBundle.read(from: &buf)
         )
     }
@@ -1729,7 +1729,7 @@ extension CustomConfiguration: Equatable, Hashable {
 public struct FfiConverterTypeCustomConfiguration: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CustomConfiguration {
         return try CustomConfiguration(
-            `keyRotationSpan`: FfiConverterOptionDuration.read(from: &buf), 
+            `keyRotationSpan`: FfiConverterOptionDuration.read(from: &buf),
             `wirePolicy`: FfiConverterOptionTypeMlsWirePolicy.read(from: &buf)
         )
     }
@@ -1814,12 +1814,12 @@ extension DecryptedMessage: Equatable, Hashable {
 public struct FfiConverterTypeDecryptedMessage: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DecryptedMessage {
         return try DecryptedMessage(
-            `message`: FfiConverterOptionSequenceUInt8.read(from: &buf), 
-            `proposals`: FfiConverterSequenceTypeProposalBundle.read(from: &buf), 
-            `isActive`: FfiConverterBool.read(from: &buf), 
-            `commitDelay`: FfiConverterOptionUInt64.read(from: &buf), 
-            `senderClientId`: FfiConverterOptionTypeClientId.read(from: &buf), 
-            `hasEpochChanged`: FfiConverterBool.read(from: &buf), 
+            `message`: FfiConverterOptionSequenceUInt8.read(from: &buf),
+            `proposals`: FfiConverterSequenceTypeProposalBundle.read(from: &buf),
+            `isActive`: FfiConverterBool.read(from: &buf),
+            `commitDelay`: FfiConverterOptionUInt64.read(from: &buf),
+            `senderClientId`: FfiConverterOptionTypeClientId.read(from: &buf),
+            `hasEpochChanged`: FfiConverterBool.read(from: &buf),
             `identity`: FfiConverterOptionTypeWireIdentity.read(from: &buf)
         )
     }
@@ -1879,7 +1879,7 @@ extension Invitee: Equatable, Hashable {
 public struct FfiConverterTypeInvitee: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Invitee {
         return try Invitee(
-            `id`: FfiConverterTypeClientId.read(from: &buf), 
+            `id`: FfiConverterTypeClientId.read(from: &buf),
             `kp`: FfiConverterSequenceUInt8.read(from: &buf)
         )
     }
@@ -1940,8 +1940,8 @@ extension MemberAddedMessages: Equatable, Hashable {
 public struct FfiConverterTypeMemberAddedMessages: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MemberAddedMessages {
         return try MemberAddedMessages(
-            `commit`: FfiConverterSequenceUInt8.read(from: &buf), 
-            `welcome`: FfiConverterSequenceUInt8.read(from: &buf), 
+            `commit`: FfiConverterSequenceUInt8.read(from: &buf),
+            `welcome`: FfiConverterSequenceUInt8.read(from: &buf),
             `publicGroupState`: FfiConverterTypePublicGroupStateBundle.read(from: &buf)
         )
     }
@@ -2003,8 +2003,8 @@ extension NewAcmeAuthz: Equatable, Hashable {
 public struct FfiConverterTypeNewAcmeAuthz: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NewAcmeAuthz {
         return try NewAcmeAuthz(
-            `identifier`: FfiConverterString.read(from: &buf), 
-            `wireDpopChallenge`: FfiConverterOptionTypeAcmeChallenge.read(from: &buf), 
+            `identifier`: FfiConverterString.read(from: &buf),
+            `wireDpopChallenge`: FfiConverterOptionTypeAcmeChallenge.read(from: &buf),
             `wireOidcChallenge`: FfiConverterOptionTypeAcmeChallenge.read(from: &buf)
         )
     }
@@ -2060,7 +2060,7 @@ extension NewAcmeOrder: Equatable, Hashable {
 public struct FfiConverterTypeNewAcmeOrder: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NewAcmeOrder {
         return try NewAcmeOrder(
-            `delegate`: FfiConverterSequenceUInt8.read(from: &buf), 
+            `delegate`: FfiConverterSequenceUInt8.read(from: &buf),
             `authorizations`: FfiConverterSequenceString.read(from: &buf)
         )
     }
@@ -2115,7 +2115,7 @@ extension ProposalBundle: Equatable, Hashable {
 public struct FfiConverterTypeProposalBundle: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ProposalBundle {
         return try ProposalBundle(
-            `proposal`: FfiConverterSequenceUInt8.read(from: &buf), 
+            `proposal`: FfiConverterSequenceUInt8.read(from: &buf),
             `proposalRef`: FfiConverterSequenceUInt8.read(from: &buf)
         )
     }
@@ -2170,7 +2170,7 @@ extension ProteusAutoPrekeyBundle: Equatable, Hashable {
 public struct FfiConverterTypeProteusAutoPrekeyBundle: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ProteusAutoPrekeyBundle {
         return try ProteusAutoPrekeyBundle(
-            `id`: FfiConverterUInt16.read(from: &buf), 
+            `id`: FfiConverterUInt16.read(from: &buf),
             `pkb`: FfiConverterSequenceUInt8.read(from: &buf)
         )
     }
@@ -2231,8 +2231,8 @@ extension PublicGroupStateBundle: Equatable, Hashable {
 public struct FfiConverterTypePublicGroupStateBundle: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PublicGroupStateBundle {
         return try PublicGroupStateBundle(
-            `encryptionType`: FfiConverterTypeMlsPublicGroupStateEncryptionType.read(from: &buf), 
-            `ratchetTreeType`: FfiConverterTypeMlsRatchetTreeType.read(from: &buf), 
+            `encryptionType`: FfiConverterTypeMlsPublicGroupStateEncryptionType.read(from: &buf),
+            `ratchetTreeType`: FfiConverterTypeMlsRatchetTreeType.read(from: &buf),
             `payload`: FfiConverterSequenceUInt8.read(from: &buf)
         )
     }
@@ -2300,9 +2300,9 @@ extension WireIdentity: Equatable, Hashable {
 public struct FfiConverterTypeWireIdentity: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> WireIdentity {
         return try WireIdentity(
-            `clientId`: FfiConverterString.read(from: &buf), 
-            `handle`: FfiConverterString.read(from: &buf), 
-            `displayName`: FfiConverterString.read(from: &buf), 
+            `clientId`: FfiConverterString.read(from: &buf),
+            `handle`: FfiConverterString.read(from: &buf),
+            `displayName`: FfiConverterString.read(from: &buf),
             `domain`: FfiConverterString.read(from: &buf)
         )
     }
@@ -2327,7 +2327,7 @@ public func FfiConverterTypeWireIdentity_lower(_ value: WireIdentity) -> RustBuf
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum CiphersuiteName {
-    
+
     case `mls128Dhkemx25519Aes128gcmSha256Ed25519`
     case `mls128Dhkemp256Aes128gcmSha256P256`
     case `mls128Dhkemx25519Chacha20poly1305Sha256Ed25519`
@@ -2343,56 +2343,56 @@ public struct FfiConverterTypeCiphersuiteName: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CiphersuiteName {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
+
         case 1: return .`mls128Dhkemx25519Aes128gcmSha256Ed25519`
-        
+
         case 2: return .`mls128Dhkemp256Aes128gcmSha256P256`
-        
+
         case 3: return .`mls128Dhkemx25519Chacha20poly1305Sha256Ed25519`
-        
+
         case 4: return .`mls256Dhkemx448Aes256gcmSha512Ed448`
-        
+
         case 5: return .`mls256Dhkemp521Aes256gcmSha512P521`
-        
+
         case 6: return .`mls256Dhkemx448Chacha20poly1305Sha512Ed448`
-        
+
         case 7: return .`mls256Dhkemp384Aes256gcmSha384P384`
-        
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: CiphersuiteName, into buf: inout [UInt8]) {
         switch value {
-        
-        
+
+
         case .`mls128Dhkemx25519Aes128gcmSha256Ed25519`:
             writeInt(&buf, Int32(1))
-        
-        
+
+
         case .`mls128Dhkemp256Aes128gcmSha256P256`:
             writeInt(&buf, Int32(2))
-        
-        
+
+
         case .`mls128Dhkemx25519Chacha20poly1305Sha256Ed25519`:
             writeInt(&buf, Int32(3))
-        
-        
+
+
         case .`mls256Dhkemx448Aes256gcmSha512Ed448`:
             writeInt(&buf, Int32(4))
-        
-        
+
+
         case .`mls256Dhkemp521Aes256gcmSha512P521`:
             writeInt(&buf, Int32(5))
-        
-        
+
+
         case .`mls256Dhkemx448Chacha20poly1305Sha512Ed448`:
             writeInt(&buf, Int32(6))
-        
-        
+
+
         case .`mls256Dhkemp384Aes256gcmSha384P384`:
             writeInt(&buf, Int32(7))
-        
+
         }
     }
 }
@@ -2413,7 +2413,7 @@ extension CiphersuiteName: Equatable, Hashable {}
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum MlsCredentialType {
-    
+
     case `basic`
     case `x509`
 }
@@ -2424,26 +2424,26 @@ public struct FfiConverterTypeMlsCredentialType: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MlsCredentialType {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
+
         case 1: return .`basic`
-        
+
         case 2: return .`x509`
-        
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: MlsCredentialType, into buf: inout [UInt8]) {
         switch value {
-        
-        
+
+
         case .`basic`:
             writeInt(&buf, Int32(1))
-        
-        
+
+
         case .`x509`:
             writeInt(&buf, Int32(2))
-        
+
         }
     }
 }
@@ -2464,7 +2464,7 @@ extension MlsCredentialType: Equatable, Hashable {}
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum MlsPublicGroupStateEncryptionType {
-    
+
     case `plaintext`
     case `jweEncrypted`
 }
@@ -2475,26 +2475,26 @@ public struct FfiConverterTypeMlsPublicGroupStateEncryptionType: FfiConverterRus
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MlsPublicGroupStateEncryptionType {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
+
         case 1: return .`plaintext`
-        
+
         case 2: return .`jweEncrypted`
-        
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: MlsPublicGroupStateEncryptionType, into buf: inout [UInt8]) {
         switch value {
-        
-        
+
+
         case .`plaintext`:
             writeInt(&buf, Int32(1))
-        
-        
+
+
         case .`jweEncrypted`:
             writeInt(&buf, Int32(2))
-        
+
         }
     }
 }
@@ -2515,7 +2515,7 @@ extension MlsPublicGroupStateEncryptionType: Equatable, Hashable {}
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum MlsRatchetTreeType {
-    
+
     case `full`
     case `delta`
     case `byRef`
@@ -2527,32 +2527,32 @@ public struct FfiConverterTypeMlsRatchetTreeType: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MlsRatchetTreeType {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
+
         case 1: return .`full`
-        
+
         case 2: return .`delta`
-        
+
         case 3: return .`byRef`
-        
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: MlsRatchetTreeType, into buf: inout [UInt8]) {
         switch value {
-        
-        
+
+
         case .`full`:
             writeInt(&buf, Int32(1))
-        
-        
+
+
         case .`delta`:
             writeInt(&buf, Int32(2))
-        
-        
+
+
         case .`byRef`:
             writeInt(&buf, Int32(3))
-        
+
         }
     }
 }
@@ -2573,7 +2573,7 @@ extension MlsRatchetTreeType: Equatable, Hashable {}
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum MlsWirePolicy {
-    
+
     case `plaintext`
     case `ciphertext`
 }
@@ -2584,26 +2584,26 @@ public struct FfiConverterTypeMlsWirePolicy: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MlsWirePolicy {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
+
         case 1: return .`plaintext`
-        
+
         case 2: return .`ciphertext`
-        
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: MlsWirePolicy, into buf: inout [UInt8]) {
         switch value {
-        
-        
+
+
         case .`plaintext`:
             writeInt(&buf, Int32(1))
-        
-        
+
+
         case .`ciphertext`:
             writeInt(&buf, Int32(2))
-        
+
         }
     }
 }
@@ -2624,128 +2624,128 @@ extension MlsWirePolicy: Equatable, Hashable {}
 
 public enum CryptoError {
 
-    
-    
+
+
     // Simple error enums only carry a message
     case ConversationNotFound(message: String)
-    
+
     // Simple error enums only carry a message
     case ClientNotFound(message: String)
-    
+
     // Simple error enums only carry a message
     case PendingProposalNotFound(message: String)
-    
+
     // Simple error enums only carry a message
     case PendingCommitNotFound(message: String)
-    
+
     // Simple error enums only carry a message
     case MalformedIdentifier(message: String)
-    
+
     // Simple error enums only carry a message
     case ClientSignatureNotFound(message: String)
-    
+
     // Simple error enums only carry a message
     case ClientSignatureMismatch(message: String)
-    
+
     // Simple error enums only carry a message
     case LockPoisonError(message: String)
-    
+
     // Simple error enums only carry a message
     case ImplementationError(message: String)
-    
+
     // Simple error enums only carry a message
     case OutOfKeyPackage(message: String)
-    
+
     // Simple error enums only carry a message
     case MlsProviderError(message: String)
-    
+
     // Simple error enums only carry a message
     case KeyStoreError(message: String)
-    
+
     // Simple error enums only carry a message
     case MlsError(message: String)
-    
+
     // Simple error enums only carry a message
     case Utf8Error(message: String)
-    
+
     // Simple error enums only carry a message
     case StringUtf8Error(message: String)
-    
+
     // Simple error enums only carry a message
     case ParseIntError(message: String)
-    
+
     // Simple error enums only carry a message
     case ConvertIntError(message: String)
-    
+
     // Simple error enums only carry a message
     case InvalidByteArrayError(message: String)
-    
+
     // Simple error enums only carry a message
     case IoError(message: String)
-    
+
     // Simple error enums only carry a message
     case Unauthorized(message: String)
-    
+
     // Simple error enums only carry a message
     case CallbacksNotSet(message: String)
-    
+
     // Simple error enums only carry a message
     case UnauthorizedExternalAddProposal(message: String)
-    
+
     // Simple error enums only carry a message
     case UnauthorizedExternalCommit(message: String)
-    
+
     // Simple error enums only carry a message
     case InvalidHashReference(message: String)
-    
+
     // Simple error enums only carry a message
     case GenerationOutOfBound(message: String)
-    
+
     // Simple error enums only carry a message
     case WrongEpoch(message: String)
-    
+
     // Simple error enums only carry a message
     case DecryptionError(message: String)
-    
+
     // Simple error enums only carry a message
     case HexDecodeError(message: String)
-    
+
     // Simple error enums only carry a message
     case ProteusError(message: String)
-    
+
     // Simple error enums only carry a message
     case CryptoboxMigrationError(message: String)
-    
+
     // Simple error enums only carry a message
     case ProteusNotInitialized(message: String)
-    
+
     // Simple error enums only carry a message
     case ProteusSupportNotEnabled(message: String)
-    
+
     // Simple error enums only carry a message
     case MlsNotInitialized(message: String)
-    
+
     // Simple error enums only carry a message
     case InvalidKeyPackage(message: String)
-    
+
     // Simple error enums only carry a message
     case IdentityAlreadyPresent(message: String)
-    
+
     // Simple error enums only carry a message
     case NoProvisionalIdentityFound(message: String)
-    
+
     // Simple error enums only carry a message
     case TooManyIdentitiesPresent(message: String)
-    
+
     // Simple error enums only carry a message
     case ParentGroupNotFound(message: String)
-    
+
     // Simple error enums only carry a message
     case InvalidIdentity(message: String)
-    
+
     // Simple error enums only carry a message
     case IdentityInitializationError(message: String)
-    
+
 }
 
 public struct FfiConverterTypeCryptoError: FfiConverterRustBuffer {
@@ -2755,169 +2755,169 @@ public struct FfiConverterTypeCryptoError: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
 
-        
 
-        
+
+
         case 1: return .ConversationNotFound(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 2: return .ClientNotFound(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 3: return .PendingProposalNotFound(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 4: return .PendingCommitNotFound(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 5: return .MalformedIdentifier(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 6: return .ClientSignatureNotFound(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 7: return .ClientSignatureMismatch(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 8: return .LockPoisonError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 9: return .ImplementationError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 10: return .OutOfKeyPackage(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 11: return .MlsProviderError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 12: return .KeyStoreError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 13: return .MlsError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 14: return .Utf8Error(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 15: return .StringUtf8Error(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 16: return .ParseIntError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 17: return .ConvertIntError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 18: return .InvalidByteArrayError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 19: return .IoError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 20: return .Unauthorized(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 21: return .CallbacksNotSet(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 22: return .UnauthorizedExternalAddProposal(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 23: return .UnauthorizedExternalCommit(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 24: return .InvalidHashReference(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 25: return .GenerationOutOfBound(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 26: return .WrongEpoch(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 27: return .DecryptionError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 28: return .HexDecodeError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 29: return .ProteusError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 30: return .CryptoboxMigrationError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 31: return .ProteusNotInitialized(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 32: return .ProteusSupportNotEnabled(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 33: return .MlsNotInitialized(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 34: return .InvalidKeyPackage(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 35: return .IdentityAlreadyPresent(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 36: return .NoProvisionalIdentityFound(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 37: return .TooManyIdentitiesPresent(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 38: return .ParentGroupNotFound(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 39: return .InvalidIdentity(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 40: return .IdentityInitializationError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -2926,9 +2926,9 @@ public struct FfiConverterTypeCryptoError: FfiConverterRustBuffer {
     public static func write(_ value: CryptoError, into buf: inout [UInt8]) {
         switch value {
 
-        
 
-        
+
+
         case let .ConversationNotFound(message):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(message, into: &buf)
@@ -3050,7 +3050,7 @@ public struct FfiConverterTypeCryptoError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(40))
             FfiConverterString.write(message, into: &buf)
 
-        
+
         }
     }
 }
@@ -3063,38 +3063,38 @@ extension CryptoError: Error { }
 
 public enum E2eIdentityError {
 
-    
-    
+
+
     // Simple error enums only carry a message
     case ImplementationError(message: String)
-    
+
     // Simple error enums only carry a message
     case NotYetSupported(message: String)
-    
+
     // Simple error enums only carry a message
     case E2eiInvalidDomain(message: String)
-    
+
     // Simple error enums only carry a message
     case CryptoError(message: String)
-    
+
     // Simple error enums only carry a message
     case IdentityError(message: String)
-    
+
     // Simple error enums only carry a message
     case UrlError(message: String)
-    
+
     // Simple error enums only carry a message
     case JsonError(message: String)
-    
+
     // Simple error enums only carry a message
     case Utf8Error(message: String)
-    
+
     // Simple error enums only carry a message
     case MlsError(message: String)
-    
+
     // Simple error enums only carry a message
     case LockPoisonError(message: String)
-    
+
 }
 
 public struct FfiConverterTypeE2eIdentityError: FfiConverterRustBuffer {
@@ -3104,49 +3104,49 @@ public struct FfiConverterTypeE2eIdentityError: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
 
-        
 
-        
+
+
         case 1: return .ImplementationError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 2: return .NotYetSupported(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 3: return .E2eiInvalidDomain(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 4: return .CryptoError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 5: return .IdentityError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 6: return .UrlError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 7: return .JsonError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 8: return .Utf8Error(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 9: return .MlsError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
         case 10: return .LockPoisonError(
             message: try FfiConverterString.read(from: &buf)
         )
-        
+
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -3155,9 +3155,9 @@ public struct FfiConverterTypeE2eIdentityError: FfiConverterRustBuffer {
     public static func write(_ value: E2eIdentityError, into buf: inout [UInt8]) {
         switch value {
 
-        
 
-        
+
+
         case let .ImplementationError(message):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(message, into: &buf)
@@ -3189,7 +3189,7 @@ public struct FfiConverterTypeE2eIdentityError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(10))
             FfiConverterString.write(message, into: &buf)
 
-        
+
         }
     }
 }
@@ -3266,7 +3266,7 @@ public protocol CoreCryptoCallbacks : AnyObject {
     func `authorize`(`conversationId`: ConversationId, `clientId`: ClientId)  -> Bool
     func `userAuthorize`(`conversationId`: ConversationId, `externalClientId`: ClientId, `existingClients`: [ClientId])  -> Bool
     func `clientIsExistingGroupUser`(`conversationId`: ConversationId, `clientId`: ClientId, `existingClients`: [ClientId], `parentConversationClients`: [ClientId]?)  -> Bool
-    
+
 }
 
 // The ForeignCallback that is passed to Rust.
@@ -3277,7 +3277,7 @@ fileprivate let foreignCallbackCallbackInterfaceCoreCryptoCallbacks : ForeignCal
 
             var reader = createReader(data: Data(rustBuffer: args))
             let result = swiftCallbackInterface.`authorize`(
-                    `conversationId`:  try FfiConverterTypeConversationId.read(from: &reader), 
+                    `conversationId`:  try FfiConverterTypeConversationId.read(from: &reader),
                     `clientId`:  try FfiConverterTypeClientId.read(from: &reader)
                     )
             var writer = [UInt8]()
@@ -3291,8 +3291,8 @@ fileprivate let foreignCallbackCallbackInterfaceCoreCryptoCallbacks : ForeignCal
 
             var reader = createReader(data: Data(rustBuffer: args))
             let result = swiftCallbackInterface.`userAuthorize`(
-                    `conversationId`:  try FfiConverterTypeConversationId.read(from: &reader), 
-                    `externalClientId`:  try FfiConverterTypeClientId.read(from: &reader), 
+                    `conversationId`:  try FfiConverterTypeConversationId.read(from: &reader),
+                    `externalClientId`:  try FfiConverterTypeClientId.read(from: &reader),
                     `existingClients`:  try FfiConverterSequenceTypeClientId.read(from: &reader)
                     )
             var writer = [UInt8]()
@@ -3306,9 +3306,9 @@ fileprivate let foreignCallbackCallbackInterfaceCoreCryptoCallbacks : ForeignCal
 
             var reader = createReader(data: Data(rustBuffer: args))
             let result = swiftCallbackInterface.`clientIsExistingGroupUser`(
-                    `conversationId`:  try FfiConverterTypeConversationId.read(from: &reader), 
-                    `clientId`:  try FfiConverterTypeClientId.read(from: &reader), 
-                    `existingClients`:  try FfiConverterSequenceTypeClientId.read(from: &reader), 
+                    `conversationId`:  try FfiConverterTypeConversationId.read(from: &reader),
+                    `clientId`:  try FfiConverterTypeClientId.read(from: &reader),
+                    `existingClients`:  try FfiConverterSequenceTypeClientId.read(from: &reader),
                     `parentConversationClients`:  try FfiConverterOptionSequenceTypeClientId.read(from: &reader)
                     )
             var writer = [UInt8]()
@@ -3317,7 +3317,7 @@ fileprivate let foreignCallbackCallbackInterfaceCoreCryptoCallbacks : ForeignCal
                 // https://github.com/mozilla/uniffi-rs/issues/351
 
         }
-        
+
 
         let cb: CoreCryptoCallbacks
         do {
@@ -3363,7 +3363,7 @@ fileprivate let foreignCallbackCallbackInterfaceCoreCryptoCallbacks : ForeignCal
                     out_buf.pointee = FfiConverterString.lower(String(describing: error))
                     return -1
                 }
-            
+
             // This should never happen, because an out of bounds method index won't
             // ever be used. Once we can catch errors, we should return an InternalError.
             // https://github.com/mozilla/uniffi-rs/issues/351
@@ -3916,9 +3916,9 @@ public struct FfiConverterTypeMemberId: FfiConverter {
 public func `version`()  -> String {
     return try! FfiConverterString.lift(
         try!
-    
+
     rustCall() {
-    
+
     CoreCrypto_105c_version($0)
 }
     )

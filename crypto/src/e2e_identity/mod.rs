@@ -45,14 +45,14 @@ impl MlsCentral {
     /// * `client_id` - client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
     /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
-    /// * `expiry_days` - generated x509 certificate expiry in days
+    /// * `expiry_sec` - generated x509 certificate expiry in seconds
     pub fn e2ei_new_enrollment(
         &self,
         client_id: ClientId,
         display_name: String,
         handle: String,
         team: Option<String>,
-        expiry_days: u32,
+        expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> CryptoResult<E2eiEnrollment> {
         let signature_keypair = None; // fresh install without a Basic client. Supplying None will generate a new keypair
@@ -61,7 +61,7 @@ impl MlsCentral {
             display_name,
             handle,
             team,
-            expiry_days,
+            expiry_sec,
             &self.mls_backend,
             ciphersuite,
             signature_keypair,
@@ -133,14 +133,14 @@ impl E2eiEnrollment {
     /// * `client_id` - client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
     /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
-    /// * `expiry_days` - generated x509 certificate expiry in days
+    /// * `expiry_sec` - generated x509 certificate expiry in seconds
     #[allow(clippy::too_many_arguments)]
     pub fn try_new(
         client_id: ClientId,
         display_name: String,
         handle: String,
         team: Option<String>,
-        expiry_days: u32,
+        expiry_sec: u32,
         backend: &MlsCryptoProvider,
         ciphersuite: MlsCiphersuite,
         sign_keypair: Option<E2eiSignatureKeypair>,
@@ -154,7 +154,7 @@ impl E2eiEnrollment {
 
         let client_id = QualifiedE2eiClientId::try_from(client_id.as_slice())?;
         let client_id = String::try_from(client_id)?;
-        let expiry = core::time::Duration::from_secs(u64::from(expiry_days) * 24 * 3600);
+        let expiry = core::time::Duration::from_secs(u64::from(expiry_sec));
         Ok(Self {
             delegate: RustyE2eIdentity::try_new(alg, sign_sk.clone()).map_err(E2eIdentityError::from)?,
             sign_sk,
@@ -558,7 +558,7 @@ pub mod tests {
     pub const E2EI_HANDLE: &str = "alice_wire";
     pub const E2EI_CLIENT_ID: &str = "bd4c7053-1c5a-4020-9559-cd7bf7961954:4959bc6ab12f2846@wire.com";
     pub const E2EI_CLIENT_ID_URI: &str = "vUxwUxxaQCCVWc1795YZVA!4959bc6ab12f2846@wire.com";
-    pub const E2EI_EXPIRY: u32 = 90;
+    pub const E2EI_EXPIRY: u32 = 90 * 24 * 3600;
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
