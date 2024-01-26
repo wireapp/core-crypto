@@ -4,7 +4,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 use std::ops::DerefMut;
 use wire_e2e_identity::prelude::x509::{
-    extract_expiration_from_crl,
+    extract_crl_uris, extract_expiration_from_crl,
     revocation::{PkiEnvironment, PkiEnvironmentParams},
 };
 use x509_cert::der::Decode;
@@ -55,7 +55,7 @@ impl MlsCentral {
     ///
     /// # Parameters
     /// * `cert_pem` - PEM certificate to register as an Intermediate CA
-    pub async fn e2ei_register_intermediate_ca(&mut self, cert_pem: String) -> CryptoResult<()> {
+    pub async fn e2ei_register_intermediate_ca(&mut self, cert_pem: String) -> CryptoResult<Option<Vec<String>>> {
         let Some(pki_env) = self.e2ei_pki_env.as_ref() else {
             return Err(CryptoError::ConsumerError);
         };
@@ -70,8 +70,12 @@ impl MlsCentral {
         // the `/federation` endpoint from smallstep repeats the root CA
         // so we filter it out here so that clients don't have to do it
         if inter_ca == ta {
-            return Ok(());
+            return Ok(None);
         }
+
+        let intermediate_crl = extract_crl_uris(&inter_ca)
+            .map_err(|e| CryptoError::E2eiError(e.into()))?
+            .map(|s| s.into_iter().collect());
 
         let (ski, aki) =
             PkiEnvironment::extract_ski_aki_from_cert(&inter_ca).map_err(|e| CryptoError::E2eiError(e.into()))?;
@@ -93,7 +97,7 @@ impl MlsCentral {
 
         self.init_pki_env().await?;
 
-        Ok(())
+        Ok(intermediate_crl)
     }
 
     /// Registers a CRL for the use in E2EI processing.

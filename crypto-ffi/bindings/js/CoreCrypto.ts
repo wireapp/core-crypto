@@ -2008,7 +2008,6 @@ export class CoreCrypto {
         return await this.#cc.e2ei_register_acme_ca(trustAnchorPEM);
     }
 
-
     /**
     * Registers an Intermediate CA for the use in E2EI processing.
     *
@@ -2017,10 +2016,9 @@ export class CoreCrypto {
     *
     * @param certPEM - PEM certificate to register as an Intermediate CA
     */
-    async e2eiRegisterIntermediateCA(certPEM: string): Promise<void> {
+    async e2eiRegisterIntermediateCA(certPEM: string): Promise<string[] | undefined> {
         return await this.#cc.e2ei_register_intermediate_ca(certPEM);
     }
-
 
     /**
     * Registers a CRL for the use in E2EI processing.
