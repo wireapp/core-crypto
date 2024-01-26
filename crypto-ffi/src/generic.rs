@@ -1576,7 +1576,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_register_intermediate_ca]
-    pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<()> {
+    pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<Option<Vec<String>>> {
         Ok(self
             .central
             .lock()

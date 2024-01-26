@@ -1230,7 +1230,7 @@ public class CoreCryptoWrapper {
     /// You **need** to have a Root CA registered before calling this
     ///
     /// - parameter cert_pem: PEM certificate to register as an Intermediate CA
-    public func e2eiRegisterIntermediateCA(certPEM: String) async throws {
+    public func e2eiRegisterIntermediateCA(certPEM: String) async throws -> [string]? {
         return try await self.coreCrypto.e2eiRegisterIntermediateCa(certPem: certPEM)
     }
 

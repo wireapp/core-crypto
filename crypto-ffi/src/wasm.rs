@@ -2430,8 +2430,14 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let mut this = this.write().await;
-                this.e2ei_register_intermediate_ca(cert_pem).await?;
-                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+                let crls = this.e2ei_register_intermediate_ca(cert_pem).await?;
+
+                let crls = if let Some(crls) = crls {
+                    js_sys::Array::from_iter(crls.into_iter().map(JsValue::from))
+                } else {
+                    js_sys::Array::new()
+                };
+                WasmCryptoResult::Ok(crls.into())
             }
             .err_into(),
         )
