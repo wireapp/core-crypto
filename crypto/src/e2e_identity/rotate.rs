@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use openmls::prelude::{KeyPackage, KeyPackageRef, MlsCredentialType as OpenMlsCredential};
 use openmls_traits::OpenMlsCryptoProvider;
-use wire_e2e_identity::prelude::x509::extract_crl_uris;
 
 use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
 use mls_crypto_provider::MlsCryptoProvider;
@@ -109,18 +108,13 @@ impl MlsCentral {
         let sk = enrollment.get_sign_key_for_mls()?;
         let cs = enrollment.ciphersuite;
         let certificate_chain = enrollment.certificate_response(certificate_chain).await?;
+
         let private_key = CertificatePrivateKey {
             value: sk,
             signature_scheme: cs.signature_algorithm(),
         };
 
-        let ee = certificate_chain.first().ok_or(CryptoError::InvalidCertificateChain)?;
-
-        use x509_cert::der::Decode as _;
-        let ee = x509_cert::Certificate::from_der(ee)?;
-        let crl_new_distribution_points = extract_crl_uris(&ee)
-            .map_err(|e| CryptoError::E2eiError(e.into()))?
-            .map(|s| s.into_iter().collect());
+        let crl_new_distribution_points = self.extract_dp_on_init(&certificate_chain[..]).await?;
 
         let cert_bundle = CertificateBundle {
             certificate_chain,

@@ -149,9 +149,9 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
         enrollment: E2EIEnrollment,
         certificateChain: String,
         nbKeyPackage: UInt? = DEFAULT_NB_KEY_PACKAGE
-    ): MLSClient {
-        cc.e2eiMlsInitOnly(enrollment.lower(), certificateChain, nbKeyPackage)
-        return MLSClient(cc)
+    ): Pair<MLSClient, CrlDistributionPoints?> {
+        val crlsDps = cc.e2eiMlsInitOnly(enrollment.lower(), certificateChain, nbKeyPackage)
+        return MLSClient(cc) to crlsDps?.toCrlDistributionPoint()
     }
 
     /**
@@ -166,7 +166,6 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
         return cc.e2eiRegisterAcmeCa(trustAnchorPEM)
     }
 
-
     /**
      * Registers an Intermediate CA for the use in E2EI processing.
      *
@@ -175,10 +174,9 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
      *
      * @param certPEM PEM certificate to register as an Intermediate CA
      */
-    suspend fun e2eiRegisterIntermediateCA(certPEM: String): CrlDistributionPoint? {
+    suspend fun e2eiRegisterIntermediateCA(certPEM: String): CrlDistributionPoints? {
         return cc.e2eiRegisterIntermediateCa(certPEM)?.toCrlDistributionPoint()
     }
-
 
     /**
      * Registers a CRL for the use in E2EI processing.

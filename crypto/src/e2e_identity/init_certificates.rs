@@ -55,7 +55,24 @@ impl MlsCentral {
     ///
     /// # Parameters
     /// * `cert_pem` - PEM certificate to register as an Intermediate CA
-    pub async fn e2ei_register_intermediate_ca(&mut self, cert_pem: String) -> CryptoResult<Option<Vec<String>>> {
+    pub async fn e2ei_register_intermediate_ca_pem(&mut self, cert_pem: String) -> CryptoResult<Option<Vec<String>>> {
+        // Parse/decode PEM cert
+        let inter_ca = PkiEnvironment::decode_pem_cert(cert_pem).map_err(|e| CryptoError::E2eiError(e.into()))?;
+        self.e2ei_register_intermediate_ca(inter_ca).await
+    }
+
+    pub(crate) async fn e2ei_register_intermediate_ca_der(
+        &mut self,
+        cert_der: &[u8],
+    ) -> CryptoResult<Option<Vec<String>>> {
+        let inter_ca = x509_cert::Certificate::from_der(cert_der)?;
+        self.e2ei_register_intermediate_ca(inter_ca).await
+    }
+
+    async fn e2ei_register_intermediate_ca(
+        &mut self,
+        inter_ca: x509_cert::Certificate,
+    ) -> CryptoResult<Option<Vec<String>>> {
         let Some(pki_env) = self.e2ei_pki_env.as_ref() else {
             return Err(CryptoError::ConsumerError);
         };
@@ -63,9 +80,6 @@ impl MlsCentral {
         // TrustAnchor must have been registered at this point
         let ta = E2eiAcmeCA::find_unique(self.mls_backend.key_store().borrow_conn().await?.deref_mut()).await?;
         let ta = x509_cert::Certificate::from_der(&ta.content)?;
-
-        // Parse/decode PEM cert
-        let inter_ca = PkiEnvironment::decode_pem_cert(cert_pem).map_err(|e| CryptoError::E2eiError(e.into()))?;
 
         // the `/federation` endpoint from smallstep repeats the root CA
         // so we filter it out here so that clients don't have to do it

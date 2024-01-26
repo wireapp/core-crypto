@@ -1,7 +1,5 @@
 package com.wire.crypto.client
 
-import com.wire.crypto.client.ClientId
-
 @JvmInline
 value class RotateBundle(private val value: com.wire.crypto.RotateBundle) {
     val commits: Map<ClientId, CommitBundle>
@@ -11,7 +9,7 @@ value class RotateBundle(private val value: com.wire.crypto.RotateBundle) {
     /**
      * New CRL distribution points that appeared by the introduction of a new credential
      */
-    val crlNewDistributionPoints: List<String>? get() = value.crlNewDistributionPoints
+    val crlNewDistributionPoints: CrlDistributionPoints? get() = value.crlNewDistributionPoints?.toCrlDistributionPoint()
 }
 
 fun com.wire.crypto.RotateBundle.toRotateBundle() = RotateBundle(this)
