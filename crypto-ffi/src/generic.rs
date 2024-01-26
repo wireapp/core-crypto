@@ -1575,13 +1575,13 @@ impl CoreCrypto {
             .await?)
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_register_intermediate_ca]
+    /// See [core_crypto::mls::MlsCentral::e2ei_register_intermediate_ca_pem]
     pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<Option<Vec<String>>> {
         Ok(self
             .central
             .lock()
             .await
-            .e2ei_register_intermediate_ca(cert_pem)
+            .e2ei_register_intermediate_ca_pem(cert_pem)
             .await?)
     }
 
@@ -1602,7 +1602,7 @@ impl CoreCrypto {
         enrollment: std::sync::Arc<E2eiEnrollment>,
         certificate_chain: String,
         nb_key_package: Option<u32>,
-    ) -> CoreCryptoResult<()> {
+    ) -> CoreCryptoResult<Option<Vec<String>>> {
         if std::sync::Arc::strong_count(&enrollment) > 1 {
             unsafe {
                 // it is required because in order to pass the enrollment to Rust, uniffi lowers it by cloning the Arc

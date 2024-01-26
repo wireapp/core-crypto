@@ -1988,7 +1988,7 @@ export class CoreCrypto {
         enrollment: E2eiEnrollment,
         certificateChain: string,
         nbKeyPackage?: number
-    ): Promise<void> {
+    ): Promise<string[] | undefined> {
         return await this.#cc.e2ei_mls_init_only(
             enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity,
             certificateChain,

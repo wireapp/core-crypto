@@ -2430,7 +2430,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let mut this = this.write().await;
-                let crls = this.e2ei_register_intermediate_ca(cert_pem).await?;
+                let crls = this.e2ei_register_intermediate_ca_pem(cert_pem).await?;
 
                 let crls = if let Some(crls) = crls {
                     js_sys::Array::from_iter(crls.into_iter().map(JsValue::from))
@@ -2476,9 +2476,16 @@ impl CoreCrypto {
                 let enrollment = std::sync::Arc::try_unwrap(enrollment.0)
                     .map_err(|_| CryptoError::LockPoisonError)?
                     .into_inner();
-                this.e2ei_mls_init_only(enrollment, certificate_chain, nb_key_package)
+                let crls = this
+                    .e2ei_mls_init_only(enrollment, certificate_chain, nb_key_package)
                     .await?;
-                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+
+                let crls = if let Some(crls) = crls {
+                    js_sys::Array::from_iter(crls.into_iter().map(JsValue::from))
+                } else {
+                    js_sys::Array::new()
+                };
+                WasmCryptoResult::Ok(crls.into())
             }
             .err_into(),
         )

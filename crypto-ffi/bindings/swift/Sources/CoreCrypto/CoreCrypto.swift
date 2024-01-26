@@ -1210,7 +1210,7 @@ public class CoreCryptoWrapper {
     /// - parameter e2ei: the enrollment instance used to fetch the certificates
     /// - parameter certificateChain: the raw response from ACME server
     /// - parameter nbKeyPackage: number of initial KeyPackage to create when initializing the client
-    public func e2eiMlsInitOnly(enrollment: E2eiEnrollment, certificateChain: String, nbKeyPackage: UInt32 = 100) async throws {
+    public func e2eiMlsInitOnly(enrollment: E2eiEnrollment, certificateChain: String, nbKeyPackage: UInt32 = 100) async throws -> [string]? {
         return try await self.coreCrypto.e2eiMlsInitOnly(enrollment: enrollment.lower(), certificateChain: certificateChain, nbKeyPackage: nbKeyPackage)
     }
 

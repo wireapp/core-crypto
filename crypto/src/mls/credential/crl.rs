@@ -1,3 +1,4 @@
+use crate::prelude::MlsCentral;
 use crate::{CryptoError, CryptoResult};
 use core_crypto_keystore::entities::E2eiCrl;
 use mls_crypto_provider::MlsCryptoProvider;
@@ -65,5 +66,46 @@ pub(crate) async fn get_new_crl_distribution_points(
         ))
     } else {
         Ok(None)
+    }
+}
+
+impl MlsCentral {
+    /// When x509 new credentials are registered this extracts the new CRL Distribution Point from the end entity certificate
+    /// and all the intermediates
+    pub(crate) async fn extract_dp_on_init(
+        &mut self,
+        certificate_chain: &[Vec<u8>],
+    ) -> CryptoResult<Option<Vec<String>>> {
+        use x509_cert::der::Decode as _;
+
+        // Own intermediates are not provided by smallstep in the /federation endpoint so we got to intercept them here, at issuance
+        let size = certificate_chain.len();
+        let mut crl_new_distribution_points = vec![];
+        if size > 3 {
+            let intermediates = &certificate_chain[1..size - 1];
+            for int in intermediates.iter().rev() {
+                let crl_dp = self.e2ei_register_intermediate_ca_der(int).await?;
+                if let Some(mut crl_dp) = crl_dp {
+                    crl_new_distribution_points.append(&mut crl_dp);
+                }
+            }
+        }
+
+        let ee = certificate_chain.first().ok_or(CryptoError::InvalidCertificateChain)?;
+
+        let ee = x509_cert::Certificate::from_der(ee)?;
+        let ee_crl_dp = extract_crl_uris(&ee)
+            .map_err(|e| CryptoError::E2eiError(e.into()))?
+            .map(|s| s.into_iter().collect());
+        if let Some(mut crl_dp) = ee_crl_dp {
+            crl_new_distribution_points.append(&mut crl_dp);
+        }
+        let crl_new_distribution_points = if !crl_new_distribution_points.is_empty() {
+            Some(crl_new_distribution_points)
+        } else {
+            None
+        };
+
+        Ok(crl_new_distribution_points)
     }
 }

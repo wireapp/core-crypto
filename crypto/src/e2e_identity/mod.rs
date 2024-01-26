@@ -77,10 +77,13 @@ impl MlsCentral {
         enrollment: E2eiEnrollment,
         certificate_chain: String,
         nb_init_key_packages: Option<usize>,
-    ) -> CryptoResult<()> {
+    ) -> CryptoResult<Option<Vec<String>>> {
         let sk = enrollment.get_sign_key_for_mls()?;
         let cs = enrollment.ciphersuite;
         let certificate_chain = enrollment.certificate_response(certificate_chain).await?;
+
+        let crl_new_distribution_points = self.extract_dp_on_init(&certificate_chain[..]).await?;
+
         let private_key = CertificatePrivateKey {
             value: sk,
             signature_scheme: cs.signature_algorithm(),
@@ -92,7 +95,7 @@ impl MlsCentral {
         };
         let identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
         self.mls_init(identifier, vec![cs], nb_init_key_packages).await?;
-        Ok(())
+        Ok(crl_new_distribution_points)
     }
 }
 

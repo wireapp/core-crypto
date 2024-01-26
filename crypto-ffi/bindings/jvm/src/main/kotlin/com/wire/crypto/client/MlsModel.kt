@@ -148,14 +148,14 @@ value class ExternallyGeneratedHandle(override val value: List<ByteArray>) :
 fun List<ByteArray>.toExternallyGeneratedHandle() = ExternallyGeneratedHandle(map { it })
 
 @JvmInline
-value class CrlDistributionPoint(override val value: Set<java.net.URI>) :
+value class CrlDistributionPoints(override val value: Set<java.net.URI>) :
     FfiType<Set<java.net.URI>, List<String>> {
     override fun lower(): List<String> = value.asSequence().map { it.toString() }.toList()
 
     override fun toString() = value.joinToString(", ") { it.toString() }
 }
 
-fun List<String>.toCrlDistributionPoint() = CrlDistributionPoint(asSequence().map { java.net.URI(it) }.toSet())
+fun List<String>.toCrlDistributionPoint() = CrlDistributionPoints(asSequence().map { java.net.URI(it) }.toSet())
 
 
 @JvmInline
@@ -190,7 +190,7 @@ data class CommitBundle(
     /**
      * New CRL distribution points that appeared by the introduction of a new credential
      */
-    val crlNewDistributionPoints: CrlDistributionPoint?,
+    val crlNewDistributionPoints: CrlDistributionPoints?,
 )
 
 fun com.wire.crypto.CommitBundle.lift() =
@@ -217,7 +217,7 @@ data class ProposalBundle(
     /**
      * New CRL distribution points that appeared by the introduction of a new credential
      */
-    val crlNewDistributionPoints: CrlDistributionPoint?,
+    val crlNewDistributionPoints: CrlDistributionPoints?,
 )
 
 fun com.wire.crypto.ProposalBundle.lift() =
@@ -238,7 +238,7 @@ data class WelcomeBundle(
     /**
      * New CRL distribution points that appeared by the introduction of a new credential
      */
-    val crlNewDistributionPoints: CrlDistributionPoint?,
+    val crlNewDistributionPoints: CrlDistributionPoints?,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -308,7 +308,7 @@ data class DecryptedMessage(
     /**
      * New CRL distribution points that appeared by the introduction of a new credential
      */
-    val crlNewDistributionPoints: CrlDistributionPoint?,
+    val crlNewDistributionPoints: CrlDistributionPoints?,
 ) {
 
     override fun equals(other: Any?): Boolean {
@@ -376,7 +376,7 @@ data class BufferedDecryptedMessage(
     /** @see DecryptedMessage.identity */
     val identity: WireIdentity?,
     /** @see DecryptedMessage.crlNewDistributionPoints */
-    val crlNewDistributionPoints: CrlDistributionPoint?,
+    val crlNewDistributionPoints: CrlDistributionPoints?,
 ) {
 
     override fun equals(other: Any?): Boolean {

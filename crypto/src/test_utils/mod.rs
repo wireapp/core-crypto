@@ -146,7 +146,7 @@ pub async fn run_test_with_deterministic_client_ids<const N: usize>(
 
                         for intermediate in &x509_test_chain.intermediates {
                             central
-                                .e2ei_register_intermediate_ca(
+                                .e2ei_register_intermediate_ca_pem(
                                     intermediate
                                         .certificate
                                         .to_pem(x509_cert::der::pem::LineEnding::LF)
