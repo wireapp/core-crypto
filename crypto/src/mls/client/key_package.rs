@@ -546,7 +546,8 @@ pub mod tests {
 
                 // make sure it's valid
                 assert!(KeyPackageIn::from(kp.clone())
-                    .standalone_validate(cc.mls_backend.crypto(), ProtocolVersion::Mls10)
+                    .standalone_validate(&cc.mls_backend, ProtocolVersion::Mls10)
+                    .await
                     .is_ok());
 
                 // see https://www.rfc-editor.org/rfc/rfc9420.html#section-10-10
