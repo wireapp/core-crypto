@@ -178,10 +178,12 @@ mod acme_server {
                 })
             }),
             // undo the inversion here to verify that it fails on acme server side (we do not want to test wire-server here)
-            create_dpop_token: Box::new(|mut test, (_, nonce, handle, team, expiry)| {
+            create_dpop_token: Box::new(|mut test, (_, nonce, handle, team, display_name, expiry)| {
                 Box::pin(async move {
                     let challenge = rc1.lock().unwrap().clone().unwrap();
-                    let dpop_token = test.create_dpop_token(&challenge, nonce, handle, team, expiry).await?;
+                    let dpop_token = test
+                        .create_dpop_token(&challenge, nonce, handle, team, display_name, expiry)
+                        .await?;
                     Ok((test, dpop_token))
                 })
             }),
@@ -270,18 +272,20 @@ mod dpop_challenge {
         let test = E2eTest::new().start(docker()).await;
 
         let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, handle, team, expiry)| {
-                Box::pin(async move {
-                    // use a different nonce than the supplied one
-                    let wrong_nonce = rand_base64_str(32).into();
-                    assert_ne!(wrong_nonce, backend_nonce);
+            create_dpop_token: Box::new(
+                |mut test, (dpop_chall, backend_nonce, handle, team, display_name, expiry)| {
+                    Box::pin(async move {
+                        // use a different nonce than the supplied one
+                        let wrong_nonce = rand_base64_str(32).into();
+                        assert_ne!(wrong_nonce, backend_nonce);
 
-                    let client_dpop_token = test
-                        .create_dpop_token(&dpop_chall, wrong_nonce, handle, team, expiry)
-                        .await?;
-                    Ok((test, client_dpop_token))
-                })
-            }),
+                        let client_dpop_token = test
+                            .create_dpop_token(&dpop_chall, wrong_nonce, handle, team, display_name, expiry)
+                            .await?;
+                        Ok((test, client_dpop_token))
+                    })
+                },
+            ),
             ..Default::default()
         };
         assert!(matches!(
@@ -317,19 +321,21 @@ mod dpop_challenge {
         let test = E2eTest::new().start(docker()).await;
 
         let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, handle, team, expiry)| {
-                Box::pin(async move {
-                    // alter the 'token' of the valid challenge
-                    let wrong_dpop_chall = AcmeChallenge {
-                        token: rand_base64_str(32),
-                        ..dpop_chall
-                    };
-                    let client_dpop_token = test
-                        .create_dpop_token(&wrong_dpop_chall, backend_nonce, handle, team, expiry)
-                        .await?;
-                    Ok((test, client_dpop_token))
-                })
-            }),
+            create_dpop_token: Box::new(
+                |mut test, (dpop_chall, backend_nonce, handle, team, display_name, expiry)| {
+                    Box::pin(async move {
+                        // alter the 'token' of the valid challenge
+                        let wrong_dpop_chall = AcmeChallenge {
+                            token: rand_base64_str(32),
+                            ..dpop_chall
+                        };
+                        let client_dpop_token = test
+                            .create_dpop_token(&wrong_dpop_chall, backend_nonce, handle, team, display_name, expiry)
+                            .await?;
+                        Ok((test, client_dpop_token))
+                    })
+                },
+            ),
             ..Default::default()
         };
         assert!(matches!(
@@ -376,17 +382,19 @@ mod dpop_challenge {
         let test = E2eTest::new().start(docker()).await;
 
         let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, handle, team, _expiry)| {
-                Box::pin(async move {
-                    let leeway = 360;
-                    let expiry = core::time::Duration::from_secs(0);
-                    let client_dpop_token = test
-                        .create_dpop_token(&dpop_chall, backend_nonce, handle, team, expiry)
-                        .await?;
-                    tokio::time::sleep(core::time::Duration::from_secs(leeway + 1)).await;
-                    Ok((test, client_dpop_token))
-                })
-            }),
+            create_dpop_token: Box::new(
+                |mut test, (dpop_chall, backend_nonce, handle, team, display_name, _expiry)| {
+                    Box::pin(async move {
+                        let leeway = 360;
+                        let expiry = core::time::Duration::from_secs(0);
+                        let client_dpop_token = test
+                            .create_dpop_token(&dpop_chall, backend_nonce, handle, team, display_name, expiry)
+                            .await?;
+                        tokio::time::sleep(core::time::Duration::from_secs(leeway + 1)).await;
+                        Ok((test, client_dpop_token))
+                    })
+                },
+            ),
             ..Default::default()
         };
         test.enrollment(flow).await.unwrap();
@@ -405,16 +413,19 @@ mod dpop_challenge {
         let (nonce_w, nonce_r) = (nonce_arc.clone(), nonce_arc.clone());
 
         let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(|mut test, (dpop_chall, nonce, handle, team, expiry)| {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, nonce, handle, team, display_name, expiry)| {
                 Box::pin(async move {
                     *nonce_w.lock().unwrap() = Some(nonce.clone());
-                    let client_dpop_token = test.create_dpop_token(&dpop_chall, nonce, handle, team, expiry).await?;
+                    let client_dpop_token = test
+                        .create_dpop_token(&dpop_chall, nonce, handle, team, display_name, expiry)
+                        .await?;
                     Ok((test, client_dpop_token))
                 })
             }),
             get_access_token: Box::new(|test, (dpop_chall, _)| {
                 Box::pin(async move {
                     let client_id = test.sub.clone();
+                    let display_name = test.display_name.clone();
                     let htu: Htu = "https://unknown.io".try_into().unwrap();
                     let backend_nonce: BackendNonce = nonce_r.lock().unwrap().clone().unwrap();
                     let acme_nonce: AcmeNonce = dpop_chall.token.as_str().into();
@@ -426,6 +437,7 @@ mod dpop_challenge {
                     let client_dpop_token = RustyJwtTools::generate_dpop_token(
                         Dpop {
                             htm: Htm::Post,
+                            display_name: display_name.clone(),
                             htu: htu.clone(),
                             challenge: acme_nonce,
                             handle: handle.clone(),
@@ -446,6 +458,7 @@ mod dpop_challenge {
                         &client_dpop_token,
                         &client_id,
                         handle,
+                        &display_name,
                         test.team.clone().into(),
                         backend_nonce,
                         htu,
@@ -479,10 +492,12 @@ mod dpop_challenge {
         let (nonce_w, nonce_r) = (nonce_arc.clone(), nonce_arc.clone());
 
         let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(|mut test, (dpop_chall, nonce, handle, team, expiry)| {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, nonce, handle, team, display_name, expiry)| {
                 Box::pin(async move {
                     *nonce_w.lock().unwrap() = Some(nonce.clone());
-                    let client_dpop_token = test.create_dpop_token(&dpop_chall, nonce, handle, team, expiry).await?;
+                    let client_dpop_token = test
+                        .create_dpop_token(&dpop_chall, nonce, handle, team, display_name, expiry)
+                        .await?;
                     Ok((test, client_dpop_token))
                 })
             }),
@@ -500,6 +515,7 @@ mod dpop_challenge {
                         .try_to_qualified(&client_id.domain)
                         .unwrap();
                     let audience = dpop_chall.url.clone();
+                    let display_name = test.display_name.clone();
 
                     let client_dpop_token = RustyJwtTools::generate_dpop_token(
                         Dpop {
@@ -508,6 +524,7 @@ mod dpop_challenge {
                             challenge: acme_nonce,
                             handle: handle.clone(),
                             team: test.team.clone().into(),
+                            display_name: display_name.clone(),
                             extra_claims: None,
                         },
                         &client_id,
@@ -524,6 +541,7 @@ mod dpop_challenge {
                         &client_dpop_token,
                         &client_id,
                         handle,
+                        &display_name,
                         test.team.clone().into(),
                         backend_nonce,
                         htu,
@@ -556,15 +574,17 @@ mod dpop_challenge {
         let test = E2eTest::new().start(docker()).await;
 
         let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, _handle, team, expiry)| {
-                Box::pin(async move {
-                    let wrong_handle = Handle::from("other_wire").try_to_qualified("wire.com").unwrap();
-                    let client_dpop_token = test
-                        .create_dpop_token(&dpop_chall, backend_nonce, wrong_handle, team, expiry)
-                        .await?;
-                    Ok((test, client_dpop_token))
-                })
-            }),
+            create_dpop_token: Box::new(
+                |mut test, (dpop_chall, backend_nonce, _handle, team, display_name, expiry)| {
+                    Box::pin(async move {
+                        let wrong_handle = Handle::from("other_wire").try_to_qualified("wire.com").unwrap();
+                        let client_dpop_token = test
+                            .create_dpop_token(&dpop_chall, backend_nonce, wrong_handle, team, display_name, expiry)
+                            .await?;
+                        Ok((test, client_dpop_token))
+                    })
+                },
+            ),
             ..Default::default()
         };
         assert!(matches!(
@@ -587,10 +607,12 @@ mod dpop_challenge {
         let (nonce_w, nonce_r) = (nonce_arc.clone(), nonce_arc.clone());
 
         let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(|mut test, (dpop_chall, nonce, handle, team, expiry)| {
+            create_dpop_token: Box::new(|mut test, (dpop_chall, nonce, handle, team, display_name, expiry)| {
                 Box::pin(async move {
                     *nonce_w.lock().unwrap() = Some(nonce.clone());
-                    let client_dpop_token = test.create_dpop_token(&dpop_chall, nonce, handle, team, expiry).await?;
+                    let client_dpop_token = test
+                        .create_dpop_token(&dpop_chall, nonce, handle, team, display_name, expiry)
+                        .await?;
                     Ok((test, client_dpop_token))
                 })
             }),
@@ -604,6 +626,7 @@ mod dpop_challenge {
                         .unwrap();
                     let acme_nonce: AcmeNonce = dpop_chall.token.as_str().into();
                     let audience = dpop_chall.url.clone();
+                    let display_name = test.display_name.clone();
 
                     // use the MLS keypair instead of the ACME one, should make the validation fail on the acme-server
                     let keypair = test.client_kp.clone();
@@ -614,6 +637,7 @@ mod dpop_challenge {
                             challenge: acme_nonce,
                             handle: handle.clone(),
                             team: test.team.clone().into(),
+                            display_name: display_name.clone(),
                             extra_claims: None,
                         },
                         &test.sub,
@@ -630,6 +654,7 @@ mod dpop_challenge {
                         &client_dpop_token,
                         &client_id,
                         handle,
+                        &display_name,
                         test.team.clone().into(),
                         backend_nonce,
                         htu,
@@ -658,18 +683,60 @@ mod dpop_challenge {
     async fn should_fail_when_invalid_dpop_audience() {
         let test = E2eTest::new().start(docker()).await;
         let flow = EnrollmentFlow {
-            create_dpop_token: Box::new(|mut test, (mut dpop_chall, backend_nonce, handle, team, expiry)| {
+            create_dpop_token: Box::new(
+                |mut test, (mut dpop_chall, backend_nonce, handle, team, display_name, expiry)| {
+                    Box::pin(async move {
+                        // change the url in the DPoP challenge to alter what's in the DPoP token, then restore it at the end
+                        let dpop_challenge_url = dpop_chall.url.clone();
+                        dpop_chall.url = "http://unknown.com".parse().unwrap();
+
+                        let client_dpop_token = test
+                            .create_dpop_token(&dpop_chall, backend_nonce, handle, team, display_name, expiry)
+                            .await?;
+
+                        dpop_chall.url = dpop_challenge_url;
+                        Ok((test, client_dpop_token))
+                    })
+                },
+            ),
+            ..Default::default()
+        };
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
+        ));
+    }
+
+    /// The DPoP token holds the "display name" of the client which is compared by the acme server against the
+    /// display name in the acme identifier as part of the acme order
+    #[tokio::test]
+    async fn acme_should_fail_when_client_dpop_token_has_wrong_display_name() {
+        let test = E2eTest::new().start(docker()).await;
+
+        let real_dn = std::sync::Arc::new(std::sync::Mutex::new(None));
+        let (dn_write, dn_read) = (real_dn.clone(), real_dn.clone());
+
+        let flow = EnrollmentFlow {
+            create_dpop_token: Box::new(
+                |mut test, (dpop_chall, backend_nonce, handle, team, _display_name, expiry)| {
+                    Box::pin(async move {
+                        *dn_write.lock().unwrap() = Some(test.display_name.clone());
+
+                        let wrong_display_name = "Unknown".to_string();
+                        test.display_name = wrong_display_name.clone();
+
+                        let client_dpop_token = test
+                            .create_dpop_token(&dpop_chall, backend_nonce, handle, team, wrong_display_name, expiry)
+                            .await?;
+                        Ok((test, client_dpop_token))
+                    })
+                },
+            ),
+            get_access_token: Box::new(|mut test, (dpop_challenge, dpop_token)| {
                 Box::pin(async move {
-                    // change the url in the DPoP challenge to alter what's in the DPoP token, then restore it at the end
-                    let dpop_challenge_url = dpop_chall.url.clone();
-                    dpop_chall.url = "http://unknown.com".parse().unwrap();
-
-                    let client_dpop_token = test
-                        .create_dpop_token(&dpop_chall, backend_nonce, handle, team, expiry)
-                        .await?;
-
-                    dpop_chall.url = dpop_challenge_url;
-                    Ok((test, client_dpop_token))
+                    let access_token = test.get_access_token(&dpop_challenge, dpop_token).await?;
+                    test.display_name = dn_read.lock().unwrap().clone().unwrap();
+                    Ok((test, access_token))
                 })
             }),
             ..Default::default()

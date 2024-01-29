@@ -61,6 +61,7 @@ fn generate_access_token(dpop: &str, client_id: ClientId, nonce: BackendNonce) -
     let hash_alg: HashAlgorithm = ctx_get("hash-alg").unwrap().parse().unwrap();
     let htu: Htu = ctx_get("wire-server-uri").unwrap().as_str().try_into().unwrap();
     let handle: Handle = ctx_get("handle").unwrap().as_str().into();
+    let display_name = ctx_get("display_name").unwrap();
     let handle = handle.try_to_qualified(&client_id.domain).unwrap();
     let team: Team = ctx_get("team").unwrap().as_str().into();
 
@@ -70,6 +71,7 @@ fn generate_access_token(dpop: &str, client_id: ClientId, nonce: BackendNonce) -
         dpop,
         &client_id,
         handle,
+        &display_name,
         team,
         nonce,
         htu,

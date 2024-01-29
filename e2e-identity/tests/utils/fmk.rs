@@ -60,8 +60,12 @@ impl E2eTest<'static> {
             .try_to_qualified(t.domain.as_str())
             .unwrap();
         let team = t.team.clone().into();
-        let (t, client_dpop_token) =
-            (f.create_dpop_token)(t, (dpop_chall.clone(), backend_nonce, handle, team, expiry)).await?;
+        let display_name = t.display_name.clone().into();
+        let (t, client_dpop_token) = (f.create_dpop_token)(
+            t,
+            (dpop_chall.clone(), backend_nonce, handle, team, display_name, expiry),
+        )
+        .await?;
         let (t, access_token) = (f.get_access_token)(t, (dpop_chall.clone(), client_dpop_token)).await?;
         let (t, previous_nonce) =
             (f.verify_dpop_challenge)(t, (account.clone(), dpop_chall, access_token, previous_nonce)).await?;
@@ -297,6 +301,7 @@ impl<'a> E2eTest<'a> {
         backend_nonce: BackendNonce,
         handle: QualifiedHandle,
         team: Team,
+        display_name: String,
         expiry: core::time::Duration,
     ) -> TestResult<String> {
         self.display_step("create client DPoP token");
@@ -309,6 +314,7 @@ impl<'a> E2eTest<'a> {
             htu,
             handle,
             team,
+            display_name,
             extra_claims: None,
         };
         let client_dpop_token = RustyJwtTools::generate_dpop_token(
@@ -344,6 +350,7 @@ impl<'a> E2eTest<'a> {
         ctx_store("hash-alg", self.hash_alg.to_string());
         ctx_store("wire-server-uri", dpop_url.clone());
         ctx_store("handle", self.handle.as_str());
+        ctx_store("display_name", self.display_name.as_str());
         ctx_store("team", self.team.as_ref().unwrap());
 
         let req = self

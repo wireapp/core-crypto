@@ -249,6 +249,7 @@ impl RustyE2eIdentity {
     pub fn new_dpop_token(
         &self,
         client_id: &str,
+        display_name: &str,
         dpop_challenge: &E2eiAcmeChallenge,
         backend_nonce: String,
         handle: &str,
@@ -265,6 +266,7 @@ impl RustyE2eIdentity {
             challenge: dpop_chall.token.into(),
             handle,
             team: team.into(),
+            display_name: display_name.to_string(),
             extra_claims: None,
         };
         Ok(RustyJwtTools::generate_dpop_token(

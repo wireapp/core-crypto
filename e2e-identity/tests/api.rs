@@ -188,6 +188,7 @@ fn e2e_api() {
             let client_dpop_token = enrollment
                 .new_dpop_token(
                     &qualified_client_id.clone(),
+                    display_name,
                     &dpop_chall,
                     backend_nonce.to_string(),
                     handle.as_str(),
@@ -206,6 +207,7 @@ fn e2e_api() {
                 client_dpop_token.as_str(),
                 &alice,
                 qualified_handle.clone(),
+                display_name,
                 team.into(),
                 backend_nonce,
                 htu,
@@ -249,6 +251,7 @@ fn e2e_api() {
                     access_token: Some(access_token_file),
                     client_id: client_id.to_uri(),
                     handle: qualified_handle.to_string(),
+                    display_name: display_name.to_string(),
                     challenge: dpop_challenge_token.to_string(),
                     leeway,
                     max_expiry,

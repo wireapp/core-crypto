@@ -427,7 +427,17 @@ pub struct EnrollmentFlow {
     pub new_authorization: Flow<(AcmeAccount, AcmeOrder, String), (AcmeAuthz, AcmeAuthz, String)>,
     pub extract_challenges: Flow<(AcmeAuthz, AcmeAuthz), (AcmeChallenge, AcmeChallenge)>,
     pub get_wire_server_nonce: Flow<(), BackendNonce>,
-    pub create_dpop_token: Flow<(AcmeChallenge, BackendNonce, QualifiedHandle, Team, core::time::Duration), String>,
+    pub create_dpop_token: Flow<
+        (
+            AcmeChallenge,
+            BackendNonce,
+            QualifiedHandle,
+            Team,
+            String,
+            core::time::Duration,
+        ),
+        String,
+    >,
     pub get_access_token: Flow<(AcmeChallenge, String), String>,
     pub verify_dpop_challenge: Flow<(AcmeAccount, AcmeChallenge, String, String), String>,
     pub fetch_id_token: Flow<(AcmeChallenge, String), String>,
@@ -484,14 +494,16 @@ impl Default for EnrollmentFlow {
                     Ok((test, backend_nonce))
                 })
             }),
-            create_dpop_token: Box::new(|mut test, (dpop_chall, backend_nonce, handle, team, expiry)| {
-                Box::pin(async move {
-                    let client_dpop_token = test
-                        .create_dpop_token(&dpop_chall, backend_nonce, handle, team, expiry)
-                        .await?;
-                    Ok((test, client_dpop_token))
-                })
-            }),
+            create_dpop_token: Box::new(
+                |mut test, (dpop_chall, backend_nonce, handle, team, display_name, expiry)| {
+                    Box::pin(async move {
+                        let client_dpop_token = test
+                            .create_dpop_token(&dpop_chall, backend_nonce, handle, team, display_name, expiry)
+                            .await?;
+                        Ok((test, client_dpop_token))
+                    })
+                },
+            ),
             get_access_token: Box::new(|mut test, (dpop_chall, client_dpop_token)| {
                 Box::pin(async move {
                     let access_token = test.get_access_token(&dpop_chall, client_dpop_token).await?;
