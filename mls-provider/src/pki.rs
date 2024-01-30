@@ -51,7 +51,7 @@ impl PkiEnvironmentProvider {
 impl openmls_traits::authentication_service::AuthenticationServiceDelegate for PkiEnvironmentProvider {
     async fn validate_credential<'a>(&'a self, credential: CredentialRef<'a>) -> CredentialAuthenticationStatus {
         match credential {
-            // ? Do we assume that Basic credentials are always valid?
+            // We assume that Basic credentials are always valid
             CredentialRef::Basic { identity: _ } => CredentialAuthenticationStatus::Valid,
 
             CredentialRef::X509 { certificates } => {
@@ -61,7 +61,9 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for P
                     return CredentialAuthenticationStatus::Unknown;
                 };
                 let Some(pki_env) = &*pki_env_lock else {
-                    return CredentialAuthenticationStatus::Unknown;
+                    // This implies that we have a Basic client without a PKI environment setup. Hence they cannot validate X509 credentials they see.
+                    // So we consider it as always valid as we have no way to assert the validity
+                    return CredentialAuthenticationStatus::Valid;
                 };
 
                 use x509_cert::der::Decode as _;
@@ -75,6 +77,7 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for P
                             reexports::certval::{Error as CertvalError, PathValidationStatus},
                             RustyX509CheckError,
                         };
+
                         if let RustyX509CheckError::CertValError(CertvalError::PathValidation(
                             certificate_validation_error,
                         )) = validation_error
