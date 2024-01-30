@@ -26,13 +26,14 @@ use core_crypto_keystore::{
     CryptoKeystoreMls,
 };
 
-use crate::mls::credential::crl::extract_dp;
 use crate::{
+    e2e_identity::conversation_state::compute_state,
     group_store::GroupStoreValue,
+    mls::credential::crl::extract_dp,
     prelude::{
         decrypt::MlsBufferedConversationDecryptMessage, id::ClientId, ConversationId, CoreCryptoCallbacks, CryptoError,
-        CryptoResult, MlsCentral, MlsCiphersuite, MlsConversation, MlsConversationConfiguration, MlsCredentialType,
-        MlsCustomConfiguration, MlsError, MlsGroupInfoBundle,
+        CryptoResult, E2eiConversationState, MlsCentral, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
+        MlsCredentialType, MlsCustomConfiguration, MlsError, MlsGroupInfoBundle,
     },
 };
 
