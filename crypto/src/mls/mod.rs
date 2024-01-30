@@ -188,7 +188,9 @@ impl MlsCentral {
 
         // Restore persisted groups if there are any
         let mls_groups = Self::restore_groups(&mls_backend).await?;
-        let e2ei_pki_env = Some(Self::restore_pki_env(&mls_backend).await?);
+        mls_backend
+            .authentication_service()
+            .update_env(Self::restore_pki_env(&mls_backend).await?)?;
 
         Ok(Self {
             mls_backend,
@@ -223,7 +225,9 @@ impl MlsCentral {
             None
         };
         let mls_groups = Self::restore_groups(&mls_backend).await?;
-        let e2ei_pki_env = Some(Self::restore_pki_env(&mls_backend).await?);
+        mls_backend
+            .authentication_service()
+            .update_env(Self::restore_pki_env(&mls_backend).await?)?;
 
         Ok(Self {
             mls_backend,

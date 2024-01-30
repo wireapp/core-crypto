@@ -38,6 +38,7 @@ impl MlsConversation {
         let (proposal, proposal_ref) = self
             .group
             .propose_add_member(backend, signer, key_package)
+            .await
             .map_err(MlsError::from)?;
         let proposal = MlsProposalBundle {
             proposal,

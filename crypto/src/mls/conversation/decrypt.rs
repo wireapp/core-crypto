@@ -18,7 +18,6 @@ use openmls::{
 };
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize;
-use wire_e2e_identity::prelude::x509::revocation::PkiEnvironment;
 
 use core_crypto_keystore::entities::MlsPendingMessage;
 use mls_crypto_provider::MlsCryptoProvider;
@@ -167,7 +166,7 @@ impl MlsConversation {
                 self.validate_external_commit(&staged_commit, sender_client_id, parent_conv, backend, callbacks)
                     .await?;
 
-                self.validate_commit(&staged_commit, pki_env)?;
+                self.validate_commit(&staged_commit, backend)?;
 
                 #[allow(clippy::needless_collect)] // false positive
                 let pending_proposals = self.self_pending_proposals().cloned().collect::<Vec<_>>();
@@ -318,8 +317,8 @@ impl MlsConversation {
         Ok(processed_msg)
     }
 
-    fn validate_commit(&self, commit: &StagedCommit, pki_env: Option<&PkiEnvironment>) -> CryptoResult<()> {
-        if let Some(pki_env) = pki_env {
+    fn validate_commit(&self, commit: &StagedCommit, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+        if backend.authentication_service().is_env_setup() {
             let credentials: Vec<_> = commit
                 .add_proposals()
                 .filter_map(|add_proposal| {
@@ -328,11 +327,7 @@ impl MlsConversation {
                     matches!(credential.credential_type(), CredentialType::X509).then(|| credential.clone())
                 })
                 .collect();
-            let state = compute_state(
-                credentials.iter(),
-                Some(pki_env),
-                crate::prelude::MlsCredentialType::X509,
-            );
+            let state = compute_state(credentials.iter(), backend, crate::prelude::MlsCredentialType::X509);
             if state != E2eiConversationState::Verified {
                 // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and impact of the validations
                 // return Err(CryptoError::InvalidCertificateChain);
