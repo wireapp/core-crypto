@@ -7,11 +7,21 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.36] - 2024-01-30
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.36" unreleased=true}}
+</details>
+
+* E2EI:
+    * Fix: intermediates certificates registration was not working because extracting the key was not working
+
 ## [1.0.0-rc.35] - 2024-01-29
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.35" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.35"}}
 </details>
 
 * E2EI:
