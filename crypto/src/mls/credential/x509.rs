@@ -54,24 +54,38 @@ impl CertificateBundle {
 }
 
 #[cfg(test)]
+impl From<crate::test_utils::x509::X509Certificate> for CertificateBundle {
+    fn from(cert: crate::test_utils::x509::X509Certificate) -> Self {
+        use x509_cert::der::Encode as _;
+
+        Self {
+            certificate_chain: vec![cert.certificate.to_der().unwrap()],
+            private_key: CertificatePrivateKey {
+                value: cert.pki_keypair.signing_key_bytes(),
+                signature_scheme: cert.signature_scheme,
+            },
+        }
+    }
+}
+
+#[cfg(test)]
 impl CertificateBundle {
     /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
-    pub fn rand(name: &ClientId, sc: SignatureScheme) -> Self {
+    pub fn rand(name: &ClientId, signer: &crate::test_utils::x509::X509Certificate) -> Self {
         // here in our tests client_id is generally just "alice" or "bob"
         // so we will use it to augment handle & display_name
         // and not a real client_id, instead we'll generate a random one
         let handle = format!("{name}_wire");
         let display_name = format!("{name} Smith");
-        Self::new(sc, &handle, &display_name, None, None)
+        Self::new(&handle, &display_name, None, signer)
     }
 
     /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
     pub fn new(
-        sc: SignatureScheme,
         handle: &str,
         display_name: &str,
         client_id: Option<&crate::e2e_identity::id::QualifiedE2eiClientId>,
-        cert_kp: Option<Vec<u8>>,
+        signer: &crate::test_utils::x509::X509Certificate,
     ) -> Self {
         // here in our tests client_id is generally just "alice" or "bob"
         // so we will use it to augment handle & display_name
@@ -84,36 +98,37 @@ impl CertificateBundle {
             })
             .unwrap_or_else(|| WireIdentityBuilder::new_rand_client(Some(domain.to_string())));
 
-        let builder = WireIdentityBuilder {
-            handle: handle.to_string(),
-            display_name: display_name.to_string(),
-            client_id,
-            domain,
-            options: Some(WireIdentityBuilderOptions::X509(WireIdentityBuilderX509 {
-                cert_kp,
-                ..Default::default()
-            })),
+        let cert = signer.create_and_sign_end_identity(crate::test_utils::x509::CertificateParams {
+            org: "Wire".to_string(),
+            domain: domain.into(),
+            common_name: Some(display_name.to_string()),
+            handle: Some(handle.to_string()),
+            client_id: Some(client_id.to_string()),
             ..Default::default()
-        };
-        Self::new_from_builder(builder, sc)
+        });
+
+        cert.into()
     }
 
-    pub fn new_from_builder(builder: WireIdentityBuilder, sc: SignatureScheme) -> Self {
-        let (certificate_chain, sign_key) = builder.build_x509_der();
-        Self {
-            certificate_chain,
-            private_key: CertificatePrivateKey {
-                value: sign_key,
-                signature_scheme: sc,
-            },
-        }
-    }
+    // pub fn new_from_builder(builder: WireIdentityBuilder, sc: SignatureScheme) -> Self {
+    //     let (certificate_chain, sign_key) = builder.build_x509_der();
+    //     Self {
+    //         certificate_chain,
+    //         private_key: CertificatePrivateKey {
+    //             value: sign_key,
+    //             signature_scheme: sc,
+    //         },
+    //     }
+    // }
 
-    pub fn rand_identifier(name: &str, signature_schemes: &[SignatureScheme]) -> crate::prelude::ClientIdentifier {
+    pub fn rand_identifier(
+        name: &str,
+        signers: &[crate::test_utils::x509::X509Certificate],
+    ) -> crate::prelude::ClientIdentifier {
         crate::prelude::ClientIdentifier::X509(
-            signature_schemes
+            signers
                 .iter()
-                .map(|sc| (*sc, Self::rand(&name.into(), *sc)))
+                .map(|signer| (signer.signature_scheme, Self::rand(&name.into(), signer)))
                 .collect::<std::collections::HashMap<_, _>>(),
         )
     }
