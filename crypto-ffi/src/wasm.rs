@@ -2487,7 +2487,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                let mut this = this.write().await;
+                let this = this.read().await;
                 this.e2ei_register_acme_ca(trust_anchor_pem).await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
@@ -2500,7 +2500,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                let mut this = this.write().await;
+                let this = this.read().await;
                 let crls = this.e2ei_register_intermediate_ca_pem(cert_pem).await?;
 
                 let crls = if let Some(crls) = crls {
@@ -2519,7 +2519,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                let mut this = this.write().await;
+                let this = this.read().await;
                 let cc_registration = this.e2ei_register_crl(crl_dp, crl_der.to_vec()).await?;
                 let registration: CrlRegistration = cc_registration.into();
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&registration)?)

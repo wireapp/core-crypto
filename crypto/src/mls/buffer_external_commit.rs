@@ -45,48 +45,65 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
+                        .mls_central
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
                     // Bob tries to join Alice's group with an external commit
-                    let gi = alice_central.get_group_info(&id).await;
+                    let gi = alice_central.mls_central.get_group_info(&id).await;
                     let external_commit = bob_central
+                        .mls_central
                         .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
 
                     // Alice decrypts the external commit...
                     alice_central
+                        .mls_central
                         .decrypt_message(&id, external_commit.commit.to_bytes().unwrap())
                         .await
                         .unwrap();
 
                     // Meanwhile Debbie joins the party by creating an external proposal
-                    let epoch = alice_central.conversation_epoch(&id).await.unwrap();
+                    let epoch = alice_central.mls_central.conversation_epoch(&id).await.unwrap();
                     let external_proposal = debbie_central
+                        .mls_central
                         .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
                         .await
                         .unwrap();
 
                     // ...then Alice generates new messages for this epoch
-                    let app_msg = alice_central.encrypt_message(&id, b"Hello Bob !").await.unwrap();
-                    let proposal = alice_central.new_update_proposal(&id).await.unwrap().proposal;
+                    let app_msg = alice_central
+                        .mls_central
+                        .encrypt_message(&id, b"Hello Bob !")
+                        .await
+                        .unwrap();
+                    let proposal = alice_central
+                        .mls_central
+                        .new_update_proposal(&id)
+                        .await
+                        .unwrap()
+                        .proposal;
                     alice_central
+                        .mls_central
                         .decrypt_message(&id, external_proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    let charlie = charlie_central.rand_key_package(&case).await;
+                    let charlie = charlie_central.mls_central.rand_key_package(&case).await;
                     let commit = alice_central
+                        .mls_central
                         .add_members_to_conversation(&id, vec![charlie])
                         .await
                         .unwrap();
-                    alice_central.commit_accepted(&id).await.unwrap();
+                    alice_central.mls_central.commit_accepted(&id).await.unwrap();
                     charlie_central
+                        .mls_central
                         .process_welcome_message(commit.welcome.clone().into(), case.custom_cfg())
                         .await
                         .unwrap();
                     debbie_central
+                        .mls_central
                         .process_welcome_message(commit.welcome.clone().into(), case.custom_cfg())
                         .await
                         .unwrap();
@@ -98,18 +115,21 @@ pub mod tests {
                         .into_iter()
                         .map(|m| m.to_bytes().unwrap());
                     for m in messages {
-                        let decrypt = bob_central.decrypt_message(&id, m).await;
+                        let decrypt = bob_central.mls_central.decrypt_message(&id, m).await;
                         assert!(matches!(decrypt.unwrap_err(), CryptoError::UnmergedPendingGroup));
                     }
-                    let decrypt = bob_central.decrypt_message(&id, app_msg).await;
+                    let decrypt = bob_central.mls_central.decrypt_message(&id, app_msg).await;
                     assert!(matches!(decrypt.unwrap_err(), CryptoError::UnmergedPendingGroup));
 
                     // Bob should have buffered the messages
-                    assert_eq!(bob_central.count_entities().await.pending_messages, 4);
+                    assert_eq!(bob_central.mls_central.count_entities().await.pending_messages, 4);
 
                     // Finally, Bob receives the green light from the DS and he can merge the external commit
-                    let Some(restored_messages) =
-                        bob_central.merge_pending_group_from_external_commit(&id).await.unwrap()
+                    let Some(restored_messages) = bob_central
+                        .mls_central
+                        .merge_pending_group_from_external_commit(&id)
+                        .await
+                        .unwrap()
                     else {
                         panic!("Alice's messages should have been restored at this point");
                     };
@@ -134,14 +154,26 @@ pub mod tests {
                         }
                     }
                     // because external commit got merged
-                    assert!(bob_central.try_talk_to(&id, &mut alice_central).await.is_ok());
+                    assert!(bob_central
+                        .mls_central
+                        .try_talk_to(&id, &mut alice_central.mls_central)
+                        .await
+                        .is_ok());
                     // because Alice's commit got merged
-                    assert!(bob_central.try_talk_to(&id, &mut charlie_central).await.is_ok());
+                    assert!(bob_central
+                        .mls_central
+                        .try_talk_to(&id, &mut charlie_central.mls_central)
+                        .await
+                        .is_ok());
                     // because Debbie's external proposal got merged through the commit
-                    assert!(bob_central.try_talk_to(&id, &mut debbie_central).await.is_ok());
+                    assert!(bob_central
+                        .mls_central
+                        .try_talk_to(&id, &mut debbie_central.mls_central)
+                        .await
+                        .is_ok());
 
                     // After merging we should erase all those pending messages
-                    assert_eq!(bob_central.count_entities().await.pending_messages, 0);
+                    assert_eq!(bob_central.mls_central.count_entities().await.pending_messages, 0);
                 })
             },
         )
@@ -158,41 +190,49 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
+                        .mls_central
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+                    alice_central
+                        .mls_central
+                        .invite_all(&case, &id, [&mut bob_central.mls_central])
+                        .await
+                        .unwrap();
 
                     // Alice will never see this commit
-                    bob_central.update_keying_material(&id).await.unwrap();
-                    bob_central.commit_accepted(&id).await.unwrap();
+                    bob_central.mls_central.update_keying_material(&id).await.unwrap();
+                    bob_central.mls_central.commit_accepted(&id).await.unwrap();
 
-                    let msg1 = bob_central.encrypt_message(&id, "A").await.unwrap();
-                    let msg2 = bob_central.encrypt_message(&id, "B").await.unwrap();
+                    let msg1 = bob_central.mls_central.encrypt_message(&id, "A").await.unwrap();
+                    let msg2 = bob_central.mls_central.encrypt_message(&id, "B").await.unwrap();
 
                     // Since Alice missed Bob's commit she should buffer this message
-                    let decrypt = alice_central.decrypt_message(&id, msg1).await;
+                    let decrypt = alice_central.mls_central.decrypt_message(&id, msg1).await;
                     assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
-                    let decrypt = alice_central.decrypt_message(&id, msg2).await;
+                    let decrypt = alice_central.mls_central.decrypt_message(&id, msg2).await;
                     assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
-                    assert_eq!(alice_central.count_entities().await.pending_messages, 2);
+                    assert_eq!(alice_central.mls_central.count_entities().await.pending_messages, 2);
 
-                    let gi = bob_central.get_group_info(&id).await;
+                    let gi = bob_central.mls_central.get_group_info(&id).await;
                     let ext_commit = alice_central
+                        .mls_central
                         .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
                     alice_central
+                        .mls_central
                         .merge_pending_group_from_external_commit(&id)
                         .await
                         .unwrap();
 
                     bob_central
+                        .mls_central
                         .decrypt_message(&id, ext_commit.commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     // Alice should have deleted all her buffered messages
-                    assert_eq!(alice_central.count_entities().await.pending_messages, 0);
+                    assert_eq!(alice_central.mls_central.count_entities().await.pending_messages, 0);
                 })
             },
         )

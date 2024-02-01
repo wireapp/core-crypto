@@ -126,15 +126,36 @@ pub mod tests {
         pub async fn should_find_most_recent(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
-                    let old = central.new_credential_bundle(&case).await;
+                    let old = central
+                        .mls_central
+                        .new_credential_bundle(
+                            &case,
+                            central
+                                .x509_test_chain
+                                .as_ref()
+                                .as_ref()
+                                .map(|chain| chain.find_local_intermediate_ca()),
+                        )
+                        .await;
 
                     // wait to make sure we're not in the same second
                     async_std::task::sleep(core::time::Duration::from_secs(1)).await;
 
-                    let new = central.new_credential_bundle(&case).await;
+                    let new = central
+                        .mls_central
+                        .new_credential_bundle(
+                            &case,
+                            central
+                                .x509_test_chain
+                                .as_ref()
+                                .as_ref()
+                                .map(|chain| chain.find_local_intermediate_ca()),
+                        )
+                        .await;
                     assert_ne!(old, new);
 
                     let found = central
+                        .mls_central
                         .mls_client
                         .as_ref()
                         .unwrap()
@@ -157,14 +178,24 @@ pub mod tests {
                     let r = rand::thread_rng().gen_range(0..N);
                     let mut to_search = None;
                     for i in 0..N {
-                        let cb = central.new_credential_bundle(&case).await;
+                        let cb = central
+                            .mls_central
+                            .new_credential_bundle(
+                                &case,
+                                central
+                                    .x509_test_chain
+                                    .as_ref()
+                                    .as_ref()
+                                    .map(|chain| chain.find_local_intermediate_ca()),
+                            )
+                            .await;
                         if i == r {
                             to_search = Some(cb.clone());
                         }
                     }
                     let to_search = to_search.unwrap();
                     let pk = SignaturePublicKey::from(to_search.signature_key.public());
-                    let client = central.mls_client.as_ref().unwrap();
+                    let client = central.mls_central.mls_client.as_ref().unwrap();
                     let found = client
                         .identities
                         .find_credential_bundle_by_public_key(case.signature_scheme(), case.credential_type, &pk)
@@ -184,12 +215,36 @@ pub mod tests {
         pub async fn should_add_credential(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
-                    let prev_count = central.mls_client.as_ref().unwrap().identities.iter().count();
+                    let prev_count = central
+                        .mls_central
+                        .mls_client
+                        .as_ref()
+                        .unwrap()
+                        .identities
+                        .iter()
+                        .count();
 
                     // this calls 'push_credential_bundle' under the hood
-                    central.new_credential_bundle(&case).await;
+                    central
+                        .mls_central
+                        .new_credential_bundle(
+                            &case,
+                            central
+                                .x509_test_chain
+                                .as_ref()
+                                .as_ref()
+                                .map(|chain| chain.find_local_intermediate_ca()),
+                        )
+                        .await;
 
-                    let next_count = central.mls_client.as_ref().unwrap().identities.iter().count();
+                    let next_count = central
+                        .mls_central
+                        .mls_client
+                        .as_ref()
+                        .unwrap()
+                        .identities
+                        .iter()
+                        .count();
                     assert_eq!(next_count, prev_count + 1);
                 })
             })
@@ -201,8 +256,18 @@ pub mod tests {
         pub async fn pushing_duplicates_should_fail(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
-                    let cb = central.new_credential_bundle(&case).await;
-                    let client = central.mls_client.as_mut().unwrap();
+                    let cb = central
+                        .mls_central
+                        .new_credential_bundle(
+                            &case,
+                            central
+                                .x509_test_chain
+                                .as_ref()
+                                .as_ref()
+                                .map(|chain| chain.find_local_intermediate_ca()),
+                        )
+                        .await;
+                    let client = central.mls_central.mls_client.as_mut().unwrap();
                     let push = client.identities.push_credential_bundle(case.signature_scheme(), cb);
                     assert!(matches!(
                         push.unwrap_err(),

@@ -28,9 +28,9 @@ use core_crypto_keystore::entities::{
 };
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::e2e_identity::device_status::DeviceStatus;
 use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
 use crate::prelude::WireIdentity;
+use crate::{e2e_identity::device_status::DeviceStatus, test_utils::x509::X509Certificate};
 use crate::{
     mls::credential::{ext::CredentialExt, CredentialBundle},
     prelude::{
@@ -42,7 +42,7 @@ use crate::{
 };
 
 #[allow(clippy::redundant_static_lifetimes)]
-pub const TEAM: &'static str = "wire";
+pub const TEAM: &'static str = "world";
 
 impl MlsCentral {
     pub async fn get_one_key_package(&self, case: &TestCase) -> KeyPackage {
@@ -328,7 +328,11 @@ impl MlsCentral {
         WireQualifiedClientId::from(self.get_client_id()).get_user_id()
     }
 
-    pub async fn new_credential_bundle(&mut self, case: &TestCase) -> CredentialBundle {
+    pub async fn new_credential_bundle(
+        &mut self,
+        case: &TestCase,
+        signer: Option<&X509Certificate>,
+    ) -> CredentialBundle {
         let client = self.mls_client.as_mut().unwrap();
 
         match case.credential_type {
@@ -341,7 +345,7 @@ impl MlsCentral {
                     .unwrap()
             }
             MlsCredentialType::X509 => {
-                let cert_bundle = CertificateBundle::rand(client.id(), case.cfg.ciphersuite.signature_algorithm());
+                let cert_bundle = CertificateBundle::rand(client.id(), signer.unwrap());
                 client
                     .save_new_x509_credential_bundle(&self.mls_backend, case.signature_scheme(), cert_bundle)
                     .await
@@ -436,11 +440,18 @@ impl MlsCentral {
         case: &TestCase,
         handle: &str,
         display_name: &str,
-        cert_kp: Option<Vec<u8>>,
+        existing_cert: &X509Certificate,
+        signer: &X509Certificate,
     ) -> CredentialBundle {
         let cid = QualifiedE2eiClientId::try_from(self.get_client_id().as_slice()).unwrap();
         let client = self.mls_client.as_mut().unwrap();
-        let new_cert = CertificateBundle::new(case.signature_scheme(), handle, display_name, Some(&cid), cert_kp);
+        let new_cert = CertificateBundle::new(
+            handle,
+            display_name,
+            Some(&cid),
+            Some(existing_cert.pki_keypair.clone()),
+            signer,
+        );
         client
             .save_new_x509_credential_bundle(&self.mls_backend, case.signature_scheme(), new_cert)
             .await
@@ -460,7 +471,7 @@ impl MlsCentral {
         new_handle: &str,
         new_display_name: &str,
     ) {
-        let new_handle = format!("wireapp://%40{new_handle}@wire.com");
+        let new_handle = format!("wireapp://%40{new_handle}@world.com");
         // verify the identity in..
         // the MLS group
         let cid = self.get_client_id();

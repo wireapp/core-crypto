@@ -44,6 +44,29 @@ impl PkiEnvironmentProvider {
             .replace(env);
         Ok(())
     }
+
+    #[allow(dead_code)]
+    fn dump_certs(&self) {
+        use x509_cert::der::EncodePem as _;
+        let pki_env_lock = self.0.read().expect("Pki env can't be locked");
+        let pki_env = pki_env_lock.as_ref().expect("No pki env");
+        for (i, ta) in pki_env.get_trust_anchors().unwrap().iter().enumerate() {
+            let x509_cert::anchor::TrustAnchorChoice::Certificate(ta_cert) = &ta.decoded_ta else {
+                unreachable!("Kaboom");
+            };
+            println!(
+                "Trust Anchor #{i}: \n{}",
+                ta_cert.to_pem(x509_cert::der::pem::LineEnding::LF).unwrap()
+            )
+        }
+
+        for (i, cert) in pki_env.get_intermediates().unwrap().iter().enumerate() {
+            println!(
+                "Intermediate #{i}: \n{}",
+                cert.decoded_cert.to_pem(x509_cert::der::pem::LineEnding::LF).unwrap()
+            )
+        }
+    }
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -67,40 +90,48 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for P
                 };
 
                 use x509_cert::der::Decode as _;
-                for cert_raw in certificates {
-                    let Ok(cert) = x509_cert::Certificate::from_der(cert_raw) else {
-                        return CredentialAuthenticationStatus::Invalid;
+                let Some(cert) = certificates
+                    .first()
+                    .and_then(|cert_raw| x509_cert::Certificate::from_der(cert_raw).ok())
+                else {
+                    return CredentialAuthenticationStatus::Invalid;
+                };
+
+                // self.dump_certs();
+                // use x509_cert::der::EncodePem as _;
+                // println!(
+                //     "Cert to validate => \n{}",
+                //     cert.to_pem(x509_cert::der::pem::LineEnding::LF).unwrap()
+                // );
+
+                if let Err(validation_error) = pki_env.validate_cert_and_revocation(&cert) {
+                    use wire_e2e_identity::prelude::x509::{
+                        reexports::certval::{Error as CertvalError, PathValidationStatus},
+                        RustyX509CheckError,
                     };
 
-                    if let Err(validation_error) = pki_env.validate_cert_and_revocation(&cert) {
-                        use wire_e2e_identity::prelude::x509::{
-                            reexports::certval::{Error as CertvalError, PathValidationStatus},
-                            RustyX509CheckError,
-                        };
+                    // dbg!(&validation_error);
 
-                        if let RustyX509CheckError::CertValError(CertvalError::PathValidation(
-                            certificate_validation_error,
-                        )) = validation_error
-                        {
-                            match certificate_validation_error {
-                                PathValidationStatus::Valid
-                                | PathValidationStatus::RevocationStatusNotAvailable
-                                | PathValidationStatus::RevocationStatusNotDetermined => {
-                                    continue;
-                                }
-                                PathValidationStatus::CertificateRevoked
-                                | PathValidationStatus::CertificateRevokedEndEntity
-                                | PathValidationStatus::CertificateRevokedIntermediateCa => {
-                                    return CredentialAuthenticationStatus::Revoked;
-                                }
-                                PathValidationStatus::InvalidNotAfterDate => {
-                                    return CredentialAuthenticationStatus::Expired;
-                                }
-                                _ => return CredentialAuthenticationStatus::Invalid,
+                    if let RustyX509CheckError::CertValError(CertvalError::PathValidation(
+                        certificate_validation_error,
+                    )) = validation_error
+                    {
+                        match certificate_validation_error {
+                            PathValidationStatus::Valid
+                            | PathValidationStatus::RevocationStatusNotAvailable
+                            | PathValidationStatus::RevocationStatusNotDetermined => {}
+                            PathValidationStatus::CertificateRevoked
+                            | PathValidationStatus::CertificateRevokedEndEntity
+                            | PathValidationStatus::CertificateRevokedIntermediateCa => {
+                                return CredentialAuthenticationStatus::Revoked;
                             }
-                        } else {
-                            return CredentialAuthenticationStatus::Unknown;
+                            PathValidationStatus::InvalidNotAfterDate => {
+                                return CredentialAuthenticationStatus::Expired;
+                            }
+                            _ => return CredentialAuthenticationStatus::Invalid,
                         }
+                    } else {
+                        return CredentialAuthenticationStatus::Unknown;
                     }
                 }
 
@@ -171,7 +202,10 @@ pub struct CertificateGenerationArgs<'a> {
     pub signature_scheme: SignatureScheme,
     pub profile: CertProfile,
     pub serial: u32,
-    pub validity_from_now: std::time::Duration,
+    /// Duration since UNIX EPOCH
+    pub validity_start: Option<std::time::Duration>,
+    /// Duration relative to `validity_start` if present. Otherwise relative to now
+    pub validity_from_start: std::time::Duration,
     pub org: &'a str,
     pub common_name: Option<&'a str>,
     pub alternative_names: Option<&'a [&'a str]>,
@@ -206,6 +240,8 @@ macro_rules! impl_certgen {
         $subject:expr, $org:expr, $domain:expr, $validity:expr, $alt_names:expr,
         $crl_dps:expr, $is_ca:expr, $is_root:expr
     ) => {{
+        let add_akid = $is_ca && $profile == x509_cert::builder::Profile::Root;
+
         let mut builder = x509_cert::builder::CertificateBuilder::new(
             $profile,
             $serial,
@@ -225,6 +261,12 @@ macro_rules! impl_certgen {
         //         .add_extension(&get_ca_keyusage())
         //         .map_err(|_| MlsProviderError::CertificateGenerationError)?;
         // }
+
+        if add_akid {
+            builder
+                .add_extension(&$signer.akid()?)
+                .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+        }
 
         builder
             .add_extension(&get_extended_keyusage($is_ca))
@@ -247,11 +289,18 @@ macro_rules! impl_certgen {
                     .map_err(|_| MlsProviderError::CertificateGenerationError)?;
             }
         } else {
-            let mut permitted_subtrees = vec![x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
-                format!(".{}", $org)
-                    .try_into()
-                    .map_err(|_| MlsProviderError::CertificateGenerationError)?,
-            )];
+            let mut permitted_subtrees = vec![
+                x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
+                    format!(".{}", $org)
+                        .try_into()
+                        .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                ),
+                x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
+                    format!("{}", $org)
+                        .try_into()
+                        .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+                ),
+            ];
 
             if let Some(domain) = $domain {
                 // Add Domain DNS SAN
@@ -332,7 +381,7 @@ impl PkiKeypair {
                     .map_err(|_| MlsProviderError::CertificateGenerationError)?,
             )),
             SignatureScheme::ED25519 => Ok(PkiKeypair::Ed25519(Ed25519PkiKeypair(
-                ed25519_dalek::SigningKey::try_from(sk.as_slice())
+                crate::RustCrypto::normalize_ed25519_key(sk.as_slice())
                     .map_err(|_| MlsProviderError::CertificateGenerationError)?,
             ))),
             _ => Err(MlsProviderError::UnsupportedSignatureScheme),
@@ -424,6 +473,7 @@ impl PkiKeypair {
         &self,
         signer_cert: &x509_cert::Certificate,
         target: &x509_cert::Certificate,
+        validity: Option<std::time::Duration>,
     ) -> MlsProviderResult<x509_cert::Certificate> {
         let mut target = target.clone();
         target.tbs_certificate.issuer = signer_cert.tbs_certificate.subject.clone();
@@ -431,15 +481,30 @@ impl PkiKeypair {
         let akid = self.akid()?;
         use x509_cert::ext::AsExtension as _;
         // Insert AKID
+        let akid_ext = akid
+            .to_extension(&target.tbs_certificate.subject, &[])
+            .map_err(|_| MlsProviderError::CertificateGenerationError)?;
         if let Some(exts) = &mut target.tbs_certificate.extensions {
-            exts.push(
-                akid.to_extension(&target.tbs_certificate.subject, &[])
-                    .map_err(|_| MlsProviderError::CertificateGenerationError)?,
-            );
+            use x509_cert::der::oid::AssociatedOid as _;
+
+            if let Some(akid_ext_index) = exts
+                .iter_mut()
+                .enumerate()
+                .find_map(|(i, ext)| (ext.extn_id == x509_cert::ext::pkix::AuthorityKeyIdentifier::OID).then_some(i))
+            {
+                exts.remove(akid_ext_index);
+                exts.insert(akid_ext_index, akid_ext);
+            } else {
+                exts.push(akid_ext);
+            }
         } else {
-            target.tbs_certificate.extensions = Some(vec![akid
-                .to_extension(&target.tbs_certificate.subject, &[])
-                .map_err(|_| MlsProviderError::CertificateGenerationError)?]);
+            target.tbs_certificate.extensions = Some(vec![akid_ext]);
+        }
+
+        // Refresh validity if provided
+        if let Some(validity) = validity {
+            target.tbs_certificate.validity = x509_cert::time::Validity::from_now(validity)
+                .map_err(|_| MlsProviderError::CertificateGenerationError)?;
         }
 
         // Update Serial
@@ -482,8 +547,26 @@ impl PkiKeypair {
 
         let subject =
             x509_cert::name::Name::from_str(&subject_fmt).map_err(|_| MlsProviderError::CertificateGenerationError)?;
-        let validity = x509_cert::time::Validity::from_now(args.validity_from_now)
-            .map_err(|_| MlsProviderError::CertificateGenerationError)?;
+
+        let validity_start = if let Some(validity_start) = args.validity_start {
+            validity_start
+        } else {
+            fluvio_wasm_timer::SystemTime::now()
+                .duration_since(fluvio_wasm_timer::UNIX_EPOCH)
+                .map_err(|_| MlsProviderError::CertificateGenerationError)?
+        } - std::time::Duration::from_secs(1); // to prevent time clipping
+
+        let validity = {
+            let not_before = x509_cert::der::asn1::GeneralizedTime::from_unix_duration(validity_start)
+                .map_err(|_| MlsProviderError::CertificateGenerationError)?
+                .into();
+            let not_after =
+                x509_cert::der::asn1::GeneralizedTime::from_unix_duration(validity_start + args.validity_from_start)
+                    .map_err(|_| MlsProviderError::CertificateGenerationError)?
+                    .into();
+            x509_cert::time::Validity { not_before, not_after }
+        };
+
         let serial_number = x509_cert::serial_number::SerialNumber::from(args.serial);
         let spki = self.spki()?;
 
@@ -547,5 +630,22 @@ impl PkiKeypair {
         };
 
         Ok(cert)
+    }
+
+    pub fn rand_unchecked(alg: SignatureScheme) -> Self {
+        let provider = crate::RustCrypto::default();
+        use openmls_traits::crypto::OpenMlsCrypto;
+        Self::new(alg, provider.signature_key_gen(alg).unwrap().0).unwrap()
+    }
+
+    pub fn rand(alg: SignatureScheme, crypto: &crate::RustCrypto) -> crate::MlsProviderResult<Self> {
+        use openmls_traits::crypto::OpenMlsCrypto as _;
+        Self::new(
+            alg,
+            crypto
+                .signature_key_gen(alg)
+                .map_err(|_| crate::MlsProviderError::UnsufficientEntropy)?
+                .0,
+        )
     }
 }

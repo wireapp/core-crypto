@@ -39,6 +39,24 @@ impl RustCrypto {
             rng: rand_chacha::ChaCha20Rng::from_seed(seed.0).into(),
         }
     }
+
+    pub fn normalize_ed25519_key(key: &[u8]) -> Result<ed25519_dalek::SigningKey, CryptoError> {
+        let k = match key.len() {
+            // Compat layer for legacy keypairs [seed, pk]
+            ed25519_dalek::KEYPAIR_LENGTH => {
+                let mut sk = zeroize::Zeroizing::new([0u8; ed25519_dalek::KEYPAIR_LENGTH]);
+                sk.copy_from_slice(key);
+                ed25519_dalek::SigningKey::from_keypair_bytes(&sk).map_err(|_| CryptoError::CryptoLibraryError)?
+            }
+            ed25519_dalek::SECRET_KEY_LENGTH => {
+                let mut sk = zeroize::Zeroizing::new([0u8; ed25519_dalek::SECRET_KEY_LENGTH]);
+                sk.copy_from_slice(key);
+                ed25519_dalek::SigningKey::from_bytes(&sk)
+            }
+            _ => return Err(CryptoError::CryptoLibraryError),
+        };
+        Ok(k)
+    }
 }
 
 impl OpenMlsCrypto for RustCrypto {
@@ -258,21 +276,7 @@ impl OpenMlsCrypto for RustCrypto {
                 Ok(signature.to_bytes().into())
             }
             SignatureScheme::ED25519 => {
-                let k = match key.len() {
-                    // Compat layer for legacy keypairs [seed, pk]
-                    ed25519_dalek::KEYPAIR_LENGTH => {
-                        let mut sk = zeroize::Zeroizing::new([0u8; ed25519_dalek::KEYPAIR_LENGTH]);
-                        sk.copy_from_slice(key);
-                        ed25519_dalek::SigningKey::from_keypair_bytes(&sk)
-                            .map_err(|_| CryptoError::CryptoLibraryError)?
-                    }
-                    ed25519_dalek::SECRET_KEY_LENGTH => {
-                        let mut sk = zeroize::Zeroizing::new([0u8; ed25519_dalek::SECRET_KEY_LENGTH]);
-                        sk.copy_from_slice(key);
-                        ed25519_dalek::SigningKey::from_bytes(&sk)
-                    }
-                    _ => return Err(CryptoError::CryptoLibraryError),
-                };
+                let k = Self::normalize_ed25519_key(key)?;
                 let signature = k.try_sign(data).map_err(|_| CryptoError::CryptoLibraryError)?;
                 Ok(signature.to_bytes().into())
             }

@@ -61,30 +61,50 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+                        alice_central
+                            .mls_central
+                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .await
+                            .unwrap();
 
                         // an commit to verify that we can still detect wrong epoch correctly
-                        let unknown_commit = alice_central.update_keying_material(&id).await.unwrap().commit;
-                        alice_central.clear_pending_commit(&id).await.unwrap();
+                        let unknown_commit = alice_central
+                            .mls_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit;
+                        alice_central.mls_central.clear_pending_commit(&id).await.unwrap();
 
-                        let commit = alice_central.update_keying_material(&id).await.unwrap().commit;
-                        alice_central.commit_accepted(&id).await.unwrap();
+                        let commit = alice_central
+                            .mls_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit;
+                        alice_central.mls_central.commit_accepted(&id).await.unwrap();
 
                         // decrypt once ... ok
                         bob_central
+                            .mls_central
                             .decrypt_message(&id, &commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         // decrypt twice ... not ok
-                        let decrypt_duplicate = bob_central.decrypt_message(&id, &commit.to_bytes().unwrap()).await;
+                        let decrypt_duplicate = bob_central
+                            .mls_central
+                            .decrypt_message(&id, &commit.to_bytes().unwrap())
+                            .await;
                         assert!(matches!(decrypt_duplicate.unwrap_err(), CryptoError::DuplicateMessage));
 
                         // Decrypting unknown commit.
                         // It fails with this error since it's not the commit who has created this epoch
                         let decrypt_lost_commit = bob_central
+                            .mls_central
                             .decrypt_message(&id, &unknown_commit.to_bytes().unwrap())
                             .await;
                         assert!(matches!(decrypt_lost_commit.unwrap_err(), CryptoError::WrongEpoch));
@@ -105,34 +125,47 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
+                        .mls_central
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
-                    let gi = alice_central.get_group_info(&id).await;
+                    let gi = alice_central.mls_central.get_group_info(&id).await;
 
                     // an external commit to verify that we can still detect wrong epoch correctly
                     let unknown_ext_commit = bob_central
+                        .mls_central
                         .join_by_external_commit(gi.clone(), case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap()
                         .commit;
-                    bob_central.clear_pending_group_from_external_commit(&id).await.unwrap();
+                    bob_central
+                        .mls_central
+                        .clear_pending_group_from_external_commit(&id)
+                        .await
+                        .unwrap();
 
                     let ext_commit = bob_central
+                        .mls_central
                         .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap()
                         .commit;
-                    bob_central.merge_pending_group_from_external_commit(&id).await.unwrap();
+                    bob_central
+                        .mls_central
+                        .merge_pending_group_from_external_commit(&id)
+                        .await
+                        .unwrap();
 
                     // decrypt once ... ok
                     alice_central
+                        .mls_central
                         .decrypt_message(&id, &ext_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     // decrypt twice ... not ok
                     let decryption = alice_central
+                        .mls_central
                         .decrypt_message(&id, &ext_commit.to_bytes().unwrap())
                         .await;
                     assert!(matches!(decryption.unwrap_err(), CryptoError::DuplicateMessage));
@@ -140,6 +173,7 @@ pub mod tests {
                     // Decrypting unknown external commit.
                     // It fails with this error since it's not the external commit who has created this epoch
                     let decryption = alice_central
+                        .mls_central
                         .decrypt_message(&id, &unknown_ext_commit.to_bytes().unwrap())
                         .await;
                     assert!(matches!(decryption.unwrap_err(), CryptoError::WrongEpoch));
@@ -159,29 +193,46 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
+                        .mls_central
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+                    alice_central
+                        .mls_central
+                        .invite_all(&case, &id, [&mut bob_central.mls_central])
+                        .await
+                        .unwrap();
 
-                    let proposal = alice_central.new_update_proposal(&id).await.unwrap().proposal;
+                    let proposal = alice_central
+                        .mls_central
+                        .new_update_proposal(&id)
+                        .await
+                        .unwrap()
+                        .proposal;
 
                     // decrypt once ... ok
                     bob_central
+                        .mls_central
                         .decrypt_message(&id, &proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
 
                     // decrypt twice ... not ok
-                    let decryption = bob_central.decrypt_message(&id, &proposal.to_bytes().unwrap()).await;
+                    let decryption = bob_central
+                        .mls_central
+                        .decrypt_message(&id, &proposal.to_bytes().unwrap())
+                        .await;
                     assert!(matches!(decryption.unwrap_err(), CryptoError::DuplicateMessage));
 
                     // advance Bob's epoch to trigger failure
-                    bob_central.commit_pending_proposals(&id).await.unwrap();
-                    bob_central.commit_accepted(&id).await.unwrap();
+                    bob_central.mls_central.commit_pending_proposals(&id).await.unwrap();
+                    bob_central.mls_central.commit_accepted(&id).await.unwrap();
 
                     // Epoch has advanced so we cannot detect duplicates anymore
-                    let decryption = bob_central.decrypt_message(&id, &proposal.to_bytes().unwrap()).await;
+                    let decryption = bob_central
+                        .mls_central
+                        .decrypt_message(&id, &proposal.to_bytes().unwrap())
+                        .await;
                     assert!(matches!(decryption.unwrap_err(), CryptoError::WrongEpoch));
                 })
             },
@@ -199,35 +250,40 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
+                        .mls_central
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
-                    let epoch = alice_central.conversation_epoch(&id).await.unwrap();
+                    let epoch = alice_central.mls_central.conversation_epoch(&id).await.unwrap();
 
                     let ext_proposal = bob_central
+                        .mls_central
                         .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
                         .await
                         .unwrap();
 
                     // decrypt once ... ok
                     alice_central
+                        .mls_central
                         .decrypt_message(&id, &ext_proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
 
                     // decrypt twice ... not ok
                     let decryption = alice_central
+                        .mls_central
                         .decrypt_message(&id, &ext_proposal.to_bytes().unwrap())
                         .await;
                     assert!(matches!(decryption.unwrap_err(), CryptoError::DuplicateMessage));
 
                     // advance alice's epoch
-                    alice_central.commit_pending_proposals(&id).await.unwrap();
-                    alice_central.commit_accepted(&id).await.unwrap();
+                    alice_central.mls_central.commit_pending_proposals(&id).await.unwrap();
+                    alice_central.mls_central.commit_accepted(&id).await.unwrap();
 
                     // Epoch has advanced so we cannot detect duplicates anymore
                     let decryption = alice_central
+                        .mls_central
                         .decrypt_message(&id, &ext_proposal.to_bytes().unwrap())
                         .await;
                     assert!(matches!(decryption.unwrap_err(), CryptoError::WrongEpoch));
@@ -248,18 +304,23 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
+                        .mls_central
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+                    alice_central
+                        .mls_central
+                        .invite_all(&case, &id, [&mut bob_central.mls_central])
+                        .await
+                        .unwrap();
 
                     let msg = b"Hello bob";
-                    let encrypted = alice_central.encrypt_message(&id, msg).await.unwrap();
+                    let encrypted = alice_central.mls_central.encrypt_message(&id, msg).await.unwrap();
 
                     // decrypt once .. ok
-                    bob_central.decrypt_message(&id, &encrypted).await.unwrap();
+                    bob_central.mls_central.decrypt_message(&id, &encrypted).await.unwrap();
                     // decrypt twice .. not ok
-                    let decryption = bob_central.decrypt_message(&id, &encrypted).await;
+                    let decryption = bob_central.mls_central.decrypt_message(&id, &encrypted).await;
                     assert!(matches!(decryption.unwrap_err(), CryptoError::DuplicateMessage));
                 })
             },

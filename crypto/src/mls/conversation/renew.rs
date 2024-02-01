@@ -182,41 +182,64 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+                        alice_central
+                            .mls_central
+                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .await
+                            .unwrap();
 
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        alice_central.new_update_proposal(&id).await.unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        alice_central.mls_central.new_update_proposal(&id).await.unwrap();
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
 
                         // Bob hasn't Alice's proposal but creates a commit
-                        let commit = bob_central.update_keying_material(&id).await.unwrap().commit;
-                        bob_central.commit_accepted(&id).await.unwrap();
+                        let commit = bob_central
+                            .mls_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit;
+                        bob_central.mls_central.commit_accepted(&id).await.unwrap();
 
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // Alice should renew the proposal because its hers
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
 
                         // It should also renew the proposal when in pending_commit
-                        alice_central.commit_pending_proposals(&id).await.unwrap();
-                        assert!(alice_central.pending_commit(&id).await.is_some());
-                        let commit = bob_central.update_keying_material(&id).await.unwrap().commit;
+                        alice_central.mls_central.commit_pending_proposals(&id).await.unwrap();
+                        assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
+                        let commit = bob_central
+                            .mls_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit;
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // Alice should renew the proposal because its hers
                         // It should also replace existing one
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
                     })
                 },
             )
@@ -233,25 +256,39 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+                        alice_central
+                            .mls_central
+                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .await
+                            .unwrap();
 
-                        alice_central.update_keying_material(&id).await.unwrap();
-                        assert!(alice_central.pending_commit(&id).await.is_some());
+                        alice_central.mls_central.update_keying_material(&id).await.unwrap();
+                        assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
 
                         // but Bob creates a commit meanwhile
-                        let commit = bob_central.update_keying_material(&id).await.unwrap().commit;
+                        let commit = bob_central
+                            .mls_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit;
 
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // Alice should renew the proposal because its her's
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
                     })
                 },
             )
@@ -268,52 +305,87 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+                        alice_central
+                            .mls_central
+                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .await
+                            .unwrap();
 
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        let proposal = alice_central.new_update_proposal(&id).await.unwrap().proposal;
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        let proposal = alice_central
+                            .mls_central
+                            .new_update_proposal(&id)
+                            .await
+                            .unwrap()
+                            .proposal;
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
 
                         // Bob has Alice's update proposal
                         bob_central
+                            .mls_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
 
-                        let commit = bob_central.update_keying_material(&id).await.unwrap().commit;
-                        bob_central.commit_accepted(&id).await.unwrap();
+                        let commit = bob_central
+                            .mls_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit;
+                        bob_central.mls_central.commit_accepted(&id).await.unwrap();
 
                         // Bob's commit has Alice's proposal
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // Alice proposal should not be renew as it was in valid commit
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
 
                         // Same if proposal is also in pending commit
-                        let proposal = alice_central.new_update_proposal(&id).await.unwrap().proposal;
-                        alice_central.commit_pending_proposals(&id).await.unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert!(alice_central.pending_commit(&id).await.is_some());
+                        let proposal = alice_central
+                            .mls_central
+                            .new_update_proposal(&id)
+                            .await
+                            .unwrap()
+                            .proposal;
+                        alice_central.mls_central.commit_pending_proposals(&id).await.unwrap();
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
+                        assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
                         bob_central
+                            .mls_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        let commit = bob_central.update_keying_material(&id).await.unwrap().commit;
+                        let commit = bob_central
+                            .mls_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit;
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // Alice should not be renew as it was in valid commit
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
                     })
                 },
             )
@@ -330,32 +402,48 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
-                            .invite_all(&case, &id, [&mut bob_central, &mut charlie_central])
+                            .mls_central
+                            .invite_all(
+                                &case,
+                                &id,
+                                [&mut bob_central.mls_central, &mut charlie_central.mls_central],
+                            )
                             .await
                             .unwrap();
 
-                        let proposal = bob_central.new_update_proposal(&id).await.unwrap().proposal;
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        let proposal = bob_central.mls_central.new_update_proposal(&id).await.unwrap().proposal;
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
                         alice_central
+                            .mls_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
 
                         // Charlie does not have other proposals, it creates a commit
-                        let commit = charlie_central.update_keying_material(&id).await.unwrap().commit;
+                        let commit = charlie_central
+                            .mls_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit;
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // Alice should not renew Bob's update proposal
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
                     })
                 },
             )
@@ -376,30 +464,44 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+                        alice_central
+                            .mls_central
+                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .await
+                            .unwrap();
 
-                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        alice_central.new_add_proposal(&id, charlie_kp).await.unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        let charlie_kp = charlie_central.mls_central.get_one_key_package(&case).await;
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        alice_central
+                            .mls_central
+                            .new_add_proposal(&id, charlie_kp)
+                            .await
+                            .unwrap();
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
 
-                        let charlie = charlie_central.rand_key_package(&case).await;
+                        let charlie = charlie_central.mls_central.rand_key_package(&case).await;
                         let commit = bob_central
+                            .mls_central
                             .add_members_to_conversation(&id, vec![charlie])
                             .await
                             .unwrap()
                             .commit;
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // Alice proposal is not renewed since she also wanted to add Charlie
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
                     })
                 },
             )
@@ -416,34 +518,48 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+                        alice_central
+                            .mls_central
+                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .await
+                            .unwrap();
 
-                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        alice_central.new_add_proposal(&id, charlie_kp).await.unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        let charlie_kp = charlie_central.mls_central.get_one_key_package(&case).await;
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        alice_central
+                            .mls_central
+                            .new_add_proposal(&id, charlie_kp)
+                            .await
+                            .unwrap();
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
 
                         // Here Alice also creates a commit
-                        alice_central.commit_pending_proposals(&id).await.unwrap();
-                        assert!(alice_central.pending_commit(&id).await.is_some());
+                        alice_central.mls_central.commit_pending_proposals(&id).await.unwrap();
+                        assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
 
-                        let charlie = charlie_central.rand_key_package(&case).await;
+                        let charlie = charlie_central.mls_central.rand_key_package(&case).await;
                         let commit = bob_central
+                            .mls_central
                             .add_members_to_conversation(&id, vec![charlie])
                             .await
                             .unwrap()
                             .commit;
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // Alice proposal is not renewed since she also wanted to add Charlie
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
                     })
                 },
             )
@@ -460,33 +576,54 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
-                            .invite_all(&case, &id, [&mut bob_central, &mut charlie_central])
+                            .mls_central
+                            .invite_all(
+                                &case,
+                                &id,
+                                [&mut bob_central.mls_central, &mut charlie_central.mls_central],
+                            )
                             .await
                             .unwrap();
 
                         // Bob will propose adding Debbie
-                        let debbie_kp = debbie_central.get_one_key_package(&case).await;
-                        let proposal = bob_central.new_add_proposal(&id, debbie_kp).await.unwrap().proposal;
+                        let debbie_kp = debbie_central.mls_central.get_one_key_package(&case).await;
+                        let proposal = bob_central
+                            .mls_central
+                            .new_add_proposal(&id, debbie_kp)
+                            .await
+                            .unwrap()
+                            .proposal;
                         alice_central
+                            .mls_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
 
                         // But Charlie will commit meanwhile
-                        let commit = charlie_central.update_keying_material(&id).await.unwrap().commit;
+                        let commit = charlie_central
+                            .mls_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit;
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // which Alice should not renew since it's not hers
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
                     })
                 },
             )
@@ -503,42 +640,69 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+                        alice_central
+                            .mls_central
+                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .await
+                            .unwrap();
 
                         // Alice proposes adding Charlie
-                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        alice_central.new_add_proposal(&id, charlie_kp).await.unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        let charlie_kp = charlie_central.mls_central.get_one_key_package(&case).await;
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        alice_central
+                            .mls_central
+                            .new_add_proposal(&id, charlie_kp)
+                            .await
+                            .unwrap();
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
 
                         // But meanwhile Bob will create a commit without Alice's proposal
-                        let commit = bob_central.update_keying_material(&id).await.unwrap().commit;
-                        bob_central.commit_accepted(&id).await.unwrap();
+                        let commit = bob_central
+                            .mls_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit;
+                        bob_central.mls_central.commit_accepted(&id).await.unwrap();
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // So Alice proposal should be renewed
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
 
                         // And same should happen when proposal is in pending commit
-                        alice_central.commit_pending_proposals(&id).await.unwrap();
-                        assert!(alice_central.pending_commit(&id).await.is_some());
-                        let commit = bob_central.update_keying_material(&id).await.unwrap().commit;
+                        alice_central.mls_central.commit_pending_proposals(&id).await.unwrap();
+                        assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
+                        let commit = bob_central
+                            .mls_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit;
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // So Alice proposal should also be renewed
                         // It should also replace existing one
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
                     })
                 },
             )
@@ -555,29 +719,44 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+                        alice_central
+                            .mls_central
+                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .await
+                            .unwrap();
 
                         // Alice commits adding Charlie
-                        let charlie = charlie_central.rand_key_package(&case).await;
+                        let charlie = charlie_central.mls_central.rand_key_package(&case).await;
                         alice_central
+                            .mls_central
                             .add_members_to_conversation(&id, vec![charlie])
                             .await
                             .unwrap();
-                        assert!(alice_central.pending_commit(&id).await.is_some());
+                        assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
 
                         // But meanwhile Bob will create a commit
-                        let commit = bob_central.update_keying_material(&id).await.unwrap().commit;
+                        let commit = bob_central
+                            .mls_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit;
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // So Alice proposal should be renewed
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
                     })
                 },
             )
@@ -598,34 +777,46 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
-                            .invite_all(&case, &id, [&mut bob_central, &mut charlie_central])
+                            .mls_central
+                            .invite_all(
+                                &case,
+                                &id,
+                                [&mut bob_central.mls_central, &mut charlie_central.mls_central],
+                            )
                             .await
                             .unwrap();
 
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
                         alice_central
-                            .new_remove_proposal(&id, charlie_central.get_client_id())
+                            .mls_central
+                            .new_remove_proposal(&id, charlie_central.mls_central.get_client_id())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
 
                         let commit = bob_central
-                            .remove_members_from_conversation(&id, &[charlie_central.get_client_id()])
+                            .mls_central
+                            .remove_members_from_conversation(&id, &[charlie_central.mls_central.get_client_id()])
                             .await
                             .unwrap()
                             .commit;
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // Remove proposal is not renewed since commit does same
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
                     })
                 },
             )
@@ -642,35 +833,52 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
-                            .invite_all(&case, &id, [&mut bob_central, &mut charlie_central])
+                            .mls_central
+                            .invite_all(
+                                &case,
+                                &id,
+                                [&mut bob_central.mls_central, &mut charlie_central.mls_central],
+                            )
                             .await
                             .unwrap();
 
                         let proposal = bob_central
-                            .new_remove_proposal(&id, charlie_central.get_client_id())
+                            .mls_central
+                            .new_remove_proposal(&id, charlie_central.mls_central.get_client_id())
                             .await
                             .unwrap()
                             .proposal;
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
                         alice_central
+                            .mls_central
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
 
-                        let commit = charlie_central.update_keying_material(&id).await.unwrap().commit;
+                        let commit = charlie_central
+                            .mls_central
+                            .update_keying_material(&id)
+                            .await
+                            .unwrap()
+                            .commit;
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // Remove proposal is not renewed since by ref
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
                     })
                 },
             )
@@ -687,40 +895,52 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
+                            .mls_central
                             .invite_all(
                                 &case,
                                 &id,
-                                [&mut bob_central, &mut charlie_central, &mut debbie_central],
+                                [
+                                    &mut bob_central.mls_central,
+                                    &mut charlie_central.mls_central,
+                                    &mut debbie_central.mls_central,
+                                ],
                             )
                             .await
                             .unwrap();
 
                         // Alice wants to remove Charlie
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
                         alice_central
-                            .new_remove_proposal(&id, charlie_central.get_client_id())
+                            .mls_central
+                            .new_remove_proposal(&id, charlie_central.mls_central.get_client_id())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
 
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
-                            .remove_members_from_conversation(&id, &[debbie_central.get_client_id()])
+                            .mls_central
+                            .remove_members_from_conversation(&id, &[debbie_central.mls_central.get_client_id()])
                             .await
                             .unwrap()
                             .commit;
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // Remove is renewed since valid commit removes another
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
                     })
                 },
             )
@@ -737,39 +957,51 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
+                            .mls_central
                             .invite_all(
                                 &case,
                                 &id,
-                                [&mut bob_central, &mut charlie_central, &mut debbie_central],
+                                [
+                                    &mut bob_central.mls_central,
+                                    &mut charlie_central.mls_central,
+                                    &mut debbie_central.mls_central,
+                                ],
                             )
                             .await
                             .unwrap();
 
                         // Alice wants to remove Charlie
                         alice_central
-                            .remove_members_from_conversation(&id, &[charlie_central.get_client_id()])
+                            .mls_central
+                            .remove_members_from_conversation(&id, &[charlie_central.mls_central.get_client_id()])
                             .await
                             .unwrap();
-                        assert!(alice_central.pending_commit(&id).await.is_some());
+                        assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
 
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
-                            .remove_members_from_conversation(&id, &[debbie_central.get_client_id()])
+                            .mls_central
+                            .remove_members_from_conversation(&id, &[debbie_central.mls_central.get_client_id()])
                             .await
                             .unwrap()
                             .commit;
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // Remove is renewed since valid commit removes another
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
                     })
                 },
             )
@@ -786,41 +1018,53 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
+                            .mls_central
                             .invite_all(
                                 &case,
                                 &id,
-                                [&mut bob_central, &mut charlie_central, &mut debbie_central],
+                                [
+                                    &mut bob_central.mls_central,
+                                    &mut charlie_central.mls_central,
+                                    &mut debbie_central.mls_central,
+                                ],
                             )
                             .await
                             .unwrap();
 
                         // Alice wants to remove Charlie
                         alice_central
-                            .new_remove_proposal(&id, charlie_central.get_client_id())
+                            .mls_central
+                            .new_remove_proposal(&id, charlie_central.mls_central.get_client_id())
                             .await
                             .unwrap();
-                        alice_central.commit_pending_proposals(&id).await.unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert!(alice_central.pending_commit(&id).await.is_some());
+                        alice_central.mls_central.commit_pending_proposals(&id).await.unwrap();
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
+                        assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
 
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
-                            .remove_members_from_conversation(&id, &[debbie_central.get_client_id()])
+                            .mls_central
+                            .remove_members_from_conversation(&id, &[debbie_central.mls_central.get_client_id()])
                             .await
                             .unwrap()
                             .commit;
                         let proposals = alice_central
+                            .mls_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
                         // Remove is renewed since valid commit removes another
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(
+                            proposals.len(),
+                            alice_central.mls_central.pending_proposals(&id).await.len()
+                        );
                     })
                 },
             )

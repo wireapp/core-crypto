@@ -56,13 +56,19 @@ pub mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 central
+                    .mls_central
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                assert!(central.get_conversation_unchecked(&id).await.group.is_active());
+                assert!(central
+                    .mls_central
+                    .get_conversation_unchecked(&id)
+                    .await
+                    .group
+                    .is_active());
 
-                central.wipe_conversation(&id).await.unwrap();
-                assert!(!central.conversation_exists(&id).await);
+                central.mls_central.wipe_conversation(&id).await.unwrap();
+                assert!(!central.mls_central.conversation_exists(&id).await);
             })
         })
         .await;
@@ -74,7 +80,7 @@ pub mod tests {
         run_test_with_central(case.clone(), move |[mut central]| {
             Box::pin(async move {
                 let id = conversation_id();
-                let err = central.wipe_conversation(&id).await.unwrap_err();
+                let err = central.mls_central.wipe_conversation(&id).await.unwrap_err();
                 assert!(matches!(err, CryptoError::ConversationNotFound(conv_id) if conv_id == id));
             })
         })
@@ -88,21 +94,22 @@ pub mod tests {
         run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
             Box::pin(async move {
                 let id = conversation_id();
-                cc.new_conversation(&id, case.credential_type, case.cfg.clone())
+                cc.mls_central
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let initial_count = cc.count_entities().await;
+                let initial_count = cc.mls_central.count_entities().await;
 
-                cc.new_update_proposal(&id).await.unwrap();
-                let post_proposal_count = cc.count_entities().await;
+                cc.mls_central.new_update_proposal(&id).await.unwrap();
+                let post_proposal_count = cc.mls_central.count_entities().await;
                 assert_eq!(
                     post_proposal_count.encryption_keypair,
                     initial_count.encryption_keypair + 1
                 );
 
-                cc.wipe_conversation(&id).await.unwrap();
+                cc.mls_central.wipe_conversation(&id).await.unwrap();
 
-                let final_count = cc.count_entities().await;
+                let final_count = cc.mls_central.count_entities().await;
                 assert_eq!(final_count.group, 0);
                 assert_eq!(final_count.encryption_keypair, final_count.key_package);
                 assert_eq!(final_count.epoch_encryption_keypair, 0);

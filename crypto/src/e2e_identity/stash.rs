@@ -66,7 +66,7 @@ pub mod tests {
         e2e_identity::id::WireQualifiedClientId,
         e2e_identity::tests::*,
         prelude::{E2eiEnrollment, INITIAL_KEYING_MATERIAL_COUNT},
-        test_utils::{central::TEAM, *},
+        test_utils::{central::TEAM, x509::X509TestChain, *},
     };
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -75,7 +75,7 @@ pub mod tests {
     // #[apply(all_cred_cipher)]
     // #[wasm_bindgen_test]
     pub async fn stash_and_pop_should_not_abort_enrollment(case: TestCase) {
-        run_test_wo_clients(case.clone(), move |cc| {
+        run_test_wo_clients(case.clone(), move |mut cc| {
             Box::pin(async move {
                 fn init(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
                     Box::pin(async move {
@@ -92,18 +92,28 @@ pub mod tests {
                     })
                 }
 
+                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+
                 let is_renewal = false;
-                let (mut cc, enrollment, cert) =
-                    e2ei_enrollment(cc, &case, Some(E2EI_CLIENT_ID_URI), is_renewal, init, |e, cc| {
+                let (enrollment, cert) = e2ei_enrollment(
+                    &mut cc,
+                    &case,
+                    &x509_test_chain,
+                    Some(E2EI_CLIENT_ID_URI),
+                    is_renewal,
+                    init,
+                    |e, cc| {
                         Box::pin(async move {
                             let handle = cc.e2ei_enrollment_stash(e).await.unwrap();
-                            let enrollment = cc.e2ei_enrollment_stash_pop(handle).await.unwrap();
-                            (enrollment, cc)
+                            cc.e2ei_enrollment_stash_pop(handle).await.unwrap()
                         })
-                    })
-                    .await
-                    .unwrap();
+                    },
+                )
+                .await
+                .unwrap();
+
                 assert!(cc
+                    .mls_central
                     .e2ei_mls_init_only(enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
                     .await
                     .is_ok());
@@ -116,7 +126,7 @@ pub mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn should_fail_when_restoring_invalid(case: TestCase) {
-        run_test_wo_clients(case.clone(), move |cc| {
+        run_test_wo_clients(case.clone(), move |mut cc| {
             Box::pin(async move {
                 fn init(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
                     Box::pin(async move {
@@ -132,28 +142,38 @@ pub mod tests {
                         )
                     })
                 }
+
+                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+
                 let is_renewal = false;
-                let result = e2ei_enrollment(cc, &case, Some(E2EI_CLIENT_ID_URI), is_renewal, init, move |e, cc| {
-                    Box::pin(async move {
-                        // this restore recreates a partial enrollment
-                        let backend = MlsCryptoProvider::try_new_in_memory("new").await.unwrap();
-                        let client_id = e.client_id.parse::<WireQualifiedClientId>().unwrap();
-                        let enrollment = E2eiEnrollment::try_new(
-                            client_id.into(),
-                            e.display_name,
-                            e.handle,
-                            e.team,
-                            1,
-                            &backend,
-                            e.ciphersuite,
-                            None,
-                            #[cfg(not(target_family = "wasm"))]
-                            None,
-                        )
-                        .unwrap();
-                        (enrollment, cc)
-                    })
-                })
+                let result = e2ei_enrollment(
+                    &mut cc,
+                    &case,
+                    &x509_test_chain,
+                    Some(E2EI_CLIENT_ID_URI),
+                    is_renewal,
+                    init,
+                    move |e, _cc| {
+                        Box::pin(async move {
+                            // this restore recreates a partial enrollment
+                            let backend = MlsCryptoProvider::try_new_in_memory("new").await.unwrap();
+                            let client_id = e.client_id.parse::<WireQualifiedClientId>().unwrap();
+                            E2eiEnrollment::try_new(
+                                client_id.into(),
+                                e.display_name,
+                                e.handle,
+                                e.team,
+                                1,
+                                &backend,
+                                e.ciphersuite,
+                                None,
+                                #[cfg(not(target_family = "wasm"))]
+                                None,
+                            )
+                            .unwrap()
+                        })
+                    },
+                )
                 .await;
                 assert!(result.is_err());
             })
