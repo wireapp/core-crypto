@@ -160,22 +160,40 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        let bob_kp = bob_central.get_one_key_package(&case).await;
-                        alice_central.new_add_proposal(&id, bob_kp).await.unwrap();
-                        let MlsCommitBundle { welcome, .. } =
-                            alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
-                        alice_central.commit_accepted(&id).await.unwrap();
-                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                        let bob_kp = bob_central.mls_central.get_one_key_package(&case).await;
+                        alice_central.mls_central.new_add_proposal(&id, bob_kp).await.unwrap();
+                        let MlsCommitBundle { welcome, .. } = alice_central
+                            .mls_central
+                            .commit_pending_proposals(&id)
+                            .await
+                            .unwrap()
+                            .unwrap();
+                        alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(
+                            alice_central
+                                .mls_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .members()
+                                .len(),
+                            2
+                        );
                         let new_id = bob_central
+                            .mls_central
                             .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
                             .await
                             .unwrap()
                             .id;
                         assert_eq!(id, new_id);
-                        assert!(bob_central.try_talk_to(&id, &mut alice_central).await.is_ok());
+                        assert!(bob_central
+                            .mls_central
+                            .try_talk_to(&id, &mut alice_central.mls_central)
+                            .await
+                            .is_ok());
                     })
                 },
             )
@@ -194,19 +212,22 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     central
+                        .mls_central
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     let before = central
+                        .mls_central
                         .get_conversation_unchecked(&id)
                         .await
                         .encryption_keys()
                         .find_or_first(|_| true)
                         .unwrap();
-                    central.new_update_proposal(&id).await.unwrap();
-                    central.commit_pending_proposals(&id).await.unwrap();
-                    central.commit_accepted(&id).await.unwrap();
+                    central.mls_central.new_update_proposal(&id).await.unwrap();
+                    central.mls_central.commit_pending_proposals(&id).await.unwrap();
+                    central.mls_central.commit_accepted(&id).await.unwrap();
                     let after = central
+                        .mls_central
                         .get_conversation_unchecked(&id)
                         .await
                         .encryption_keys()
@@ -229,32 +250,68 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
+                        .mls_central
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                    assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                    alice_central
+                        .mls_central
+                        .invite_all(&case, &id, [&mut bob_central.mls_central])
+                        .await
+                        .unwrap();
+                    assert_eq!(
+                        alice_central
+                            .mls_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .len(),
+                        2
+                    );
+                    assert_eq!(
+                        bob_central
+                            .mls_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .len(),
+                        2
+                    );
 
                     let remove_proposal = alice_central
-                        .new_remove_proposal(&id, bob_central.get_client_id())
+                        .mls_central
+                        .new_remove_proposal(&id, bob_central.mls_central.get_client_id())
                         .await
                         .unwrap();
                     bob_central
+                        .mls_central
                         .decrypt_message(&id, remove_proposal.proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    let MlsCommitBundle { commit, .. } =
-                        alice_central.commit_pending_proposals(&id).await.unwrap().unwrap();
-                    alice_central.commit_accepted(&id).await.unwrap();
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
+                    let MlsCommitBundle { commit, .. } = alice_central
+                        .mls_central
+                        .commit_pending_proposals(&id)
+                        .await
+                        .unwrap()
+                        .unwrap();
+                    alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                    assert_eq!(
+                        alice_central
+                            .mls_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .len(),
+                        1
+                    );
 
                     bob_central
+                        .mls_central
                         .decrypt_message(&id, commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     assert!(matches!(
-                        bob_central.get_conversation(&id).await.unwrap_err(),
+                        bob_central.mls_central.get_conversation(&id).await.unwrap_err(),
                         CryptoError::ConversationNotFound(conv_id) if conv_id == id
                     ));
                 })
@@ -269,11 +326,15 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
+                        .mls_central
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
-                    let remove_proposal = alice_central.new_remove_proposal(&id, b"unknown"[..].into()).await;
+                    let remove_proposal = alice_central
+                        .mls_central
+                        .new_remove_proposal(&id, b"unknown"[..].into())
+                        .await;
                     assert!(matches!(
                         remove_proposal.unwrap_err(),
                         CryptoError::ClientNotFound(client_id) if client_id == b"unknown"[..].into()

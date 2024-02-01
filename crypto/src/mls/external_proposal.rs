@@ -162,42 +162,83 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         owner_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        let epoch = owner_central.get_conversation_unchecked(&id).await.group.epoch();
+                        let epoch = owner_central
+                            .mls_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .epoch();
 
                         // Craft an external proposal from guest
                         let external_add = guest_central
+                            .mls_central
                             .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
                             .await
                             .unwrap();
 
                         // Owner receives external proposal message from server
                         let decrypted = owner_central
+                            .mls_central
                             .decrypt_message(&id, external_add.to_bytes().unwrap())
                             .await
                             .unwrap();
                         // just owner for now
-                        assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 1);
+                        assert_eq!(
+                            owner_central
+                                .mls_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .members()
+                                .len(),
+                            1
+                        );
 
                         // verify Guest's (sender) identity
-                        guest_central.verify_sender_identity(&case, &decrypted);
+                        guest_central.mls_central.verify_sender_identity(&case, &decrypted);
 
                         // simulate commit message reception from server
-                        let MlsCommitBundle { welcome, .. } =
-                            owner_central.commit_pending_proposals(&id).await.unwrap().unwrap();
-                        owner_central.commit_accepted(&id).await.unwrap();
+                        let MlsCommitBundle { welcome, .. } = owner_central
+                            .mls_central
+                            .commit_pending_proposals(&id)
+                            .await
+                            .unwrap()
+                            .unwrap();
+                        owner_central.mls_central.commit_accepted(&id).await.unwrap();
                         // guest joined the group
-                        assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                        assert_eq!(
+                            owner_central
+                                .mls_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .members()
+                                .len(),
+                            2
+                        );
 
                         guest_central
+                            .mls_central
                             .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
                             .await
                             .unwrap();
-                        assert_eq!(guest_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                        assert_eq!(
+                            guest_central
+                                .mls_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .members()
+                                .len(),
+                            2
+                        );
                         // guest can send messages in the group
-                        assert!(guest_central.try_talk_to(&id, &mut owner_central).await.is_ok());
+                        assert!(guest_central
+                            .mls_central
+                            .try_talk_to(&id, &mut owner_central.mls_central)
+                            .await
+                            .is_ok());
                     })
                 },
             )

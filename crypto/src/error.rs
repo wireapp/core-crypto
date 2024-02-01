@@ -84,7 +84,7 @@ pub enum CryptoError {
     KeyStoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
     /// MLS Internal Errors
     #[error(transparent)]
-    MlsError(#[from] MlsError),
+    MlsError(MlsError),
     /// UUID-related errors
     #[cfg(test)]
     #[error(transparent)]
@@ -237,6 +237,23 @@ pub enum CryptoError {
     /// Json error
     #[error(transparent)]
     JsonError(#[from] serde_json::Error),
+}
+
+impl From<MlsError> for CryptoError {
+    fn from(err: MlsError) -> Self {
+        match err {
+            MlsError::MlsAddMembersError(openmls::prelude::AddMembersError::KeyPackageVerifyError(
+                openmls::key_packages::errors::KeyPackageVerifyError::InvalidLeafNode(
+                    openmls::prelude::LeafNodeValidationError::InvalidCredential(
+                        openmls::credentials::errors::CredentialError::AuthenticationServiceValidationFailure(
+                            openmls_traits::authentication_service::CredentialAuthenticationStatus::Invalid,
+                        ),
+                    ),
+                ),
+            )) => Self::InvalidIdentity,
+            e => Self::MlsError(e),
+        }
+    }
 }
 
 /// A simpler definition for Result types that the Error is a [CryptoError]

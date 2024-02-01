@@ -194,10 +194,11 @@ pub mod tests {
         run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
             Box::pin(async move {
                 let id = conversation_id();
-                cc.new_conversation(&id, case.credential_type, case.cfg.clone())
+                cc.mls_central
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let conv = cc.get_conversation(&id).await.unwrap();
+                let conv = cc.mls_central.get_conversation(&id).await.unwrap();
                 let group = conv.read().await;
 
                 let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
@@ -220,10 +221,11 @@ pub mod tests {
         run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
             Box::pin(async move {
                 let id = conversation_id();
-                cc.new_conversation(&id, case.credential_type, case.cfg.clone())
+                cc.mls_central
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let conv = cc.get_conversation(&id).await.unwrap();
+                let conv = cc.mls_central.get_conversation(&id).await.unwrap();
                 let group = conv.read().await;
 
                 // verifying https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2

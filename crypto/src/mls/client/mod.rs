@@ -462,6 +462,7 @@ impl Client {
     pub async fn random_generate(
         case: &crate::test_utils::TestCase,
         backend: &MlsCryptoProvider,
+        signer: Option<&crate::test_utils::x509::X509Certificate>,
         provision: bool,
     ) -> CryptoResult<Self> {
         let user_uuid = uuid::Uuid::new_v4();
@@ -469,7 +470,10 @@ impl Client {
         let client_id = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated());
         let identity = match case.credential_type {
             MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.as_str().into()),
-            MlsCredentialType::X509 => CertificateBundle::rand_identifier(&client_id, &[case.signature_scheme()]),
+            MlsCredentialType::X509 => {
+                let signer = signer.expect("Missing intermediate CA");
+                CertificateBundle::rand_identifier(&client_id, &[signer])
+            }
         };
         let nb_key_package = if provision {
             crate::prelude::INITIAL_KEYING_MATERIAL_COUNT
@@ -516,7 +520,21 @@ pub mod tests {
     #[wasm_bindgen_test]
     pub async fn can_generate_client(case: TestCase) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        assert!(Client::random_generate(&case, &backend, false).await.is_ok());
+        let x509_test_chain = if case.is_x509() {
+            let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
+            x509_test_chain.register_with_provider(&backend).await;
+            Some(x509_test_chain)
+        } else {
+            None
+        };
+        let _ = Client::random_generate(
+            &case,
+            &backend,
+            x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
+            false,
+        )
+        .await
+        .unwrap();
     }
 
     #[apply(all_cred_cipher)]
@@ -547,7 +565,7 @@ pub mod tests {
                     assert_eq!(&prov_client_id, handles.first().unwrap());
 
                     // phase 2: pretend we have a new client ID from the backend, and try to init the client this way
-                    let client_id: ClientId = b"whatever:my:client:is@wire.com".to_vec().into();
+                    let client_id: ClientId = b"whatever:my:client:is@world.com".to_vec().into();
                     let alice = Client::init_with_external_client_id(
                         client_id.clone(),
                         handles.clone(),

@@ -143,7 +143,7 @@ impl MlsCryptoProvider {
     }
 
     pub fn update_pki_env(
-        &mut self,
+        &self,
         pki_env: wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
     ) -> MlsProviderResult<()> {
         self.pki_env.update_env(pki_env)

@@ -434,7 +434,7 @@ pub mod tests {
     use crate::prelude::{CertificateBundle, ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
     use crate::{
         mls::{CryptoError, MlsCentral, MlsCentralConfiguration},
-        test_utils::*,
+        test_utils::{x509::X509TestChain, *},
     };
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -449,10 +449,11 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     central
+                        .mls_central
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    let epoch = central.conversation_epoch(&id).await.unwrap();
+                    let epoch = central.mls_central.conversation_epoch(&id).await.unwrap();
                     assert_eq!(epoch, 0);
                 })
             })
@@ -469,11 +470,16 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        let epoch = alice_central.conversation_epoch(&id).await.unwrap();
+                        alice_central
+                            .mls_central
+                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .await
+                            .unwrap();
+                        let epoch = alice_central.mls_central.conversation_epoch(&id).await.unwrap();
                         assert_eq!(epoch, 1);
                     })
                 },
@@ -487,7 +493,7 @@ pub mod tests {
             run_test_with_central(case.clone(), move |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    let err = central.conversation_epoch(&id).await.unwrap_err();
+                    let err = central.mls_central.conversation_epoch(&id).await.unwrap_err();
                     assert!(matches!(err, CryptoError::ConversationNotFound(conv_id) if conv_id == id));
                 })
             })
@@ -595,12 +601,14 @@ pub mod tests {
                 let id = conversation_id();
 
                 let create = alice_central
+                    .mls_central
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
                 assert!(create.is_ok());
 
                 // creating a conversation should first verify that the conversation does not already exist ; only then create it
                 let repeat_create = alice_central
+                    .mls_central
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
                 assert!(matches!(repeat_create.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
@@ -636,6 +644,7 @@ pub mod tests {
     pub async fn can_2_phase_init_central(case: TestCase) {
         run_tests(move |[tmp_dir_argument]| {
             Box::pin(async move {
+                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
                 let configuration = MlsCentralConfiguration::try_new(
                     tmp_dir_argument,
                     "test".to_string(),
@@ -647,13 +656,15 @@ pub mod tests {
                 .unwrap();
                 // phase 1: init without mls_client
                 let mut central = MlsCentral::try_new(configuration).await.unwrap();
+                x509_test_chain.register_with_central(&central).await;
+
                 assert!(central.mls_client.is_none());
                 // phase 2: init mls_client
                 let client_id = "alice";
                 let identifier = match case.credential_type {
                     MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
                     MlsCredentialType::X509 => {
-                        CertificateBundle::rand_identifier(client_id, &[case.signature_scheme()])
+                        CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
                     }
                 };
                 central

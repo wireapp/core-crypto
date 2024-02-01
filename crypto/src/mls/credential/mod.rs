@@ -141,17 +141,20 @@ impl Client {
 // Requires more than 1 ciphersuite supported at the moment.
 #[cfg(test)]
 pub mod tests {
+    use mls_crypto_provider::PkiKeypair;
     use std::collections::HashMap;
     use wasm_bindgen_test::*;
-    use wire_e2e_identity::prelude::WireIdentityBuilder;
 
     use crate::{
         mls::credential::x509::CertificatePrivateKey,
         prelude::{
-            ClientIdentifier, ConversationId, CryptoError, MlsCentral, MlsCentralConfiguration, MlsCredentialType,
-            INITIAL_KEYING_MATERIAL_COUNT,
+            ClientIdentifier, ConversationId, CryptoError, E2eiConversationState, MlsCentral, MlsCentralConfiguration,
+            MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT,
         },
-        test_utils::*,
+        test_utils::{
+            x509::{CertificateParams, X509TestChain},
+            *,
+        },
     };
 
     use super::*;
@@ -164,7 +167,7 @@ pub mod tests {
         if case.is_basic() {
             let alice_identifier = ClientIdentifier::Basic("alice".into());
             let bob_identifier = ClientIdentifier::Basic("bob".into());
-            assert!(try_talk(&case, alice_identifier, bob_identifier).await.is_ok());
+            assert!(try_talk(&case, None, alice_identifier, bob_identifier).await.is_ok());
         }
     }
 
@@ -172,39 +175,61 @@ pub mod tests {
     #[wasm_bindgen_test]
     async fn certificate_clients_can_send_messages(case: TestCase) {
         if case.is_x509() {
-            let alice_identifier = CertificateBundle::rand_identifier("alice", &[case.signature_scheme()]);
-            let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
-            assert!(try_talk(&case, alice_identifier, bob_identifier).await.is_ok());
+            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+
+            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
+            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
+            assert!(
+                try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
+                    .await
+                    .is_ok()
+            );
         }
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn heterogeneous_clients_can_send_messages(case: TestCase) {
+        let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+
         // check that both credentials can initiate/join a group
         {
             let alice_identifier = ClientIdentifier::Basic("alice".into());
-            let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
-            assert!(try_talk(&case, alice_identifier, bob_identifier).await.is_ok());
+            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
+            assert!(
+                try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
+                    .await
+                    .is_ok()
+            );
             // drop alice & bob key stores
         }
         {
-            let alice_identifier = CertificateBundle::rand_identifier("alice", &[case.signature_scheme()]);
+            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
             let bob_identifier = ClientIdentifier::Basic("bob".into());
-            assert!(try_talk(&case, alice_identifier, bob_identifier).await.is_ok());
+            assert!(
+                try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
+                    .await
+                    .is_ok()
+            );
         }
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_is_empty(case: TestCase) {
-        let mut certs = CertificateBundle::rand(&"alice".into(), case.signature_scheme());
+        let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+
+        let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
+
+        let mut certs = CertificateBundle::rand(&"alice".into(), x509_intermediate);
         certs.certificate_chain = vec![];
         let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), certs)]));
 
-        let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
+        let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
         assert!(matches!(
-            try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err(),
+            try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
+                .await
+                .unwrap_err(),
             CryptoError::InvalidIdentity
         ));
     }
@@ -212,52 +237,25 @@ pub mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_has_a_single_self_signed(case: TestCase) {
-        let mut certs = CertificateBundle::rand(&"alice".into(), case.signature_scheme());
-        let root_ca = certs.certificate_chain.last().unwrap().to_owned();
-        certs.certificate_chain = vec![root_ca];
-        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), certs)]));
-
-        let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
-        assert!(matches!(
-            try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err(),
-            CryptoError::InvalidIdentity
-        ));
-    }
-
-    #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
-    async fn should_fail_when_certificate_chain_is_unordered(case: TestCase) {
-        // chain must be [leaf, leaf-issuer, ..., root-ca]
-        let mut certs = CertificateBundle::rand(&"alice".into(), case.signature_scheme());
-        certs.certificate_chain.reverse();
-        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), certs)]));
-
-        let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
-        assert!(matches!(
-            try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err(),
-            CryptoError::InvalidIdentity
-        ));
-    }
-
-    #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
-    async fn should_fail_when_invalid_intermediates(case: TestCase) {
         if case.is_x509() {
-            let eve_ca = WireIdentityBuilder::default().new_ca_certificate();
-            let mut certs = CertificateBundle::rand(&"alice".into(), case.signature_scheme());
-            // remove the valid intermediate
-            certs.certificate_chain.pop().unwrap();
-            // and replace it with the malicious one
-            certs.certificate_chain.push(eve_ca.serialize_der().unwrap());
-            let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), certs)]));
+            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
-            let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
+            let (_alice_identifier, alice_cert) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
 
+            let new_cert = alice_cert
+                .pki_keypair
+                .re_sign(&alice_cert.certificate, &alice_cert.certificate, None)
+                .unwrap();
+            let mut alice_cert = alice_cert.clone();
+            alice_cert.certificate = new_cert;
+            let alice_identifier = ClientIdentifier::X509([(case.signature_scheme(), alice_cert.into())].into());
+
+            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
             assert!(matches!(
-                try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err(),
-                CryptoError::MlsError(MlsError::MlsMessageError(
-                    openmls::prelude::ProcessMessageError::CryptoError(openmls::prelude::CryptoError::InvalidSignature)
-                ))
+                try_talk(&case, Some(&x509_test_chain), bob_identifier, alice_identifier)
+                    .await
+                    .unwrap_err(),
+                CryptoError::InvalidIdentity
             ));
         }
     }
@@ -266,10 +264,14 @@ pub mod tests {
     #[wasm_bindgen_test]
     async fn should_fail_when_signature_key_doesnt_match_certificate_public_key(case: TestCase) {
         if case.is_x509() {
-            let certs = CertificateBundle::rand(&"alice".into(), case.signature_scheme());
-            let (_, sign_key) = WireIdentityBuilder::default().new_key_pair();
+            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+            let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
+
+            let certs = CertificateBundle::rand(&"alice".into(), x509_intermediate);
+            let new_pki_kp = PkiKeypair::rand_unchecked(case.signature_scheme());
+
             let eve_key = CertificatePrivateKey {
-                value: sign_key,
+                value: new_pki_kp.signing_key_bytes(),
                 signature_scheme: case.ciphersuite().signature_algorithm(),
             };
             let cb = CertificateBundle {
@@ -278,10 +280,11 @@ pub mod tests {
             };
             let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
 
-            let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
-
+            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
             assert!(matches!(
-                try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err(),
+                try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
+                    .await
+                    .unwrap_err(),
                 CryptoError::MlsError(MlsError::MlsCryptoError(openmls::prelude::CryptoError::MismatchKeypair))
             ));
         }
@@ -289,45 +292,38 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_certificate_expired(case: TestCase) {
+    async fn should_not_fail_but_degrade_when_certificate_expired(case: TestCase) {
         if case.is_x509() {
+            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+
             let expiration_time = core::time::Duration::from_secs(14);
             let start = fluvio_wasm_timer::Instant::now();
-            let expiration = now() + expiration_time;
-            let (certificate_chain, sign_key) = WireIdentityBuilder {
-                not_after: expiration,
-                ..Default::default()
-            }
-            .build_x509_der();
 
-            let cb = CertificateBundle {
-                certificate_chain,
-                private_key: CertificatePrivateKey {
-                    value: sign_key,
-                    signature_scheme: case.ciphersuite().signature_algorithm(),
-                },
-            };
-            let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
+            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
+            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", Some(expiration_time));
 
-            let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
             // this should work since the certificate is not yet expired
             let (mut alice_central, mut bob_central, id) =
-                try_talk(&case, alice_identifier, bob_identifier).await.unwrap();
+                try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
+                    .await
+                    .unwrap();
+
+            assert_eq!(
+                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                E2eiConversationState::Verified
+            );
 
             let elapsed = start.elapsed();
             // Give time to the certificate to expire
             if expiration_time > elapsed {
-                async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
+                async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(2)).await;
             }
 
-            match alice_central.try_talk_to(&id, &mut bob_central).await.unwrap_err() {
-                CryptoError::MlsError(MlsError::MlsMessageError(
-                    openmls::prelude::ProcessMessageError::CryptoError(
-                        openmls::prelude::CryptoError::ExpiredCertificate,
-                    ),
-                )) => {}
-                e => panic!("Unexpected error: {e:?}"),
-            }
+            let _ = alice_central.try_talk_to(&id, &mut bob_central).await.unwrap();
+            assert_eq!(
+                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                E2eiConversationState::NotVerified
+            );
         }
     }
 
@@ -335,25 +331,35 @@ pub mod tests {
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_not_valid_yet(case: TestCase) {
         if case.is_x509() {
-            let tomorrow = now() + core::time::Duration::from_secs(3600 * 24);
-            let (certificate_chain, sign_key) = WireIdentityBuilder {
-                not_before: tomorrow,
-                ..Default::default()
-            }
-            .build_x509_der();
+            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
-            let cb = CertificateBundle {
-                certificate_chain,
-                private_key: CertificatePrivateKey {
-                    value: sign_key,
-                    signature_scheme: case.ciphersuite().signature_algorithm(),
-                },
+            let tomorrow = now_std() + core::time::Duration::from_secs(3600 * 24);
+            let local_ca = x509_test_chain.find_local_intermediate_ca();
+            let alice_cert = {
+                let name = "alice";
+                let common_name = format!("{name} Smith");
+                let handle = format!("{}_wire", name.to_lowercase());
+                let client_id: String =
+                    crate::e2e_identity::id::QualifiedE2eiClientId::generate_with_domain("wire.com")
+                        .try_into()
+                        .unwrap();
+                local_ca.create_and_sign_end_identity(CertificateParams {
+                    common_name: Some(common_name.clone()),
+                    handle: Some(handle.clone()),
+                    client_id: Some(client_id.clone()),
+                    validity_start: Some(tomorrow),
+                    ..Default::default()
+                })
             };
+            let cb = alice_cert.into();
             let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
 
-            let bob_identifier = CertificateBundle::rand_identifier("bob", &[case.signature_scheme()]);
+            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
 
-            match try_talk(&case, alice_identifier, bob_identifier).await.unwrap_err() {
+            match try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
+                .await
+                .unwrap_err()
+            {
                 CryptoError::MlsError(MlsError::MlsCryptoError(openmls::prelude::CryptoError::ExpiredCertificate)) => {}
                 e => panic!("Unexpected error: {e:?}"),
             }
@@ -361,14 +367,19 @@ pub mod tests {
     }
 
     /// In order to be WASM-compatible
-    pub fn now() -> wire_e2e_identity::prelude::OffsetDateTime {
+    // pub fn now() -> wire_e2e_identity::prelude::OffsetDateTime {
+    //     let now_since_epoch = now_std().as_secs() as i64;
+    //     wire_e2e_identity::prelude::OffsetDateTime::from_unix_timestamp(now_since_epoch).unwrap()
+    // }
+
+    pub fn now_std() -> std::time::Duration {
         let now = fluvio_wasm_timer::SystemTime::now();
-        let now_since_epoch = now.duration_since(fluvio_wasm_timer::UNIX_EPOCH).unwrap().as_secs() as i64;
-        wire_e2e_identity::prelude::OffsetDateTime::from_unix_timestamp(now_since_epoch).unwrap()
+        now.duration_since(fluvio_wasm_timer::UNIX_EPOCH).unwrap()
     }
 
     async fn try_talk(
         case: &TestCase,
+        x509_test_chain: Option<&X509TestChain>,
         creator_identifier: ClientIdentifier,
         guest_identifier: ClientIdentifier,
     ) -> CryptoResult<(MlsCentral, MlsCentral, ConversationId)> {
@@ -396,6 +407,9 @@ pub mod tests {
         )?;
 
         let mut creator_central = MlsCentral::try_new(creator_cfg).await?;
+        if let Some(x509_test_chain) = &x509_test_chain {
+            x509_test_chain.register_with_central(&creator_central).await;
+        }
         creator_central
             .mls_init(
                 creator_identifier,
@@ -415,6 +429,9 @@ pub mod tests {
         )?;
 
         let mut guest_central = MlsCentral::try_new(guest_cfg).await?;
+        if let Some(x509_test_chain) = &x509_test_chain {
+            x509_test_chain.register_with_central(&guest_central).await;
+        }
         guest_central
             .mls_init(
                 guest_identifier,

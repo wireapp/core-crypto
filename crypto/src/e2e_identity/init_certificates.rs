@@ -17,7 +17,16 @@ impl MlsCentral {
     ///
     /// # Parameters
     /// * `trust_anchor_pem` - PEM certificate to anchor as a Trust Root
-    pub async fn e2ei_register_acme_ca(&mut self, trust_anchor_pem: String) -> CryptoResult<()> {
+    pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CryptoResult<()> {
+        {
+            let mut conn = self.mls_backend.key_store().borrow_conn().await?;
+            if E2eiAcmeCA::find_unique(&mut conn).await.is_ok() {
+                return Err(CryptoError::E2eiError(
+                    super::E2eIdentityError::TrustAnchorAlreadyRegistered,
+                ));
+            }
+        }
+
         let pki_env = PkiEnvironment::init(PkiEnvironmentParams {
             intermediates: Default::default(),
             trust_roots: Default::default(),
@@ -55,22 +64,19 @@ impl MlsCentral {
     ///
     /// # Parameters
     /// * `cert_pem` - PEM certificate to register as an Intermediate CA
-    pub async fn e2ei_register_intermediate_ca_pem(&mut self, cert_pem: String) -> CryptoResult<Option<Vec<String>>> {
+    pub async fn e2ei_register_intermediate_ca_pem(&self, cert_pem: String) -> CryptoResult<Option<Vec<String>>> {
         // Parse/decode PEM cert
         let inter_ca = PkiEnvironment::decode_pem_cert(cert_pem).map_err(|e| CryptoError::E2eiError(e.into()))?;
         self.e2ei_register_intermediate_ca(inter_ca).await
     }
 
-    pub(crate) async fn e2ei_register_intermediate_ca_der(
-        &mut self,
-        cert_der: &[u8],
-    ) -> CryptoResult<Option<Vec<String>>> {
+    pub(crate) async fn e2ei_register_intermediate_ca_der(&self, cert_der: &[u8]) -> CryptoResult<Option<Vec<String>>> {
         let inter_ca = x509_cert::Certificate::from_der(cert_der)?;
         self.e2ei_register_intermediate_ca(inter_ca).await
     }
 
     async fn e2ei_register_intermediate_ca(
-        &mut self,
+        &self,
         inter_ca: x509_cert::Certificate,
     ) -> CryptoResult<Option<Vec<String>>> {
         // TrustAnchor must have been registered at this point
@@ -128,7 +134,7 @@ impl MlsCentral {
     ///
     /// # Returns
     /// A [CrlRegistration] with the dirty state of the new CRL (see struct) and its expiration timestamp
-    pub async fn e2ei_register_crl(&mut self, crl_dp: String, crl_der: Vec<u8>) -> CryptoResult<CrlRegistration> {
+    pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> CryptoResult<CrlRegistration> {
         // Parse/decode DER CRL
         let crl = PkiEnvironment::decode_der_crl(crl_der).map_err(|e| CryptoError::E2eiError(e.into()))?;
 
@@ -169,7 +175,7 @@ impl MlsCentral {
         Ok(CrlRegistration { expiration, dirty })
     }
 
-    pub(crate) async fn init_pki_env(&mut self) -> CryptoResult<()> {
+    pub(crate) async fn init_pki_env(&self) -> CryptoResult<()> {
         self.mls_backend
             .authentication_service()
             .update_env(Self::restore_pki_env(&self.mls_backend).await?)?;

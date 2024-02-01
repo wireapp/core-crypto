@@ -97,11 +97,12 @@ wasm-bindgen-test = "0.3"
 js-sys = "0.3"
 rstest = "0.18"
 rstest_reuse = "0.6"
+pretty_env_logger = "0.5"
 async-std = { version = "1.12", features = ["attributes"] }
 futures-util = { version = "0.3", features = ["std", "alloc"] }
 proteus-traits = "2.0"
 async-trait = "0.1"
-wire-e2e-identity = { version = "0.8", features = ["identity-builder"] }
+wire-e2e-identity = { version = "0.8", default-features = false }
 fluvio-wasm-timer = "0.2"
 time = { version = "0.3", features = ["wasm-bindgen"] }
 

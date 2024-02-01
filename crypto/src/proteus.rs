@@ -955,7 +955,7 @@ impl ProteusCentral {
 mod tests {
     use crate::{
         prelude::{CertificateBundle, ClientIdentifier, MlsCentral, MlsCentralConfiguration, MlsCredentialType},
-        test_utils::{proteus_utils::*, *},
+        test_utils::{proteus_utils::*, x509::X509TestChain, *},
     };
 
     use crate::prelude::INITIAL_KEYING_MATERIAL_COUNT;
@@ -1008,6 +1008,8 @@ mod tests {
         )
         .unwrap();
         let mut cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
+        let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+        x509_test_chain.register_with_central(&cc.mls).await;
         assert!(cc.proteus_init().await.is_ok());
         // proteus is initialized, prekeys can be generated
         assert!(cc.proteus_new_prekey(1).await.is_ok());
@@ -1015,7 +1017,9 @@ mod tests {
         let client_id = "alice";
         let identifier = match case.credential_type {
             MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
-            MlsCredentialType::X509 => CertificateBundle::rand_identifier(client_id, &[case.signature_scheme()]),
+            MlsCredentialType::X509 => {
+                CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
+            }
         };
         cc.mls_init(
             identifier,

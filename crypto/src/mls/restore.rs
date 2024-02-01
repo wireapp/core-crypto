@@ -51,7 +51,7 @@ pub mod tests {
             CertificateBundle, ClientIdentifier, MlsCentral, MlsCentralConfiguration, MlsCredentialType,
             INITIAL_KEYING_MATERIAL_COUNT,
         },
-        test_utils::*,
+        test_utils::{x509::X509TestChain, *},
     };
     use std::collections::HashMap;
 
@@ -62,11 +62,12 @@ pub mod tests {
     pub async fn can_persist_group_state(case: TestCase) {
         run_tests(move |[store_path]| {
             Box::pin(async move {
+                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
                 let cid = match case.credential_type {
                     MlsCredentialType::Basic => ClientIdentifier::Basic("potato".into()),
                     MlsCredentialType::X509 => {
                         let cert =
-                            CertificateBundle::rand(&"potato".into(), case.cfg.ciphersuite.signature_algorithm());
+                            CertificateBundle::rand(&"potato".into(), x509_test_chain.find_local_intermediate_ca());
                         ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]))
                     }
                 };
@@ -81,6 +82,7 @@ pub mod tests {
                 .unwrap();
 
                 let mut central = MlsCentral::try_new(configuration.clone()).await.unwrap();
+                x509_test_chain.register_with_central(&central).await;
                 central
                     .mls_init(
                         cid.clone(),
@@ -116,6 +118,7 @@ pub mod tests {
         run_tests(move |[alice_path, bob_path]| {
             Box::pin(async move {
                 let id = conversation_id();
+                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
                 let (alice_cid, bob_cid) = match case.credential_type {
                     MlsCredentialType::Basic => (
@@ -123,10 +126,11 @@ pub mod tests {
                         ClientIdentifier::Basic("bob".into()),
                     ),
                     MlsCredentialType::X509 => {
-                        let cert = CertificateBundle::rand(&"alice".into(), case.cfg.ciphersuite.signature_algorithm());
+                        let cert =
+                            CertificateBundle::rand(&"alice".into(), x509_test_chain.find_local_intermediate_ca());
                         let alice =
                             ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]));
-                        let cert = CertificateBundle::rand(&"bob".into(), case.cfg.ciphersuite.signature_algorithm());
+                        let cert = CertificateBundle::rand(&"bob".into(), x509_test_chain.find_local_intermediate_ca());
                         let bob =
                             ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]));
                         (alice, bob)
@@ -142,6 +146,7 @@ pub mod tests {
                 )
                 .unwrap();
                 let mut alice_central = MlsCentral::try_new(alice_cfg.clone()).await.unwrap();
+                x509_test_chain.register_with_central(&alice_central).await;
                 alice_central
                     .mls_init(
                         alice_cid.clone(),
@@ -161,6 +166,7 @@ pub mod tests {
                 )
                 .unwrap();
                 let mut bob_central = MlsCentral::try_new(bob_cfg).await.unwrap();
+                x509_test_chain.register_with_central(&bob_central).await;
                 bob_central
                     .mls_init(bob_cid, vec![case.ciphersuite()], Some(INITIAL_KEYING_MATERIAL_COUNT))
                     .await

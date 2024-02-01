@@ -1,9 +1,8 @@
+#[cfg(test)]
+use mls_crypto_provider::PkiKeypair;
 use openmls_traits::types::SignatureScheme;
 use wire_e2e_identity::prelude::WireIdentityReader;
 use zeroize::Zeroize;
-
-#[cfg(test)]
-use wire_e2e_identity::prelude::{WireIdentityBuilder, WireIdentityBuilderOptions, WireIdentityBuilderX509};
 
 use crate::{
     e2e_identity::id::WireQualifiedClientId,
@@ -69,6 +68,35 @@ impl From<crate::test_utils::x509::X509Certificate> for CertificateBundle {
 }
 
 #[cfg(test)]
+impl From<&crate::test_utils::x509::X509Certificate> for CertificateBundle {
+    fn from(cert: &crate::test_utils::x509::X509Certificate) -> Self {
+        use x509_cert::der::Encode as _;
+
+        Self {
+            certificate_chain: vec![cert.certificate.to_der().unwrap()],
+            private_key: CertificatePrivateKey {
+                value: cert.pki_keypair.signing_key_bytes(),
+                signature_scheme: cert.signature_scheme,
+            },
+        }
+    }
+}
+
+#[cfg(test)]
+fn new_rand_client(domain: Option<String>) -> (String, String) {
+    let rand_str = |n: usize| {
+        use rand::distributions::{Alphanumeric, DistString as _};
+        Alphanumeric.sample_string(&mut rand::thread_rng(), n)
+    };
+    let user_id = uuid::Uuid::new_v4().to_string();
+    let domain = domain.unwrap_or_else(|| format!("{}.com", rand_str(6)));
+    let client_id = wire_e2e_identity::prelude::E2eiClientId::try_new(user_id, rand::random::<u64>(), &domain)
+        .unwrap()
+        .to_qualified();
+    (client_id, domain)
+}
+
+#[cfg(test)]
 impl CertificateBundle {
     /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
     pub fn rand(name: &ClientId, signer: &crate::test_utils::x509::X509Certificate) -> Self {
@@ -77,7 +105,7 @@ impl CertificateBundle {
         // and not a real client_id, instead we'll generate a random one
         let handle = format!("{name}_wire");
         let display_name = format!("{name} Smith");
-        Self::new(&handle, &display_name, None, signer)
+        Self::new(&handle, &display_name, None, None, signer)
     }
 
     /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
@@ -85,45 +113,57 @@ impl CertificateBundle {
         handle: &str,
         display_name: &str,
         client_id: Option<&crate::e2e_identity::id::QualifiedE2eiClientId>,
+        cert_keypair: Option<PkiKeypair>,
         signer: &crate::test_utils::x509::X509Certificate,
+    ) -> Self {
+        Self::new_with_expiration(handle, display_name, client_id, cert_keypair, signer, None)
+    }
+
+    pub fn new_with_expiration(
+        handle: &str,
+        display_name: &str,
+        client_id: Option<&crate::e2e_identity::id::QualifiedE2eiClientId>,
+        cert_keypair: Option<PkiKeypair>,
+        signer: &crate::test_utils::x509::X509Certificate,
+        expiration: Option<std::time::Duration>,
     ) -> Self {
         // here in our tests client_id is generally just "alice" or "bob"
         // so we will use it to augment handle & display_name
         // and not a real client_id, instead we'll generate a random one
-        let domain = "wire.com";
+        let domain = "world.com";
         let (client_id, domain) = client_id
             .map(|cid| {
                 let cid = String::from_utf8(cid.to_vec()).unwrap();
                 (cid, domain.to_string())
             })
-            .unwrap_or_else(|| WireIdentityBuilder::new_rand_client(Some(domain.to_string())));
+            .unwrap_or_else(|| new_rand_client(Some(domain.to_string())));
 
-        let cert = signer.create_and_sign_end_identity(crate::test_utils::x509::CertificateParams {
-            org: "Wire".to_string(),
+        let mut cert_params = crate::test_utils::x509::CertificateParams {
             domain: domain.into(),
             common_name: Some(display_name.to_string()),
             handle: Some(handle.to_string()),
             client_id: Some(client_id.to_string()),
+            cert_keypair,
             ..Default::default()
-        });
+        };
 
-        cert.into()
+        if let Some(expiration) = expiration {
+            cert_params.expiration = expiration;
+        }
+
+        signer.create_and_sign_end_identity(cert_params).into()
     }
 
-    // pub fn new_from_builder(builder: WireIdentityBuilder, sc: SignatureScheme) -> Self {
-    //     let (certificate_chain, sign_key) = builder.build_x509_der();
-    //     Self {
-    //         certificate_chain,
-    //         private_key: CertificatePrivateKey {
-    //             value: sign_key,
-    //             signature_scheme: sc,
-    //         },
-    //     }
-    // }
+    pub fn new_with_default_values(
+        signer: &crate::test_utils::x509::X509Certificate,
+        expiration: Option<std::time::Duration>,
+    ) -> Self {
+        Self::new_with_expiration("alice_wire@world.com", "Alice Smith", None, None, signer, expiration)
+    }
 
     pub fn rand_identifier(
         name: &str,
-        signers: &[crate::test_utils::x509::X509Certificate],
+        signers: &[&crate::test_utils::x509::X509Certificate],
     ) -> crate::prelude::ClientIdentifier {
         crate::prelude::ClientIdentifier::X509(
             signers

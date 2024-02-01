@@ -33,7 +33,7 @@ p384 = { version = "0.13", features = ["pkcs8"] }
 # p521 = { version = "0.12", git = "https://github.com/RustCrypto/elliptic-curves", package = "p521" }
 hkdf = "0.12"
 spki = { version = "0.7", features = ["pem", "fingerprint"] }
-x509-cert = { version = "0.2", features = ["builder"] }
+x509-cert = { version = "0.2", features = ["builder", "hazmat"] }
 wire-e2e-identity = { version = "0.8", default-features = false }
 fluvio-wasm-timer = "0.2"
 rand = { version = "0.8", features = ["getrandom"] }

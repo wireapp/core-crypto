@@ -33,7 +33,7 @@ pub mod tests {
     pub async fn should_be_false_when_basic_and_true_when_x509(case: TestCase) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
-                let e2ei_is_enabled = cc.e2ei_is_enabled(case.signature_scheme()).unwrap();
+                let e2ei_is_enabled = cc.mls_central.e2ei_is_enabled(case.signature_scheme()).unwrap();
                 match case.credential_type {
                     MlsCredentialType::Basic => assert!(!e2ei_is_enabled),
                     MlsCredentialType::X509 => assert!(e2ei_is_enabled),
@@ -49,7 +49,7 @@ pub mod tests {
         run_test_wo_clients(case.clone(), move |cc| {
             Box::pin(async move {
                 assert!(matches!(
-                    cc.e2ei_is_enabled(case.signature_scheme()).unwrap_err(),
+                    cc.mls_central.e2ei_is_enabled(case.signature_scheme()).unwrap_err(),
                     CryptoError::MlsNotInitialized
                 ));
             })
@@ -68,7 +68,7 @@ pub mod tests {
                     _ => SignatureScheme::ED25519,
                 };
                 assert!(matches!(
-                    cc.e2ei_is_enabled(other_sc).unwrap_err(),
+                    cc.mls_central.e2ei_is_enabled(other_sc).unwrap_err(),
                     CryptoError::CredentialNotFound(_)
                 ));
             })

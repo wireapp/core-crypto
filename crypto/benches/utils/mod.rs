@@ -5,7 +5,6 @@ pub mod proteus_bench;
 
 use criterion::Criterion;
 pub use mls::*;
-pub use proteus_bench::*;
 
 // number of criterion sample
 pub const SAMPLE_SIZE: usize = 10;

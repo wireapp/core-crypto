@@ -181,18 +181,48 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         alice_central
-                            .remove_members_from_conversation(&id, &[bob_central.get_client_id()])
+                            .mls_central
+                            .invite_all(&case, &id, [&mut bob_central.mls_central])
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                        alice_central.commit_accepted(&id).await.unwrap();
-                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
+                        assert_eq!(
+                            alice_central
+                                .mls_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .members()
+                                .len(),
+                            2
+                        );
+                        alice_central
+                            .mls_central
+                            .remove_members_from_conversation(&id, &[bob_central.mls_central.get_client_id()])
+                            .await
+                            .unwrap();
+                        assert_eq!(
+                            alice_central
+                                .mls_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .members()
+                                .len(),
+                            2
+                        );
+                        alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                        assert_eq!(
+                            alice_central
+                                .mls_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .members()
+                                .len(),
+                            1
+                        );
                     })
                 },
             )
@@ -209,17 +239,22 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.new_update_proposal(&id).await.unwrap();
-                        let bob = bob_central.rand_key_package(&case).await;
-                        alice_central.add_members_to_conversation(&id, vec![bob]).await.unwrap();
-                        assert!(!alice_central.pending_proposals(&id).await.is_empty());
-                        assert!(alice_central.pending_commit(&id).await.is_some());
-                        alice_central.commit_accepted(&id).await.unwrap();
-                        assert!(alice_central.pending_commit(&id).await.is_none());
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        alice_central.mls_central.new_update_proposal(&id).await.unwrap();
+                        let bob = bob_central.mls_central.rand_key_package(&case).await;
+                        alice_central
+                            .mls_central
+                            .add_members_to_conversation(&id, vec![bob])
+                            .await
+                            .unwrap();
+                        assert!(!alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
+                        alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                        assert!(alice_central.mls_central.pending_commit(&id).await.is_none());
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
                     })
                 },
             )
@@ -233,23 +268,24 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
+                        .mls_central
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
-                    let initial_count = alice_central.count_entities().await;
+                    let initial_count = alice_central.mls_central.count_entities().await;
 
-                    alice_central.new_update_proposal(&id).await.unwrap();
-                    let post_proposal_count = alice_central.count_entities().await;
+                    alice_central.mls_central.new_update_proposal(&id).await.unwrap();
+                    let post_proposal_count = alice_central.mls_central.count_entities().await;
                     assert_eq!(
                         post_proposal_count.encryption_keypair,
                         initial_count.encryption_keypair + 1
                     );
 
-                    alice_central.commit_pending_proposals(&id).await.unwrap();
-                    alice_central.commit_accepted(&id).await.unwrap();
+                    alice_central.mls_central.commit_pending_proposals(&id).await.unwrap();
+                    alice_central.mls_central.commit_accepted(&id).await.unwrap();
 
-                    let final_count = alice_central.count_entities().await;
+                    let final_count = alice_central.mls_central.count_entities().await;
                     assert_eq!(initial_count, final_count);
                 })
             })
@@ -270,47 +306,74 @@ pub mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
+                            .mls_central
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        alice_central
+                            .mls_central
+                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .await
+                            .unwrap();
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
 
-                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
+                        let charlie_kp = charlie_central.mls_central.get_one_key_package(&case).await;
                         let add_ref = alice_central
+                            .mls_central
                             .new_add_proposal(&id, charlie_kp)
                             .await
                             .unwrap()
                             .proposal_ref;
 
                         let remove_ref = alice_central
-                            .new_remove_proposal(&id, bob_central.get_client_id())
+                            .mls_central
+                            .new_remove_proposal(&id, bob_central.mls_central.get_client_id())
                             .await
                             .unwrap()
                             .proposal_ref;
 
-                        let update_ref = alice_central.new_update_proposal(&id).await.unwrap().proposal_ref;
+                        let update_ref = alice_central
+                            .mls_central
+                            .new_update_proposal(&id)
+                            .await
+                            .unwrap()
+                            .proposal_ref;
 
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 3);
-                        alice_central.clear_pending_proposal(&id, add_ref).await.unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 2);
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 3);
+                        alice_central
+                            .mls_central
+                            .clear_pending_proposal(&id, add_ref)
+                            .await
+                            .unwrap();
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 2);
                         assert!(!alice_central
+                            .mls_central
                             .pending_proposals(&id)
                             .await
                             .into_iter()
                             .any(|p| matches!(p.proposal(), Proposal::Add(_))));
 
-                        alice_central.clear_pending_proposal(&id, remove_ref).await.unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        alice_central
+                            .mls_central
+                            .clear_pending_proposal(&id, remove_ref)
+                            .await
+                            .unwrap();
+                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
                         assert!(!alice_central
+                            .mls_central
                             .pending_proposals(&id)
                             .await
                             .into_iter()
                             .any(|p| matches!(p.proposal(), Proposal::Remove(_))));
 
-                        alice_central.clear_pending_proposal(&id, update_ref).await.unwrap();
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        alice_central
+                            .mls_central
+                            .clear_pending_proposal(&id, update_ref)
+                            .await
+                            .unwrap();
+                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
                         assert!(!alice_central
+                            .mls_central
                             .pending_proposals(&id)
                             .await
                             .into_iter()
@@ -328,7 +391,7 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     let simple_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
-                    let clear = alice_central.clear_pending_proposal(&id, simple_ref).await;
+                    let clear = alice_central.mls_central.clear_pending_proposal(&id, simple_ref).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::ConversationNotFound(conv_id) if conv_id == id))
                 })
             })
@@ -342,12 +405,12 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .mls_central.new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    assert!(alice_central.pending_proposals(&id).await.is_empty());
+                    assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
                     let any_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
-                    let clear = alice_central.clear_pending_proposal(&id, any_ref.clone()).await;
+                    let clear = alice_central.mls_central.clear_pending_proposal(&id, any_ref.clone()).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::PendingProposalNotFound(prop_ref) if prop_ref == any_ref))
                 })
             })
@@ -360,23 +423,24 @@ pub mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    cc.new_conversation(&id, case.credential_type, case.cfg.clone())
+                    cc.mls_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    assert!(cc.pending_proposals(&id).await.is_empty());
+                    assert!(cc.mls_central.pending_proposals(&id).await.is_empty());
 
-                    let init = cc.count_entities().await;
+                    let init = cc.mls_central.count_entities().await;
 
-                    let proposal_ref = cc.new_update_proposal(&id).await.unwrap().proposal_ref;
-                    assert_eq!(cc.pending_proposals(&id).await.len(), 1);
+                    let proposal_ref = cc.mls_central.new_update_proposal(&id).await.unwrap().proposal_ref;
+                    assert_eq!(cc.mls_central.pending_proposals(&id).await.len(), 1);
 
-                    cc.clear_pending_proposal(&id, proposal_ref).await.unwrap();
-                    assert!(cc.pending_proposals(&id).await.is_empty());
+                    cc.mls_central.clear_pending_proposal(&id, proposal_ref).await.unwrap();
+                    assert!(cc.mls_central.pending_proposals(&id).await.is_empty());
 
                     // This whole flow should be idempotent.
                     // Here we verify that we are indeed deleting the `EncryptionKeyPair` created
                     // for the Update proposal
-                    let after_clear_proposal = cc.count_entities().await;
+                    let after_clear_proposal = cc.mls_central.count_entities().await;
                     assert_eq!(init, after_clear_proposal);
                 })
             })
@@ -394,15 +458,16 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
+                        .mls_central
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    assert!(alice_central.pending_commit(&id).await.is_none());
+                    assert!(alice_central.mls_central.pending_commit(&id).await.is_none());
 
-                    alice_central.update_keying_material(&id).await.unwrap();
-                    assert!(alice_central.pending_commit(&id).await.is_some());
-                    alice_central.clear_pending_commit(&id).await.unwrap();
-                    assert!(alice_central.pending_commit(&id).await.is_none());
+                    alice_central.mls_central.update_keying_material(&id).await.unwrap();
+                    assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
+                    alice_central.mls_central.clear_pending_commit(&id).await.unwrap();
+                    assert!(alice_central.mls_central.pending_commit(&id).await.is_none());
                 })
             })
             .await
@@ -414,7 +479,7 @@ pub mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    let clear = alice_central.clear_pending_commit(&id).await;
+                    let clear = alice_central.mls_central.clear_pending_commit(&id).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::ConversationNotFound(conv_id) if conv_id == id))
                 })
             })
@@ -428,11 +493,12 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
+                        .mls_central
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    assert!(alice_central.pending_commit(&id).await.is_none());
-                    let clear = alice_central.clear_pending_commit(&id).await;
+                    assert!(alice_central.mls_central.pending_commit(&id).await.is_none());
+                    let clear = alice_central.mls_central.clear_pending_commit(&id).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::PendingCommitNotFound))
                 })
             })
@@ -445,23 +511,24 @@ pub mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    cc.new_conversation(&id, case.credential_type, case.cfg.clone())
+                    cc.mls_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    assert!(cc.pending_commit(&id).await.is_none());
+                    assert!(cc.mls_central.pending_commit(&id).await.is_none());
 
-                    let init = cc.count_entities().await;
+                    let init = cc.mls_central.count_entities().await;
 
-                    cc.update_keying_material(&id).await.unwrap();
-                    assert!(cc.pending_commit(&id).await.is_some());
+                    cc.mls_central.update_keying_material(&id).await.unwrap();
+                    assert!(cc.mls_central.pending_commit(&id).await.is_some());
 
-                    cc.clear_pending_commit(&id).await.unwrap();
-                    assert!(cc.pending_commit(&id).await.is_none());
+                    cc.mls_central.clear_pending_commit(&id).await.unwrap();
+                    assert!(cc.mls_central.pending_commit(&id).await.is_none());
 
                     // This whole flow should be idempotent.
                     // Here we verify that we are indeed deleting the `EncryptionKeyPair` created
                     // for the Update commit
-                    let after_clear_commit = cc.count_entities().await;
+                    let after_clear_commit = cc.mls_central.count_entities().await;
                     assert_eq!(init, after_clear_commit);
                 })
             })

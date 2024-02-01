@@ -59,4 +59,7 @@ pub enum E2eIdentityError {
     /// !!!! Something went very wrong and one of our locks has been poisoned by an in-thread panic !!!!
     #[error("One of the locks has been poisoned")]
     LockPoisonError,
+    /// We already have an ACME Root Trust Anchor registered. Cannot proceed but this is usually indicative of double registration and can be ignored
+    #[error("We already have an ACME Root Trust Anchor registered. Cannot proceed but this is usually indicative of double registration and can be ignored")]
+    TrustAnchorAlreadyRegistered,
 }

@@ -171,57 +171,99 @@ pub mod tests {
                     let id = conversation_id();
 
                     alice_central
+                        .mls_central
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
-                    let bob = bob_central.rand_key_package(&case).await;
+                    let bob = bob_central.mls_central.rand_key_package(&case).await;
                     let MlsConversationCreationMessage {
                         welcome: bob_welcome, ..
-                    } = alice_central.add_members_to_conversation(&id, vec![bob]).await.unwrap();
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-                    alice_central.commit_accepted(&id).await.unwrap();
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                    } = alice_central
+                        .mls_central
+                        .add_members_to_conversation(&id, vec![bob])
+                        .await
+                        .unwrap();
+                    assert_eq!(
+                        alice_central
+                            .mls_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .len(),
+                        1
+                    );
+                    alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                    assert_eq!(
+                        alice_central
+                            .mls_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .len(),
+                        2
+                    );
 
                     bob_central
+                        .mls_central
                         .process_welcome_message(bob_welcome.clone().into(), case.custom_cfg())
                         .await
                         .unwrap();
 
-                    let charlie = charlie_central.rand_key_package(&case).await;
+                    let charlie = charlie_central.mls_central.rand_key_package(&case).await;
                     let MlsConversationCreationMessage {
                         welcome: charlie_welcome,
                         commit,
                         ..
                     } = alice_central
+                        .mls_central
                         .add_members_to_conversation(&id, vec![charlie])
                         .await
                         .unwrap();
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                    alice_central.commit_accepted(&id).await.unwrap();
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
+                    assert_eq!(
+                        alice_central
+                            .mls_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .len(),
+                        2
+                    );
+                    alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                    assert_eq!(
+                        alice_central
+                            .mls_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .members()
+                            .len(),
+                        3
+                    );
 
                     let _ = bob_central
+                        .mls_central
                         .decrypt_message(&id, &commit.tls_serialize_detached().unwrap())
                         .await
                         .unwrap();
 
                     charlie_central
+                        .mls_central
                         .process_welcome_message(charlie_welcome.into(), case.custom_cfg())
                         .await
                         .unwrap();
 
                     assert_eq!(
-                        bob_central.get_conversation_unchecked(&id).await.id(),
-                        alice_central.get_conversation_unchecked(&id).await.id()
+                        bob_central.mls_central.get_conversation_unchecked(&id).await.id(),
+                        alice_central.mls_central.get_conversation_unchecked(&id).await.id()
                     );
                     assert_eq!(
-                        charlie_central.get_conversation_unchecked(&id).await.id(),
-                        alice_central.get_conversation_unchecked(&id).await.id()
+                        charlie_central.mls_central.get_conversation_unchecked(&id).await.id(),
+                        alice_central.mls_central.get_conversation_unchecked(&id).await.id()
                     );
 
                     let proposal_bundle = alice_central
-                        .new_remove_proposal(&id, alice_central.get_client_id())
+                        .mls_central
+                        .new_remove_proposal(&id, alice_central.mls_central.get_client_id())
                         .await
                         .unwrap();
 
@@ -229,6 +271,7 @@ pub mod tests {
                     let charlie_hypothetical_position = 1;
 
                     let bob_decrypted_message = bob_central
+                        .mls_central
                         .decrypt_message(&id, &proposal_bundle.proposal.tls_serialize_detached().unwrap())
                         .await
                         .unwrap();
@@ -239,6 +282,7 @@ pub mod tests {
                     );
 
                     let charlie_decrypted_message = charlie_central
+                        .mls_central
                         .decrypt_message(&id, &proposal_bundle.proposal.tls_serialize_detached().unwrap())
                         .await
                         .unwrap();
