@@ -382,7 +382,7 @@ test("get client public key", async () => {
   const [ctx, page] = await initBrowser();
 
   const pkLength = await page.evaluate(async () => {
-    const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
+    const { CoreCrypto, Ciphersuite, CredentialType } = await import("./corecrypto.js");
 
     const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
     const cc = await CoreCrypto.init({
@@ -392,7 +392,7 @@ test("get client public key", async () => {
       clientId: "test",
     });
 
-    const len = (await cc.clientPublicKey(ciphersuite)).length;
+    const len = (await cc.clientPublicKey(ciphersuite, CredentialType.Basic)).length;
     await cc.wipe();
     return len;
   });

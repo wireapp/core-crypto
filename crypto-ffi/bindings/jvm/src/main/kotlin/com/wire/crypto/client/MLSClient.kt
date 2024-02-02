@@ -79,8 +79,8 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param ciphersuite of the signature key to get
      * @return the client's public signature key
      */
-    suspend fun getPublicKey(ciphersuite: Ciphersuite = Ciphersuite.DEFAULT): SignaturePublicKey {
-        return cc.clientPublicKey(ciphersuite.lower()).toSignaturePublicKey()
+    suspend fun getPublicKey(ciphersuite: Ciphersuite = Ciphersuite.DEFAULT, credentialType: CredentialType = CredentialType.DEFAULT,): SignaturePublicKey {
+        return cc.clientPublicKey(ciphersuite.lower(), credentialType.lower()).toSignaturePublicKey()
     }
 
     /**

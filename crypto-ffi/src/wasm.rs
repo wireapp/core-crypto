@@ -1357,14 +1357,14 @@ impl CoreCrypto {
     /// Returns:: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::mls::MlsCentral::client_public_key]
-    pub fn client_public_key(&self, ciphersuite: Ciphersuite) -> Promise {
+    pub fn client_public_key(&self, ciphersuite: Ciphersuite, credential_type: CredentialType) -> Promise {
         let this = self.inner.clone();
         let ciphersuite: CiphersuiteName = ciphersuite.into();
         future_to_promise(
             async move {
                 let cc = this.read().await;
                 let pk = cc
-                    .client_public_key(ciphersuite.into())
+                    .client_public_key(ciphersuite.into(), credential_type.into())
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
             }
