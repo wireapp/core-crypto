@@ -1197,11 +1197,12 @@ export class CoreCrypto {
      * Get the client's public signature key. To upload to the DS for further backend side validation
      *
      * @param ciphersuite - of the signature key to get
+     * @param credentialType - of the public key to look for
      * @returns the client's public signature key
      */
-    async clientPublicKey(ciphersuite: Ciphersuite): Promise<Uint8Array> {
+    async clientPublicKey(ciphersuite: Ciphersuite, credentialType: CredentialType): Promise<Uint8Array> {
         return await CoreCryptoError.asyncMapErr(
-            this.#cc.client_public_key(ciphersuite)
+            this.#cc.client_public_key(ciphersuite, credentialType)
         );
     }
 

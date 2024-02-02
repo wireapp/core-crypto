@@ -867,8 +867,16 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::client_public_key]
-    pub async fn client_public_key(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self.central.lock().await.client_public_key(ciphersuite.into())?)
+    pub async fn client_public_key(
+        &self,
+        ciphersuite: Ciphersuite,
+        credential_type: MlsCredentialType,
+    ) -> CoreCryptoResult<Vec<u8>> {
+        Ok(self
+            .central
+            .lock()
+            .await
+            .client_public_key(ciphersuite.into(), credential_type.into())?)
     }
 
     /// See [core_crypto::mls::MlsCentral::get_or_create_client_keypackages]

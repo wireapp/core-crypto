@@ -309,15 +309,17 @@ impl MlsCentral {
     /// Returns the client's most recent public signature key as a buffer.
     /// Used to upload a public key to the server in order to verify client's messages signature.
     ///
-    /// NB: only works for [MlsCredentialType::Basic]. For [MlsCredentialType::X509] we have trust anchor
-    /// certificates provided by the backend hence no client registration is required.
-    ///
     /// # Arguments
     /// * `ciphersuite` - a callback to be called to perform authorization
-    pub fn client_public_key(&self, ciphersuite: MlsCiphersuite) -> CryptoResult<Vec<u8>> {
+    /// * `credential_type` - of the credential to look for
+    pub fn client_public_key(
+        &self,
+        ciphersuite: MlsCiphersuite,
+        credential_type: MlsCredentialType,
+    ) -> CryptoResult<Vec<u8>> {
         let mls_client = self.mls_client()?;
         let cb = mls_client
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
             .ok_or(CryptoError::ClientSignatureNotFound)?;
         Ok(cb.signature_key.to_public_vec())
     }

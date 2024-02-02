@@ -720,20 +720,20 @@ public class CoreCryptoWrapper {
     }
 
     /// - returns: The client's public key
-    public func clientPublicKey(ciphersuite: UInt16) async throws -> [UInt8] {
-        return try await self.coreCrypto.clientPublicKey(ciphersuite: ciphersuite)
+    public func clientPublicKey(ciphersuite: UInt16, credentialType: MlsCredentialType) async throws -> [UInt8] {
+        return try await self.coreCrypto.clientPublicKey(ciphersuite: ciphersuite, credentialType: credentialType.convert())
     }
 
     /// Fetches a requested amount of keypackages
     /// - parameter amountRequested: The amount of keypackages requested
     /// - returns: An array of length `amountRequested` containing TLS-serialized KeyPackages
-    public func clientKeypackages(ciphersuite: UInt16, amountRequested: UInt32) async throws -> [[UInt8]] {
-        return try await self.coreCrypto.clientKeypackages(ciphersuite: ciphersuite, amountRequested: amountRequested)
+    public func clientKeypackages(ciphersuite: UInt16, credentialType: MlsCredentialType, amountRequested: UInt32) async throws -> [[UInt8]] {
+        return try await self.coreCrypto.clientKeypackages(ciphersuite: ciphersuite, credentialType: credentialType.convert(), amountRequested: amountRequested)
     }
 
     /// - returns: The amount of valid, non-expired KeyPackages that are persisted in the backing storage
-    public func clientValidKeypackagesCount(ciphersuite: UInt16) async throws -> UInt64 {
-        return try await self.coreCrypto.clientValidKeypackagesCount(ciphersuite: ciphersuite)
+    public func clientValidKeypackagesCount(ciphersuite: UInt16, credentialType: MlsCredentialType) async throws -> UInt64 {
+        return try await self.coreCrypto.clientValidKeypackagesCount(ciphersuite: ciphersuite, credentialType: credentialType.convert())
     }
 
     /// Prunes local KeyPackages after making sure they also have been deleted on the backend side.
