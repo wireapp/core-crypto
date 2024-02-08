@@ -12,8 +12,8 @@ use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
     group::StagedCommit,
     prelude::{
-        CredentialType, MlsMessageIn, MlsMessageInBody, ProcessMessageError, ProcessedMessage, ProcessedMessageContent,
-        Proposal, ProtocolMessage, ValidationError,
+        ContentType, CredentialType, MlsMessageIn, MlsMessageInBody, ProcessMessageError, ProcessedMessage,
+        ProcessedMessageContent, Proposal, ProtocolMessage, ValidationError,
     },
 };
 use openmls_traits::OpenMlsCryptoProvider;
@@ -271,12 +271,16 @@ impl MlsConversation {
         msg_in: MlsMessageIn,
     ) -> CryptoResult<ProcessedMessage> {
         let mut is_duplicate = false;
-        let protocol_message = match msg_in.extract() {
+        let (protocol_message, content_type) = match msg_in.extract() {
             MlsMessageInBody::PublicMessage(m) => {
                 is_duplicate = self.is_duplicate_message(backend, &m)?;
-                ProtocolMessage::PublicMessage(m)
+                let ct = m.content_type();
+                (ProtocolMessage::PublicMessage(m), ct)
             }
-            MlsMessageInBody::PrivateMessage(m) => ProtocolMessage::PrivateMessage(m),
+            MlsMessageInBody::PrivateMessage(m) => {
+                let ct = m.content_type();
+                (ProtocolMessage::PrivateMessage(m), ct)
+            }
             _ => {
                 return Err(CryptoError::MlsError(
                     ProcessMessageError::IncompatibleWireFormat.into(),
@@ -284,6 +288,7 @@ impl MlsConversation {
             }
         };
         let msg_epoch = protocol_message.epoch().as_u64();
+        let group_epoch = self.group.epoch().as_u64();
         let processed_msg = self
             .group
             .process_message(backend, protocol_message)
@@ -295,10 +300,16 @@ impl MlsConversation {
                 ProcessMessageError::ValidationError(ValidationError::WrongEpoch) => {
                     if is_duplicate {
                         CryptoError::DuplicateMessage
-                    } else if msg_epoch == self.group.epoch().as_u64() + 1 {
+                    } else if msg_epoch == group_epoch + 1 {
                         // limit to next epoch otherwise if we were buffering a commit for epoch + 2
                         // we would fail when trying to decrypt it in [MlsCentral::commit_accepted]
                         CryptoError::BufferedFutureMessage
+                    } else if msg_epoch < group_epoch {
+                        match content_type {
+                            ContentType::Application => CryptoError::WrongEpoch,
+                            ContentType::Commit => CryptoError::StaleCommit,
+                            ContentType::Proposal => CryptoError::StaleProposal,
+                        }
                     } else {
                         CryptoError::WrongEpoch
                     }
@@ -1639,7 +1650,6 @@ pub mod tests {
                             .to_bytes()
                             .unwrap();
                         alice_central.mls_central.clear_pending_commit(&id).await.unwrap();
-                        let outdated_messages = vec![old_proposal, old_commit];
 
                         // Now let's jump to next epoch
                         let commit = alice_central
@@ -1656,10 +1666,21 @@ pub mod tests {
                             .unwrap();
 
                         // trying to consume outdated messages should fail with a dedicated error
-                        for outdated in outdated_messages {
-                            let decrypt = bob_central.mls_central.decrypt_message(&id, &outdated).await;
-                            assert!(matches!(decrypt.unwrap_err(), CryptoError::WrongEpoch));
-                        }
+                        let decrypt_err = bob_central
+                            .mls_central
+                            .decrypt_message(&id, &old_proposal)
+                            .await
+                            .unwrap_err();
+
+                        assert!(matches!(decrypt_err, CryptoError::StaleProposal));
+
+                        let decrypt_err = bob_central
+                            .mls_central
+                            .decrypt_message(&id, &old_commit)
+                            .await
+                            .unwrap_err();
+
+                        assert!(matches!(decrypt_err, CryptoError::StaleCommit));
                     })
                 },
             )

@@ -545,7 +545,7 @@ pub mod tests {
                         .mls_central
                         .decrypt_message(&id, &external_commit.to_bytes().unwrap())
                         .await;
-                    assert!(matches!(result.unwrap_err(), crate::CryptoError::WrongEpoch));
+                    assert!(matches!(result.unwrap_err(), crate::CryptoError::StaleCommit));
                 })
             },
         )

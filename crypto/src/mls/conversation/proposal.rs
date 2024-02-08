@@ -491,7 +491,7 @@ pub mod tests {
                             .mls_central
                             .decrypt_message(&id, &proposal.to_bytes().unwrap())
                             .await;
-                        assert!(matches!(past_proposal.unwrap_err(), CryptoError::WrongEpoch));
+                        assert!(matches!(past_proposal.unwrap_err(), CryptoError::StaleProposal));
                     })
                 },
             )
