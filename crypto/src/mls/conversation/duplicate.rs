@@ -107,7 +107,7 @@ pub mod tests {
                             .mls_central
                             .decrypt_message(&id, &unknown_commit.to_bytes().unwrap())
                             .await;
-                        assert!(matches!(decrypt_lost_commit.unwrap_err(), CryptoError::WrongEpoch));
+                        assert!(matches!(decrypt_lost_commit.unwrap_err(), CryptoError::StaleCommit));
                     })
                 },
             )
@@ -176,7 +176,7 @@ pub mod tests {
                         .mls_central
                         .decrypt_message(&id, &unknown_ext_commit.to_bytes().unwrap())
                         .await;
-                    assert!(matches!(decryption.unwrap_err(), CryptoError::WrongEpoch));
+                    assert!(matches!(decryption.unwrap_err(), CryptoError::StaleCommit));
                 })
             },
         )
@@ -233,7 +233,7 @@ pub mod tests {
                         .mls_central
                         .decrypt_message(&id, &proposal.to_bytes().unwrap())
                         .await;
-                    assert!(matches!(decryption.unwrap_err(), CryptoError::WrongEpoch));
+                    assert!(matches!(decryption.unwrap_err(), CryptoError::StaleProposal));
                 })
             },
         )
@@ -286,7 +286,7 @@ pub mod tests {
                         .mls_central
                         .decrypt_message(&id, &ext_proposal.to_bytes().unwrap())
                         .await;
-                    assert!(matches!(decryption.unwrap_err(), CryptoError::WrongEpoch));
+                    assert!(matches!(decryption.unwrap_err(), CryptoError::StaleProposal));
                 })
             },
         )

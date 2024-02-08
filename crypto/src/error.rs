@@ -237,6 +237,12 @@ pub enum CryptoError {
     /// Json error
     #[error(transparent)]
     JsonError(#[from] serde_json::Error),
+    /// The recieved commit is deemed stale and is from an older epoch
+    #[error("The recieved commit is deemed stale and is from an older epoch.")]
+    StaleCommit,
+    /// The recieved proposal is deemed stale and is from an older epoch
+    #[error("The recieved proposal is deemed stale and is from an older epoch.")]
+    StaleProposal,
 }
 
 impl From<MlsError> for CryptoError {

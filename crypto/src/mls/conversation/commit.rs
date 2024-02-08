@@ -1377,7 +1377,7 @@ pub mod tests {
 
                         // and then fails again when trying to decrypt a commit with an epoch in the past
                         let past_commit = bob_central.mls_central.decrypt_message(&id, &commit1).await;
-                        assert!(matches!(past_commit.unwrap_err(), CryptoError::WrongEpoch));
+                        assert!(matches!(past_commit.unwrap_err(), CryptoError::StaleCommit));
                     })
                 },
             )
@@ -1505,7 +1505,7 @@ pub mod tests {
                                     .decrypt_message(&id, commit2.to_bytes().unwrap())
                                     .await
                                     .unwrap_err(),
-                                CryptoError::WrongEpoch
+                                CryptoError::StaleCommit
                             ));
                         })
                     },
