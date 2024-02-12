@@ -64,10 +64,10 @@ impl From<(Vec<u8>, Vec<u8>)> for E2eiSignatureKeypair {
     }
 }
 
-impl TryFrom<SignatureKeyPair> for E2eiSignatureKeypair {
+impl TryFrom<&SignatureKeyPair> for E2eiSignatureKeypair {
     type Error = CryptoError;
 
-    fn try_from(kp: SignatureKeyPair) -> CryptoResult<Self> {
+    fn try_from(kp: &SignatureKeyPair) -> CryptoResult<Self> {
         let sk = kp.private();
         let sk = match sk.len() {
             SIGN_KEY_LENGTH => sk,
