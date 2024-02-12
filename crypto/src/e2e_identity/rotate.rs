@@ -37,7 +37,7 @@ impl MlsCentral {
             .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::Basic))?;
         let client_id = cb.credential().identity().into();
 
-        let sign_keypair = Some(cb.signature_key.clone().try_into()?);
+        let sign_keypair = Some((&cb.signature_key).try_into()?);
 
         E2eiEnrollment::try_new(
             client_id,
@@ -73,7 +73,7 @@ impl MlsCentral {
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
             .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::X509))?;
         let client_id = cb.credential().identity().into();
-        let sign_keypair = Some(cb.signature_key.clone().try_into()?);
+        let sign_keypair = Some((&cb.signature_key).try_into()?);
         let existing_identity = cb
             .credential()
             .extract_identity()?
