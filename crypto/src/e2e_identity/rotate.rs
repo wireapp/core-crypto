@@ -569,9 +569,8 @@ pub mod tests {
             .await
         }
 
-        // FIXME: E2EI Testing
-        // #[apply(all_cred_cipher)]
-        // #[wasm_bindgen_test]
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
         pub async fn should_restore_credentials_in_order(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
