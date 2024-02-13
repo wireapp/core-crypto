@@ -49,25 +49,25 @@ branch = "2.x"
 package = "openmls"
 git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "feat/validate-credential-callback"
+branch = "wire/stable"
 
 [patch.crates-io.openmls_traits]
 package = "openmls_traits"
 git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "feat/validate-credential-callback"
+branch = "wire/stable"
 
 [patch.crates-io.openmls_basic_credential]
 package = "openmls_basic_credential"
 git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "feat/validate-credential-callback"
+branch = "wire/stable"
 
 [patch.crates-io.openmls_x509_credential]
 package = "openmls_x509_credential"
 git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "feat/validate-credential-callback"
+branch = "wire/stable"
 
 [patch.crates-io.hpke]
 git = "https://github.com/wireapp/rust-hpke.git"
@@ -77,8 +77,7 @@ branch = "wire/unstable-pq-xyber"
 package = "wire-e2e-identity"
 # tag = "v0.8.6"
 git = "https://github.com/wireapp/rusty-jwt-tools"
-branch = "fix/forbid-ee"
-# path = "../rusty-jwt-tools/e2e-identity"
+branch = "main"
 
 [patch.crates-io.x509-cert]
 git = "https://github.com/otak/formats"
