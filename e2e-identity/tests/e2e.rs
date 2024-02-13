@@ -76,6 +76,34 @@ async fn google_demo_should_succeed() {
     assert!(test.nominal_enrollment().await.is_ok());
 }
 
+/// Tests using the custom SPI Provider to be able to use the refreshToken to get a new idToken with the current ACME challenges
+#[cfg(not(ci))]
+#[tokio::test]
+async fn refresh_token_can_be_used_to_renew() {
+    let test = E2eTest::new_demo().start(docker()).await;
+
+    // first enrollment
+    let test = test.nominal_enrollment().await.unwrap();
+
+    let refresh_token = std::env::var("REFRESH_TOKEN").unwrap();
+    assert!(!refresh_token.is_empty());
+    let refresh_token = oauth2::RefreshToken::new(refresh_token);
+
+    // second enrollment
+    let flow = EnrollmentFlow {
+        fetch_id_token: Box::new(|mut test, (oidc_chall, keyauth)| {
+            Box::pin(async move {
+                let id_token = test
+                    .fetch_id_token_from_refresh_token(&oidc_chall, keyauth, refresh_token)
+                    .await?;
+                Ok((test, id_token))
+            })
+        }),
+        ..Default::default()
+    };
+    test.enrollment(flow).await.unwrap();
+}
+
 /// Verify that it works for all MLS ciphersuites
 #[cfg(not(ci))]
 mod alg {

@@ -1,5 +1,7 @@
+use std::process::Command;
 use std::{collections::HashMap, env, net::SocketAddr};
 
+use keycloak::types::JsonNode;
 use keycloak::{
     types::ProtocolMapperRepresentation,
     types::{ClientRepresentation, CredentialRepresentation, UserRepresentation},
@@ -24,8 +26,9 @@ pub struct KeycloakImage {
 }
 
 impl KeycloakImage {
-    const NAME: &'static str = "quay.io/keycloak/keycloak";
-    const TAG: &'static str = "22.0.5"; // has to match the version of Keycloak crate
+    const NAME: &'static str = "wire-keycloak";
+    const TAG: &'static str = "latest"; // has to match the version of Keycloak crate
+    const VERSION: &'static str = "22.0.5";
     pub const HTTP_PORT: u16 = 8080;
     pub const HTTPS_PORT: u16 = 8443;
 
@@ -35,6 +38,7 @@ impl KeycloakImage {
     pub const LOG_LEVEL: &'static str = "info";
 
     pub async fn run(docker: &Cli, cfg: KeycloakCfg, redirect_uri: String) -> KeycloakServer {
+        Self::build();
         let instance = Self::new();
         let image: RunnableImage<Self> = instance.into();
         let image = image
@@ -62,6 +66,27 @@ impl KeycloakImage {
             https_uri,
             socket,
             node,
+        }
+    }
+
+    fn build() {
+        let cwd = env::var("CARGO_MANIFEST_DIR").unwrap();
+        Command::new("docker")
+            .args(&["image", "rm", &format!("{}:{}", Self::NAME, Self::TAG)])
+            .output()
+            .unwrap();
+
+        let output = Command::new("docker")
+            .arg("build")
+            .arg("--file")
+            .arg(&format!("{cwd}/tests/utils/docker/keycloak/Dockerfile"))
+            .arg("--force-rm=true")
+            .arg(format!("--tag={}:{}", Self::NAME, Self::TAG))
+            .arg(".")
+            .output()
+            .unwrap();
+        if !output.status.success() {
+            panic!("stderr: {}", String::from_utf8(output.stderr).unwrap());
         }
     }
 
@@ -171,6 +196,47 @@ impl KeycloakImage {
             .realm_client_scopes_with_id_protocol_mappers_models_post(Self::REALM, &scope_id, audience_protocol_mapper)
             .await
             .unwrap();
+
+        // Create the client profile to attach the executor
+        const EXECUTOR_NAME: &str = "wire-e2ei-claims-refresh";
+        const CLIENT_PROFILE_NAME: &str = "wire-e2ei-claims-refresh-client-profile";
+        let executor = keycloak::types::ClientPolicyExecutorRepresentation {
+            configuration: Some(JsonNode::default()),
+            executor: Some(EXECUTOR_NAME.to_string()),
+        };
+        let client_profile = keycloak::types::ClientProfileRepresentation {
+            name: Some(CLIENT_PROFILE_NAME.to_string()),
+            description: Some("TODO".to_string()),
+            executors: Some(vec![executor]),
+        };
+        let client_profiles = keycloak::types::ClientProfilesRepresentation {
+            global_profiles: None,
+            profiles: Some(vec![client_profile]),
+        };
+        admin
+            .realm_client_policies_profiles_put(Self::REALM, client_profiles)
+            .await
+            .unwrap();
+
+        let condition = keycloak::types::ClientPolicyConditionRepresentation {
+            condition: Some("any-client".to_string()),
+            configuration: Some(JsonNode::default()),
+        };
+
+        let client_policy = keycloak::types::ClientPolicyRepresentation {
+            name: Some(format!("{EXECUTOR_NAME}-client-profile")),
+            conditions: Some(vec![condition]),
+            description: Some("TODO".to_string()),
+            enabled: Some(true),
+            profiles: Some(vec![CLIENT_PROFILE_NAME.to_string()]),
+        };
+        let client_policies = keycloak::types::ClientPoliciesRepresentation {
+            policies: Some(vec![client_policy]),
+        };
+        admin
+            .realm_client_policies_policies_put(Self::REALM, client_policies)
+            .await
+            .unwrap();
     }
 }
 
@@ -219,7 +285,7 @@ impl Image for KeycloakImage {
     }
 
     fn ready_conditions(&self) -> Vec<WaitFor> {
-        let msg = format!("Keycloak {} on JVM", Self::TAG);
+        let msg = format!("Keycloak {} on JVM", Self::VERSION);
         vec![WaitFor::message_on_stdout(msg)]
     }
 

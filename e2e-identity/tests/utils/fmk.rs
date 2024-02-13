@@ -5,7 +5,7 @@ use base64::Engine;
 use http::StatusCode;
 use itertools::Itertools;
 use jwt_simple::prelude::*;
-use oauth2::{ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};
+use oauth2::{ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, RefreshToken, Scope};
 use openidconnect::{
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
     IssuerUrl, Nonce,
@@ -36,11 +36,11 @@ pub(crate) static mut GOOGLE_SND: Option<std::sync::Mutex<std::sync::mpsc::Sende
 static mut GOOGLE_RECV: Option<std::sync::Mutex<std::sync::mpsc::Receiver<String>>> = None;
 
 impl E2eTest<'static> {
-    pub async fn nominal_enrollment(self) -> TestResult<()> {
+    pub async fn nominal_enrollment(self) -> TestResult<Self> {
         self.enrollment(EnrollmentFlow::default()).await
     }
 
-    pub async fn enrollment(self, f: EnrollmentFlow) -> TestResult<()> {
+    pub async fn enrollment(self, f: EnrollmentFlow) -> TestResult<Self> {
         let (t, directory) = (f.acme_directory)(self, ()).await?;
         let (t, previous_nonce) = (f.get_acme_nonce)(t, directory.clone()).await?;
         let (t, (account, previous_nonce)) = (f.new_account)(t, (directory.clone(), previous_nonce)).await?;
@@ -77,7 +77,7 @@ impl E2eTest<'static> {
         let (t, (finalize, previous_nonce)) = (f.finalize)(t, (account.clone(), order.clone(), previous_nonce)).await?;
         let (mut t, _) = (f.get_x509_certificates)(t, (account, finalize, order, previous_nonce)).await?;
         t.display();
-        Ok(())
+        Ok(t)
     }
 }
 
@@ -154,10 +154,10 @@ impl<'a> E2eTest<'a> {
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
 
         // TODO: improve when asserhttp implements fallible errors
-        if resp.status() != StatusCode::CREATED {
+        if resp.status() != StatusCode::CREATED && resp.status() != StatusCode::OK {
             return Err(TestError::AccountCreationError);
         }
-        resp.expect_status_created()
+        resp.expect_status_success()
             .has_replay_nonce()
             .has_location()
             .expect_content_type_json();
@@ -641,7 +641,7 @@ impl<'a> E2eTest<'a> {
         // A variant of https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter
         let acme_audience = oidc_chall.url.clone();
         let extra = json!({
-            "id_token":{
+            "id_token": {
                 "keyauth": { "essential": true, "value": keyauth },
                 "acme_aud": { "essential": true, "value": acme_audience }
             }
@@ -695,7 +695,6 @@ impl<'a> E2eTest<'a> {
         self.display_step("OAUTH authorization code + verifier (token endpoint)");
         let token_request = client
             .exchange_code(openidconnect::AuthorizationCode::new(authz_code))
-            // .add_extra_param("toto", "toto")
             .set_pkce_verifier(pkce_verifier);
 
         let oauth_token_response = token_request
@@ -729,6 +728,7 @@ impl<'a> E2eTest<'a> {
 
         if let Some(refresh_token) = oauth_token_response.refresh_token() {
             self.display_token("OAuth Refresh token", refresh_token.secret(), None, &dex_pk);
+            std::env::set_var("REFRESH_TOKEN", refresh_token.secret());
         }
 
         use openidconnect::TokenResponse as _;
@@ -784,6 +784,63 @@ impl<'a> E2eTest<'a> {
             let rx = GOOGLE_RECV.as_ref().unwrap().lock().unwrap();
             rx.recv().unwrap()
         };
+        Ok(id_token)
+    }
+
+    pub async fn fetch_id_token_from_refresh_token(
+        &mut self,
+        oidc_chall: &AcmeChallenge,
+        keyauth: String,
+        refresh_token: RefreshToken,
+    ) -> TestResult<String> {
+        match self.oidc_provider {
+            OidcProvider::Keycloak => {
+                self.fetch_id_token_from_refresh_token_from_keycloak(oidc_chall, keyauth, refresh_token)
+                    .await
+            }
+            OidcProvider::Dex | OidcProvider::Google => unimplemented!(),
+        }
+    }
+
+    pub async fn fetch_id_token_from_refresh_token_from_keycloak(
+        &mut self,
+        oidc_chall: &AcmeChallenge,
+        keyauth: String,
+        refresh_token: RefreshToken,
+    ) -> TestResult<String> {
+        self.display_chapter("Use refreshToken to retrieve idToken");
+        let oidc_target = oidc_chall.target.to_string();
+        let issuer_url = IssuerUrl::new(oidc_target).unwrap();
+        let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), move |r| {
+            custom_oauth_client("discovery", ctx_get_http_client(), r)
+        })
+        .await
+        .unwrap();
+
+        let client_id = openidconnect::ClientId::new(self.oauth_cfg.client_id.clone());
+        let redirect_url = RedirectUrl::new(self.oauth_cfg.redirect_uri.clone()).unwrap();
+        let client =
+            CoreClient::from_provider_metadata(provider_metadata, client_id, None).set_redirect_uri(redirect_url);
+
+        let acme_audience = oidc_chall.url.clone();
+        let extra = json!({
+            "id_token": {
+                "keyauth": { "essential": true, "value": keyauth },
+                "acme_aud": { "essential": true, "value": acme_audience }
+            }
+        })
+        .to_string();
+
+        let refresh_token_request = client
+            .exchange_refresh_token(&refresh_token)
+            .add_extra_param("claims", extra);
+
+        let refresh_token_response = refresh_token_request
+            .request_async(move |r| custom_oauth_client("refresh-token", ctx_get_http_client(), r))
+            .await
+            .unwrap();
+        use openidconnect::TokenResponse as _;
+        let id_token = refresh_token_response.id_token().unwrap().to_string();
         Ok(id_token)
     }
 
