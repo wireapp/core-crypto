@@ -97,20 +97,11 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for P
                     return CredentialAuthenticationStatus::Invalid;
                 };
 
-                // self.dump_certs();
-                // use x509_cert::der::EncodePem as _;
-                // println!(
-                //     "Cert to validate => \n{}",
-                //     cert.to_pem(x509_cert::der::pem::LineEnding::LF).unwrap()
-                // );
-
                 if let Err(validation_error) = pki_env.validate_cert_and_revocation(&cert) {
                     use wire_e2e_identity::prelude::x509::{
                         reexports::certval::{Error as CertvalError, PathValidationStatus},
                         RustyX509CheckError,
                     };
-
-                    // dbg!(&validation_error);
 
                     if let RustyX509CheckError::CertValError(CertvalError::PathValidation(
                         certificate_validation_error,
@@ -123,7 +114,8 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for P
                             PathValidationStatus::CertificateRevoked
                             | PathValidationStatus::CertificateRevokedEndEntity
                             | PathValidationStatus::CertificateRevokedIntermediateCa => {
-                                return CredentialAuthenticationStatus::Revoked;
+                                // ? Revoked credentials are A-OK. They still degrade conversations though.
+                                // return CredentialAuthenticationStatus::Revoked;
                             }
                             PathValidationStatus::InvalidNotAfterDate => {
                                 return CredentialAuthenticationStatus::Expired;
