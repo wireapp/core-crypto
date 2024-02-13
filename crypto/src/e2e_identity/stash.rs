@@ -71,9 +71,8 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    // FIXME: E2EI Testing
-    // #[apply(all_cred_cipher)]
-    // #[wasm_bindgen_test]
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
     pub async fn stash_and_pop_should_not_abort_enrollment(case: TestCase) {
         run_test_wo_clients(case.clone(), move |mut cc| {
             Box::pin(async move {

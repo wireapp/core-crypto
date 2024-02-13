@@ -565,9 +565,8 @@ pub mod tests {
     pub const E2EI_CLIENT_ID_URI: &str = "vUxwUxxaQCCVWc1795YZVA!4959bc6ab12f2846@world.com";
     pub const E2EI_EXPIRY: u32 = 90 * 24 * 3600;
 
-    // FIXME: E2EI Testing
-    // #[apply(all_cred_cipher)]
-    // #[wasm_bindgen_test]
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
     pub async fn e2e_identity_should_work(case: TestCase) {
         run_test_wo_clients(case.clone(), move |mut cc| {
             Box::pin(async move {
