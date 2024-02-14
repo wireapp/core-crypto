@@ -7,11 +7,29 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.37] - 2024-02-15
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.37" unreleased=true}}
+</details>
+
+* Fixed an issue with the WASM FFI where many fields were incorrectly exposed and were leading to constant `undefined` values (i.e. `epochHasChanged` issue)
+* Avoided a clone of the signature public key when performing E2EI enrollment
+* **API BREAKING CHANGES**:
+    * `clientPublicKey` now works with X.509 credentials. This implies that the CredentialType now has to be provided to fetch the correct credential.
+    * We now return dedicated errors for commits and proposals from older epochs instead of a generic `WrongEpoch` error. Respectively, we now return `StaleCommit` and `StaleProposal`.
+* **BEHAVIORAL BREAKING CHANGES**:
+    * We now verify (as per the MLS spec / RFC9420) GroupInfo prior to joining via external commit
+    * We also verify Welcomes prior to joining a group
+    * We now properly validate X.509 credentials against the set up PKI Environment
+        * Note: Expired or Revoked credentials do not constitute hard errors in MLS operations but alter the E2EI status of a conversation
+
 ## [1.0.0-rc.36] - 2024-01-30
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.36" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.36"}}
 </details>
 
 * E2EI:
