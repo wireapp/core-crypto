@@ -30,7 +30,7 @@ jobs:
           java-version: "17"
           distribution: "adopt"
       - name: Gradle Setup
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@v1
       - name: "Setup rust"
@@ -53,7 +53,7 @@ jobs:
           cd crypto-ffi
           cargo make android
       - name: Publish package
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
         with:
           build-root-directory: crypto-ffi/bindings/
           arguments: "android:publishAllPublicationsToMavenCentral --no-configuration-cache"
