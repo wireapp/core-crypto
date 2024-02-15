@@ -299,7 +299,7 @@ impl X509TestChain {
             .await
         {
             Ok(_) | Err(CryptoError::E2eiError(E2eIdentityError::TrustAnchorAlreadyRegistered)) => {}
-            Err(e) => Err(e).unwrap(),
+            Err(e) => panic!("{:?}", e),
         }
 
         for intermediate in &self.intermediates {
@@ -331,7 +331,7 @@ impl X509TestChain {
             .iter()
             .map(|intermediate| intermediate.certificate.clone())
             .collect();
-        let crls: Vec<_> = self.crls.iter().map(|(_, crl)| crl.clone()).collect();
+        let crls: Vec<_> = self.crls.values().cloned().collect();
         let params = wire_e2e_identity::prelude::x509::revocation::PkiEnvironmentParams {
             trust_roots: &trust_roots,
             intermediates: &intermediates,
