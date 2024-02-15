@@ -627,7 +627,7 @@ pub mod tests {
 
     pub type RestoreFnReturn<'a> = std::pin::Pin<Box<dyn std::future::Future<Output = E2eiEnrollment> + 'a>>;
 
-    pub fn noop_restore<'a>(e: E2eiEnrollment, _cc: &'a MlsCentral) -> RestoreFnReturn<'a> {
+    pub fn noop_restore(e: E2eiEnrollment, _cc: &MlsCentral) -> RestoreFnReturn<'_> {
         Box::pin(async move { e })
     }
 

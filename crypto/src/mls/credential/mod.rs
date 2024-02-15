@@ -319,7 +319,7 @@ pub mod tests {
                 async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(2)).await;
             }
 
-            let _ = alice_central.try_talk_to(&id, &mut bob_central).await.unwrap();
+            alice_central.try_talk_to(&id, &mut bob_central).await.unwrap();
             assert_eq!(
                 alice_central.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::NotVerified
