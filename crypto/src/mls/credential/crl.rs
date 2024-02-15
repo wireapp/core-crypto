@@ -81,9 +81,8 @@ impl MlsCentral {
         // Own intermediates are not provided by smallstep in the /federation endpoint so we got to intercept them here, at issuance
         let size = certificate_chain.len();
         let mut crl_new_distribution_points = vec![];
-        if size > 3 {
-            let intermediates = &certificate_chain[1..size - 1];
-            for int in intermediates.iter().rev() {
+        if size > 1 {
+            for int in certificate_chain.iter().skip(1).rev() {
                 let crl_dp = self.e2ei_register_intermediate_ca_der(int).await?;
                 if let Some(mut crl_dp) = crl_dp {
                     crl_new_distribution_points.append(&mut crl_dp);
