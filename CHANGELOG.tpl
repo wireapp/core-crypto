@@ -7,11 +7,21 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.38] - 2024-02-16
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.38" unreleased=true}}
+</details>
+
+* Add `getExternalSender()` to init a subconversation with the parent external sender
+* Fix e2ei issue when intermediates were not registered during the enrollment.
+
 ## [1.0.0-rc.37] - 2024-02-15
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.37" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.37"}}
 </details>
 
 * Fixed an issue with the WASM FFI where many fields were incorrectly exposed and were leading to constant `undefined` values (i.e. `epochHasChanged` issue)
