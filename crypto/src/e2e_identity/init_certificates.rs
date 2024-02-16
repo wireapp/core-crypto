@@ -1,7 +1,9 @@
+use crate::prelude::MlsCredentialType;
 use crate::{e2e_identity::CrlRegistration, prelude::MlsCentral, CryptoError, CryptoResult};
 use core_crypto_keystore::entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, EntityBase, UniqueEntity};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
+use std::collections::HashMap;
 use std::ops::DerefMut;
 use wire_e2e_identity::prelude::x509::{
     extract_crl_uris, extract_expiration_from_crl,
@@ -219,5 +221,47 @@ impl MlsCentral {
         };
 
         PkiEnvironment::init(params).map_err(|e| CryptoError::E2eiError(e.into()))
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use crate::prelude::E2eIdentityError;
+    use wasm_bindgen_test::*;
+    use x509_cert::der::pem::LineEnding;
+    use x509_cert::der::EncodePem;
+
+    use crate::test_utils::*;
+
+    use super::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn register_acme_ca_should_fail_when_already_set(case: TestCase) {
+        if case.is_x509() {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    let alice_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
+                    let alice_ta = alice_test_chain
+                        .trust_anchor
+                        .certificate
+                        .to_pem(LineEnding::CRLF)
+                        .unwrap();
+
+                    assert!(matches!(
+                        alice_central
+                            .mls_central
+                            .e2ei_register_acme_ca(alice_ta)
+                            .await
+                            .unwrap_err(),
+                        CryptoError::E2eiError(E2eIdentityError::TrustAnchorAlreadyRegistered)
+                    ));
+                })
+            })
+            .await;
+        }
     }
 }
