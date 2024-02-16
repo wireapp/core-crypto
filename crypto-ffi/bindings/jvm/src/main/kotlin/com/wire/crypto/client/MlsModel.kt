@@ -83,6 +83,8 @@ value class ExternalSenderKey(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
+fun ByteArray.toExternalSenderKey() = ExternalSenderKey(this)
+
 @JvmInline
 value class Welcome(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()

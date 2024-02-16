@@ -2357,6 +2357,25 @@ impl CoreCrypto {
         )
     }
 
+    /// Returns: [`WasmCryptoResult<Vec<u8>>`]
+    ///
+    /// see [core_crypto::mls::MlsCentral::get_external_sender]
+    pub fn get_external_sender(&self, id: ConversationId) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                let ext_sender = this
+                    .write()
+                    .await
+                    .get_external_sender(&id.to_vec())
+                    .await
+                    .map_err(CoreCryptoError::from)?;
+                WasmCryptoResult::Ok(Uint8Array::from(ext_sender.as_slice()).into())
+            }
+            .err_into(),
+        )
+    }
+
     /// Returns: [`WasmCryptoResult<Box<[js_sys::Uint8Array]>`]
     ///
     /// see [core_crypto::mls::MlsCentral::get_client_ids]

@@ -1262,6 +1262,11 @@ impl CoreCrypto {
             .export_secret_key(&conversation_id, key_length as usize)
             .await?)
     }
+
+    /// See [core_crypto::mls::MlsCentral::get_external_sender]
+    pub async fn get_external_sender(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
+        Ok(self.central.lock().await.get_external_sender(&conversation_id).await?)
+    }
 }
 
 #[derive(Debug, Copy, Clone, uniffi::Enum)]

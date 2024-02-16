@@ -15,9 +15,10 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use openmls::prelude::{
-    group_info::VerifiableGroupInfo, Credential, CredentialWithKey, CryptoConfig, HpkePublicKey, KeyPackage,
-    KeyPackageIn, LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit,
+    group_info::VerifiableGroupInfo, Credential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey,
+    KeyPackage, KeyPackageIn, LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit,
 };
+use openmls_traits::crypto::OpenMlsCrypto;
 use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
 use tls_codec::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::WireIdentityReader;
@@ -552,6 +553,19 @@ impl MlsCentral {
 
     pub async fn members_count(&mut self, id: &ConversationId) -> u32 {
         self.get_conversation_unchecked(id).await.members().len() as u32
+    }
+
+    pub fn rand_external_sender(&self, case: &TestCase) -> ExternalSender {
+        let sc = case.signature_scheme();
+
+        let crypto = self.mls_backend.crypto();
+        let (_, pk) = crypto.signature_key_gen(sc).unwrap();
+
+        let signature_key = SignaturePublicKey::from(pk);
+
+        let credential = Credential::new_basic(b"server".to_vec());
+
+        ExternalSender::new(signature_key, credential)
     }
 }
 
