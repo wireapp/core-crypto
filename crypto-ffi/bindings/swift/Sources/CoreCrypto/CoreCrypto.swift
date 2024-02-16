@@ -964,6 +964,15 @@ public class CoreCryptoWrapper {
         try await self.coreCrypto.exportSecretKey(conversationId: conversationId, keyLength: keyLength)
     }
 
+    /// Returns the raw public key of the single external sender present in this group.
+    /// This should be used to initialize a subconversation
+    ///
+    /// - parameter conversationId: conversation identifier
+    /// - returns a byte array representing the external sender raw public key
+    public func getExternalSender(conversationId: ConversationId) async throws -> [UInt8] {
+        try await self.coreCrypto.getExternalSender(conversationId: conversationId)
+    }
+
     /// Returns all clients from group's members
     ///
     /// - parameter conversationId: conversation identifier

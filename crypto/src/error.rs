@@ -237,12 +237,15 @@ pub enum CryptoError {
     /// Json error
     #[error(transparent)]
     JsonError(#[from] serde_json::Error),
-    /// The recieved commit is deemed stale and is from an older epoch
-    #[error("The recieved commit is deemed stale and is from an older epoch.")]
+    /// The received commit is deemed stale and is from an older epoch
+    #[error("The received commit is deemed stale and is from an older epoch.")]
     StaleCommit,
-    /// The recieved proposal is deemed stale and is from an older epoch
-    #[error("The recieved proposal is deemed stale and is from an older epoch.")]
+    /// The received proposal is deemed stale and is from an older epoch
+    #[error("The received proposal is deemed stale and is from an older epoch.")]
     StaleProposal,
+    /// The group lacks an ExternalSender extension whereas it should have at least one
+    #[error("The group lacks an ExternalSender extension whereas it should have at least one")]
+    MissingExternalSenderExtension,
 }
 
 impl From<MlsError> for CryptoError {

@@ -1647,6 +1647,18 @@ export class CoreCrypto {
     }
 
     /**
+     * Returns the raw public key of the single external sender present in this group.
+     * This should be used to initialize a subconversation
+     *
+     * @param conversationId - The group's ID
+     *
+     * @returns A `Uint8Array` representing the external sender raw public key
+     */
+    async getExternalSender(conversationId: ConversationId): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(this.#cc.get_external_sender(conversationId));
+    }
+
+    /**
      * Returns all clients from group's members
      *
      * @param conversationId - The group's ID

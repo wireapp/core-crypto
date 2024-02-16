@@ -1905,7 +1905,7 @@ the FFI. Still uncertain about the root cause but to move on all the parameters 
         * `pkb`: the CBOR-serialized proteus PreKeyBundle
 * **[BREAKING]** Added an API to mark subconversations as child of another one (`mark_conversation_as_child_of`)
     * This is breaking because this now allows us to provide the parent conversation's client list in the `client_is_existing_group_user` callback, which adds a new parameter to it
-* **[BREAKING]** `wipe_conversation` is now automatically called when a commit removing the local client is recieved.
+* **[BREAKING]** `wipe_conversation` is now automatically called when a commit removing the local client is received.
 * **[BREAKING]** Huge internal change on how we cache MLS groups and Proteus sessions in memory
     * This affects some APIs that became async on the TS bindings
     * Our previous `HashMap`-based cache could grow indefinitely in the case of massive accounts with many, many groups/conversations, each containing a ton of clients. This replaces this memory store by a LRU cache having the following properties:
