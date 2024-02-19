@@ -240,11 +240,11 @@ impl X509TestChain {
             })
             .collect();
 
-        let local_crl_dp = local_intermediate.crl_dps.first().unwrap().clone();
+        let local_crl_dp = trust_anchor.crl_dps.first().unwrap().clone();
 
-        let crl = local_intermediate
+        let crl = trust_anchor
             .pki_keypair
-            .revoke_certs(&local_intermediate.certificate, revoked_serial_numbers)
+            .revoke_certs(&trust_anchor.certificate, revoked_serial_numbers)
             .unwrap();
 
         crls.insert(local_crl_dp, crl);
