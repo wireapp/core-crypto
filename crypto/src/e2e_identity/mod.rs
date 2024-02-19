@@ -322,6 +322,7 @@ impl E2eiEnrollment {
         };
         Ok(self.new_dpop_token(
             &self.client_id,
+            self.display_name.as_str(),
             challenge,
             backend_nonce,
             self.handle.as_str(),
