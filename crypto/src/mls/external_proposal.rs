@@ -90,7 +90,7 @@ impl MlsCentral {
     ///
     /// # Arguments
     /// * `conversation_id` - the group/conversation id
-    /// * `epoch` - the current epoch of the group. See [openmls::group::GroupEpoch][GroupEpoch]
+    /// * `epoch` - the current epoch of the group. See [openmls::group::GroupEpoch]
     /// * `ciphersuite` - of the new [openmls::prelude::KeyPackage] to create
     /// * `credential_type` - of the new [openmls::prelude::KeyPackage] to create
     ///

@@ -11,14 +11,14 @@ mod idempotent;
 /// This simulates an application crash. Once restarted, everything has to be loaded from the
 /// keystore, memory is lost.
 ///
-/// Requires the [core_crypto::MlsConversation] method to have a parameter exactly like `backend: &MlsCryptoProvider`
+/// Requires the `MlsConversation` method to have a parameter exactly like `backend: &MlsCryptoProvider`
 ///
 /// This helps spotting:
-/// * when one has forgotten to call [core_crypto::MlsConversation::persist_group_when_changed]
+/// * when one has forgotten to call `persist_group_when_changed`
 /// * if persisted fields are sufficient to pursue normally after a crash
 ///
 /// **IF** you mark a method `#[durable]`, remove its call to
-/// [core_crypto::MlsConversation::persist_group_when_changed] and tests still pass, you either:
+/// `persist_group_when_changed` and tests still pass, you either:
 /// * have unit tests not covering the method enough
 /// * do not require this method to be durable
 #[proc_macro_attribute]
