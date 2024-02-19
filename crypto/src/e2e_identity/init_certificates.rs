@@ -1,9 +1,7 @@
-use crate::prelude::MlsCredentialType;
 use crate::{e2e_identity::CrlRegistration, prelude::MlsCentral, CryptoError, CryptoResult};
 use core_crypto_keystore::entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, EntityBase, UniqueEntity};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
-use std::collections::HashMap;
 use std::ops::DerefMut;
 use wire_e2e_identity::prelude::x509::{
     extract_crl_uris, extract_expiration_from_crl,
