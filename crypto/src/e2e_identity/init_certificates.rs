@@ -135,20 +135,17 @@ impl MlsCentral {
     /// # Returns
     /// A [CrlRegistration] with the dirty state of the new CRL (see struct) and its expiration timestamp
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> CryptoResult<CrlRegistration> {
-        // Parse/decode DER CRL
-        let crl = PkiEnvironment::decode_der_crl(crl_der).map_err(|e| CryptoError::E2eiError(e.into()))?;
-
-        // Validate CRL
-        {
+        // Parse & Validate CRL
+        let crl = {
             let auth_service_arc = self.mls_backend.authentication_service().clone();
             let auth_service = auth_service_arc.borrow()?;
             let Some(pki_env) = auth_service.as_ref() else {
                 return Err(CryptoError::ConsumerError);
             };
             pki_env
-                .validate_crl(&crl)
-                .map_err(|e| CryptoError::E2eiError(e.into()))?;
-        }
+                .validate_crl_with_raw(&crl_der)
+                .map_err(|e| CryptoError::E2eiError(e.into()))?
+        };
 
         let expiration = extract_expiration_from_crl(&crl);
 
@@ -241,7 +238,6 @@ pub mod tests {
         if case.is_x509() {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
-                    let id = conversation_id();
                     let alice_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
                     let alice_ta = alice_test_chain
                         .trust_anchor
