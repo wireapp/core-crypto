@@ -122,7 +122,7 @@ pub enum CryptoError {
     /// External Commit sender was not authorized to perform such
     #[error("External Commit sender was not authorized to perform such")]
     UnauthorizedExternalCommit,
-    /// A supplied [`HashReference`] is not of the expected size: 16
+    /// A supplied [`openmls::ciphersuite::hash_ref::HashReference`] is not of the expected size: 16
     #[error("A supplied reference is not of the expected size: 16")]
     InvalidHashReference,
     /// Tried to decrypt a message in the wrong epoch
@@ -308,7 +308,7 @@ pub enum MlsError {
     /// Parse message error
     #[error(transparent)]
     MlsMessageError(#[from] openmls::prelude::ProcessMessageError),
-    /// [openmls::key_packages::KeyPackageBundle] new error
+    /// `KeyPackageBundle` new error
     #[error(transparent)]
     MlsKeyPackageBundleNewError(
         #[from] openmls::prelude::KeyPackageNewError<core_crypto_keystore::CryptoKeystoreError>,

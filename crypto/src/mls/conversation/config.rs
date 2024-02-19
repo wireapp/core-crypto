@@ -99,7 +99,7 @@ impl MlsConversationConfiguration {
             .build())
     }
 
-    /// Default capabilities for every generated [KeyPackage]
+    /// Default capabilities for every generated [openmls::prelude::KeyPackage]
     pub fn default_leaf_capabilities() -> Capabilities {
         Capabilities::new(
             Some(&[Self::DEFAULT_PROTOCOL_VERSION]),

@@ -114,7 +114,7 @@ impl MlsCentral {
     ///
     /// # Arguments
     /// * `conversation_id` - the group/conversation id
-    /// * `proposal_ref` - unique proposal identifier which is present in [MlsProposalBundle] and
+    /// * `proposal_ref` - unique proposal identifier which is present in [crate::prelude::MlsProposalBundle] and
     /// returned from all operation creating a proposal
     ///
     /// # Errors

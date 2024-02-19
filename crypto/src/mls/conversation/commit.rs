@@ -293,14 +293,14 @@ impl MlsConversation {
 }
 
 /// Returned when initializing a conversation through a commit.
-/// Different from conversation created from a [`Welcome`] message or an external commit.
+/// Different from conversation created from a [`openmls::prelude::Welcome`] message or an external commit.
 #[derive(Debug)]
 pub struct MlsConversationCreationMessage {
     /// A welcome message for new members to join the group
     pub welcome: MlsMessageOut,
     /// Commit message adding members to the group
     pub commit: MlsMessageOut,
-    /// [`GroupInfo`] (aka GroupInfo) if the commit is merged
+    /// `GroupInfo` if the commit is merged
     pub group_info: MlsGroupInfoBundle,
     /// New CRL distribution points that appeared by the introduction of a new credential
     pub crl_new_distribution_points: Option<Vec<String>>,
@@ -327,7 +327,7 @@ pub struct MlsCommitBundle {
     pub welcome: Option<MlsMessageOut>,
     /// The commit message
     pub commit: MlsMessageOut,
-    /// [`GroupInfo`] (aka GroupInfo) if the commit is merged
+    /// `GroupInfo` if the commit is merged
     pub group_info: MlsGroupInfoBundle,
 }
 

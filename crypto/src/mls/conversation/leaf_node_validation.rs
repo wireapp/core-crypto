@@ -1,4 +1,4 @@
-//! cf https://www.rfc-editor.org/rfc/rfc9420.html#name-leaf-node-validation
+//! cf <https://www.rfc-editor.org/rfc/rfc9420.html#name-leaf-node-validation>
 
 #[cfg(test)]
 pub mod tests {

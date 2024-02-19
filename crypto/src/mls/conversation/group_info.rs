@@ -6,9 +6,9 @@ use crate::{CryptoResult, MlsError};
 /// A [GroupInfo] with metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MlsGroupInfoBundle {
-    /// Indicates if the [payload] is encrypted or not
+    /// Indicates if the `payload` is encrypted or not
     pub encryption_type: MlsGroupInfoEncryptionType,
-    /// Indicates if the [payload] contains a full, partial or referenced [GroupInfo]
+    /// Indicates if the `payload` contains a full, partial or referenced [GroupInfo]
     pub ratchet_tree_type: MlsRatchetTreeType,
     /// The [GroupInfo]
     pub payload: GroupInfoPayload,
@@ -93,7 +93,7 @@ pub enum MlsRatchetTreeType {
     ByRef = 3,
 }
 
-/// Represents the byte array in [GroupInfoBundle]
+/// Represents the byte array in [MlsGroupInfoBundle]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GroupInfoPayload {
     /// Unencrypted [GroupInfo]

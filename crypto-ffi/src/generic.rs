@@ -270,9 +270,9 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
 #[derive(Debug, Clone, Copy, uniffi::Enum)]
 #[repr(u8)]
 pub enum MlsGroupInfoEncryptionType {
-    /// Unencrypted [GroupInfo]
+    /// Unencrypted `GroupInfo`
     Plaintext = core_crypto::prelude::MlsGroupInfoEncryptionType::Plaintext as u8,
-    /// [GroupInfo] encrypted in a JWE
+    /// `GroupInfo` encrypted in a JWE
     JweEncrypted = core_crypto::prelude::MlsGroupInfoEncryptionType::JweEncrypted as u8,
 }
 
@@ -297,9 +297,9 @@ impl From<MlsGroupInfoEncryptionType> for core_crypto::prelude::MlsGroupInfoEncr
 #[derive(Debug, Clone, Copy, uniffi::Enum)]
 #[repr(u8)]
 pub enum MlsRatchetTreeType {
-    /// Plain old and complete [GroupInfo]
+    /// Plain old and complete `GroupInfo`
     Full = core_crypto::prelude::MlsRatchetTreeType::Full as u8,
-    /// Contains [GroupInfo] changes since previous epoch (not yet implemented)
+    /// Contains `GroupInfo` changes since previous epoch (not yet implemented)
     /// (see [draft](https://github.com/rohan-wire/ietf-drafts/blob/main/mahy-mls-ratchet-tree-delta/draft-mahy-mls-ratchet-tree-delta.md))
     Delta = core_crypto::prelude::MlsRatchetTreeType::Delta as u8,
     /// TODO: to define
@@ -735,7 +735,7 @@ pub async fn core_crypto_new(
 }
 
 #[uniffi::export]
-/// Similar to [CoreCrypto::new] but defers MLS initialization. It can be initialized later
+/// Similar to [core_crypto_new] but defers MLS initialization. It can be initialized later
 /// with [CoreCrypto::mls_init].
 pub async fn core_crypto_deferred_init(
     path: String,
@@ -1198,7 +1198,7 @@ impl CoreCrypto {
             .random_bytes(len.try_into().map_err(CryptoError::from)?)?)
     }
 
-    /// see [MlsCryptoProvider::reseed]
+    /// see [core_crypto::prelude::MlsCryptoProvider::reseed]
     pub async fn reseed_rng(&self, seed: Vec<u8>) -> CoreCryptoResult<()> {
         let seed = EntropySeed::try_from_slice(&seed).map_err(CryptoError::from)?;
         self.central.lock().await.provider_mut().reseed(Some(seed));
@@ -1767,7 +1767,7 @@ impl CoreCrypto {
 }
 
 #[derive(Debug, uniffi::Object)]
-/// See [core_crypto::e2e_identity::WireE2eIdentity]
+/// See [core_crypto::e2e_identity::E2eiEnrollment]
 pub struct E2eiEnrollment(std::sync::Arc<async_lock::RwLock<core_crypto::prelude::E2eiEnrollment>>);
 
 #[uniffi::export]
@@ -1876,22 +1876,22 @@ impl E2eiEnrollment {
         Ok(self.0.write().await.check_order_response(order)?)
     }
 
-    /// See [core_crypto::e2e_identity::E2eiEnrollment::finalize_request]
+    /// See [core_crypto::prelude::E2eiEnrollment::finalize_request]
     pub async fn finalize_request(&self, previous_nonce: String) -> CoreCryptoResult<Vec<u8>> {
         Ok(self.0.write().await.finalize_request(previous_nonce)?)
     }
 
-    /// See [core_crypto::e2e_identity::E2eiEnrollment::finalize_response]
+    /// See [core_crypto::prelude::E2eiEnrollment::finalize_response]
     pub async fn finalize_response(&self, finalize: Vec<u8>) -> CoreCryptoResult<String> {
         Ok(self.0.write().await.finalize_response(finalize)?)
     }
 
-    /// See [core_crypto::e2e_identity::E2eiEnrollment::certificate_request]
+    /// See [core_crypto::prelude::E2eiEnrollment::certificate_request]
     pub async fn certificate_request(&self, previous_nonce: String) -> CoreCryptoResult<Vec<u8>> {
         Ok(self.0.write().await.certificate_request(previous_nonce)?)
     }
 
-    /// See [core_crypto::e2e_identity::refresh_token::RefreshToken]
+    /// See [core_crypto::prelude::E2eiEnrollment::get_refresh_token]
     pub async fn get_refresh_token(&self) -> CoreCryptoResult<String> {
         Ok(self.0.read().await.get_refresh_token().map(Into::into)?)
     }
