@@ -7,15 +7,25 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.40] - 2024-02-20
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.40" unreleased=true}}
+</details>
+
+* Fixed an issue with incorrect code in TypeScript bindings
+
 ## [1.0.0-rc.39] - 2024-02-20
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.39" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.39"}}
 </details>
 
 * Integrated the display name in the JWT DPoP token
 * Reworked and hardened all x.509 verifications (including revocation)
+* Added `serialNumber`, `notBefore` and `notAfter` fields to the `WireIdentity` struct. These fields are pulled directly from the relevant fields in End-identity X.509 certificates
 
 ## [1.0.0-rc.38] - 2024-02-16
 
