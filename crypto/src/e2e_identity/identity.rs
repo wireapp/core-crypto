@@ -29,6 +29,12 @@ pub struct WireIdentity {
     pub status: DeviceStatus,
     /// MLS thumbprint
     pub thumbprint: String,
+    /// X509 certificate serial number
+    pub serial_number: String,
+    /// X509 certificate not before as Unix timestamp
+    pub not_before: u64,
+    /// X509 certificate not after as Unix timestamp
+    pub not_after: u64,
 }
 
 impl<'a> TryFrom<(wire_e2e_identity::prelude::WireIdentity, &'a [u8])> for WireIdentity {
@@ -50,6 +56,9 @@ impl<'a> TryFrom<(wire_e2e_identity::prelude::WireIdentity, &'a [u8])> for WireI
             certificate,
             status: i.status.into(),
             thumbprint: i.thumbprint,
+            serial_number: i.serial_number,
+            not_before: i.not_before,
+            not_after: i.not_after,
         })
     }
 }

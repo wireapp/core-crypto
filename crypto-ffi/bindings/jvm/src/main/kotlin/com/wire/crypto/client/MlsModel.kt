@@ -458,10 +458,22 @@ data class WireIdentity(
      * MLS thumbprint
      */
     val thumbprint: String,
+    /**
+     * X509 certificate serial number
+     */
+    val serialNumber: String,
+    /**
+     * X509 certificate not before as Unix timestamp
+     */
+    val notBefore: java.time.Instant,
+    /**
+     * X509 certificate not after as Unix timestamp
+     */
+    val notAfter: java.time.Instant,
 )
 
 fun com.wire.crypto.WireIdentity.lift() =
-    WireIdentity(clientId, handle, displayName, domain, certificate, status.lift(), thumbprint)
+    WireIdentity(clientId, handle, displayName, domain, certificate, status.lift(), thumbprint, serialNumber, java.time.Instant.ofEpochSecond(notBefore.toLong()), java.time.Instant.ofEpochSecond(notAfter.toLong()))
 
 /**
  * Indicates the standalone status of a device Credential in a MLS group at a moment T. This does not represent the

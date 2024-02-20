@@ -827,26 +827,35 @@ impl BufferedDecryptedMessage {
 /// Those claims are verifiable by any member in the group
 pub struct WireIdentity {
     /// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
-    #[wasm_bindgen(readonly, js_name = "clientId")]
+    #[wasm_bindgen(readonly)]
     pub client_id: String,
     /// user handle e.g. `john_wire`
-    #[wasm_bindgen(readonly, js_name = "handle")]
+    #[wasm_bindgen(readonly)]
     pub handle: String,
     /// Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
-    #[wasm_bindgen(readonly, js_name = "displayName")]
+    #[wasm_bindgen(readonly)]
     pub display_name: String,
     /// DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
-    #[wasm_bindgen(readonly, js_name = "domain")]
+    #[wasm_bindgen(readonly)]
     pub domain: String,
     /// X509 certificate identifying this client in the MLS group ; PEM encoded
-    #[wasm_bindgen(readonly, js_name = "certificate")]
+    #[wasm_bindgen(readonly)]
     pub certificate: String,
     /// Status of the Credential at the moment T when this object is created
-    #[wasm_bindgen(readonly, js_name = "status")]
+    #[wasm_bindgen(readonly)]
     pub status: DeviceStatus,
     /// MLS thumbprint
-    #[wasm_bindgen(readonly, js_name = "thumbprint")]
+    #[wasm_bindgen(readonly)]
     pub thumbprint: String,
+    /// X509 certificate serial number
+    #[wasm_bindgen(readonly)]
+    pub serial_number: String,
+    /// X509 certificate not before as Unix timestamp
+    #[wasm_bindgen(readonly)]
+    pub not_before: u64,
+    /// X509 certificate not after as Unix timestamp
+    #[wasm_bindgen(readonly)]
+    pub not_after: u64,
 }
 
 impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
@@ -859,6 +868,9 @@ impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
             certificate: i.certificate,
             status: i.status.into(),
             thumbprint: i.thumbprint,
+            serial_number: i.serial_number,
+            not_before: i.not_before,
+            not_after: i.not_after,
         }
     }
 }
@@ -2995,16 +3007,16 @@ impl E2eiEnrollment {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct AcmeDirectory {
     /// URL for fetching a new nonce. Use this only for creating a new account.
-    #[wasm_bindgen(readonly, js_name = "newNonce")]
+    #[wasm_bindgen(readonly)]
     pub new_nonce: String,
     /// URL for creating a new account.
-    #[wasm_bindgen(readonly, js_name = "newAccount")]
+    #[wasm_bindgen(readonly)]
     pub new_account: String,
     /// URL for creating a new order.
-    #[wasm_bindgen(readonly, js_name = "newOrder")]
+    #[wasm_bindgen(readonly)]
     pub new_order: String,
     /// Revocation URL
-    #[wasm_bindgen(readonly, js_name = "revokeCert")]
+    #[wasm_bindgen(readonly)]
     pub revoke_cert: String,
 }
 
@@ -3036,7 +3048,7 @@ impl From<AcmeDirectory> for core_crypto::prelude::E2eiAcmeDirectory {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NewAcmeOrder {
     /// Contains raw JSON data of this order. This is parsed by the underlying Rust library hence should not be accessed
-    #[wasm_bindgen(readonly, getter_with_clone, js_name = "delegate")]
+    #[wasm_bindgen(readonly, getter_with_clone)]
     pub delegate: Vec<u8>,
     authorizations: ArrayOfByteArray,
 }
@@ -3085,13 +3097,13 @@ impl TryFrom<NewAcmeOrder> for core_crypto::prelude::E2eiNewAcmeOrder {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NewAcmeAuthz {
     /// DNS entry associated with those challenge
-    #[wasm_bindgen(readonly, js_name = "identifier")]
+    #[wasm_bindgen(readonly)]
     pub identifier: String,
     /// ACME challenge + ACME key thumbprint
-    #[wasm_bindgen(readonly, js_name = "keyauth")]
+    #[wasm_bindgen(readonly)]
     pub keyauth: Option<String>,
     /// Associated ACME Challenge
-    #[wasm_bindgen(readonly, js_name = "challenge")]
+    #[wasm_bindgen(readonly)]
     pub challenge: AcmeChallenge,
 }
 
@@ -3121,14 +3133,14 @@ impl From<NewAcmeAuthz> for core_crypto::prelude::E2eiNewAcmeAuthz {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct AcmeChallenge {
     /// Contains raw JSON data of this challenge. This is parsed by the underlying Rust library hence should not be accessed
-    #[wasm_bindgen(readonly, js_name = "delegate")]
+    #[wasm_bindgen(readonly)]
     pub delegate: Vec<u8>,
     /// URL of this challenge
-    #[wasm_bindgen(readonly, js_name = "url")]
+    #[wasm_bindgen(readonly)]
     pub url: String,
     /// Non-standard, Wire specific claim. Indicates the consumer from where it should get the challenge proof.
     /// Either from wire-server "/access-token" endpoint in case of a DPoP challenge, or from an OAuth token endpoint for an OIDC challenge
-    #[wasm_bindgen(readonly, js_name = "target")]
+    #[wasm_bindgen(readonly)]
     pub target: String,
 }
 

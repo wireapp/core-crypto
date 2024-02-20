@@ -9,7 +9,7 @@ pub enum DeviceStatus {
     Valid,
     /// The Credential's certificate is expired
     Expired,
-    /// The Credential's certificate is revoked (not implemented yet)
+    /// The Credential's certificate is revoked
     Revoked,
 }
 

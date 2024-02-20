@@ -92,7 +92,7 @@ extension CoreCryptoSwift.BufferedDecryptedMessage {
 
 extension CoreCryptoSwift.WireIdentity {
     func convertTo() -> WireIdentity {
-        return WireIdentity(clientId: self.clientId, handle: self.handle, displayName: self.displayName, domain: self.domain)
+        return WireIdentity(clientId: self.clientId, handle: self.handle, displayName: self.displayName, domain: self.domain, thumbprint: self.thumbprint, serialNumber: self.serialNumber, notBefore: self.notBefore, notAfter: self.notAfter)
     }
 }
 
@@ -436,18 +436,27 @@ public struct WireIdentity: ConvertToInner {
     public var status: DeviceStatus
     /// MLS thumbprint
     public var thumbprint: String
+    /// X509 certificate serial number
+    public var serialNumber: String
+    /// X509 certificate not before as Unix timestamp
+    public var notBefore: UInt64
+    /// X509 certificate not after as Unix timestamp
+    public var notAfter: UInt64
 
-    public init(clientId: String, handle: String, displayName: String, domain: String, status: DeviceStatus, thumbprint: String) {
+    public init(clientId: String, handle: String, displayName: String, domain: String, status: DeviceStatus, thumbprint: String, serialNumber: String, notBefore: UInt64, notAfter: UInt64) {
         self.clientId = clientId
         self.handle = handle
         self.displayName = displayName
         self.domain = domain
         self.status = status
         self.thumbprint = thumbprint
+        self.serialNumber = serialNumber
+        self.notBefore = notBefore
+        self.notAfter = notAfter
     }
 
     func convert() -> Inner {
-        return CoreCryptoSwift.WireIdentity(clientId: self.clientId, handle: self.handle, displayName: self.displayName, domain: self.domain, status: self.status.convert(), thumbprint: self.thumbprint)
+        return CoreCryptoSwift.WireIdentity(clientId: self.clientId, handle: self.handle, displayName: self.displayName, domain: self.domain, status: self.status.convert(), thumbprint: self.thumbprint, serialNumber: self.serialNumber, notBefore: self.notBefore, notAfter: self.notAfter)
     }
 }
 
