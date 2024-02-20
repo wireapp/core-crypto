@@ -20,22 +20,16 @@ import initWasm, {
     ConversationConfiguration as ConversationConfigurationFfi,
     CustomConfiguration as CustomConfigurationFfi,
     CoreCryptoWasmCallbacks,
-    AcmeDirectory,
     NewAcmeOrder,
     NewAcmeAuthz,
     AcmeChallenge,
-    WireIdentity,
-    DeviceStatus,
 } from "./wasm";
 
 // re-exports
 export {
-    AcmeDirectory,
     NewAcmeOrder,
     NewAcmeAuthz,
     AcmeChallenge,
-    WireIdentity,
-    DeviceStatus,
 };
 
 interface CoreCryptoRichError {
@@ -561,6 +555,107 @@ export interface BufferedDecryptedMessage {
      * see {@link DecryptedMessage.crlNewDistributionPoints}
      */
     crlNewDistributionPoints?: string[];
+}
+
+/**
+ * Represents the identity claims identifying a client
+ * Those claims are verifiable by any member in the group
+ */
+export interface WireIdentity {
+    /**
+     * Unique client identifier
+     */
+    clientId: string;
+    /**
+     * User handle e.g. `john_wire`
+     */
+    handle: string;
+    /**
+     * Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
+     */
+    displayName: string;
+    /**
+     * DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
+     */
+    domain: string;
+    /**
+     * X509 certificate identifying this client in the MLS group ; PEM encoded
+     */
+    certificate: string;
+    /**
+     * Status of the Credential at the moment T when this object is created
+     */
+    status: DeviceStatus;
+    /**
+     * MLS thumbprint
+     */
+    thumbprint: string;
+    /**
+     * X509 certificate serial number
+     */
+    serialNumber: string;
+    /**
+     * X509 certificate not before as Unix timestamp
+     */
+    notBefore: bigint;
+    /**
+     * X509 certificate not after as Unix timestamp
+     */
+    notAfter: bigint;
+}
+
+const mapWireIdentity = (ffiIdentity?: CoreCryptoFfiTypes.WireIdentity): WireIdentity|undefined => {
+    if (!ffiIdentity) { return undefined; }
+    return {
+        clientId: ffiIdentity.client_id,
+        handle: ffiIdentity.handle,
+        displayName: ffiIdentity.display_name,
+        domain: ffiIdentity.domain,
+        certificate: ffiIdentity.certificate,
+        status: ffiIdentity.status,
+        thumbprint: ffiIdentity.thumbprint,
+        serialNumber: ffiIdentity.serial_number,
+        notBefore: ffiIdentity.not_before,
+        notAfter: ffiIdentity.not_after,
+    };
+};
+
+export interface AcmeDirectory {
+    /**
+     * URL for fetching a new nonce. Use this only for creating a new account.
+     */
+    newNonce: string;
+    /**
+     * URL for creating a new account.
+     */
+    newAccount: string;
+    /**
+     * URL for creating a new order.
+     */
+    newOrder: string;
+    /**
+     * Revocation URL
+     */
+    revokeCert: string;
+}
+
+/**
+ * Indicates the standalone status of a device Credential in a MLS group at a moment T.
+ * This does not represent the states where a device is not using MLS or is not using end-to-end identity
+ */
+export enum DeviceStatus {
+    /**
+     * All is fine
+     */
+    Valid,
+    /**
+     * The Credential's certificate is expired
+     */
+    Expired,
+    /**
+     * The Credential's certificate is revoked
+     */
+    Revoked,
 }
 
 /**
@@ -1111,25 +1206,27 @@ export class CoreCrypto {
                 commitDelay = ffiCommitDelay * 1000;
             }
 
+            const identity = mapWireIdentity(ffiDecryptedMessage.identity);
+
             const ret: DecryptedMessage = {
                 message: ffiDecryptedMessage.message,
                 proposals: ffiDecryptedMessage.proposals,
                 isActive: ffiDecryptedMessage.is_active,
                 senderClientId: ffiDecryptedMessage.sender_client_id,
                 commitDelay,
+                identity,
                 hasEpochChanged: ffiDecryptedMessage.has_epoch_changed,
                 bufferedMessages: ffiDecryptedMessage.buffered_messages?.map(
-                    (m) => {
-                        return {
-                            message: m.message,
-                            proposals: m.proposals,
-                            isActive: m.is_active,
-                            senderClientId: m.sender_client_id,
-                            commitDelay: m.commit_delay,
-                            hasEpochChanged: m.has_epoch_changed,
-                            crlNewDistributionPoints: m.crl_new_distribution_points,
-                        };
-                    }
+                    (m) => ({
+                        message: m.message,
+                        proposals: m.proposals,
+                        isActive: m.is_active,
+                        senderClientId: m.sender_client_id,
+                        commitDelay: m.commit_delay,
+                        identity: mapWireIdentity(m.identity),
+                        hasEpochChanged: m.has_epoch_changed,
+                        crlNewDistributionPoints: m.crl_new_distribution_points,
+                    })
                 ),
                 crlNewDistributionPoints: ffiDecryptedMessage.crl_new_distribution_points,
             };
@@ -2191,9 +2288,9 @@ export class CoreCrypto {
         conversationId: ConversationId,
         deviceIds: ClientId[]
     ): Promise<WireIdentity[]> {
-        return await CoreCryptoError.asyncMapErr(
+        return (await CoreCryptoError.asyncMapErr(
             this.#cc.get_device_identities(conversationId, deviceIds)
-        );
+        )).map(mapWireIdentity);
     }
 
     /**
@@ -2209,9 +2306,9 @@ export class CoreCrypto {
         conversationId: ConversationId,
         userIds: string[]
     ): Promise<Map<string, WireIdentity[]>> {
-        return await CoreCryptoError.asyncMapErr(
+        return (await CoreCryptoError.asyncMapErr(
             this.#cc.get_user_identities(conversationId, userIds)
-        );
+        )).map(([userId, identities]: [string, CoreCryptoFfiTypes.WireIdentity[]]) => ([userId, identities.map(mapWireIdentity)]));
     }
 
     /**
@@ -2270,9 +2367,16 @@ export class E2eiEnrollment {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
      */
     async directoryResponse(directory: JsonRawData): Promise<AcmeDirectory> {
-        return await CoreCryptoError.asyncMapErr(
+        const ffiRet: CoreCryptoFfiTypes.AcmeDirectory = await CoreCryptoError.asyncMapErr(
             this.#enrollment.directory_response(directory)
         );
+
+        return {
+            newNonce: ffiRet.new_nonce,
+            newAccount: ffiRet.new_account,
+            newOrder: ffiRet.new_order,
+            revokeCert: ffiRet.revoke_cert,
+        };
     }
 
     /**

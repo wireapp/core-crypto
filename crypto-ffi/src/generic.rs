@@ -509,6 +509,9 @@ pub struct WireIdentity {
     pub certificate: String,
     pub status: DeviceStatus,
     pub thumbprint: String,
+    pub serial_number: String,
+    pub not_before: u64,
+    pub not_after: u64,
 }
 
 impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
@@ -521,6 +524,9 @@ impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
             certificate: i.certificate,
             status: i.status.into(),
             thumbprint: i.thumbprint,
+            serial_number: i.serial_number,
+            not_before: i.not_before,
+            not_after: i.not_after,
         }
     }
 }
