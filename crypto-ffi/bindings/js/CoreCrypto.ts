@@ -2306,9 +2306,21 @@ export class CoreCrypto {
         conversationId: ConversationId,
         userIds: string[]
     ): Promise<Map<string, WireIdentity[]>> {
-        return (await CoreCryptoError.asyncMapErr(
+        const map: Map<string, CoreCryptoFfiTypes.WireIdentity[]> = await CoreCryptoError.asyncMapErr(
             this.#cc.get_user_identities(conversationId, userIds)
-        )).map(([userId, identities]: [string, CoreCryptoFfiTypes.WireIdentity[]]) => ([userId, identities.map(mapWireIdentity)]));
+        );
+
+        const mapFixed: Map<string, WireIdentity[]> = new Map();
+
+        for (const [userId, identities] of map) {
+            const mappedIdentities = identities.flatMap(identity => {
+                const mappedIdentity = mapWireIdentity(identity);
+                return mappedIdentity ? [mappedIdentity] : [];
+            });
+            mapFixed.set(userId, mappedIdentities);
+        }
+
+        return mapFixed;
     }
 
     /**
