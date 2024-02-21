@@ -7,11 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.42] - 2024-02-21
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.42" unreleased=true}}
+</details>
+
+* Do not assert keypackage expiration when joining a group via external commit
+
 ## [1.0.0-rc.41] - 2024-02-21
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.41" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.41"}}
 </details>
 
 * WASM: Integrated pre-version into the calculation of the IndexedDB store version
