@@ -7,11 +7,24 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.41] - 2024-02-21
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.41" unreleased=true}}
+</details>
+
+* WASM: Integrated pre-version into the calculation of the IndexedDB store version
+    * This issue was preventing migrations between CC 1.0.0-[pre|rc] versions on Web
+* Only assert keypackage expiration when being the sender of a commit/proposal
+* Internal: Remove the cached flag determining the client's ability to perform E2EI operations.
+    * This is precautionary to avoid potential state discrepancies when rotating credentials for example.
+
 ## [1.0.0-rc.40] - 2024-02-20
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.40" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.40"}}
 </details>
 
 * Fixed an issue with incorrect code in TypeScript bindings
