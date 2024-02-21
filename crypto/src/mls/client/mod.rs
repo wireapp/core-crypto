@@ -53,7 +53,6 @@ pub struct Client {
     id: ClientId,
     pub(crate) identities: ClientIdentities,
     keypackage_lifetime: std::time::Duration,
-    is_e2ei_capable: bool,
 }
 
 impl Client {
@@ -74,8 +73,6 @@ impl Client {
         backend: &MlsCryptoProvider,
         nb_key_package: usize,
     ) -> CryptoResult<Self> {
-        let is_e2ei_capable = matches!(identifier, ClientIdentifier::X509(_));
-
         let id = identifier.get_id()?;
 
         let credentials = backend
@@ -97,15 +94,15 @@ impl Client {
                 .iter()
                 .map(|cs| cs.signature_algorithm())
                 .collect::<HashSet<_>>();
-            match Self::load(backend, id.as_ref(), credentials, signature_schemes, is_e2ei_capable).await {
+            match Self::load(backend, id.as_ref(), credentials, signature_schemes).await {
                 Ok(client) => client,
                 Err(CryptoError::ClientSignatureNotFound) => {
-                    Self::generate(identifier, backend, ciphersuites, nb_key_package, is_e2ei_capable).await?
+                    Self::generate(identifier, backend, ciphersuites, nb_key_package).await?
                 }
                 Err(e) => return Err(e),
             }
         } else {
-            Self::generate(identifier, backend, ciphersuites, nb_key_package, is_e2ei_capable).await?
+            Self::generate(identifier, backend, ciphersuites, nb_key_package).await?
         };
 
         Ok(client)
@@ -194,7 +191,6 @@ impl Client {
             id: client_id.clone(),
             identities: ClientIdentities::new(stored_skp.len()),
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
-            is_e2ei_capable: false,
         };
 
         let id = &client_id;
@@ -242,7 +238,6 @@ impl Client {
         backend: &MlsCryptoProvider,
         ciphersuites: &[MlsCiphersuite],
         nb_key_package: usize,
-        is_e2ei_capable: bool,
     ) -> CryptoResult<Self> {
         let id = identifier.get_id()?;
         let signature_schemes = ciphersuites
@@ -253,7 +248,6 @@ impl Client {
             id: id.into_owned(),
             identities: ClientIdentities::new(signature_schemes.len()),
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
-            is_e2ei_capable,
         };
 
         let identities = identifier.generate_credential_bundles(backend, signature_schemes)?;
@@ -283,7 +277,6 @@ impl Client {
         id: &ClientId,
         mut credentials: Vec<(Credential, u64)>,
         signature_schemes: HashSet<SignatureScheme>,
-        is_e2ei_capable: bool,
     ) -> CryptoResult<Self> {
         let mut identities = ClientIdentities::new(signature_schemes.len());
 
@@ -336,7 +329,6 @@ impl Client {
             id: id.clone(),
             identities,
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
-            is_e2ei_capable,
         })
     }
 
@@ -403,7 +395,9 @@ impl Client {
 
     /// Returns whether this client is E2EI capable
     pub fn is_e2ei_capable(&self) -> bool {
-        self.is_e2ei_capable
+        self.identities
+            .iter()
+            .any(|(_, cred)| cred.credential().credential_type() == CredentialType::X509)
     }
 
     pub(crate) async fn get_most_recent_or_create_credential_bundle(
@@ -480,14 +474,7 @@ impl Client {
         } else {
             0
         };
-        Self::generate(
-            identity,
-            backend,
-            &[case.ciphersuite()],
-            nb_key_package,
-            matches!(case.credential_type, MlsCredentialType::X509),
-        )
-        .await
+        Self::generate(identity, backend, &[case.ciphersuite()], nb_key_package).await
     }
 
     pub async fn find_keypackages(
