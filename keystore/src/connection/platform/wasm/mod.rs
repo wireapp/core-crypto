@@ -41,6 +41,39 @@ impl WasmConnection {
 
 impl DatabaseConnectionRequirements for WasmConnection {}
 
+fn determine_pre_version(pre_str: &str) -> u32 {
+    let mut pre_parts = pre_str.split('+');
+    // We ignore the build number for simplicity's sake and we don't really use it either
+    // So we just pick what's before the build number
+    let Some(pre_version) = pre_parts.next() else {
+        return 0;
+    };
+
+    // <pre-release identifier> "." <dot-separated pre-release identifiers>
+    let mut pre_version_parts = pre_version.split('.');
+
+    // grab the pre-version identifier (i.e. alpha, beta, pre, rc, etc)
+    let Some(pre_identifier) = pre_version_parts.next() else {
+        return 0;
+    };
+
+    // grab the pre-version build identifier i.e. rc.24, here we extract and parse the "24"
+    let pre_identifier_version = pre_version_parts
+        .next()
+        .and_then(|v| v.parse::<u32>().ok())
+        .unwrap_or_default();
+
+    let base_version = match pre_identifier {
+        "alpha" => 200,
+        "beta" => 400,
+        "pre" => 600,
+        "rc" => 800,
+        _ => 0,
+    };
+
+    base_version + pre_identifier_version
+}
+
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl DatabaseConnection for WasmConnection {
@@ -51,9 +84,15 @@ impl DatabaseConnection for WasmConnection {
         let version_major = env!("CARGO_PKG_VERSION_MAJOR").parse::<u32>().unwrap_or_default();
         let version_minor = env!("CARGO_PKG_VERSION_MINOR").parse::<u32>().unwrap_or_default();
         let version_patch = env!("CARGO_PKG_VERSION_PATCH").parse::<u32>().unwrap_or_default();
+        let version_pre: u32 = determine_pre_version(env!("CARGO_PKG_VERSION_PRE"));
 
-        // Watch out: we'll have issues after major version 4294.xx.xx lol
-        let version = version_major * 1_000_000 + version_minor * 1_000 + version_patch;
+        // ? Watch out, version limits, do NOT exceed those before patching:
+        // - major: breaks after version 429
+        // - minor: breaks after version 99
+        // - patch: breaks after version 99
+        // - prerelease: breaks after rc.99
+        // - build: breaks after r9
+        let version = version_major * 10_000_000 + version_minor * 100_000 + version_patch * 1_000 + version_pre;
 
         let rexie_builder = rexie::Rexie::builder(&name)
             .version(version)
