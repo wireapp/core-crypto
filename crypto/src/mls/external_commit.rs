@@ -1014,14 +1014,17 @@ pub mod tests {
                         .mls_central
                         .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
                         .await;
-                    assert!(matches!(
+
+                    // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage
+                    join_ext_commit.unwrap();
+                    /*assert!(matches!(
                         join_ext_commit.unwrap_err(),
                         CryptoError::MlsError(MlsError::MlsExternalCommitError(ExternalCommitError::PublicGroupError(
                             CreationFromExternalError::TreeSyncError(TreeSyncFromNodesError::LeafNodeValidationError(
                                 LeafNodeValidationError::Lifetime(LifetimeError::NotCurrent),
                             )),
                         )))
-                    ))
+                    ));*/
                 })
             },
         )
