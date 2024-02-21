@@ -7,6 +7,25 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.41] - 2024-02-21
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Remove cached is_e2ei_capable flag
+- KeyPackage lifetime validation when receiving messages
+- Integrate -pre version to iDB store version
+
+</details>
+
+* WASM: Integrated pre-version into the calculation of the IndexedDB store version
+    * This issue was preventing migrations between CC 1.0.0-[pre|rc] versions on Web
+* Only assert keypackage expiration when being the sender of a commit/proposal
+* Internal: Remove the cached flag determining the client's ability to perform E2EI operations.
+    * This is precautionary to avoid potential state discrepancies when rotating credentials for example.
+
 ## [1.0.0-rc.40] - 2024-02-20
 
 <details>
@@ -15,6 +34,412 @@ Platform support legends:
 ### Bug Fixes
 
 - TS mapping of identities was using experimental methods
+
+
+### Bug Fixes
+
+- Harden x509 validation & revocation checks
+
+### Documentation
+
+- Update all doc warnings including a lot of broken links
+
+### Features
+
+- Add serialNumber, notBefore & notAfter in `WireIdentity` object
+- Add display name in dpop token
+
+### Miscellaneous Tasks
+
+- Fix some clippy lints
+
+### Testing
+
+- Verify that registering a TA twice fails
+
+
+### Bug Fixes
+
+- Intermediates were not registered during enrollment
+
+### Features
+
+- Add getter for external sender to seed subconversations
+
+### Miscellaneous Tasks
+
+- Clippy warnings
+
+
+### Bug Fixes
+
+- [**breaking**] Add dedicated error for stale commits and proposals
+- Verify GroupInfo
+- Allow revoked Credentials in MLS operations
+- Reenable E2EI tests
+- Update tests
+- Post-rebase fixes
+- Consider x509 credentials as always valid if no PKI environment is available
+- Adapt calls to OpenMLS new async methods
+- Disable non working (MissingSki) E2EI tests
+- Undo WASM binding API mistake
+
+### Features
+
+- [**breaking**] `clientPublicKey` now also works for x509 credentials
+- Validate x509 credentials when introduced
+
+### Miscellaneous Tasks
+
+- Update deps
+- Do not clone MLS signature keypair while creating the enrollment
+
+### Testing
+
+- Get rid of rcgen-based x509 cert generation
+
+
+### Bug Fixes
+
+- Register intermediate certificates at issuance since they're not fetchable afterwards
+
+### Features
+
+- [**breaking**] Return CRL Distribution Points when registering intermediate certificates
+
+
+### Features
+
+- [**breaking**] Change certificate expiry from days to seconds in the public API
+
+
+### Bug Fixes
+
+- Restore pki_env from disk whenever necessary
+- Relax uniqueness constraint on intermediate certificates and CRLs on sqlite
+
+### Features
+
+- Filter out root CA when registering intermediates in case the provider repeats it
+- [**breaking**] Remove refreshToken handling from WASM altogether as it is not used
+
+
+### Bug Fixes
+
+- Remove unused test
+- Use forked x509-cert to fix WASM compilation
+- Fix tests
+- Duration overflow in x509 expiration setting
+- Typo in E2eiAcmeCA registration SQL query
+- Add missing CRLDP field to FFI + fill it up
+
+### Features
+
+- Add full PKI test harness
+
+
+### Bug Fixes
+
+- Use 2 acme authorizations instead of 1
+
+
+### Bug Fixes
+
+- Wrong rusty-jwt-tools pinned in rc30
+
+### Features
+
+- [**breaking**] Expose keyauth in ACME authz
+
+
+### Bug Fixes
+
+- Pin rusty-jwt-tools v0.8.4 fixing an issue with the wrong signature key being used for the client DPoP token
+
+
+### Bug Fixes
+
+- Actually fix keyauth issue
+
+
+### Bug Fixes
+
+- Use rusty-jwt-tools v0.8.1 which fixes the keyauth issue
+
+
+### Bug Fixes
+
+- Previous fix was not compiling
+
+
+### Bug Fixes
+
+- E2ei keystore method 'find_all' was unimplemented on WASM for intermediate CAs & CRLs
+
+
+### Bug Fixes
+
+- Pin e2ei package tag
+- Add PKI API to bindings
+
+### Features
+
+- Added support for PKI environment
+- Change ClientId & Handle format to URIs
+
+
+### Bug Fixes
+
+- Null pointer in Javascript when calling 'new_oidc_challenge_response'
+- Swift wrapper for E2eiEnrollment was not used in other methods
+- Use 'implementation' Gradle configuration not to enforce dependencies version into consumers. Fixes #451
+
+### Features
+
+- [**breaking**] Remove PerDomainTrustAnchor extension altogether. Backward incompatible changes !
+
+
+### Bug Fixes
+
+- README mentions a task which doesn't exist ([#445](https://github.com/wireapp/core-crypto/issues/445))
+- Remove unnecessary boxing of values before persisting them in IndexedDb
+
+### Features
+
+- [**breaking**] Remove 'clientId' from activation & rotate enrollment now that we expect a specific ClientId format
+- [**breaking**] Add `get_credential_in_use()` to check the e2ei state from a GroupInfo
+- [**breaking**] Rename `E2eiConversationState::Degraded` in to `E2eiConversationState::NotVerified`
+- [**breaking**] Managed OIDC refreshToken (wpb-5012)
+
+### Miscellaneous Tasks
+
+- Remove unused 'MlsSignatureKeyPairExt' trait and 'get_indexed' method
+- Streamline "collection" in wasm storage
+- WasmEncryptedStorage::get_many was not used
+
+### Testing
+
+- Verify that clients can create conversation with x509 credentials
+
+
+### Features
+
+- [**breaking**] Canonicalize ClientId keeping only the regular version where the UserId portion is the hyphenated string representation of the UUID. Also apply this to 'getUserIdentities()'
+
+
+### Features
+
+- Better errors: 'ImplementationError' was way too often used as a fallback when the developer was too lazy to create a new error. This tries to cure that, especially with e2ei errors. It also tries to distinguish client errors from internal errors
+- [**breaking**] Simplify API of 'add_clients_to_conversation' by not requiring to repeat the ClientId of the new members alongside their KeyPackage when the former can now be extracted from the latter
+- [**breaking**] Introduce handle & team in the client dpop token
+
+### Testing
+
+- Test DB migration from 0.9.2
+
+
+### Testing
+
+- Add new keystore regression test to CI
+- Test keystore migration regressions
+
+
+### Bug Fixes
+
+- Preserve schema upgrade path between schemafix'd versions and upcoming
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.18
+
+
+### Bug Fixes
+
+- Don't depend on OpenSSL on WASM
+- Dynamic linking issue on Android with the atomic lib
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.17 ([#425](https://github.com/wireapp/core-crypto/issues/425))
+- Use actual CI cache
+
+
+### Bug Fixes
+
+- Prevent CI from overriding RUSTFLAGS
+- Added missing d.ts declarations
+- KP test was taking too much time
+
+### Documentation
+
+- Updated README.md noting Bun usage
+
+### Features
+
+- Switch from node to bun
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.16
+
+
+### Bug Fixes
+
+- Add '-latomic' flag when building for Android to dynamically link atomic lib which is supposedly causing issues with openssl
+
+### Features
+
+- Re-export e2ei types
+
+### Miscellaneous Tasks
+
+- Fix some clippy lints
+
+
+### Bug Fixes
+
+- Backward incompatible database schemas. It only preserves Proteus compatibility when migrating from CC 0.11.0 -> 1.0.0. For anything MLS-related it is recommended to wipe all the groups
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.14
+
+
+### Bug Fixes
+
+- Do not reapply buffered messages when rejoining with external commit
+- Coarsetime issue causing compilation error on WASM
+
+### Features
+
+- [**breaking**] Make initial number of generated KeyPackage configurable
+- Add e2ei ffi in Swift wrapper
+- [**breaking**] Add LeafNode validation
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.13
+- Use wasm_bindgen macros to generate Typescript classes used in e2ei enrollment process
+
+### Testing
+
+- Try fixing flaky time-based LeafNode validation tests
+
+
+### Bug Fixes
+
+- Use sed in a cross-platform way for kt edits
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.12
+
+
+### Bug Fixes
+
+- [**breaking**] UniFFI Errors
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.11
+
+
+### Bug Fixes
+
+- UniFFI symbol matching
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.10
+
+
+### Bug Fixes
+
+- Make UniFFI produce the correct symbol in bindings
+- Change e2ei enrollment identifier causing collision now that keypairs are reused
+
+### Documentation
+
+- Regenerate changelog
+
+### Features
+
+- [**breaking**] Return raw PEM certificate in `getUserIdentities` for display purpose
+- [**breaking**] Bump rusty-jwt-tools to v0.5.0. Add 'revokeCert' to AcmeDirectory
+
+### Miscellaneous Tasks
+
+- Release v1.0.0-rc.9
+
+
+### Bug Fixes
+
+- TLS serialization of x509 credential
+- [**breaking**] UniFFI Async cancellable routines + bytes
+- Make interop runner pick up CHROME_PATH from env
+
+### Features
+
+- Expose `getUserIdentities` through the FFI
+- [**breaking**] Also restore buffered messages on the receiver side
+- Increase max past epoch to 3 since backend inordering of messages requires client's config to backend's one + 1
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.8
+- Fix clippy lint on wasm tests
+- Quiet clippy new lint about non send in Arc because it comes from wasm-bindgen wrapped Javascript object which cannot be shared between threads anyway
+- Remove useless application message epoch check
+
+### Refactor
+
+- Borrow conversation_id in `new_conversation`
+
+### Testing
+
+- Fix wasm test hitting a limit. Just split them for now, waiting for a proper solution
+- Fix spinoff 0.8 compilation
+
+
+### Bug Fixes
+
+- Kotlin tests not compiling after methods became async
+
+### Features
+
+- Correlate RotateBundle with a GroupId
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.7
+
+
+### Bug Fixes
+
+- `e2eiRotateAll` return type was not wrapped
+- Signature KeyPair was rotated when credentials were which was zealous. Also fixes an important bug caused by inverted private & public keypair part when rotating credentials
+
+### Features
+
+- [**breaking**] Handle the case when a client tries to decrypt a Welcome referring to a KeyPackage he already has deleted locally
+- Add keystore dump exporter CLI tool
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.6
+
+### Testing
+
+- Add a roundtrip test for e2ei credential rotation to tackle a false positive regression
+
+
+### Bug Fixes
+
+- E2ei enum for conversation state was unused and failing the Typescript publication. Now CI will have the same compiler flags when checking bindings in order to prevent this again
+
+### Miscellaneous Tasks
+
+- Release 1.0.0-rc.5
 
 </details>
 
@@ -1395,14 +1820,6 @@ In that case he has to catch & ignore the "OrphanWelcome" error and to rejoin th
 
 <details>
     <summary>git-conventional changelog</summary>
-
-### Bug Fixes
-
-- E2ei enum for conversation state was unused and failing the Typescript publication. Now CI will have the same compiler flags when checking bindings in order to prevent this again
-
-### Miscellaneous Tasks
-
-- Release 1.0.0-rc.5
 
 </details>
 
