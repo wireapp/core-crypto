@@ -51,7 +51,7 @@ impl MlsCentral {
         // participants once joining it.
         // This 👇 verifies the GroupInfo and the RatchetTree btw
         let rt = group_info
-            .take_ratchet_tree(&self.mls_backend)
+            .take_ratchet_tree(&self.mls_backend, false)
             .await
             .map_err(MlsError::from)?;
         self.get_credential_in_use_in_ratchet_tree(rt, credential_type)

@@ -582,7 +582,7 @@ pub mod tests {
 
                 // make sure it's valid
                 let _ = KeyPackageIn::from(kp.clone())
-                    .standalone_validate(&cc.mls_central.mls_backend, ProtocolVersion::Mls10)
+                    .standalone_validate(&cc.mls_central.mls_backend, ProtocolVersion::Mls10, true)
                     .await
                     .unwrap();
 
