@@ -21,14 +21,14 @@ targets = [
 [advisories]
 vulnerability = "deny"
 ignore = [
-    # ? ansi_term works well as is, despite being unmaintained
-    "RUSTSEC-2021-0139",
-    # ? `time` is only used in the interop runner
-    "RUSTSEC-2020-0071",
     # ? `sodiumoxide` is only used in tests
     "RUSTSEC-2021-0137",
-    # ? `atty` only has a vuln on windows
-    "RUSTSEC-2021-0145",
+    # ? There's no fix currently for the Marvin attack
+    # - https://github.com/RustCrypto/RSA/issues/390
+    # -https://github.com/RustCrypto/RSA/pull/394
+    "RUSTSEC-2023-0071",
+    # ? Only used in wasm-browser-run
+    "RUSTSEC-2023-0072"
 ]
 
 [bans]
@@ -40,15 +40,15 @@ allow-osi-fsf-free = "both"
 copyleft = "allow"
 unused-allowed-license = "warn"
 confidence-threshold = 0.93
-allow = ["Apache-2.0", "MIT", "MPL-2.0", "GPL-3.0", "OpenSSL"]
-exceptions = [{ allow = ["Unicode-DFS-2016"], name = "unicode-ident" }]
+allow = ["Apache-2.0", "MIT", "MPL-2.0", "GPL-3.0", "CC0-1.0"]
+exceptions = [
+    { allow = ["Unicode-DFS-2016"], name = "unicode-ident" },
+]
 
 [[licenses.clarify]]
-name = "ring"
-expression = "MIT AND ISC AND OpenSSL"
-license-files = [
-    { path = "LICENSE", hash = 0xbd0eed23 }
-]
+name = "pkiprocmacros"
+expression = "Apache-2.0 OR MIT"
+license-files = []
 
 [[licenses.clarify]]
 name = "encoding_rs"
@@ -57,21 +57,16 @@ license-files = [
     { path = "COPYRIGHT", hash = 0x39f8ad31 }
 ]
 
-[[licenses.clarify]]
-name = "webpki"
-expression = "ISC"
-license-files = [{ path = "LICENSE", hash = 0x001c7e6c }]
-
 [sources]
 allow-git = [
     # ? Needed fork for PQ crypto
     "https://github.com/bwesterb/argyle-kyber",
     # ? Needed for our interop runner.
-    # "https://github.com/otak/fantoccini",
+    "https://github.com/otak/fantoccini",
+    # ? Fix for wasm
+    "https://github.com/otak/formats?branch=otak/x509-cert-wasm",
     # ? Needed for rusqlite
     "https://github.com/alexcrichton/openssl-src-rs",
-    # ? Used in a devdep within wiree2eidentity
-    "https://github.com/briansmith/ring",
 ]
 
 [sources.allow-org]
