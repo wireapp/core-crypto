@@ -52,7 +52,7 @@ async function initBrowser(args = { captureLogs: true }) {
   if (!browser) {
     browser = await puppeteer.launch({ headless: "new" });
   }
-  const context = await browser.createIncognitoBrowserContext();
+  const context = await browser.createBrowserContext();
   const page = await context.newPage();
   if (args.captureLogs) {
     page.on("console", msg => {
