@@ -68,6 +68,7 @@ pub enum OidcProvider {
 }
 
 unsafe impl<'a> Send for E2eTest<'a> {}
+
 unsafe impl<'a> Sync for E2eTest<'a> {}
 
 impl<'a> E2eTest<'a> {
@@ -118,32 +119,35 @@ impl<'a> E2eTest<'a> {
         let sub = ClientId::try_new(wire_user_id.to_string(), wire_client_id, &domain).unwrap();
         let (handle, team, password) = ("alice_wire", "wire", "foo");
         let qualified_handle = Handle::from(handle).try_to_qualified(&domain).unwrap();
+        let keycloak_handle = format!("{handle}@{domain}");
         let email = format!("alicesmith@{domain}");
         let audience = "wireapp";
         let client_secret = rand_base64_str(24);
         let idp_host_port = portpicker::pick_unused_port().unwrap();
+        std::env::set_var("IDP_HOST_PORT", idp_host_port.to_string());
         let idp_base = format!("http://{idp_host}");
-        let (issuer, jwks_uri) = match oidc_provider {
+        let (issuer, jwks_url, discovery_base_url) = match oidc_provider {
             OidcProvider::Dex => {
                 // this will be called from Docker network so we don't want to use the host port
                 let docker_port = DexImage::PORT;
                 (
                     format!("{idp_base}:{idp_host_port}/dex"),
                     format!("{idp_base}:{docker_port}/dex/keys"),
+                    "TODO".to_string(),
                 )
             }
             OidcProvider::Keycloak => {
                 let realm = KeycloakImage::REALM;
-                // this will be called from Docker network so we don't want to use the host port
-                let docker_port = KeycloakImage::HTTP_PORT;
                 (
                     format!("{idp_base}:{idp_host_port}/realms/{realm}"),
-                    format!("{idp_base}:{docker_port}/realms/{realm}/protocol/openid-connect/certs",),
+                    format!("{idp_base}:{idp_host_port}/realms/{realm}/protocol/openid-connect/certs",),
+                    format!("{idp_base}:{idp_host_port}/realms/{realm}",),
                 )
             }
             OidcProvider::Google => (
                 "https://accounts.google.com".to_string(),
                 "https://www.googleapis.com/oauth2/v3/certs".to_string(),
+                "TODO".to_string(),
             ),
         };
 
@@ -218,11 +222,11 @@ impl<'a> E2eTest<'a> {
             keycloak_cfg: KeycloakCfg {
                 oauth_client_id: audience.to_string(),
                 http_host_port: idp_host_port,
-                https_host_port: portpicker::pick_unused_port().unwrap(),
                 host: idp_host,
                 firstname: firstname.to_string(),
                 lastname: lastname.to_string(),
-                username: qualified_handle.to_string(),
+                username: keycloak_handle.to_string(),
+                // username: qualified_handle.to_string(),
                 email,
                 password: password.to_string(),
             },
@@ -230,9 +234,14 @@ impl<'a> E2eTest<'a> {
                 sign_key,
                 issuer,
                 audience: audience.to_string(),
-                jwks_uri,
+                jwks_url,
+                discovery_base_url,
                 dpop_target_uri: None,
-                template: serde_json::json!({ "template": template }),
+                x509_template: serde_json::json!({ "template": template }),
+                oidc_template: serde_json::json!({
+                    "name": "{{ .name }}",
+                    "preferred_username": "wireapp://%40{{ .preferred_username }}"
+                }),
                 host: ca_host,
             },
             oauth_cfg: OauthCfg {

@@ -1,4 +1,5 @@
 use std::collections::{hash_map::RandomState, HashMap};
+use std::str::FromStr;
 
 use asserhttp::*;
 use base64::Engine;
@@ -469,6 +470,8 @@ impl<'a> E2eTest<'a> {
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();
 
+        // tokio::time::sleep(core::time::Duration::from_secs(10)).await;
+
         // TODO: improve when asserhttp implements fallible errors
         if resp.status() != StatusCode::OK {
             return Err(TestError::OidcChallengeError);
@@ -619,7 +622,13 @@ impl<'a> E2eTest<'a> {
     ) -> TestResult<String> {
         self.display_chapter("Authenticate end user using OIDC Authorization Code with PKCE flow");
         let oidc_target = oidc_chall.target.to_string();
-        let issuer_url = IssuerUrl::new(oidc_target).unwrap();
+
+        let mut oidc_target = url::Url::parse(&oidc_target).unwrap();
+        let local_port = std::env::var("IDP_HOST_PORT").unwrap();
+        let local_port = u16::from_str(&local_port).unwrap();
+        oidc_target.set_port(Some(local_port)).unwrap();
+
+        let issuer_url = IssuerUrl::new(oidc_target.as_str().to_string()).unwrap();
         let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), move |r| {
             custom_oauth_client("discovery", ctx_get_http_client(), r)
         })
@@ -907,8 +916,6 @@ impl<'a> E2eTest<'a> {
 
         self.display_step("get back a url for fetching the certificate");
         let mut resp = self.client.execute(req).await?;
-
-        // tokio::time::sleep(core::time::Duration::from_secs(20)).await;
 
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();

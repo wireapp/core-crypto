@@ -19,9 +19,11 @@ pub struct CaCfg {
     pub sign_key: String,
     pub issuer: String,
     pub audience: String,
-    pub jwks_uri: String,
+    pub jwks_url: String,
+    pub discovery_base_url: String,
     pub dpop_target_uri: Option<String>,
-    pub template: serde_json::Value,
+    pub x509_template: serde_json::Value,
+    pub oidc_template: serde_json::Value,
     pub host: String,
 }
 
@@ -33,15 +35,17 @@ impl CaCfg {
             sign_key,
             issuer,
             audience,
-            jwks_uri,
+            // jwks_url,
+            discovery_base_url,
             dpop_target_uri,
-            template,
+            x509_template,
+            oidc_template,
             ..
         } = self;
         let dpop_target_uri = dpop_target_uri.as_ref().unwrap();
-        let x509 = template.clone();
+        let x509_template = x509_template.clone();
         let b64_sign_key = BASE64_STANDARD.encode(sign_key);
-        let transform = r#"{"name": "{{ .name }}", "preferred_username": "{{ .preferred_username }}"}"#; // same as (current) default template
+        let transform = serde_json::to_string(oidc_template).unwrap();
 
         // TODO: remove RS256 when EcDSA & EdDSA are supported in Dex
         json!({
@@ -59,15 +63,12 @@ impl CaCfg {
                         "defaultTLSCertDuration": "87600h"
                     },
                     "options": {
-                        "x509": x509,
+                        "x509": x509_template,
                         "wire": {
                             "oidc": {
                                 "provider": {
-                                    "issuer": issuer,
-                                    "authorization_endpoint": "https://authorization_endpoint.com",
-                                    "token_endpoint": "https://token_endpoint.com",
-                                    "jwks_uri": jwks_uri,
-                                    "userinfo_endpoint": "https://userinfo_endpoint.com",
+                                    "issuerUrl": issuer,
+                                    "discoveryBaseUrl": discovery_base_url,
                                     "id_token_signing_alg_values_supported": [
                                         "RS256",
                                         "ES256",

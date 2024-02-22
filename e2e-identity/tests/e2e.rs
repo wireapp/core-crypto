@@ -66,7 +66,7 @@ async fn google_demo_should_succeed() {
         ca_cfg: CaCfg {
             issuer,
             audience,
-            jwks_uri,
+            jwks_url: jwks_uri,
             ..default.ca_cfg
         },
         oidc_provider: OidcProvider::Google,
@@ -786,9 +786,9 @@ mod oidc_challenge {
     async fn should_fail_when_oidc_provider_jwks_uri_unavailable() {
         let mut test = E2eTest::new();
         // invalid jwks uri
-        let mut jwks_uri: url::Url = test.ca_cfg.jwks_uri.parse().unwrap();
+        let mut jwks_uri: url::Url = test.ca_cfg.jwks_url.parse().unwrap();
         jwks_uri.set_port(Some(jwks_uri.port().unwrap() + 1)).unwrap();
-        test.ca_cfg.jwks_uri = jwks_uri.to_string();
+        test.ca_cfg.jwks_url = jwks_uri.to_string();
         let test = test.start(docker()).await;
 
         // cannot validate the OIDC challenge
@@ -815,7 +815,7 @@ mod oidc_challenge {
         let _attacker_keycloak = WiremockImage::run(docker, attacker_host, vec![jwks_stub]);
 
         // invalid jwks uri
-        test.ca_cfg.jwks_uri = format!("http://{attacker_host}/oauth2/jwks");
+        test.ca_cfg.jwks_url = format!("http://{attacker_host}/oauth2/jwks");
         let test = test.start(docker).await;
 
         // cannot validate the OIDC challenge
@@ -839,7 +839,7 @@ mod oidc_challenge {
         let (jwks_stub, new_kp, kid) = test.new_jwks_uri_mock();
         let attacker_host = "attacker-keycloak";
         let _attacker_keycloak = WiremockImage::run(docker, attacker_host, vec![jwks_stub]);
-        test.ca_cfg.jwks_uri = format!("https://{attacker_host}/realms/master/protocol/openid-connect/certs");
+        test.ca_cfg.jwks_url = format!("https://{attacker_host}/realms/master/protocol/openid-connect/certs");
 
         let test = test.start(docker).await;
 
@@ -882,7 +882,7 @@ mod oidc_challenge {
         let (jwks_stub, new_kp, kid) = test.new_jwks_uri_mock();
         let attacker_host = "attacker-dex";
         let _attacker_dex = WiremockImage::run(docker, attacker_host, vec![jwks_stub]);
-        test.ca_cfg.jwks_uri = format!("https://{attacker_host}/realms/master/protocol/openid-connect/certs");
+        test.ca_cfg.jwks_url = format!("https://{attacker_host}/realms/master/protocol/openid-connect/certs");
 
         let test = test.start(docker).await;
 

@@ -1,4 +1,5 @@
 use std::process::Command;
+use std::str::FromStr;
 use std::{collections::HashMap, env, net::SocketAddr};
 
 use keycloak::types::JsonNode;
@@ -14,7 +15,6 @@ use crate::utils::docker::SHM;
 
 pub struct KeycloakServer<'a> {
     pub http_uri: String,
-    pub https_uri: String,
     pub node: Container<'a, KeycloakImage>,
     pub socket: SocketAddr,
 }
@@ -27,10 +27,9 @@ pub struct KeycloakImage {
 
 impl KeycloakImage {
     const NAME: &'static str = "wire-keycloak";
-    const TAG: &'static str = "latest"; // has to match the version of Keycloak crate
+    const TAG: &'static str = "latest";
+    // has to match the version of Keycloak crate
     const VERSION: &'static str = "22.0.5";
-    pub const HTTP_PORT: u16 = 8080;
-    pub const HTTPS_PORT: u16 = 8443;
 
     pub const USER: &'static str = "admin";
     pub const PASSWORD: &'static str = "changeme";
@@ -38,53 +37,47 @@ impl KeycloakImage {
     pub const LOG_LEVEL: &'static str = "info";
 
     pub async fn run(docker: &Cli, cfg: KeycloakCfg, redirect_uri: String) -> KeycloakServer {
-        Self::build();
+        std::env::set_var("KC_HTTP_PORT", cfg.http_host_port.to_string());
+        Self::build(cfg.http_host_port.to_string());
         let instance = Self::new();
         let image: RunnableImage<Self> = instance.into();
         let image = image
             .with_container_name(&cfg.host)
             .with_network(super::NETWORK)
-            .with_mapped_port((cfg.http_host_port, Self::HTTP_PORT))
-            .with_mapped_port((cfg.https_host_port, Self::HTTPS_PORT))
+            .with_mapped_port((cfg.http_host_port, cfg.http_host_port))
             .with_privileged(true)
             .with_shm_size(SHM);
         let node = docker.run(image);
 
-        let http_port = node.get_host_port_ipv4(Self::HTTP_PORT);
+        let http_port = node.get_host_port_ipv4(cfg.http_host_port);
         let http_uri = format!("http://{}:{http_port}", cfg.host);
-
-        let https_port = node.get_host_port_ipv4(Self::HTTPS_PORT);
-        let https_uri = format!("http://{}:{https_port}", cfg.host);
 
         let ip = std::net::IpAddr::V4("127.0.0.1".parse().unwrap());
         let socket = SocketAddr::new(ip, http_port);
 
         Self::configure(http_port, &cfg, &redirect_uri).await;
 
-        KeycloakServer {
-            http_uri,
-            https_uri,
-            socket,
-            node,
-        }
+        KeycloakServer { http_uri, socket, node }
     }
 
-    fn build() {
+    fn build(port: String) {
         let cwd = env::var("CARGO_MANIFEST_DIR").unwrap();
         Command::new("docker")
             .args(&["image", "rm", &format!("{}:{}", Self::NAME, Self::TAG)])
             .output()
             .unwrap();
 
-        let output = Command::new("docker")
-            .arg("build")
-            .arg("--file")
-            .arg(&format!("{cwd}/tests/utils/docker/keycloak/Dockerfile"))
-            .arg("--force-rm=true")
-            .arg(format!("--tag={}:{}", Self::NAME, Self::TAG))
-            .arg(".")
-            .output()
-            .unwrap();
+        let build_args = &[
+            "build",
+            "--file",
+            &format!("{cwd}/tests/utils/docker/keycloak/Dockerfile"),
+            "--force-rm=true",
+            "--build-arg",
+            &format!("kc_port={port}"),
+            &format!("--tag={}:{}", Self::NAME, Self::TAG),
+            ".",
+        ];
+        let output = Command::new("docker").args(build_args).output().unwrap();
         if !output.status.success() {
             panic!("stderr: {}", String::from_utf8(output.stderr).unwrap());
         }
@@ -250,7 +243,6 @@ pub struct KeycloakCfg {
     pub password: String,
     pub host: String,
     pub http_host_port: u16,
-    pub https_host_port: u16,
 }
 
 impl From<&KeycloakCfg> for UserRepresentation {
@@ -298,7 +290,9 @@ impl Image for KeycloakImage {
     }
 
     fn expose_ports(&self) -> Vec<u16> {
-        vec![KeycloakImage::HTTP_PORT, KeycloakImage::HTTPS_PORT]
+        let port = std::env::var("KC_HTTP_PORT").unwrap();
+        let port = u16::from_str(&port).unwrap();
+        vec![port]
     }
 }
 

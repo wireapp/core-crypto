@@ -1,4 +1,5 @@
 FROM quay.io/keycloak/keycloak:22.0.5
+ARG kc_port
 
 WORKDIR /opt/keycloak
 
@@ -13,7 +14,9 @@ RUN keytool -genkeypair \
      -ext "SAN:c=DNS:localhost,IP:127.0.0.1" \
      -keystore conf/server.keystore
 
-COPY tests/utils/docker/keycloak/e2ei-keycloak-oidc-mapper-0.0.1-SNAPSHOT.jar /opt/keycloak/providers/e2ei-keycloak-oidc-mapper.jar
+COPY tests/utils/docker/keycloak/e2ei-keycloak-oidc-mapper-0.1.0.jar /opt/keycloak/providers/e2ei-keycloak-oidc-mapper.jar
+
+ENV KC_HTTP_PORT="${kc_port}"
 
 ENV KC_FEATURES="client-policies"
 ENV KC_DB="dev-file"
