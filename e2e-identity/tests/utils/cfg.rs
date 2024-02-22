@@ -54,6 +54,12 @@ pub struct E2eTest<'a> {
     pub oidc_provider: OidcProvider,
 }
 
+impl std::fmt::Debug for E2eTest<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "")
+    }
+}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum OidcProvider {
     Dex,
