@@ -7,11 +7,21 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+
+## [1.0.0-rc.43] - 2024-02-22
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.43" unreleased=true}}
+</details>
+
+* Fixed WASM IndexedDB ObjectStores being tentatively created when they already exist during migrations
+
 ## [1.0.0-rc.42] - 2024-02-21
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.42" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.42"}}
 </details>
 
 * Do not assert keypackage expiration when joining a group via external commit
