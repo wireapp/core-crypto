@@ -8,11 +8,20 @@ Platform support legends:
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
 
+## [1.0.0-rc.44] - 2024-02-27
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.44" unreleased=true}}
+</details>
+
+* Fix issues when e2ei is turned off on a environment and the PKI env is restored which to validation failures when verifying a GroupInfo.
+
 ## [1.0.0-rc.43] - 2024-02-22
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.43" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.43"}}
 </details>
 
 * Fixed WASM IndexedDB ObjectStores being tentatively created when they already exist during migrations
