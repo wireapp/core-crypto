@@ -8,6 +8,19 @@ Platform support legends:
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
 
+## [1.0.0-rc.46] - 2024-02-28
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Rollback handling of e2ei deactivation since it creates issues in the regular case
+
+</details>
+
+* Rollback regression introduced in v1.0.0-rc.44
+
 ## [1.0.0-rc.45] - 2024-02-28
 
 <details>
