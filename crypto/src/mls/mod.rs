@@ -189,11 +189,11 @@ impl MlsCentral {
         // Restore persisted groups if there are any
         let mls_groups = Self::restore_groups(&mls_backend).await?;
 
-        if mls_client.as_ref().map(|c| c.is_e2ei_capable()).unwrap_or_default() {
-            mls_backend
-                .authentication_service()
-                .update_env(Self::restore_pki_env(&mls_backend).await?)?;
-        }
+        // this might cause disruptions in case e2ei is turned off and a new Client with Basic credentials is created without registering TA & intermediates
+        // but this is not something supposed to be supported (at the moment)
+        mls_backend
+            .authentication_service()
+            .update_env(Self::restore_pki_env(&mls_backend).await?)?;
 
         Ok(Self {
             mls_backend,
