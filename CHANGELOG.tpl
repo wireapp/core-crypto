@@ -8,11 +8,20 @@ Platform support legends:
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
 
+## [1.0.0-rc.45] - 2024-02-28
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.45" unreleased=true}}
+</details>
+
+* Fix x509 validation in received messages (especially UpdatePath) lenient since there is no active eviction mechanism in place for ghost clients
+
 ## [1.0.0-rc.44] - 2024-02-27
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.44" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.44"}}
 </details>
 
 * Fix issues when e2ei is turned off on a environment and the PKI env is restored which to validation failures when verifying a GroupInfo.

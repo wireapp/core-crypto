@@ -8,6 +8,15 @@ Platform support legends:
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
 
+## [1.0.0-rc.45] - 2024-02-28
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+</details>
+
+* Fix x509 validation in received messages (especially UpdatePath) lenient since there is no active eviction mechanism in place for ghost clients
+
 ## [1.0.0-rc.44] - 2024-02-27
 
 <details>
