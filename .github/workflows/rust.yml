@@ -87,6 +87,10 @@ jobs:
         run: |
           cd extras/keystore-regression-versions
           cargo run
+      - name: "Upload test results"
+        uses: softprops/action-gh-release@v1
+        with:
+            files: target/nextest/default/junit.xml
 
   proteus-test:
     runs-on: ubuntu-latest
