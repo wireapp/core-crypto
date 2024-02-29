@@ -32,7 +32,7 @@ jobs:
       - name: Gradle Setup
         uses: gradle/gradle-build-action@v2
       - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@v1
+        uses: gradle/wrapper-validation-action@v2
       - name: "Setup rust"
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
