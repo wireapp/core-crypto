@@ -101,7 +101,7 @@ impl MlsCentral {
         // Validate it
         {
             let auth_service_arc = self.mls_backend.authentication_service().clone();
-            let auth_service = auth_service_arc.borrow()?;
+            let auth_service = auth_service_arc.borrow().await;
             let Some(pki_env) = auth_service.as_ref() else {
                 return Err(CryptoError::ConsumerError);
             };
@@ -138,7 +138,7 @@ impl MlsCentral {
         // Parse & Validate CRL
         let crl = {
             let auth_service_arc = self.mls_backend.authentication_service().clone();
-            let auth_service = auth_service_arc.borrow()?;
+            let auth_service = auth_service_arc.borrow().await;
             let Some(pki_env) = auth_service.as_ref() else {
                 return Err(CryptoError::ConsumerError);
             };
@@ -174,7 +174,7 @@ impl MlsCentral {
 
     pub(crate) async fn init_pki_env(&self) -> CryptoResult<()> {
         if let Some(pki_env) = Self::restore_pki_env(&self.mls_backend).await? {
-            self.mls_backend.update_pki_env(pki_env)?;
+            self.mls_backend.update_pki_env(pki_env).await?;
         }
 
         Ok(())
@@ -275,12 +275,12 @@ pub mod tests {
                     } = alice_ctx;
 
                     assert!(x509_test_chain.is_none());
-                    assert!(!mls_central.mls_backend.is_pki_env_setup());
+                    assert!(!mls_central.mls_backend.is_pki_env_setup().await);
 
                     mls_central.restore_from_disk().await.unwrap();
 
                     assert!(x509_test_chain.is_none());
-                    assert!(!mls_central.mls_backend.is_pki_env_setup());
+                    assert!(!mls_central.mls_backend.is_pki_env_setup().await);
                 })
             })
             .await;

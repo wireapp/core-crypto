@@ -74,7 +74,9 @@ impl MlsConversation {
         self.commit_accepted(backend).await?;
 
         let own_leaf = self.group.own_leaf().ok_or(CryptoError::InternalMlsError)?;
-        let identity = own_leaf.credential().extract_identity()?;
+
+        // We return self identity here, probably not necessary to check revocation
+        let identity = own_leaf.credential().extract_identity(None)?;
 
         Ok(MlsConversationDecryptMessage {
             app_msg: None,

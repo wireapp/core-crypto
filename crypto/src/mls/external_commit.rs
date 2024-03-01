@@ -278,7 +278,7 @@ impl MlsConversation {
             }
         }
 
-        if backend.authentication_service().is_env_setup() {
+        if backend.authentication_service().is_env_setup().await {
             let credentials: Vec<_> = commit
                 .add_proposals()
                 .filter_map(|add_proposal| {
@@ -287,7 +287,12 @@ impl MlsConversation {
                     matches!(credential.credential_type(), CredentialType::X509).then(|| credential.clone())
                 })
                 .collect();
-            let state = compute_state(credentials.iter(), backend, MlsCredentialType::X509);
+            let state = compute_state(
+                credentials.iter(),
+                MlsCredentialType::X509,
+                backend.authentication_service().borrow().await.as_ref(),
+            )
+            .await;
             if state != E2eiConversationState::Verified {
                 // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and impact of the validations
                 // return Err(CryptoError::InvalidCertificateChain);
@@ -301,13 +306,12 @@ impl MlsConversation {
 #[cfg(test)]
 pub mod tests {
     use openmls::prelude::*;
-    use openmls::treesync::errors::{LifetimeError, TreeSyncFromNodesError};
     use wasm_bindgen_test::*;
 
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
 
     use crate::prelude::MlsConversationConfiguration;
-    use crate::{prelude::MlsConversationInitBundle, test_utils::*, CryptoError, MlsError};
+    use crate::{prelude::MlsConversationInitBundle, test_utils::*, CryptoError};
 
     wasm_bindgen_test_configure!(run_in_browser);
 

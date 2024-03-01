@@ -6,7 +6,10 @@ use x509_cert::Certificate;
 pub(crate) trait CredentialExt {
     fn parse_leaf_cert(&self) -> CryptoResult<Option<Certificate>>;
     fn get_type(&self) -> CryptoResult<MlsCredentialType>;
-    fn extract_identity(&self) -> CryptoResult<Option<WireIdentity>>;
+    fn extract_identity(
+        &self,
+        env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
+    ) -> CryptoResult<Option<WireIdentity>>;
     fn extract_public_key(&self) -> CryptoResult<Option<Vec<u8>>>;
     fn is_basic(&self) -> bool;
 }
@@ -27,9 +30,12 @@ impl CredentialExt for Credential {
         }
     }
 
-    fn extract_identity(&self) -> CryptoResult<Option<WireIdentity>> {
+    fn extract_identity(
+        &self,
+        env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
+    ) -> CryptoResult<Option<WireIdentity>> {
         match self.mls_credential() {
-            openmls::prelude::MlsCredentialType::X509(cert) => cert.extract_identity(),
+            openmls::prelude::MlsCredentialType::X509(cert) => cert.extract_identity(env),
             _ => Ok(None),
         }
     }
@@ -57,11 +63,14 @@ impl CredentialExt for openmls::prelude::Certificate {
         Ok(MlsCredentialType::X509)
     }
 
-    fn extract_identity(&self) -> CryptoResult<Option<WireIdentity>> {
+    fn extract_identity(
+        &self,
+        env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
+    ) -> CryptoResult<Option<WireIdentity>> {
         let leaf = self.certificates.first().ok_or(CryptoError::InvalidIdentity)?;
         let leaf = leaf.as_slice();
         use wire_e2e_identity::prelude::WireIdentityReader as _;
-        let identity = leaf.extract_identity().map_err(|_| CryptoError::InvalidIdentity)?;
+        let identity = leaf.extract_identity(env).map_err(|_| CryptoError::InvalidIdentity)?;
         let identity = WireIdentity::try_from((identity, leaf))?;
         Ok(Some(identity))
     }

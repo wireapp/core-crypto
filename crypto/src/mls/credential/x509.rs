@@ -40,7 +40,7 @@ impl CertificateBundle {
     pub fn get_client_id(&self) -> CryptoResult<ClientId> {
         let leaf = self.certificate_chain.first().ok_or(CryptoError::InvalidIdentity)?;
 
-        let identity = leaf.extract_identity().map_err(|_| CryptoError::InvalidIdentity)?;
+        let identity = leaf.extract_identity(None).map_err(|_| CryptoError::InvalidIdentity)?;
         let client_id = identity.client_id.parse::<WireQualifiedClientId>()?;
         Ok(client_id.into())
     }
