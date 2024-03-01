@@ -491,7 +491,7 @@ impl MlsCentral {
             .await
             .unwrap()
             .clone();
-        let local_identity = cb.credential().extract_identity().unwrap().unwrap();
+        let local_identity = cb.credential().extract_identity(None).unwrap().unwrap();
         assert_eq!(&local_identity.client_id.as_bytes(), &cid.0);
         assert_eq!(local_identity.display_name, new_display_name);
         assert_eq!(local_identity.handle, new_handle);
@@ -502,7 +502,7 @@ impl MlsCentral {
         let credential = self.find_credential_from_keystore(&cb).await.unwrap();
         let credential = Credential::tls_deserialize(&mut credential.credential.as_slice()).unwrap();
         assert_eq!(credential.identity(), &cid.0);
-        let keystore_identity = credential.extract_identity().unwrap().unwrap();
+        let keystore_identity = credential.extract_identity(None).unwrap().unwrap();
         assert_eq!(keystore_identity.display_name, new_display_name);
         assert_eq!(keystore_identity.handle, new_handle);
         assert_eq!(keystore_identity.status, DeviceStatus::Valid);
@@ -515,13 +515,13 @@ impl MlsCentral {
         let sender_cb = mls_client.find_most_recent_credential_bundle(sc, ct).unwrap();
 
         if let openmls::prelude::MlsCredentialType::X509(certificate) = &sender_cb.credential().mls_credential() {
-            let mls_identity = certificate.extract_identity().unwrap().unwrap();
+            let mls_identity = certificate.extract_identity(None).unwrap().unwrap();
             let mls_client_id = mls_identity.client_id.as_bytes();
 
             let decrypted_identity = decrypted.identity.as_ref().unwrap();
 
             let leaf: Vec<u8> = certificate.certificates.first().unwrap().clone().into();
-            let identity = leaf.as_slice().extract_identity().unwrap();
+            let identity = leaf.as_slice().extract_identity(None).unwrap();
             let identity = WireIdentity::try_from((identity, leaf.as_slice())).unwrap();
 
             assert_eq!(decrypted_identity.client_id, identity.client_id);
@@ -537,7 +537,7 @@ impl MlsCentral {
             assert!(decrypted_identity.certificate.ends_with("-----END CERTIFICATE-----\n"));
             let chain = x509_cert::Certificate::load_pem_chain(decrypted_identity.certificate.as_bytes()).unwrap();
             let leaf = chain.first().unwrap();
-            let cert_identity = leaf.extract_identity().unwrap();
+            let cert_identity = leaf.extract_identity(None).unwrap();
 
             let cert_identity = WireIdentity::try_from((cert_identity, leaf.to_der().unwrap().as_slice())).unwrap();
             assert_eq!(cert_identity.client_id, identity.client_id);

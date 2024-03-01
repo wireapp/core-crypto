@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use itertools::Itertools;
+use openmls_traits::OpenMlsCryptoProvider;
 use x509_cert::der::pem::LineEnding;
 
 use crate::e2e_identity::id::WireQualifiedClientId;
@@ -76,7 +77,10 @@ impl MlsCentral {
             .await?
             .read()
             .await
-            .get_device_identities(client_ids)
+            .get_device_identities(
+                client_ids,
+                self.mls_backend.authentication_service().borrow().await.as_ref(),
+            )
     }
 
     /// From a given conversation, get the identity of the users (device holders) supplied.
@@ -94,23 +98,34 @@ impl MlsCentral {
             .await?
             .read()
             .await
-            .get_user_identities(user_ids)
+            .get_user_identities(
+                user_ids,
+                self.mls_backend.authentication_service().borrow().await.as_ref(),
+            )
     }
 }
 
 impl MlsConversation {
-    fn get_device_identities(&self, device_ids: &[ClientId]) -> CryptoResult<Vec<WireIdentity>> {
+    fn get_device_identities(
+        &self,
+        device_ids: &[ClientId],
+        env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
+    ) -> CryptoResult<Vec<WireIdentity>> {
         if device_ids.is_empty() {
             return Err(CryptoError::ConsumerError);
         }
         self.members()
             .into_iter()
             .filter(|(id, _)| device_ids.contains(&ClientId::from(id.as_slice())))
-            .filter_map(|(_, c)| c.extract_identity().transpose())
+            .filter_map(|(_, c)| c.extract_identity(env).transpose())
             .collect::<CryptoResult<Vec<_>>>()
     }
 
-    fn get_user_identities(&self, user_ids: &[String]) -> CryptoResult<HashMap<String, Vec<WireIdentity>>> {
+    fn get_user_identities(
+        &self,
+        user_ids: &[String],
+        env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
+    ) -> CryptoResult<HashMap<String, Vec<WireIdentity>>> {
         if user_ids.is_empty() {
             return Err(CryptoError::ConsumerError);
         }
@@ -119,7 +134,7 @@ impl MlsConversation {
             .iter()
             .filter_map(|(id, c)| UserId::try_from(id.as_slice()).ok().zip(Some(c)))
             .filter(|(uid, _)| user_ids.contains(uid))
-            .filter_map(|(uid, c)| Some(uid).zip(c.extract_identity().transpose()))
+            .filter_map(|(uid, c)| Some(uid).zip(c.extract_identity(env).transpose()))
             .group_by(|(uid, _)| *uid)
             .into_iter()
             .map(|(uid, group)| {

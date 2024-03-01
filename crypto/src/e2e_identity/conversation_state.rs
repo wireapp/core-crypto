@@ -36,7 +36,7 @@ impl MlsCentral {
 
         let conversation_lock = conversation.read().await;
 
-        Ok(conversation_lock.e2ei_conversation_state(&self.mls_backend))
+        conversation_lock.e2ei_conversation_state(&self.mls_backend).await
     }
 
     /// Gets the e2ei conversation state from a `GroupInfo`. Useful to check if the group has e2ei
@@ -54,10 +54,10 @@ impl MlsCentral {
             .take_ratchet_tree(&self.mls_backend, false)
             .await
             .map_err(MlsError::from)?;
-        self.get_credential_in_use_in_ratchet_tree(rt, credential_type)
+        self.get_credential_in_use_in_ratchet_tree(rt, credential_type).await
     }
 
-    fn get_credential_in_use_in_ratchet_tree(
+    async fn get_credential_in_use_in_ratchet_tree(
         &self,
         ratchet_tree: RatchetTree,
         credential_type: MlsCredentialType,
@@ -66,22 +66,32 @@ impl MlsCentral {
             Some(Node::LeafNode(ln)) => Some(ln.credential()),
             _ => None,
         });
-        Ok(compute_state(credentials, &self.mls_backend, credential_type))
+        Ok(compute_state(
+            credentials,
+            credential_type,
+            self.mls_backend.authentication_service().borrow().await.as_ref(),
+        )
+        .await)
     }
 }
 
 impl MlsConversation {
-    fn e2ei_conversation_state(&self, backend: &MlsCryptoProvider) -> E2eiConversationState {
-        compute_state(self.group.members_credentials(), backend, MlsCredentialType::X509)
+    async fn e2ei_conversation_state(&self, backend: &MlsCryptoProvider) -> CryptoResult<E2eiConversationState> {
+        Ok(compute_state(
+            self.group.members_credentials(),
+            MlsCredentialType::X509,
+            backend.authentication_service().borrow().await.as_ref(),
+        )
+        .await)
     }
 }
 
 /// _credential_type will be used in the future to get the usage of VC Credentials, even Basics one.
 /// Right now though, we do not need anything other than X509 so let's keep things simple.
-pub(crate) fn compute_state<'a>(
+pub(crate) async fn compute_state<'a>(
     credentials: impl Iterator<Item = &'a Credential>,
-    backend: &MlsCryptoProvider,
     _credential_type: MlsCredentialType,
+    env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
 ) -> E2eiConversationState {
     let mut is_e2ei = false;
 
@@ -89,22 +99,14 @@ pub(crate) fn compute_state<'a>(
         if let Ok(Some(cert)) = credential.parse_leaf_cert() {
             is_e2ei = true;
 
-            let invalid_identity = cert.extract_identity().is_err();
+            let invalid_identity = cert.extract_identity(env).is_err();
 
             // TODO: this is incomplete and has to be applied to the whole cert chain
             use openmls_x509_credential::X509Ext as _;
             let is_time_valid = cert.is_time_valid().unwrap_or(false);
             let is_time_invalid = !is_time_valid;
-            let is_revoked_or_invalid = backend
-                .authentication_service()
-                .borrow()
-                .map(|pki_env| {
-                    if let Some(pki_env) = &*pki_env {
-                        pki_env.validate_cert_and_revocation(&cert).is_err()
-                    } else {
-                        false
-                    }
-                })
+            let is_revoked_or_invalid = env
+                .map(|e| e.validate_cert_and_revocation(&cert).is_err())
                 .unwrap_or(false);
 
             let is_invalid = invalid_identity || is_time_invalid || is_revoked_or_invalid;

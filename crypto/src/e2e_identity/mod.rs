@@ -1,3 +1,4 @@
+use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::HashMap;
 
 use wire_e2e_identity::prelude::{E2eiAcmeAuthorization, RustyE2eIdentity};
@@ -9,7 +10,7 @@ use crate::{
     e2e_identity::{crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId},
     mls::credential::x509::CertificatePrivateKey,
     prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCentral, MlsCiphersuite},
-    CryptoResult,
+    CryptoError, CryptoResult,
 };
 
 pub(crate) mod conversation_state;
@@ -80,7 +81,17 @@ impl MlsCentral {
     ) -> CryptoResult<Option<Vec<String>>> {
         let sk = enrollment.get_sign_key_for_mls()?;
         let cs = enrollment.ciphersuite;
-        let certificate_chain = enrollment.certificate_response(certificate_chain).await?;
+        let certificate_chain = enrollment
+            .certificate_response(
+                certificate_chain,
+                self.mls_backend
+                    .authentication_service()
+                    .borrow()
+                    .await
+                    .as_ref()
+                    .ok_or(CryptoError::ConsumerError)?,
+            )
+            .await?;
 
         let crl_new_distribution_points = self.extract_dp_on_init(&certificate_chain[..]).await?;
 
@@ -531,11 +542,15 @@ impl E2eiEnrollment {
         Ok(certificate)
     }
 
-    async fn certificate_response(mut self, certificate_chain: String) -> E2eIdentityResult<Vec<Vec<u8>>> {
+    async fn certificate_response(
+        mut self,
+        certificate_chain: String,
+        env: &wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
+    ) -> E2eIdentityResult<Vec<Vec<u8>>> {
         let order = self.valid_order.take().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'checkOrderResponse()'",
         ))?;
-        Ok(self.acme_x509_certificate_response(certificate_chain, order)?)
+        Ok(self.acme_x509_certificate_response(certificate_chain, order, Some(env))?)
     }
 }
 

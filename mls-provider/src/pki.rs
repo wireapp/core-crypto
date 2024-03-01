@@ -1,10 +1,11 @@
 use crate::error::{MlsProviderError, MlsProviderResult};
+use async_lock::RwLock;
+use async_lock::RwLockReadGuard;
 use openmls_traits::{
     authentication_service::{CredentialAuthenticationStatus, CredentialRef},
     types::SignatureScheme,
 };
-use std::sync::RwLockReadGuard;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Default)]
 pub struct PkiEnvironmentProvider(Arc<RwLock<Option<wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>>>);
@@ -16,40 +17,35 @@ impl From<wire_e2e_identity::prelude::x509::revocation::PkiEnvironment> for PkiE
 }
 
 impl PkiEnvironmentProvider {
-    pub fn refresh_time_of_interest(&self) {
-        if let Ok(mut lock) = self.0.write() {
-            if let Some(pki) = &mut *lock {
-                let _ = pki.refresh_time_of_interest();
-            }
+    pub async fn refresh_time_of_interest(&self) {
+        if let Some(pki) = self.0.write().await.as_mut() {
+            let _ = pki.refresh_time_of_interest();
         }
     }
 
-    pub fn borrow(
+    pub async fn borrow(
         &self,
-    ) -> MlsProviderResult<RwLockReadGuard<Option<wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>>> {
-        self.0.read().map_err(|_| MlsProviderError::RngLockPoison)
+    ) -> RwLockReadGuard<Option<wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>> {
+        self.0.read().await
     }
 
-    pub fn is_env_setup(&self) -> bool {
-        self.0.read().is_ok_and(|value| value.is_some())
+    pub async fn is_env_setup(&self) -> bool {
+        self.0.read().await.is_some()
     }
 
-    pub fn update_env(
+    pub async fn update_env(
         &self,
         env: wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
     ) -> MlsProviderResult<()> {
-        self.0
-            .write()
-            .map_err(|_| MlsProviderError::RngLockPoison)?
-            .replace(env);
+        self.0.write().await.replace(env);
         Ok(())
     }
 
     #[allow(dead_code)]
-    fn dump_certs(&self) {
+    async fn dump_certs(&self) {
         use x509_cert::der::EncodePem as _;
-        let pki_env_lock = self.0.read().expect("Pki env can't be locked");
-        let pki_env = pki_env_lock.as_ref().expect("No pki env");
+        let env = self.0.read().await;
+        let pki_env = env.as_ref().expect("No pki env");
         for (i, ta) in pki_env.get_trust_anchors().unwrap().iter().enumerate() {
             let x509_cert::anchor::TrustAnchorChoice::Certificate(ta_cert) = &ta.decoded_ta else {
                 unreachable!("Kaboom");
@@ -78,12 +74,10 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for P
             CredentialRef::Basic { identity: _ } => CredentialAuthenticationStatus::Valid,
 
             CredentialRef::X509 { certificates } => {
-                self.refresh_time_of_interest();
+                self.refresh_time_of_interest().await;
 
-                let Ok(pki_env_lock) = self.0.read() else {
-                    return CredentialAuthenticationStatus::Unknown;
-                };
-                let Some(pki_env) = &*pki_env_lock else {
+                let binding = self.0.read().await;
+                let Some(pki_env) = binding.as_ref() else {
                     // This implies that we have a Basic client without a PKI environment setup. Hence they cannot validate X509 credentials they see.
                     // So we consider it as always valid as we have no way to assert the validity
                     return CredentialAuthenticationStatus::Valid;
@@ -208,13 +202,6 @@ pub struct CertificateGenerationArgs<'a> {
     pub is_root: bool,
 }
 
-// fn get_ca_keyusage() -> x509_cert::ext::pkix::KeyUsage {
-//     let mut flags = x509_cert::der::flagset::FlagSet::default();
-//     flags |= x509_cert::ext::pkix::KeyUsages::KeyCertSign;
-//     flags |= x509_cert::ext::pkix::KeyUsages::CRLSign;
-//     x509_cert::ext::pkix::KeyUsage(flags)
-// }
-
 fn get_extended_keyusage(is_ca: bool) -> x509_cert::ext::pkix::ExtendedKeyUsage {
     let mut ext_keyusages = vec![];
     if !is_ca {
@@ -243,16 +230,6 @@ macro_rules! impl_certgen {
             $signer_keypair,
         )
         .map_err(|_| MlsProviderError::CertificateGenerationError)?;
-
-        // builder
-        //     .add_extension(&$skid)
-        //     .map_err(|_| MlsProviderError::CertificateGenerationError)?;
-
-        // if $is_ca {
-        //     builder
-        //         .add_extension(&get_ca_keyusage())
-        //         .map_err(|_| MlsProviderError::CertificateGenerationError)?;
-        // }
 
         if add_akid {
             builder

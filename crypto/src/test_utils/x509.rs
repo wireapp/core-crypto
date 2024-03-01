@@ -340,7 +340,7 @@ impl X509TestChain {
         };
 
         let pki_env = wire_e2e_identity::prelude::x509::revocation::PkiEnvironment::init(params).unwrap();
-        backend.update_pki_env(pki_env).unwrap()
+        backend.update_pki_env(pki_env).await.unwrap()
     }
 
     pub fn find_local_intermediate_ca(&self) -> &X509Certificate {

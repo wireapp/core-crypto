@@ -76,7 +76,7 @@ impl MlsCentral {
         let sign_keypair = Some((&cb.signature_key).try_into()?);
         let existing_identity = cb
             .credential()
-            .extract_identity()?
+            .extract_identity(None)?
             .ok_or(E2eIdentityError::InvalidIdentity)?;
 
         let display_name = display_name.unwrap_or(existing_identity.display_name);
@@ -107,7 +107,17 @@ impl MlsCentral {
     ) -> CryptoResult<MlsRotateBundle> {
         let sk = enrollment.get_sign_key_for_mls()?;
         let cs = enrollment.ciphersuite;
-        let certificate_chain = enrollment.certificate_response(certificate_chain).await?;
+        let certificate_chain = enrollment
+            .certificate_response(
+                certificate_chain,
+                self.mls_backend
+                    .authentication_service()
+                    .borrow()
+                    .await
+                    .as_ref()
+                    .ok_or(CryptoError::ConsumerError)?,
+            )
+            .await?;
 
         let private_key = CertificatePrivateKey {
             value: sk,
@@ -470,7 +480,7 @@ pub mod tests {
                             .map(|kp| kp.leaf_node().credential());
                         for c in new_credentials {
                             assert_eq!(c.credential_type(), openmls::prelude::CredentialType::X509);
-                            let identity = c.extract_identity().unwrap().unwrap();
+                            let identity = c.extract_identity(None).unwrap().unwrap();
                             assert_eq!(identity.display_name, NEW_DISPLAY_NAME);
                             assert_eq!(identity.handle, format!("wireapp://%40{NEW_HANDLE}@world.com"));
                         }
@@ -653,7 +663,7 @@ pub mod tests {
                         .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
                         .await
                         .unwrap();
-                    let identity = cb.credential().extract_identity().unwrap().unwrap();
+                    let identity = cb.credential().extract_identity(None).unwrap().unwrap();
                     assert_eq!(identity.display_name, NEW_DISPLAY_NAME);
                     assert_eq!(identity.handle, format!("wireapp://%40{NEW_HANDLE}@world.com"));
 
@@ -704,7 +714,7 @@ pub mod tests {
                         .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
                         .await
                         .unwrap();
-                    let identity = cb.credential().extract_identity().unwrap().unwrap();
+                    let identity = cb.credential().extract_identity(None).unwrap().unwrap();
                     assert_eq!(identity.display_name, NEW_DISPLAY_NAME);
                     assert_eq!(identity.handle, format!("wireapp://%40{NEW_HANDLE}@world.com"));
 

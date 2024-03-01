@@ -128,7 +128,7 @@ impl MlsConversation {
         let message = self.parse_message(backend, message).await?;
 
         let credential = message.credential();
-        let identity = credential.extract_identity()?;
+        let identity = credential.extract_identity(backend.authentication_service().borrow().await.as_ref())?;
 
         let sender_client_id = credential.identity().into();
 
@@ -166,7 +166,7 @@ impl MlsConversation {
                 self.validate_external_commit(&staged_commit, sender_client_id, parent_conv, backend, callbacks)
                     .await?;
 
-                self.validate_commit(&staged_commit, backend)?;
+                self.validate_commit(&staged_commit, backend).await?;
 
                 #[allow(clippy::needless_collect)] // false positive
                 let pending_proposals = self.self_pending_proposals().cloned().collect::<Vec<_>>();
@@ -328,8 +328,8 @@ impl MlsConversation {
         Ok(processed_msg)
     }
 
-    fn validate_commit(&self, commit: &StagedCommit, backend: &MlsCryptoProvider) -> CryptoResult<()> {
-        if backend.authentication_service().is_env_setup() {
+    async fn validate_commit(&self, commit: &StagedCommit, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+        if backend.authentication_service().is_env_setup().await {
             let credentials: Vec<_> = commit
                 .add_proposals()
                 .filter_map(|add_proposal| {
@@ -338,7 +338,12 @@ impl MlsConversation {
                     matches!(credential.credential_type(), CredentialType::X509).then(|| credential.clone())
                 })
                 .collect();
-            let state = compute_state(credentials.iter(), backend, crate::prelude::MlsCredentialType::X509);
+            let state = compute_state(
+                credentials.iter(),
+                crate::prelude::MlsCredentialType::X509,
+                backend.authentication_service().borrow().await.as_ref(),
+            )
+            .await;
             if state != E2eiConversationState::Verified {
                 // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and impact of the validations
                 // return Err(CryptoError::InvalidCertificateChain);
@@ -402,15 +407,11 @@ impl MlsCentral {
 
 #[cfg(test)]
 pub mod tests {
-    use std::time::Duration;
-
-    use openmls::prelude::{KeyPackageRef, ProcessMessageError};
-    use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
 
-    use crate::mls::conversation::config::MAX_PAST_EPOCHS;
     use crate::{
-        prelude::{MlsCommitBundle, MlsWirePolicy},
+        mls::conversation::config::MAX_PAST_EPOCHS,
+        prelude::MlsCommitBundle,
         test_utils::{ValidationCallbacks, *},
         CryptoError,
     };
