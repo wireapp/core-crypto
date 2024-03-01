@@ -392,7 +392,7 @@ VkihH+lXehb6MJ3nbsiyRpbekCwYmUB9vykCIQCkIi/orr5qTGgs/YZlC6uofDFj
 ySz3I+2cUu+6ShJhdQ==
 -----END CERTIFICATE-----"#;
             enrollment
-                .acme_x509_certificate_response(resp.to_string(), order)
+                .acme_x509_certificate_response(resp.to_string(), order, None)
                 .unwrap()
         };
     }

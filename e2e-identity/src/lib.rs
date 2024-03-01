@@ -1,6 +1,7 @@
 use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, Ed25519KeyPair, Jwk};
 use zeroize::Zeroize;
 
+use crate::prelude::x509::revocation::PkiEnvironment;
 use error::*;
 use prelude::*;
 use rusty_acme::prelude::{AcmeChallenge, AcmeIdentifier};
@@ -450,8 +451,9 @@ impl RustyE2eIdentity {
         &self,
         response: String,
         order: E2eiAcmeOrder,
+        env: Option<&PkiEnvironment>,
     ) -> E2eIdentityResult<Vec<Vec<u8>>> {
         let order = order.try_into()?;
-        Ok(RustyAcme::certificate_response(response, order)?)
+        Ok(RustyAcme::certificate_response(response, order, env)?)
     }
 }

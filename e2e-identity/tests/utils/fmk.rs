@@ -61,7 +61,7 @@ impl E2eTest<'static> {
             .try_to_qualified(t.domain.as_str())
             .unwrap();
         let team = t.team.clone().into();
-        let display_name = t.display_name.clone().into();
+        let display_name = t.display_name.clone();
         let (t, client_dpop_token) = (f.create_dpop_token)(
             t,
             (dpop_chall.clone(), backend_nonce, handle, team, display_name, expiry),
@@ -958,7 +958,7 @@ impl<'a> E2eTest<'a> {
             .expect_header("content-type", "application/pem-certificate-chain");
         let resp = resp.text().await?;
         self.display_body(&resp);
-        let mut certificates = RustyAcme::certificate_response(resp, order)?;
+        let mut certificates = RustyAcme::certificate_response(resp, order, None)?;
         let root_ca = self.fetch_acme_root_ca().await;
         let root_ca_der = x509_cert::Certificate::from_pem(root_ca).unwrap().to_der().unwrap();
         certificates.push(root_ca_der);

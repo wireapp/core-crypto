@@ -63,7 +63,7 @@ impl KeycloakImage {
     fn build(port: String) {
         let cwd = env::var("CARGO_MANIFEST_DIR").unwrap();
         Command::new("docker")
-            .args(&["image", "rm", &format!("{}:{}", Self::NAME, Self::TAG)])
+            .args(["image", "rm", &format!("{}:{}", Self::NAME, Self::TAG)])
             .output()
             .unwrap();
 
