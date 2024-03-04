@@ -142,11 +142,17 @@ impl MlsCryptoProvider {
         }
     }
 
+    /// Replaces the PKI env currently in place
     pub fn update_pki_env(
         &self,
         pki_env: wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
     ) -> MlsProviderResult<()> {
         self.pki_env.update_env(pki_env)
+    }
+
+    /// Returns whether we have a PKI env setup
+    pub fn is_pki_env_setup(&self) -> bool {
+        self.pki_env.is_env_setup()
     }
 
     /// Reseeds the internal CSPRNG entropy pool with a brand new one.

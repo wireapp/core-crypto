@@ -173,24 +173,25 @@ impl MlsCentral {
     }
 
     pub(crate) async fn init_pki_env(&self) -> CryptoResult<()> {
-        self.mls_backend
-            .authentication_service()
-            .update_env(Self::restore_pki_env(&self.mls_backend).await?)?;
+        if let Some(pki_env) = Self::restore_pki_env(&self.mls_backend).await? {
+            self.mls_backend.update_pki_env(pki_env)?;
+        }
 
         Ok(())
     }
 
-    pub(crate) async fn restore_pki_env(backend: &MlsCryptoProvider) -> CryptoResult<PkiEnvironment> {
+    pub(crate) async fn restore_pki_env(backend: &MlsCryptoProvider) -> CryptoResult<Option<PkiEnvironment>> {
         let keystore = backend.key_store();
         let mut conn = keystore.borrow_conn().await?;
 
         let mut trust_roots = vec![];
-        if let Ok(ta_raw) = E2eiAcmeCA::find_unique(&mut conn).await {
-            trust_roots.push(
-                x509_cert::Certificate::from_der(&ta_raw.content)
-                    .map(x509_cert::anchor::TrustAnchorChoice::Certificate)?,
-            );
-        }
+        let Ok(ta_raw) = E2eiAcmeCA::find_unique(&mut conn).await else {
+            return Ok(None);
+        };
+
+        trust_roots.push(
+            x509_cert::Certificate::from_der(&ta_raw.content).map(x509_cert::anchor::TrustAnchorChoice::Certificate)?,
+        );
 
         let intermediates = E2eiIntermediateCert::find_all(&mut conn, Default::default())
             .await?
@@ -215,7 +216,9 @@ impl MlsCentral {
             time_of_interest: None,
         };
 
-        PkiEnvironment::init(params).map_err(|e| CryptoError::E2eiError(e.into()))
+        Ok(Some(
+            PkiEnvironment::init(params).map_err(|e| CryptoError::E2eiError(e.into()))?,
+        ))
     }
 }
 
@@ -253,6 +256,31 @@ pub mod tests {
                             .unwrap_err(),
                         CryptoError::E2eiError(E2eIdentityError::TrustAnchorAlreadyRegistered)
                     ));
+                })
+            })
+            .await;
+        }
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn x509_restore_should_not_happen_if_basic(case: TestCase) {
+        if !case.is_x509() {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_ctx]| {
+                Box::pin(async move {
+                    let ClientContext {
+                        mut mls_central,
+                        x509_test_chain,
+                        ..
+                    } = alice_ctx;
+
+                    assert!(x509_test_chain.is_none());
+                    assert!(!mls_central.mls_backend.is_pki_env_setup());
+
+                    mls_central.restore_from_disk().await.unwrap();
+
+                    assert!(x509_test_chain.is_none());
+                    assert!(!mls_central.mls_backend.is_pki_env_setup());
                 })
             })
             .await;

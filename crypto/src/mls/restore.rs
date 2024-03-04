@@ -12,9 +12,8 @@ impl MlsCentral {
     #[cfg_attr(test, crate::idempotent)]
     pub async fn restore_from_disk(&mut self) -> CryptoResult<()> {
         self.mls_groups = Self::restore_groups(&self.mls_backend).await?;
-        self.mls_backend
-            .authentication_service()
-            .update_env(Self::restore_pki_env(&self.mls_backend).await?)?;
+        self.init_pki_env().await?;
+
         Ok(())
     }
 
