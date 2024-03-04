@@ -189,18 +189,16 @@ impl MlsCentral {
         // Restore persisted groups if there are any
         let mls_groups = Self::restore_groups(&mls_backend).await?;
 
-        // this might cause disruptions in case e2ei is turned off and a new Client with Basic credentials is created without registering TA & intermediates
-        // but this is not something supposed to be supported (at the moment)
-        mls_backend
-            .authentication_service()
-            .update_env(Self::restore_pki_env(&mls_backend).await?)?;
-
-        Ok(Self {
+        let central = Self {
             mls_backend,
             mls_client,
             mls_groups,
             callbacks: None,
-        })
+        };
+
+        central.init_pki_env().await?;
+
+        Ok(central)
     }
 
     /// Same as the [MlsCentral::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
@@ -228,16 +226,17 @@ impl MlsCentral {
             None
         };
         let mls_groups = Self::restore_groups(&mls_backend).await?;
-        mls_backend
-            .authentication_service()
-            .update_env(Self::restore_pki_env(&mls_backend).await?)?;
 
-        Ok(Self {
+        let central = Self {
             mls_backend,
             mls_client,
             mls_groups,
             callbacks: None,
-        })
+        };
+
+        central.init_pki_env().await?;
+
+        Ok(central)
     }
 
     /// Initializes the MLS client if [super::CoreCrypto] has previously been initialized with
