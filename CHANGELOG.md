@@ -7,6 +7,29 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.47] - 2024-03-04
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Check revocation in status
+- Don't create an empty PKI env on restore
+
+### Features
+
+- Upload unit test results in junit format (WPB-6928)
+
+### Testing
+
+- Remove ignore (and not relevant anymore) test
+
+</details>
+
+* Actually check revocation status instead of mocking it
+* Fixed creating an empty PKI env on restore which will help Basic clients verifying (actually ignoring) x509 credentials from other groups
+* Upload test results in JUnit format
 
 ## [1.0.0-rc.46] - 2024-02-28
 

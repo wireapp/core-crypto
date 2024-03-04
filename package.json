@@ -1,6 +1,6 @@
 {
   "name": "@wireapp/core-crypto",
-  "version": "1.0.0-rc.46",
+  "version": "1.0.0-rc.47",
   "description": "CoreCrypto bindings for the Web",
   "type": "module",
   "module": "platforms/web/corecrypto.js",

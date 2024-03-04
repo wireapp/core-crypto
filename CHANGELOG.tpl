@@ -7,12 +7,22 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.47] - 2024-03-04
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.47" unreleased=true}}
+</details>
+
+* Actually check revocation status instead of mocking it
+* Fixed creating an empty PKI env on restore which will help Basic clients verifying (actually ignoring) x509 credentials from other groups
+* Upload test results in JUnit format
 
 ## [1.0.0-rc.46] - 2024-02-28
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.46" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.46"}}
 </details>
 
 * Rollback regression introduced in v1.0.0-rc.44
