@@ -329,6 +329,93 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
+    async fn should_not_fail_but_degrade_when_basic_joins(case: TestCase) {
+        if case.is_x509() {
+            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+
+            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
+            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
+
+            // this should work since the certificate is not yet expired
+            let (mut alice_central, mut bob_central, id) =
+                try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
+                    .await
+                    .unwrap();
+
+            assert_eq!(
+                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                E2eiConversationState::Verified
+            );
+
+            assert_eq!(
+                bob_central.e2ei_conversation_state(&id).await.unwrap(),
+                E2eiConversationState::Verified
+            );
+
+            alice_central.try_talk_to(&id, &mut bob_central).await.unwrap();
+            assert_eq!(
+                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                E2eiConversationState::Verified
+            );
+
+            assert_eq!(
+                bob_central.e2ei_conversation_state(&id).await.unwrap(),
+                E2eiConversationState::Verified
+            );
+
+            // Charlie is a basic client that tries to join (i.e. emulates guest links in Wire)
+            let charlie_identifier = ClientIdentifier::Basic("charlie".into());
+            let charlie_path = tmp_db_file();
+
+            let ciphersuites = vec![case.ciphersuite()];
+
+            let mut charlie_central = MlsCentral::try_new(
+                MlsCentralConfiguration::try_new(
+                    charlie_path.0,
+                    "charlie".into(),
+                    None,
+                    ciphersuites.clone(),
+                    None,
+                    Some(INITIAL_KEYING_MATERIAL_COUNT),
+                )
+                .unwrap(),
+            )
+            .await
+            .unwrap();
+            charlie_central
+                .mls_init(
+                    charlie_identifier,
+                    ciphersuites.clone(),
+                    Some(INITIAL_KEYING_MATERIAL_COUNT),
+                )
+                .await
+                .unwrap();
+
+            let charlie_kp = charlie_central
+                .rand_key_package_of_type(&case, MlsCredentialType::Basic)
+                .await;
+
+            alice_central
+                .invite_all_members(&case, &id, [(&mut charlie_central, charlie_kp)])
+                .await
+                .unwrap();
+
+            assert_eq!(
+                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                E2eiConversationState::NotVerified
+            );
+
+            alice_central.try_talk_to(&id, &mut charlie_central).await.unwrap();
+
+            assert_eq!(
+                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                E2eiConversationState::NotVerified
+            );
+        }
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
     async fn should_fail_when_certificate_not_valid_yet(case: TestCase) {
         if case.is_x509() {
             let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
