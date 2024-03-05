@@ -90,7 +90,7 @@ impl ClientContext {
     }
 }
 
-fn init_x509_test_chain(case: &TestCase, client_ids: &[[&str; 3]]) -> X509TestChain {
+fn init_x509_test_chain(case: &TestCase, client_ids: &[[&str; 3]], revoked_display_names: &[&str]) -> X509TestChain {
     let default_params = CertificateParams::default();
     let root_params = {
         let mut params = default_params.clone();
@@ -123,7 +123,7 @@ fn init_x509_test_chain(case: &TestCase, client_ids: &[[&str; 3]]) -> X509TestCh
             } else {
                 client_id.to_string()
             },
-            is_revoked: false, // TODO: Add tests for revocation
+            is_revoked: revoked_display_names.contains(display_name),
         })
         .collect();
 
@@ -152,14 +152,41 @@ pub async fn run_test_with_client_ids<const N: usize>(
     run_test_with_deterministic_client_ids(case, client_ids.map(|display_name| ["", "", display_name]), test).await
 }
 
+pub async fn run_test_with_client_ids_and_revocation<const N: usize>(
+    case: TestCase,
+    client_ids: [&'static str; N],
+    revoked_display_names: &'static [&'static str],
+    test: impl FnOnce([ClientContext; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+) {
+    run_test_with_deterministic_client_ids_and_revocation(
+        case,
+        client_ids.map(|display_name| ["", "", display_name]),
+        revoked_display_names,
+        test,
+    )
+    .await
+}
+
 pub async fn run_test_with_deterministic_client_ids<const N: usize>(
     case: TestCase,
     client_ids: [[&'static str; 3]; N],
     test: impl FnOnce([ClientContext; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
+    run_test_with_deterministic_client_ids_and_revocation(case, client_ids, &[], test).await
+}
+
+pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usize>(
+    case: TestCase,
+    client_ids: [[&'static str; 3]; N],
+    revoked_display_names: &'static [&'static str],
+    test: impl FnOnce([ClientContext; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+) {
     run_tests(move |paths: [String; N]| {
         Box::pin(async move {
-            let x509_test_chain = std::sync::Arc::new(case.is_x509().then(|| init_x509_test_chain(&case, &client_ids)));
+            let x509_test_chain = std::sync::Arc::new(
+                case.is_x509()
+                    .then(|| init_x509_test_chain(&case, &client_ids, revoked_display_names)),
+            );
 
             let path_x509_chains: Vec<std::sync::Arc<Option<X509TestChain>>> =
                 (0..paths.len()).map(|_| x509_test_chain.clone()).collect();

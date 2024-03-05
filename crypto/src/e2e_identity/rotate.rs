@@ -368,8 +368,6 @@ pub mod tests {
 
                         let x509_test_chain = x509_test_chain_arc.as_ref().as_ref().unwrap();
 
-                        // dbg!(x509_test_chain);
-
                         for _ in 0..N {
                             let id = conversation_id();
                             alice_central

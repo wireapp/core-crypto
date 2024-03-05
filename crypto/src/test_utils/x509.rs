@@ -230,21 +230,26 @@ impl X509TestChain {
 
         let mut crls = std::collections::HashMap::new();
 
-        let revoked_serial_numbers: Vec<u32> = actors
+        let revoked_serial_numbers: Vec<Vec<u8>> = actors
             .iter()
-            .filter(|actor| actor.is_revoked)
-            .map(|actor| {
-                let mut bytes = [0u8; 4];
-                bytes.copy_from_slice(actor.certificate.certificate.tbs_certificate.serial_number.as_bytes());
-                u32::from_le_bytes(bytes)
+            .filter_map(|actor| {
+                actor.is_revoked.then(|| {
+                    actor
+                        .certificate
+                        .certificate
+                        .tbs_certificate
+                        .serial_number
+                        .as_bytes()
+                        .into()
+                })
             })
             .collect();
 
-        let local_crl_dp = trust_anchor.crl_dps.first().unwrap().clone();
+        let local_crl_dp = local_intermediate.crl_dps.first().unwrap().clone();
 
-        let crl = trust_anchor
+        let crl = local_intermediate
             .pki_keypair
-            .revoke_certs(&trust_anchor.certificate, revoked_serial_numbers)
+            .revoke_certs(&local_intermediate.certificate, revoked_serial_numbers)
             .unwrap();
 
         crls.insert(local_crl_dp, crl);
@@ -524,7 +529,7 @@ impl X509Certificate {
     pub fn create_and_sign_end_identity(&self, params: CertificateParams) -> X509Certificate {
         let crypto = RustCrypto::default();
         let signature_scheme = self.signature_scheme;
-        let serial = u16::from_le_bytes(crypto.random_array().unwrap());
+        let serial = u64::from_le_bytes(crypto.random_array().unwrap());
 
         let crl_dps = vec![params.get_crl_dp()];
         let pki_keypair = params.cert_keypair.unwrap_or_else(|| {
