@@ -187,7 +187,7 @@ pub use x509_cert::builder::Profile as CertProfile;
 pub struct CertificateGenerationArgs<'a> {
     pub signature_scheme: SignatureScheme,
     pub profile: CertProfile,
-    pub serial: u32,
+    pub serial: u64,
     /// Duration since UNIX EPOCH
     pub validity_start: Option<std::time::Duration>,
     /// Duration relative to `validity_start` if present. Otherwise relative to now
@@ -382,7 +382,7 @@ impl PkiKeypair {
     pub fn revoke_certs(
         &self,
         issuer_cert: &x509_cert::Certificate,
-        revoked_cert_serial_numbers: Vec<u32>,
+        revoked_cert_serial_numbers: Vec<Vec<u8>>,
     ) -> MlsProviderResult<x509_cert::crl::CertificateList> {
         let now = fluvio_wasm_timer::SystemTime::now()
             .duration_since(fluvio_wasm_timer::UNIX_EPOCH)
@@ -394,7 +394,8 @@ impl PkiKeypair {
         let revoked_certificates = revoked_cert_serial_numbers
             .into_iter()
             .map(|serial_number| x509_cert::crl::RevokedCert {
-                serial_number: x509_cert::serial_number::SerialNumber::from(serial_number),
+                serial_number: x509_cert::serial_number::SerialNumber::new(&serial_number)
+                    .expect("Non-positive serial number"),
                 revocation_date: now,
                 crl_entry_extensions: None,
             })

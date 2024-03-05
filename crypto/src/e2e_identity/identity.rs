@@ -151,7 +151,11 @@ impl MlsConversation {
 pub mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{test_utils::*, CryptoError};
+    use crate::{
+        prelude::{DeviceStatus, E2eiConversationState},
+        test_utils::*,
+        CryptoError,
+    };
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -222,6 +226,63 @@ pub mod tests {
 
                     let invalid = alice_android_central.mls_central.get_device_identities(&id, &[]).await;
                     assert!(matches!(invalid.unwrap_err(), CryptoError::ConsumerError));
+                })
+            },
+        )
+        .await
+    }
+
+    #[async_std::test]
+    #[wasm_bindgen_test]
+    pub async fn should_read_revoked_device() {
+        let case = TestCase::default_x509();
+        run_test_with_client_ids_and_revocation(
+            case.clone(),
+            ["alice", "bob", "rupert"],
+            &["rupert"],
+            move |[mut alice, mut bob, mut rupert]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice
+                        .mls_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice
+                        .mls_central
+                        .invite_all(&case, &id, [&mut bob.mls_central, &mut rupert.mls_central])
+                        .await
+                        .unwrap();
+
+                    let (alice_id, bob_id, rupert_id) = (
+                        alice.mls_central.get_client_id(),
+                        bob.mls_central.get_client_id(),
+                        rupert.mls_central.get_client_id(),
+                    );
+
+                    let mut identities = alice
+                        .mls_central
+                        .get_device_identities(&id, &[alice_id, bob_id, rupert_id])
+                        .await
+                        .unwrap();
+
+                    let alice_identity =
+                        identities.remove(identities.iter().position(|i| i.display_name == "alice").unwrap());
+                    let bob_identity =
+                        identities.remove(identities.iter().position(|i| i.display_name == "bob").unwrap());
+                    let rupert_identity =
+                        identities.remove(identities.iter().position(|i| i.display_name == "rupert").unwrap());
+
+                    assert!(identities.is_empty());
+
+                    assert_eq!(alice_identity.status, DeviceStatus::Valid);
+                    assert_eq!(bob_identity.status, DeviceStatus::Valid);
+                    assert_eq!(rupert_identity.status, DeviceStatus::Revoked);
+
+                    assert_eq!(
+                        alice.mls_central.e2ei_conversation_state(&id).await.unwrap(),
+                        E2eiConversationState::NotVerified
+                    );
                 })
             },
         )
