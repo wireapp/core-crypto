@@ -6,9 +6,11 @@
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
 use openmls::prelude::{KeyPackageIn, LeafNode, LeafNodeIndex, MlsMessageOut};
+use std::collections::HashSet;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
+use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
     mls::credential::{crl::extract_dp, CredentialBundle},
     prelude::{Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError, MlsGroupInfoBundle},
@@ -151,15 +153,10 @@ impl MlsConversation {
                 openmls::prelude::MlsCredentialType::X509(cert) => Some(cert),
                 _ => None,
             })
-            .try_fold(vec![], |mut acc, c| {
+            .try_fold(HashSet::new(), |mut acc, c| {
                 acc.extend(extract_dp(c)?);
                 CryptoResult::Ok(acc)
             })?;
-        let crl_new_distribution_points = if crl_new_distribution_points.is_empty() {
-            None
-        } else {
-            Some(crl_new_distribution_points)
-        };
 
         let (commit, welcome, gi) = self
             .group
@@ -172,6 +169,13 @@ impl MlsConversation {
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi)?;
 
         self.persist_group_when_changed(backend, false).await?;
+
+        let crl_new_distribution_points = if crl_new_distribution_points.is_empty() {
+            None
+        } else {
+            Some(crl_new_distribution_points)
+        }
+        .into();
 
         Ok(MlsConversationCreationMessage {
             welcome,
@@ -303,7 +307,7 @@ pub struct MlsConversationCreationMessage {
     /// `GroupInfo` if the commit is merged
     pub group_info: MlsGroupInfoBundle,
     /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: Option<Vec<String>>,
+    pub crl_new_distribution_points: NewCrlDistributionPoint,
 }
 
 impl MlsConversationCreationMessage {
@@ -312,7 +316,7 @@ impl MlsConversationCreationMessage {
     /// 1 -> commit
     /// 2 -> group_info
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> CryptoResult<(Vec<u8>, Vec<u8>, MlsGroupInfoBundle, Option<Vec<String>>)> {
+    pub fn to_bytes(self) -> CryptoResult<(Vec<u8>, Vec<u8>, MlsGroupInfoBundle, NewCrlDistributionPoint)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self.welcome.tls_serialize_detached().map_err(MlsError::from)?;
         let msg = self.commit.tls_serialize_detached().map_err(MlsError::from)?;

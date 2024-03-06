@@ -2,12 +2,22 @@ use crate::{e2e_identity::CrlRegistration, prelude::MlsCentral, CryptoError, Cry
 use core_crypto_keystore::entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, EntityBase, UniqueEntity};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
+use std::collections::HashSet;
 use std::ops::DerefMut;
 use wire_e2e_identity::prelude::x509::{
     extract_crl_uris, extract_expiration_from_crl,
     revocation::{PkiEnvironment, PkiEnvironmentParams},
 };
 use x509_cert::der::Decode;
+
+#[derive(Debug, Clone, derive_more::From, derive_more::Into, derive_more::Deref, derive_more::DerefMut)]
+pub struct NewCrlDistributionPoint(Option<HashSet<String>>);
+
+impl From<NewCrlDistributionPoint> for Option<Vec<String>> {
+    fn from(mut dp: NewCrlDistributionPoint) -> Self {
+        dp.take().map(|d| d.into_iter().collect())
+    }
+}
 
 impl MlsCentral {
     /// Registers a Root Trust Anchor CA for the use in E2EI processing.
@@ -64,13 +74,16 @@ impl MlsCentral {
     ///
     /// # Parameters
     /// * `cert_pem` - PEM certificate to register as an Intermediate CA
-    pub async fn e2ei_register_intermediate_ca_pem(&self, cert_pem: String) -> CryptoResult<Option<Vec<String>>> {
+    pub async fn e2ei_register_intermediate_ca_pem(&self, cert_pem: String) -> CryptoResult<NewCrlDistributionPoint> {
         // Parse/decode PEM cert
         let inter_ca = PkiEnvironment::decode_pem_cert(cert_pem).map_err(|e| CryptoError::E2eiError(e.into()))?;
         self.e2ei_register_intermediate_ca(inter_ca).await
     }
 
-    pub(crate) async fn e2ei_register_intermediate_ca_der(&self, cert_der: &[u8]) -> CryptoResult<Option<Vec<String>>> {
+    pub(crate) async fn e2ei_register_intermediate_ca_der(
+        &self,
+        cert_der: &[u8],
+    ) -> CryptoResult<NewCrlDistributionPoint> {
         let inter_ca = x509_cert::Certificate::from_der(cert_der)?;
         self.e2ei_register_intermediate_ca(inter_ca).await
     }
@@ -78,7 +91,7 @@ impl MlsCentral {
     async fn e2ei_register_intermediate_ca(
         &self,
         inter_ca: x509_cert::Certificate,
-    ) -> CryptoResult<Option<Vec<String>>> {
+    ) -> CryptoResult<NewCrlDistributionPoint> {
         // TrustAnchor must have been registered at this point
         let ta = E2eiAcmeCA::find_unique(self.mls_backend.key_store().borrow_conn().await?.deref_mut()).await?;
         let ta = x509_cert::Certificate::from_der(&ta.content)?;
@@ -86,7 +99,7 @@ impl MlsCentral {
         // the `/federation` endpoint from smallstep repeats the root CA
         // so we filter it out here so that clients don't have to do it
         if inter_ca == ta {
-            return Ok(None);
+            return Ok(None.into());
         }
 
         let intermediate_crl = extract_crl_uris(&inter_ca)
@@ -120,7 +133,7 @@ impl MlsCentral {
 
         self.init_pki_env().await?;
 
-        Ok(intermediate_crl)
+        Ok(intermediate_crl.into())
     }
 
     /// Registers a CRL for the use in E2EI processing.

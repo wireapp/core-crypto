@@ -6,6 +6,7 @@ use wire_e2e_identity::prelude::{E2eiAcmeAuthorization, RustyE2eIdentity};
 use error::*;
 use mls_crypto_provider::MlsCryptoProvider;
 
+use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
     e2e_identity::{crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId},
     mls::credential::x509::CertificatePrivateKey,
@@ -78,7 +79,7 @@ impl MlsCentral {
         enrollment: E2eiEnrollment,
         certificate_chain: String,
         nb_init_key_packages: Option<usize>,
-    ) -> CryptoResult<Option<Vec<String>>> {
+    ) -> CryptoResult<NewCrlDistributionPoint> {
         let sk = enrollment.get_sign_key_for_mls()?;
         let cs = enrollment.ciphersuite;
         let certificate_chain = enrollment

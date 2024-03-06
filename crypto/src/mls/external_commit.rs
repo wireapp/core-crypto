@@ -26,6 +26,7 @@ use core_crypto_keystore::{
     CryptoKeystoreMls,
 };
 
+use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
     e2e_identity::conversation_state::compute_state,
     group_store::GroupStoreValue,
@@ -47,7 +48,7 @@ pub struct MlsConversationInitBundle {
     /// `GroupInfo` which becomes valid when the external commit is accepted by the Delivery Service
     pub group_info: MlsGroupInfoBundle,
     /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: Option<Vec<String>>,
+    pub crl_new_distribution_points: NewCrlDistributionPoint,
 }
 
 impl MlsConversationInitBundle {
@@ -55,7 +56,7 @@ impl MlsConversationInitBundle {
     /// 0 -> external commit
     /// 1 -> public group state
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> CryptoResult<(Vec<u8>, MlsGroupInfoBundle, Option<Vec<String>>)> {
+    pub fn to_bytes(self) -> CryptoResult<(Vec<u8>, MlsGroupInfoBundle, NewCrlDistributionPoint)> {
         let commit = self.commit.tls_serialize_detached().map_err(MlsError::from)?;
         Ok((commit, self.group_info, self.crl_new_distribution_points))
     }
@@ -129,7 +130,8 @@ impl MlsCentral {
         let crl_new_distribution_points = match cb.credential.mls_credential() {
             openmls::prelude::MlsCredentialType::X509(cert) => Some(extract_dp(cert)?),
             _ => None,
-        };
+        }
+        .into();
 
         self.mls_backend
             .key_store()

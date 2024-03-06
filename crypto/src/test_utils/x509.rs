@@ -232,17 +232,13 @@ impl X509TestChain {
 
         let revoked_serial_numbers: Vec<Vec<u8>> = actors
             .iter()
-            .filter_map(|actor| {
-                actor.is_revoked.then(|| {
-                    actor
+            .filter(|&actor| actor.is_revoked).map(|actor| actor
                         .certificate
                         .certificate
                         .tbs_certificate
                         .serial_number
                         .as_bytes()
-                        .into()
-                })
-            })
+                        .into())
             .collect();
 
         let local_crl_dp = local_intermediate.crl_dps.first().unwrap().clone();
