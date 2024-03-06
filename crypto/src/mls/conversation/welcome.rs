@@ -1,3 +1,4 @@
+use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::mls::credential::crl::extract_dp;
 use crate::{
     group_store::GroupStore,
@@ -10,6 +11,7 @@ use core_crypto_keystore::entities::PersistedMlsPendingGroup;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
+use std::collections::HashSet;
 use tls_codec::Deserialize;
 
 /// Contains everything client needs to know after decrypting an (encrypted) Welcome message
@@ -18,7 +20,7 @@ pub struct WelcomeBundle {
     /// MLS Group Id
     pub id: ConversationId,
     /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: Option<Vec<String>>,
+    pub crl_new_distribution_points: NewCrlDistributionPoint,
 }
 
 impl MlsCentral {
@@ -85,7 +87,7 @@ impl MlsCentral {
                 openmls::prelude::MlsCredentialType::X509(cert) => Some(cert),
                 _ => None,
             })
-            .try_fold(vec![], |mut acc, c| {
+            .try_fold(HashSet::new(), |mut acc, c| {
                 acc.extend(extract_dp(c)?);
                 CryptoResult::Ok(acc)
             })?;
@@ -93,7 +95,8 @@ impl MlsCentral {
             None
         } else {
             Some(crl_new_distribution_points)
-        };
+        }
+        .into();
 
         let id = conversation.id.clone();
         self.mls_groups.insert(id.clone(), conversation);

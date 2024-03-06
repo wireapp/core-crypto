@@ -24,7 +24,7 @@ uniffi = ["dep:uniffi"]
 
 [dependencies]
 thiserror = "1.0"
-derive_more = { version = "0.99", features = ["from", "into", "deref"] }
+derive_more = { version = "0.99", features = ["from", "into", "deref", "deref_mut"] }
 strum = { version = "0.26", features = ["derive"] }
 cfg-if = "1.0"
 hex = "0.4"

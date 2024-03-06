@@ -6,6 +6,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
 use mls_crypto_provider::MlsCryptoProvider;
 
+use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
     prelude::{
@@ -239,7 +240,7 @@ pub struct MlsRotateBundle {
     /// All the now deprecated KeyPackages. Once deleted remotely, delete them locally with [MlsCentral::delete_keypackages]
     pub key_package_refs_to_remove: Vec<KeyPackageRef>,
     /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: Option<Vec<String>>,
+    pub crl_new_distribution_points: NewCrlDistributionPoint,
 }
 
 impl MlsRotateBundle {
@@ -251,7 +252,7 @@ impl MlsRotateBundle {
         HashMap<String, MlsCommitBundle>,
         Vec<Vec<u8>>,
         Vec<Vec<u8>>,
-        Option<Vec<String>>,
+        NewCrlDistributionPoint,
     )> {
         use openmls::prelude::TlsSerializeTrait as _;
 

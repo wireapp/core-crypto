@@ -17,11 +17,13 @@ use openmls::{
     },
 };
 use openmls_traits::OpenMlsCryptoProvider;
+use std::collections::HashSet;
 use tls_codec::Deserialize;
 
 use core_crypto_keystore::entities::MlsPendingMessage;
 use mls_crypto_provider::MlsCryptoProvider;
 
+use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
     e2e_identity::conversation_state::compute_state,
     group_store::GroupStoreValue,
@@ -66,7 +68,7 @@ pub struct MlsConversationDecryptMessage {
     /// because the DS did not fan them out in order.
     pub buffered_messages: Option<Vec<MlsBufferedConversationDecryptMessage>>,
     /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: Option<Vec<String>>,
+    pub crl_new_distribution_points: NewCrlDistributionPoint,
 }
 
 /// Type safe recursion of [MlsConversationDecryptMessage]
@@ -87,7 +89,7 @@ pub struct MlsBufferedConversationDecryptMessage {
     /// see [MlsConversationDecryptMessage]
     pub identity: Option<WireIdentity>,
     /// see [MlsConversationDecryptMessage]
-    pub crl_new_distribution_points: Option<Vec<String>>,
+    pub crl_new_distribution_points: NewCrlDistributionPoint,
 }
 
 impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessage {
@@ -142,7 +144,7 @@ impl MlsConversation {
                 has_epoch_changed: false,
                 identity,
                 buffered_messages: None,
-                crl_new_distribution_points: None,
+                crl_new_distribution_points: None.into(),
             },
             ProcessedMessageContent::ProposalMessage(proposal) => {
                 let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])?;
@@ -189,11 +191,12 @@ impl MlsConversation {
                 // - This requires a change in OpenMLS to get access to it
                 let crl_dps_from_proposals = extract_crl_uris_from_proposals(proposal_refs.as_ref())?;
                 let crl_dps_from_update_path = extract_crl_uris_from_update_path(&staged_commit)?;
-                let crl_new_distribution_points = get_new_crl_distribution_points(
-                    backend,
-                    [crl_dps_from_proposals, crl_dps_from_update_path].concat(),
-                )
-                .await?;
+
+                let mut crl_dps = HashSet::new();
+                crl_dps.extend(crl_dps_from_proposals);
+                crl_dps.extend(crl_dps_from_update_path);
+
+                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps).await?;
 
                 // getting the pending has to be done before `merge_staged_commit` otherwise it's wiped out
                 let pending_commit = self.group.pending_commit().cloned();

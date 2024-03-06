@@ -302,7 +302,7 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
             welcome,
             commit,
             group_info: pgs.into(),
-            crl_new_distribution_points,
+            crl_new_distribution_points: crl_new_distribution_points.into(),
         })
     }
 }
@@ -460,7 +460,7 @@ impl TryFrom<MlsRotateBundle> for RotateBundle {
             commits,
             new_key_packages,
             key_package_refs_to_remove,
-            crl_new_distribution_points,
+            crl_new_distribution_points: crl_new_distribution_points.into(),
         })
     }
 }
@@ -506,7 +506,7 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
         Ok(Self {
             proposal,
             proposal_ref,
-            crl_new_distribution_points,
+            crl_new_distribution_points: crl_new_distribution_points.into(),
         })
     }
 }
@@ -558,7 +558,7 @@ impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
             conversation_id,
             commit,
             group_info: pgs.into(),
-            crl_new_distribution_points,
+            crl_new_distribution_points: crl_new_distribution_points.into(),
         })
     }
 }
@@ -592,7 +592,7 @@ impl From<core_crypto::prelude::WelcomeBundle> for WelcomeBundle {
     fn from(w: core_crypto::prelude::WelcomeBundle) -> Self {
         Self {
             id: w.id,
-            crl_new_distribution_points: w.crl_new_distribution_points,
+            crl_new_distribution_points: w.crl_new_distribution_points.into(),
         }
     }
 }
@@ -651,7 +651,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.map(Into::into),
             buffered_messages,
-            crl_new_distribution_points: from.crl_new_distribution_points,
+            crl_new_distribution_points: from.crl_new_distribution_points.into(),
         })
     }
 }
@@ -759,7 +759,7 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
             sender_client_id: from.sender_client_id.map(ClientId::into),
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.map(Into::into),
-            crl_new_distribution_points: from.crl_new_distribution_points,
+            crl_new_distribution_points: from.crl_new_distribution_points.into(),
         })
     }
 }
@@ -2534,7 +2534,7 @@ impl CoreCrypto {
                 let this = this.read().await;
                 let crls = this.e2ei_register_intermediate_ca_pem(cert_pem).await?;
 
-                let crls = if let Some(crls) = crls {
+                let crls = if let Some(crls) = &*crls {
                     js_sys::Array::from_iter(crls.into_iter().map(JsValue::from))
                 } else {
                     js_sys::Array::new()
@@ -2582,7 +2582,7 @@ impl CoreCrypto {
                     .e2ei_mls_init_only(enrollment, certificate_chain, nb_key_package)
                     .await?;
 
-                let crls = if let Some(crls) = crls {
+                let crls = if let Some(crls) = &*crls {
                     js_sys::Array::from_iter(crls.into_iter().map(JsValue::from))
                 } else {
                     js_sys::Array::new()

@@ -9,6 +9,7 @@ use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::
 
 use mls_crypto_provider::MlsCryptoProvider;
 
+use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
     mls::credential::crl::extract_dp,
     prelude::{Client, MlsConversation, MlsProposalRef},
@@ -33,7 +34,8 @@ impl MlsConversation {
         let crl_new_distribution_points = match key_package.credential().mls_credential() {
             openmls::prelude::MlsCredentialType::X509(cert) => Some(extract_dp(cert)?),
             _ => None,
-        };
+        }
+        .into();
 
         let (proposal, proposal_ref) = self
             .group
@@ -122,7 +124,7 @@ pub struct MlsProposalBundle {
     /// A unique identifier of the proposal to rollback it later if required
     pub proposal_ref: MlsProposalRef,
     /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: Option<Vec<String>>,
+    pub crl_new_distribution_points: NewCrlDistributionPoint,
 }
 
 impl From<(MlsMessageOut, openmls::prelude::hash_ref::ProposalRef)> for MlsProposalBundle {
@@ -130,7 +132,7 @@ impl From<(MlsMessageOut, openmls::prelude::hash_ref::ProposalRef)> for MlsPropo
         Self {
             proposal,
             proposal_ref: proposal_ref.into(),
-            crl_new_distribution_points: None,
+            crl_new_distribution_points: None.into(),
         }
     }
 }
@@ -140,7 +142,7 @@ impl MlsProposalBundle {
     /// 0 -> proposal
     /// 1 -> proposal reference
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> CryptoResult<(Vec<u8>, Vec<u8>, Option<Vec<String>>)> {
+    pub fn to_bytes(self) -> CryptoResult<(Vec<u8>, Vec<u8>, NewCrlDistributionPoint)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let proposal = self.proposal.tls_serialize_detached().map_err(MlsError::from)?;
         let proposal_ref = self.proposal_ref.to_bytes();
