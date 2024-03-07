@@ -7,6 +7,25 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.48] - 2024-03-07
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Deduplicate CRL DPs
+
+### Testing
+
+- Add test to assert that a basic client can join a verified conversation
+- Add test to assert that revocation works properly
+
+</details>
+
+* Fix revocation (URIs were not supported when parsing CrlInfo)
+* Deduplicate CRL DistributionPoints
+
 ## [1.0.0-rc.47] - 2024-03-04
 
 <details>
