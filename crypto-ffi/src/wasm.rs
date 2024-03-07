@@ -2535,7 +2535,7 @@ impl CoreCrypto {
                 let crls = this.e2ei_register_intermediate_ca_pem(cert_pem).await?;
 
                 let crls = if let Some(crls) = &*crls {
-                    js_sys::Array::from_iter(crls.into_iter().map(JsValue::from))
+                    js_sys::Array::from_iter(crls.iter().map(JsValue::from))
                 } else {
                     js_sys::Array::new()
                 };
@@ -2583,7 +2583,7 @@ impl CoreCrypto {
                     .await?;
 
                 let crls = if let Some(crls) = &*crls {
-                    js_sys::Array::from_iter(crls.into_iter().map(JsValue::from))
+                    js_sys::Array::from_iter(crls.iter().map(JsValue::from))
                 } else {
                     js_sys::Array::new()
                 };

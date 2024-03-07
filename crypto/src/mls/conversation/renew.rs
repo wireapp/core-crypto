@@ -1,5 +1,5 @@
 use core_crypto_keystore::entities::MlsEncryptionKeyPair;
-use openmls::prelude::{LeafNode, LeafNodeIndex, Proposal, QueuedProposal, Sender, StagedCommit};
+use openmls::prelude::{LeafNode, Proposal, QueuedProposal, Sender, StagedCommit};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
@@ -18,36 +18,30 @@ impl Renew {
     /// NB: we do not deal with partial commit (commit which do not contain all pending proposals)
     /// because they cannot be created at the moment by core-crypto
     ///
-    /// * `self_index` - own client [KeyPackageRef] in current MLS group
+    /// * `old_leaf_node` - the current LeafNode of this client (if any)
     /// * `pending_proposals` - local pending proposals in group's proposal store
     /// * `pending_commit` - local pending commit which is now invalid
     /// * `valid_commit` - commit accepted by the backend which will now supersede our local pending commit
     pub(crate) fn renew<'a>(
-        self_index: &LeafNodeIndex,
+        old_leaf_node: Option<&LeafNode>,
         pending_proposals: impl Iterator<Item = QueuedProposal> + 'a,
         pending_commit: Option<&'a StagedCommit>,
         valid_commit: &'a StagedCommit,
-    ) -> (Vec<QueuedProposal>, bool) {
+    ) -> (Vec<QueuedProposal>, Option<&'a LeafNode>) {
         // indicates if we need to renew an update proposal.
-        // true only if we have an empty pending commit or the valid commit does not contain one of our update proposal
-        // otherwise, local orphan update proposal will be renewed regularly, without this flag
-        let mut needs_update = false;
+        let mut leaf_node_to_renew = None;
 
         let renewed_pending_proposals = if let Some(pending_commit) = pending_commit {
             // present in pending commit but not in valid commit
             let commit_proposals = pending_commit.queued_proposals().cloned().collect::<Vec<_>>();
 
-            // if our own pending commit is empty it means we were attempting to update
-            let empty_commit = commit_proposals.is_empty();
-
-            // does the valid commit contains one of our update proposal ?
-            let valid_commit_has_own_update_proposal = valid_commit.update_proposals().any(|p| match p.sender() {
-                Sender::Member(sender_index) => self_index == sender_index,
-                _ => false,
-            });
-
-            // do we need to renew the update or has it already been committed
-            needs_update = !valid_commit_has_own_update_proposal && empty_commit;
+            // we just renew the LeafNode in the pending Commit's UpdatePath if it's ours
+            // (it could be the LeafNode of another client whose Update proposal we committed)
+            leaf_node_to_renew = pending_commit
+                .get_update_path_leaf_node()
+                .zip(old_leaf_node)
+                .filter(|(new_ln, old_ln)| old_ln.credential().identity() == new_ln.credential().identity())
+                .map(|(new_ln, _)| new_ln);
 
             // local proposals present in local pending commit but not in valid commit
             commit_proposals
@@ -60,7 +54,7 @@ impl Renew {
                 .filter_map(|p| Self::is_proposal_renewable(p, Some(valid_commit)))
                 .collect::<Vec<_>>()
         };
-        (renewed_pending_proposals, needs_update)
+        (renewed_pending_proposals, leaf_node_to_renew)
     }
 
     /// A proposal has to be renewed if it is absent from supplied commit
@@ -100,23 +94,35 @@ impl MlsConversation {
         client: &Client,
         backend: &MlsCryptoProvider,
         proposals: impl Iterator<Item = QueuedProposal>,
-        needs_update: bool,
+        own_leaf_node: Option<&LeafNode>,
     ) -> CryptoResult<Vec<MlsProposalBundle>> {
         let mut bundle = vec![];
         let is_external = |p: &QueuedProposal| matches!(p.sender(), Sender::External(_) | Sender::NewMemberProposal);
         let proposals = proposals.filter(|p| !is_external(p));
+
+        // If we had a pending commit with our own Update proposal, the updated LeafNode will appear
+        // twice (once in the pending proposals, once in the pending commit UpdatePath).
+        // We ensure here to only renew it once
+        let mut renewed_update_proposal = false;
+
         for proposal in proposals {
             let msg = match proposal.proposal {
                 Proposal::Add(add) => self.propose_add_member(client, backend, add.key_package.into()).await?,
                 Proposal::Remove(remove) => self.propose_remove_member(client, backend, remove.removed()).await?,
-                Proposal::Update(update) => self.renew_update(client, backend, Some(update.leaf_node())).await?,
+                Proposal::Update(update) => {
+                    renewed_update_proposal = true;
+                    self.renew_update(client, backend, Some(update.leaf_node()), false)
+                        .await?
+                }
                 _ => return Err(CryptoError::ImplementationError),
             };
             bundle.push(msg);
         }
-        if needs_update {
-            let proposal = self.renew_update(client, backend, None).await?;
-            bundle.push(proposal);
+        if let Some(oln) = own_leaf_node {
+            if !renewed_update_proposal {
+                let proposal = self.renew_update(client, backend, Some(oln), true).await?;
+                bundle.push(proposal);
+            }
         }
         Ok(bundle)
     }
@@ -129,14 +135,18 @@ impl MlsConversation {
         client: &Client,
         backend: &MlsCryptoProvider,
         leaf_node: Option<&LeafNode>,
+        is_commit: bool, // pending commits only store the MlsEncryptionKeyPair once merged
     ) -> CryptoResult<MlsProposalBundle> {
-        if let Some(leaf_node) = leaf_node {
-            // Creating an update rekeys the LeafNode everytime. Hence we need to clear the previous
-            // encryption key from the keystore otherwise we would have a leak
-            backend
-                .key_store()
-                .remove::<MlsEncryptionKeyPair, _>(leaf_node.encryption_key().as_slice())
-                .await?;
+        if !is_commit {
+            // only update proposals create an Encryption keypair
+            if let Some(leaf_node) = leaf_node {
+                // Creating an update rekeys the LeafNode everytime. Hence we need to clear the previous
+                // encryption key from the keystore otherwise we would have a leak
+                backend
+                    .key_store()
+                    .remove::<MlsEncryptionKeyPair, _>(leaf_node.encryption_key().as_slice())
+                    .await?
+            }
         }
 
         let mut leaf_node = leaf_node
@@ -171,6 +181,7 @@ pub mod tests {
 
     mod update {
         use super::*;
+        use openmls::prelude::Proposal;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -212,11 +223,12 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Alice should renew the proposal because its hers
-                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.mls_central.pending_proposals(&id).await.len()
-                        );
+                        let pending_proposals = alice_central.mls_central.pending_proposals(&id).await;
+                        assert_eq!(pending_proposals.len(), 1);
+                        assert!(pending_proposals
+                            .iter()
+                            .any(|p| matches!(p.proposal(), Proposal::Update(_))));
+                        assert_eq!(proposals.len(), 1);
 
                         // It should also renew the proposal when in pending_commit
                         alice_central.mls_central.commit_pending_proposals(&id).await.unwrap();
@@ -235,11 +247,12 @@ pub mod tests {
                             .proposals;
                         // Alice should renew the proposal because its hers
                         // It should also replace existing one
-                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.mls_central.pending_proposals(&id).await.len()
-                        );
+                        let pending_proposals = alice_central.mls_central.pending_proposals(&id).await;
+                        assert_eq!(pending_proposals.len(), 1);
+                        assert!(pending_proposals
+                            .iter()
+                            .any(|p| matches!(p.proposal(), Proposal::Update(_))));
+                        assert_eq!(proposals.len(), 1);
                     })
                 },
             )
@@ -285,10 +298,7 @@ pub mod tests {
                             .proposals;
                         // Alice should renew the proposal because its her's
                         assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.mls_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), 1);
                     })
                 },
             )
@@ -300,8 +310,8 @@ pub mod tests {
         pub async fn not_renewable_when_in_valid_commit(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
-                ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
+                ["alice", "bob", "charlie"],
+                move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
@@ -354,9 +364,10 @@ pub mod tests {
                         );
 
                         // Same if proposal is also in pending commit
+                        let charlie = charlie_central.mls_central.rand_key_package(&case).await;
                         let proposal = alice_central
                             .mls_central
-                            .new_update_proposal(&id)
+                            .new_add_proposal(&id, charlie.into())
                             .await
                             .unwrap()
                             .proposal;
@@ -382,10 +393,7 @@ pub mod tests {
                             .proposals;
                         // Alice should not be renew as it was in valid commit
                         assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.mls_central.pending_proposals(&id).await.len()
-                        );
+                        assert!(proposals.is_empty());
                     })
                 },
             )
@@ -440,10 +448,7 @@ pub mod tests {
                             .proposals;
                         // Alice should not renew Bob's update proposal
                         assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.mls_central.pending_proposals(&id).await.len()
-                        );
+                        assert!(proposals.is_empty());
                     })
                 },
             )
@@ -766,6 +771,7 @@ pub mod tests {
 
     mod remove {
         use super::*;
+        use openmls::prelude::Proposal;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -997,11 +1003,16 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Remove is renewed since valid commit removes another
-                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.mls_central.pending_proposals(&id).await.len()
-                        );
+                        // An Update is also renewed since Remove requires an Update Path
+                        assert_eq!(proposals.len(), 2);
+                        let pending_proposals = alice_central.mls_central.pending_proposals(&id).await;
+                        assert_eq!(pending_proposals.len(), 2);
+                        assert!(pending_proposals
+                            .iter()
+                            .any(|p| matches!(p.proposal(), Proposal::Remove(_))));
+                        assert!(pending_proposals
+                            .iter()
+                            .any(|p| matches!(p.proposal(), Proposal::Update(_))));
                     })
                 },
             )
@@ -1060,11 +1071,16 @@ pub mod tests {
                             .unwrap()
                             .proposals;
                         // Remove is renewed since valid commit removes another
-                        assert_eq!(alice_central.mls_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.mls_central.pending_proposals(&id).await.len()
-                        );
+                        // An Update is also renewed since Remove requires an Update Path
+                        assert_eq!(proposals.len(), 2);
+                        let pending_proposals = alice_central.mls_central.pending_proposals(&id).await;
+                        assert_eq!(pending_proposals.len(), 2);
+                        assert!(pending_proposals
+                            .iter()
+                            .any(|p| matches!(p.proposal(), Proposal::Remove(_))));
+                        assert!(pending_proposals
+                            .iter()
+                            .any(|p| matches!(p.proposal(), Proposal::Update(_))));
                     })
                 },
             )

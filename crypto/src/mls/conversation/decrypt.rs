@@ -206,14 +206,14 @@ impl MlsConversation {
                     .await
                     .map_err(MlsError::from)?;
 
-                let (proposals_to_renew, needs_update) = Renew::renew(
-                    &self.group.own_leaf_index(),
+                let (proposals_to_renew, own_leaf_node) = Renew::renew(
+                    self.group.own_leaf_node(),
                     pending_proposals.into_iter(),
                     pending_commit.as_ref(),
                     staged_commit.as_ref(),
                 );
                 let proposals = self
-                    .renew_proposals_for_current_epoch(client, backend, proposals_to_renew.into_iter(), needs_update)
+                    .renew_proposals_for_current_epoch(client, backend, proposals_to_renew.into_iter(), own_leaf_node)
                     .await?;
 
                 let buffered_messages = if restore_pending {
