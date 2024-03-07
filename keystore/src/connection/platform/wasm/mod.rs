@@ -105,7 +105,6 @@ impl DatabaseConnection for WasmConnection {
             .add_object_store(
                 ObjectStore::new("mls_signature_keypairs")
                     .auto_increment(false)
-                    .add_index(Index::new("mls_id", "mls_id"))
                     .add_index(Index::new("signature_scheme", "signature_scheme"))
                     .add_index(Index::new("signature_pk", "pk")),
             )

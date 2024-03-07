@@ -240,10 +240,9 @@ impl MlsConversation {
         cb: Option<&CredentialBundle>,
         leaf_node: Option<LeafNode>,
     ) -> CryptoResult<MlsCommitBundle> {
-        let cb = cb.ok_or(CryptoError::IdentityInitializationError).or_else(|_| {
-            self.find_most_recent_credential_bundle(client)?
-                .ok_or(CryptoError::IdentityInitializationError)
-        })?;
+        let cb = cb
+            .or_else(|| self.find_most_recent_credential_bundle(client).ok().flatten())
+            .ok_or(CryptoError::IdentityInitializationError)?;
         let (commit, welcome, group_info) = self
             .group
             .explicit_self_update(backend, &cb.signature_key, leaf_node)

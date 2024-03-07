@@ -253,20 +253,20 @@ impl Client {
     ) -> Result<Vec<&'a [u8]>, CryptoError> {
         use core_crypto_keystore::entities::EntityBase as _;
 
-        let kp_to_delete = kps.iter().try_fold(vec![], |mut kp_to_delete, (store_kp, kp)| {
-            let is_expired = Self::is_mls_keypackage_expired(kp);
-            let mut to_delete = is_expired;
-            if !(is_expired || refs.is_empty()) {
-                // not expired and there are some refs to check
-                // then delete it when it's found in the refs
-                to_delete = refs.iter().any(|r| r.as_slice() == store_kp.keypackage_ref);
-            }
+        let kp_to_delete: Vec<_> = kps
+            .iter()
+            .filter_map(|(store_kp, kp)| {
+                let is_expired = Self::is_mls_keypackage_expired(kp);
+                let mut to_delete = is_expired;
+                if !(is_expired || refs.is_empty()) {
+                    // not expired and there are some refs to check
+                    // then delete it when it's found in the refs
+                    to_delete = refs.iter().any(|r| r.as_slice() == store_kp.keypackage_ref);
+                }
 
-            if to_delete {
-                kp_to_delete.push((kp, &store_kp.keypackage_ref));
-            }
-            CryptoResult::Ok(kp_to_delete)
-        })?;
+                to_delete.then_some((kp, &store_kp.keypackage_ref))
+            })
+            .collect();
 
         for (kp, kp_ref) in &kp_to_delete {
             // TODO: maybe rewrite this to optimize it. But honestly it's called so rarely and on a so tiny amount of data
