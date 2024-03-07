@@ -38,8 +38,7 @@ impl ClientIdentities {
         self.0
             .get(&sc)?
             .iter()
-            .filter(|c| ct == c.credential.credential_type().into())
-            .last()
+            .rfind(|c| ct == c.credential.credential_type().into())
     }
 
     /// Having `cb` requiring ownership kinda forces the caller to first persist it in the keystore and
