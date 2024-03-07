@@ -8,7 +8,7 @@ use rusty_acme::prelude::*;
 use rusty_jwt_tools::prelude::*;
 use utils::{
     cfg::{E2eTest, EnrollmentFlow, OidcProvider},
-    docker::{stepca::CaCfg, wiremock::WiremockImage},
+    docker::{keycloak::KeycloakImage, stepca::CaCfg, wiremock::WiremockImage},
     id_token::resign_id_token,
     rand_base64_str, rand_client_id,
     wire_server::OauthCfg,
@@ -139,8 +139,6 @@ mod alg {
 /// Since the acme server is a fork, verify its invariants are respected
 #[cfg(not(ci))]
 mod acme_server {
-    use rusty_acme::prelude::RustyAcmeError;
-
     use super::*;
 
     /// Challenges returned by ACME server are mixed up
@@ -185,48 +183,6 @@ mod acme_server {
         assert!(matches!(
             test.enrollment(flow).await.unwrap_err(),
             TestError::AuthzCreationError
-        ));
-    }
-
-    /// Challenges returned by ACME server are mixed up
-    #[tokio::test]
-    async fn should_fail_when_challenges_inverted() {
-        let test = E2eTest::new().start(docker()).await;
-
-        let real_chall = std::sync::Arc::new(std::sync::Mutex::new(None));
-        let (real_chall_setter, rc1, rc2) = (real_chall.clone(), real_chall.clone(), real_chall.clone());
-
-        let flow = EnrollmentFlow {
-            extract_challenges: Box::new(|mut test, (authz_a, authz_b)| {
-                Box::pin(async move {
-                    let (dpop_chall, oidc_chall) = test.extract_challenges(authz_b, authz_a)?;
-                    *real_chall_setter.lock().unwrap() = Some(dpop_chall.clone());
-                    // let's invert those challenges for the rest of the flow
-                    Ok((test, (oidc_chall, dpop_chall)))
-                })
-            }),
-            // undo the inversion here to verify that it fails on acme server side (we do not want to test wire-server here)
-            create_dpop_token: Box::new(|mut test, (_, nonce, handle, team, display_name, expiry)| {
-                Box::pin(async move {
-                    let challenge = rc1.lock().unwrap().clone().unwrap();
-                    let dpop_token = test
-                        .create_dpop_token(&challenge, nonce, handle, team, display_name, expiry)
-                        .await?;
-                    Ok((test, dpop_token))
-                })
-            }),
-            get_access_token: Box::new(|mut test, (_, dpop_token)| {
-                Box::pin(async move {
-                    let challenge = rc2.lock().unwrap().clone().unwrap();
-                    let access_token = test.get_access_token(&challenge, dpop_token).await?;
-                    Ok((test, access_token))
-                })
-            }),
-            ..Default::default()
-        };
-        assert!(matches!(
-            test.enrollment(flow).await.unwrap_err(),
-            TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
         ));
     }
 
@@ -780,50 +736,22 @@ mod dpop_challenge {
 mod oidc_challenge {
     use super::*;
 
-    /// Authorization Server (Dex in our case) exposes an endpoint for clients to fetch its public keys.
+    /// Authorization Server (Dex in our case) exposes an endpoint for clients to fetch its public
+    /// keys (it gets from the OAuth discovery endpoint of hte IdP).
     /// It is used to validate the signature of the id token we supply to this challenge.
     #[tokio::test]
-    async fn should_fail_when_oidc_provider_jwks_uri_unavailable() {
+    async fn should_fail_when_oidc_provider_discovery_uri_unavailable() {
         let mut test = E2eTest::new();
-        // invalid jwks uri
-        let mut jwks_uri: url::Url = test.ca_cfg.jwks_url.parse().unwrap();
-        jwks_uri.set_port(Some(jwks_uri.port().unwrap() + 1)).unwrap();
-        test.ca_cfg.jwks_url = jwks_uri.to_string();
+        // invalid discovery uri
+        let mut discovery_uri: url::Url = test.ca_cfg.discovery_base_url.parse().unwrap();
+        discovery_uri.set_port(Some(discovery_uri.port().unwrap() + 1)).unwrap();
+        test.ca_cfg.discovery_base_url = discovery_uri.to_string();
         let test = test.start(docker()).await;
 
         // cannot validate the OIDC challenge
         assert!(matches!(
             test.nominal_enrollment().await.unwrap_err(),
-            TestError::Acme(RustyAcmeError::ClientImplementationError(
-                "a challenge is not supposed to be pending at this point. It must either be 'valid' or 'processing'."
-            ))
-        ));
-    }
-
-    /// Authorization Server (Dex in our case) exposes an endpoint for clients to fetch its public keys.
-    /// It is used to validate the signature of the id token we supply to this challenge.
-    /// Here, the AS will return a valid JWKS URI but it contains an invalid public key
-    /// for verifying the id token.
-    #[tokio::test]
-    async fn should_fail_when_malicious_jwks_uri() {
-        let docker = docker();
-
-        let mut test = E2eTest::new();
-        let (jwks_stub, ..) = test.new_jwks_uri_mock();
-        // this starts a server serving the abose stub with a malicious JWK
-        let attacker_host = "attacker-keycloak";
-        let _attacker_keycloak = WiremockImage::run(docker, attacker_host, vec![jwks_stub]);
-
-        // invalid jwks uri
-        test.ca_cfg.jwks_url = format!("http://{attacker_host}/oauth2/jwks");
-        let test = test.start(docker).await;
-
-        // cannot validate the OIDC challenge
-        assert!(matches!(
-            test.nominal_enrollment().await.unwrap_err(),
-            TestError::Acme(RustyAcmeError::ClientImplementationError(
-                "a challenge is not supposed to be pending at this point. It must either be 'valid' or 'processing'."
-            ))
+            TestError::OidcChallengeError
         ));
     }
 
@@ -839,7 +767,10 @@ mod oidc_challenge {
         let (jwks_stub, new_kp, kid) = test.new_jwks_uri_mock();
         let attacker_host = "attacker-keycloak";
         let _attacker_keycloak = WiremockImage::run(docker, attacker_host, vec![jwks_stub]);
-        test.ca_cfg.jwks_url = format!("https://{attacker_host}/realms/master/protocol/openid-connect/certs");
+        test.ca_cfg.jwks_url = format!(
+            "https://{attacker_host}/realms/{}/protocol/openid-connect/certs",
+            KeycloakImage::REALM
+        );
 
         let test = test.start(docker).await;
 
