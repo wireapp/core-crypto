@@ -21,7 +21,7 @@ use tls_codec::{Deserialize, Serialize};
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
     prelude::{
-        ClientIdentifier, CryptoError, E2eIdentityError, EntropySeed, KeyPackageIn, KeyPackageRef,
+        ClientIdentifier, CryptoError, E2eIdentityError, EntropySeed, KeyPackageIn,
         MlsBufferedConversationDecryptMessage, MlsCentral, MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle,
         MlsConversationConfiguration, MlsConversationCreationMessage, MlsConversationDecryptMessage,
         MlsConversationInitBundle, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle, MlsRotateBundle,
@@ -923,16 +923,6 @@ impl CoreCrypto {
             .await?;
 
         Ok(count.try_into().unwrap_or(0))
-    }
-
-    /// See [core_crypto::mls::MlsCentral::delete_keypackages]
-    pub async fn delete_keypackages(&self, refs: Vec<Vec<u8>>) -> CoreCryptoResult<()> {
-        let refs = refs
-            .into_iter()
-            .map(|r| KeyPackageRef::from_slice(&r))
-            .collect::<Vec<_>>();
-
-        Ok(self.central.lock().await.delete_keypackages(&refs[..]).await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::new_conversation]

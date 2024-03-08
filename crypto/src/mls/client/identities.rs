@@ -2,7 +2,7 @@ use crate::{
     mls::credential::{typ::MlsCredentialType, CredentialBundle},
     prelude::{Client, CryptoError, CryptoResult, MlsConversation},
 };
-use openmls::prelude::{Credential, SignaturePublicKey};
+use openmls::prelude::SignaturePublicKey;
 use openmls_traits::types::SignatureScheme;
 use std::collections::HashMap;
 
@@ -59,13 +59,6 @@ impl ClientIdentities {
                 self.0.insert(sc, indexmap::IndexSet::from([cb]));
             }
         }
-        Ok(())
-    }
-
-    pub(crate) fn remove(&mut self, credential: &Credential) -> CryptoResult<()> {
-        self.0.iter_mut().for_each(|(_, cbs)| {
-            cbs.retain(|c| c.credential() != credential);
-        });
         Ok(())
     }
 

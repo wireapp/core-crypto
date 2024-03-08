@@ -1449,32 +1449,6 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: [`WasmCryptoResult<usize>`]
-    ///
-    /// see [core_crypto::mls::MlsCentral::delete_keypackages]
-    #[allow(clippy::boxed_local)]
-    pub fn delete_keypackages(&self, refs: Box<[Uint8Array]>) -> Promise {
-        let this = self.inner.clone();
-
-        let refs = refs
-            .iter()
-            .map(|r| r.to_vec())
-            .map(|r| KeyPackageRef::from(r.as_slice()))
-            .collect::<Vec<_>>();
-
-        future_to_promise(
-            async move {
-                this.write()
-                    .await
-                    .delete_keypackages(&refs[..])
-                    .await
-                    .map_err(CoreCryptoError::from)?;
-                WasmCryptoResult::Ok(JsValue::UNDEFINED)
-            }
-            .err_into(),
-        )
-    }
-
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::MlsCentral::new_conversation]

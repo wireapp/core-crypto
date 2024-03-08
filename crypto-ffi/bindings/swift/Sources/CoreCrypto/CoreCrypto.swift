@@ -623,7 +623,7 @@ public struct RotateBundle: ConvertToInner {
     public var commits: [String : CommitBundle]
     /// Fresh KeyPackages with the new Credential
     public var newKeyPackages: [[UInt8]]
-    /// All the now deprecated KeyPackages. Once deleted remotely, delete them locally with ``CoreCrypto/deleteKeypackages``
+    /// All the now deprecated KeyPackages.
     public var keyPackageRefsToRemove: [[UInt8]]
     /// New CRL distribution points that appeared by the introduction of a new credential
     public var crlNewDistributionPoints: [String]?
@@ -743,12 +743,6 @@ public class CoreCryptoWrapper {
     /// - returns: The amount of valid, non-expired KeyPackages that are persisted in the backing storage
     public func clientValidKeypackagesCount(ciphersuite: UInt16, credentialType: MlsCredentialType) async throws -> UInt64 {
         return try await self.coreCrypto.clientValidKeypackagesCount(ciphersuite: ciphersuite, credentialType: credentialType.convert())
-    }
-
-    /// Prunes local KeyPackages after making sure they also have been deleted on the backend side.
-    /// You should only use this after ``CoreCrypto/e2eiRotateAll``
-    public func deleteKeypackages(refs: [[UInt8]]) async throws {
-        return try await self.coreCrypto.deleteKeypackages(refs)
     }
 
     /// Creates a new conversation with the current client being the sole member

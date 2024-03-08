@@ -43,7 +43,7 @@ pub mod tests {
                         .welcome;
 
                     // ...Bob deletes locally (with the associated private key) before processing the Welcome
-                    bob_central.mls_central.delete_keypackages(&[bob_kp_ref]).await.unwrap();
+                    bob_central.mls_central.delete_keypackages(&[bob_kp_ref]).await;
 
                     // in that case a dedicated error is thrown for clients to identify this case
                     // and rejoin with an external commit

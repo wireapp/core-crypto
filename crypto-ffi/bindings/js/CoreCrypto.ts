@@ -80,7 +80,7 @@ export class CoreCryptoError extends Error {
             const cause = new Error(
                 "CoreCrypto WASM FFI Error doesn't have enough elements to build a rich error"
             );
-            return this.fallback(msg, { cause }, ...params);
+            return this.fallback(msg, {cause}, ...params);
         }
 
         const [errMsg, richErrorJSON] = parts;
@@ -88,7 +88,7 @@ export class CoreCryptoError extends Error {
             const richError: CoreCryptoRichError = JSON.parse(richErrorJSON);
             return new this(errMsg, richError, ...params);
         } catch (cause) {
-            return this.fallback(msg, { cause }, ...params);
+            return this.fallback(msg, {cause}, ...params);
         }
     }
 
@@ -604,8 +604,10 @@ export interface WireIdentity {
     notAfter: bigint;
 }
 
-const mapWireIdentity = (ffiIdentity?: CoreCryptoFfiTypes.WireIdentity): WireIdentity|undefined => {
-    if (!ffiIdentity) { return undefined; }
+const mapWireIdentity = (ffiIdentity?: CoreCryptoFfiTypes.WireIdentity): WireIdentity | undefined => {
+    if (!ffiIdentity) {
+        return undefined;
+    }
     return {
         clientId: ffiIdentity.client_id,
         handle: ffiIdentity.handle,
@@ -897,14 +899,14 @@ export class CoreCrypto {
      * ````
      */
     static async init({
-        databaseName,
-        key,
-        clientId,
-        wasmFilePath,
-        ciphersuites,
-        entropySeed,
-        nbKeyPackage,
-    }: CoreCryptoParams): Promise<CoreCrypto> {
+                          databaseName,
+                          key,
+                          clientId,
+                          wasmFilePath,
+                          ciphersuites,
+                          entropySeed,
+                          nbKeyPackage,
+                      }: CoreCryptoParams): Promise<CoreCrypto> {
         await this.#loadModule(wasmFilePath);
 
         let cs = ciphersuites.map((cs) => cs.valueOf());
@@ -929,13 +931,13 @@ export class CoreCrypto {
      * @param params - {@link CoreCryptoDeferredParams}
      */
     static async deferredInit({
-        databaseName,
-        key,
-        ciphersuites,
-        entropySeed,
-        wasmFilePath,
-        nbKeyPackage,
-    }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
+                                  databaseName,
+                                  key,
+                                  ciphersuites,
+                                  entropySeed,
+                                  wasmFilePath,
+                                  nbKeyPackage,
+                              }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
         await this.#loadModule(wasmFilePath);
 
         let cs = ciphersuites.map((cs) => cs.valueOf());
@@ -1270,7 +1272,7 @@ export class CoreCrypto {
         configuration: CustomConfiguration = {}
     ): Promise<WelcomeBundle> {
         try {
-            const { keyRotationSpan, wirePolicy } = configuration || {};
+            const {keyRotationSpan, wirePolicy} = configuration || {};
             const config = new CustomConfigurationFfi(
                 keyRotationSpan,
                 wirePolicy
@@ -1337,18 +1339,6 @@ export class CoreCrypto {
                 credentialType,
                 amountRequested
             )
-        );
-    }
-
-    /**
-     * Prunes local KeyPackages after making sure they also have been deleted on the backend side
-     * You should only use this after {@link CoreCrypto.e2eiRotateAll}
-     *
-     * @param refs - KeyPackage references to delete obtained from a {RotateBundle}
-     */
-    async deleteKeypackages(refs: Uint8Array[]): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(
-            this.#cc.delete_keypackages(refs)
         );
     }
 
@@ -1614,7 +1604,7 @@ export class CoreCrypto {
         configuration: CustomConfiguration = {}
     ): Promise<ConversationInitBundle> {
         try {
-            const { keyRotationSpan, wirePolicy } = configuration || {};
+            const {keyRotationSpan, wirePolicy} = configuration || {};
             const config = new CustomConfigurationFfi(
                 keyRotationSpan,
                 wirePolicy
@@ -2149,40 +2139,40 @@ export class CoreCrypto {
     }
 
     /**
-    * Registers a Root Trust Anchor CA for the use in E2EI processing.
-    *
-    * Please note that without a Root Trust Anchor, all validations *will* fail;
-    * So this is the first step to perform after initializing your E2EI client
-    *
-    * @param trustAnchorPEM - PEM certificate to anchor as a Trust Root
-    */
+     * Registers a Root Trust Anchor CA for the use in E2EI processing.
+     *
+     * Please note that without a Root Trust Anchor, all validations *will* fail;
+     * So this is the first step to perform after initializing your E2EI client
+     *
+     * @param trustAnchorPEM - PEM certificate to anchor as a Trust Root
+     */
     async e2eiRegisterAcmeCA(trustAnchorPEM: string): Promise<void> {
         return await this.#cc.e2ei_register_acme_ca(trustAnchorPEM);
     }
 
     /**
-    * Registers an Intermediate CA for the use in E2EI processing.
-    *
-    * Please note that a Root Trust Anchor CA is needed to validate Intermediate CAs;
-    * You **need** to have a Root CA registered before calling this
-    *
-    * @param certPEM - PEM certificate to register as an Intermediate CA
-    */
+     * Registers an Intermediate CA for the use in E2EI processing.
+     *
+     * Please note that a Root Trust Anchor CA is needed to validate Intermediate CAs;
+     * You **need** to have a Root CA registered before calling this
+     *
+     * @param certPEM - PEM certificate to register as an Intermediate CA
+     */
     async e2eiRegisterIntermediateCA(certPEM: string): Promise<string[] | undefined> {
         return await this.#cc.e2ei_register_intermediate_ca(certPEM);
     }
 
     /**
-    * Registers a CRL for the use in E2EI processing.
-    *
-    * Please note that a Root Trust Anchor CA is needed to validate CRLs;
-    * You **need** to have a Root CA registered before calling this
-    *
-    * @param crlDP - CRL Distribution Point; Basically the URL you fetched it from
-    * @param crlDER - DER representation of the CRL
-    *
-    * @returns a {@link CRLRegistration} with the dirty state of the new CRL (see struct) and its expiration timestamp
-    */
+     * Registers a CRL for the use in E2EI processing.
+     *
+     * Please note that a Root Trust Anchor CA is needed to validate CRLs;
+     * You **need** to have a Root CA registered before calling this
+     *
+     * @param crlDP - CRL Distribution Point; Basically the URL you fetched it from
+     * @param crlDER - DER representation of the CRL
+     *
+     * @returns a {@link CRLRegistration} with the dirty state of the new CRL (see struct) and its expiration timestamp
+     */
     async e2eiRegisterCRL(crlDP: string, crlDER: Uint8Array): Promise<CRLRegistration> {
         return await this.#cc.e2ei_register_crl(crlDP, crlDER);
     }
