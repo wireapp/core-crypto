@@ -130,7 +130,8 @@ impl MlsConversation {
         let group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None).await;
 
         let group = match group {
-            Err(openmls::prelude::WelcomeError::NoMatchingKeyPackage) => return Err(CryptoError::OrphanWelcome),
+            Err(openmls::prelude::WelcomeError::NoMatchingKeyPackage)
+            | Err(openmls::prelude::WelcomeError::NoMatchingEncryptionKey) => return Err(CryptoError::OrphanWelcome),
             _ => group.map_err(MlsError::from)?,
         };
 
