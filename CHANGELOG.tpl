@@ -7,11 +7,21 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.49] - 2024-03-11
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.49" unreleased=true}}
+</details>
+
+* We now emit an `OrphanWelcome` error if a LeafNode's HPKE private key is missing from the store
+* Web only: Dropped the unique index on MLS Signature Keys' public keys. This should prevent weird issues with x509 vs basic credential handling
+
 ## [1.0.0-rc.48] - 2024-03-07
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.48" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.48"}}
 </details>
 
 * Fix revocation (URIs were not supported when parsing CrlInfo)
