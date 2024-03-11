@@ -237,7 +237,7 @@ pub struct MlsRotateBundle {
     pub commits: HashMap<ConversationId, MlsCommitBundle>,
     /// Fresh KeyPackages with the new Credential
     pub new_key_packages: Vec<KeyPackage>,
-    /// All the now deprecated KeyPackages. Once deleted remotely, delete them locally with [MlsCentral::delete_keypackages]
+    /// All the now deprecated KeyPackages.
     pub key_package_refs_to_remove: Vec<KeyPackageRef>,
     /// New CRL distribution points that appeared by the introduction of a new credential
     pub crl_new_distribution_points: NewCrlDistributionPoint,
@@ -513,47 +513,6 @@ pub mod tests {
                             .find_signature_keypair_from_keystore(old_credential.signature_key.public())
                             .await
                             .is_some());
-
-                        // Checks are done, now let's delete ALL the deprecated KeyPackages.
-                        // This should have the consequence to purge the previous credential material as well.
-                        alice_central
-                            .mls_central
-                            .delete_keypackages(&rotate_bundle.key_package_refs_to_remove[..])
-                            .await
-                            .unwrap();
-
-                        // Alice should just have the number of X509 KeyPackages she requested
-                        let nb_x509_kp = alice_central
-                            .mls_central
-                            .count_key_package(case.ciphersuite(), Some(MlsCredentialType::X509))
-                            .await;
-                        assert_eq!(nb_x509_kp, NB_KEY_PACKAGE);
-                        // in both cases, Alice should not anymore have any Basic KeyPackage
-                        let nb_basic_kp = alice_central
-                            .mls_central
-                            .count_key_package(case.ciphersuite(), Some(MlsCredentialType::Basic))
-                            .await;
-                        assert_eq!(nb_basic_kp, 0);
-
-                        // and since all of Alice's unclaimed KeyPackages have been purged, so should be her old Credential
-
-                        // Also the old Credential has been removed from the keystore
-                        let after_delete = alice_central.mls_central.count_entities().await;
-                        assert_eq!(after_delete.credential, 1);
-                        assert!(alice_central
-                            .mls_central
-                            .find_credential_from_keystore(&old_credential)
-                            .await
-                            .is_none());
-
-                        // and all her Private HPKE keys...
-                        assert_eq!(after_delete.hpke_private_key, NB_KEY_PACKAGE);
-
-                        // ...and encryption keypairs
-                        assert_eq!(
-                            after_rotate.encryption_keypair - after_delete.encryption_keypair,
-                            INITIAL_KEYING_MATERIAL_COUNT
-                        );
 
                         // Now charlie tries to add Alice to a conversation with her new KeyPackages
                         let id = conversation_id();

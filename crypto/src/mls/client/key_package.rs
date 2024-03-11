@@ -14,18 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use std::collections::HashMap;
-
-use openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
+use openmls::prelude::{CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
 use openmls_traits::OpenMlsCryptoProvider;
-use tls_codec::{Deserialize, Serialize};
 
 use core_crypto_keystore::{
     connection::KeystoreDatabaseConnection,
-    entities::{
-        EntityBase, EntityFindParams, MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsHpkePrivateKey,
-        MlsKeyPackage,
-    },
+    entities::{EntityBase, EntityFindParams, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage},
 };
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -203,44 +197,6 @@ impl Client {
         Ok(())
     }
 
-    pub(crate) async fn prune_keypackages_and_credential(
-        &mut self,
-        backend: &MlsCryptoProvider,
-        refs: &[KeyPackageRef],
-    ) -> CryptoResult<()> {
-        let mut conn = backend.key_store().borrow_conn().await?;
-        let kps = self.find_all_keypackages(&mut conn).await?;
-        let kp_to_delete = self._prune_keypackages(&kps, &mut conn, refs).await?;
-
-        // Let's group KeyPackages by Credential
-        let mut grouped_kps = HashMap::<Vec<u8>, Vec<KeyPackageRef>>::new();
-        for (_, kp) in &kps {
-            let cred = kp
-                .leaf_node()
-                .credential()
-                .tls_serialize_detached()
-                .map_err(MlsError::from)?;
-            let kp_ref = kp.hash_ref(backend.crypto()).map_err(MlsError::from)?;
-            grouped_kps
-                .entry(cred)
-                .and_modify(|kprfs| kprfs.push(kp_ref.clone()))
-                .or_insert(vec![kp_ref]);
-        }
-
-        for (credential, kps) in &grouped_kps {
-            // If all KeyPackages are to be deleted for this given Credential
-            let all_to_delete = kps.iter().all(|kpr| kp_to_delete.contains(&kpr.as_slice()));
-            if all_to_delete {
-                // then delete this Credential
-                MlsCredential::delete_by_credential(&mut conn, credential.clone()).await?;
-                let credential = Credential::tls_deserialize(&mut credential.as_slice()).map_err(MlsError::from)?;
-                self.identities.remove(&credential)?;
-            }
-        }
-
-        Ok(())
-    }
-
     /// Deletes all expired KeyPackages plus the ones in `refs`. It also deletes all associated:
     /// * HPKE private keys
     /// * HPKE Encryption KeyPairs
@@ -341,17 +297,6 @@ impl MlsCentral {
         self.mls_client()?
             .valid_keypackages_count(&self.mls_backend, ciphersuite, credential_type)
             .await
-    }
-
-    /// Prunes local KeyPackages after making sure they also have been deleted on the backend side
-    /// You should only use this after [MlsCentral::e2ei_rotate_all]
-    #[cfg_attr(test, crate::dispotent)]
-    pub async fn delete_keypackages(&mut self, refs: &[KeyPackageRef]) -> CryptoResult<()> {
-        if refs.is_empty() {
-            return Err(CryptoError::ConsumerError);
-        }
-        let client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
-        client.prune_keypackages_and_credential(&self.mls_backend, refs).await
     }
 }
 
@@ -458,7 +403,7 @@ pub mod tests {
                         // Make sure we have no previous keypackages found (that were pruned) in our new batch of KPs
                         assert!(!has_duplicates);
                     }
-                    cc.mls_central.delete_keypackages(&kpbs_refs).await.unwrap();
+                    cc.mls_central.delete_keypackages(&kpbs_refs).await;
                 }
 
                 let count = cc
@@ -472,7 +417,7 @@ pub mod tests {
                     .unwrap()
                     .hash_ref(cc.mls_central.mls_backend.crypto())
                     .unwrap();
-                cc.mls_central.delete_keypackages(&[pinned_kpr]).await.unwrap();
+                cc.mls_central.delete_keypackages(&[pinned_kpr]).await;
                 let count = cc
                     .mls_central
                     .client_valid_key_packages_count(case.ciphersuite(), case.credential_type)
@@ -483,7 +428,6 @@ pub mod tests {
                 assert_eq!(after_delete.key_package, 0);
                 assert_eq!(after_delete.encryption_keypair, 0);
                 assert_eq!(after_delete.hpke_private_key, 0);
-                assert_eq!(after_delete.credential, 0);
             })
         })
         .await

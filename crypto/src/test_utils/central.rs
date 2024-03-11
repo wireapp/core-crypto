@@ -16,7 +16,8 @@
 
 use openmls::prelude::{
     group_info::VerifiableGroupInfo, Credential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey,
-    KeyPackage, KeyPackageIn, LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit,
+    KeyPackage, KeyPackageIn, KeyPackageRef, LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey,
+    StagedCommit,
 };
 use openmls_traits::crypto::OpenMlsCrypto;
 use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
@@ -566,6 +567,11 @@ impl MlsCentral {
         let credential = Credential::new_basic(b"server".to_vec());
 
         ExternalSender::new(signature_key, credential)
+    }
+
+    pub async fn delete_keypackages(&mut self, refs: &[KeyPackageRef]) {
+        let client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized).unwrap();
+        client.prune_keypackages(&self.mls_backend, refs).await.unwrap();
     }
 }
 
