@@ -7,11 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.50] - 2024-03-11
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.50" unreleased=true}}
+</details>
+
+* Fixed CRL-based revocation handling in some rare cases that were encountered during testing
+
 ## [1.0.0-rc.49] - 2024-03-11
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.49" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.49"}}
 </details>
 
 * We now emit an `OrphanWelcome` error if a LeafNode's HPKE private key is missing from the store
