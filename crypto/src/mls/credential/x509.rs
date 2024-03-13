@@ -1,10 +1,9 @@
 #[cfg(test)]
 use mls_crypto_provider::PkiKeypair;
 use openmls_traits::types::SignatureScheme;
-use wire_e2e_identity::prelude::WireIdentityReader;
+use wire_e2e_identity::prelude::{HashAlgorithm, WireIdentityReader};
 use zeroize::Zeroize;
 
-use crate::prelude::MlsCiphersuite;
 use crate::{
     e2e_identity::id::WireQualifiedClientId,
     prelude::{ClientId, CryptoError, CryptoResult},
@@ -41,9 +40,11 @@ impl CertificateBundle {
     pub fn get_client_id(&self) -> CryptoResult<ClientId> {
         let leaf = self.certificate_chain.first().ok_or(CryptoError::InvalidIdentity)?;
 
-        // We do not use the thumbprint generated from this hash alg anyway here
-        // No need to bloat the API for nothing
-        let hash_alg = MlsCiphersuite::default().e2ei_hash_alg();
+        let hash_alg = match self.private_key.signature_scheme {
+            SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ED25519 => HashAlgorithm::SHA256,
+            SignatureScheme::ECDSA_SECP384R1_SHA384 => HashAlgorithm::SHA384,
+            SignatureScheme::ED448 | SignatureScheme::ECDSA_SECP521R1_SHA512 => HashAlgorithm::SHA512,
+        };
 
         let identity = leaf
             .extract_identity(None, hash_alg)

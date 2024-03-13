@@ -524,7 +524,7 @@ pub mod tests {
         assert_eq!(len, UNEXPIRED_COUNT);
 
         // Set the keypackage expiration to be in 2 seconds
-        client.set_keypackage_lifetime(std::time::Duration::from_secs(2));
+        client.set_keypackage_lifetime(std::time::Duration::from_secs(10));
 
         // Generate new keypackages that are normally partially expired 2s after they're requested
         let partially_expired_kpbs = client
@@ -534,7 +534,7 @@ pub mod tests {
         assert_eq!(partially_expired_kpbs.len(), EXPIRED_COUNT);
 
         // Sleep to trigger the expiration
-        async_std::task::sleep(std::time::Duration::from_secs(5)).await;
+        async_std::task::sleep(std::time::Duration::from_secs(10)).await;
 
         // Request the same number of keypackages. The automatic lifetime-based expiration should take
         // place and remove old expired keypackages and generate fresh ones instead

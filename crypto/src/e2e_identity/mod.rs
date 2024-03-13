@@ -581,8 +581,8 @@ pub mod tests {
     use crate::{
         e2e_identity::{id::QualifiedE2eiClientId, tests::x509::X509TestChain},
         prelude::{
-            CertificateBundle, E2eIdentityError, E2eIdentityResult, E2eiConversationState, E2eiEnrollment, MlsCentral,
-            MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT,
+            CertificateBundle, E2eIdentityError, E2eiConversationState, E2eiEnrollment, MlsCentral, MlsCredentialType,
+            INITIAL_KEYING_MATERIAL_COUNT,
         },
         test_utils::{central::TEAM, *},
         CryptoResult,
@@ -679,7 +679,7 @@ pub mod tests {
         init: impl Fn(E2eiInitWrapper) -> InitFnReturn<'_>,
         // used to verify persisting the instance actually does restore it entirely
         restore: impl Fn(E2eiEnrollment, &'a MlsCentral) -> RestoreFnReturn<'a>,
-    ) -> E2eIdentityResult<(E2eiEnrollment, String)> {
+    ) -> CryptoResult<(E2eiEnrollment, String)> {
         x509_test_chain.register_with_central(&ctx.mls_central).await;
 
         #[cfg(not(target_family = "wasm"))]
@@ -699,7 +699,7 @@ pub mod tests {
             cc: &ctx.mls_central,
             case,
         };
-        let mut enrollment = init(wrapper).await.map_err(|_| E2eIdentityError::ImplementationError)?;
+        let mut enrollment = init(wrapper).await?;
 
         #[cfg(not(target_family = "wasm"))]
         {

@@ -223,6 +223,7 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
                             let sc = case.cfg.ciphersuite.signature_algorithm();
                             let actor_cert = &x509_test_chain.as_ref().as_ref().unwrap().actors[i];
                             let cert_der = actor_cert.certificate.certificate.to_der().unwrap();
+
                             let bundle = crate::prelude::CertificateBundle {
                                 certificate_chain: vec![cert_der],
                                 private_key: crate::mls::credential::x509::CertificatePrivateKey {

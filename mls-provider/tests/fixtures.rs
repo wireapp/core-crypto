@@ -131,7 +131,7 @@ pub fn entropy() -> EntropySeed {
     openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519,
     Some(entropy())
 )]
-// TODO: Those 3 next ciphersuites aren't supported because of the lack of both p521 (wip) and ed448 (status unknown) crates
+// TODO: The next ciphersuite isn't supported because of the lack of  ed448 (status unknown) crate
 // #[case::ed448_aes256_sys_entropy__persistent(
 //     setup(false),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448,
@@ -150,26 +150,6 @@ pub fn entropy() -> EntropySeed {
 // #[case::ed448_aes256__ext_entropy__in_memory(
 //     setup(true),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448,
-//     Some(entropy())
-// )]
-// #[case::p521_aes256__sys_entropy__persistent(
-//     setup(false),
-//     openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
-//     None
-// )]
-// #[case::p521_aes256__ext_entropy__persistent(
-//     setup(false),
-//     openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
-//     Some(entropy())
-// )]
-// #[case::p521_aes256__sys_entropy__in_memory(
-//     setup(true),
-//     openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
-//     None
-// )]
-// #[case::p521_aes256__ext_entropy__in_memory(
-//     setup(true),
-//     openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
 //     Some(entropy())
 // )]
 // #[case::ed448_chacha20poly1305_sys_entropy__persistent(
@@ -192,6 +172,26 @@ pub fn entropy() -> EntropySeed {
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448,
 //     Some(entropy())
 // )]
+#[case::p521_aes256__sys_entropy__persistent(
+    setup(false),
+    openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+    None
+)]
+#[case::p521_aes256__ext_entropy__persistent(
+    setup(false),
+    openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+    Some(entropy())
+)]
+#[case::p521_aes256__sys_entropy__in_memory(
+    setup(true),
+    openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+    None
+)]
+#[case::p521_aes256__ext_entropy__in_memory(
+    setup(true),
+    openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+    Some(entropy())
+)]
 #[case::p384_aes256__sys_entropy__persistent(
     setup(false),
     openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,

@@ -146,12 +146,13 @@ fn compute_thumbprint(cs: MlsCiphersuite, raw_key: &[u8]) -> CryptoResult<String
         SignatureScheme::ED25519 => JwsAlgorithm::Ed25519,
         SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::P256,
         SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
-        SignatureScheme::ED448 | SignatureScheme::ECDSA_SECP521R1_SHA512 => return Err(CryptoError::Unsupported),
+        SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
+        SignatureScheme::ED448 => return Err(CryptoError::Unsupported),
     };
     let hash_alg = match cs.hash_algorithm() {
         HashType::Sha2_256 => HashAlgorithm::SHA256,
         HashType::Sha2_384 => HashAlgorithm::SHA384,
-        HashType::Sha2_512 => return Err(CryptoError::Unsupported),
+        HashType::Sha2_512 => HashAlgorithm::SHA512,
     };
 
     // return an empty string when it fails. Not worth failing for this, it's just informative
