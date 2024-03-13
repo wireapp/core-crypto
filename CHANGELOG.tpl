@@ -7,11 +7,22 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.51] - 2024-03-13
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.51" unreleased=true}}
+</details>
+
+* Fixed the CRL revocation cache that was causing X.509 credentials to be considered valid on 2nd verifications
+* Preemptively fixed an issue where an outdated PKI env `time_of_interest` could cause false-negatives in certificate verifications
+* **BREAKING FIX**: The TypeScript wrapper now returns enum members for `E2eiConversationState` and `DeviceStatus` values instead of ints.
+
 ## [1.0.0-rc.50] - 2024-03-11
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.50" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.50"}}
 </details>
 
 * Fixed CRL-based revocation handling in some rare cases that were encountered during testing
