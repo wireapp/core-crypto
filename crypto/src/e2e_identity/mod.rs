@@ -28,6 +28,8 @@ pub(crate) mod rotate;
 pub(crate) mod stash;
 pub mod types;
 
+pub use init_certificates::E2eiDumpedPkiEnv;
+
 type Json = Vec<u8>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

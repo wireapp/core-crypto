@@ -821,41 +821,31 @@ impl BufferedDecryptedMessage {
     }
 }
 
-#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
+#[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group
 pub struct WireIdentity {
     /// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
-    #[wasm_bindgen(readonly)]
-    pub client_id: String,
+    client_id: String,
     /// user handle e.g. `john_wire`
-    #[wasm_bindgen(readonly)]
-    pub handle: String,
+    handle: String,
     /// Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
-    #[wasm_bindgen(readonly)]
-    pub display_name: String,
+    display_name: String,
     /// DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
-    #[wasm_bindgen(readonly)]
-    pub domain: String,
+    domain: String,
     /// X509 certificate identifying this client in the MLS group ; PEM encoded
-    #[wasm_bindgen(readonly)]
-    pub certificate: String,
+    certificate: String,
     /// Status of the Credential at the moment T when this object is created
-    #[wasm_bindgen(readonly)]
-    pub status: DeviceStatus,
+    status: u8,
     /// MLS thumbprint
-    #[wasm_bindgen(readonly)]
-    pub thumbprint: String,
+    thumbprint: String,
     /// X509 certificate serial number
-    #[wasm_bindgen(readonly)]
-    pub serial_number: String,
+    serial_number: String,
     /// X509 certificate not before as Unix timestamp
-    #[wasm_bindgen(readonly)]
-    pub not_before: u64,
+    not_before: u64,
     /// X509 certificate not after as Unix timestamp
-    #[wasm_bindgen(readonly)]
-    pub not_after: u64,
+    not_after: u64,
 }
 
 impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
@@ -866,11 +856,89 @@ impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
             display_name: i.display_name,
             domain: i.domain,
             certificate: i.certificate,
-            status: i.status.into(),
+            status: i.status as u8,
             thumbprint: i.thumbprint,
             serial_number: i.serial_number,
             not_before: i.not_before,
             not_after: i.not_after,
+        }
+    }
+}
+
+#[wasm_bindgen]
+impl WireIdentity {
+    #[wasm_bindgen(getter)]
+    pub fn client_id(&self) -> String {
+        self.client_id.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn handle(&self) -> String {
+        self.handle.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn display_name(&self) -> String {
+        self.display_name.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn domain(&self) -> String {
+        self.domain.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn certificate(&self) -> String {
+        self.certificate.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn status(&self) -> u8 {
+        self.status
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn thumbprint(&self) -> String {
+        self.thumbprint.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn serial_number(&self) -> String {
+        self.serial_number.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn not_before(&self) -> u64 {
+        self.not_before
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn not_after(&self) -> u64 {
+        self.not_after
+    }
+}
+
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+/// Dump of the PKI environemnt as PEM
+pub struct E2eiDumpedPkiEnv {
+    #[wasm_bindgen(readonly)]
+    /// Root CA in use (i.e. Trust Anchor)
+    pub root_ca: String,
+    #[wasm_bindgen(readonly)]
+    /// Intermediate CAs that are loaded
+    pub intermediates: Vec<String>,
+    #[wasm_bindgen(readonly)]
+    /// CRLs registered in the PKI env
+    pub crls: Vec<String>,
+}
+
+impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
+    fn from(value: core_crypto::e2e_identity::E2eiDumpedPkiEnv) -> Self {
+        Self {
+            root_ca: value.root_ca,
+            intermediates: value.intermediates,
+            crls: value.crls,
         }
     }
 }
@@ -1134,6 +1202,9 @@ impl CoreCrypto {
         entropy_seed: Option<Box<[u8]>>,
         nb_key_package: Option<u32>,
     ) -> WasmCryptoResult<CoreCrypto> {
+        #[cfg(feature = "debug-logging")]
+        femme::with_level(femme::LevelFilter::Debug);
+
         let ciphersuites = lower_ciphersuites(&ciphersuites)?;
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
         let nb_key_package = nb_key_package
@@ -1167,6 +1238,9 @@ impl CoreCrypto {
         entropy_seed: Option<Box<[u8]>>,
         nb_key_package: Option<u32>,
     ) -> WasmCryptoResult<CoreCrypto> {
+        #[cfg(feature = "debug-logging")]
+        femme::with_level(femme::LevelFilter::Debug);
+
         let ciphersuites = lower_ciphersuites(&ciphersuites)?;
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
         let nb_key_package = nb_key_package
@@ -2513,6 +2587,31 @@ impl CoreCrypto {
         )
     }
 
+    /// See [core_crypto::mls::MlsCentral::e2ei_dump_pki_env]
+    pub async fn e2ei_dump_pki_env(&self) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                let this = this.read().await;
+                let dump: Option<E2eiDumpedPkiEnv> = this.e2ei_dump_pki_env().await?.map(Into::into);
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&dump)?)
+            }
+            .err_into(),
+        )
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
+    pub async fn e2ei_is_pki_env_setup(&self) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                let this = this.read().await;
+                WasmCryptoResult::Ok(this.e2ei_is_pki_env_setup().await.into())
+            }
+            .err_into(),
+        )
+    }
+
     /// See [core_crypto::mls::MlsCentral::e2ei_register_acme_ca]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> Promise {
         let this = self.inner.clone();
@@ -3191,11 +3290,11 @@ impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState
 /// see [core_crypto::prelude::DeviceStatus]
 pub enum DeviceStatus {
     /// All is fine
-    Valid,
+    Valid = 1,
     /// The Credential's certificate is expired
-    Expired,
+    Expired = 2,
     /// The Credential's certificate is revoked (not implemented yet)
-    Revoked,
+    Revoked = 3,
 }
 
 impl From<core_crypto::prelude::DeviceStatus> for DeviceStatus {

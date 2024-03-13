@@ -58,7 +58,7 @@ impl EntityBase for E2eiAcmeCA {
 
 impl Entity for E2eiAcmeCA {
     fn id_raw(&self) -> &[u8] {
-        &[0]
+        &ID
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {

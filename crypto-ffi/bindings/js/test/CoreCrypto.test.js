@@ -1142,7 +1142,7 @@ test("e2ei is conversation invalid", async () => {
     const state = await cc.e2eiConversationState(conversationId);
 
     await cc.wipe();
-    return E2eiConversationState[state];
+    return state;
   });
 
   expect(state).toBe("NotEnabled");

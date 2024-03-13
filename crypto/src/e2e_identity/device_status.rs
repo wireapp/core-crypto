@@ -6,11 +6,11 @@ use wire_e2e_identity::prelude::IdentityStatus;
 #[repr(u8)]
 pub enum DeviceStatus {
     /// All is fine
-    Valid,
+    Valid = 1,
     /// The Credential's certificate is expired
-    Expired,
+    Expired = 2,
     /// The Credential's certificate is revoked
-    Revoked,
+    Revoked = 3,
 }
 
 impl From<IdentityStatus> for DeviceStatus {

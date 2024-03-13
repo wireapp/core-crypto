@@ -1232,6 +1232,16 @@ public class CoreCryptoWrapper {
         return try await self.coreCrypto.e2eiMlsInitOnly(enrollment: enrollment.lower(), certificateChain: certificateChain, nbKeyPackage: nbKeyPackage)
     }
 
+    /// Dumps the PKI environment as PEM
+    public func e2eiDumpPKIEnv() async -> E2eiDumpedPkiEnv? {
+        return try await cc.e2eiDumpPkiEnv()
+    }
+
+    /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
+    public func e2eiIsPKIEnvSetup() async -> Boolean {
+        return try await cc.e2eiIsPkiEnvSetup()
+    }
+
     /// Registers a Root Trust Anchor CA for the use in E2EI processing.
     ///
     /// Please note that without a Root Trust Anchor, all validations *will* fail;
