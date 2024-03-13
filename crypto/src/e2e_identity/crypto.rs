@@ -3,7 +3,9 @@ use crate::{prelude::MlsCiphersuite, CryptoError, CryptoResult, MlsError};
 use mls_crypto_provider::{MlsCryptoProvider, PkiKeypair, RustCrypto};
 use openmls_basic_credential::SignatureKeyPair as OpenMlsSignatureKeyPair;
 use openmls_traits::{
-    crypto::OpenMlsCrypto, signatures::DefaultSigner, types::Ciphersuite, types::SignatureScheme, OpenMlsCryptoProvider,
+    crypto::OpenMlsCrypto,
+    types::{Ciphersuite, SignatureScheme},
+    OpenMlsCryptoProvider,
 };
 use wire_e2e_identity::prelude::JwsAlgorithm;
 use zeroize::Zeroize;
@@ -17,14 +19,13 @@ impl super::E2eiEnrollment {
             .crypto()
             .signature_key_gen(ciphersuite.signature_algorithm())
             .map_err(MlsError::from)?;
-        E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), &sk[..])
+        E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), sk)
     }
 
     pub(super) fn get_sign_key_for_mls(&self) -> CryptoResult<Vec<u8>> {
         let sk = match self.ciphersuite.signature_algorithm() {
-            SignatureScheme::ECDSA_SECP256R1_SHA256
-            | SignatureScheme::ECDSA_SECP384R1_SHA384
-            | SignatureScheme::ECDSA_SECP521R1_SHA512 => self.sign_sk.to_vec(),
+            SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ECDSA_SECP384R1_SHA384 => self.sign_sk.to_vec(),
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => RustCrypto::normalize_p521_secret_key(&self.sign_sk).to_vec(),
             SignatureScheme::ED25519 => RustCrypto::normalize_ed25519_key(self.sign_sk.as_slice())
                 .map_err(MlsError::from)?
                 .to_bytes()
@@ -60,22 +61,9 @@ impl TryFrom<MlsCiphersuite> for JwsAlgorithm {
 pub struct E2eiSignatureKeypair(Vec<u8>);
 
 impl E2eiSignatureKeypair {
-    fn try_new(sc: SignatureScheme, sk: &[u8]) -> CryptoResult<Self> {
-        match sc {
-            SignatureScheme::ECDSA_SECP256R1_SHA256
-            | SignatureScheme::ECDSA_SECP384R1_SHA384
-            | SignatureScheme::ECDSA_SECP521R1_SHA512 => Ok(PkiKeypair::new(sc, sk.to_vec())
-                .map(|kp| kp.signing_key_bytes())
-                .map(Self)?),
-            SignatureScheme::ED25519 => Ok(PkiKeypair::new(sc, sk.to_vec())
-                .map_err(CryptoError::from)
-                .and_then(|kp| match kp {
-                    PkiKeypair::P256(_) | PkiKeypair::P384(_) => Err(CryptoError::ImplementationError),
-                    PkiKeypair::Ed25519(kp) => Ok(kp.keypair_bytes()),
-                })
-                .map(Self)?),
-            SignatureScheme::ED448 => Err(E2eIdentityError::NotYetSupported.into()),
-        }
+    pub fn try_new(sc: SignatureScheme, sk: Vec<u8>) -> CryptoResult<Self> {
+        let keypair = PkiKeypair::new(sc, sk)?;
+        Ok(Self(keypair.signing_key_bytes()))
     }
 }
 
@@ -83,6 +71,6 @@ impl TryFrom<&OpenMlsSignatureKeyPair> for E2eiSignatureKeypair {
     type Error = CryptoError;
 
     fn try_from(kp: &OpenMlsSignatureKeyPair) -> CryptoResult<Self> {
-        Self::try_new(kp.signature_scheme(), kp.private_key())
+        Self::try_new(kp.signature_scheme(), kp.private().to_vec())
     }
 }

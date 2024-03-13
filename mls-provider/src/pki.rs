@@ -5,6 +5,8 @@ use openmls_traits::{
     authentication_service::{CredentialAuthenticationStatus, CredentialRef},
     types::SignatureScheme,
 };
+use spki::der::referenced::RefToOwned;
+use spki::SignatureAlgorithmIdentifier;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Default)]
@@ -162,11 +164,75 @@ impl signature::Signer<Ed25519PkiSignature> for Ed25519PkiKeypair {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
+pub struct P521PkiVerifyingKey(ecdsa::VerifyingKey<p521::NistP521>);
+impl From<ecdsa::VerifyingKey<p521::NistP521>> for P521PkiVerifyingKey {
+    fn from(k: ecdsa::VerifyingKey<p521::NistP521>) -> Self {
+        Self(k)
+    }
+}
+
+impl std::ops::Deref for P521PkiVerifyingKey {
+    type Target = ecdsa::VerifyingKey<p521::NistP521>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl p521::pkcs8::EncodePublicKey for P521PkiVerifyingKey {
+    fn to_public_key_der(&self) -> spki::Result<spki::Document> {
+        self.0.to_public_key_der()
+    }
+}
+
+#[derive(Clone)]
+pub struct P521PkiKeypair(ecdsa::SigningKey<p521::NistP521>);
+
+impl spki::SignatureAlgorithmIdentifier for P521PkiKeypair {
+    type Params = spki::ObjectIdentifier;
+    const SIGNATURE_ALGORITHM_IDENTIFIER: spki::AlgorithmIdentifier<Self::Params> = spki::AlgorithmIdentifier {
+        oid: ecdsa::ECDSA_SHA512_OID,
+        parameters: None,
+    };
+}
+
+impl signature::Keypair for P521PkiKeypair {
+    type VerifyingKey = P521PkiVerifyingKey;
+    fn verifying_key(&self) -> Self::VerifyingKey {
+        (*self.0.verifying_key()).into()
+    }
+}
+
+impl signature::Signer<p521::ecdsa::DerSignature> for P521PkiKeypair {
+    fn try_sign(&self, message: &[u8]) -> Result<p521::ecdsa::DerSignature, p521::ecdsa::Error> {
+        let sk = p521::ecdsa::SigningKey::from(self.0.clone());
+        Ok(sk.try_sign(message)?.to_der())
+    }
+}
+
+#[derive(Clone)]
 pub enum PkiKeypair {
     P256(p256::ecdsa::SigningKey),
     P384(p384::ecdsa::SigningKey),
+    P521(P521PkiKeypair),
     Ed25519(Ed25519PkiKeypair),
+}
+
+impl std::fmt::Debug for PkiKeypair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PkiKeypair")
+            .field(
+                "type",
+                &match self {
+                    Self::P256(_k) => "P256",
+                    Self::P384(_k) => "P384",
+                    Self::P521(_k) => "P521",
+                    Self::Ed25519(_k) => "Ed25519",
+                },
+            )
+            .field("key", &"[REDACTED]")
+            .finish()
+    }
 }
 
 impl PkiKeypair {
@@ -174,18 +240,23 @@ impl PkiKeypair {
         match self {
             Self::P256(sk) => sk.to_bytes().to_vec(),
             Self::P384(sk) => sk.to_bytes().to_vec(),
+            Self::P521(sk) => sk.0.to_bytes().to_vec(),
             Self::Ed25519(sk) => sk.0.to_bytes().to_vec(),
         }
     }
 
-    pub fn public_key_identifier(&self) -> Vec<u8> {
-        let pk_bytes = match self {
+    pub fn public_key_bytes(&self) -> Vec<u8> {
+        match self {
             Self::P256(sk) => sk.verifying_key().to_sec1_bytes().to_vec(),
             Self::P384(sk) => sk.verifying_key().to_sec1_bytes().to_vec(),
+            Self::P521(sk) => sk.0.verifying_key().to_sec1_bytes().to_vec(),
             Self::Ed25519(sk) => sk.0.verifying_key().to_bytes().to_vec(),
-        };
+        }
+    }
+
+    pub fn public_key_identifier(&self) -> Vec<u8> {
         use sha1::Digest as _;
-        sha1::Sha1::digest(pk_bytes).to_vec()
+        sha1::Sha1::digest(self.public_key_bytes()).to_vec()
     }
 }
 
@@ -212,8 +283,7 @@ pub struct CertificateGenerationArgs<'a> {
 fn get_extended_keyusage(is_ca: bool) -> x509_cert::ext::pkix::ExtendedKeyUsage {
     let mut ext_keyusages = vec![];
     if !is_ca {
-        // ID_KP_CLIENT_AUTH
-        ext_keyusages.push(spki::ObjectIdentifier::new_unwrap("1.3.6.1.5.5.7.3.2"));
+        ext_keyusages.push(x509_cert::der::oid::db::rfc5280::ID_KP_CLIENT_AUTH);
     }
 
     x509_cert::ext::pkix::ExtendedKeyUsage(ext_keyusages)
@@ -349,13 +419,17 @@ impl PkiKeypair {
     pub fn new(signature_scheme: SignatureScheme, sk: Vec<u8>) -> MlsProviderResult<Self> {
         match signature_scheme {
             SignatureScheme::ECDSA_SECP256R1_SHA256 => Ok(PkiKeypair::P256(
-                p256::ecdsa::SigningKey::from_bytes(sk.as_slice().into())
+                p256::ecdsa::SigningKey::from_slice(sk.as_slice())
                     .map_err(|_| MlsProviderError::CertificateGenerationError)?,
             )),
             SignatureScheme::ECDSA_SECP384R1_SHA384 => Ok(PkiKeypair::P384(
-                p384::ecdsa::SigningKey::from_bytes(sk.as_slice().into())
+                p384::ecdsa::SigningKey::from_slice(sk.as_slice())
                     .map_err(|_| MlsProviderError::CertificateGenerationError)?,
             )),
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => Ok(PkiKeypair::P521(P521PkiKeypair(
+                ecdsa::SigningKey::<p521::NistP521>::from_slice(sk.as_slice())
+                    .map_err(|_| MlsProviderError::CertificateGenerationError)?,
+            ))),
             SignatureScheme::ED25519 => Ok(PkiKeypair::Ed25519(Ed25519PkiKeypair(
                 crate::RustCrypto::normalize_ed25519_key(sk.as_slice())
                     .map_err(|_| MlsProviderError::CertificateGenerationError)?,
@@ -364,11 +438,25 @@ impl PkiKeypair {
         }
     }
 
+    pub fn signature_algorithm(&self) -> spki::AlgorithmIdentifierRef {
+        match self {
+            Self::P256(_) => p256::ecdsa::SigningKey::SIGNATURE_ALGORITHM_IDENTIFIER,
+            Self::P384(_) => p384::ecdsa::SigningKey::SIGNATURE_ALGORITHM_IDENTIFIER,
+            Self::P521(_) => spki::AlgorithmIdentifierRef {
+                oid: ecdsa::ECDSA_SHA512_OID,
+                parameters: None,
+            },
+            Self::Ed25519(_) => ed25519_dalek::pkcs8::ALGORITHM_ID,
+        }
+    }
+
     pub fn spki(&self) -> MlsProviderResult<spki::SubjectPublicKeyInfoOwned> {
         match self {
             Self::P256(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(*sk.verifying_key())
                 .map_err(|_| MlsProviderError::CertificateGenerationError)?),
             Self::P384(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(*sk.verifying_key())
+                .map_err(|_| MlsProviderError::CertificateGenerationError)?),
+            Self::P521(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(*sk.0.verifying_key())
                 .map_err(|_| MlsProviderError::CertificateGenerationError)?),
             Self::Ed25519(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(sk.0.verifying_key())
                 .map_err(|_| MlsProviderError::CertificateGenerationError)?),
@@ -391,6 +479,7 @@ impl PkiKeypair {
         issuer_cert: &x509_cert::Certificate,
         revoked_cert_serial_numbers: Vec<Vec<u8>>,
     ) -> MlsProviderResult<x509_cert::crl::CertificateList> {
+        let signature_algorithm = self.signature_algorithm();
         let now = fluvio_wasm_timer::SystemTime::now()
             .duration_since(fluvio_wasm_timer::UNIX_EPOCH)
             .map_err(|_| MlsProviderError::CertificateGenerationError)?;
@@ -410,7 +499,7 @@ impl PkiKeypair {
 
         let tbs_cert_list = x509_cert::crl::TbsCertList {
             version: x509_cert::Version::V3,
-            signature: issuer_cert.signature_algorithm.clone(),
+            signature: signature_algorithm.ref_to_owned(),
             issuer: issuer_cert.tbs_certificate.subject.clone(),
             this_update: now,
             next_update: None,
@@ -433,6 +522,14 @@ impl PkiKeypair {
             PkiKeypair::P384(sk) => signature::Signer::<p384::ecdsa::DerSignature>::try_sign(sk, &tbs)?
                 .to_der()
                 .map_err(|_| MlsProviderError::CertificateGenerationError),
+            PkiKeypair::P521(sk) => {
+                let sk = p521::ecdsa::SigningKey::from(sk.0.clone());
+                let signature: p521::ecdsa::DerSignature = sk.try_sign(&tbs)?.to_der();
+
+                signature
+                    .to_der()
+                    .map_err(|_| MlsProviderError::CertificateGenerationError)
+            }
             PkiKeypair::Ed25519(sk) => Ok(sk.try_sign(&tbs)?.0.to_vec()),
         }?;
 
@@ -441,7 +538,7 @@ impl PkiKeypair {
 
         Ok(x509_cert::crl::CertificateList {
             tbs_cert_list,
-            signature_algorithm: issuer_cert.signature_algorithm.clone(),
+            signature_algorithm: signature_algorithm.ref_to_owned(),
             signature,
         })
     }
@@ -454,7 +551,6 @@ impl PkiKeypair {
     ) -> MlsProviderResult<x509_cert::Certificate> {
         let mut target = target.clone();
         target.tbs_certificate.issuer = signer_cert.tbs_certificate.subject.clone();
-        let our_spki = self.spki()?;
         let akid = self.akid()?;
         use x509_cert::ext::AsExtension as _;
         // Insert AKID
@@ -504,10 +600,18 @@ impl PkiKeypair {
             PkiKeypair::P384(sk) => signature::Signer::<p384::ecdsa::DerSignature>::try_sign(sk, &tbs)?
                 .to_der()
                 .map_err(|_| MlsProviderError::CertificateGenerationError),
+            PkiKeypair::P521(sk) => {
+                let sk = p521::ecdsa::SigningKey::from(sk.0.clone());
+                let signature: p521::ecdsa::DerSignature = sk.try_sign(&tbs)?.to_der();
+
+                signature
+                    .to_der()
+                    .map_err(|_| MlsProviderError::CertificateGenerationError)
+            }
             PkiKeypair::Ed25519(sk) => Ok(sk.try_sign(&tbs)?.0.to_vec()),
         }?;
 
-        target.signature_algorithm = our_spki.algorithm;
+        target.signature_algorithm = self.signature_algorithm().ref_to_owned();
         target.signature =
             spki::der::asn1::BitString::new(0, signature).map_err(|_| MlsProviderError::CertificateGenerationError)?;
 
@@ -573,6 +677,24 @@ impl PkiKeypair {
                     signer,
                     kp,
                     p384::ecdsa::DerSignature,
+                    args.profile,
+                    spki,
+                    serial_number,
+                    subject,
+                    args.org,
+                    args.domain,
+                    validity,
+                    args.alternative_names,
+                    args.crl_dps,
+                    args.is_ca,
+                    args.is_root
+                )
+            }
+            PkiKeypair::P521(kp) => {
+                impl_certgen!(
+                    signer,
+                    kp,
+                    p521::ecdsa::DerSignature,
                     args.profile,
                     spki,
                     serial_number,

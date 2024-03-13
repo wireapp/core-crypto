@@ -29,8 +29,7 @@ signature = "2.1"
 ecdsa = { version = "0.16", features = ["der", "pkcs8"] }
 p256 = { version = "0.13", features = ["pkcs8"] }
 p384 = { version = "0.13", features = ["pkcs8"] }
-# TODO: Uncomment this once p521 crate is ready
-# p521 = { version = "0.12", git = "https://github.com/RustCrypto/elliptic-curves", package = "p521" }
+p521 = { version = "0.13", features = ["pkcs8"] }
 hkdf = "0.12"
 spki = { version = "0.7", features = ["pem", "fingerprint"] }
 x509-cert = { version = "0.2", features = ["builder", "hazmat"] }
@@ -46,8 +45,8 @@ hex = "0.4"
 async-lock = "3.3"
 
 [dependencies.hpke]
-version = "0.10"
-features = ["x25519", "p256", "p384", "xyber768d00", "serde_impls"]
+version = "0.11"
+features = ["x25519", "p256", "p384", "p521", "xyber768d00"]
 
 [target.'cfg(not(target_os = "ios"))'.dependencies]
 core-crypto-keystore = { version = "^1.0.0-rc.55", path = "../keystore" }
