@@ -618,6 +618,24 @@ impl From<CustomConfiguration> for MlsCustomConfiguration {
     }
 }
 
+#[derive(Debug, Clone, uniffi::Record)]
+/// Dummy comment
+pub struct E2eiDumpedPkiEnv {
+    pub root_ca: String,
+    pub intermediates: Vec<String>,
+    pub crls: Vec<String>,
+}
+
+impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
+    fn from(value: core_crypto::e2e_identity::E2eiDumpedPkiEnv) -> Self {
+        Self {
+            root_ca: value.root_ca,
+            intermediates: value.intermediates,
+            crls: value.crls,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, uniffi::Enum)]
 #[repr(u8)]
 pub enum MlsCredentialType {
@@ -718,6 +736,9 @@ pub async fn core_crypto_new(
     ciphersuites: Ciphersuites,
     nb_key_package: Option<u32>,
 ) -> CoreCryptoResult<std::sync::Arc<CoreCrypto>> {
+    #[cfg(feature = "debug-logging")]
+    femme::with_level(femme::LevelFilter::Debug);
+
     let nb_key_package = nb_key_package
         .map(usize::try_from)
         .transpose()
@@ -749,6 +770,9 @@ pub async fn core_crypto_deferred_init(
     ciphersuites: Ciphersuites,
     nb_key_package: Option<u32>,
 ) -> CoreCryptoResult<std::sync::Arc<CoreCrypto>> {
+    #[cfg(feature = "debug-logging")]
+    femme::with_level(femme::LevelFilter::Debug);
+
     let nb_key_package = nb_key_package
         .map(usize::try_from)
         .transpose()
@@ -1582,6 +1606,15 @@ impl CoreCrypto {
             .map(std::sync::Arc::new)
             .map(E2eiEnrollment)
             .map(std::sync::Arc::new)?)
+    }
+
+    pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
+        Ok(self.central.lock().await.e2ei_dump_pki_env().await?.map(Into::into))
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
+    pub async fn e2ei_is_pki_env_setup(&self) -> bool {
+        self.central.lock().await.e2ei_is_pki_env_setup().await
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_register_acme_ca]

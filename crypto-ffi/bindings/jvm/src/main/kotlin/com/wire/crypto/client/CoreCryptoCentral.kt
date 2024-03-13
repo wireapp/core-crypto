@@ -155,6 +155,22 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
     }
 
     /**
+     * Dumps the PKI environment as PEM
+     *
+     * @return a struct with different fields representing the PKI environment as PEM strings
+     */
+    suspend fun e2eiDumpPKIEnv(): E2eiDumpedPkiEnv? {
+        return cc.e2eiDumpPkiEnv()
+    }
+
+    /**
+     * Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
+     */
+    suspend fun e2eiIsPKIEnvSetup(): Boolean {
+        return cc.e2eiIsPkiEnvSetup()
+    }
+
+    /**
      * Registers a Root Trust Anchor CA for the use in E2EI processing.
      *
      * Please note that without a Root Trust Anchor, all validations *will* fail;

@@ -19,7 +19,85 @@ impl From<NewCrlDistributionPoint> for Option<Vec<String>> {
     }
 }
 
+#[derive(Debug, Clone)]
+/// Dump of the PKI environemnt as PEM
+pub struct E2eiDumpedPkiEnv {
+    /// Root CA in use (i.e. Trust Anchor)
+    pub root_ca: String,
+    /// Intermediate CAs that are loaded
+    pub intermediates: Vec<String>,
+    /// CRLs registered in the PKI env
+    pub crls: Vec<String>,
+}
+
 impl MlsCentral {
+    /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
+    pub async fn e2ei_is_pki_env_setup(&self) -> bool {
+        self.mls_backend.is_pki_env_setup().await
+    }
+
+    /// Dumps the PKI environment as PEM
+    pub async fn e2ei_dump_pki_env(&self) -> CryptoResult<Option<E2eiDumpedPkiEnv>> {
+        if !self.e2ei_is_pki_env_setup().await {
+            return Ok(None);
+        }
+
+        use wire_e2e_identity::prelude::x509::RustyX509CheckError;
+        use x509_cert::der::pem::LineEnding;
+        use x509_cert::der::EncodePem as _;
+        let pki_env_lock = self.mls_backend.authentication_service().borrow().await;
+        let Some(pki_env) = &*pki_env_lock else {
+            return Ok(None);
+        };
+
+        let Some(root) = pki_env
+            .get_trust_anchors()
+            .map_err(|e| CryptoError::E2eiError(RustyX509CheckError::from(e).into()))?
+            .pop()
+        else {
+            return Ok(None);
+        };
+
+        let x509_cert::anchor::TrustAnchorChoice::Certificate(root) = &root.decoded_ta else {
+            return Ok(None);
+        };
+
+        let root_ca = root
+            .to_pem(LineEnding::LF)
+            .map_err(|e| CryptoError::E2eiError(RustyX509CheckError::from(e).into()))?;
+
+        let inner_intermediates = pki_env
+            .get_intermediates()
+            .map_err(|e| CryptoError::E2eiError(RustyX509CheckError::from(e).into()))?;
+
+        let mut intermediates = Vec::with_capacity(inner_intermediates.len());
+
+        for inter in inner_intermediates {
+            let pem_inter = inter
+                .decoded_cert
+                .to_pem(LineEnding::LF)
+                .map_err(|e| CryptoError::E2eiError(RustyX509CheckError::from(e).into()))?;
+            intermediates.push(pem_inter);
+        }
+
+        let inner_crls: Vec<Vec<u8>> = pki_env
+            .get_all_crls()
+            .map_err(|e| CryptoError::E2eiError(RustyX509CheckError::from(e).into()))?;
+
+        let mut crls = Vec::with_capacity(inner_crls.len());
+        for crl in inner_crls.into_iter() {
+            let crl_pem = x509_cert::der::pem::encode_string("X509 CRL", LineEnding::LF, &crl)
+                .map_err(|e| CryptoError::E2eiError(RustyX509CheckError::from(e).into()))?;
+            crls.push(crl_pem);
+        }
+
+        Ok(Some(E2eiDumpedPkiEnv {
+            root_ca,
+            intermediates,
+            crls,
+        }))
+    }
+
     /// Registers a Root Trust Anchor CA for the use in E2EI processing.
     ///
     /// Please note that without a Root Trust Anchor, all validations *will* fail;

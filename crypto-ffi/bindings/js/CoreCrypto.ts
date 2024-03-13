@@ -23,6 +23,7 @@ import initWasm, {
     NewAcmeOrder,
     NewAcmeAuthz,
     AcmeChallenge,
+    E2eiDumpedPkiEnv,
 } from "./wasm";
 
 // re-exports
@@ -30,6 +31,7 @@ export {
     NewAcmeOrder,
     NewAcmeAuthz,
     AcmeChallenge,
+    E2eiDumpedPkiEnv,
 };
 
 interface CoreCryptoRichError {
@@ -612,7 +614,7 @@ const mapWireIdentity = (ffiIdentity?: CoreCryptoFfiTypes.WireIdentity): WireIde
         displayName: ffiIdentity.display_name,
         domain: ffiIdentity.domain,
         certificate: ffiIdentity.certificate,
-        status: ffiIdentity.status,
+        status: DeviceStatus[ffiIdentity.status as unknown as keyof typeof DeviceStatus],
         thumbprint: ffiIdentity.thumbprint,
         serialNumber: ffiIdentity.serial_number,
         notBefore: ffiIdentity.not_before,
@@ -647,15 +649,15 @@ export enum DeviceStatus {
     /**
      * All is fine
      */
-    Valid,
+    Valid = 1,
     /**
      * The Credential's certificate is expired
      */
-    Expired,
+    Expired = 2,
     /**
      * The Credential's certificate is revoked
      */
-    Revoked,
+    Revoked = 3,
 }
 
 /**
@@ -2149,40 +2151,56 @@ export class CoreCrypto {
     }
 
     /**
-    * Registers a Root Trust Anchor CA for the use in E2EI processing.
-    *
-    * Please note that without a Root Trust Anchor, all validations *will* fail;
-    * So this is the first step to perform after initializing your E2EI client
-    *
-    * @param trustAnchorPEM - PEM certificate to anchor as a Trust Root
-    */
+     * Dumps the PKI environment as PEM
+     *
+     * @returns a struct with different fields representing the PKI environment as PEM strings
+     */
+    async e2eiDumpPKIEnv(): Promise<E2eiDumpedPkiEnv|undefined> {
+        return await this.#cc.e2ei_dump_pki_env();
+    }
+
+    /**
+     * @returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
+     */
+    async e2eiIsPKIEnvSetup(): Promise<boolean> {
+        return await this.#cc.e2ei_is_pki_env_setup();
+    }
+
+    /**
+     * Registers a Root Trust Anchor CA for the use in E2EI processing.
+     *
+     * Please note that without a Root Trust Anchor, all validations *will* fail;
+     * So this is the first step to perform after initializing your E2EI client
+     *
+     * @param trustAnchorPEM - PEM certificate to anchor as a Trust Root
+     */
     async e2eiRegisterAcmeCA(trustAnchorPEM: string): Promise<void> {
         return await this.#cc.e2ei_register_acme_ca(trustAnchorPEM);
     }
 
     /**
-    * Registers an Intermediate CA for the use in E2EI processing.
-    *
-    * Please note that a Root Trust Anchor CA is needed to validate Intermediate CAs;
-    * You **need** to have a Root CA registered before calling this
-    *
-    * @param certPEM - PEM certificate to register as an Intermediate CA
-    */
+     * Registers an Intermediate CA for the use in E2EI processing.
+     *
+     * Please note that a Root Trust Anchor CA is needed to validate Intermediate CAs;
+     * You **need** to have a Root CA registered before calling this
+     *
+     * @param certPEM - PEM certificate to register as an Intermediate CA
+     */
     async e2eiRegisterIntermediateCA(certPEM: string): Promise<string[] | undefined> {
         return await this.#cc.e2ei_register_intermediate_ca(certPEM);
     }
 
     /**
-    * Registers a CRL for the use in E2EI processing.
-    *
-    * Please note that a Root Trust Anchor CA is needed to validate CRLs;
-    * You **need** to have a Root CA registered before calling this
-    *
-    * @param crlDP - CRL Distribution Point; Basically the URL you fetched it from
-    * @param crlDER - DER representation of the CRL
-    *
-    * @returns a {@link CRLRegistration} with the dirty state of the new CRL (see struct) and its expiration timestamp
-    */
+     * Registers a CRL for the use in E2EI processing.
+     *
+     * Please note that a Root Trust Anchor CA is needed to validate CRLs;
+     * You **need** to have a Root CA registered before calling this
+     *
+     * @param crlDP - CRL Distribution Point; Basically the URL you fetched it from
+     * @param crlDER - DER representation of the CRL
+     *
+     * @returns a {@link CRLRegistration} with the dirty state of the new CRL (see struct) and its expiration timestamp
+     */
     async e2eiRegisterCRL(crlDP: string, crlDER: Uint8Array): Promise<CRLRegistration> {
         return await this.#cc.e2ei_register_crl(crlDP, crlDER);
     }
@@ -2260,8 +2278,8 @@ export class CoreCrypto {
         let state = await CoreCryptoError.asyncMapErr(
             this.#cc.e2ei_conversation_state(conversationId)
         );
-        // @ts-ignore
-        return E2eiConversationState[E2eiConversationState[state]];
+
+        return E2eiConversationState[state as unknown as keyof typeof E2eiConversationState];
     }
 
     /**
@@ -2333,8 +2351,7 @@ export class CoreCrypto {
      */
     async getCredentialInUse(groupInfo: Uint8Array, credentialType: CredentialType = CredentialType.X509): Promise<E2eiConversationState> {
         let state = await CoreCryptoError.asyncMapErr(this.#cc.get_credential_in_use(groupInfo, credentialType));
-        // @ts-ignore
-        return E2eiConversationState[E2eiConversationState[state]];
+        return E2eiConversationState[state as unknown as keyof typeof E2eiConversationState];
     }
 
     /**
@@ -2637,3 +2654,5 @@ export enum E2eiConversationState {
      */
     NotEnabled = 0x0003,
 }
+
+

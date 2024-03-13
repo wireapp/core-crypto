@@ -270,6 +270,31 @@ pub mod tests {
 
                     let mut identities = alice
                         .mls_central
+                        .get_device_identities(&id, &[alice_id.clone(), bob_id.clone(), rupert_id.clone()])
+                        .await
+                        .unwrap();
+
+                    let alice_identity =
+                        identities.remove(identities.iter().position(|i| i.display_name == "alice").unwrap());
+                    let bob_identity =
+                        identities.remove(identities.iter().position(|i| i.display_name == "bob").unwrap());
+                    let rupert_identity =
+                        identities.remove(identities.iter().position(|i| i.display_name == "rupert").unwrap());
+
+                    assert!(identities.is_empty());
+
+                    assert_eq!(alice_identity.status, DeviceStatus::Valid);
+                    assert_eq!(bob_identity.status, DeviceStatus::Valid);
+                    assert_eq!(rupert_identity.status, DeviceStatus::Revoked);
+
+                    assert_eq!(
+                        alice.mls_central.e2ei_conversation_state(&id).await.unwrap(),
+                        E2eiConversationState::NotVerified
+                    );
+
+                    // Do it a second time to avoid WPB-6904 happening again
+                    let mut identities = alice
+                        .mls_central
                         .get_device_identities(&id, &[alice_id, bob_id, rupert_id])
                         .await
                         .unwrap();
