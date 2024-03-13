@@ -33,6 +33,13 @@ impl Default for RustCrypto {
     }
 }
 
+#[inline]
+fn normalize_p521_secret_key(sk: &[u8]) -> zeroize::Zeroizing<[u8; 66]> {
+    let mut sk_buf = zeroize::Zeroizing::new([0u8; 66]);
+    sk_buf[66 - sk.len()..].copy_from_slice(sk);
+    sk_buf
+}
+
 impl RustCrypto {
     pub fn new_with_seed(seed: EntropySeed) -> Self {
         Self {
@@ -66,6 +73,7 @@ impl OpenMlsCrypto for RustCrypto {
             | Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
             | Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
             | Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+            | Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521
             | Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519 => Ok(()),
             _ => Err(CryptoError::UnsupportedCiphersuite),
         }
@@ -77,6 +85,7 @@ impl OpenMlsCrypto for RustCrypto {
             Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519,
             Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
             Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
+            Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
             Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519,
         ]
     }
@@ -214,6 +223,14 @@ impl OpenMlsCrypto for RustCrypto {
                 let pk = sk.verifying_key().to_encoded_point(false).to_bytes().into();
                 Ok((sk.to_bytes().to_vec(), pk))
             }
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
+                let sk = p521::ecdsa::SigningKey::random(&mut *rng);
+                let pk = p521::ecdsa::VerifyingKey::from(&sk)
+                    .to_encoded_point(false)
+                    .to_bytes()
+                    .into();
+                Ok((sk.to_bytes().to_vec(), pk))
+            }
             SignatureScheme::ED25519 => {
                 let k = ed25519_dalek::SigningKey::generate(&mut *rng);
                 let pk = k.verifying_key();
@@ -248,6 +265,14 @@ impl OpenMlsCrypto for RustCrypto {
 
                 k.verify(data, &signature).map_err(|_| CryptoError::InvalidSignature)
             }
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
+                let k = p521::ecdsa::VerifyingKey::from_sec1_bytes(pk).map_err(|_| CryptoError::CryptoLibraryError)?;
+
+                let signature =
+                    p521::ecdsa::Signature::from_der(signature).map_err(|_| CryptoError::InvalidSignature)?;
+
+                k.verify(data, &signature).map_err(|_| CryptoError::InvalidSignature)
+            }
             SignatureScheme::ED25519 => {
                 let k = ed25519_dalek::VerifyingKey::try_from(pk).map_err(|_| CryptoError::CryptoLibraryError)?;
 
@@ -273,6 +298,13 @@ impl OpenMlsCrypto for RustCrypto {
                 let k = p384::ecdsa::SigningKey::from_bytes(key.into()).map_err(|_| CryptoError::CryptoLibraryError)?;
                 let signature: p384::ecdsa::DerSignature =
                     k.try_sign(data).map_err(|_| CryptoError::CryptoLibraryError)?;
+                Ok(signature.to_bytes().into())
+            }
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
+                let k = p521::ecdsa::SigningKey::from_slice(&*normalize_p521_secret_key(key))
+                    .map_err(|_| CryptoError::CryptoLibraryError)?;
+                let signature: p521::ecdsa::DerSignature =
+                    k.try_sign(data).map_err(|_| CryptoError::CryptoLibraryError)?.to_der();
                 Ok(signature.to_bytes().into())
             }
             SignatureScheme::ED25519 => {
@@ -312,6 +344,11 @@ impl OpenMlsCrypto for RustCrypto {
             }
             HpkeConfig(HpkeKemType::DhKemP384, HpkeKdfType::HkdfSha384, HpkeAeadType::AesGcm256) => {
                 hpke_core::hpke_seal::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::DhP384HkdfSha384>(
+                    pk_r, info, aad, ptxt, &mut *rng,
+                )
+            }
+            HpkeConfig(HpkeKemType::DhKemP521, HpkeKdfType::HkdfSha512, HpkeAeadType::AesGcm256) => {
+                hpke_core::hpke_seal::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha512, hpke::kem::DhP521HkdfSha512>(
                     pk_r, info, aad, ptxt, &mut *rng,
                 )
             }
@@ -362,6 +399,15 @@ impl OpenMlsCrypto for RustCrypto {
             }
             HpkeConfig(HpkeKemType::DhKemP384, HpkeKdfType::HkdfSha384, HpkeAeadType::AesGcm256) => {
                 hpke_core::hpke_open::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::DhP384HkdfSha384>(
+                    sk_r,
+                    input.kem_output.as_slice(),
+                    info,
+                    aad,
+                    input.ciphertext.as_slice(),
+                )?
+            }
+            HpkeConfig(HpkeKemType::DhKemP521, HpkeKdfType::HkdfSha512, HpkeAeadType::AesGcm256) => {
+                hpke_core::hpke_open::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha512, hpke::kem::DhP521HkdfSha512>(
                     sk_r,
                     input.kem_output.as_slice(),
                     info,
@@ -424,6 +470,13 @@ impl OpenMlsCrypto for RustCrypto {
                         hpke::kem::DhP384HkdfSha384,
                     >(pk_r, info, exporter_context, exporter_length, &mut *rng)?
                 }
+                HpkeConfig(HpkeKemType::DhKemP521, HpkeKdfType::HkdfSha512, HpkeAeadType::AesGcm256) => {
+                    hpke_core::hpke_export_tx::<
+                        hpke::aead::AesGcm256,
+                        hpke::kdf::HkdfSha512,
+                        hpke::kem::DhP521HkdfSha512,
+                    >(pk_r, info, exporter_context, exporter_length, &mut *rng)?
+                }
                 HpkeConfig(HpkeKemType::X25519Kyber768Draft00, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
                     hpke_core::hpke_export_tx::<
                         hpke::aead::AesGcm128,
@@ -478,6 +531,13 @@ impl OpenMlsCrypto for RustCrypto {
                         hpke::kem::DhP384HkdfSha384,
                     >(enc, sk_r, info, exporter_context, exporter_length)?
                 }
+                HpkeConfig(HpkeKemType::DhKemP521, HpkeKdfType::HkdfSha512, HpkeAeadType::AesGcm256) => {
+                    hpke_core::hpke_export_rx::<
+                        hpke::aead::AesGcm256,
+                        hpke::kdf::HkdfSha512,
+                        hpke::kem::DhP521HkdfSha512,
+                    >(enc, sk_r, info, exporter_context, exporter_length)?
+                }
                 HpkeConfig(HpkeKemType::X25519Kyber768Draft00, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
                     hpke_core::hpke_export_rx::<
                         hpke::aead::AesGcm128,
@@ -497,6 +557,7 @@ impl OpenMlsCrypto for RustCrypto {
         match config.0 {
             HpkeKemType::DhKemP256 => hpke_core::hpke_derive_keypair::<hpke::kem::DhP256HkdfSha256>(ikm),
             HpkeKemType::DhKemP384 => hpke_core::hpke_derive_keypair::<hpke::kem::DhP384HkdfSha384>(ikm),
+            HpkeKemType::DhKemP521 => hpke_core::hpke_derive_keypair::<hpke::kem::DhP521HkdfSha512>(ikm),
             HpkeKemType::DhKem25519 => hpke_core::hpke_derive_keypair::<hpke::kem::X25519HkdfSha256>(ikm),
             HpkeKemType::X25519Kyber768Draft00 => {
                 hpke_core::hpke_derive_keypair::<hpke::kem::X25519Kyber768Draft00>(ikm)
