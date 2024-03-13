@@ -77,6 +77,7 @@ impl MlsCentral {
 
 impl MlsConversation {
     async fn e2ei_conversation_state(&self, backend: &MlsCryptoProvider) -> CryptoResult<E2eiConversationState> {
+        backend.authentication_service().refresh_time_of_interest().await;
         Ok(compute_state(
             self.group.members_credentials(),
             MlsCredentialType::X509,

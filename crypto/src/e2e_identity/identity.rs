@@ -73,6 +73,10 @@ impl MlsCentral {
         conversation_id: &ConversationId,
         client_ids: &[ClientId],
     ) -> CryptoResult<Vec<WireIdentity>> {
+        self.mls_backend
+            .authentication_service()
+            .refresh_time_of_interest()
+            .await;
         self.get_conversation(conversation_id)
             .await?
             .read()
@@ -94,6 +98,10 @@ impl MlsCentral {
         conversation_id: &ConversationId,
         user_ids: &[String],
     ) -> CryptoResult<HashMap<String, Vec<WireIdentity>>> {
+        self.mls_backend
+            .authentication_service()
+            .refresh_time_of_interest()
+            .await;
         self.get_conversation(conversation_id)
             .await?
             .read()
