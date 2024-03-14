@@ -9,9 +9,11 @@ use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
-    mls::credential::crl::extract_dp,
+    e2e_identity::init_certificates::NewCrlDistributionPoint, mls::credential::crl::get_new_crl_distribution_points,
+};
+use crate::{
+    mls::credential::crl::extract_crl_uris_from_credentials,
     prelude::{Client, MlsConversation, MlsProposalRef},
     CryptoError, CryptoResult, MlsError,
 };
@@ -31,11 +33,11 @@ impl MlsConversation {
             .ok_or(CryptoError::IdentityInitializationError)?
             .signature_key;
 
-        let crl_new_distribution_points = match key_package.credential().mls_credential() {
-            openmls::prelude::MlsCredentialType::X509(cert) => Some(extract_dp(cert)?),
-            _ => None,
-        }
-        .into();
+        let crl_new_distribution_points = get_new_crl_distribution_points(
+            backend,
+            extract_crl_uris_from_credentials(std::iter::once(key_package.credential().mls_credential()))?,
+        )
+        .await?;
 
         let (proposal, proposal_ref) = self
             .group

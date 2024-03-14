@@ -3,28 +3,37 @@ use crate::prelude::MlsCentral;
 use crate::{CryptoError, CryptoResult};
 use core_crypto_keystore::entities::E2eiCrl;
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::{Certificate, MlsCredentialType, Proposal, StagedCommit};
+use openmls::{
+    group::MlsGroup,
+    prelude::{Certificate, MlsCredentialType, Proposal, StagedCommit},
+};
 use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::HashSet;
 use wire_e2e_identity::prelude::x509::extract_crl_uris;
 
+pub(crate) fn extract_crl_uris_from_credentials<'a>(
+    mut credentials: impl Iterator<Item = &'a MlsCredentialType>,
+) -> CryptoResult<HashSet<String>> {
+    credentials.try_fold(HashSet::new(), |mut acc, cred| {
+        if let MlsCredentialType::X509(cert) = cred {
+            acc.extend(extract_dp(cert)?);
+        }
+
+        Ok(acc)
+    })
+}
+
 pub(crate) fn extract_crl_uris_from_proposals(proposals: &[Proposal]) -> CryptoResult<HashSet<String>> {
-    proposals
-        .iter()
-        .filter_map(|p| match p {
-            Proposal::Add(add) => Some(add.key_package().leaf_node()),
-            Proposal::Update(update) => Some(update.leaf_node()),
-            _ => None,
-        })
-        .map(|ln| ln.credential().mls_credential())
-        .filter_map(|c| match c {
-            MlsCredentialType::X509(cert) => Some(cert),
-            _ => None,
-        })
-        .try_fold(HashSet::new(), |mut acc, c| {
-            acc.extend(extract_dp(c)?);
-            CryptoResult::Ok(acc)
-        })
+    extract_crl_uris_from_credentials(
+        proposals
+            .iter()
+            .filter_map(|p| match p {
+                Proposal::Add(add) => Some(add.key_package().leaf_node()),
+                Proposal::Update(update) => Some(update.leaf_node()),
+                _ => None,
+            })
+            .map(|ln| ln.credential().mls_credential()),
+    )
 }
 
 pub(crate) fn extract_crl_uris_from_update_path(commit: &StagedCommit) -> CryptoResult<HashSet<String>> {
@@ -36,11 +45,15 @@ pub(crate) fn extract_crl_uris_from_update_path(commit: &StagedCommit) -> Crypto
     Ok(HashSet::new())
 }
 
+pub(crate) fn extract_crl_uris_from_group(group: &MlsGroup) -> CryptoResult<HashSet<String>> {
+    extract_crl_uris_from_credentials(group.members_credentials().map(|c| c.mls_credential()))
+}
+
 pub(crate) fn extract_dp(cert: &Certificate) -> CryptoResult<HashSet<String>> {
     Ok(cert
         .certificates
         .iter()
-        .try_fold(std::collections::HashSet::new(), |mut acc, cert| {
+        .try_fold(HashSet::new(), |mut acc, cert| {
             use x509_cert::der::Decode as _;
             let cert = x509_cert::Certificate::from_der(cert.as_slice())?;
             if let Some(crl_uris) = extract_crl_uris(&cert).map_err(|e| CryptoError::E2eiError(e.into()))? {
@@ -54,22 +67,17 @@ pub(crate) fn extract_dp(cert: &Certificate) -> CryptoResult<HashSet<String>> {
 
 pub(crate) async fn get_new_crl_distribution_points(
     backend: &MlsCryptoProvider,
-    crl_dps: HashSet<String>,
+    mut crl_dps: HashSet<String>,
 ) -> CryptoResult<NewCrlDistributionPoint> {
-    if !crl_dps.is_empty() {
-        let stored_crls = backend.key_store().find_all::<E2eiCrl>(Default::default()).await?;
-        let stored_crl_dps: HashSet<&str> = stored_crls.iter().map(|crl| crl.distribution_point.as_str()).collect();
-
-        Ok(Some(
-            crl_dps
-                .into_iter()
-                .filter(|dp| stored_crl_dps.contains(&dp.as_str()))
-                .collect(),
-        )
-        .into())
-    } else {
-        Ok(None.into())
+    if crl_dps.is_empty() {
+        return Ok(None.into());
     }
+
+    let stored_crls = backend.key_store().find_all::<E2eiCrl>(Default::default()).await?;
+    let stored_crl_dps: HashSet<&str> = stored_crls.iter().map(|crl| crl.distribution_point.as_str()).collect();
+    crl_dps.retain(|dp| !stored_crl_dps.contains(&dp.as_str()));
+
+    Ok(Some(crl_dps).into())
 }
 
 impl MlsCentral {
@@ -100,13 +108,7 @@ impl MlsCentral {
         if let Some(crl_dp) = ee_crl_dp.take() {
             crl_new_distribution_points.extend(crl_dp);
         }
-        let crl_new_distribution_points = if !crl_new_distribution_points.is_empty() {
-            Some(crl_new_distribution_points)
-        } else {
-            None
-        }
-        .into();
 
-        Ok(crl_new_distribution_points)
+        get_new_crl_distribution_points(&self.mls_backend, crl_new_distribution_points).await
     }
 }
