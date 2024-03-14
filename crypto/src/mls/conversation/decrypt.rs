@@ -17,23 +17,24 @@ use openmls::{
     },
 };
 use openmls_traits::OpenMlsCryptoProvider;
-use std::collections::HashSet;
+
 use tls_codec::Deserialize;
 
 use core_crypto_keystore::entities::MlsPendingMessage;
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
-    e2e_identity::conversation_state::compute_state,
+    e2e_identity::{conversation_state::compute_state, init_certificates::NewCrlDistributionPoint},
     group_store::GroupStoreValue,
     mls::{
         client::Client,
         conversation::renew::Renew,
-        credential::crl::{
-            extract_crl_uris_from_proposals, extract_crl_uris_from_update_path, get_new_crl_distribution_points,
+        credential::{
+            crl::{
+                extract_crl_uris_from_proposals, extract_crl_uris_from_update_path, get_new_crl_distribution_points,
+            },
+            ext::CredentialExt,
         },
-        credential::ext::CredentialExt,
         ClientId, ConversationId, MlsCentral, MlsConversation,
     },
     prelude::{E2eiConversationState, MlsProposalBundle, WireIdentity},
@@ -189,12 +190,8 @@ impl MlsConversation {
                     .collect();
 
                 // - This requires a change in OpenMLS to get access to it
-                let crl_dps_from_proposals = extract_crl_uris_from_proposals(proposal_refs.as_ref())?;
-                let crl_dps_from_update_path = extract_crl_uris_from_update_path(&staged_commit)?;
-
-                let mut crl_dps = HashSet::new();
-                crl_dps.extend(crl_dps_from_proposals);
-                crl_dps.extend(crl_dps_from_update_path);
+                let mut crl_dps = extract_crl_uris_from_proposals(&proposal_refs)?;
+                crl_dps.extend(extract_crl_uris_from_update_path(&staged_commit)?);
 
                 let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps).await?;
 

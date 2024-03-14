@@ -1,7 +1,7 @@
-use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
-use crate::mls::credential::crl::extract_dp;
 use crate::{
+    e2e_identity::init_certificates::NewCrlDistributionPoint,
     group_store::GroupStore,
+    mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{
         ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationConfiguration,
         MlsCustomConfiguration, MlsError,
@@ -11,7 +11,6 @@ use core_crypto_keystore::entities::PersistedMlsPendingGroup;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
-use std::collections::HashSet;
 use tls_codec::Deserialize;
 
 /// Contains everything client needs to know after decrypting an (encrypted) Welcome message
@@ -80,23 +79,9 @@ impl MlsCentral {
                 .await?;
 
         // We wait for the group to be created then we iterate through all members
-        let crl_new_distribution_points = conversation
-            .group
-            .members_credentials()
-            .filter_map(|c| match c.mls_credential() {
-                openmls::prelude::MlsCredentialType::X509(cert) => Some(cert),
-                _ => None,
-            })
-            .try_fold(HashSet::new(), |mut acc, c| {
-                acc.extend(extract_dp(c)?);
-                CryptoResult::Ok(acc)
-            })?;
-        let crl_new_distribution_points = if crl_new_distribution_points.is_empty() {
-            None
-        } else {
-            Some(crl_new_distribution_points)
-        }
-        .into();
+        let crl_new_distribution_points =
+            get_new_crl_distribution_points(&self.mls_backend, extract_crl_uris_from_group(&conversation.group)?)
+                .await?;
 
         let id = conversation.id.clone();
         self.mls_groups.insert(id.clone(), conversation);

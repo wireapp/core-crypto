@@ -1,5 +1,8 @@
 use crate::{
-    mls::credential::ext::CredentialExt,
+    mls::credential::{
+        crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
+        ext::CredentialExt,
+    },
     prelude::{CryptoError, CryptoResult, MlsConversation, MlsConversationDecryptMessage},
 };
 use mls_crypto_provider::MlsCryptoProvider;
@@ -78,6 +81,9 @@ impl MlsConversation {
         // We return self identity here, probably not necessary to check revocation
         let identity = own_leaf.credential().extract_identity(None)?;
 
+        let crl_new_distribution_points =
+            get_new_crl_distribution_points(backend, extract_crl_uris_from_group(&self.group)?).await?;
+
         Ok(MlsConversationDecryptMessage {
             app_msg: None,
             proposals: vec![],
@@ -87,7 +93,7 @@ impl MlsConversation {
             has_epoch_changed: true,
             identity,
             buffered_messages: None,
-            crl_new_distribution_points: None.into(),
+            crl_new_distribution_points,
         })
     }
 }

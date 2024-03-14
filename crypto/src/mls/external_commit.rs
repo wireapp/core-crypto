@@ -26,11 +26,10 @@ use core_crypto_keystore::{
     CryptoKeystoreMls,
 };
 
-use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
-    e2e_identity::conversation_state::compute_state,
+    e2e_identity::{conversation_state::compute_state, init_certificates::NewCrlDistributionPoint},
     group_store::GroupStoreValue,
-    mls::credential::crl::extract_dp,
+    mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{
         decrypt::MlsBufferedConversationDecryptMessage, id::ClientId, ConversationId, CoreCryptoCallbacks, CryptoError,
         CryptoResult, E2eiConversationState, MlsCentral, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
@@ -127,11 +126,8 @@ impl MlsCentral {
         let group_info = group_info.ok_or(CryptoError::ImplementationError)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
 
-        let crl_new_distribution_points = match cb.credential.mls_credential() {
-            openmls::prelude::MlsCredentialType::X509(cert) => Some(extract_dp(cert)?),
-            _ => None,
-        }
-        .into();
+        let crl_new_distribution_points =
+            get_new_crl_distribution_points(&self.mls_backend, extract_crl_uris_from_group(&group)?).await?;
 
         self.mls_backend
             .key_store()
