@@ -7,13 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.53] - 2024-03-15
 
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.53" unreleased=true}}
+</details>
+
+* Fixed expired certificates in credentials being verified in MLS
 
 ## [1.0.0-rc.52] - 2024-03-14
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.52" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.52"}}
 </details>
 
 * Fixed the handling of newly seen CRL Distribution Points (`new_crl_distribution_points` field in the relevant structs)
