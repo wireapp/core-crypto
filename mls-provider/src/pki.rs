@@ -112,7 +112,8 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for P
                                 // return CredentialAuthenticationStatus::Revoked;
                             }
                             PathValidationStatus::InvalidNotAfterDate => {
-                                return CredentialAuthenticationStatus::Expired;
+                                // ? Expired credentials are A-OK. They still degrade conversations though.
+                                // return CredentialAuthenticationStatus::Expired;
                             }
                             _ => return CredentialAuthenticationStatus::Invalid,
                         }
