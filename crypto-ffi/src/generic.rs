@@ -1652,16 +1652,18 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
     pub async fn e2ei_mls_init_only(
         &self,
-        enrollment: std::sync::Arc<E2eiEnrollment>,
+        mut enrollment: std::sync::Arc<E2eiEnrollment>,
         certificate_chain: String,
         nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<Option<Vec<String>>> {
-        if std::sync::Arc::strong_count(&enrollment) > 1 {
+        while std::sync::Arc::strong_count(&enrollment) > 1 {
             unsafe {
                 // it is required because in order to pass the enrollment to Rust, uniffi lowers it by cloning the Arc
                 // hence here the Arc has a strong_count of 2. We decrement it manually then drop it with `try_unwrap`.
                 // We have to do this since this instance contains private keys that have to be zeroed once dropped.
-                std::sync::Arc::decrement_strong_count(std::sync::Arc::as_ptr(&enrollment));
+                let ptr = std::sync::Arc::into_raw(enrollment);
+                std::sync::Arc::decrement_strong_count(ptr);
+                enrollment = std::sync::Arc::from_raw(ptr);
             }
         }
         let e2ei = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
@@ -1686,18 +1688,21 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_rotate_all]
     pub async fn e2ei_rotate_all(
         &self,
-        enrollment: std::sync::Arc<E2eiEnrollment>,
+        mut enrollment: std::sync::Arc<E2eiEnrollment>,
         certificate_chain: String,
         new_key_packages_count: u32,
     ) -> CoreCryptoResult<RotateBundle> {
-        if std::sync::Arc::strong_count(&enrollment) > 1 {
+        while std::sync::Arc::strong_count(&enrollment) > 1 {
             unsafe {
                 // it is required because in order to pass the enrollment to Rust, uniffi lowers it by cloning the Arc
                 // hence here the Arc has a strong_count of 2. We decrement it manually then drop it with `try_unwrap`.
                 // We have to do this since this instance contains private keys that have to be zeroed once dropped.
-                std::sync::Arc::decrement_strong_count(std::sync::Arc::as_ptr(&enrollment));
+                let ptr = std::sync::Arc::into_raw(enrollment);
+                std::sync::Arc::decrement_strong_count(ptr);
+                enrollment = std::sync::Arc::from_raw(ptr);
             }
         }
+
         let e2ei = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
         let e2ei = std::sync::Arc::into_inner(e2ei.0)
             .ok_or_else(|| CryptoError::LockPoisonError)?
