@@ -61,9 +61,8 @@ pub struct MlsConversationDecryptMessage {
     /// Is the epoch changed after decrypting this message
     pub has_epoch_changed: bool,
     /// Identity claims present in the sender credential
-    /// Only present when the credential is a x509 certificate
     /// Present for all messages
-    pub identity: Option<WireIdentity>,
+    pub identity: WireIdentity,
     /// Only set when the decrypted message is a commit.
     /// Contains buffered messages for next epoch which were received before the commit creating the epoch
     /// because the DS did not fan them out in order.
@@ -88,7 +87,7 @@ pub struct MlsBufferedConversationDecryptMessage {
     /// see [MlsConversationDecryptMessage]
     pub has_epoch_changed: bool,
     /// see [MlsConversationDecryptMessage]
-    pub identity: Option<WireIdentity>,
+    pub identity: WireIdentity,
     /// see [MlsConversationDecryptMessage]
     pub crl_new_distribution_points: NewCrlDistributionPoint,
 }
@@ -131,9 +130,13 @@ impl MlsConversation {
         let message = self.parse_message(backend, message).await?;
 
         let credential = message.credential();
-        let identity = credential.extract_identity(backend.authentication_service().borrow().await.as_ref())?;
 
-        let sender_client_id = credential.identity().into();
+        let identity = credential.extract_identity(
+            self.ciphersuite(),
+            backend.authentication_service().borrow().await.as_ref(),
+        )?;
+
+        let sender_client_id = credential.credential.identity().into();
 
         let decrypted = match message.into_content() {
             ProcessedMessageContent::ApplicationMessage(app_msg) => MlsConversationDecryptMessage {

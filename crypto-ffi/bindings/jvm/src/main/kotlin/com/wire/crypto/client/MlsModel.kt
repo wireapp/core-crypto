@@ -60,6 +60,11 @@ enum class CredentialType {
     }
 }
 
+fun com.wire.crypto.MlsCredentialType.lift() = when (this) {
+    com.wire.crypto.MlsCredentialType.BASIC -> CredentialType.Basic
+    com.wire.crypto.MlsCredentialType.X509 -> CredentialType.X509
+}
+
 @JvmInline
 value class MLSGroupId(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
@@ -202,7 +207,12 @@ fun com.wire.crypto.ConversationInitBundle.lift() =
     CommitBundle(commit.toMlsMessage(), null, groupInfo.lift(), crlNewDistributionPoints?.toCrlDistributionPoint())
 
 fun com.wire.crypto.MemberAddedMessages.lift() =
-    CommitBundle(commit.toMlsMessage(), welcome.toWelcome(), groupInfo.lift(), crlNewDistributionPoints?.toCrlDistributionPoint())
+    CommitBundle(
+        commit.toMlsMessage(),
+        welcome.toWelcome(),
+        groupInfo.lift(),
+        crlNewDistributionPoints?.toCrlDistributionPoint()
+    )
 
 /**
  * Returned when a Proposal is created. Helps roll backing a local proposal
@@ -300,7 +310,7 @@ data class DecryptedMessage(
      * Only present when the credential is a x509 certificate
      * Present for all messages
      */
-    val identity: WireIdentity?,
+    val identity: WireIdentity,
     /**
      * Identity claims present in the sender credential
      * Only present when the credential is a x509 certificate
@@ -354,7 +364,7 @@ fun com.wire.crypto.DecryptedMessage.lift() = DecryptedMessage(
     commitDelay?.toLong(),
     senderClientId?.toClientId(),
     hasEpochChanged,
-    identity?.lift(),
+    identity.lift(),
     bufferedMessages?.map { it.lift() },
     crlNewDistributionPoints?.toCrlDistributionPoint()
 )
@@ -376,7 +386,7 @@ data class BufferedDecryptedMessage(
     /** @see DecryptedMessage.hasEpochChanged */
     val hasEpochChanged: Boolean,
     /** @see DecryptedMessage.identity */
-    val identity: WireIdentity?,
+    val identity: WireIdentity,
     /** @see DecryptedMessage.crlNewDistributionPoints */
     val crlNewDistributionPoints: CrlDistributionPoints?,
 ) {
@@ -422,7 +432,7 @@ fun com.wire.crypto.BufferedDecryptedMessage.lift() = BufferedDecryptedMessage(
     commitDelay?.toLong(),
     senderClientId?.toClientId(),
     hasEpochChanged,
-    identity?.lift(),
+    identity.lift(),
     crlNewDistributionPoints?.toCrlDistributionPoint()
 )
 
@@ -434,6 +444,31 @@ data class WireIdentity(
      * Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
      */
     val clientId: String,
+    /**
+     * Status of the Credential at the moment T when this object is created
+     */
+    val status: DeviceStatus,
+    /**
+     * MLS thumbprint
+     */
+    val thumbprint: String,
+    /**
+     * Indicates whether the credential is Basic or X509
+     */
+    val credentialType: CredentialType,
+    /**
+     * In case [credentialType] is [CredentialType.X509] this is populated
+     */
+    val x509Identity: X509Identity?,
+)
+
+fun com.wire.crypto.WireIdentity.lift() =
+    WireIdentity(clientId, status.lift(), thumbprint, credentialType.lift(), x509Identity?.lift())
+
+/**
+ * Represents the parts of WireIdentity that are specific to a X509 certificate (and not a Basic one).
+ */
+data class X509Identity(
     /**
      * user handle e.g. `john_wire`
      */
@@ -451,14 +486,6 @@ data class WireIdentity(
      */
     val certificate: String,
     /**
-     * Status of the Credential at the moment T when this object is created
-     */
-    val status: DeviceStatus,
-    /**
-     * MLS thumbprint
-     */
-    val thumbprint: String,
-    /**
      * X509 certificate serial number
      */
     val serialNumber: String,
@@ -472,8 +499,16 @@ data class WireIdentity(
     val notAfter: java.time.Instant,
 )
 
-fun com.wire.crypto.WireIdentity.lift() =
-    WireIdentity(clientId, handle, displayName, domain, certificate, status.lift(), thumbprint, serialNumber, java.time.Instant.ofEpochSecond(notBefore.toLong()), java.time.Instant.ofEpochSecond(notAfter.toLong()))
+fun com.wire.crypto.X509Identity.lift() =
+    X509Identity(
+        handle,
+        displayName,
+        domain,
+        certificate,
+        serialNumber,
+        java.time.Instant.ofEpochSecond(notBefore.toLong()),
+        java.time.Instant.ofEpochSecond(notAfter.toLong())
+    )
 
 /**
  * Indicates the standalone status of a device Credential in a MLS group at a moment T. This does not represent the

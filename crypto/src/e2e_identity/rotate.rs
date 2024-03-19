@@ -76,9 +76,10 @@ impl MlsCentral {
         let client_id = cb.credential().identity().into();
         let sign_keypair = Some((&cb.signature_key).try_into()?);
         let existing_identity = cb
-            .credential()
-            .extract_identity(None)?
-            .ok_or(E2eIdentityError::InvalidIdentity)?;
+            .to_mls_credential_with_key()
+            .extract_identity(ciphersuite, None)?
+            .x509_identity
+            .ok_or(E2eIdentityError::ImplementationError)?;
 
         let display_name = display_name.unwrap_or(existing_identity.display_name);
         let handle = handle.unwrap_or(existing_identity.handle);
@@ -476,12 +477,15 @@ pub mod tests {
                         let new_credentials = rotate_bundle
                             .new_key_packages
                             .iter()
-                            .map(|kp| kp.leaf_node().credential());
+                            .map(|kp| kp.leaf_node().to_credential_with_key());
                         for c in new_credentials {
-                            assert_eq!(c.credential_type(), openmls::prelude::CredentialType::X509);
-                            let identity = c.extract_identity(None).unwrap().unwrap();
-                            assert_eq!(identity.display_name, NEW_DISPLAY_NAME);
-                            assert_eq!(identity.handle, format!("wireapp://%40{NEW_HANDLE}@world.com"));
+                            assert_eq!(c.credential.credential_type(), openmls::prelude::CredentialType::X509);
+                            let identity = c.extract_identity(case.ciphersuite(), None).unwrap();
+                            assert_eq!(identity.x509_identity.as_ref().unwrap().display_name, NEW_DISPLAY_NAME);
+                            assert_eq!(
+                                identity.x509_identity.as_ref().unwrap().handle,
+                                format!("wireapp://%40{NEW_HANDLE}@world.com")
+                            );
                         }
 
                         // Alice has to delete her old KeyPackages
@@ -662,9 +666,15 @@ pub mod tests {
                         .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
                         .await
                         .unwrap();
-                    let identity = cb.credential().extract_identity(None).unwrap().unwrap();
-                    assert_eq!(identity.display_name, NEW_DISPLAY_NAME);
-                    assert_eq!(identity.handle, format!("wireapp://%40{NEW_HANDLE}@world.com"));
+                    let identity = cb
+                        .to_mls_credential_with_key()
+                        .extract_identity(case.ciphersuite(), None)
+                        .unwrap();
+                    assert_eq!(identity.x509_identity.as_ref().unwrap().display_name, NEW_DISPLAY_NAME);
+                    assert_eq!(
+                        identity.x509_identity.as_ref().unwrap().handle,
+                        format!("wireapp://%40{NEW_HANDLE}@world.com")
+                    );
 
                     // but keeps her old one since it's referenced from some KeyPackages
                     let old_spk = SignaturePublicKey::from(old_cb.signature_key.public());
@@ -713,9 +723,15 @@ pub mod tests {
                         .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
                         .await
                         .unwrap();
-                    let identity = cb.credential().extract_identity(None).unwrap().unwrap();
-                    assert_eq!(identity.display_name, NEW_DISPLAY_NAME);
-                    assert_eq!(identity.handle, format!("wireapp://%40{NEW_HANDLE}@world.com"));
+                    let identity = cb
+                        .to_mls_credential_with_key()
+                        .extract_identity(case.ciphersuite(), None)
+                        .unwrap();
+                    assert_eq!(identity.x509_identity.as_ref().unwrap().display_name, NEW_DISPLAY_NAME);
+                    assert_eq!(
+                        identity.x509_identity.as_ref().unwrap().handle,
+                        format!("wireapp://%40{NEW_HANDLE}@world.com")
+                    );
 
                     assert_eq!(
                         alice_central
@@ -751,6 +767,7 @@ pub mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
+
                         alice_central
                             .mls_central
                             .invite_all(&case, &id, [&mut bob_central.mls_central])
@@ -943,8 +960,14 @@ pub mod tests {
                                 .await
                                 .unwrap();
                             let alice_old_identity = alice_old_identities.first().unwrap();
-                            assert_ne!(alice_old_identity.display_name, new_display_name);
-                            assert_ne!(alice_old_identity.handle, format!("{new_handle}@world.com"));
+                            assert_ne!(
+                                alice_old_identity.x509_identity.as_ref().unwrap().display_name,
+                                new_display_name
+                            );
+                            assert_ne!(
+                                alice_old_identity.x509_identity.as_ref().unwrap().handle,
+                                format!("{new_handle}@world.com")
+                            );
 
                             // Alice issues an Update commit to replace her current identity
                             let commit = alice_central.mls_central.e2ei_rotate(&id, &cb).await.unwrap();

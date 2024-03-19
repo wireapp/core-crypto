@@ -610,7 +610,7 @@ pub struct DecryptedMessage {
     sender_client_id: Option<Vec<u8>>,
     /// true when the decrypted message resulted in an epoch change i.e. it was a commit
     has_epoch_changed: bool,
-    identity: Option<WireIdentity>,
+    identity: WireIdentity,
     buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
     /// New CRL Distribution of members of this group
     crl_new_distribution_points: Option<Vec<String>>,
@@ -649,7 +649,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             commit_delay,
             sender_client_id: from.sender_client_id.map(ClientId::into),
             has_epoch_changed: from.has_epoch_changed,
-            identity: from.identity.map(Into::into),
+            identity: from.identity.into(),
             buffered_messages,
             crl_new_distribution_points: from.crl_new_distribution_points.into(),
         })
@@ -701,7 +701,7 @@ impl DecryptedMessage {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn identity(&self) -> Option<WireIdentity> {
+    pub fn identity(&self) -> WireIdentity {
         self.identity.clone()
     }
 
@@ -730,7 +730,7 @@ pub struct BufferedDecryptedMessage {
     commit_delay: Option<u32>,
     sender_client_id: Option<Vec<u8>>,
     has_epoch_changed: bool,
-    identity: Option<WireIdentity>,
+    identity: WireIdentity,
     /// New CRL Distribution of members of this group
     crl_new_distribution_points: Option<Vec<String>>,
 }
@@ -758,7 +758,7 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
             commit_delay,
             sender_client_id: from.sender_client_id.map(ClientId::into),
             has_epoch_changed: from.has_epoch_changed,
-            identity: from.identity.map(Into::into),
+            identity: from.identity.into(),
             crl_new_distribution_points: from.crl_new_distribution_points.into(),
         })
     }
@@ -809,7 +809,7 @@ impl BufferedDecryptedMessage {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn identity(&self) -> Option<WireIdentity> {
+    pub fn identity(&self) -> WireIdentity {
         self.identity.clone()
     }
 
@@ -828,39 +828,22 @@ impl BufferedDecryptedMessage {
 pub struct WireIdentity {
     /// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
     client_id: String,
-    /// user handle e.g. `john_wire`
-    handle: String,
-    /// Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
-    display_name: String,
-    /// DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
-    domain: String,
-    /// X509 certificate identifying this client in the MLS group ; PEM encoded
-    certificate: String,
     /// Status of the Credential at the moment T when this object is created
     status: u8,
     /// MLS thumbprint
     thumbprint: String,
-    /// X509 certificate serial number
-    serial_number: String,
-    /// X509 certificate not before as Unix timestamp
-    not_before: u64,
-    /// X509 certificate not after as Unix timestamp
-    not_after: u64,
+    credential_type: u8,
+    x509_identity: Option<X509Identity>,
 }
 
 impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
     fn from(i: core_crypto::prelude::WireIdentity) -> Self {
         Self {
             client_id: i.client_id,
-            handle: i.handle,
-            display_name: i.display_name,
-            domain: i.domain,
-            certificate: i.certificate,
             status: i.status as u8,
             thumbprint: i.thumbprint,
-            serial_number: i.serial_number,
-            not_before: i.not_before,
-            not_after: i.not_after,
+            credential_type: i.credential_type as u8,
+            x509_identity: i.x509_identity.map(Into::into),
         }
     }
 }
@@ -872,6 +855,64 @@ impl WireIdentity {
         self.client_id.clone()
     }
 
+    #[wasm_bindgen(getter)]
+    pub fn status(&self) -> u8 {
+        self.status
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn thumbprint(&self) -> String {
+        self.thumbprint.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn credential_type(&self) -> u8 {
+        self.credential_type
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn x509_identity(&self) -> Option<X509Identity> {
+        self.x509_identity.clone()
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+/// Represents the identity claims identifying a client
+/// Those claims are verifiable by any member in the group
+pub struct X509Identity {
+    /// user handle e.g. `john_wire`
+    handle: String,
+    /// Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
+    display_name: String,
+    /// DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
+    domain: String,
+    /// X509 certificate identifying this client in the MLS group ; PEM encoded
+    certificate: String,
+    /// X509 certificate serial number
+    serial_number: String,
+    /// X509 certificate not before as Unix timestamp
+    not_before: u64,
+    /// X509 certificate not after as Unix timestamp
+    not_after: u64,
+}
+
+impl From<core_crypto::prelude::X509Identity> for X509Identity {
+    fn from(i: core_crypto::prelude::X509Identity) -> Self {
+        Self {
+            handle: i.handle,
+            display_name: i.display_name,
+            domain: i.domain,
+            certificate: i.certificate,
+            serial_number: i.serial_number,
+            not_before: i.not_before,
+            not_after: i.not_after,
+        }
+    }
+}
+
+#[wasm_bindgen]
+impl X509Identity {
     #[wasm_bindgen(getter)]
     pub fn handle(&self) -> String {
         self.handle.clone()
@@ -890,16 +931,6 @@ impl WireIdentity {
     #[wasm_bindgen(getter)]
     pub fn certificate(&self) -> String {
         self.certificate.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn status(&self) -> u8 {
-        self.status
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn thumbprint(&self) -> String {
-        self.thumbprint.clone()
     }
 
     #[wasm_bindgen(getter)]

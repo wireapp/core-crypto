@@ -424,7 +424,7 @@ pub struct DecryptedMessage {
     pub commit_delay: Option<u64>,
     pub sender_client_id: Option<ClientId>,
     pub has_epoch_changed: bool,
-    pub identity: Option<WireIdentity>,
+    pub identity: WireIdentity,
     pub buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
     pub crl_new_distribution_points: Option<Vec<String>>,
 }
@@ -438,7 +438,7 @@ pub struct BufferedDecryptedMessage {
     pub commit_delay: Option<u64>,
     pub sender_client_id: Option<ClientId>,
     pub has_epoch_changed: bool,
-    pub identity: Option<WireIdentity>,
+    pub identity: WireIdentity,
     pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
@@ -469,7 +469,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             commit_delay: from.delay,
             sender_client_id: from.sender_client_id.map(ClientId),
             has_epoch_changed: from.has_epoch_changed,
-            identity: from.identity.map(Into::into),
+            identity: from.identity.into(),
             buffered_messages,
             crl_new_distribution_points: from.crl_new_distribution_points.into(),
         })
@@ -493,7 +493,7 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
             commit_delay: from.delay,
             sender_client_id: from.sender_client_id.map(ClientId),
             has_epoch_changed: from.has_epoch_changed,
-            identity: from.identity.map(Into::into),
+            identity: from.identity.into(),
             crl_new_distribution_points: from.crl_new_distribution_points.into(),
         })
     }
@@ -503,30 +503,20 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
 /// See [core_crypto::prelude::WireIdentity]
 pub struct WireIdentity {
     pub client_id: String,
-    pub handle: String,
-    pub display_name: String,
-    pub domain: String,
-    pub certificate: String,
     pub status: DeviceStatus,
     pub thumbprint: String,
-    pub serial_number: String,
-    pub not_before: u64,
-    pub not_after: u64,
+    pub credential_type: MlsCredentialType,
+    pub x509_identity: Option<X509Identity>,
 }
 
 impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
     fn from(i: core_crypto::prelude::WireIdentity) -> Self {
         Self {
             client_id: i.client_id,
-            handle: i.handle,
-            display_name: i.display_name,
-            domain: i.domain,
-            certificate: i.certificate,
             status: i.status.into(),
             thumbprint: i.thumbprint,
-            serial_number: i.serial_number,
-            not_before: i.not_before,
-            not_after: i.not_after,
+            credential_type: i.credential_type.into(),
+            x509_identity: i.x509_identity.map(Into::into),
         }
     }
 }
@@ -548,6 +538,32 @@ impl From<core_crypto::prelude::DeviceStatus> for DeviceStatus {
             core_crypto::prelude::DeviceStatus::Valid => Self::Valid,
             core_crypto::prelude::DeviceStatus::Expired => Self::Expired,
             core_crypto::prelude::DeviceStatus::Revoked => Self::Revoked,
+        }
+    }
+}
+
+#[derive(Debug, uniffi::Record)]
+/// See [core_crypto::prelude::X509Identity]
+pub struct X509Identity {
+    pub handle: String,
+    pub display_name: String,
+    pub domain: String,
+    pub certificate: String,
+    pub serial_number: String,
+    pub not_before: u64,
+    pub not_after: u64,
+}
+
+impl From<core_crypto::prelude::X509Identity> for X509Identity {
+    fn from(i: core_crypto::prelude::X509Identity) -> Self {
+        Self {
+            handle: i.handle,
+            display_name: i.display_name,
+            domain: i.domain,
+            certificate: i.certificate,
+            serial_number: i.serial_number,
+            not_before: i.not_before,
+            not_after: i.not_after,
         }
     }
 }
