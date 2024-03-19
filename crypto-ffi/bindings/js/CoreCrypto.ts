@@ -27,12 +27,7 @@ import initWasm, {
 } from "./wasm";
 
 // re-exports
-export {
-    NewAcmeOrder,
-    NewAcmeAuthz,
-    AcmeChallenge,
-    E2eiDumpedPkiEnv,
-};
+export { NewAcmeOrder, NewAcmeAuthz, AcmeChallenge, E2eiDumpedPkiEnv };
 
 interface CoreCryptoRichError {
     errorName: string;
@@ -569,6 +564,28 @@ export interface WireIdentity {
      */
     clientId: string;
     /**
+     * Status of the Credential at the moment T when this object is created
+     */
+    status: DeviceStatus;
+    /**
+     * MLS thumbprint
+     */
+    thumbprint: string;
+    /**
+     * Indicates whether the credential is Basic or X509
+     */
+    credentialType: CredentialType;
+    /**
+     * In case {@link credentialType} is {@link CredentialType.X509} this is populated
+     */
+    x509Identity?: X509Identity;
+}
+
+/**
+ * Represents the parts of {@link WireIdentity} that are specific to a X509 certificate (and not a Basic one).
+ */
+export interface X509Identity {
+    /**
      * User handle e.g. `john_wire`
      */
     handle: string;
@@ -585,14 +602,6 @@ export interface WireIdentity {
      */
     certificate: string;
     /**
-     * Status of the Credential at the moment T when this object is created
-     */
-    status: DeviceStatus;
-    /**
-     * MLS thumbprint
-     */
-    thumbprint: string;
-    /**
      * X509 certificate serial number
      */
     serialNumber: string;
@@ -606,16 +615,37 @@ export interface WireIdentity {
     notAfter: bigint;
 }
 
-const mapWireIdentity = (ffiIdentity?: CoreCryptoFfiTypes.WireIdentity): WireIdentity|undefined => {
-    if (!ffiIdentity) { return undefined; }
+const mapWireIdentity = (
+    ffiIdentity?: CoreCryptoFfiTypes.WireIdentity
+): WireIdentity | undefined => {
+    if (!ffiIdentity) {
+        return undefined;
+    }
     return {
         clientId: ffiIdentity.client_id,
+        status: DeviceStatus[
+            ffiIdentity.status as unknown as keyof typeof DeviceStatus
+        ],
+        thumbprint: ffiIdentity.thumbprint,
+        credentialType:
+            CredentialType[
+                ffiIdentity.credential_type as unknown as keyof typeof CredentialType
+            ],
+        x509Identity: mapX509Identity(ffiIdentity.x509_identity),
+    };
+};
+
+const mapX509Identity = (
+    ffiIdentity?: CoreCryptoFfiTypes.X509Identity
+): X509Identity | undefined => {
+    if (!ffiIdentity) {
+        return undefined;
+    }
+    return {
         handle: ffiIdentity.handle,
         displayName: ffiIdentity.display_name,
         domain: ffiIdentity.domain,
         certificate: ffiIdentity.certificate,
-        status: DeviceStatus[ffiIdentity.status as unknown as keyof typeof DeviceStatus],
-        thumbprint: ffiIdentity.thumbprint,
         serialNumber: ffiIdentity.serial_number,
         notBefore: ffiIdentity.not_before,
         notAfter: ffiIdentity.not_after,
@@ -1159,7 +1189,7 @@ export class CoreCrypto {
                 ciphersuite,
                 externalSenders,
                 custom?.keyRotationSpan,
-                custom?.wirePolicy,
+                custom?.wirePolicy
             );
             const ret = await CoreCryptoError.asyncMapErr(
                 this.#cc.create_conversation(
@@ -1230,7 +1260,8 @@ export class CoreCrypto {
                         crlNewDistributionPoints: m.crl_new_distribution_points,
                     })
                 ),
-                crlNewDistributionPoints: ffiDecryptedMessage.crl_new_distribution_points,
+                crlNewDistributionPoints:
+                    ffiDecryptedMessage.crl_new_distribution_points,
             };
 
             return ret;
@@ -1277,9 +1308,10 @@ export class CoreCrypto {
                 keyRotationSpan,
                 wirePolicy
             );
-            const ffiRet: CoreCryptoFfiTypes.WelcomeBundle = await CoreCryptoError.asyncMapErr(
-                this.#cc.process_welcome_message(welcomeMessage, config)
-            );
+            const ffiRet: CoreCryptoFfiTypes.WelcomeBundle =
+                await CoreCryptoError.asyncMapErr(
+                    this.#cc.process_welcome_message(welcomeMessage, config)
+                );
 
             const ret: WelcomeBundle = {
                 id: ffiRet.id,
@@ -1299,7 +1331,10 @@ export class CoreCrypto {
      * @param credentialType - of the public key to look for
      * @returns the client's public signature key
      */
-    async clientPublicKey(ciphersuite: Ciphersuite, credentialType: CredentialType): Promise<Uint8Array> {
+    async clientPublicKey(
+        ciphersuite: Ciphersuite,
+        credentialType: CredentialType
+    ): Promise<Uint8Array> {
         return await CoreCryptoError.asyncMapErr(
             this.#cc.client_public_key(ciphersuite, credentialType)
         );
@@ -1640,7 +1675,8 @@ export class CoreCrypto {
                     ratchetTreeType: gi.ratchet_tree_type,
                     payload: gi.payload,
                 },
-                crlNewDistributionPoints: ffiInitMessage.crl_new_distribution_points,
+                crlNewDistributionPoints:
+                    ffiInitMessage.crl_new_distribution_points,
             };
 
             return ret;
@@ -1753,8 +1789,12 @@ export class CoreCrypto {
      *
      * @returns A `Uint8Array` representing the external sender raw public key
      */
-    async getExternalSender(conversationId: ConversationId): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.get_external_sender(conversationId));
+    async getExternalSender(
+        conversationId: ConversationId
+    ): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.get_external_sender(conversationId)
+        );
     }
 
     /**
@@ -2155,7 +2195,7 @@ export class CoreCrypto {
      *
      * @returns a struct with different fields representing the PKI environment as PEM strings
      */
-    async e2eiDumpPKIEnv(): Promise<E2eiDumpedPkiEnv|undefined> {
+    async e2eiDumpPKIEnv(): Promise<E2eiDumpedPkiEnv | undefined> {
         return await this.#cc.e2ei_dump_pki_env();
     }
 
@@ -2186,7 +2226,9 @@ export class CoreCrypto {
      *
      * @param certPEM - PEM certificate to register as an Intermediate CA
      */
-    async e2eiRegisterIntermediateCA(certPEM: string): Promise<string[] | undefined> {
+    async e2eiRegisterIntermediateCA(
+        certPEM: string
+    ): Promise<string[] | undefined> {
         return await this.#cc.e2ei_register_intermediate_ca(certPEM);
     }
 
@@ -2201,7 +2243,10 @@ export class CoreCrypto {
      *
      * @returns a {@link CRLRegistration} with the dirty state of the new CRL (see struct) and its expiration timestamp
      */
-    async e2eiRegisterCRL(crlDP: string, crlDER: Uint8Array): Promise<CRLRegistration> {
+    async e2eiRegisterCRL(
+        crlDP: string,
+        crlDER: Uint8Array
+    ): Promise<CRLRegistration> {
         return await this.#cc.e2ei_register_crl(crlDP, crlDER);
     }
 
@@ -2279,7 +2324,9 @@ export class CoreCrypto {
             this.#cc.e2ei_conversation_state(conversationId)
         );
 
-        return E2eiConversationState[state as unknown as keyof typeof E2eiConversationState];
+        return E2eiConversationState[
+            state as unknown as keyof typeof E2eiConversationState
+        ];
     }
 
     /**
@@ -2306,9 +2353,11 @@ export class CoreCrypto {
         conversationId: ConversationId,
         deviceIds: ClientId[]
     ): Promise<WireIdentity[]> {
-        return (await CoreCryptoError.asyncMapErr(
-            this.#cc.get_device_identities(conversationId, deviceIds)
-        )).map(mapWireIdentity);
+        return (
+            await CoreCryptoError.asyncMapErr(
+                this.#cc.get_device_identities(conversationId, deviceIds)
+            )
+        ).map(mapWireIdentity);
     }
 
     /**
@@ -2324,14 +2373,15 @@ export class CoreCrypto {
         conversationId: ConversationId,
         userIds: string[]
     ): Promise<Map<string, WireIdentity[]>> {
-        const map: Map<string, CoreCryptoFfiTypes.WireIdentity[]> = await CoreCryptoError.asyncMapErr(
-            this.#cc.get_user_identities(conversationId, userIds)
-        );
+        const map: Map<string, CoreCryptoFfiTypes.WireIdentity[]> =
+            await CoreCryptoError.asyncMapErr(
+                this.#cc.get_user_identities(conversationId, userIds)
+            );
 
         const mapFixed: Map<string, WireIdentity[]> = new Map();
 
         for (const [userId, identities] of map) {
-            const mappedIdentities = identities.flatMap(identity => {
+            const mappedIdentities = identities.flatMap((identity) => {
                 const mappedIdentity = mapWireIdentity(identity);
                 return mappedIdentity ? [mappedIdentity] : [];
             });
@@ -2349,9 +2399,16 @@ export class CoreCrypto {
      * @param credentialType - kind of Credential to check usage of. Defaults to X509 for now as no other value will give any result.
      * @returns see {@link E2eiConversationState}
      */
-    async getCredentialInUse(groupInfo: Uint8Array, credentialType: CredentialType = CredentialType.X509): Promise<E2eiConversationState> {
-        let state = await CoreCryptoError.asyncMapErr(this.#cc.get_credential_in_use(groupInfo, credentialType));
-        return E2eiConversationState[state as unknown as keyof typeof E2eiConversationState];
+    async getCredentialInUse(
+        groupInfo: Uint8Array,
+        credentialType: CredentialType = CredentialType.X509
+    ): Promise<E2eiConversationState> {
+        let state = await CoreCryptoError.asyncMapErr(
+            this.#cc.get_credential_in_use(groupInfo, credentialType)
+        );
+        return E2eiConversationState[
+            state as unknown as keyof typeof E2eiConversationState
+        ];
     }
 
     /**
@@ -2396,9 +2453,10 @@ export class E2eiEnrollment {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
      */
     async directoryResponse(directory: JsonRawData): Promise<AcmeDirectory> {
-        const ffiRet: CoreCryptoFfiTypes.AcmeDirectory = await CoreCryptoError.asyncMapErr(
-            this.#enrollment.directory_response(directory)
-        );
+        const ffiRet: CoreCryptoFfiTypes.AcmeDirectory =
+            await CoreCryptoError.asyncMapErr(
+                this.#enrollment.directory_response(directory)
+            );
 
         return {
             newNonce: ffiRet.new_nonce,
@@ -2548,10 +2606,7 @@ export class E2eiEnrollment {
         previousNonce: string
     ): Promise<JsonRawData> {
         return await CoreCryptoError.asyncMapErr(
-            this.#enrollment.new_oidc_challenge_request(
-                idToken,
-                previousNonce
-            )
+            this.#enrollment.new_oidc_challenge_request(idToken, previousNonce)
         );
     }
 
@@ -2654,5 +2709,3 @@ export enum E2eiConversationState {
      */
     NotEnabled = 0x0003,
 }
-
-

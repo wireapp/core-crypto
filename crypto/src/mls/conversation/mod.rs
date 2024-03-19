@@ -29,6 +29,7 @@
 
 use std::collections::HashMap;
 
+use openmls::prelude::{CredentialWithKey, SignaturePublicKey};
 use openmls::{group::MlsGroup, prelude::Credential};
 use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
 
@@ -173,6 +174,21 @@ impl MlsConversation {
         self.group.members().fold(HashMap::new(), |mut acc, kp| {
             let credential = kp.credential;
             let id = credential.identity().to_vec();
+            acc.entry(id).or_insert(credential);
+            acc
+        })
+    }
+
+    /// Returns all members credentials with their signature public key from the group/conversation
+    pub fn members_with_key(&self) -> HashMap<Vec<u8>, CredentialWithKey> {
+        self.group.members().fold(HashMap::new(), |mut acc, kp| {
+            let credential = kp.credential;
+            let id = credential.identity().to_vec();
+            let signature_key = SignaturePublicKey::from(kp.signature_key);
+            let credential = CredentialWithKey {
+                credential,
+                signature_key,
+            };
             acc.entry(id).or_insert(credential);
             acc
         })

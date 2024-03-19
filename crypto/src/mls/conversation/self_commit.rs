@@ -6,7 +6,9 @@ use crate::{
     prelude::{CryptoError, CryptoResult, MlsConversation, MlsConversationDecryptMessage},
 };
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::{ConfirmationTag, ContentType, FramedContentBodyIn, MlsMessageIn, MlsMessageInBody, Sender};
+use openmls::prelude::{
+    ConfirmationTag, ContentType, CredentialWithKey, FramedContentBodyIn, MlsMessageIn, MlsMessageInBody, Sender,
+};
 
 impl MlsConversation {
     pub(crate) fn maybe_self_member_commit<'a>(
@@ -79,7 +81,11 @@ impl MlsConversation {
         let own_leaf = self.group.own_leaf().ok_or(CryptoError::InternalMlsError)?;
 
         // We return self identity here, probably not necessary to check revocation
-        let identity = own_leaf.credential().extract_identity(None)?;
+        let own_leaf_credential_with_key = CredentialWithKey {
+            credential: own_leaf.credential().clone(),
+            signature_key: own_leaf.signature_key().clone(),
+        };
+        let identity = own_leaf_credential_with_key.extract_identity(self.ciphersuite(), None)?;
 
         let crl_new_distribution_points =
             get_new_crl_distribution_points(backend, extract_crl_uris_from_group(&self.group)?).await?;

@@ -7,6 +7,7 @@ use x509_cert::der::pem::LineEnding;
 
 use crate::e2e_identity::id::WireQualifiedClientId;
 use crate::mls::credential::ext::CredentialExt;
+use crate::prelude::MlsCredentialType;
 use crate::{
     e2e_identity::device_status::DeviceStatus,
     prelude::{user_id::UserId, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation},
@@ -14,10 +15,25 @@ use crate::{
 
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct WireIdentity {
     /// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
     pub client_id: String,
+    /// MLS thumbprint
+    pub thumbprint: String,
+    /// Status of the Credential at the moment T when this object is created
+    pub status: DeviceStatus,
+    /// Indicates whether the credential is Basic or X509
+    pub credential_type: MlsCredentialType,
+    /// In case 'credential_type' is [MlsCredentialType::X509] this is populated
+    pub x509_identity: Option<X509Identity>,
+}
+
+/// Represents the parts of [WireIdentity] that are specific to a X509 certificate (and not a Basic one).
+/// We don't use an enum here since the sole purpose of this is to be exposed through the FFI (and
+/// union types are impossible to carry over the FFI boundary)
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct X509Identity {
     /// user handle e.g. `john_wire`
     pub handle: String,
     /// Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
@@ -26,10 +42,6 @@ pub struct WireIdentity {
     pub domain: String,
     /// X509 certificate identifying this client in the MLS group ; PEM encoded
     pub certificate: String,
-    /// Status of the Credential at the moment T when this object is created
-    pub status: DeviceStatus,
-    /// MLS thumbprint
-    pub thumbprint: String,
     /// X509 certificate serial number
     pub serial_number: String,
     /// X509 certificate not before as Unix timestamp
@@ -47,19 +59,21 @@ impl<'a> TryFrom<(wire_e2e_identity::prelude::WireIdentity, &'a [u8])> for WireI
         let certificate = document.to_pem("CERTIFICATE", LineEnding::LF)?;
 
         let client_id = WireQualifiedClientId::from_str(&i.client_id)?;
-        let client_id = String::try_from(client_id)?;
 
         Ok(Self {
-            client_id,
-            handle: i.handle.to_string(),
-            display_name: i.display_name,
-            domain: i.domain,
-            certificate,
+            client_id: client_id.try_into()?,
             status: i.status.into(),
             thumbprint: i.thumbprint,
-            serial_number: i.serial_number,
-            not_before: i.not_before,
-            not_after: i.not_after,
+            credential_type: MlsCredentialType::X509,
+            x509_identity: Some(X509Identity {
+                handle: i.handle.to_string(),
+                display_name: i.display_name,
+                domain: i.domain,
+                certificate,
+                serial_number: i.serial_number,
+                not_before: i.not_before,
+                not_after: i.not_after,
+            }),
         })
     }
 }
@@ -122,10 +136,10 @@ impl MlsConversation {
         if device_ids.is_empty() {
             return Err(CryptoError::ConsumerError);
         }
-        self.members()
+        self.members_with_key()
             .into_iter()
             .filter(|(id, _)| device_ids.contains(&ClientId::from(id.as_slice())))
-            .filter_map(|(_, c)| c.extract_identity(env).transpose())
+            .map(|(_, c)| c.extract_identity(self.ciphersuite(), env))
             .collect::<CryptoResult<Vec<_>>>()
     }
 
@@ -138,11 +152,11 @@ impl MlsConversation {
             return Err(CryptoError::ConsumerError);
         }
         let user_ids = user_ids.iter().map(|uid| uid.as_bytes()).collect::<Vec<_>>();
-        self.members()
+        self.members_with_key()
             .iter()
             .filter_map(|(id, c)| UserId::try_from(id.as_slice()).ok().zip(Some(c)))
             .filter(|(uid, _)| user_ids.contains(uid))
-            .filter_map(|(uid, c)| Some(uid).zip(c.extract_identity(env).transpose()))
+            .map(|(uid, c)| (uid, c.extract_identity(self.ciphersuite(), env)))
             .group_by(|(uid, _)| *uid)
             .into_iter()
             .map(|(uid, group)| {
@@ -159,6 +173,7 @@ impl MlsConversation {
 pub mod tests {
     use wasm_bindgen_test::*;
 
+    use crate::prelude::MlsCredentialType;
     use crate::{
         prelude::{DeviceStatus, E2eiConversationState},
         test_utils::*,
@@ -274,12 +289,24 @@ pub mod tests {
                         .await
                         .unwrap();
 
-                    let alice_identity =
-                        identities.remove(identities.iter().position(|i| i.display_name == "alice").unwrap());
-                    let bob_identity =
-                        identities.remove(identities.iter().position(|i| i.display_name == "bob").unwrap());
-                    let rupert_identity =
-                        identities.remove(identities.iter().position(|i| i.display_name == "rupert").unwrap());
+                    let alice_identity = identities.remove(
+                        identities
+                            .iter()
+                            .position(|i| i.x509_identity.as_ref().unwrap().display_name == "alice")
+                            .unwrap(),
+                    );
+                    let bob_identity = identities.remove(
+                        identities
+                            .iter()
+                            .position(|i| i.x509_identity.as_ref().unwrap().display_name == "bob")
+                            .unwrap(),
+                    );
+                    let rupert_identity = identities.remove(
+                        identities
+                            .iter()
+                            .position(|i| i.x509_identity.as_ref().unwrap().display_name == "rupert")
+                            .unwrap(),
+                    );
 
                     assert!(identities.is_empty());
 
@@ -299,12 +326,24 @@ pub mod tests {
                         .await
                         .unwrap();
 
-                    let alice_identity =
-                        identities.remove(identities.iter().position(|i| i.display_name == "alice").unwrap());
-                    let bob_identity =
-                        identities.remove(identities.iter().position(|i| i.display_name == "bob").unwrap());
-                    let rupert_identity =
-                        identities.remove(identities.iter().position(|i| i.display_name == "rupert").unwrap());
+                    let alice_identity = identities.remove(
+                        identities
+                            .iter()
+                            .position(|i| i.x509_identity.as_ref().unwrap().display_name == "alice")
+                            .unwrap(),
+                    );
+                    let bob_identity = identities.remove(
+                        identities
+                            .iter()
+                            .position(|i| i.x509_identity.as_ref().unwrap().display_name == "bob")
+                            .unwrap(),
+                    );
+                    let rupert_identity = identities.remove(
+                        identities
+                            .iter()
+                            .position(|i| i.x509_identity.as_ref().unwrap().display_name == "rupert")
+                            .unwrap(),
+                    );
 
                     assert!(identities.is_empty());
 
@@ -348,19 +387,30 @@ pub mod tests {
                         alice_ios_central.mls_central.get_client_id(),
                     );
 
-                    let android_ids = alice_android_central
+                    let mut android_ids = alice_android_central
                         .mls_central
                         .get_device_identities(&id, &[android_id.clone(), ios_id.clone()])
                         .await
                         .unwrap();
-                    assert!(android_ids.is_empty());
+                    android_ids.sort();
 
-                    let ios_ids = alice_ios_central
+                    let mut ios_ids = alice_ios_central
                         .mls_central
                         .get_device_identities(&id, &[android_id, ios_id])
                         .await
                         .unwrap();
-                    assert!(ios_ids.is_empty());
+                    ios_ids.sort();
+
+                    assert_eq!(ios_ids.len(), 2);
+                    assert_eq!(ios_ids, android_ids);
+
+                    assert!(ios_ids.iter().all(|i| {
+                        matches!(i.credential_type, MlsCredentialType::Basic)
+                            && matches!(i.status, DeviceStatus::Valid)
+                            && i.x509_identity.is_none()
+                            && !i.thumbprint.is_empty()
+                            && !i.client_id.is_empty()
+                    }));
                 })
             },
         )

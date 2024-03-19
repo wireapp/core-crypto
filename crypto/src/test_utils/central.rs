@@ -480,8 +480,11 @@ impl MlsCentral {
         let group_identities = self.get_device_identities(id, &[cid.clone()]).await.unwrap();
         let group_identity = group_identities.first().unwrap();
         assert_eq!(group_identity.client_id.as_bytes(), cid.0.as_slice());
-        assert_eq!(group_identity.display_name, new_display_name);
-        assert_eq!(group_identity.handle, new_handle);
+        assert_eq!(
+            group_identity.x509_identity.as_ref().unwrap().display_name,
+            new_display_name
+        );
+        assert_eq!(group_identity.x509_identity.as_ref().unwrap().handle, new_handle);
         assert_eq!(group_identity.status, DeviceStatus::Valid);
         assert!(!group_identity.thumbprint.is_empty());
 
@@ -491,20 +494,37 @@ impl MlsCentral {
             .await
             .unwrap()
             .clone();
-        let local_identity = cb.credential().extract_identity(None).unwrap().unwrap();
+        let cs = self.get_conversation_unchecked(id).await.ciphersuite();
+        let local_identity = cb.to_mls_credential_with_key().extract_identity(cs, None).unwrap();
         assert_eq!(&local_identity.client_id.as_bytes(), &cid.0);
-        assert_eq!(local_identity.display_name, new_display_name);
-        assert_eq!(local_identity.handle, new_handle);
+        assert_eq!(
+            local_identity.x509_identity.as_ref().unwrap().display_name,
+            new_display_name
+        );
+        assert_eq!(local_identity.x509_identity.as_ref().unwrap().handle, new_handle);
         assert_eq!(local_identity.status, DeviceStatus::Valid);
         assert!(!local_identity.thumbprint.is_empty());
 
         // the keystore
+        let signature_key = self
+            .find_signature_keypair_from_keystore(cb.signature_key.public())
+            .await
+            .unwrap();
+        let signature_key = SignaturePublicKey::from(signature_key.pk.as_slice());
         let credential = self.find_credential_from_keystore(&cb).await.unwrap();
         let credential = Credential::tls_deserialize(&mut credential.credential.as_slice()).unwrap();
-        assert_eq!(credential.identity(), &cid.0);
-        let keystore_identity = credential.extract_identity(None).unwrap().unwrap();
-        assert_eq!(keystore_identity.display_name, new_display_name);
-        assert_eq!(keystore_identity.handle, new_handle);
+        let credential = CredentialWithKey {
+            credential,
+            signature_key,
+        };
+
+        assert_eq!(credential.credential.identity(), &cid.0);
+        let keystore_identity = credential.extract_identity(cs, None).unwrap();
+        assert_eq!(
+            keystore_identity.x509_identity.as_ref().unwrap().display_name,
+            new_display_name
+        );
+        assert_eq!(keystore_identity.x509_identity.as_ref().unwrap().handle, new_handle);
         assert_eq!(keystore_identity.status, DeviceStatus::Valid);
         assert!(!keystore_identity.thumbprint.is_empty());
     }
@@ -515,10 +535,10 @@ impl MlsCentral {
         let sender_cb = mls_client.find_most_recent_credential_bundle(sc, ct).unwrap();
 
         if let openmls::prelude::MlsCredentialType::X509(certificate) = &sender_cb.credential().mls_credential() {
-            let mls_identity = certificate.extract_identity(None).unwrap().unwrap();
+            let mls_identity = certificate.extract_identity(case.ciphersuite(), None).unwrap();
             let mls_client_id = mls_identity.client_id.as_bytes();
 
-            let decrypted_identity = decrypted.identity.as_ref().unwrap();
+            let decrypted_identity = &decrypted.identity;
 
             let leaf: Vec<u8> = certificate.certificates.first().unwrap().clone().into();
             let identity = leaf.as_slice().extract_identity(None).unwrap();
@@ -526,24 +546,37 @@ impl MlsCentral {
 
             assert_eq!(decrypted_identity.client_id, identity.client_id);
             assert_eq!(decrypted_identity.client_id.as_bytes(), mls_client_id);
-            assert_eq!(&decrypted_identity.handle, identity.handle.as_str());
-            assert_eq!(decrypted_identity.display_name, identity.display_name);
-            assert_eq!(decrypted_identity.domain, identity.domain);
+            let decrypted_x509_identity = decrypted_identity.x509_identity.as_ref().unwrap();
+            let x509_identity = identity.x509_identity.as_ref().unwrap();
+            assert_eq!(&decrypted_x509_identity.handle, x509_identity.handle.as_str());
+            assert_eq!(decrypted_x509_identity.display_name, x509_identity.display_name);
+            assert_eq!(decrypted_x509_identity.domain, x509_identity.domain);
             assert_eq!(decrypted_identity.status, identity.status);
             assert_eq!(decrypted_identity.thumbprint, identity.thumbprint);
-            assert!(decrypted_identity
+            assert!(decrypted_x509_identity
                 .certificate
                 .starts_with("-----BEGIN CERTIFICATE-----"));
-            assert!(decrypted_identity.certificate.ends_with("-----END CERTIFICATE-----\n"));
-            let chain = x509_cert::Certificate::load_pem_chain(decrypted_identity.certificate.as_bytes()).unwrap();
+            assert!(decrypted_x509_identity
+                .certificate
+                .ends_with("-----END CERTIFICATE-----\n"));
+            let chain = x509_cert::Certificate::load_pem_chain(decrypted_x509_identity.certificate.as_bytes()).unwrap();
             let leaf = chain.first().unwrap();
             let cert_identity = leaf.extract_identity(None).unwrap();
 
             let cert_identity = WireIdentity::try_from((cert_identity, leaf.to_der().unwrap().as_slice())).unwrap();
             assert_eq!(cert_identity.client_id, identity.client_id);
-            assert_eq!(cert_identity.handle.as_str(), identity.handle.as_str());
-            assert_eq!(cert_identity.display_name, identity.display_name);
-            assert_eq!(cert_identity.domain, identity.domain);
+            assert_eq!(
+                cert_identity.x509_identity.as_ref().unwrap().handle.as_str(),
+                x509_identity.handle.as_str()
+            );
+            assert_eq!(
+                cert_identity.x509_identity.as_ref().unwrap().display_name,
+                x509_identity.display_name
+            );
+            assert_eq!(
+                cert_identity.x509_identity.as_ref().unwrap().domain,
+                x509_identity.domain
+            );
             assert_eq!(cert_identity.status, identity.status);
             assert_eq!(cert_identity.thumbprint, identity.thumbprint);
             assert_eq!(identity.status, DeviceStatus::Valid);

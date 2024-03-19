@@ -90,12 +90,6 @@ extension CoreCryptoSwift.BufferedDecryptedMessage {
     }
 }
 
-extension CoreCryptoSwift.WireIdentity {
-    func convertTo() -> WireIdentity {
-        return WireIdentity(clientId: self.clientId, handle: self.handle, displayName: self.displayName, domain: self.domain, thumbprint: self.thumbprint, serialNumber: self.serialNumber, notBefore: self.notBefore, notAfter: self.notAfter)
-    }
-}
-
 extension CoreCryptoSwift.ProposalBundle {
     func convertTo() -> ProposalBundle {
         return ProposalBundle(proposal: self.proposal, proposalRef: self.proposalRef, crlNewDistributionPoints: self.crlNewDistributionPoints)
@@ -179,7 +173,7 @@ private extension CiphersuiteName {
 }
 
 /// Type of credential: either Basic or X509 certificate (probably more to come)
-public enum MlsCredentialType: ConvertToInner {
+public enum MlsCredentialType {
     typealias Inner = CoreCryptoSwift.MlsCredentialType
 
     case basic
@@ -187,12 +181,23 @@ public enum MlsCredentialType: ConvertToInner {
 }
 
 private extension MlsCredentialType {
-    func convert() -> Inner {
+    func lower() -> Inner {
         switch self {
         case .basic:
             return CoreCryptoSwift.MlsCredentialType.basic
         case .x509:
             return CoreCryptoSwift.MlsCredentialType.x509
+        }
+    }
+}
+
+private extension CoreCryptoSwift.MlsCredentialType {
+    func lift() -> MlsCredentialType {
+        switch self {
+        case .basic:
+            return MlsCredentialType.basic
+        case .x509:
+            return MlsCredentialType.x509
         }
     }
 }
@@ -339,7 +344,7 @@ public struct DecryptedMessage: ConvertToInner {
     /// Identity claims present in the sender credential
     /// Only present when the credential is a x509 certificate
     /// Present for all messages
-    public var identity: WireIdentity?
+    public var identity: WireIdentity
     /// Only set when the decrypted message is a commit.
     /// Contains buffered messages for next epoch which were received before the commit creating the epoch
     /// because the DS did not fan them out in order.
@@ -347,7 +352,7 @@ public struct DecryptedMessage: ConvertToInner {
     /// New CRL distribution points that appeared by the introduction of a new credential
     public var crlNewDistributionPoints: [String]?
 
-    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?, hasEpochChanged: Bool, identity: WireIdentity?, bufferedMessages: [BufferedDecryptedMessage]?, crlNewDistributionPoints: [String]?) {
+    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?, hasEpochChanged: Bool, identity: WireIdentity, bufferedMessages: [BufferedDecryptedMessage]?, crlNewDistributionPoints: [String]?) {
         self.message = message
         self.proposals = proposals
         self.isActive = isActive
@@ -367,7 +372,7 @@ public struct DecryptedMessage: ConvertToInner {
             commitDelay: self.commitDelay,
             senderClientId: self.senderClientId,
             hasEpochChanged: self.hasEpochChanged,
-            identity: self.identity?.convert(),
+            identity: self.identity.lower(),
             bufferedMessages: self.bufferedMessages.map({ (bm) -> CoreCryptoSwift.DecryptedMessage in bm.convert() }),
             crlNewDistributionPoints: self.crlNewDistributionPoints
         )
@@ -390,12 +395,12 @@ public struct BufferedDecryptedMessage: ConvertToInner {
     /// see ```DecryptedMessage.hasEpochChanged```
     public var hasEpochChanged: Bool
     /// see ```DecryptedMessage.identity```
-    public var identity: WireIdentity?
+    public var identity: WireIdentity
     /// see ```DecryptedMessage.crlNewDistributionPoints```
     public var crlNewDistributionPoints: [String]?
 
 
-    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?, hasEpochChanged: Bool, identity: WireIdentity?, crlNewDistributionPoints: [String]?) {
+    public init(message: [UInt8]?, proposals: [ProposalBundle], isActive: Bool, commitDelay: UInt64?, senderClientId: ClientId?, hasEpochChanged: Bool, identity: WireIdentity, crlNewDistributionPoints: [String]?) {
         self.message = message
         self.proposals = proposals
         self.isActive = isActive
@@ -414,7 +419,7 @@ public struct BufferedDecryptedMessage: ConvertToInner {
             commitDelay: self.commitDelay,
             senderClientId: self.senderClientId,
             hasEpochChanged: self.hasEpochChanged,
-            identity: self.identity?.convert(),
+            identity: self.identity.lower(),
             crlNewDistributionPoints: self.crlNewDistributionPoints
         )
     }
@@ -426,16 +431,44 @@ public struct WireIdentity: ConvertToInner {
 
     /// Represents the identity claims identifying a client. Those claims are verifiable by any member in the group
     public var clientId: String
+    /// Status of the Credential at the moment T when this object is created
+    public var status: DeviceStatus
+    /// MLS thumbprint
+    public var thumbprint: String
+    /// Indicates whether the credential is Basic or X509
+    public var credentialType: MlsCredentialType
+    /// In case 'credential_type' is X509 this is populated
+    public var x509Identity: X509Identity?
+
+    public init(clientId: String, status: DeviceStatus, thumbprint: String, credentialType: MlsCredentialType, x509Identity: X509Identity?) {
+        self.clientId = clientId
+        self.status = status
+        self.thumbprint = thumbprint
+        self.credentialType = credentialType
+        self.x509Identity = x509Identity
+    }
+
+    func lower() -> Inner {
+        return CoreCryptoSwift.WireIdentity(clientId: self.clientId, status: self.status.lower(), thumbprint: self.thumbprint, credentialType: credentialType.lower(), x509Identity: x509Identity?.lower())
+    }
+}
+
+extension CoreCryptoSwift.WireIdentity {
+    func lift() -> WireIdentity {
+        return WireIdentity(clientId: self.clientId, status: self.status, thumbprint: self.thumbprint, credentialType: self.credentialType.lift(), x509Identity: self.x509Identity?.lift())
+    }
+}
+
+/// Represents the parts of WireIdentity that are specific to a X509 certificate (and not a Basic one).
+public struct X509Identity: ConvertToInner {
+    typealias Inner = CoreCryptoSwift.X509Identity
+
     /// user handle e.g. `john_wire`
     public var handle: String
     /// Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
     public var displayName: String
     /// DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
     public var domain: String
-    /// Status of the Credential at the moment T when this object is created
-    public var status: DeviceStatus
-    /// MLS thumbprint
-    public var thumbprint: String
     /// X509 certificate serial number
     public var serialNumber: String
     /// X509 certificate not before as Unix timestamp
@@ -443,20 +476,23 @@ public struct WireIdentity: ConvertToInner {
     /// X509 certificate not after as Unix timestamp
     public var notAfter: UInt64
 
-    public init(clientId: String, handle: String, displayName: String, domain: String, status: DeviceStatus, thumbprint: String, serialNumber: String, notBefore: UInt64, notAfter: UInt64) {
-        self.clientId = clientId
+    public init(handle: String, displayName: String, domain: String, serialNumber: String, notBefore: UInt64, notAfter: UInt64) {
         self.handle = handle
         self.displayName = displayName
         self.domain = domain
-        self.status = status
-        self.thumbprint = thumbprint
         self.serialNumber = serialNumber
         self.notBefore = notBefore
         self.notAfter = notAfter
     }
 
-    func convert() -> Inner {
-        return CoreCryptoSwift.WireIdentity(clientId: self.clientId, handle: self.handle, displayName: self.displayName, domain: self.domain, status: self.status.convert(), thumbprint: self.thumbprint, serialNumber: self.serialNumber, notBefore: self.notBefore, notAfter: self.notAfter)
+    func lower() -> Inner {
+        return CoreCryptoSwift.X509Identity(handle: self.handle, displayName: self.displayName, domain: self.domain, serialNumber: self.serialNumber, notBefore: self.notBefore, notAfter: self.notAfter)
+    }
+}
+
+extension CoreCryptoSwift.X509Identity {
+    func lift() -> X509Identity {
+        return X509Identity(handle: self.handle, displayName: self.displayName, domain: self.domain, serialNumber: self.serialNumber, notBefore: self.notBefore, notAfter: self.notAfter)
     }
 }
 
@@ -730,19 +766,19 @@ public class CoreCryptoWrapper {
 
     /// - returns: The client's public key
     public func clientPublicKey(ciphersuite: UInt16, credentialType: MlsCredentialType) async throws -> [UInt8] {
-        return try await self.coreCrypto.clientPublicKey(ciphersuite: ciphersuite, credentialType: credentialType.convert())
+        return try await self.coreCrypto.clientPublicKey(ciphersuite: ciphersuite, credentialType: credentialType.lower())
     }
 
     /// Fetches a requested amount of keypackages
     /// - parameter amountRequested: The amount of keypackages requested
     /// - returns: An array of length `amountRequested` containing TLS-serialized KeyPackages
     public func clientKeypackages(ciphersuite: UInt16, credentialType: MlsCredentialType, amountRequested: UInt32) async throws -> [[UInt8]] {
-        return try await self.coreCrypto.clientKeypackages(ciphersuite: ciphersuite, credentialType: credentialType.convert(), amountRequested: amountRequested)
+        return try await self.coreCrypto.clientKeypackages(ciphersuite: ciphersuite, credentialType: credentialType.lower(), amountRequested: amountRequested)
     }
 
     /// - returns: The amount of valid, non-expired KeyPackages that are persisted in the backing storage
     public func clientValidKeypackagesCount(ciphersuite: UInt16, credentialType: MlsCredentialType) async throws -> UInt64 {
-        return try await self.coreCrypto.clientValidKeypackagesCount(ciphersuite: ciphersuite, credentialType: credentialType.convert())
+        return try await self.coreCrypto.clientValidKeypackagesCount(ciphersuite: ciphersuite, credentialType: credentialType.lower())
     }
 
     /// Prunes local KeyPackages after making sure they also have been deleted on the backend side.
@@ -757,7 +793,7 @@ public class CoreCryptoWrapper {
     /// - parameter creatorCredentialType: kind of credential the creator wants to create the group with
     /// - parameter config: the configuration for the conversation to be created
     public func createConversation(conversationId: ConversationId, creatorCredentialType: MlsCredentialType, config: ConversationConfiguration) async throws {
-        try await self.coreCrypto.createConversation(conversationId: conversationId, creatorCredentialType: creatorCredentialType.convert(), config: config.convert())
+        try await self.coreCrypto.createConversation(conversationId: conversationId, creatorCredentialType: creatorCredentialType.lower(), config: config.convert())
     }
 
     /// Checks if the Client is member of a given conversation and if the MLS Group is loaded up
@@ -925,7 +961,7 @@ public class CoreCryptoWrapper {
     /// - parameter epoch: the current epoch of the group
     /// - returns: a message with the proposal to be add a new client
     public func newExternalAddProposal(conversationId: ConversationId, epoch: UInt64, ciphersuite: UInt16, credentialType: MlsCredentialType) async throws -> [UInt8] {
-        return try await self.coreCrypto.newExternalAddProposal(conversationId: conversationId, epoch: epoch, ciphersuite: ciphersuite, credentialType: credentialType.convert())
+        return try await self.coreCrypto.newExternalAddProposal(conversationId: conversationId, epoch: epoch, ciphersuite: ciphersuite, credentialType: credentialType.lower()())
     }
 
     /// Issues an external commit and stores the group in a temporary table. This method is
@@ -942,7 +978,7 @@ public class CoreCryptoWrapper {
     /// - parameter config: - configuration of the MLS group
     /// - returns: an object of type `ConversationInitBundle`
     public func joinByExternalCommit(groupInfo: [UInt8], configuration: CustomConfiguration, credentialType: MlsCredentialType) async throws -> ConversationInitBundle {
-        try await self.coreCrypto.joinByExternalCommit(groupInfo: groupInfo, customConfiguration: configuration.convert(), credentialType: credentialType.convert()).convertTo()
+        try await self.coreCrypto.joinByExternalCommit(groupInfo: groupInfo, customConfiguration: configuration.convert(), credentialType: credentialType.lower()).convertTo()
     }
 
     /// This merges the commit generated by ``CoreCryptoWrapper/joinByExternalCommit``, persists the group permanently and
@@ -1346,7 +1382,7 @@ public class CoreCryptoWrapper {
     /// - parameter groupInfo: a TLS encoded `GroupInfo` fetched from the Delivery Service
     /// - parameter credentialType: kind of Credential to check usage of. Defaults to X509 for now as no other value will give any result.
     public func getCredentialInUse(groupInfo: [UInt8], credentialType: MlsCredentialType) async throws -> E2eiConversationState {
-        try await self.coreCrypto.getCredentialInUse(groupInfo: groupInfo, credentialType: credentialType.convert()).convertTo()
+        try await self.coreCrypto.getCredentialInUse(groupInfo: groupInfo, credentialType: credentialType.lower()()).convertTo()
     }
 
     /// - returns: The CoreCrypto version
@@ -1524,7 +1560,7 @@ public struct E2eiEnrollment: ConvertToInner {
 }
 
 extension CoreCryptoSwift.WireE2eIdentity {
-    func lift() -> CommitBundle {
+    func lift() -> E2eiEnrollment {
         return E2eiEnrollment.init(delegate: self)
     }
 }

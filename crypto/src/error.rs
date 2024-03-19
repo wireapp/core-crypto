@@ -246,6 +246,9 @@ pub enum CryptoError {
     /// The group lacks an ExternalSender extension whereas it should have at least one
     #[error("The group lacks an ExternalSender extension whereas it should have at least one")]
     MissingExternalSenderExtension,
+    /// Not supported for the moment
+    #[error("Not supported for the moment")]
+    Unsupported,
 }
 
 impl From<MlsError> for CryptoError {
