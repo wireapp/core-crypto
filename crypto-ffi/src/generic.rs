@@ -1564,7 +1564,11 @@ impl CoreCrypto {
             .map(async_lock::RwLock::new)
             .map(std::sync::Arc::new)
             .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)?)
+            .map(std::sync::Arc::new)
+            .map(|e| {
+                unsafe { std::sync::Arc::increment_strong_count(std::sync::Arc::as_ptr(&e)) };
+                e
+            })?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_new_activation_enrollment]
@@ -1584,7 +1588,11 @@ impl CoreCrypto {
             .map(async_lock::RwLock::new)
             .map(std::sync::Arc::new)
             .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)?)
+            .map(std::sync::Arc::new)
+            .map(|e| {
+                unsafe { std::sync::Arc::increment_strong_count(std::sync::Arc::as_ptr(&e)) };
+                e
+            })?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_new_rotate_enrollment]
@@ -1605,7 +1613,11 @@ impl CoreCrypto {
             .map(async_lock::RwLock::new)
             .map(std::sync::Arc::new)
             .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)?)
+            .map(std::sync::Arc::new)
+            .map(|e| {
+                unsafe { std::sync::Arc::increment_strong_count(std::sync::Arc::as_ptr(&e)) };
+                e
+            })?)
     }
 
     pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
