@@ -1564,11 +1564,7 @@ impl CoreCrypto {
             .map(async_lock::RwLock::new)
             .map(std::sync::Arc::new)
             .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)
-            .map(|e| {
-                unsafe { std::sync::Arc::increment_strong_count(std::sync::Arc::as_ptr(&e)) };
-                e
-            })?)
+            .map(std::sync::Arc::new)?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_new_activation_enrollment]
@@ -1588,11 +1584,7 @@ impl CoreCrypto {
             .map(async_lock::RwLock::new)
             .map(std::sync::Arc::new)
             .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)
-            .map(|e| {
-                unsafe { std::sync::Arc::increment_strong_count(std::sync::Arc::as_ptr(&e)) };
-                e
-            })?)
+            .map(std::sync::Arc::new)?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_new_rotate_enrollment]
@@ -1613,11 +1605,7 @@ impl CoreCrypto {
             .map(async_lock::RwLock::new)
             .map(std::sync::Arc::new)
             .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)
-            .map(|e| {
-                unsafe { std::sync::Arc::increment_strong_count(std::sync::Arc::as_ptr(&e)) };
-                e
-            })?)
+            .map(std::sync::Arc::new)?)
     }
 
     pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
@@ -1662,6 +1650,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
+    #[allow(unused_assignments)]
     pub async fn e2ei_mls_init_only(
         &self,
         mut enrollment: std::sync::Arc<E2eiEnrollment>,
@@ -1679,6 +1668,9 @@ impl CoreCrypto {
             }
         }
         let e2ei = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
+
+        enrollment = std::sync::Arc::new(e2ei.clone());
+
         let e2ei = std::sync::Arc::into_inner(e2ei.0)
             .ok_or_else(|| CryptoError::LockPoisonError)?
             .into_inner();
@@ -1698,6 +1690,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_rotate_all]
+    #[allow(unused_assignments)]
     pub async fn e2ei_rotate_all(
         &self,
         mut enrollment: std::sync::Arc<E2eiEnrollment>,
@@ -1716,6 +1709,9 @@ impl CoreCrypto {
         }
 
         let e2ei = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
+
+        enrollment = std::sync::Arc::new(e2ei.clone());
+
         let e2ei = std::sync::Arc::into_inner(e2ei.0)
             .ok_or_else(|| CryptoError::LockPoisonError)?
             .into_inner();
@@ -1824,7 +1820,7 @@ impl CoreCrypto {
     }
 }
 
-#[derive(Debug, uniffi::Object)]
+#[derive(Debug, Clone, uniffi::Object)]
 /// See [core_crypto::e2e_identity::E2eiEnrollment]
 pub struct E2eiEnrollment(std::sync::Arc<async_lock::RwLock<core_crypto::prelude::E2eiEnrollment>>);
 
