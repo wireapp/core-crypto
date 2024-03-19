@@ -6,13 +6,15 @@
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
 use openmls::prelude::{KeyPackageIn, LeafNode, LeafNodeIndex, MlsMessageOut};
-use std::collections::HashSet;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
-    mls::credential::{crl::extract_dp, CredentialBundle},
+    e2e_identity::init_certificates::NewCrlDistributionPoint,
+    mls::credential::{
+        crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
+        CredentialBundle,
+    },
     prelude::{Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError, MlsGroupInfoBundle},
 };
 
@@ -147,16 +149,18 @@ impl MlsConversation {
             .signature_key;
 
         // No need to also check pending proposals since they should already have been scanned while decrypting the proposal message
-        let crl_new_distribution_points = key_packages
-            .iter()
-            .filter_map(|kp| match kp.credential().mls_credential() {
-                openmls::prelude::MlsCredentialType::X509(cert) => Some(cert),
-                _ => None,
-            })
-            .try_fold(HashSet::new(), |mut acc, c| {
-                acc.extend(extract_dp(c)?);
-                CryptoResult::Ok(acc)
-            })?;
+        let crl_new_distribution_points = get_new_crl_distribution_points(
+            backend,
+            extract_crl_uris_from_credentials(key_packages.iter().filter_map(|kp| {
+                let mls_credential = kp.credential().mls_credential();
+                if matches!(mls_credential, openmls::prelude::MlsCredentialType::X509(_)) {
+                    Some(mls_credential)
+                } else {
+                    None
+                }
+            }))?,
+        )
+        .await?;
 
         let (commit, welcome, gi) = self
             .group
@@ -169,13 +173,6 @@ impl MlsConversation {
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi)?;
 
         self.persist_group_when_changed(backend, false).await?;
-
-        let crl_new_distribution_points = if crl_new_distribution_points.is_empty() {
-            None
-        } else {
-            Some(crl_new_distribution_points)
-        }
-        .into();
 
         Ok(MlsConversationCreationMessage {
             welcome,
