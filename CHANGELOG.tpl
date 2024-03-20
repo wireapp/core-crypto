@@ -7,11 +7,20 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.54] - 2024-03-20
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.54" unreleased=true}}
+</details>
+
+* Fixed `new_crl_distribution_points` not being deduplicated vs what we have in-store for `add_members_to_conversation`
+
 ## [1.0.0-rc.53] - 2024-03-15
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.53" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.53"}}
 </details>
 
 * Fixed expired certificates in credentials being verified in MLS
