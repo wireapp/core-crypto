@@ -40,7 +40,7 @@ macro_rules! proteus_impl {
                             }
                         }
 
-                        CoreCryptoResult::Ok(result?)
+                        result
                     }
                 }
             } else {
