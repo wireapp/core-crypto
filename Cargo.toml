@@ -71,7 +71,7 @@ branch = "wire/stable"
 
 [patch.crates-io.hpke]
 git = "https://github.com/wireapp/rust-hpke.git"
-branch = "wire/unstable-pq-xyber"
+branch = "wire/unstable-pq-xyber-p521"
 
 [patch.crates-io.wire-e2e-identity]
 package = "wire-e2e-identity"
