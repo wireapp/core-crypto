@@ -38,6 +38,34 @@ impl MlsCentral {
         conversation_lock.e2ei_conversation_state(&self.mls_backend).await
     }
 
+    /// Verifies a Group state before joining it
+    pub async fn e2ei_verify_group_state(
+        &self,
+        group_info: VerifiableGroupInfo,
+    ) -> CryptoResult<E2eiConversationState> {
+        self.mls_backend
+            .authentication_service()
+            .refresh_time_of_interest()
+            .await;
+
+        let is_sender = true; // verify the ratchet tree as sender to turn on hardened verification
+        let Ok(rt) = group_info.take_ratchet_tree(&self.mls_backend, is_sender).await else {
+            return Ok(E2eiConversationState::NotVerified);
+        };
+
+        let credentials = rt.iter().filter_map(|n| match n {
+            Some(Node::LeafNode(ln)) => Some(ln.credential()),
+            _ => None,
+        });
+
+        Ok(compute_state(
+            credentials,
+            MlsCredentialType::X509,
+            self.mls_backend.authentication_service().borrow().await.as_ref(),
+        )
+        .await)
+    }
+
     /// Gets the e2ei conversation state from a `GroupInfo`. Useful to check if the group has e2ei
     /// turned on or not before joining it.
     pub async fn get_credential_in_use(
