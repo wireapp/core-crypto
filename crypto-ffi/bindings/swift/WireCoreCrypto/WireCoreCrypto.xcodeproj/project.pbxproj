@@ -10,9 +10,32 @@
 		16CDD1172A2636BB0073FB8E /* WireCoreCrypto.h in Headers */ = {isa = PBXBuildFile; fileRef = 16CDD1162A2636BB0073FB8E /* WireCoreCrypto.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		16CDD11F2A26392C0073FB8E /* core_cryptoFFI.h in Headers */ = {isa = PBXBuildFile; fileRef = 16CDD11D2A26392C0073FB8E /* core_cryptoFFI.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		16CDD1202A26392C0073FB8E /* CoreCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16CDD11E2A26392C0073FB8E /* CoreCrypto.swift */; };
+		16EFC3B82BB216AB0046C1D7 /* WireCoreCryptoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16EFC3B72BB216AB0046C1D7 /* WireCoreCryptoTests.swift */; };
+		16EFC3B92BB216AB0046C1D7 /* WireCoreCrypto.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 16CDD1132A2636BB0073FB8E /* WireCoreCrypto.framework */; platformFilter = ios; };
+		16EFC3C62BB21E210046C1D7 /* TestHostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16EFC3C52BB21E210046C1D7 /* TestHostApp.swift */; };
+		16EFC3C82BB21E210046C1D7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16EFC3C72BB21E210046C1D7 /* ContentView.swift */; };
+		16EFC3CA2BB21E230046C1D7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 16EFC3C92BB21E230046C1D7 /* Assets.xcassets */; };
+		16EFC3CD2BB21E230046C1D7 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 16EFC3CC2BB21E230046C1D7 /* Preview Assets.xcassets */; };
 		692B48242AA0F7860074F00A /* core_crypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 692B48232AA0F7860074F00A /* core_crypto.swift */; };
 		692B48272AA0F9810074F00A /* core_crypto_ffiFFI.h in Headers */ = {isa = PBXBuildFile; fileRef = 692B48262AA0F9810074F00A /* core_crypto_ffiFFI.h */; settings = {ATTRIBUTES = (Public, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		16EFC3BA2BB216AB0046C1D7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 16CDD10A2A2636BB0073FB8E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 16CDD1122A2636BB0073FB8E;
+			remoteInfo = WireCoreCrypto;
+		};
+		16EFC3D12BB21E360046C1D7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 16CDD10A2A2636BB0073FB8E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 16EFC3C22BB21E210046C1D7;
+			remoteInfo = TestHost;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		16CDD1132A2636BB0073FB8E /* WireCoreCrypto.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WireCoreCrypto.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -20,12 +43,34 @@
 		16CDD11D2A26392C0073FB8E /* core_cryptoFFI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = core_cryptoFFI.h; sourceTree = "<group>"; };
 		16CDD11E2A26392C0073FB8E /* CoreCrypto.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CoreCrypto.swift; sourceTree = "<group>"; };
 		16CDD1212A29E0760073FB8E /* BuildSettings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = BuildSettings.xcconfig; sourceTree = "<group>"; };
+		16EFC3B52BB216AB0046C1D7 /* WireCoreCryptoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WireCoreCryptoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		16EFC3B72BB216AB0046C1D7 /* WireCoreCryptoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireCoreCryptoTests.swift; sourceTree = "<group>"; };
+		16EFC3C32BB21E210046C1D7 /* TestHost.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		16EFC3C52BB21E210046C1D7 /* TestHostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestHostApp.swift; sourceTree = "<group>"; };
+		16EFC3C72BB21E210046C1D7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		16EFC3C92BB21E230046C1D7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		16EFC3CC2BB21E230046C1D7 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		692B48232AA0F7860074F00A /* core_crypto.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = core_crypto.swift; sourceTree = "<group>"; };
 		692B48262AA0F9810074F00A /* core_crypto_ffiFFI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = core_crypto_ffiFFI.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		16CDD1102A2636BB0073FB8E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		16EFC3B22BB216AB0046C1D7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				16EFC3B92BB216AB0046C1D7 /* WireCoreCrypto.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		16EFC3C02BB21E210046C1D7 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -40,6 +85,8 @@
 			children = (
 				16CDD1212A29E0760073FB8E /* BuildSettings.xcconfig */,
 				16CDD1152A2636BB0073FB8E /* WireCoreCrypto */,
+				16EFC3B62BB216AB0046C1D7 /* WireCoreCryptoTests */,
+				16EFC3C42BB21E210046C1D7 /* TestHost */,
 				16CDD1142A2636BB0073FB8E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -48,6 +95,8 @@
 			isa = PBXGroup;
 			children = (
 				16CDD1132A2636BB0073FB8E /* WireCoreCrypto.framework */,
+				16EFC3B52BB216AB0046C1D7 /* WireCoreCryptoTests.xctest */,
+				16EFC3C32BB21E210046C1D7 /* TestHost.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -62,6 +111,33 @@
 				692B48262AA0F9810074F00A /* core_crypto_ffiFFI.h */,
 			);
 			path = WireCoreCrypto;
+			sourceTree = "<group>";
+		};
+		16EFC3B62BB216AB0046C1D7 /* WireCoreCryptoTests */ = {
+			isa = PBXGroup;
+			children = (
+				16EFC3B72BB216AB0046C1D7 /* WireCoreCryptoTests.swift */,
+			);
+			path = WireCoreCryptoTests;
+			sourceTree = "<group>";
+		};
+		16EFC3C42BB21E210046C1D7 /* TestHost */ = {
+			isa = PBXGroup;
+			children = (
+				16EFC3C52BB21E210046C1D7 /* TestHostApp.swift */,
+				16EFC3C72BB21E210046C1D7 /* ContentView.swift */,
+				16EFC3C92BB21E230046C1D7 /* Assets.xcassets */,
+				16EFC3CB2BB21E230046C1D7 /* Preview Content */,
+			);
+			path = TestHost;
+			sourceTree = "<group>";
+		};
+		16EFC3CB2BB21E230046C1D7 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				16EFC3CC2BB21E230046C1D7 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -98,6 +174,42 @@
 			productReference = 16CDD1132A2636BB0073FB8E /* WireCoreCrypto.framework */;
 			productType = "com.apple.product-type.framework";
 		};
+		16EFC3B42BB216AB0046C1D7 /* WireCoreCryptoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 16EFC3BE2BB216AB0046C1D7 /* Build configuration list for PBXNativeTarget "WireCoreCryptoTests" */;
+			buildPhases = (
+				16EFC3B12BB216AB0046C1D7 /* Sources */,
+				16EFC3B22BB216AB0046C1D7 /* Frameworks */,
+				16EFC3B32BB216AB0046C1D7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				16EFC3BB2BB216AB0046C1D7 /* PBXTargetDependency */,
+				16EFC3D22BB21E360046C1D7 /* PBXTargetDependency */,
+			);
+			name = WireCoreCryptoTests;
+			productName = WireCoreCryptoTests;
+			productReference = 16EFC3B52BB216AB0046C1D7 /* WireCoreCryptoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		16EFC3C22BB21E210046C1D7 /* TestHost */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 16EFC3CE2BB21E230046C1D7 /* Build configuration list for PBXNativeTarget "TestHost" */;
+			buildPhases = (
+				16EFC3BF2BB21E210046C1D7 /* Sources */,
+				16EFC3C02BB21E210046C1D7 /* Frameworks */,
+				16EFC3C12BB21E210046C1D7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TestHost;
+			productName = TestHost;
+			productReference = 16EFC3C32BB21E210046C1D7 /* TestHost.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -105,11 +217,19 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1520;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					16CDD1122A2636BB0073FB8E = {
 						CreatedOnToolsVersion = 14.2;
 						LastSwiftMigration = 1420;
+					};
+					16EFC3B42BB216AB0046C1D7 = {
+						CreatedOnToolsVersion = 15.2;
+						TestTargetID = 16EFC3C22BB21E210046C1D7;
+					};
+					16EFC3C22BB21E210046C1D7 = {
+						CreatedOnToolsVersion = 15.2;
 					};
 				};
 			};
@@ -127,6 +247,8 @@
 			projectRoot = "";
 			targets = (
 				16CDD1122A2636BB0073FB8E /* WireCoreCrypto */,
+				16EFC3B42BB216AB0046C1D7 /* WireCoreCryptoTests */,
+				16EFC3C22BB21E210046C1D7 /* TestHost */,
 			);
 		};
 /* End PBXProject section */
@@ -136,6 +258,22 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		16EFC3B32BB216AB0046C1D7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		16EFC3C12BB21E210046C1D7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				16EFC3CD2BB21E230046C1D7 /* Preview Assets.xcassets in Resources */,
+				16EFC3CA2BB21E230046C1D7 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -151,7 +289,38 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		16EFC3B12BB216AB0046C1D7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				16EFC3B82BB216AB0046C1D7 /* WireCoreCryptoTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		16EFC3BF2BB21E210046C1D7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				16EFC3C82BB21E210046C1D7 /* ContentView.swift in Sources */,
+				16EFC3C62BB21E210046C1D7 /* TestHostApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		16EFC3BB2BB216AB0046C1D7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilter = ios;
+			target = 16CDD1122A2636BB0073FB8E /* WireCoreCrypto */;
+			targetProxy = 16EFC3BA2BB216AB0046C1D7 /* PBXContainerItemProxy */;
+		};
+		16EFC3D22BB21E360046C1D7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 16EFC3C22BB21E210046C1D7 /* TestHost */;
+			targetProxy = 16EFC3D12BB21E360046C1D7 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		16CDD1182A2636BB0073FB8E /* Debug */ = {
@@ -360,6 +529,126 @@
 			};
 			name = Release;
 		};
+		16EFC3BC2BB216AB0046C1D7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wire.WireCoreCryptoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TestHost.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TestHost";
+			};
+			name = Debug;
+		};
+		16EFC3BD2BB216AB0046C1D7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wire.WireCoreCryptoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TestHost.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TestHost";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		16EFC3CF2BB21E230046C1D7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"TestHost/Preview Content\"";
+				DEVELOPMENT_TEAM = EDF3JCE8BC;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wire.TestHost;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		16EFC3D02BB21E230046C1D7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"TestHost/Preview Content\"";
+				DEVELOPMENT_TEAM = EDF3JCE8BC;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wire.TestHost;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -377,6 +666,24 @@
 			buildConfigurations = (
 				16CDD11B2A2636BB0073FB8E /* Debug */,
 				16CDD11C2A2636BB0073FB8E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		16EFC3BE2BB216AB0046C1D7 /* Build configuration list for PBXNativeTarget "WireCoreCryptoTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				16EFC3BC2BB216AB0046C1D7 /* Debug */,
+				16EFC3BD2BB216AB0046C1D7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		16EFC3CE2BB21E230046C1D7 /* Build configuration list for PBXNativeTarget "TestHost" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				16EFC3CF2BB21E230046C1D7 /* Debug */,
+				16EFC3D02BB21E230046C1D7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
