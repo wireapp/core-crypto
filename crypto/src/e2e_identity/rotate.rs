@@ -103,7 +103,7 @@ impl MlsCentral {
     /// or [MlsCentral::e2ei_new_rotate_enrollment]
     pub async fn e2ei_rotate_all(
         &mut self,
-        enrollment: E2eiEnrollment,
+        enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
         new_key_packages_count: usize,
     ) -> CryptoResult<MlsRotateBundle> {
@@ -433,7 +433,7 @@ pub mod tests {
 
                         let is_renewal = case.credential_type == MlsCredentialType::X509;
 
-                        let (enrollment, cert) = e2ei_enrollment(
+                        let (mut enrollment, cert) = e2ei_enrollment(
                             &mut alice_central,
                             &case,
                             x509_test_chain,
@@ -447,7 +447,7 @@ pub mod tests {
 
                         let rotate_bundle = alice_central
                             .mls_central
-                            .e2ei_rotate_all(enrollment, cert, NB_KEY_PACKAGE)
+                            .e2ei_rotate_all(&mut enrollment, cert, NB_KEY_PACKAGE)
                             .await
                             .unwrap();
 
@@ -640,7 +640,7 @@ pub mod tests {
 
                     let is_renewal = case.credential_type == MlsCredentialType::X509;
 
-                    let (enrollment, cert) = e2ei_enrollment(
+                    let (mut enrollment, cert) = e2ei_enrollment(
                         &mut alice_central,
                         &case,
                         x509_test_chain,
@@ -654,7 +654,7 @@ pub mod tests {
 
                     alice_central
                         .mls_central
-                        .e2ei_rotate_all(enrollment, cert, 10)
+                        .e2ei_rotate_all(&mut enrollment, cert, 10)
                         .await
                         .unwrap();
 
@@ -806,7 +806,7 @@ pub mod tests {
 
                         let is_renewal = case.credential_type == MlsCredentialType::X509;
 
-                        let (enrollment, cert) = e2ei_enrollment(
+                        let (mut enrollment, cert) = e2ei_enrollment(
                             &mut alice_central,
                             &case,
                             x509_test_chain,
@@ -820,7 +820,7 @@ pub mod tests {
 
                         let rotate_bundle = alice_central
                             .mls_central
-                            .e2ei_rotate_all(enrollment, cert, 10)
+                            .e2ei_rotate_all(&mut enrollment, cert, 10)
                             .await
                             .unwrap();
 
@@ -870,7 +870,7 @@ pub mod tests {
                         }
                         let is_renewal = case.credential_type == MlsCredentialType::X509;
 
-                        let (enrollment, cert) = e2ei_enrollment(
+                        let (mut enrollment, cert) = e2ei_enrollment(
                             &mut bob_central,
                             &case,
                             x509_test_chain,
@@ -884,7 +884,7 @@ pub mod tests {
 
                         let rotate_bundle = bob_central
                             .mls_central
-                            .e2ei_rotate_all(enrollment, cert, 10)
+                            .e2ei_rotate_all(&mut enrollment, cert, 10)
                             .await
                             .unwrap();
 

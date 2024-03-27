@@ -15,6 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use std::collections::HashMap;
+use std::ops::DerefMut;
 
 use tls_codec::{Deserialize, Serialize};
 
@@ -1672,19 +1673,6 @@ impl CoreCrypto {
         certificate_chain: String,
         nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<Option<Vec<String>>> {
-        if std::sync::Arc::strong_count(&enrollment) > 1 {
-            unsafe {
-                // it is required because in order to pass the enrollment to Rust, uniffi lowers it by cloning the Arc
-                // hence here the Arc has a strong_count of 2. We decrement it manually then drop it with `try_unwrap`.
-                // We have to do this since this instance contains private keys that have to be zeroed once dropped.
-                std::sync::Arc::decrement_strong_count(std::sync::Arc::as_ptr(&enrollment));
-            }
-        }
-        let e2ei = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
-        let e2ei = std::sync::Arc::into_inner(e2ei.0)
-            .ok_or_else(|| CryptoError::LockPoisonError)?
-            .into_inner();
-
         let nb_key_package = nb_key_package
             .map(usize::try_from)
             .transpose()
@@ -1694,7 +1682,11 @@ impl CoreCrypto {
             .central
             .lock()
             .await
-            .e2ei_mls_init_only(e2ei, certificate_chain, nb_key_package)
+            .e2ei_mls_init_only(
+                enrollment.0.write().await.deref_mut(),
+                certificate_chain,
+                nb_key_package,
+            )
             .await?
             .into())
     }
@@ -1706,23 +1698,14 @@ impl CoreCrypto {
         certificate_chain: String,
         new_key_packages_count: u32,
     ) -> CoreCryptoResult<RotateBundle> {
-        if std::sync::Arc::strong_count(&enrollment) > 1 {
-            unsafe {
-                // it is required because in order to pass the enrollment to Rust, uniffi lowers it by cloning the Arc
-                // hence here the Arc has a strong_count of 2. We decrement it manually then drop it with `try_unwrap`.
-                // We have to do this since this instance contains private keys that have to be zeroed once dropped.
-                std::sync::Arc::decrement_strong_count(std::sync::Arc::as_ptr(&enrollment));
-            }
-        }
-        let e2ei = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
-        let e2ei = std::sync::Arc::into_inner(e2ei.0)
-            .ok_or_else(|| CryptoError::LockPoisonError)?
-            .into_inner();
-
         self.central
             .lock()
             .await
-            .e2ei_rotate_all(e2ei, certificate_chain, new_key_packages_count as usize)
+            .e2ei_rotate_all(
+                enrollment.0.write().await.deref_mut(),
+                certificate_chain,
+                new_key_packages_count as usize,
+            )
             .await?
             .try_into()
     }

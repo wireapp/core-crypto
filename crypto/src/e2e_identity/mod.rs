@@ -2,6 +2,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::HashMap;
 
 use wire_e2e_identity::prelude::{E2eiAcmeAuthorization, RustyE2eIdentity};
+use zeroize::Zeroize;
 
 use error::*;
 use mls_crypto_provider::MlsCryptoProvider;
@@ -78,7 +79,7 @@ impl MlsCentral {
     /// to initialize the MLS client with a certificate
     pub async fn e2ei_mls_init_only(
         &mut self,
-        enrollment: E2eiEnrollment,
+        enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
         nb_init_key_packages: Option<usize>,
     ) -> CryptoResult<NewCrlDistributionPoint> {
@@ -546,14 +547,24 @@ impl E2eiEnrollment {
     }
 
     async fn certificate_response(
-        mut self,
+        &mut self,
         certificate_chain: String,
         env: &wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
     ) -> E2eIdentityResult<Vec<Vec<u8>>> {
         let order = self.valid_order.take().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'checkOrderResponse()'",
         ))?;
-        Ok(self.acme_x509_certificate_response(certificate_chain, order, Some(env))?)
+        let certificates = self.acme_x509_certificate_response(certificate_chain, order, Some(env))?;
+
+        // zeroize the private material
+        self.sign_sk.zeroize();
+        self.delegate.sign_kp.zeroize();
+        self.delegate.acme_kp.zeroize();
+
+        #[cfg(not(target_family = "wasm"))]
+        self.refresh_token.zeroize();
+
+        Ok(certificates)
     }
 }
 
@@ -607,7 +618,7 @@ pub mod tests {
 
                 let is_renewal = false;
 
-                let (enrollment, cert) = e2ei_enrollment(
+                let (mut enrollment, cert) = e2ei_enrollment(
                     &mut cc,
                     &case,
                     &x509_test_chain,
@@ -620,7 +631,7 @@ pub mod tests {
                 .unwrap();
 
                 cc.mls_central
-                    .e2ei_mls_init_only(enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
+                    .e2ei_mls_init_only(&mut enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
                     .await
                     .unwrap();
 
