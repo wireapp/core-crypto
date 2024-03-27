@@ -119,7 +119,7 @@ mod alg {
 
     #[tokio::test]
     async fn p256_should_succeed() {
-        let test = E2eTest::new_internal(false, JwsAlgorithm::P256, OidcProvider::Dex)
+        let test = E2eTest::new_internal(false, JwsAlgorithm::P256, OidcProvider::Keycloak)
             .start(docker())
             .await;
         assert!(test.nominal_enrollment().await.is_ok());
@@ -129,7 +129,7 @@ mod alg {
     #[ignore]
     #[tokio::test]
     async fn p384_should_succeed() {
-        let test = E2eTest::new_internal(false, JwsAlgorithm::P384, OidcProvider::Dex)
+        let test = E2eTest::new_internal(false, JwsAlgorithm::P384, OidcProvider::Keycloak)
             .start(docker())
             .await;
         assert!(test.nominal_enrollment().await.is_ok());

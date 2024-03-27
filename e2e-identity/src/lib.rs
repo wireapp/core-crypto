@@ -39,7 +39,7 @@ pub struct RustyE2eIdentity {
     pub sign_alg: JwsAlgorithm,
     pub sign_kp: Pem,
     pub hash_alg: HashAlgorithm,
-    acme_kp: Pem,
+    pub acme_kp: Pem,
     pub acme_jwk: Jwk,
 }
 
