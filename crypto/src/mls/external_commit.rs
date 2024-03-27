@@ -286,6 +286,7 @@ impl MlsConversation {
                 })
                 .collect();
             let state = compute_state(
+                self.ciphersuite(),
                 credentials.iter(),
                 MlsCredentialType::X509,
                 backend.authentication_service().borrow().await.as_ref(),

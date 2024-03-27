@@ -4,6 +4,7 @@ use openmls_traits::types::SignatureScheme;
 use wire_e2e_identity::prelude::WireIdentityReader;
 use zeroize::Zeroize;
 
+use crate::prelude::MlsCiphersuite;
 use crate::{
     e2e_identity::id::WireQualifiedClientId,
     prelude::{ClientId, CryptoError, CryptoResult},
@@ -40,7 +41,13 @@ impl CertificateBundle {
     pub fn get_client_id(&self) -> CryptoResult<ClientId> {
         let leaf = self.certificate_chain.first().ok_or(CryptoError::InvalidIdentity)?;
 
-        let identity = leaf.extract_identity(None).map_err(|_| CryptoError::InvalidIdentity)?;
+        // We do not use the thumbprint generated from this hash alg anyway here
+        // No need to bloat the API for nothing
+        let hash_alg = MlsCiphersuite::default().e2ei_hash_alg();
+
+        let identity = leaf
+            .extract_identity(None, hash_alg)
+            .map_err(|_| CryptoError::InvalidIdentity)?;
         let client_id = identity.client_id.parse::<WireQualifiedClientId>()?;
         Ok(client_id.into())
     }

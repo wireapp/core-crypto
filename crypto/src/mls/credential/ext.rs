@@ -113,13 +113,15 @@ impl CredentialExt for openmls::prelude::Certificate {
 
     fn extract_identity(
         &self,
-        _cs: MlsCiphersuite,
+        cs: MlsCiphersuite,
         env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
     ) -> CryptoResult<WireIdentity> {
         let leaf = self.certificates.first().ok_or(CryptoError::InvalidIdentity)?;
         let leaf = leaf.as_slice();
         use wire_e2e_identity::prelude::WireIdentityReader as _;
-        let identity = leaf.extract_identity(env).map_err(|_| CryptoError::InvalidIdentity)?;
+        let identity = leaf
+            .extract_identity(env, cs.e2ei_hash_alg())
+            .map_err(|_| CryptoError::InvalidIdentity)?;
         let identity = WireIdentity::try_from((identity, leaf))?;
         Ok(identity)
     }
