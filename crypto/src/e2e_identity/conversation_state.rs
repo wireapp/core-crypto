@@ -8,6 +8,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 use wire_e2e_identity::prelude::WireIdentityReader;
 
+use crate::prelude::MlsCiphersuite;
 use openmls::{
     messages::group_info::VerifiableGroupInfo,
     prelude::{Credential, Node},
@@ -48,6 +49,8 @@ impl MlsCentral {
             .refresh_time_of_interest()
             .await;
 
+        let cs = group_info.ciphersuite().into();
+
         let is_sender = true; // verify the ratchet tree as sender to turn on hardened verification
         let Ok(rt) = group_info.take_ratchet_tree(&self.mls_backend, is_sender).await else {
             return Ok(E2eiConversationState::NotVerified);
@@ -59,6 +62,7 @@ impl MlsCentral {
         });
 
         Ok(compute_state(
+            cs,
             credentials,
             MlsCredentialType::X509,
             self.mls_backend.authentication_service().borrow().await.as_ref(),
@@ -73,6 +77,7 @@ impl MlsCentral {
         group_info: VerifiableGroupInfo,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<E2eiConversationState> {
+        let cs = group_info.ciphersuite().into();
         // Not verifying the supplied the GroupInfo here could let attackers lure the clients about
         // the e2ei state of a conversation and as a consequence degrade this conversation for all
         // participants once joining it.
@@ -81,11 +86,13 @@ impl MlsCentral {
             .take_ratchet_tree(&self.mls_backend, false)
             .await
             .map_err(MlsError::from)?;
-        self.get_credential_in_use_in_ratchet_tree(rt, credential_type).await
+        self.get_credential_in_use_in_ratchet_tree(cs, rt, credential_type)
+            .await
     }
 
     async fn get_credential_in_use_in_ratchet_tree(
         &self,
+        ciphersuite: MlsCiphersuite,
         ratchet_tree: RatchetTree,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<E2eiConversationState> {
@@ -94,6 +101,7 @@ impl MlsCentral {
             _ => None,
         });
         Ok(compute_state(
+            ciphersuite,
             credentials,
             credential_type,
             self.mls_backend.authentication_service().borrow().await.as_ref(),
@@ -106,6 +114,7 @@ impl MlsConversation {
     async fn e2ei_conversation_state(&self, backend: &MlsCryptoProvider) -> CryptoResult<E2eiConversationState> {
         backend.authentication_service().refresh_time_of_interest().await;
         Ok(compute_state(
+            self.ciphersuite(),
             self.group.members_credentials(),
             MlsCredentialType::X509,
             backend.authentication_service().borrow().await.as_ref(),
@@ -117,6 +126,7 @@ impl MlsConversation {
 /// _credential_type will be used in the future to get the usage of VC Credentials, even Basics one.
 /// Right now though, we do not need anything other than X509 so let's keep things simple.
 pub(crate) async fn compute_state<'a>(
+    ciphersuite: MlsCiphersuite,
     credentials: impl Iterator<Item = &'a Credential>,
     _credential_type: MlsCredentialType,
     env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
@@ -135,7 +145,7 @@ pub(crate) async fn compute_state<'a>(
 
         is_e2ei = true;
 
-        let invalid_identity = cert.extract_identity(env).is_err();
+        let invalid_identity = cert.extract_identity(env, ciphersuite.e2ei_hash_alg()).is_err();
 
         use openmls_x509_credential::X509Ext as _;
         let is_time_valid = cert.is_time_valid().unwrap_or(false);

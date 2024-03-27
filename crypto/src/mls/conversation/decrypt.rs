@@ -342,6 +342,7 @@ impl MlsConversation {
                 })
                 .collect();
             let state = compute_state(
+                self.ciphersuite(),
                 credentials.iter(),
                 crate::prelude::MlsCredentialType::X509,
                 backend.authentication_service().borrow().await.as_ref(),

@@ -1,12 +1,23 @@
 use crate::prelude::CiphersuiteName;
 use crate::{CryptoError, CryptoResult};
-use openmls_traits::types::Ciphersuite;
+use openmls_traits::types::{Ciphersuite, HashType};
+use wire_e2e_identity::prelude::HashAlgorithm;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, derive_more::Deref, serde::Serialize, serde::Deserialize)]
 #[serde(transparent)]
 #[repr(transparent)]
 /// A wrapper for the OpenMLS Ciphersuite, so that we are able to provide a default value.
 pub struct MlsCiphersuite(pub(crate) Ciphersuite);
+
+impl MlsCiphersuite {
+    pub(crate) fn e2ei_hash_alg(&self) -> HashAlgorithm {
+        match self.0.hash_algorithm() {
+            HashType::Sha2_256 => HashAlgorithm::SHA256,
+            HashType::Sha2_384 => HashAlgorithm::SHA384,
+            HashType::Sha2_512 => HashAlgorithm::SHA512,
+        }
+    }
+}
 
 impl Default for MlsCiphersuite {
     fn default() -> Self {
