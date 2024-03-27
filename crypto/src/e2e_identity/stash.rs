@@ -94,7 +94,7 @@ pub mod tests {
                 let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
                 let is_renewal = false;
-                let (enrollment, cert) = e2ei_enrollment(
+                let (mut enrollment, cert) = e2ei_enrollment(
                     &mut cc,
                     &case,
                     &x509_test_chain,
@@ -113,7 +113,7 @@ pub mod tests {
 
                 assert!(cc
                     .mls_central
-                    .e2ei_mls_init_only(enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
+                    .e2ei_mls_init_only(&mut enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
                     .await
                     .is_ok());
             })

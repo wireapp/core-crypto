@@ -24,6 +24,7 @@ use core_crypto::prelude::*;
 use core_crypto::CryptoError;
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
+use std::ops::DerefMut;
 use tls_codec::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -2705,11 +2706,12 @@ impl CoreCrypto {
                     .transpose()
                     .map_err(CryptoError::from)?;
 
-                let enrollment = std::sync::Arc::try_unwrap(enrollment.0)
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .into_inner();
                 let crls = this
-                    .e2ei_mls_init_only(enrollment, certificate_chain, nb_key_package)
+                    .e2ei_mls_init_only(
+                        enrollment.0.write().await.deref_mut(),
+                        certificate_chain,
+                        nb_key_package,
+                    )
                     .await?;
 
                 let crls = if let Some(crls) = &*crls {
@@ -2734,13 +2736,12 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let mut this = this.write().await;
-
-                let enrollment = std::sync::Arc::try_unwrap(enrollment.0)
-                    .map_err(|_| CryptoError::LockPoisonError)?
-                    .into_inner();
-
                 let rotate_bundle: RotateBundle = this
-                    .e2ei_rotate_all(enrollment, certificate_chain, new_key_packages_count as usize)
+                    .e2ei_rotate_all(
+                        enrollment.0.write().await.deref_mut(),
+                        certificate_chain,
+                        new_key_packages_count as usize,
+                    )
                     .await?
                     .try_into()?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&rotate_bundle)?)
