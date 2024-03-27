@@ -310,7 +310,7 @@ pub mod tests {
         };
         let (cert_chain, ..) = builder.build_x509();
         let cert = cert_chain.first().unwrap();
-        let identity = cert.extract_identity(None).unwrap();
+        let identity = cert.extract_identity(None, HashAlgorithm::SHA256).unwrap();
         assert_eq!(&identity.client_id, client_id);
         assert_eq!(
             identity.handle.as_str(),
@@ -325,6 +325,6 @@ pub mod tests {
     fn default_should_be_valid() {
         let (cert_chain, ..) = WireIdentityBuilder::default().build_x509();
         let cert = cert_chain.first().unwrap();
-        assert!(cert.extract_identity(None).is_ok());
+        assert!(cert.extract_identity(None, HashAlgorithm::SHA256).is_ok());
     }
 }

@@ -188,6 +188,7 @@ impl<'a> E2eTest<'a> {
                     acme_kp.public_key().try_into_jwk().unwrap(),
                 )
             }
+            JwsAlgorithm::P521 => unimplemented!(),
         };
 
         let hash_alg = HashAlgorithm::SHA256;

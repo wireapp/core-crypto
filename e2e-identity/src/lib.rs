@@ -57,6 +57,7 @@ impl RustyE2eIdentity {
             JwsAlgorithm::Ed25519 => Ed25519KeyPair::from_bytes(&raw_sign_key[..])?.to_pem(),
             JwsAlgorithm::P256 => ES256KeyPair::from_bytes(&raw_sign_key[..])?.to_pem()?,
             JwsAlgorithm::P384 => ES384KeyPair::from_bytes(&raw_sign_key[..])?.to_pem()?,
+            JwsAlgorithm::P521 => return Err(E2eIdentityError::NotSupported),
         };
         let (acme_kp, acme_jwk) = match sign_alg {
             JwsAlgorithm::Ed25519 => {
@@ -71,6 +72,7 @@ impl RustyE2eIdentity {
                 let kp = ES384KeyPair::generate();
                 (kp.to_pem()?.into(), kp.public_key().try_into_jwk()?)
             }
+            JwsAlgorithm::P521 => return Err(E2eIdentityError::NotSupported),
         };
         // drop the private immediately since it already has been copied
         raw_sign_key.zeroize();
@@ -455,6 +457,6 @@ impl RustyE2eIdentity {
         env: Option<&PkiEnvironment>,
     ) -> E2eIdentityResult<Vec<Vec<u8>>> {
         let order = order.try_into()?;
-        Ok(RustyAcme::certificate_response(response, order, env)?)
+        Ok(RustyAcme::certificate_response(response, order, self.hash_alg, env)?)
     }
 }

@@ -958,7 +958,7 @@ impl<'a> E2eTest<'a> {
             .expect_header("content-type", "application/pem-certificate-chain");
         let resp = resp.text().await?;
         self.display_body(&resp);
-        let mut certificates = RustyAcme::certificate_response(resp, order, None)?;
+        let mut certificates = RustyAcme::certificate_response(resp, order, self.hash_alg, None)?;
         let root_ca = self.fetch_acme_root_ca().await;
         let root_ca_der = x509_cert::Certificate::from_pem(root_ca).unwrap().to_der().unwrap();
         certificates.push(root_ca_der);

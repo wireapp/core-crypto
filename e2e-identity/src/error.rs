@@ -19,4 +19,7 @@ pub enum E2eIdentityError {
     /// Core JWT error
     #[error(transparent)]
     JwtSimpleError(#[from] jwt_simple::Error),
+    /// Not supported
+    #[error("Not supported")]
+    NotSupported,
 }
