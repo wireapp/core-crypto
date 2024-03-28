@@ -7,11 +7,24 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.55] - 2024-03-28
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.55" unreleased=true}}
+</details>
+
+* Introduce `e2ei_verify_group_state()` to preemptively check a group state through its GroupInfo before joining it
+* WireIdentity (returned by `getUserIdentities()` & `getDeviceIdentities()`) now also works for Basic credentials. The struct has changed to reflect that ; the X509 related part being moved in a dedicated field
+* MLS thumbprint returned by WireIdentity is consistent between X509 & Basic credentials
+* Fixed: E2EI enrollment double free on iOS
+* Fixed: MLS thumbprint has hash algorithm agility
+
 ## [1.0.0-rc.54] - 2024-03-20
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.54" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.54"}}
 </details>
 
 * Fixed `new_crl_distribution_points` not being deduplicated vs what we have in-store for `add_members_to_conversation`
