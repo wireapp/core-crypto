@@ -34,5 +34,15 @@ pub fn enrollments() -> Vec<(RustyE2eIdentity, Pem, Pem, HashAlgorithm)> {
             HashAlgorithm::SHA384,
         )
     };
-    vec![ed25519_enrollment, p256_enrollment, p384_enrollment]
+    let p521_enrollment = {
+        let p521_client_kp = ES512KeyPair::generate().to_bytes();
+        let p521_backend_kp = ES512KeyPair::generate();
+        (
+            RustyE2eIdentity::try_new(JwsAlgorithm::P521, p521_client_kp).unwrap(),
+            p521_backend_kp.to_pem().unwrap().into(),
+            p521_backend_kp.public_key().to_pem().unwrap().into(),
+            HashAlgorithm::SHA512,
+        )
+    };
+    vec![ed25519_enrollment, p256_enrollment, p384_enrollment, p521_enrollment]
 }

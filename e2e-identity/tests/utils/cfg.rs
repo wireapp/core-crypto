@@ -188,7 +188,18 @@ impl<'a> E2eTest<'a> {
                     acme_kp.public_key().try_into_jwk().unwrap(),
                 )
             }
-            JwsAlgorithm::P521 => unimplemented!(),
+            JwsAlgorithm::P521 => {
+                let client_kp = ES512KeyPair::generate();
+                let backend_kp = ES512KeyPair::generate();
+                let acme_kp = ES512KeyPair::generate();
+                (
+                    Pem::from(client_kp.to_pem().unwrap()),
+                    backend_kp.public_key().to_pem().unwrap(),
+                    Pem::from(backend_kp.to_pem().unwrap()),
+                    Pem::from(acme_kp.to_pem().unwrap()),
+                    acme_kp.public_key().try_into_jwk().unwrap(),
+                )
+            }
         };
 
         let hash_alg = HashAlgorithm::SHA256;
