@@ -138,6 +138,12 @@ impl spki::SignatureBitStringEncoding for Ed25519PkiSignature {
 #[derive(Debug, Clone)]
 pub struct Ed25519PkiKeypair(ed25519_dalek::SigningKey);
 
+impl Ed25519PkiKeypair {
+    pub fn keypair_bytes(&self) -> Vec<u8> {
+        self.0.to_keypair_bytes().to_vec()
+    }
+}
+
 impl spki::SignatureAlgorithmIdentifier for Ed25519PkiKeypair {
     type Params = spki::der::AnyRef<'static>;
     const SIGNATURE_ALGORITHM_IDENTIFIER: spki::AlgorithmIdentifier<Self::Params> = ed25519_dalek::pkcs8::ALGORITHM_ID;

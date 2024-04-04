@@ -173,8 +173,9 @@ impl E2eiEnrollment {
         let client_id = QualifiedE2eiClientId::try_from(client_id.as_slice())?;
         let client_id = String::try_from(client_id)?;
         let expiry = core::time::Duration::from_secs(u64::from(expiry_sec));
+        let delegate = RustyE2eIdentity::try_new(alg, sign_sk.clone()).map_err(E2eIdentityError::from)?;
         Ok(Self {
-            delegate: RustyE2eIdentity::try_new(alg, sign_sk.clone()).map_err(E2eIdentityError::from)?,
+            delegate,
             sign_sk,
             client_id,
             display_name,

@@ -32,12 +32,10 @@ pub use rstest_reuse::{self, *};
         crate::prelude::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )),
-    #[cfg(feature = "test-all-cipher")]
     case::basic_cs2(TestCase::new(
         crate::prelude::MlsCredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     )),
-    #[cfg(feature = "test-all-cipher")]
     case::cert_cs2(TestCase::new(
         crate::prelude::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256

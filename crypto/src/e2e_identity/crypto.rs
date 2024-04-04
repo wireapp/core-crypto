@@ -1,36 +1,37 @@
 use super::error::*;
-use crate::prelude::MlsCiphersuite;
-use crate::{CryptoError, CryptoResult, MlsError};
-use mls_crypto_provider::MlsCryptoProvider;
-use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::{crypto::OpenMlsCrypto, types::Ciphersuite, OpenMlsCryptoProvider};
+use crate::{prelude::MlsCiphersuite, CryptoError, CryptoResult, MlsError};
+use mls_crypto_provider::{MlsCryptoProvider, PkiKeypair, RustCrypto};
+use openmls_basic_credential::SignatureKeyPair as OpenMlsSignatureKeyPair;
+use openmls_traits::{
+    crypto::OpenMlsCrypto, signatures::DefaultSigner, types::Ciphersuite, types::SignatureScheme, OpenMlsCryptoProvider,
+};
 use wire_e2e_identity::prelude::JwsAlgorithm;
 use zeroize::Zeroize;
-
-/// Length for all signature keys since there's not method to retrieve it from openmls
-const SIGN_KEY_LENGTH: usize = 32;
-const SIGN_KEYPAIR_LENGTH: usize = SIGN_KEY_LENGTH * 2;
 
 impl super::E2eiEnrollment {
     pub(super) fn new_sign_key(
         ciphersuite: MlsCiphersuite,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<E2eiSignatureKeypair> {
-        let crypto = backend.crypto();
-        let cs = openmls_traits::types::Ciphersuite::from(ciphersuite);
-        let (sk, pk) = crypto
-            .signature_key_gen(cs.signature_algorithm())
+        let (sk, _) = backend
+            .crypto()
+            .signature_key_gen(ciphersuite.signature_algorithm())
             .map_err(MlsError::from)?;
-        Ok((sk, pk).into())
+        E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), &sk[..])
     }
 
     pub(super) fn get_sign_key_for_mls(&self) -> CryptoResult<Vec<u8>> {
-        let sk = match self.sign_sk.len() {
-            SIGN_KEYPAIR_LENGTH => &self.sign_sk[..SIGN_KEY_LENGTH],
-            SIGN_KEY_LENGTH => &self.sign_sk,
-            _ => return Err(E2eIdentityError::InvalidSignatureKey.into()),
+        let sk = match self.ciphersuite.signature_algorithm() {
+            SignatureScheme::ECDSA_SECP256R1_SHA256
+            | SignatureScheme::ECDSA_SECP384R1_SHA384
+            | SignatureScheme::ECDSA_SECP521R1_SHA512 => self.sign_sk.to_vec(),
+            SignatureScheme::ED25519 => RustCrypto::normalize_ed25519_key(self.sign_sk.as_slice())
+                .map_err(MlsError::from)?
+                .to_bytes()
+                .to_vec(),
+            SignatureScheme::ED448 => return Err(E2eIdentityError::NotYetSupported.into()),
         };
-        Ok(sk.to_vec())
+        Ok(sk)
     }
 }
 
@@ -45,8 +46,8 @@ impl TryFrom<MlsCiphersuite> for JwsAlgorithm {
             | Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519 => JwsAlgorithm::Ed25519,
             Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 => JwsAlgorithm::P256,
             Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => JwsAlgorithm::P384,
+            Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 => JwsAlgorithm::P521,
             Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
-            | Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521
             | Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 => {
                 return Err(E2eIdentityError::NotYetSupported)
             }
@@ -58,22 +59,30 @@ impl TryFrom<MlsCiphersuite> for JwsAlgorithm {
 #[zeroize(drop)]
 pub struct E2eiSignatureKeypair(Vec<u8>);
 
-impl From<(Vec<u8>, Vec<u8>)> for E2eiSignatureKeypair {
-    fn from((sk, pk): (Vec<u8>, Vec<u8>)) -> Self {
-        Self([sk, pk].concat())
+impl E2eiSignatureKeypair {
+    fn try_new(sc: SignatureScheme, sk: &[u8]) -> CryptoResult<Self> {
+        match sc {
+            SignatureScheme::ECDSA_SECP256R1_SHA256
+            | SignatureScheme::ECDSA_SECP384R1_SHA384
+            | SignatureScheme::ECDSA_SECP521R1_SHA512 => Ok(PkiKeypair::new(sc, sk.to_vec())
+                .map(|kp| kp.signing_key_bytes())
+                .map(Self)?),
+            SignatureScheme::ED25519 => Ok(PkiKeypair::new(sc, sk.to_vec())
+                .map_err(CryptoError::from)
+                .and_then(|kp| match kp {
+                    PkiKeypair::P256(_) | PkiKeypair::P384(_) => Err(CryptoError::ImplementationError),
+                    PkiKeypair::Ed25519(kp) => Ok(kp.keypair_bytes()),
+                })
+                .map(Self)?),
+            SignatureScheme::ED448 => Err(E2eIdentityError::NotYetSupported.into()),
+        }
     }
 }
 
-impl TryFrom<&SignatureKeyPair> for E2eiSignatureKeypair {
+impl TryFrom<&OpenMlsSignatureKeyPair> for E2eiSignatureKeypair {
     type Error = CryptoError;
 
-    fn try_from(kp: &SignatureKeyPair) -> CryptoResult<Self> {
-        let sk = kp.private();
-        let sk = match sk.len() {
-            SIGN_KEY_LENGTH => sk,
-            SIGN_KEYPAIR_LENGTH => &sk[..SIGN_KEY_LENGTH],
-            _ => return Err(E2eIdentityError::InvalidSignatureKey.into()),
-        };
-        Ok((sk.to_vec(), kp.to_public_vec()).into())
+    fn try_from(kp: &OpenMlsSignatureKeyPair) -> CryptoResult<Self> {
+        Self::try_new(kp.signature_scheme(), kp.private_key())
     }
 }

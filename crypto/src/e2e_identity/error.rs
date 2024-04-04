@@ -20,27 +20,15 @@ pub enum E2eIdentityError {
     /// The required local MLS client was not initialized. It's likely a consumer error
     #[error("Expected a MLS client with credential type {0:?} but none found")]
     MissingExistingClient(MlsCredentialType),
-    /// Cannot read the identity in the EE certificate
-    #[error("Could not the identity information in the Credential's certificate")]
-    InvalidIdentity,
-    /// Failed converting the MLS signature key for the e2ei enrollment
-    #[error("Failed converting the MLS signature key for the e2ei enrollment")]
-    InvalidSignatureKey,
     /// Enrollment methods are called out of order
     #[error("Enrollment methods are called out of order: {0}")]
     OutOfOrderEnrollment(&'static str),
-    /// Error when an end-to-end-identity domain is not well-formed utf-16, which means it's out of spec
-    #[error("The E2EI provided domain is invalid utf-16")]
-    E2eiInvalidDomain,
     /// Invalid OIDC RefreshToken supplied
     #[error("Invalid OIDC RefreshToken supplied")]
     InvalidRefreshToken,
     /// An error occurred while trying to persist the RefreshToken in the keystore
     #[error("An error occurred while trying to persist the RefreshToken in the keystore")]
     KeyStoreError(#[from] CryptoKeystoreError),
-    /// Error generating keys
-    #[error(transparent)]
-    CryptoError(#[from] openmls_traits::types::CryptoError),
     /// Error creating client Dpop token or acme error
     #[error(transparent)]
     IdentityError(#[from] wire_e2e_identity::prelude::E2eIdentityError),
@@ -53,12 +41,6 @@ pub enum E2eIdentityError {
     /// Json error
     #[error(transparent)]
     JsonError(#[from] serde_json::Error),
-    /// Utf8 error
-    #[error(transparent)]
-    Utf8Error(#[from] ::core::str::Utf8Error),
-    /// !!!! Something went very wrong and one of our locks has been poisoned by an in-thread panic !!!!
-    #[error("One of the locks has been poisoned")]
-    LockPoisonError,
     /// We already have an ACME Root Trust Anchor registered. Cannot proceed but this is usually indicative of double registration and can be ignored
     #[error("We already have an ACME Root Trust Anchor registered. Cannot proceed but this is usually indicative of double registration and can be ignored")]
     TrustAnchorAlreadyRegistered,
