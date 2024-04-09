@@ -577,19 +577,6 @@ pub struct ConversationConfiguration {
     pub custom: CustomConfiguration,
 }
 
-impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
-    type Error = CoreCryptoError;
-    fn try_into(self) -> CoreCryptoResult<MlsConversationConfiguration> {
-        let mut cfg = MlsConversationConfiguration {
-            custom: self.custom.into(),
-            ciphersuite: self.ciphersuite.into(),
-            ..Default::default()
-        };
-        cfg.set_raw_external_senders(self.external_senders);
-        Ok(cfg)
-    }
-}
-
 #[derive(Debug, Copy, Clone, Default, Eq, PartialEq, uniffi::Enum)]
 #[repr(u8)]
 pub enum MlsWirePolicy {
@@ -807,6 +794,22 @@ pub async fn core_crypto_deferred_init(
 }
 
 #[allow(dead_code, unused_variables)]
+impl CoreCrypto {
+    async fn lower_cfg(&self, cfg: ConversationConfiguration) -> CoreCryptoResult<MlsConversationConfiguration> {
+        let mut lower_cfg = MlsConversationConfiguration {
+            custom: cfg.custom.into(),
+            ciphersuite: cfg.ciphersuite.into(),
+            ..Default::default()
+        };
+        self.central
+            .lock()
+            .await
+            .set_raw_external_senders(&mut lower_cfg, cfg.external_senders)?;
+        Ok(lower_cfg)
+    }
+}
+
+#[allow(dead_code, unused_variables)]
 #[uniffi::export]
 impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::mls_init]
@@ -987,7 +990,11 @@ impl CoreCrypto {
             .central
             .lock()
             .await
-            .new_conversation(&conversation_id, creator_credential_type.into(), config.try_into()?)
+            .new_conversation(
+                &conversation_id,
+                creator_credential_type.into(),
+                self.lower_cfg(config).await?,
+            )
             .await?)
     }
 

@@ -19,15 +19,20 @@
 //! Either use [MlsConversationConfiguration] when creating a conversation or [MlsCustomConfiguration]
 //! when joining one by Welcome or external commit
 
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
-    Capabilities, Credential, CredentialType, ExternalSender, ProtocolVersion, RequiredCapabilitiesExtension,
-    SenderRatchetConfiguration, SignaturePublicKey, WireFormatPolicy, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
+    Capabilities, Credential, CredentialType, ExternalSender, OpenMlsSignaturePublicKey, ProtocolVersion,
+    RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
     PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
 };
-use openmls_traits::types::Ciphersuite;
+use openmls_traits::crypto::OpenMlsCrypto;
+use openmls_traits::types::{Ciphersuite, SignatureScheme};
+use openmls_traits::OpenMlsCryptoProvider;
 use serde::{Deserialize, Serialize};
+use wire_e2e_identity::prelude::parse_json_jwk;
 
-use crate::prelude::{CryptoResult, MlsCiphersuite};
+use crate::prelude::{CryptoResult, E2eIdentityError, MlsCentral, MlsCiphersuite};
+use crate::MlsError;
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -38,6 +43,24 @@ pub(crate) const OUT_OF_ORDER_TOLERANCE: u32 = 2;
 
 /// How many application messages can be skipped. Use this when the Delivery Service can drop application messages
 pub(crate) const MAXIMUM_FORWARD_DISTANCE: u32 = 1000;
+
+impl MlsCentral {
+    /// Parses supplied key from Delivery Service in order to build back an [ExternalSender]
+    pub fn set_raw_external_senders(
+        &self,
+        cfg: &mut MlsConversationConfiguration,
+        external_senders: Vec<Vec<u8>>,
+    ) -> CryptoResult<()> {
+        cfg.external_senders = external_senders
+            .into_iter()
+            .map(|key| {
+                MlsConversationConfiguration::parse_external_sender(&key)
+                    .or_else(|_| MlsConversationConfiguration::legacy_external_sender(key, &self.mls_backend))
+            })
+            .collect::<CryptoResult<_>>()?;
+        Ok(())
+    }
+}
 
 /// The configuration parameters for a group/conversation
 #[derive(Debug, Clone, Default)]
@@ -115,19 +138,30 @@ impl MlsConversationConfiguration {
         RequiredCapabilitiesExtension::new(&[], &[], Self::DEFAULT_SUPPORTED_CREDENTIALS)
     }
 
-    /// Parses supplied key from Delivery Service in order to build back an [ExternalSender]
-    /// Note that this only works currently with Ed25519 keys and will have to be changed to accept
-    /// other key schemes
-    pub fn set_raw_external_senders(&mut self, external_senders: Vec<Vec<u8>>) {
-        self.external_senders = external_senders
-            .into_iter()
-            .map(|key| {
-                ExternalSender::new(
-                    SignaturePublicKey::from(key),
-                    Credential::new_basic(Self::WIRE_SERVER_IDENTITY.into()),
-                )
-            })
-            .collect();
+    /// This expects a raw json serialized JWK. It works with any Signature scheme
+    fn parse_external_sender(jwk: &[u8]) -> CryptoResult<ExternalSender> {
+        let pk = parse_json_jwk(jwk)
+            .map_err(wire_e2e_identity::prelude::E2eIdentityError::from)
+            .map_err(E2eIdentityError::from)?;
+        Ok(ExternalSender::new(
+            pk.into(),
+            Credential::new_basic(Self::WIRE_SERVER_IDENTITY.into()),
+        ))
+    }
+
+    /// This supports the legacy behaviour where the server was providing the external sender public key
+    /// raw. This only supports Ed25519
+    // TODO: remove at some point when the backend API is not used anymore
+    fn legacy_external_sender(key: Vec<u8>, backend: &MlsCryptoProvider) -> CryptoResult<ExternalSender> {
+        backend
+            .crypto()
+            .validate_signature_key(SignatureScheme::ED25519, &key[..])
+            .map_err(MlsError::from)?;
+        let key = OpenMlsSignaturePublicKey::new(key.into(), SignatureScheme::ED25519).map_err(MlsError::from)?;
+        Ok(ExternalSender::new(
+            key.into(),
+            Credential::new_basic(Self::WIRE_SERVER_IDENTITY.into()),
+        ))
     }
 }
 
@@ -181,10 +215,16 @@ impl From<MlsWirePolicy> for WireFormatPolicy {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{prelude::MlsConversationConfiguration, test_utils::*};
     use openmls::prelude::ProtocolVersion;
-    use openmls_traits::types::VerifiableCiphersuite;
+    use openmls_traits::{
+        crypto::OpenMlsCrypto,
+        types::{SignatureScheme, VerifiableCiphersuite},
+        OpenMlsCryptoProvider,
+    };
     use wasm_bindgen_test::*;
+    use wire_e2e_identity::prelude::JwsAlgorithm;
+
+    use crate::{prelude::MlsConversationConfiguration, test_utils::*, CryptoError, MlsError};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -259,5 +299,63 @@ pub mod tests {
             })
         })
         .await
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn should_support_raw_external_sender(case: TestCase) {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
+            Box::pin(async move {
+                let (_sk, pk) = cc
+                    .mls_central
+                    .mls_backend
+                    .crypto()
+                    .signature_key_gen(case.signature_scheme())
+                    .unwrap();
+
+                match case.signature_scheme() {
+                    SignatureScheme::ED25519 => {
+                        assert!(cc
+                            .mls_central
+                            .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
+                            .is_ok());
+                    }
+                    _ => {
+                        assert!(matches!(
+                            cc.mls_central
+                                .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
+                                .unwrap_err(),
+                            CryptoError::MlsError(MlsError::MlsCryptoError(openmls::prelude::CryptoError::InvalidKey))
+                        ));
+                    }
+                }
+            })
+        })
+        .await
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn should_support_jwk_external_sender(case: TestCase) {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
+            Box::pin(async move {
+                let sc = case.signature_scheme();
+
+                let alg = match sc {
+                    SignatureScheme::ED25519 => JwsAlgorithm::Ed25519,
+                    SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::P256,
+                    SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
+                    SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
+                    SignatureScheme::ED448 => unreachable!(),
+                };
+
+                let jwk = wire_e2e_identity::prelude::generate_jwk(alg);
+                assert!(cc
+                    .mls_central
+                    .set_raw_external_senders(&mut case.cfg.clone(), vec![jwk])
+                    .is_ok());
+            })
+        })
+        .await;
     }
 }
