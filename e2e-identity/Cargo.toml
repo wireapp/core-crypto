@@ -35,7 +35,7 @@ optional = true
 
 [dev-dependencies]
 wire-e2e-identity = { version = "0.9.0", path = ".", features = ["identity-builder"] }
-rusty-jwt-tools = { version = "0.9.0", path = "../jwt", features = ["test-utils"] }
+rusty-jwt-tools = { version = "0.9.0", path = "../jwt", features = ["test-utils", "rsa"] }
 rand = "0.8"
 base64 = "0.21.0"
 url = "2.5"
@@ -72,4 +72,4 @@ rusty-acme = { version = "0.9.0", path = "../acme" }
 
 [features]
 default = []
-identity-builder = ["dep:rcgen", "dep:rand", "dep:uuid", "dep:x509-cert", "dep:oid-registry", "dep:time"]
+identity-builder = ["dep:rcgen", "dep:rand", "dep:uuid", "dep:x509-cert", "dep:oid-registry", "dep:time", "rusty-jwt-tools/test-utils"]
