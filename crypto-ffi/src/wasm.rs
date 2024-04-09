@@ -1004,25 +1004,6 @@ impl ConversationConfiguration {
     }
 }
 
-impl TryInto<MlsConversationConfiguration> for ConversationConfiguration {
-    type Error = CoreCryptoError;
-    fn try_into(mut self) -> WasmCryptoResult<MlsConversationConfiguration> {
-        let mut cfg = MlsConversationConfiguration {
-            custom: self.custom.into(),
-            ..Default::default()
-        };
-
-        cfg.set_raw_external_senders(self.external_senders);
-
-        if let Some(ciphersuite) = self.ciphersuite.take() {
-            let mls_ciphersuite: CiphersuiteName = ciphersuite.into();
-            cfg.ciphersuite = mls_ciphersuite.into();
-        }
-
-        Ok(cfg)
-    }
-}
-
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// see [core_crypto::prelude::MlsCustomConfiguration]
@@ -1588,18 +1569,28 @@ impl CoreCrypto {
         &self,
         conversation_id: ConversationId,
         creator_credential_type: CredentialType,
-        config: ConversationConfiguration,
+        mut config: ConversationConfiguration,
     ) -> Promise {
         let this = self.inner.clone();
         future_to_promise(
             async move {
+                let mut lower_cfg = MlsConversationConfiguration {
+                    custom: config.custom.into(),
+                    ..Default::default()
+                };
+
+                this.read()
+                    .await
+                    .set_raw_external_senders(&mut lower_cfg, config.external_senders)?;
+
+                if let Some(ciphersuite) = config.ciphersuite.take() {
+                    let mls_ciphersuite: CiphersuiteName = ciphersuite.into();
+                    lower_cfg.ciphersuite = mls_ciphersuite.into();
+                }
+
                 this.write()
                     .await
-                    .new_conversation(
-                        &conversation_id.to_vec(),
-                        creator_credential_type.into(),
-                        config.try_into()?,
-                    )
+                    .new_conversation(&conversation_id.to_vec(), creator_credential_type.into(), lower_cfg)
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)

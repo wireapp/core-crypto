@@ -261,6 +261,27 @@ impl OpenMlsCrypto for RustCrypto {
         }
     }
 
+    fn validate_signature_key(&self, alg: SignatureScheme, key: &[u8]) -> Result<(), CryptoError> {
+        match alg {
+            SignatureScheme::ED25519 => {
+                ed25519_dalek::VerifyingKey::try_from(key).map_err(|_| CryptoError::InvalidKey)?;
+            }
+            SignatureScheme::ECDSA_SECP256R1_SHA256 => {
+                p256::ecdsa::VerifyingKey::try_from(key).map_err(|_| CryptoError::InvalidKey)?;
+            }
+            SignatureScheme::ECDSA_SECP384R1_SHA384 => {
+                p384::ecdsa::VerifyingKey::try_from(key).map_err(|_| CryptoError::InvalidKey)?;
+            }
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
+                p521::ecdsa::VerifyingKey::from_sec1_bytes(key).map_err(|_| CryptoError::InvalidKey)?;
+            }
+            SignatureScheme::ED448 => {
+                return Err(CryptoError::UnsupportedSignatureScheme);
+            }
+        }
+        Ok(())
+    }
+
     fn verify_signature(
         &self,
         alg: SignatureScheme,
