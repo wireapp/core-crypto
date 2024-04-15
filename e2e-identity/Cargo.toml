@@ -37,7 +37,7 @@ optional = true
 wire-e2e-identity = { version = "0.9.0", path = ".", features = ["identity-builder"] }
 rusty-jwt-tools = { version = "0.9.0", path = "../jwt", features = ["test-utils", "rsa"] }
 rand = "0.8"
-base64 = "0.21.0"
+base64 = "0.22"
 url = "2.5"
 itertools = "0.12"
 uuid = "1.6"
