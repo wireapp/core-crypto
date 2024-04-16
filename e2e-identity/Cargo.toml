@@ -11,49 +11,43 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-serde = "1.0"
-serde_json = "1.0"
-thiserror = "1.0"
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
 rusty-acme = { version = "0.9.0", path = "../acme" }
 rusty-jwt-tools = { version = "0.9.0", path = "../jwt" }
 jwt-simple = { workspace = true }
-derive_more = { version = "0.99", features = ["deref", "from", "into"] }
-url = "2.5"
-zeroize = "1.7"
-
-uuid = { version = "1.6", optional = true }
-rand = { version = "0.8", optional = true }
-x509-cert = { version = "0.2", optional = true }
-oid-registry = { version = "0.6", optional = true }
-time = { version = "0.3", optional = true }
-
-[dependencies.rcgen]
-git = "https://github.com/wireapp/rcgen"
-tag = "v1.2.2-pre.core-crypto-0.7.0"
-version = "=0.9.2"
-optional = true
+derive_more = { workspace = true, features = ["deref", "from", "into"] }
+url = { workspace = true }
+zeroize = { workspace = true }
+uuid = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
+x509-cert = { workspace = true, optional = true }
+oid-registry = { workspace = true, optional = true }
+time = { workspace = true, optional = true }
+rcgen = { workspace = true, optional = true }
 
 [dev-dependencies]
 wire-e2e-identity = { version = "0.9.0", path = ".", features = ["identity-builder"] }
 rusty-jwt-tools = { version = "0.9.0", path = "../jwt", features = ["test-utils", "rsa"] }
-rand = "0.8"
-base64 = "0.22"
-url = "2.5"
-itertools = "0.12"
-uuid = "1.6"
-wasm-bindgen-test = "0.3"
-hex = "0.4"
-webbrowser = "0.8"
+rand = { workspace = true }
+base64 = { workspace = true }
+url = { workspace = true }
+itertools = { workspace = true }
+uuid = { workspace = true }
+wasm-bindgen-test = { workspace = true }
+hex = { workspace = true }
+webbrowser = { workspace = true }
 rusty-jwt-cli = { version = "0.9.0", path = "../cli" }
 
-openidconnect = "3.0.0-alpha.1"
-html_parser = "0.6"
-scraper = "0.14"
-anyhow = "1.0"
-tokio = { version = "1.5", features = ["macros"], default_features = false }
-lazy_static = "1.4"
-portpicker = "0.1"
-pem = "3.0"
+openidconnect = { workspace = true }
+html_parser = { workspace = true }
+scraper = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+lazy_static = { workspace = true }
+portpicker = { workspace = true }
+pem = { workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 rusty-acme = { version = "0.9.0", path = "../acme" }
