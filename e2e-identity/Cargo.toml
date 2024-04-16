@@ -23,7 +23,7 @@ zeroize = { workspace = true }
 uuid = { workspace = true, optional = true }
 rand = { workspace = true, optional = true }
 x509-cert = { workspace = true, optional = true }
-oid-registry = { workspace = true, optional = true }
+const-oid = { workspace = true, optional = true }
 time = { workspace = true, optional = true }
 rcgen = { workspace = true, optional = true }
 
@@ -66,4 +66,4 @@ rusty-acme = { version = "0.9.0", path = "../acme" }
 
 [features]
 default = []
-identity-builder = ["dep:rcgen", "dep:rand", "dep:uuid", "dep:x509-cert", "dep:oid-registry", "dep:time", "rusty-jwt-tools/test-utils"]
+identity-builder = ["dep:rcgen", "dep:rand", "dep:uuid", "dep:x509-cert", "dep:const-oid", "dep:time", "rusty-jwt-tools/test-utils"]

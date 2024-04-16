@@ -70,11 +70,11 @@ pub enum SignAlgorithm {
 impl SignAlgorithm {
     fn spki_alg_oid(&self) -> Vec<u64> {
         match self {
-            SignAlgorithm::Ed25519 => oid_registry::OID_SIG_ED25519,
+            SignAlgorithm::Ed25519 => const_oid::db::rfc8410::ID_ED_25519,
         }
-        .iter()
-        .unwrap()
-        .collect::<Vec<u64>>()
+        .arcs()
+        .map(|a| a as u64)
+        .collect()
     }
 }
 
