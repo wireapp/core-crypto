@@ -52,7 +52,7 @@ async-recursion = "1"
 uniffi = { workspace = true, optional = true }
 itertools = "0.12"
 uuid = { version = "1.6", features = ["v4"] }
-base64 = "0.21"
+base64 = "0.22"
 
 [dependencies.proteus-wasm]
 version = "2.1"
