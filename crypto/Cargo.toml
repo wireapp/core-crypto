@@ -47,7 +47,7 @@ wire-e2e-identity = { version = "0.9", default-features = false }
 indexmap = "2"
 x509-cert = "0.2"
 pem = "3.0"
-oid-registry = "0.6"
+oid-registry = "0.7"
 async-recursion = "1"
 uniffi = { workspace = true, optional = true }
 itertools = "0.12"
