@@ -7,11 +7,21 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.56] - 2024-04-22
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.56" unreleased=true}}
+</details>
+
+* Added full support for NIST-P curves ciphersuites
+* Added support for setting MLS ExternalSenders as a JWK
+
 ## [1.0.0-rc.55] - 2024-03-28
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.55" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.55"}}
 </details>
 
 * Introduce `e2ei_verify_group_state()` to preemptively check a group state through its GroupInfo before joining it
