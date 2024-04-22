@@ -351,7 +351,7 @@ data class DecryptedMessage(
         result = 31 * result + (commitDelay?.hashCode() ?: 0)
         result = 31 * result + (senderClientId?.hashCode() ?: 0)
         result = 31 * result + hasEpochChanged.hashCode()
-        result = 31 * result + (identity?.hashCode() ?: 0)
+        result = 31 * result + identity.hashCode()
         result = 31 * result + (crlNewDistributionPoints?.hashCode() ?: 0)
         return result
     }
@@ -419,7 +419,7 @@ data class BufferedDecryptedMessage(
         result = 31 * result + (commitDelay?.hashCode() ?: 0)
         result = 31 * result + (senderClientId?.hashCode() ?: 0)
         result = 31 * result + hasEpochChanged.hashCode()
-        result = 31 * result + (identity?.hashCode() ?: 0)
+        result = 31 * result + identity.hashCode()
         result = 31 * result + (crlNewDistributionPoints?.hashCode() ?: 0)
         return result
     }

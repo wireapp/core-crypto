@@ -1445,7 +1445,7 @@ impl CoreCrypto {
         let this = self.inner.clone();
         future_to_promise(
             async move {
-                this.write().await.callbacks(Box::new(callbacks));
+                this.write().await.callbacks(std::sync::Arc::new(callbacks));
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }

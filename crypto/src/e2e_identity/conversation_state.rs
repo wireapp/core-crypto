@@ -22,7 +22,7 @@ use openmls::{
 #[repr(u8)]
 pub enum E2eiConversationState {
     /// All clients have a valid E2EI certificate
-    Verified,
+    Verified = 1,
     /// Some clients are either still Basic or their certificate is expired
     NotVerified,
     /// All clients are still Basic. If all client have expired certificates, [E2eiConversationState::NotVerified] is returned.
