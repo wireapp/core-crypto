@@ -1,21 +1,22 @@
 package com.wire.crypto.client
 
 import com.wire.crypto.*
+import com.wire.crypto.CoreCryptoCallbacks
 import java.io.File
 
 typealias EnrollmentHandle = ByteArray
 
 private class Callbacks : CoreCryptoCallbacks {
 
-    override fun authorize(conversationId: ByteArray, clientId: ByteArray): Boolean = true
+    override suspend fun authorize(conversationId: ByteArray, clientId: ByteArray): Boolean = true
 
-    override fun userAuthorize(
+    override suspend fun userAuthorize(
         conversationId: ByteArray,
         externalClientId: ByteArray,
         existingClients: List<ByteArray>
     ): Boolean = true
 
-    override fun clientIsExistingGroupUser(
+    override suspend fun clientIsExistingGroupUser(
         conversationId: ByteArray,
         clientId: ByteArray,
         existingClients: List<ByteArray>,

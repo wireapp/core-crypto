@@ -141,7 +141,7 @@ pub struct MlsCentral {
     pub(crate) mls_client: Option<Client>,
     pub(crate) mls_backend: MlsCryptoProvider,
     pub(crate) mls_groups: crate::group_store::GroupStore<MlsConversation>,
-    pub(crate) callbacks: Option<Box<dyn CoreCryptoCallbacks + 'static>>,
+    pub(crate) callbacks: Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>,
 }
 
 impl MlsCentral {
@@ -304,8 +304,8 @@ impl MlsCentral {
     ///
     /// # Arguments
     /// * `callbacks` - a callback to be called to perform authorization
-    pub fn callbacks(&mut self, callbacks: Box<dyn CoreCryptoCallbacks>) {
-        self.callbacks = Some(callbacks);
+    pub fn callbacks(&mut self, callbacks: std::sync::Arc<dyn CoreCryptoCallbacks>) {
+        self.callbacks.replace(callbacks);
     }
 
     /// Returns the client's most recent public signature key as a buffer.

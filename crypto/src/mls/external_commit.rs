@@ -762,10 +762,12 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
 
-                    alice_central.mls_central.callbacks(Box::new(ValidationCallbacks {
-                        client_is_existing_group_user: false,
-                        ..Default::default()
-                    }));
+                    alice_central
+                        .mls_central
+                        .callbacks(std::sync::Arc::new(ValidationCallbacks {
+                            client_is_existing_group_user: false,
+                            ..Default::default()
+                        }));
 
                     alice_central
                         .mls_central
@@ -806,10 +808,12 @@ pub mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
 
-                    alice_central.mls_central.callbacks(Box::new(ValidationCallbacks {
-                        user_authorize: false,
-                        ..Default::default()
-                    }));
+                    alice_central
+                        .mls_central
+                        .callbacks(std::sync::Arc::new(ValidationCallbacks {
+                            user_authorize: false,
+                            ..Default::default()
+                        }));
 
                     alice_central
                         .mls_central

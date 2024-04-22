@@ -1130,10 +1130,12 @@ pub mod tests {
                 move |[mut alice_central, mut bob_central, mut alice2_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
-                        alice_central.mls_central.callbacks(Box::new(ValidationCallbacks {
-                            client_is_existing_group_user: false,
-                            ..Default::default()
-                        }));
+                        alice_central
+                            .mls_central
+                            .callbacks(std::sync::Arc::new(ValidationCallbacks {
+                                client_is_existing_group_user: false,
+                                ..Default::default()
+                            }));
 
                         alice_central
                             .mls_central

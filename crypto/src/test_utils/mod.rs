@@ -243,7 +243,7 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
                         )
                         .await
                         .unwrap();
-                    central.callbacks(Box::<ValidationCallbacks>::default());
+                    central.callbacks(std::sync::Arc::<ValidationCallbacks>::default());
                     ClientContext {
                         mls_central: central,
                         initial_identifier: initial_identifier.into(),
@@ -277,7 +277,7 @@ pub async fn run_test_wo_clients(
             )
             .unwrap();
             let mut central = MlsCentral::try_new(configuration).await.unwrap();
-            central.callbacks(Box::<ValidationCallbacks>::default());
+            central.callbacks(std::sync::Arc::<ValidationCallbacks>::default());
             test(ClientContext {
                 mls_central: central,
                 initial_identifier: String::from("nobody"),

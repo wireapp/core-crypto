@@ -79,29 +79,21 @@ impl UniffiCustomTypeConverter for ClientId {
 #[repr(u16)]
 pub enum CiphersuiteName {
     /// DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
-    MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 =
-        core_crypto::prelude::CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u16,
+    MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 = 0x0001,
     /// DH KEM P256 | AES-GCM 128 | SHA2-256 | EcDSA P256
-    MLS_128_DHKEMP256_AES128GCM_SHA256_P256 =
-        core_crypto::prelude::CiphersuiteName::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 as u16,
+    MLS_128_DHKEMP256_AES128GCM_SHA256_P256 = 0x0002,
     /// DH KEM x25519 | Chacha20Poly1305 | SHA2-256 | Ed25519
-    MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 =
-        core_crypto::prelude::CiphersuiteName::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 as u16,
+    MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 = 0x0003,
     /// DH KEM x448 | AES-GCM 256 | SHA2-512 | Ed448
-    MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 =
-        core_crypto::prelude::CiphersuiteName::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 as u16,
+    MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 = 0x0004,
     /// DH KEM P521 | AES-GCM 256 | SHA2-512 | EcDSA P521
-    MLS_256_DHKEMP521_AES256GCM_SHA512_P521 =
-        core_crypto::prelude::CiphersuiteName::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 as u16,
+    MLS_256_DHKEMP521_AES256GCM_SHA512_P521 = 0x0005,
     /// DH KEM x448 | Chacha20Poly1305 | SHA2-512 | Ed448
-    MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 =
-        core_crypto::prelude::CiphersuiteName::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 as u16,
+    MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 = 0x0006,
     /// DH KEM P384 | AES-GCM 256 | SHA2-384 | EcDSA P384
-    MLS_256_DHKEMP384_AES256GCM_SHA384_P384 =
-        core_crypto::prelude::CiphersuiteName::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 as u16,
+    MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = 0x0007,
     /// x25519Kyber768Draft00 Hybrid KEM | AES-GCM 128 | SHA2-256 | Ed25519
-    MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519 =
-        core_crypto::prelude::CiphersuiteName::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519 as u16,
+    MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519 = 0xf031,
 }
 
 #[derive(Debug, Clone)]
@@ -272,9 +264,9 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
 #[repr(u8)]
 pub enum MlsGroupInfoEncryptionType {
     /// Unencrypted `GroupInfo`
-    Plaintext = core_crypto::prelude::MlsGroupInfoEncryptionType::Plaintext as u8,
+    Plaintext = 1,
     /// `GroupInfo` encrypted in a JWE
-    JweEncrypted = core_crypto::prelude::MlsGroupInfoEncryptionType::JweEncrypted as u8,
+    JweEncrypted = 2,
 }
 
 impl From<core_crypto::prelude::MlsGroupInfoEncryptionType> for MlsGroupInfoEncryptionType {
@@ -299,12 +291,12 @@ impl From<MlsGroupInfoEncryptionType> for core_crypto::prelude::MlsGroupInfoEncr
 #[repr(u8)]
 pub enum MlsRatchetTreeType {
     /// Plain old and complete `GroupInfo`
-    Full = core_crypto::prelude::MlsRatchetTreeType::Full as u8,
+    Full = 1,
     /// Contains `GroupInfo` changes since previous epoch (not yet implemented)
     /// (see [draft](https://github.com/rohan-wire/ietf-drafts/blob/main/mahy-mls-ratchet-tree-delta/draft-mahy-mls-ratchet-tree-delta.md))
-    Delta = core_crypto::prelude::MlsRatchetTreeType::Delta as u8,
+    Delta = 2,
     /// TODO: to define
-    ByRef = core_crypto::prelude::MlsRatchetTreeType::ByRef as u8,
+    ByRef = 3,
 }
 
 impl From<core_crypto::prelude::MlsRatchetTreeType> for MlsRatchetTreeType {
@@ -526,11 +518,11 @@ impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
 #[repr(u8)]
 pub enum DeviceStatus {
     /// All is fine
-    Valid = core_crypto::prelude::DeviceStatus::Valid as u8,
+    Valid = 1,
     /// The Credential's certificate is expired
-    Expired = core_crypto::prelude::DeviceStatus::Expired as u8,
+    Expired = 2,
     /// The Credential's certificate is revoked (not implemented yet)
-    Revoked = core_crypto::prelude::DeviceStatus::Revoked as u8,
+    Revoked = 3,
 }
 
 impl From<core_crypto::prelude::DeviceStatus> for DeviceStatus {
@@ -582,9 +574,9 @@ pub struct ConversationConfiguration {
 pub enum MlsWirePolicy {
     /// Handshake messages are never encrypted
     #[default]
-    Plaintext = core_crypto::prelude::MlsWirePolicy::Plaintext as u8,
+    Plaintext = 1,
     /// Handshake messages are always encrypted
-    Ciphertext = core_crypto::prelude::MlsWirePolicy::Ciphertext as u8,
+    Ciphertext = 2,
 }
 
 impl From<core_crypto::prelude::MlsWirePolicy> for MlsWirePolicy {
@@ -645,9 +637,9 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
 pub enum MlsCredentialType {
     /// Basic credential i.e. a KeyPair
     #[default]
-    Basic = core_crypto::prelude::MlsCredentialType::Basic as u8,
+    Basic = 0x01,
     /// A x509 certificate generally obtained through e2e identity enrollment process
-    X509 = core_crypto::prelude::MlsCredentialType::X509 as u8,
+    X509 = 0x02,
 }
 
 impl From<core_crypto::prelude::MlsCredentialType> for MlsCredentialType {
@@ -669,13 +661,13 @@ impl From<MlsCredentialType> for core_crypto::prelude::MlsCredentialType {
 }
 
 #[derive(Debug)]
-struct CoreCryptoCallbacksWrapper(Box<dyn CoreCryptoCallbacks>);
+struct CoreCryptoCallbacksWrapper(std::sync::Arc<dyn CoreCryptoCallbacks>);
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl core_crypto::prelude::CoreCryptoCallbacks for CoreCryptoCallbacksWrapper {
     async fn authorize(&self, conversation_id: Vec<u8>, client_id: core_crypto::prelude::ClientId) -> bool {
-        self.0.authorize(conversation_id, ClientId(client_id))
+        self.0.authorize(conversation_id, ClientId(client_id)).await
     }
     async fn user_authorize(
         &self,
@@ -683,11 +675,13 @@ impl core_crypto::prelude::CoreCryptoCallbacks for CoreCryptoCallbacksWrapper {
         external_client_id: core_crypto::prelude::ClientId,
         existing_clients: Vec<core_crypto::prelude::ClientId>,
     ) -> bool {
-        self.0.user_authorize(
-            conversation_id,
-            ClientId(external_client_id),
-            existing_clients.into_iter().map(ClientId).collect(),
-        )
+        self.0
+            .user_authorize(
+                conversation_id,
+                ClientId(external_client_id),
+                existing_clients.into_iter().map(ClientId).collect(),
+            )
+            .await
     }
     async fn client_is_existing_group_user(
         &self,
@@ -696,27 +690,31 @@ impl core_crypto::prelude::CoreCryptoCallbacks for CoreCryptoCallbacksWrapper {
         existing_clients: Vec<core_crypto::prelude::ClientId>,
         parent_conversation_clients: Option<Vec<core_crypto::prelude::ClientId>>,
     ) -> bool {
-        self.0.client_is_existing_group_user(
-            conversation_id,
-            ClientId(client_id),
-            existing_clients.into_iter().map(ClientId).collect(),
-            parent_conversation_clients.map(|pccs| pccs.into_iter().map(ClientId).collect()),
-        )
+        self.0
+            .client_is_existing_group_user(
+                conversation_id,
+                ClientId(client_id),
+                existing_clients.into_iter().map(ClientId).collect(),
+                parent_conversation_clients.map(|pccs| pccs.into_iter().map(ClientId).collect()),
+            )
+            .await
     }
 }
 
 /// This only exists to create a sync interface to our internal async callback interface
 // TODO: Remove this once UniFFI supports async callbacks
-#[uniffi::export(callback_interface)]
+#[uniffi::export(with_foreign)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
-    fn authorize(&self, conversation_id: Vec<u8>, client_id: ClientId) -> bool;
-    fn user_authorize(
+    async fn authorize(&self, conversation_id: Vec<u8>, client_id: ClientId) -> bool;
+    async fn user_authorize(
         &self,
         conversation_id: Vec<u8>,
         external_client_id: ClientId,
         existing_clients: Vec<ClientId>,
     ) -> bool;
-    fn client_is_existing_group_user(
+    async fn client_is_existing_group_user(
         &self,
         conversation_id: Vec<u8>,
         client_id: ClientId,
@@ -739,30 +737,8 @@ pub async fn core_crypto_new(
     client_id: ClientId,
     ciphersuites: Ciphersuites,
     nb_key_package: Option<u32>,
-) -> CoreCryptoResult<std::sync::Arc<CoreCrypto>> {
-    #[cfg(feature = "debug-logging")]
-    femme::with_level(femme::LevelFilter::Debug);
-
-    let nb_key_package = nb_key_package
-        .map(usize::try_from)
-        .transpose()
-        .map_err(CryptoError::from)?;
-    let configuration = MlsCentralConfiguration::try_new(
-        path,
-        key,
-        Some(client_id.0.clone()),
-        (&ciphersuites).into(),
-        None,
-        nb_key_package,
-    )?;
-
-    let central = MlsCentral::try_new(configuration).await?;
-    let central = core_crypto::CoreCrypto::from(central).into();
-    Ok(CoreCrypto {
-        central,
-        proteus_last_error_code: std::sync::atomic::AtomicU32::new(0),
-    }
-    .into())
+) -> CoreCryptoResult<CoreCrypto> {
+    CoreCrypto::new(path, key, Some(client_id), ciphersuites, nb_key_package).await
 }
 
 #[uniffi::export]
@@ -773,24 +749,8 @@ pub async fn core_crypto_deferred_init(
     key: String,
     ciphersuites: Ciphersuites,
     nb_key_package: Option<u32>,
-) -> CoreCryptoResult<std::sync::Arc<CoreCrypto>> {
-    #[cfg(feature = "debug-logging")]
-    femme::with_level(femme::LevelFilter::Debug);
-
-    let nb_key_package = nb_key_package
-        .map(usize::try_from)
-        .transpose()
-        .map_err(CryptoError::from)?;
-    let configuration =
-        MlsCentralConfiguration::try_new(path, key, None, (&ciphersuites).into(), None, nb_key_package)?;
-
-    let central = MlsCentral::try_new(configuration).await?;
-    let central = core_crypto::CoreCrypto::from(central).into();
-    Ok(CoreCrypto {
-        central,
-        proteus_last_error_code: std::sync::atomic::AtomicU32::new(0),
-    }
-    .into())
+) -> CoreCryptoResult<CoreCrypto> {
+    CoreCrypto::new(path, key, None, ciphersuites, nb_key_package).await
 }
 
 #[allow(dead_code, unused_variables)]
@@ -812,6 +772,39 @@ impl CoreCrypto {
 #[allow(dead_code, unused_variables)]
 #[uniffi::export]
 impl CoreCrypto {
+    #[uniffi::constructor]
+    pub async fn new(
+        path: String,
+        key: String,
+        client_id: Option<ClientId>,
+        ciphersuites: Ciphersuites,
+        nb_key_package: Option<u32>,
+    ) -> CoreCryptoResult<Self> {
+        #[cfg(feature = "debug-logging")]
+        femme::with_level(femme::LevelFilter::Debug);
+
+        let nb_key_package = nb_key_package
+            .map(usize::try_from)
+            .transpose()
+            .map_err(CryptoError::from)?;
+        let configuration = MlsCentralConfiguration::try_new(
+            path,
+            key,
+            client_id.map(|cid| cid.0.clone()),
+            (&ciphersuites).into(),
+            None,
+            nb_key_package,
+        )?;
+
+        let central = MlsCentral::try_new(configuration).await?;
+        let central = core_crypto::CoreCrypto::from(central).into();
+
+        Ok(CoreCrypto {
+            central,
+            proteus_last_error_code: std::sync::atomic::AtomicU32::new(0),
+        })
+    }
+
     /// See [core_crypto::mls::MlsCentral::mls_init]
     pub async fn mls_init(
         &self,
@@ -908,11 +901,11 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::callbacks]
-    pub async fn set_callbacks(&self, callbacks: Box<dyn CoreCryptoCallbacks>) -> CoreCryptoResult<()> {
+    pub async fn set_callbacks(&self, callbacks: std::sync::Arc<dyn CoreCryptoCallbacks>) -> CoreCryptoResult<()> {
         self.central
             .lock()
             .await
-            .callbacks(Box::new(CoreCryptoCallbacksWrapper(callbacks)));
+            .callbacks(std::sync::Arc::new(CoreCryptoCallbacksWrapper(callbacks)));
         Ok(())
     }
 
@@ -1327,11 +1320,11 @@ impl CoreCrypto {
 #[repr(u8)]
 pub enum E2eiConversationState {
     /// All clients have a valid E2EI certificate
-    Verified = core_crypto::prelude::E2eiConversationState::Verified as u8,
+    Verified = 1,
     /// Some clients are either still Basic or their certificate is expired
-    NotVerified = core_crypto::prelude::E2eiConversationState::NotVerified as u8,
+    NotVerified,
     /// All clients are still Basic. If all client have expired certificates, [E2eiConversationState::NotVerified] is returned.
-    NotEnabled = core_crypto::prelude::E2eiConversationState::NotEnabled as u8,
+    NotEnabled,
 }
 
 impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState {
@@ -1572,7 +1565,7 @@ impl CoreCrypto {
         team: Option<String>,
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
-    ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
+    ) -> CoreCryptoResult<E2eiEnrollment> {
         Ok(self
             .central
             .lock()
@@ -1587,8 +1580,7 @@ impl CoreCrypto {
             )
             .map(async_lock::RwLock::new)
             .map(std::sync::Arc::new)
-            .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)?)
+            .map(E2eiEnrollment)?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_new_activation_enrollment]
@@ -1599,7 +1591,7 @@ impl CoreCrypto {
         team: Option<String>,
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
-    ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
+    ) -> CoreCryptoResult<E2eiEnrollment> {
         Ok(self
             .central
             .lock()
@@ -1607,8 +1599,7 @@ impl CoreCrypto {
             .e2ei_new_activation_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
             .map(async_lock::RwLock::new)
             .map(std::sync::Arc::new)
-            .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)?)
+            .map(E2eiEnrollment)?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_new_rotate_enrollment]
@@ -1619,7 +1610,7 @@ impl CoreCrypto {
         team: Option<String>,
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
-    ) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
+    ) -> CoreCryptoResult<E2eiEnrollment> {
         Ok(self
             .central
             .lock()
@@ -1628,8 +1619,7 @@ impl CoreCrypto {
             .await
             .map(async_lock::RwLock::new)
             .map(std::sync::Arc::new)
-            .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)?)
+            .map(E2eiEnrollment)?)
     }
 
     pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
@@ -1728,7 +1718,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash_pop]
-    pub async fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CoreCryptoResult<std::sync::Arc<E2eiEnrollment>> {
+    pub async fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CoreCryptoResult<E2eiEnrollment> {
         Ok(self
             .central
             .lock()
@@ -1737,8 +1727,7 @@ impl CoreCrypto {
             .await
             .map(async_lock::RwLock::new)
             .map(std::sync::Arc::new)
-            .map(E2eiEnrollment)
-            .map(std::sync::Arc::new)?)
+            .map(E2eiEnrollment)?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_conversation_state]
