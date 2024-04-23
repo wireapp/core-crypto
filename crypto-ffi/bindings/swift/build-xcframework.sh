@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 xcodebuild archive \
     -project 'WireCoreCrypto/WireCoreCrypto.xcodeproj' \
     -scheme 'WireCoreCrypto' \

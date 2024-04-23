@@ -67,7 +67,7 @@ jobs:
         uses: davidB/rust-cargo-make@v1
       - run: |
           cd crypto-ffi
-          cargo make ios
+          cargo make ios-create-xcframework
 
   check-wasm:
     runs-on: ubuntu-latest
