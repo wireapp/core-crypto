@@ -615,6 +615,12 @@ export interface X509Identity {
     notAfter: bigint;
 }
 
+function normalizeEnum<T>(enumType: T, value: number): T[keyof T] {
+    const enumAsString = enumType[value as unknown as keyof T];
+    const enumAsDiscriminant = enumType[enumAsString as unknown as keyof T];
+    return enumAsDiscriminant;
+}
+
 const mapWireIdentity = (
     ffiIdentity?: CoreCryptoFfiTypes.WireIdentity
 ): WireIdentity | undefined => {
@@ -623,14 +629,9 @@ const mapWireIdentity = (
     }
     return {
         clientId: ffiIdentity.client_id,
-        status: DeviceStatus[
-            ffiIdentity.status as unknown as keyof typeof DeviceStatus
-        ],
+        status: normalizeEnum(DeviceStatus, ffiIdentity.status),
         thumbprint: ffiIdentity.thumbprint,
-        credentialType:
-            CredentialType[
-                ffiIdentity.credential_type as unknown as keyof typeof CredentialType
-            ],
+        credentialType: normalizeEnum(CredentialType, ffiIdentity.credential_type),
         x509Identity: mapX509Identity(ffiIdentity.x509_identity),
     };
 };
@@ -2324,9 +2325,7 @@ export class CoreCrypto {
             this.#cc.e2ei_conversation_state(conversationId)
         );
 
-        return E2eiConversationState[
-            state as unknown as keyof typeof E2eiConversationState
-        ];
+        return normalizeEnum(E2eiConversationState, state);
     }
 
     /**
@@ -2406,9 +2405,7 @@ export class CoreCrypto {
         let state = await CoreCryptoError.asyncMapErr(
             this.#cc.get_credential_in_use(groupInfo, credentialType)
         );
-        return E2eiConversationState[
-            state as unknown as keyof typeof E2eiConversationState
-        ];
+        return normalizeEnum(E2eiConversationState, state);
     }
 
     /**

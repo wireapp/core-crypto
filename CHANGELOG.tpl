@@ -18,6 +18,7 @@ Platform support legends:
     * The callback ABI has changed and now all callbacks are `async`/`suspend` to support Async IO workflows.
     * `core_crypto_new()` and `core_crypto_deferred_init()` are now soft-deprecated in favor of an async constructor for the `CoreCrypto` class.
     * There is a slew of other changes in how enums are represented across the FFI
+* **[BREAKING]** The TypeScript wrapper now represents enums as their `number` discriminant instead of their `string` representation
 
 ## [1.0.0-rc.56] - 2024-04-22
 
