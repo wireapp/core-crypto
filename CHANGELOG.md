@@ -7,6 +7,28 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.57] - 2024-04-25
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Convert TS enums to their discriminant repr
+
+### Miscellaneous Tasks
+
+- Make swift checks build the Swift code
+- [**breaking**] UniFFI 0.27 upgrade
+
+</details>
+
+* **[BREAKING]** The Kotlin and iOS FFI have been updated to use UniFFI 0.27
+    * The callback ABI has changed and now all callbacks are `async`/`suspend` to support Async IO workflows.
+    * `core_crypto_new()` and `core_crypto_deferred_init()` are now soft-deprecated in favor of an async constructor for the `CoreCrypto` class.
+    * There is a slew of other changes in how enums are represented across the FFI
+* **[BREAKING]** The TypeScript wrapper now represents enums as their `number` discriminant instead of their `string` representation
+
 ## [1.0.0-rc.56] - 2024-04-22
 
 <details>
