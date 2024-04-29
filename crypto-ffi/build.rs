@@ -25,4 +25,14 @@ fn main() {
             println!("cargo:rustc-cfg=android");
         }
     }
+
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+    let target_arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    if target_arch == "x86_64" && target_os == "android" {
+        let android_home = std::env::var("ANDROID_HOME").expect("ANDROID_HOME not set");
+        const ANDROID_NDK_VERSION: &str = "25.2.9519653";
+        const LINUX_X86_64_LIB_DIR: &str = "/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.7/lib/linux/";
+        println!("cargo:rustc-link-search={android_home}/ndk/{ANDROID_NDK_VERSION}/{LINUX_X86_64_LIB_DIR}");
+        println!("cargo:rustc-link-lib=static=clang_rt.builtins-x86_64-android");
+    }
 }
