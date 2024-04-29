@@ -7,6 +7,37 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.58] - 2024-04-30
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Avoid lock reentrancy on Generic FFI's conversation_create causing deadlocks
+- Use Mozilla's hack to fix Android on x86_64
+
+### Miscellaneous Tasks
+
+- [**breaking**] Drop unused parameters from deferred_init
+
+
+### Bug Fixes
+
+- Convert TS enums to their discriminant repr
+
+### Miscellaneous Tasks
+
+- Make swift checks build the Swift code
+- [**breaking**] UniFFI 0.27 upgrade
+
+</details>
+
+* **[BREAKING]** The `deferred_init` following parameters have been removed: `ciphersuite`, `nb_key_packages`.
+    * Those parameters were unused anyway so this aims to remove some API cruft.
+* Fixed a crash on x86_64 Android
+* Android & iOS FFI: Fixed a deadlock in `conversation_create` due to a reentrancy
+
 ## [1.0.0-rc.57] - 2024-04-25
 
 <details>
