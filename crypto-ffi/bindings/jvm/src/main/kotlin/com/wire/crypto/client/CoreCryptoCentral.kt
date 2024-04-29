@@ -267,7 +267,7 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
         ): CoreCryptoCentral {
             val path = "$rootDir/$KEYSTORE_NAME"
             File(rootDir).mkdirs()
-            val cc = coreCryptoDeferredInit(path, databaseKey, ciphersuites.lower(), DEFAULT_NB_KEY_PACKAGE)
+            val cc = coreCryptoDeferredInit(path, databaseKey)
             cc.setCallbacks(Callbacks())
             return CoreCryptoCentral(cc, rootDir)
         }

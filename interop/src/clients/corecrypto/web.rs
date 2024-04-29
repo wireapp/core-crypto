@@ -70,11 +70,9 @@ callback();"#,
     pub async fn new_deferred(driver_addr: &SocketAddr) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
         let client_id_str = client_id.as_hyphenated().to_string();
-        let ciphersuite = CIPHERSUITE_IN_USE as u16;
         let client_config = serde_json::json!({
             "databaseName": format!("db-{client_id_str}"),
             "key": "test",
-            "ciphersuites": [ciphersuite],
         });
         let browser = crate::build::web::webdriver::setup_browser(driver_addr, "core-crypto").await?;
 

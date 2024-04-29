@@ -393,10 +393,6 @@ export interface CoreCryptoDeferredParams {
      */
     key: string;
     /**
-     * All the ciphersuites this MLS client can support
-     */
-    ciphersuites: Ciphersuite[];
-    /**
      * External PRNG entropy pool seed.
      * This **must** be exactly 32 bytes
      */
@@ -405,10 +401,6 @@ export interface CoreCryptoDeferredParams {
      * .wasm file path, this will be useful in case your bundling system likes to relocate files (i.e. what webpack does)
      */
     wasmFilePath?: string;
-    /**
-     * Number of initial KeyPackage to create when initializing the client
-     */
-    nbKeyPackage?: number;
 }
 
 /**
@@ -421,6 +413,14 @@ export interface CoreCryptoParams extends CoreCryptoDeferredParams {
      * This should stay consistent as it will be verified against the stored signature & identity to validate the persisted credential
      */
     clientId: ClientId;
+    /**
+     * All the ciphersuites this MLS client can support
+     */
+    ciphersuites: Ciphersuite[];
+    /**
+     * Number of initial KeyPackage to create when initializing the client
+     */
+    nbKeyPackage?: number;
 }
 
 export interface ConversationInitBundle {
@@ -964,21 +964,16 @@ export class CoreCrypto {
     static async deferredInit({
         databaseName,
         key,
-        ciphersuites,
         entropySeed,
         wasmFilePath,
-        nbKeyPackage,
     }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
         await this.#loadModule(wasmFilePath);
 
-        let cs = ciphersuites.map((cs) => cs.valueOf());
         const cc = await CoreCryptoError.asyncMapErr(
             CoreCryptoFfi.deferred_init(
                 databaseName,
                 key,
-                Uint16Array.of(...cs),
                 entropySeed,
-                nbKeyPackage
             )
         );
         return new this(cc);

@@ -717,8 +717,8 @@ public class CoreCryptoWrapper {
     /// Almost identical to ```CoreCrypto/init``` but allows a 2 phase initialization of MLS.First, calling this will
     /// set up the keystore and will allow generating proteus prekeys.Then, those keys can be traded for a clientId.
     /// Use this clientId to initialize MLS with ```CoreCrypto/mlsInit```.
-    public static func deferredInit(path: String, key: String, ciphersuites: Array<UInt16>, nbKeyPackage: UInt32 = 100) async throws -> CoreCrypto {
-        try await CoreCrypto.deferredInit(path: path, key: key, ciphersuites: ciphersuites, nbKeyPackage: nbKeyPackage)
+    public static func deferredInit(path: String, key: String) async throws -> CoreCrypto {
+        try await CoreCrypto.deferredInit(path: path, key: key)
     }
 
     /// Use this after ```CoreCrypto/deferredInit``` when you have a clientId. It initializes MLS.

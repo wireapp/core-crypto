@@ -54,7 +54,7 @@ impl<'a> CoreCryptoFfiClient<'a> {
     pub async fn new_deferred() -> Result<CoreCryptoFfiClient<'a>> {
         let client_id = uuid::Uuid::new_v4();
         let ciphersuite = CIPHERSUITE_IN_USE.into();
-        let cc = CoreCrypto::deferred_init("path", "key", vec![ciphersuite], None)?;
+        let cc = CoreCrypto::deferred_init("path", "key")?;
         Ok(Self {
             cc,
             client_id: client_id.into_bytes().into(),

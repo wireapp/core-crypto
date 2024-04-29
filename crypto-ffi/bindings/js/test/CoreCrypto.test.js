@@ -309,7 +309,6 @@ test("externally generated clients", async () => {
         const alice = await CoreCrypto.deferredInit({
             databaseName: "extgen alice test",
             key: "test",
-            ciphersuites: [ciphersuite],
         });
 
         const signaturePks = await alice.mlsGenerateKeypair([ciphersuite]);
@@ -853,13 +852,11 @@ test("proteus", async () => {
         const client1Config = {
             databaseName: "proteus test1",
             key: "test",
-            ciphersuites: [ciphersuite],
         };
 
         const client2Config = {
             databaseName: "proteus test2",
             key: "test",
-            ciphersuites: [ciphersuite],
         };
 
         const message = "Hello world!";
@@ -943,7 +940,6 @@ test("end-to-end-identity", async () => {
         const cc = await CoreCrypto.deferredInit({
             databaseName: "e2ei test",
             key: "test",
-            ciphersuites: [ciphersuite],
         });
 
         const encoder = new TextEncoder();
