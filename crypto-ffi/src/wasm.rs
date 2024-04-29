@@ -1247,22 +1247,14 @@ impl CoreCrypto {
     pub async fn deferred_init(
         path: String,
         key: String,
-        ciphersuites: Box<[u16]>,
         entropy_seed: Option<Box<[u8]>>,
-        nb_key_package: Option<u32>,
     ) -> WasmCryptoResult<CoreCrypto> {
         #[cfg(feature = "debug-logging")]
         femme::with_level(femme::LevelFilter::Debug);
 
-        let ciphersuites = lower_ciphersuites(&ciphersuites)?;
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
-        let nb_key_package = nb_key_package
-            .map(usize::try_from)
-            .transpose()
-            .map_err(CryptoError::from)?;
-        let configuration =
-            MlsCentralConfiguration::try_new(path, key, None, ciphersuites, entropy_seed, nb_key_package)
-                .map_err(CoreCryptoError::from)?;
+        let configuration = MlsCentralConfiguration::try_new(path, key, None, vec![], entropy_seed, None)
+            .map_err(CoreCryptoError::from)?;
 
         let central = MlsCentral::try_new(configuration)
             .await

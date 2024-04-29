@@ -133,7 +133,7 @@ impl UniffiCustomTypeConverter for Ciphersuite {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Ciphersuites(Vec<core_crypto::prelude::CiphersuiteName>);
 
 impl From<Vec<core_crypto::prelude::CiphersuiteName>> for Ciphersuites {
@@ -738,19 +738,14 @@ pub async fn core_crypto_new(
     ciphersuites: Ciphersuites,
     nb_key_package: Option<u32>,
 ) -> CoreCryptoResult<CoreCrypto> {
-    CoreCrypto::new(path, key, Some(client_id), ciphersuites, nb_key_package).await
+    CoreCrypto::new(path, key, Some(client_id), Some(ciphersuites), nb_key_package).await
 }
 
 #[uniffi::export]
 /// Similar to [core_crypto_new] but defers MLS initialization. It can be initialized later
 /// with [CoreCrypto::mls_init].
-pub async fn core_crypto_deferred_init(
-    path: String,
-    key: String,
-    ciphersuites: Ciphersuites,
-    nb_key_package: Option<u32>,
-) -> CoreCryptoResult<CoreCrypto> {
-    CoreCrypto::new(path, key, None, ciphersuites, nb_key_package).await
+pub async fn core_crypto_deferred_init(path: String, key: String) -> CoreCryptoResult<CoreCrypto> {
+    CoreCrypto::new(path, key, None, None, None).await
 }
 
 #[allow(dead_code, unused_variables)]
@@ -761,7 +756,7 @@ impl CoreCrypto {
         path: String,
         key: String,
         client_id: Option<ClientId>,
-        ciphersuites: Ciphersuites,
+        ciphersuites: Option<Ciphersuites>,
         nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<Self> {
         #[cfg(feature = "debug-logging")]
@@ -775,7 +770,7 @@ impl CoreCrypto {
             path,
             key,
             client_id.map(|cid| cid.0.clone()),
-            (&ciphersuites).into(),
+            (&ciphersuites.unwrap_or_default()).into(),
             None,
             nb_key_package,
         )?;
