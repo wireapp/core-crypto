@@ -7,11 +7,23 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.58] - 2024-04-30
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0-rc.58" unreleased=true}}
+</details>
+
+* **[BREAKING]** The `deferred_init` following parameters have been removed: `ciphersuite`, `nb_key_packages`.
+    * Those parameters were unused anyway so this aims to remove some API cruft.
+* Fixed a crash on x86_64 Android
+* Android & iOS FFI: Fixed a deadlock in `conversation_create` due to a reentrancy
+
 ## [1.0.0-rc.57] - 2024-04-25
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.57" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.57"}}
 </details>
 
 * **[BREAKING]** The Kotlin and iOS FFI have been updated to use UniFFI 0.27

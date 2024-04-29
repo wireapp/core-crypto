@@ -2,7 +2,7 @@
 name = "mls-crypto-provider"
 description = "MLS Crypto Provider wrapping core-crypto-keystore"
 repository = "https://github.com/wireapp/core-crypto"
-version = "1.0.0-rc.57"
+version = "1.0.0-rc.58"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
@@ -49,10 +49,10 @@ version = "0.11"
 features = ["x25519", "p256", "p384", "p521", "xyber768d00"]
 
 [target.'cfg(not(target_os = "ios"))'.dependencies]
-core-crypto-keystore = { version = "^1.0.0-rc.57", path = "../keystore" }
+core-crypto-keystore = { version = "^1.0.0-rc.58", path = "../keystore" }
 
 [target.'cfg(target_os = "ios")'.dependencies]
-core-crypto-keystore = { version = "^1.0.0-rc.57", path = "../keystore", features = ["ios-wal-compat"] }
+core-crypto-keystore = { version = "^1.0.0-rc.58", path = "../keystore", features = ["ios-wal-compat"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
