@@ -794,22 +794,6 @@ pub async fn core_crypto_deferred_init(
 }
 
 #[allow(dead_code, unused_variables)]
-impl CoreCrypto {
-    async fn lower_cfg(&self, cfg: ConversationConfiguration) -> CoreCryptoResult<MlsConversationConfiguration> {
-        let mut lower_cfg = MlsConversationConfiguration {
-            custom: cfg.custom.into(),
-            ciphersuite: cfg.ciphersuite.into(),
-            ..Default::default()
-        };
-        self.central
-            .lock()
-            .await
-            .set_raw_external_senders(&mut lower_cfg, cfg.external_senders)?;
-        Ok(lower_cfg)
-    }
-}
-
-#[allow(dead_code, unused_variables)]
 #[uniffi::export]
 impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::mls_init]
@@ -986,15 +970,17 @@ impl CoreCrypto {
         creator_credential_type: MlsCredentialType,
         config: ConversationConfiguration,
     ) -> CoreCryptoResult<()> {
-        Ok(self
-            .central
-            .lock()
-            .await
-            .new_conversation(
-                &conversation_id,
-                creator_credential_type.into(),
-                self.lower_cfg(config).await?,
-            )
+        let mut central = self.central.lock().await;
+        let mut lower_cfg = MlsConversationConfiguration {
+            custom: config.custom.into(),
+            ciphersuite: config.ciphersuite.into(),
+            ..Default::default()
+        };
+
+        central.set_raw_external_senders(&mut lower_cfg, config.external_senders)?;
+
+        Ok(central
+            .new_conversation(&conversation_id, creator_credential_type.into(), lower_cfg)
             .await?)
     }
 
