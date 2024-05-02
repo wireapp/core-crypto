@@ -54,8 +54,13 @@ impl MlsCentral {
         cfg.external_senders = external_senders
             .into_iter()
             .map(|key| {
-                MlsConversationConfiguration::parse_external_sender(&key)
-                    .or_else(|_| MlsConversationConfiguration::legacy_external_sender(key, &self.mls_backend))
+                MlsConversationConfiguration::parse_external_sender(&key).or_else(|_| {
+                    MlsConversationConfiguration::legacy_external_sender(
+                        key,
+                        cfg.ciphersuite.signature_algorithm(),
+                        &self.mls_backend,
+                    )
+                })
             })
             .collect::<CryptoResult<_>>()?;
         Ok(())
@@ -152,12 +157,16 @@ impl MlsConversationConfiguration {
     /// This supports the legacy behaviour where the server was providing the external sender public key
     /// raw. This only supports Ed25519
     // TODO: remove at some point when the backend API is not used anymore
-    fn legacy_external_sender(key: Vec<u8>, backend: &MlsCryptoProvider) -> CryptoResult<ExternalSender> {
+    fn legacy_external_sender(
+        key: Vec<u8>,
+        signature_scheme: SignatureScheme,
+        backend: &MlsCryptoProvider,
+    ) -> CryptoResult<ExternalSender> {
         backend
             .crypto()
-            .validate_signature_key(SignatureScheme::ED25519, &key[..])
+            .validate_signature_key(signature_scheme, &key[..])
             .map_err(MlsError::from)?;
-        let key = OpenMlsSignaturePublicKey::new(key.into(), SignatureScheme::ED25519).map_err(MlsError::from)?;
+        let key = OpenMlsSignaturePublicKey::new(key.into(), signature_scheme).map_err(MlsError::from)?;
         Ok(ExternalSender::new(
             key.into(),
             Credential::new_basic(Self::WIRE_SERVER_IDENTITY.into()),
@@ -224,7 +233,7 @@ pub mod tests {
     use wasm_bindgen_test::*;
     use wire_e2e_identity::prelude::JwsAlgorithm;
 
-    use crate::{prelude::MlsConversationConfiguration, test_utils::*, CryptoError, MlsError};
+    use crate::{prelude::MlsConversationConfiguration, test_utils::*};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -313,22 +322,10 @@ pub mod tests {
                     .signature_key_gen(case.signature_scheme())
                     .unwrap();
 
-                match case.signature_scheme() {
-                    SignatureScheme::ED25519 => {
-                        assert!(cc
-                            .mls_central
-                            .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
-                            .is_ok());
-                    }
-                    _ => {
-                        assert!(matches!(
-                            cc.mls_central
-                                .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
-                                .unwrap_err(),
-                            CryptoError::MlsError(MlsError::MlsCryptoError(openmls::prelude::CryptoError::InvalidKey))
-                        ));
-                    }
-                }
+                assert!(cc
+                    .mls_central
+                    .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
+                    .is_ok());
             })
         })
         .await
@@ -350,10 +347,10 @@ pub mod tests {
                 };
 
                 let jwk = wire_e2e_identity::prelude::generate_jwk(alg);
-                assert!(cc
+                let _ = cc
                     .mls_central
                     .set_raw_external_senders(&mut case.cfg.clone(), vec![jwk])
-                    .is_ok());
+                    .unwrap();
             })
         })
         .await;
