@@ -7,6 +7,19 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.59] - 2024-05-02
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Support legacy external senders with ECDSA
+
+</details>
+
+* Fixed the support of External Senders as the legacy format (raw encoded public keys) for ECDSA-based ciphersuites
+
 ## [1.0.0-rc.58] - 2024-04-30
 
 <details>
@@ -20,16 +33,6 @@ Platform support legends:
 ### Miscellaneous Tasks
 
 - [**breaking**] Drop unused parameters from deferred_init
-
-
-### Bug Fixes
-
-- Convert TS enums to their discriminant repr
-
-### Miscellaneous Tasks
-
-- Make swift checks build the Swift code
-- [**breaking**] UniFFI 0.27 upgrade
 
 </details>
 
