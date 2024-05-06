@@ -1,0 +1,371 @@
+$dokka.format:html-v1
+$dokka.linkExtension:html
+$dokka.location:com.wire.crypto.client////PointingToDeclaration/-core-crypto/com.wire.crypto.client/index.html
+$dokka.location:com.wire.crypto.client//lift/[Error type: Unresolved type for com.wire.crypto.BufferedDecryptedMessage]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/lift.html
+$dokka.location:com.wire.crypto.client//lift/[Error type: Unresolved type for com.wire.crypto.CommitBundle]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/lift.html
+$dokka.location:com.wire.crypto.client//lift/[Error type: Unresolved type for com.wire.crypto.ConversationInitBundle]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/lift.html
+$dokka.location:com.wire.crypto.client//lift/[Error type: Unresolved type for com.wire.crypto.CrlRegistration]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/lift.html
+$dokka.location:com.wire.crypto.client//lift/[Error type: Unresolved type for com.wire.crypto.DecryptedMessage]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/lift.html
+$dokka.location:com.wire.crypto.client//lift/[Error type: Unresolved type for com.wire.crypto.DeviceStatus]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/lift.html
+$dokka.location:com.wire.crypto.client//lift/[Error type: Unresolved type for com.wire.crypto.GroupInfoBundle]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/lift.html
+$dokka.location:com.wire.crypto.client//lift/[Error type: Unresolved type for com.wire.crypto.MemberAddedMessages]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/lift.html
+$dokka.location:com.wire.crypto.client//lift/[Error type: Unresolved type for com.wire.crypto.MlsCredentialType]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/lift.html
+$dokka.location:com.wire.crypto.client//lift/[Error type: Unresolved type for com.wire.crypto.ProposalBundle]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/lift.html
+$dokka.location:com.wire.crypto.client//lift/[Error type: Unresolved type for com.wire.crypto.WelcomeBundle]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/lift.html
+$dokka.location:com.wire.crypto.client//lift/[Error type: Unresolved type for com.wire.crypto.WireIdentity]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/lift.html
+$dokka.location:com.wire.crypto.client//lift/[Error type: Unresolved type for com.wire.crypto.X509Identity]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/lift.html
+$dokka.location:com.wire.crypto.client//toAcmeChallenge/[Error type: Unresolved type for com.wire.crypto.AcmeChallenge]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-acme-challenge.html
+$dokka.location:com.wire.crypto.client//toAcmeDirectory/[Error type: Unresolved type for com.wire.crypto.AcmeDirectory]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-acme-directory.html
+$dokka.location:com.wire.crypto.client//toAvsSecret/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-avs-secret.html
+$dokka.location:com.wire.crypto.client//toByteArray/kotlin.String#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-byte-array.html
+$dokka.location:com.wire.crypto.client//toClientId/[Error type: Unresolved type for com.wire.crypto.ClientId]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-client-id.html
+$dokka.location:com.wire.crypto.client//toClientId/kotlin.String#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-client-id.html
+$dokka.location:com.wire.crypto.client//toCrlDistributionPoint/kotlin.collections.List[kotlin.String]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-crl-distribution-point.html
+$dokka.location:com.wire.crypto.client//toExternalSenderKey/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-external-sender-key.html
+$dokka.location:com.wire.crypto.client//toExternallyGeneratedHandle/kotlin.collections.List[kotlin.ByteArray]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-externally-generated-handle.html
+$dokka.location:com.wire.crypto.client//toGroupId/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-group-id.html
+$dokka.location:com.wire.crypto.client//toGroupId/kotlin.String#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-group-id.html
+$dokka.location:com.wire.crypto.client//toGroupInfo/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-group-info.html
+$dokka.location:com.wire.crypto.client//toHex/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-hex.html
+$dokka.location:com.wire.crypto.client//toMLSKeyPackage/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-m-l-s-key-package.html
+$dokka.location:com.wire.crypto.client//toMlsMessage/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-mls-message.html
+$dokka.location:com.wire.crypto.client//toNewAcmeAuthz/[Error type: Unresolved type for com.wire.crypto.NewAcmeAuthz]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-new-acme-authz.html
+$dokka.location:com.wire.crypto.client//toNewAcmeOrder/[Error type: Unresolved type for com.wire.crypto.NewAcmeOrder]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-new-acme-order.html
+$dokka.location:com.wire.crypto.client//toPlaintextMessage/kotlin.String#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-plaintext-message.html
+$dokka.location:com.wire.crypto.client//toProposalRef/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-proposal-ref.html
+$dokka.location:com.wire.crypto.client//toRotateBundle/[Error type: Unresolved type for com.wire.crypto.RotateBundle]#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-rotate-bundle.html
+$dokka.location:com.wire.crypto.client//toSignaturePublicKey/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-signature-public-key.html
+$dokka.location:com.wire.crypto.client//toWelcome/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/to-welcome.html
+$dokka.location:com.wire.crypto.client/AcmeChallenge///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-acme-challenge/index.html
+$dokka.location:com.wire.crypto.client/AcmeChallenge/AcmeChallenge/#[Error type: Unresolved type for com.wire.crypto.AcmeChallenge]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-acme-challenge/-acme-challenge.html
+$dokka.location:com.wire.crypto.client/AcmeChallenge/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-acme-challenge/lower.html
+$dokka.location:com.wire.crypto.client/AcmeChallenge/raw/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-acme-challenge/raw.html
+$dokka.location:com.wire.crypto.client/AcmeChallenge/url/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-acme-challenge/url.html
+$dokka.location:com.wire.crypto.client/AcmeDirectory///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-acme-directory/index.html
+$dokka.location:com.wire.crypto.client/AcmeDirectory/AcmeDirectory/#[Error type: Unresolved type for com.wire.crypto.AcmeDirectory]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-acme-directory/-acme-directory.html
+$dokka.location:com.wire.crypto.client/AcmeDirectory/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-acme-directory/lower.html
+$dokka.location:com.wire.crypto.client/AcmeDirectory/newAccount/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-acme-directory/new-account.html
+$dokka.location:com.wire.crypto.client/AcmeDirectory/newNonce/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-acme-directory/new-nonce.html
+$dokka.location:com.wire.crypto.client/AcmeDirectory/newOrder/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-acme-directory/new-order.html
+$dokka.location:com.wire.crypto.client/AcmeDirectory/revokeCert/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-acme-directory/revoke-cert.html
+$dokka.location:com.wire.crypto.client/AvsSecret///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-avs-secret/index.html
+$dokka.location:com.wire.crypto.client/AvsSecret/AvsSecret/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-avs-secret/-avs-secret.html
+$dokka.location:com.wire.crypto.client/AvsSecret/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-avs-secret/to-string.html
+$dokka.location:com.wire.crypto.client/AvsSecret/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-avs-secret/value.html
+$dokka.location:com.wire.crypto.client/BufferedDecryptedMessage///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-buffered-decrypted-message/index.html
+$dokka.location:com.wire.crypto.client/BufferedDecryptedMessage/BufferedDecryptedMessage/#kotlin.ByteArray?#kotlin.collections.Set[com.wire.crypto.client.ProposalBundle]#kotlin.Boolean#kotlin.Long?#com.wire.crypto.client.ClientId?#kotlin.Boolean#com.wire.crypto.client.WireIdentity#com.wire.crypto.client.CrlDistributionPoints?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-buffered-decrypted-message/-buffered-decrypted-message.html
+$dokka.location:com.wire.crypto.client/BufferedDecryptedMessage/commitDelay/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-buffered-decrypted-message/commit-delay.html
+$dokka.location:com.wire.crypto.client/BufferedDecryptedMessage/crlNewDistributionPoints/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-buffered-decrypted-message/crl-new-distribution-points.html
+$dokka.location:com.wire.crypto.client/BufferedDecryptedMessage/equals/#kotlin.Any?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-buffered-decrypted-message/equals.html
+$dokka.location:com.wire.crypto.client/BufferedDecryptedMessage/hasEpochChanged/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-buffered-decrypted-message/has-epoch-changed.html
+$dokka.location:com.wire.crypto.client/BufferedDecryptedMessage/hashCode/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-buffered-decrypted-message/hash-code.html
+$dokka.location:com.wire.crypto.client/BufferedDecryptedMessage/identity/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-buffered-decrypted-message/identity.html
+$dokka.location:com.wire.crypto.client/BufferedDecryptedMessage/isActive/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-buffered-decrypted-message/is-active.html
+$dokka.location:com.wire.crypto.client/BufferedDecryptedMessage/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-buffered-decrypted-message/message.html
+$dokka.location:com.wire.crypto.client/BufferedDecryptedMessage/proposals/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-buffered-decrypted-message/proposals.html
+$dokka.location:com.wire.crypto.client/BufferedDecryptedMessage/senderClientId/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-buffered-decrypted-message/sender-client-id.html
+$dokka.location:com.wire.crypto.client/CRLRegistration///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-c-r-l-registration/index.html
+$dokka.location:com.wire.crypto.client/CRLRegistration/CRLRegistration/#kotlin.Boolean#kotlin.Long?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-c-r-l-registration/-c-r-l-registration.html
+$dokka.location:com.wire.crypto.client/CRLRegistration/dirty/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-c-r-l-registration/dirty.html
+$dokka.location:com.wire.crypto.client/CRLRegistration/equals/#kotlin.Any?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-c-r-l-registration/equals.html
+$dokka.location:com.wire.crypto.client/CRLRegistration/expiration/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-c-r-l-registration/expiration.html
+$dokka.location:com.wire.crypto.client/CRLRegistration/hashCode/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-c-r-l-registration/hash-code.html
+$dokka.location:com.wire.crypto.client/Ciphersuite.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-ciphersuite/-companion/index.html
+$dokka.location:com.wire.crypto.client/Ciphersuite.Companion/DEFAULT/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-ciphersuite/-companion/-d-e-f-a-u-l-t.html
+$dokka.location:com.wire.crypto.client/Ciphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-ciphersuite/-m-l-s_128_-d-h-k-e-m-p256_-a-e-s128-g-c-m_-s-h-a256_-p256/index.html
+$dokka.location:com.wire.crypto.client/Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-ciphersuite/-m-l-s_128_-d-h-k-e-m-x25519_-a-e-s128-g-c-m_-s-h-a256_-ed25519/index.html
+$dokka.location:com.wire.crypto.client/Ciphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-ciphersuite/-m-l-s_128_-d-h-k-e-m-x25519_-c-h-a-c-h-a20-p-o-l-y1305_-s-h-a256_-ed25519/index.html
+$dokka.location:com.wire.crypto.client/Ciphersuite.MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-ciphersuite/-m-l-s_128_-x25519-k-y-b-e-r768-d-r-a-f-t00_-a-e-s128-g-c-m_-s-h-a256_-ed25519/index.html
+$dokka.location:com.wire.crypto.client/Ciphersuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-ciphersuite/-m-l-s_256_-d-h-k-e-m-p384_-a-e-s256-g-c-m_-s-h-a384_-p384/index.html
+$dokka.location:com.wire.crypto.client/Ciphersuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-ciphersuite/-m-l-s_256_-d-h-k-e-m-p521_-a-e-s256-g-c-m_-s-h-a512_-p521/index.html
+$dokka.location:com.wire.crypto.client/Ciphersuite.MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-ciphersuite/-m-l-s_256_-d-h-k-e-m-x448_-a-e-s256-g-c-m_-s-h-a512_-ed448/index.html
+$dokka.location:com.wire.crypto.client/Ciphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-ciphersuite/-m-l-s_256_-d-h-k-e-m-x448_-c-h-a-c-h-a20-p-o-l-y1305_-s-h-a512_-ed448/index.html
+$dokka.location:com.wire.crypto.client/Ciphersuite///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-ciphersuite/index.html
+$dokka.location:com.wire.crypto.client/Ciphersuite/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-ciphersuite/lower.html
+$dokka.location:com.wire.crypto.client/Ciphersuite/valueOf/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-ciphersuite/value-of.html
+$dokka.location:com.wire.crypto.client/Ciphersuite/values/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-ciphersuite/values.html
+$dokka.location:com.wire.crypto.client/Ciphersuites.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-ciphersuites/-companion/index.html
+$dokka.location:com.wire.crypto.client/Ciphersuites.Companion/DEFAULT/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-ciphersuites/-companion/-d-e-f-a-u-l-t.html
+$dokka.location:com.wire.crypto.client/Ciphersuites///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-ciphersuites/index.html
+$dokka.location:com.wire.crypto.client/Ciphersuites/Ciphersuites/#kotlin.collections.Set[com.wire.crypto.client.Ciphersuite]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-ciphersuites/-ciphersuites.html
+$dokka.location:com.wire.crypto.client/Ciphersuites/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-ciphersuites/lower.html
+$dokka.location:com.wire.crypto.client/ClientId///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-client-id/index.html
+$dokka.location:com.wire.crypto.client/ClientId/ClientId/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-client-id/-client-id.html
+$dokka.location:com.wire.crypto.client/ClientId/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-client-id/lower.html
+$dokka.location:com.wire.crypto.client/ClientId/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-client-id/value.html
+$dokka.location:com.wire.crypto.client/CommitBundle///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-commit-bundle/index.html
+$dokka.location:com.wire.crypto.client/CommitBundle/CommitBundle/#com.wire.crypto.client.MlsMessage#com.wire.crypto.client.Welcome?#com.wire.crypto.client.GroupInfoBundle#com.wire.crypto.client.CrlDistributionPoints?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-commit-bundle/-commit-bundle.html
+$dokka.location:com.wire.crypto.client/CommitBundle/commit/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-commit-bundle/commit.html
+$dokka.location:com.wire.crypto.client/CommitBundle/crlNewDistributionPoints/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-commit-bundle/crl-new-distribution-points.html
+$dokka.location:com.wire.crypto.client/CommitBundle/groupInfoBundle/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-commit-bundle/group-info-bundle.html
+$dokka.location:com.wire.crypto.client/CommitBundle/welcome/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-commit-bundle/welcome.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/-companion/index.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral.Companion/invoke/#kotlin.String#kotlin.String#com.wire.crypto.client.Ciphersuites/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/-companion/invoke.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/index.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/close.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/e2eiDumpPKIEnv/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/e2ei-dump-p-k-i-env.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/e2eiEnrollmentStash/#com.wire.crypto.client.E2EIEnrollment/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/e2ei-enrollment-stash.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/e2eiEnrollmentStashPop/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/e2ei-enrollment-stash-pop.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/e2eiIsPKIEnvSetup/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/e2ei-is-p-k-i-env-setup.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/e2eiMlsInitOnly/#com.wire.crypto.client.E2EIEnrollment#kotlin.String#[Error type: Unresolved type for UInt]?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/e2ei-mls-init-only.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/e2eiNewActivationEnrollment/#kotlin.String#kotlin.String#[Error type: Unresolved type for UInt]#com.wire.crypto.client.Ciphersuite#kotlin.String?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/e2ei-new-activation-enrollment.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/e2eiNewEnrollment/#kotlin.String#kotlin.String#kotlin.String#[Error type: Unresolved type for UInt]#com.wire.crypto.client.Ciphersuite#kotlin.String?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/e2ei-new-enrollment.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/e2eiNewRotateEnrollment/#[Error type: Unresolved type for UInt]#com.wire.crypto.client.Ciphersuite#kotlin.String?#kotlin.String?#kotlin.String?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/e2ei-new-rotate-enrollment.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/e2eiRegisterAcmeCA/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/e2ei-register-acme-c-a.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/e2eiRegisterCRL/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/e2ei-register-c-r-l.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/e2eiRegisterIntermediateCA/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/e2ei-register-intermediate-c-a.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/e2eiRotateAll/#com.wire.crypto.client.E2EIEnrollment#kotlin.String#[Error type: Unresolved type for UInt]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/e2ei-rotate-all.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/externallyGeneratedMlsClient/#com.wire.crypto.client.Ciphersuites/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/externally-generated-mls-client.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/mlsClient/#com.wire.crypto.client.ClientId#com.wire.crypto.client.Ciphersuites/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/mls-client.html
+$dokka.location:com.wire.crypto.client/CoreCryptoCentral/proteusClient/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-core-crypto-central/proteus-client.html
+$dokka.location:com.wire.crypto.client/CredentialType.Basic///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-credential-type/-basic/index.html
+$dokka.location:com.wire.crypto.client/CredentialType.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-credential-type/-companion/index.html
+$dokka.location:com.wire.crypto.client/CredentialType.Companion/DEFAULT/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-credential-type/-companion/-d-e-f-a-u-l-t.html
+$dokka.location:com.wire.crypto.client/CredentialType.X509///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-credential-type/-x509/index.html
+$dokka.location:com.wire.crypto.client/CredentialType///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-credential-type/index.html
+$dokka.location:com.wire.crypto.client/CredentialType/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-credential-type/lower.html
+$dokka.location:com.wire.crypto.client/CredentialType/valueOf/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-credential-type/value-of.html
+$dokka.location:com.wire.crypto.client/CredentialType/values/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-credential-type/values.html
+$dokka.location:com.wire.crypto.client/CrlDistributionPoints///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-crl-distribution-points/index.html
+$dokka.location:com.wire.crypto.client/CrlDistributionPoints/CrlDistributionPoints/#kotlin.collections.Set[java.net.URI]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-crl-distribution-points/-crl-distribution-points.html
+$dokka.location:com.wire.crypto.client/CrlDistributionPoints/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-crl-distribution-points/lower.html
+$dokka.location:com.wire.crypto.client/CrlDistributionPoints/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-crl-distribution-points/to-string.html
+$dokka.location:com.wire.crypto.client/CrlDistributionPoints/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-crl-distribution-points/value.html
+$dokka.location:com.wire.crypto.client/DecryptedMessage///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-decrypted-message/index.html
+$dokka.location:com.wire.crypto.client/DecryptedMessage/DecryptedMessage/#kotlin.ByteArray?#kotlin.collections.Set[com.wire.crypto.client.ProposalBundle]#kotlin.Boolean#kotlin.Long?#com.wire.crypto.client.ClientId?#kotlin.Boolean#com.wire.crypto.client.WireIdentity#kotlin.collections.List[com.wire.crypto.client.BufferedDecryptedMessage]?#com.wire.crypto.client.CrlDistributionPoints?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-decrypted-message/-decrypted-message.html
+$dokka.location:com.wire.crypto.client/DecryptedMessage/bufferedMessages/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-decrypted-message/buffered-messages.html
+$dokka.location:com.wire.crypto.client/DecryptedMessage/commitDelay/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-decrypted-message/commit-delay.html
+$dokka.location:com.wire.crypto.client/DecryptedMessage/crlNewDistributionPoints/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-decrypted-message/crl-new-distribution-points.html
+$dokka.location:com.wire.crypto.client/DecryptedMessage/equals/#kotlin.Any?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-decrypted-message/equals.html
+$dokka.location:com.wire.crypto.client/DecryptedMessage/hasEpochChanged/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-decrypted-message/has-epoch-changed.html
+$dokka.location:com.wire.crypto.client/DecryptedMessage/hashCode/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-decrypted-message/hash-code.html
+$dokka.location:com.wire.crypto.client/DecryptedMessage/identity/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-decrypted-message/identity.html
+$dokka.location:com.wire.crypto.client/DecryptedMessage/isActive/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-decrypted-message/is-active.html
+$dokka.location:com.wire.crypto.client/DecryptedMessage/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-decrypted-message/message.html
+$dokka.location:com.wire.crypto.client/DecryptedMessage/proposals/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-decrypted-message/proposals.html
+$dokka.location:com.wire.crypto.client/DecryptedMessage/senderClientId/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-decrypted-message/sender-client-id.html
+$dokka.location:com.wire.crypto.client/DeviceStatus.Expired///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-device-status/-expired/index.html
+$dokka.location:com.wire.crypto.client/DeviceStatus.Revoked///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-device-status/-revoked/index.html
+$dokka.location:com.wire.crypto.client/DeviceStatus.Valid///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-device-status/-valid/index.html
+$dokka.location:com.wire.crypto.client/DeviceStatus///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-device-status/index.html
+$dokka.location:com.wire.crypto.client/DeviceStatus/valueOf/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-device-status/value-of.html
+$dokka.location:com.wire.crypto.client/DeviceStatus/values/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-device-status/values.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/index.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/E2EIEnrollment/#[Error type: Unresolved type for com.wire.crypto.E2eiEnrollment]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/-e2-e-i-enrollment.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/accountResponse/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/account-response.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/authzResponse/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/authz-response.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/certificateRequest/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/certificate-request.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/checkOrderRequest/#kotlin.String#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/check-order-request.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/checkOrderResponse/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/check-order-response.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/createDpopToken/#[Error type: Unresolved type for UInt]#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/create-dpop-token.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/directoryResponse/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/directory-response.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/dpopChallengeResponse/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/dpop-challenge-response.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/finalizeRequest/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/finalize-request.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/finalizeResponse/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/finalize-response.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/getRefreshToken/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/get-refresh-token.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/newAccountRequest/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/new-account-request.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/newAuthzRequest/#kotlin.String#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/new-authz-request.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/newDpopChallengeRequest/#kotlin.String#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/new-dpop-challenge-request.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/newOidcChallengeRequest/#kotlin.String#kotlin.String#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/new-oidc-challenge-request.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/newOrderRequest/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/new-order-request.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/newOrderResponse/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/new-order-response.html
+$dokka.location:com.wire.crypto.client/E2EIEnrollment/oidcChallengeResponse/#com.wire.crypto.client.CoreCryptoCentral#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-e2-e-i-enrollment/oidc-challenge-response.html
+$dokka.location:com.wire.crypto.client/ExternalSenderKey///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-external-sender-key/index.html
+$dokka.location:com.wire.crypto.client/ExternalSenderKey/ExternalSenderKey/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-external-sender-key/-external-sender-key.html
+$dokka.location:com.wire.crypto.client/ExternalSenderKey/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-external-sender-key/to-string.html
+$dokka.location:com.wire.crypto.client/ExternalSenderKey/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-external-sender-key/value.html
+$dokka.location:com.wire.crypto.client/ExternallyGeneratedHandle///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-externally-generated-handle/index.html
+$dokka.location:com.wire.crypto.client/ExternallyGeneratedHandle/ExternallyGeneratedHandle/#kotlin.collections.List[kotlin.ByteArray]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-externally-generated-handle/-externally-generated-handle.html
+$dokka.location:com.wire.crypto.client/ExternallyGeneratedHandle/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-externally-generated-handle/lower.html
+$dokka.location:com.wire.crypto.client/ExternallyGeneratedHandle/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-externally-generated-handle/to-string.html
+$dokka.location:com.wire.crypto.client/ExternallyGeneratedHandle/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-externally-generated-handle/value.html
+$dokka.location:com.wire.crypto.client/FfiType///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-ffi-type/index.html
+$dokka.location:com.wire.crypto.client/FfiType/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-ffi-type/lower.html
+$dokka.location:com.wire.crypto.client/FfiType/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-ffi-type/value.html
+$dokka.location:com.wire.crypto.client/GroupInfo///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-group-info/index.html
+$dokka.location:com.wire.crypto.client/GroupInfo/GroupInfo/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-group-info/-group-info.html
+$dokka.location:com.wire.crypto.client/GroupInfo/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-group-info/to-string.html
+$dokka.location:com.wire.crypto.client/GroupInfo/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-group-info/value.html
+$dokka.location:com.wire.crypto.client/GroupInfoBundle///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-group-info-bundle/index.html
+$dokka.location:com.wire.crypto.client/GroupInfoBundle/GroupInfoBundle/#[Error type: Unresolved type for MlsGroupInfoEncryptionType]#[Error type: Unresolved type for MlsRatchetTreeType]#com.wire.crypto.client.GroupInfo/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-group-info-bundle/-group-info-bundle.html
+$dokka.location:com.wire.crypto.client/GroupInfoBundle/encryptionType/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-group-info-bundle/encryption-type.html
+$dokka.location:com.wire.crypto.client/GroupInfoBundle/payload/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-group-info-bundle/payload.html
+$dokka.location:com.wire.crypto.client/GroupInfoBundle/ratchetTreeType/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-group-info-bundle/ratchet-tree-type.html
+$dokka.location:com.wire.crypto.client/MLSClient.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/-companion/index.html
+$dokka.location:com.wire.crypto.client/MLSClient///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/index.html
+$dokka.location:com.wire.crypto.client/MLSClient/MLSClient/#[Error type: Unresolved type for com.wire.crypto.CoreCrypto]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/-m-l-s-client.html
+$dokka.location:com.wire.crypto.client/MLSClient/addMember/#com.wire.crypto.client.MLSGroupId#kotlin.collections.List[com.wire.crypto.client.MLSKeyPackage]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/add-member.html
+$dokka.location:com.wire.crypto.client/MLSClient/clearPendingCommit/#com.wire.crypto.client.MLSGroupId/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/clear-pending-commit.html
+$dokka.location:com.wire.crypto.client/MLSClient/clearPendingGroupFromExternalCommit/#com.wire.crypto.client.MLSGroupId/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/clear-pending-group-from-external-commit.html
+$dokka.location:com.wire.crypto.client/MLSClient/clearPendingProposal/#com.wire.crypto.client.MLSGroupId#com.wire.crypto.client.ProposalRef/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/clear-pending-proposal.html
+$dokka.location:com.wire.crypto.client/MLSClient/commitAccepted/#com.wire.crypto.client.MLSGroupId/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/commit-accepted.html
+$dokka.location:com.wire.crypto.client/MLSClient/commitPendingProposals/#com.wire.crypto.client.MLSGroupId/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/commit-pending-proposals.html
+$dokka.location:com.wire.crypto.client/MLSClient/conversationEpoch/#com.wire.crypto.client.MLSGroupId/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/conversation-epoch.html
+$dokka.location:com.wire.crypto.client/MLSClient/conversationExists/#com.wire.crypto.client.MLSGroupId/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/conversation-exists.html
+$dokka.location:com.wire.crypto.client/MLSClient/createConversation/#com.wire.crypto.client.MLSGroupId#com.wire.crypto.client.Ciphersuite#com.wire.crypto.client.CredentialType#kotlin.collections.List[com.wire.crypto.client.ExternalSenderKey]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/create-conversation.html
+$dokka.location:com.wire.crypto.client/MLSClient/decryptMessage/#com.wire.crypto.client.MLSGroupId#com.wire.crypto.client.MlsMessage/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/decrypt-message.html
+$dokka.location:com.wire.crypto.client/MLSClient/deleteKeyPackages/#kotlin.collections.List[com.wire.crypto.client.MLSKeyPackageRef]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/delete-key-packages.html
+$dokka.location:com.wire.crypto.client/MLSClient/deriveAvsSecret/#com.wire.crypto.client.MLSGroupId#[Error type: Unresolved type for UInt]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/derive-avs-secret.html
+$dokka.location:com.wire.crypto.client/MLSClient/e2eiConversationState/#com.wire.crypto.client.MLSGroupId/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/e2ei-conversation-state.html
+$dokka.location:com.wire.crypto.client/MLSClient/e2eiIsEnabled/#com.wire.crypto.client.Ciphersuite/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/e2ei-is-enabled.html
+$dokka.location:com.wire.crypto.client/MLSClient/encryptMessage/#com.wire.crypto.client.MLSGroupId#com.wire.crypto.client.PlaintextMessage/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/encrypt-message.html
+$dokka.location:com.wire.crypto.client/MLSClient/generateKeyPackages/#[Error type: Unresolved type for UInt]#com.wire.crypto.client.Ciphersuite#com.wire.crypto.client.CredentialType/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/generate-key-packages.html
+$dokka.location:com.wire.crypto.client/MLSClient/getCredentialInUse/#com.wire.crypto.client.GroupInfo#com.wire.crypto.client.CredentialType/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/get-credential-in-use.html
+$dokka.location:com.wire.crypto.client/MLSClient/getDeviceIdentities/#com.wire.crypto.client.MLSGroupId#kotlin.collections.List[com.wire.crypto.client.ClientId]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/get-device-identities.html
+$dokka.location:com.wire.crypto.client/MLSClient/getExternalSender/#com.wire.crypto.client.MLSGroupId/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/get-external-sender.html
+$dokka.location:com.wire.crypto.client/MLSClient/getPublicKey/#com.wire.crypto.client.Ciphersuite#com.wire.crypto.client.CredentialType/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/get-public-key.html
+$dokka.location:com.wire.crypto.client/MLSClient/getUserIdentities/#com.wire.crypto.client.MLSGroupId#kotlin.collections.List[kotlin.String]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/get-user-identities.html
+$dokka.location:com.wire.crypto.client/MLSClient/joinByExternalCommit/#com.wire.crypto.client.GroupInfo#com.wire.crypto.client.CredentialType#[Error type: Unresolved type for com.wire.crypto.CustomConfiguration]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/join-by-external-commit.html
+$dokka.location:com.wire.crypto.client/MLSClient/joinConversation/#com.wire.crypto.client.MLSGroupId#[Error type: Unresolved type for ULong]#com.wire.crypto.client.Ciphersuite#com.wire.crypto.client.CredentialType/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/join-conversation.html
+$dokka.location:com.wire.crypto.client/MLSClient/members/#com.wire.crypto.client.MLSGroupId/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/members.html
+$dokka.location:com.wire.crypto.client/MLSClient/mergePendingGroupFromExternalCommit/#com.wire.crypto.client.MLSGroupId/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/merge-pending-group-from-external-commit.html
+$dokka.location:com.wire.crypto.client/MLSClient/mlsGenerateKeypairs/#com.wire.crypto.client.Ciphersuites/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/mls-generate-keypairs.html
+$dokka.location:com.wire.crypto.client/MLSClient/mlsInit/#com.wire.crypto.client.ClientId#com.wire.crypto.client.Ciphersuites#[Error type: Unresolved type for UInt]?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/mls-init.html
+$dokka.location:com.wire.crypto.client/MLSClient/mlsInitWithClientId/#com.wire.crypto.client.ClientId#com.wire.crypto.client.ExternallyGeneratedHandle#com.wire.crypto.client.Ciphersuites/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/mls-init-with-client-id.html
+$dokka.location:com.wire.crypto.client/MLSClient/newAddProposal/#com.wire.crypto.client.MLSGroupId#com.wire.crypto.client.MLSKeyPackage/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/new-add-proposal.html
+$dokka.location:com.wire.crypto.client/MLSClient/newRemoveProposal/#com.wire.crypto.client.MLSGroupId#com.wire.crypto.client.ClientId/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/new-remove-proposal.html
+$dokka.location:com.wire.crypto.client/MLSClient/newUpdateProposal/#com.wire.crypto.client.MLSGroupId/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/new-update-proposal.html
+$dokka.location:com.wire.crypto.client/MLSClient/processWelcomeMessage/#com.wire.crypto.client.Welcome#[Error type: Unresolved type for com.wire.crypto.CustomConfiguration]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/process-welcome-message.html
+$dokka.location:com.wire.crypto.client/MLSClient/removeMember/#com.wire.crypto.client.MLSGroupId#kotlin.collections.List[com.wire.crypto.client.ClientId]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/remove-member.html
+$dokka.location:com.wire.crypto.client/MLSClient/updateKeyingMaterial/#com.wire.crypto.client.MLSGroupId/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/update-keying-material.html
+$dokka.location:com.wire.crypto.client/MLSClient/validKeyPackageCount/#com.wire.crypto.client.Ciphersuite#com.wire.crypto.client.CredentialType/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/valid-key-package-count.html
+$dokka.location:com.wire.crypto.client/MLSClient/wipeConversation/#com.wire.crypto.client.MLSGroupId/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-client/wipe-conversation.html
+$dokka.location:com.wire.crypto.client/MLSGroupId///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-group-id/index.html
+$dokka.location:com.wire.crypto.client/MLSGroupId/MLSGroupId/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-group-id/-m-l-s-group-id.html
+$dokka.location:com.wire.crypto.client/MLSGroupId/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-group-id/to-string.html
+$dokka.location:com.wire.crypto.client/MLSGroupId/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-group-id/value.html
+$dokka.location:com.wire.crypto.client/MLSKeyPackage///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-key-package/index.html
+$dokka.location:com.wire.crypto.client/MLSKeyPackage/MLSKeyPackage/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-key-package/-m-l-s-key-package.html
+$dokka.location:com.wire.crypto.client/MLSKeyPackage/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-key-package/to-string.html
+$dokka.location:com.wire.crypto.client/MLSKeyPackage/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-key-package/value.html
+$dokka.location:com.wire.crypto.client/MLSKeyPackageRef///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-key-package-ref/index.html
+$dokka.location:com.wire.crypto.client/MLSKeyPackageRef/MLSKeyPackageRef/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-key-package-ref/-m-l-s-key-package-ref.html
+$dokka.location:com.wire.crypto.client/MLSKeyPackageRef/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-key-package-ref/to-string.html
+$dokka.location:com.wire.crypto.client/MLSKeyPackageRef/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-m-l-s-key-package-ref/value.html
+$dokka.location:com.wire.crypto.client/MlsMessage///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-mls-message/index.html
+$dokka.location:com.wire.crypto.client/MlsMessage/MlsMessage/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-mls-message/-mls-message.html
+$dokka.location:com.wire.crypto.client/MlsMessage/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-mls-message/to-string.html
+$dokka.location:com.wire.crypto.client/MlsMessage/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-mls-message/value.html
+$dokka.location:com.wire.crypto.client/NewAcmeAuthz///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-new-acme-authz/index.html
+$dokka.location:com.wire.crypto.client/NewAcmeAuthz/NewAcmeAuthz/#[Error type: Unresolved type for com.wire.crypto.NewAcmeAuthz]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-new-acme-authz/-new-acme-authz.html
+$dokka.location:com.wire.crypto.client/NewAcmeAuthz/challenge/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-new-acme-authz/challenge.html
+$dokka.location:com.wire.crypto.client/NewAcmeAuthz/identifier/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-new-acme-authz/identifier.html
+$dokka.location:com.wire.crypto.client/NewAcmeAuthz/keyauth/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-new-acme-authz/keyauth.html
+$dokka.location:com.wire.crypto.client/NewAcmeAuthz/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-new-acme-authz/lower.html
+$dokka.location:com.wire.crypto.client/NewAcmeOrder///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-new-acme-order/index.html
+$dokka.location:com.wire.crypto.client/NewAcmeOrder/NewAcmeOrder/#[Error type: Unresolved type for com.wire.crypto.NewAcmeOrder]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-new-acme-order/-new-acme-order.html
+$dokka.location:com.wire.crypto.client/NewAcmeOrder/authorizations/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-new-acme-order/authorizations.html
+$dokka.location:com.wire.crypto.client/NewAcmeOrder/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-new-acme-order/lower.html
+$dokka.location:com.wire.crypto.client/NewAcmeOrder/raw/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-new-acme-order/raw.html
+$dokka.location:com.wire.crypto.client/PlaintextMessage///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-plaintext-message/index.html
+$dokka.location:com.wire.crypto.client/PlaintextMessage/PlaintextMessage/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-plaintext-message/-plaintext-message.html
+$dokka.location:com.wire.crypto.client/PlaintextMessage/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-plaintext-message/to-string.html
+$dokka.location:com.wire.crypto.client/PlaintextMessage/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-plaintext-message/value.html
+$dokka.location:com.wire.crypto.client/PreKey///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-pre-key/index.html
+$dokka.location:com.wire.crypto.client/PreKey/PreKey/#[Error type: Unresolved type for UShort]#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-pre-key/-pre-key.html
+$dokka.location:com.wire.crypto.client/PreKey/data/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-pre-key/data.html
+$dokka.location:com.wire.crypto.client/PreKey/equals/#kotlin.Any?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-pre-key/equals.html
+$dokka.location:com.wire.crypto.client/PreKey/hashCode/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-pre-key/hash-code.html
+$dokka.location:com.wire.crypto.client/PreKey/id/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-pre-key/id.html
+$dokka.location:com.wire.crypto.client/ProposalBundle///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proposal-bundle/index.html
+$dokka.location:com.wire.crypto.client/ProposalBundle/ProposalBundle/#com.wire.crypto.client.MlsMessage#com.wire.crypto.client.ProposalRef#com.wire.crypto.client.CrlDistributionPoints?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proposal-bundle/-proposal-bundle.html
+$dokka.location:com.wire.crypto.client/ProposalBundle/crlNewDistributionPoints/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proposal-bundle/crl-new-distribution-points.html
+$dokka.location:com.wire.crypto.client/ProposalBundle/proposal/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proposal-bundle/proposal.html
+$dokka.location:com.wire.crypto.client/ProposalBundle/proposalRef/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proposal-bundle/proposal-ref.html
+$dokka.location:com.wire.crypto.client/ProposalRef///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proposal-ref/index.html
+$dokka.location:com.wire.crypto.client/ProposalRef/ProposalRef/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proposal-ref/-proposal-ref.html
+$dokka.location:com.wire.crypto.client/ProposalRef/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proposal-ref/to-string.html
+$dokka.location:com.wire.crypto.client/ProposalRef/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proposal-ref/value.html
+$dokka.location:com.wire.crypto.client/ProteusClient///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client/index.html
+$dokka.location:com.wire.crypto.client/ProteusClient/createSession/#com.wire.crypto.client.PreKey#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client/create-session.html
+$dokka.location:com.wire.crypto.client/ProteusClient/decrypt/#kotlin.ByteArray#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client/decrypt.html
+$dokka.location:com.wire.crypto.client/ProteusClient/deleteSession/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client/delete-session.html
+$dokka.location:com.wire.crypto.client/ProteusClient/doesSessionExist/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client/does-session-exist.html
+$dokka.location:com.wire.crypto.client/ProteusClient/encrypt/#kotlin.ByteArray#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client/encrypt.html
+$dokka.location:com.wire.crypto.client/ProteusClient/encryptBatched/#kotlin.ByteArray#kotlin.collections.List[kotlin.String]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client/encrypt-batched.html
+$dokka.location:com.wire.crypto.client/ProteusClient/encryptWithPreKey/#kotlin.ByteArray#com.wire.crypto.client.PreKey#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client/encrypt-with-pre-key.html
+$dokka.location:com.wire.crypto.client/ProteusClient/getIdentity/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client/get-identity.html
+$dokka.location:com.wire.crypto.client/ProteusClient/getLocalFingerprint/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client/get-local-fingerprint.html
+$dokka.location:com.wire.crypto.client/ProteusClient/getRemoteFingerprint/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client/get-remote-fingerprint.html
+$dokka.location:com.wire.crypto.client/ProteusClient/newLastPreKey/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client/new-last-pre-key.html
+$dokka.location:com.wire.crypto.client/ProteusClient/newPreKeys/#kotlin.Int#kotlin.Int/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client/new-pre-keys.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/-companion/index.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl.Companion/invoke/#[Error type: Unresolved type for CoreCrypto]#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/-companion/invoke.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl.Companion/needsMigration/#java.io.File/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/-companion/needs-migration.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/index.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl/createSession/#com.wire.crypto.client.PreKey#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/create-session.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl/decrypt/#kotlin.ByteArray#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/decrypt.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl/deleteSession/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/delete-session.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl/doesSessionExist/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/does-session-exist.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl/encrypt/#kotlin.ByteArray#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/encrypt.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl/encryptBatched/#kotlin.ByteArray#kotlin.collections.List[kotlin.String]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/encrypt-batched.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl/encryptWithPreKey/#kotlin.ByteArray#com.wire.crypto.client.PreKey#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/encrypt-with-pre-key.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl/getIdentity/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/get-identity.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl/getLocalFingerprint/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/get-local-fingerprint.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl/getRemoteFingerprint/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/get-remote-fingerprint.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl/newLastPreKey/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/new-last-pre-key.html
+$dokka.location:com.wire.crypto.client/ProteusClientImpl/newPreKeys/#kotlin.Int#kotlin.Int/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-client-impl/new-pre-keys.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code.DECODE_ERROR///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-proteus-exception/-code/-d-e-c-o-d-e_-e-r-r-o-r/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code.DUPLICATE_MESSAGE///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-proteus-exception/-code/-d-u-p-l-i-c-a-t-e_-m-e-s-s-a-g-e/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code.IDENTITY_ERROR///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-proteus-exception/-code/-i-d-e-n-t-i-t-y_-e-r-r-o-r/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code.INVALID_MESSAGE///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-proteus-exception/-code/-i-n-v-a-l-i-d_-m-e-s-s-a-g-e/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code.INVALID_SIGNATURE///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-proteus-exception/-code/-i-n-v-a-l-i-d_-s-i-g-n-a-t-u-r-e/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code.LOCAL_FILES_NOT_FOUND///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-proteus-exception/-code/-l-o-c-a-l_-f-i-l-e-s_-n-o-t_-f-o-u-n-d/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code.OUTDATED_MESSAGE///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-proteus-exception/-code/-o-u-t-d-a-t-e-d_-m-e-s-s-a-g-e/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code.PANIC///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-proteus-exception/-code/-p-a-n-i-c/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code.PREKEY_NOT_FOUND///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-proteus-exception/-code/-p-r-e-k-e-y_-n-o-t_-f-o-u-n-d/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code.REMOTE_IDENTITY_CHANGED///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-proteus-exception/-code/-r-e-m-o-t-e_-i-d-e-n-t-i-t-y_-c-h-a-n-g-e-d/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code.SESSION_NOT_FOUND///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-proteus-exception/-code/-s-e-s-s-i-o-n_-n-o-t_-f-o-u-n-d/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code.STORAGE_ERROR///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-proteus-exception/-code/-s-t-o-r-a-g-e_-e-r-r-o-r/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code.TOO_DISTANT_FUTURE///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-proteus-exception/-code/-t-o-o_-d-i-s-t-a-n-t_-f-u-t-u-r-e/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code.UNKNOWN_ERROR///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto.client/-proteus-exception/-code/-u-n-k-n-o-w-n_-e-r-r-o-r/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-exception/-code/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code/valueOf/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-exception/-code/value-of.html
+$dokka.location:com.wire.crypto.client/ProteusException.Code/values/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-exception/-code/values.html
+$dokka.location:com.wire.crypto.client/ProteusException.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-exception/-companion/index.html
+$dokka.location:com.wire.crypto.client/ProteusException.Companion/fromNativeCode/#kotlin.Int/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-exception/-companion/from-native-code.html
+$dokka.location:com.wire.crypto.client/ProteusException.Companion/fromProteusCode/#kotlin.Int/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-exception/-companion/from-proteus-code.html
+$dokka.location:com.wire.crypto.client/ProteusException///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-exception/index.html
+$dokka.location:com.wire.crypto.client/ProteusException/ProteusException/#kotlin.String?#com.wire.crypto.client.ProteusException.Code#kotlin.Throwable?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-exception/-proteus-exception.html
+$dokka.location:com.wire.crypto.client/ProteusException/ProteusException/#kotlin.String?#kotlin.Int#kotlin.Throwable?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-exception/-proteus-exception.html
+$dokka.location:com.wire.crypto.client/ProteusException/code/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-proteus-exception/code.html
+$dokka.location:com.wire.crypto.client/RotateBundle///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-rotate-bundle/index.html
+$dokka.location:com.wire.crypto.client/RotateBundle/RotateBundle/#[Error type: Unresolved type for com.wire.crypto.RotateBundle]/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-rotate-bundle/-rotate-bundle.html
+$dokka.location:com.wire.crypto.client/RotateBundle/commits/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-rotate-bundle/commits.html
+$dokka.location:com.wire.crypto.client/RotateBundle/crlNewDistributionPoints/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-rotate-bundle/crl-new-distribution-points.html
+$dokka.location:com.wire.crypto.client/RotateBundle/keyPackageRefsToRemove/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-rotate-bundle/key-package-refs-to-remove.html
+$dokka.location:com.wire.crypto.client/RotateBundle/newKeyPackages/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-rotate-bundle/new-key-packages.html
+$dokka.location:com.wire.crypto.client/SignaturePublicKey///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-signature-public-key/index.html
+$dokka.location:com.wire.crypto.client/SignaturePublicKey/SignaturePublicKey/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-signature-public-key/-signature-public-key.html
+$dokka.location:com.wire.crypto.client/SignaturePublicKey/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-signature-public-key/to-string.html
+$dokka.location:com.wire.crypto.client/SignaturePublicKey/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-signature-public-key/value.html
+$dokka.location:com.wire.crypto.client/Uniffi///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-uniffi/index.html
+$dokka.location:com.wire.crypto.client/Uniffi/lower/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-uniffi/lower.html
+$dokka.location:com.wire.crypto.client/Welcome///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-welcome/index.html
+$dokka.location:com.wire.crypto.client/Welcome/Welcome/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-welcome/-welcome.html
+$dokka.location:com.wire.crypto.client/Welcome/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-welcome/to-string.html
+$dokka.location:com.wire.crypto.client/Welcome/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-welcome/value.html
+$dokka.location:com.wire.crypto.client/WelcomeBundle///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-welcome-bundle/index.html
+$dokka.location:com.wire.crypto.client/WelcomeBundle/WelcomeBundle/#com.wire.crypto.client.MLSGroupId#com.wire.crypto.client.CrlDistributionPoints?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-welcome-bundle/-welcome-bundle.html
+$dokka.location:com.wire.crypto.client/WelcomeBundle/crlNewDistributionPoints/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-welcome-bundle/crl-new-distribution-points.html
+$dokka.location:com.wire.crypto.client/WelcomeBundle/equals/#kotlin.Any?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-welcome-bundle/equals.html
+$dokka.location:com.wire.crypto.client/WelcomeBundle/hashCode/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-welcome-bundle/hash-code.html
+$dokka.location:com.wire.crypto.client/WelcomeBundle/id/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-welcome-bundle/id.html
+$dokka.location:com.wire.crypto.client/WireIdentity///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-wire-identity/index.html
+$dokka.location:com.wire.crypto.client/WireIdentity/WireIdentity/#kotlin.String#com.wire.crypto.client.DeviceStatus#kotlin.String#com.wire.crypto.client.CredentialType#com.wire.crypto.client.X509Identity?/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-wire-identity/-wire-identity.html
+$dokka.location:com.wire.crypto.client/WireIdentity/clientId/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-wire-identity/client-id.html
+$dokka.location:com.wire.crypto.client/WireIdentity/credentialType/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-wire-identity/credential-type.html
+$dokka.location:com.wire.crypto.client/WireIdentity/status/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-wire-identity/status.html
+$dokka.location:com.wire.crypto.client/WireIdentity/thumbprint/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-wire-identity/thumbprint.html
+$dokka.location:com.wire.crypto.client/WireIdentity/x509Identity/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-wire-identity/x509-identity.html
+$dokka.location:com.wire.crypto.client/X509Identity///PointingToDeclaration/-core-crypto/com.wire.crypto.client/-x509-identity/index.html
+$dokka.location:com.wire.crypto.client/X509Identity/X509Identity/#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.String#java.time.Instant#java.time.Instant/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-x509-identity/-x509-identity.html
+$dokka.location:com.wire.crypto.client/X509Identity/certificate/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-x509-identity/certificate.html
+$dokka.location:com.wire.crypto.client/X509Identity/displayName/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-x509-identity/display-name.html
+$dokka.location:com.wire.crypto.client/X509Identity/domain/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-x509-identity/domain.html
+$dokka.location:com.wire.crypto.client/X509Identity/handle/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-x509-identity/handle.html
+$dokka.location:com.wire.crypto.client/X509Identity/notAfter/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-x509-identity/not-after.html
+$dokka.location:com.wire.crypto.client/X509Identity/notBefore/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-x509-identity/not-before.html
+$dokka.location:com.wire.crypto.client/X509Identity/serialNumber/#/PointingToDeclaration/-core-crypto/com.wire.crypto.client/-x509-identity/serial-number.html
+com.wire.crypto.client
+
