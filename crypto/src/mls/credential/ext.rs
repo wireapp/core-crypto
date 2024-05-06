@@ -4,6 +4,7 @@ use openmls_traits::types::{HashType, SignatureScheme};
 use wire_e2e_identity::prelude::{compute_raw_key_thumbprint, HashAlgorithm, JwsAlgorithm};
 use x509_cert::{der::Decode, Certificate};
 
+#[allow(dead_code)]
 pub(crate) trait CredentialExt {
     fn parse_leaf_cert(&self) -> CryptoResult<Option<Certificate>>;
     fn get_type(&self) -> CryptoResult<MlsCredentialType>;

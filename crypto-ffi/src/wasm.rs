@@ -1571,14 +1571,14 @@ impl CoreCrypto {
                     ..Default::default()
                 };
 
-                this.read()
-                    .await
-                    .set_raw_external_senders(&mut lower_cfg, config.external_senders)?;
-
                 if let Some(ciphersuite) = config.ciphersuite.take() {
                     let mls_ciphersuite: CiphersuiteName = ciphersuite.into();
                     lower_cfg.ciphersuite = mls_ciphersuite.into();
                 }
+
+                this.read()
+                    .await
+                    .set_raw_external_senders(&mut lower_cfg, config.external_senders)?;
 
                 this.write()
                     .await

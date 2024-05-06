@@ -58,6 +58,7 @@ impl std::fmt::Display for EmulatedClientType {
 }
 
 #[async_trait::async_trait(?Send)]
+#[allow(dead_code)]
 pub trait EmulatedClient {
     fn client_name(&self) -> &str;
     fn client_type(&self) -> EmulatedClientType;
@@ -67,6 +68,7 @@ pub trait EmulatedClient {
 }
 
 #[async_trait::async_trait(?Send)]
+#[allow(dead_code)]
 pub trait EmulatedMlsClient: EmulatedClient {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>>;
     async fn add_client(&mut self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>>;
@@ -78,6 +80,7 @@ pub trait EmulatedMlsClient: EmulatedClient {
 }
 
 #[async_trait::async_trait(?Send)]
+#[allow(dead_code)]
 pub trait EmulatedProteusClient: EmulatedClient {
     async fn init(&mut self) -> Result<()> {
         Ok(())
@@ -91,6 +94,7 @@ pub trait EmulatedProteusClient: EmulatedClient {
 }
 
 #[async_trait::async_trait(?Send)]
+#[allow(dead_code)]
 pub trait EmulatedE2eIdentityClient: EmulatedClient {
     async fn e2ei_new_enrollment(&mut self, ciphersuite: MlsCiphersuite) -> Result<()>;
 }
