@@ -7,6 +7,19 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.60] - 2024-05-06
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Ciphersuite being ignored on WASM createConversation
+
+</details>
+
+* Fixed an issue on WASM using `createConversation()` with external senders, as the ciphersuite was ignored in parsing External Senders
+
 ## [1.0.0-rc.59] - 2024-05-02
 
 <details>
