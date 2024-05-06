@@ -7,11 +7,21 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.56-hotfix.2] - 2024-05-06
+
+* Backports additional fixes up to rc.60 without the UniFFI upgrade
+
+## [1.0.0-rc.56-hotfix.1] - 2024-04-29
+
+* Backports 2 fixes:
+    * Android crash on x86_64
+    * Lock reentrancy in the iOS/Android FFI causing deadlocks
+
 ## [1.0.0-rc.56] - 2024-04-22
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.56" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.56"}}
 </details>
 
 * Added full support for NIST-P curves ciphersuites
