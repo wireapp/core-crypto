@@ -47,7 +47,7 @@ sha2 = { version = "0.10", features = ["force-soft"] }
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 # UniFFI - Android + iOS bindings - Runtime support
 uniffi = { workspace = true }
-core-crypto = { version = "^1.0.0-rc.60", path = "../crypto", features = ["uniffi"] }
+core-crypto = { version = "^1.0.0-rc.60", path = "../crypto" }
 
 [target.wasm32-unknown-unknown.dependencies]
 wasm-bindgen = "0.2"

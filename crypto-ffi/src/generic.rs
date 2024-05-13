@@ -42,17 +42,12 @@ pub fn version() -> String {
 }
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
+#[uniffi(flat_error)]
 pub enum CoreCryptoError {
-    #[error(transparent)]
-    CryptoError {
-        #[from]
-        error: CryptoError,
-    },
-    #[error(transparent)]
-    E2eIdentityError {
-        #[from]
-        error: E2eIdentityError,
-    },
+    #[error("CoreCryptoError: {0}")]
+    CryptoError(#[from] CryptoError),
+    #[error("E2eIdentityError: {0}")]
+    E2eIdentityError(#[from] E2eIdentityError),
 }
 
 type CoreCryptoResult<T> = Result<T, CoreCryptoError>;
@@ -1001,9 +996,8 @@ impl CoreCrypto {
         let key_packages = key_packages
             .into_iter()
             .map(|kp| {
-                KeyPackageIn::tls_deserialize(&mut kp.as_slice()).map_err(|e| CoreCryptoError::CryptoError {
-                    error: CryptoError::MlsError(e.into()),
-                })
+                KeyPackageIn::tls_deserialize(&mut kp.as_slice())
+                    .map_err(|e| CoreCryptoError::CryptoError(CryptoError::MlsError(e.into())))
             })
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 

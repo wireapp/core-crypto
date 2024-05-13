@@ -33,7 +33,7 @@ macro_rules! proteus_impl {
 
                         result
                     } else {
-                        if let Err(CoreCryptoError::CryptoError { error: e }) = &result {
+                        if let Err(CoreCryptoError::CryptoError(e)) = &result {
                             let errcode = e.proteus_error_code();
                             if errcode > 0 {
                                 $errcode_dest.store(errcode, std::sync::atomic::Ordering::SeqCst);

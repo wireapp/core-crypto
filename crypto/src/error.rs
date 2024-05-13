@@ -19,8 +19,6 @@ use crate::prelude::{E2eIdentityError, MlsCredentialType};
 
 /// CoreCrypto errors
 #[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-#[cfg_attr(feature = "uniffi", uniffi(flat_error))]
 pub enum CryptoError {
     /// End to end identity error
     #[error("End to end identity error")]
