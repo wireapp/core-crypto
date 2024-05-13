@@ -2,7 +2,7 @@
 name = "core-crypto"
 description = "Abstraction over OpenMLS with persistent keystore"
 repository = "https://github.com/wireapp/core-crypto"
-version = "1.0.0-rc.60"
+version = "1.0.0-rc.60-hotfix.1"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
@@ -13,8 +13,19 @@ crate-type = ["lib", "cdylib"]
 
 [features]
 default = ["proteus", "cryptobox-migrate", "test-pq-cipher"]
-proteus = ["dep:proteus-wasm", "dep:proteus-traits", "core-crypto-keystore/proteus-keystore"]
-cryptobox-migrate = ["proteus", "proteus-wasm?/cryptobox-identity", "dep:async-fs", "dep:futures-lite", "dep:rexie", "dep:base64"]
+proteus = [
+    "dep:proteus-wasm",
+    "dep:proteus-traits",
+    "core-crypto-keystore/proteus-keystore",
+]
+cryptobox-migrate = [
+    "proteus",
+    "proteus-wasm?/cryptobox-identity",
+    "dep:async-fs",
+    "dep:futures-lite",
+    "dep:rexie",
+    "dep:base64",
+]
 # for test/bench all ciphersuites
 test-all-cipher = ["test-pq-cipher"]
 test-pq-cipher = []
@@ -23,7 +34,12 @@ bench-in-db = []
 
 [dependencies]
 thiserror = "1.0"
-derive_more = { version = "0.99", features = ["from", "into", "deref", "deref_mut"] }
+derive_more = { version = "0.99", features = [
+    "from",
+    "into",
+    "deref",
+    "deref_mut",
+] }
 strum = { version = "0.26", features = ["derive"] }
 cfg-if = "1.0"
 hex = "0.4"
@@ -63,7 +79,9 @@ optional = true
 version = "2.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-sysinfo = { version = "0.30", default-features = false, features = ["apple-app-store"] }
+sysinfo = { version = "0.30", default-features = false, features = [
+    "apple-app-store",
+] }
 async-fs = { version = "2.0", optional = true }
 futures-lite = { version = "2.0", optional = true }
 
@@ -73,13 +91,15 @@ rexie = { version = "0.4", optional = true }
 base64 = { version = "0.22", optional = true }
 
 [target.'cfg(not(target_os = "ios"))'.dependencies]
-core-crypto-keystore = { version = "^1.0.0-rc.60", path = "../keystore" }
+core-crypto-keystore = { version = "^1.0.0-rc.60-hotfix.1", path = "../keystore" }
 
 [target.'cfg(target_os = "ios")'.dependencies]
-core-crypto-keystore = { version = "^1.0.0-rc.60", path = "../keystore", features = ["ios-wal-compat"] }
+core-crypto-keystore = { version = "^1.0.0-rc.60-hotfix.1", path = "../keystore", features = [
+    "ios-wal-compat",
+] }
 
 [dependencies.mls-crypto-provider]
-version = "^1.0.0-rc.60"
+version = "^1.0.0-rc.60-hotfix.1"
 path = "../mls-provider"
 
 [dev-dependencies]
@@ -103,7 +123,7 @@ fluvio-wasm-timer = "0.2"
 time = { version = "0.3", features = ["wasm-bindgen"] }
 
 [dev-dependencies.core-crypto-keystore]
-version = "^1.0.0-rc.60"
+version = "^1.0.0-rc.60-hotfix.1"
 path = "../keystore"
 features = ["dummy-entity"]
 
@@ -116,11 +136,16 @@ version = "0.5"
 features = ["async_std", "html_reports"]
 
 [dev-dependencies.core-crypto-attributes]
-version = "^1.0.0-rc.60"
+version = "^1.0.0-rc.60-hotfix.1"
 path = "../crypto-attributes"
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-Os", "--enable-mutable-globals", "--enable-threads", "--detect-features"]
+wasm-opt = [
+    "-Os",
+    "--enable-mutable-globals",
+    "--enable-threads",
+    "--detect-features",
+]
 
 [[bench]]
 name = "key_package"

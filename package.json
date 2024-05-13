@@ -1,6 +1,6 @@
 {
   "name": "@wireapp/core-crypto",
-  "version": "1.0.0-rc.60",
+  "version": "1.0.0-rc.60-hotfix.1",
   "description": "CoreCrypto bindings for the Web",
   "type": "module",
   "module": "platforms/web/corecrypto.js",
@@ -11,16 +11,8 @@
   "publishConfig": {
     "access": "public"
   },
-  "files": [
-    "platforms/web"
-  ],
-  "keywords": [
-    "wire",
-    "e2ee",
-    "corecrypto",
-    "mls",
-    "proteus"
-  ],
+  "files": ["platforms/web"],
+  "keywords": ["wire", "e2ee", "corecrypto", "mls", "proteus"],
   "author": "Mathieu Amiot <amiot.mathieu@gmail.com>",
   "license": "GPL-3.0",
   "homepage": "https://github.com/wireapp/core-crypto",

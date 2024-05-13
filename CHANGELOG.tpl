@@ -7,11 +7,15 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0-rc.60-hotfix.1] - 2024-05-06
+
+* Tentative fix for the Android/iOS FFI errors causing buffer issues within UniFFI
+
 ## [1.0.0-rc.60] - 2024-05-06
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.60" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.60"}}
 </details>
 
 * Fixed an issue on WASM using `createConversation()` with external senders, as the ciphersuite was ignored in parsing External Senders

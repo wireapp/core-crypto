@@ -65,12 +65,16 @@ script = '''
 dependencies = ["docs-kotlin-install-deps"]
 command = "java"
 args = [
-    "-jar", "../target/_kotlin_docs_tmp/dokka-cli-${DOKKA_VERSION}.jar",
-    "-moduleName", "CoreCrypto",
+    "-jar",
+    "../target/_kotlin_docs_tmp/dokka-cli-${DOKKA_VERSION}.jar",
+    "-moduleName",
+    "CoreCrypto",
     "-pluginsClasspath",
     "../target/_kotlin_docs_tmp/dokka-base-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/dokka-analysis-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/dokka-analysis-intellij-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/dokka-analysis-compiler-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/kotlinx-coroutines-core-1.6.4.jar;../target/_kotlin_docs_tmp/kotlinx-html-jvm-0.8.1.jar;../target/_kotlin_docs_tmp/freemarker-2.3.31.jar",
-    "-sourceSet", "-src ./bindings/jvm/src/main/kotlin",
-    "-outputDir", "../target/doc/core_crypto_ffi/bindings/kotlin",
+    "-sourceSet",
+    "-src ./bindings/jvm/src/main/kotlin",
+    "-outputDir",
+    "../target/doc/core_crypto_ffi/bindings/kotlin",
 ]
 
 [tasks.docs-rust-wasm]
@@ -85,11 +89,16 @@ args = ["install"]
 dependencies = ["npm-deps"]
 command = "npx"
 args = [
-    "-y", "typedoc",
-    "--basePath", "./bindings/js",
-    "--entryPoints", "./bindings/js/CoreCrypto.ts",
-    "--tsconfig", "./bindings/js/tsconfig.json",
-    "--out", "../target/doc/core_crypto_ffi/bindings/typescript"
+    "-y",
+    "typedoc",
+    "--basePath",
+    "./bindings/js",
+    "--entryPoints",
+    "./bindings/js/CoreCrypto.ts",
+    "--tsconfig",
+    "./bindings/js/tsconfig.json",
+    "--out",
+    "../target/doc/core_crypto_ffi/bindings/typescript",
 ]
 
 #[tasks.docs-swift]
@@ -102,11 +111,15 @@ command = "wasm-pack"
 # env = { "WASM_BINDGEN_WEAKREF" = 1, "WASM_BINDGEN_EXTERNREF" = 1 }
 args = [
     "build",
-    "--out-dir", "bindings/js/wasm",
-    "--out-name", "core-crypto-ffi",
-    "--mode", "normal",
-    "--target", "web",
-    "${@}"
+    "--out-dir",
+    "bindings/js/wasm",
+    "--out-name",
+    "core-crypto-ffi",
+    "--mode",
+    "normal",
+    "--target",
+    "web",
+    "${@}",
 ]
 
 # Quiets warning related to wasm-opt. Used to generate bindings and check Typescript wrapper
@@ -125,12 +138,17 @@ dependencies = ["release-build"]
 command = "cargo"
 args = [
     "run",
-    "--features", "uniffi/cli",
-    "--bin", "uniffi-bindgen",
+    "--features",
+    "uniffi/cli",
+    "--bin",
+    "uniffi-bindgen",
     "generate",
-    "--language", "swift",
-    "--out-dir", "./bindings/swift/WireCoreCrypto/WireCoreCrypto",
-    "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
+    "--language",
+    "swift",
+    "--out-dir",
+    "./bindings/swift/WireCoreCrypto/WireCoreCrypto",
+    "--library",
+    "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}",
 ]
 
 [tasks.ffi-swift]
@@ -145,25 +163,23 @@ dependencies = ["release-build"]
 command = "cargo"
 args = [
     "run",
-    "--features", "uniffi/cli",
-    "--bin", "uniffi-bindgen",
+    "--features",
+    "uniffi/cli",
+    "--bin",
+    "uniffi-bindgen",
     "generate",
-    "--language", "kotlin",
-    "--out-dir", "./bindings/jvm/src/main/kotlin/",
-    "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
+    "--language",
+    "kotlin",
+    "--out-dir",
+    "./bindings/jvm/src/main/kotlin/",
+    "--library",
+    "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}",
 ]
 
 [tasks.ffi-kotlin]
 dependencies = ["compile-ffi-kotlin"]
 script = '''
     mv ./bindings/jvm/src/main/kotlin/com/wire/crypto/core_crypto_ffi.kt ./bindings/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt
-
-    sed -i.bak \
-        -e 's/\CryptoException\b/CryptoError/g' \
-        -e 's/\bE2eIdentityException\b/E2eIdentityError/g' \
-        ./bindings/jvm/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
-
-    rm ./bindings/jvm/src/main/kotlin/uniffi/core_crypto/core_crypto.kt.bak
 '''
 
 [tasks.ffi]
@@ -178,7 +194,17 @@ plugin = "detect-release"
 dependencies = ["ffi-swift"]
 condition = { platforms = ["mac"] }
 command = "cargo"
-args = ["rustc", "--target", "aarch64-apple-ios", "--crate-type=cdylib", "--crate-type=staticlib", "--release", "--", "-C", "strip=symbols"]
+args = [
+    "rustc",
+    "--target",
+    "aarch64-apple-ios",
+    "--crate-type=cdylib",
+    "--crate-type=staticlib",
+    "--release",
+    "--",
+    "-C",
+    "strip=symbols",
+]
 
 [tasks.ios-simulator-x86]
 dependencies = ["ffi-swift"]
@@ -186,28 +212,34 @@ condition = { platforms = ["mac"] }
 command = "cargo"
 args = [
     "rustc",
-    "--target", "x86_64-apple-ios",
+    "--target",
+    "x86_64-apple-ios",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
     "--release",
     "--",
-    "-C", "strip=symbols"
+    "-C",
+    "strip=symbols",
 ]
 
 [tasks.ios-simulator-arm]
 dependencies = ["ffi-swift"]
 # override CFLAGS to fix ring compilation
-env = { "CRATE_CC_NO_DEFAULTS" = 1, "TARGET_CFLAGS" = { script = ["echo \"--target=arm64-apple-ios14.0.0-simulator -mios-simulator-version-min=14.0 -isysroot `xcrun --show-sdk-path --sdk iphonesimulator`\""] } }
+env = { "CRATE_CC_NO_DEFAULTS" = 1, "TARGET_CFLAGS" = { script = [
+    "echo \"--target=arm64-apple-ios14.0.0-simulator -mios-simulator-version-min=14.0 -isysroot `xcrun --show-sdk-path --sdk iphonesimulator`\"",
+] } }
 condition = { platforms = ["mac"] }
 command = "cargo"
 args = [
     "rustc",
-    "--target", "aarch64-apple-ios-sim",
+    "--target",
+    "aarch64-apple-ios-sim",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
     "--release",
     "--",
-    "-C", "strip=symbols"
+    "-C",
+    "strip=symbols",
 ]
 
 [tasks.ios]
@@ -232,12 +264,14 @@ plugin = "android-env"
 command = "cargo"
 args = [
     "rustc",
-    "--target", "armv7-linux-androideabi",
+    "--target",
+    "armv7-linux-androideabi",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
     "--release",
     "--",
-    "-C", "strip=symbols"
+    "-C",
+    "strip=symbols",
 ]
 dependencies = ["ffi-kotlin", "android-env"]
 
@@ -245,12 +279,14 @@ dependencies = ["ffi-kotlin", "android-env"]
 command = "cargo"
 args = [
     "rustc",
-    "--target", "aarch64-linux-android",
+    "--target",
+    "aarch64-linux-android",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
     "--release",
     "--",
-    "-C", "strip=symbols"
+    "-C",
+    "strip=symbols",
 ]
 dependencies = ["ffi-kotlin", "android-env"]
 
@@ -258,12 +294,14 @@ dependencies = ["ffi-kotlin", "android-env"]
 command = "cargo"
 args = [
     "rustc",
-    "--target", "x86_64-linux-android",
+    "--target",
+    "x86_64-linux-android",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
     "--release",
     "--",
-    "-C", "strip=symbols"
+    "-C",
+    "strip=symbols",
 ]
 dependencies = ["ffi-kotlin", "android-env"]
 
@@ -271,12 +309,14 @@ dependencies = ["ffi-kotlin", "android-env"]
 command = "cargo"
 args = [
     "rustc",
-    "--target", "i686-linux-android",
+    "--target",
+    "i686-linux-android",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
     "--release",
     "--",
-    "-C", "strip=symbols"
+    "-C",
+    "strip=symbols",
 ]
 dependencies = ["ffi-kotlin", "android-env"]
 
@@ -317,12 +357,14 @@ cp ${from} ${to}
 command = "cargo"
 args = [
     "rustc",
-    "--target", "x86_64-apple-darwin",
+    "--target",
+    "x86_64-apple-darwin",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
     "--release",
     "--",
-    "-C", "strip=symbols"
+    "-C",
+    "strip=symbols",
 ]
 dependencies = ["ffi-kotlin"]
 condition = { platforms = ["mac"] }
@@ -331,12 +373,14 @@ condition = { platforms = ["mac"] }
 command = "cargo"
 args = [
     "rustc",
-    "--target", "aarch64-apple-darwin",
+    "--target",
+    "aarch64-apple-darwin",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
     "--release",
     "--",
-    "-C", "strip=symbols"
+    "-C",
+    "strip=symbols",
 ]
 dependencies = ["ffi-kotlin"]
 condition = { platforms = ["mac"] }
@@ -345,12 +389,14 @@ condition = { platforms = ["mac"] }
 command = "cargo"
 args = [
     "rustc",
-    "--target", "x86_64-unknown-linux-gnu",
+    "--target",
+    "x86_64-unknown-linux-gnu",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
     "--release",
     "--",
-    "-C", "strip=symbols"
+    "-C",
+    "strip=symbols",
 ]
 dependencies = ["ffi-kotlin"]
 condition = { platforms = ["linux"] }

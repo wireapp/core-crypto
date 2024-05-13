@@ -1,6 +1,6 @@
 [package]
 name = "interop"
-version = "1.0.0-rc.60"
+version = "1.0.0-rc.60-hotfix.1"
 edition = "2021"
 license = "GPL-3.0-only"
 
@@ -12,7 +12,7 @@ proteus = [
     "dep:proteus-wasm",
     "dep:tempfile",
     "core-crypto/cryptobox-migrate",
-    "core-crypto/proteus"
+    "core-crypto/proteus",
 ]
 
 [dependencies]
@@ -37,7 +37,9 @@ uuid = { version = "1.5", features = ["v4"] }
 tempfile = { version = "3.3", optional = true }
 # Terminal support
 xshell = "0.2"
-spinoff = { version = "0.8", features = ["aesthetic"], default-features = false }
+spinoff = { version = "0.8", features = [
+    "aesthetic",
+], default-features = false }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 cryptobox = { git = "https://github.com/wireapp/cryptobox", optional = true }
@@ -55,6 +57,3 @@ features = ["hazmat"]
 optional = true
 git = "https://github.com/wireapp/proteus"
 branch = "2.x"
-
-
-

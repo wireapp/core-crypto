@@ -2,7 +2,7 @@
 name = "core-crypto-keystore"
 description = "Encrypted keystore with support for OpenMLS and Proteus"
 repository = "https://github.com/wireapp/core-crypto"
-version = "1.0.0-rc.60"
+version = "1.0.0-rc.60-hotfix.1"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
@@ -21,9 +21,17 @@ harness = false
 
 [features]
 default = ["mls-keystore", "proteus-keystore"]
-mls-keystore = ["dep:openmls_traits", "dep:openmls_basic_credential", "dep:openmls_x509_credential"]
+mls-keystore = [
+    "dep:openmls_traits",
+    "dep:openmls_basic_credential",
+    "dep:openmls_x509_credential",
+]
 proteus-keystore = ["dep:proteus-traits"]
-ios-wal-compat = ["dep:security-framework", "dep:security-framework-sys", "dep:core-foundation"]
+ios-wal-compat = [
+    "dep:security-framework",
+    "dep:security-framework-sys",
+    "dep:core-foundation",
+]
 idb-regression-test = []
 log-queries = ["dep:log", "rusqlite/trace"]
 serde = ["dep:serde"]
@@ -100,13 +108,18 @@ wasm-bindgen-test = "0.3"
 uuid = { version = "1.0", features = ["v4", "js"] }
 rand = { version = "0.8", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
-openmls = { version = "1", default-features = false, features = ["crypto-subtle"] }
+openmls = { version = "1", default-features = false, features = [
+    "crypto-subtle",
+] }
 mls-crypto-provider = { path = "../mls-provider" }
 rstest = "0.19"
 rstest_reuse = "0.6"
 async-std = { version = "1.12", features = ["attributes"] }
 futures-lite = "2.0"
-core-crypto-keystore = { path = ".", features = ["idb-regression-test", "log-queries"] }
+core-crypto-keystore = { path = ".", features = [
+    "idb-regression-test",
+    "log-queries",
+] }
 pretty_env_logger = "0.5"
 
 [dev-dependencies.proteus-wasm]
@@ -119,4 +132,9 @@ version = "0.5"
 features = ["async_futures", "html_reports"]
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-Os", "--enable-mutable-globals", "--enable-threads", "--detect-features"]
+wasm-opt = [
+    "-Os",
+    "--enable-mutable-globals",
+    "--enable-threads",
+    "--detect-features",
+]

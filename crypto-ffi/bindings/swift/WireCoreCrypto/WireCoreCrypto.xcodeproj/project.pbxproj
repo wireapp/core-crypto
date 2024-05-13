@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		16CDD1172A2636BB0073FB8E /* WireCoreCrypto.h in Headers */ = {isa = PBXBuildFile; fileRef = 16CDD1162A2636BB0073FB8E /* WireCoreCrypto.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		16CDD11F2A26392C0073FB8E /* core_cryptoFFI.h in Headers */ = {isa = PBXBuildFile; fileRef = 16CDD11D2A26392C0073FB8E /* core_cryptoFFI.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		16CDD1202A26392C0073FB8E /* CoreCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16CDD11E2A26392C0073FB8E /* CoreCrypto.swift */; };
 		692B48242AA0F7860074F00A /* core_crypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 692B48232AA0F7860074F00A /* core_crypto.swift */; };
 		692B48272AA0F9810074F00A /* core_crypto_ffiFFI.h in Headers */ = {isa = PBXBuildFile; fileRef = 692B48262AA0F9810074F00A /* core_crypto_ffiFFI.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -17,7 +16,6 @@
 /* Begin PBXFileReference section */
 		16CDD1132A2636BB0073FB8E /* WireCoreCrypto.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WireCoreCrypto.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		16CDD1162A2636BB0073FB8E /* WireCoreCrypto.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WireCoreCrypto.h; sourceTree = "<group>"; };
-		16CDD11D2A26392C0073FB8E /* core_cryptoFFI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = core_cryptoFFI.h; sourceTree = "<group>"; };
 		16CDD11E2A26392C0073FB8E /* CoreCrypto.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CoreCrypto.swift; sourceTree = "<group>"; };
 		16CDD1212A29E0760073FB8E /* BuildSettings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = BuildSettings.xcconfig; sourceTree = "<group>"; };
 		692B48232AA0F7860074F00A /* core_crypto.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = core_crypto.swift; sourceTree = "<group>"; };
@@ -55,7 +53,6 @@
 		16CDD1152A2636BB0073FB8E /* WireCoreCrypto */ = {
 			isa = PBXGroup;
 			children = (
-				16CDD11D2A26392C0073FB8E /* core_cryptoFFI.h */,
 				16CDD11E2A26392C0073FB8E /* CoreCrypto.swift */,
 				16CDD1162A2636BB0073FB8E /* WireCoreCrypto.h */,
 				692B48232AA0F7860074F00A /* core_crypto.swift */,
@@ -72,7 +69,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				692B48272AA0F9810074F00A /* core_crypto_ffiFFI.h in Headers */,
-				16CDD11F2A26392C0073FB8E /* core_cryptoFFI.h in Headers */,
 				16CDD1172A2636BB0073FB8E /* WireCoreCrypto.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

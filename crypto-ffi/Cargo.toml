@@ -2,7 +2,7 @@
 name = "core-crypto-ffi"
 description = "Platform-specific bindings (Android, iOS, WASM) for CoreCrypto"
 repository = "https://github.com/wireapp/core-crypto"
-version = "1.0.0-rc.60"
+version = "1.0.0-rc.60-hotfix.1"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
@@ -19,7 +19,7 @@ required-features = ["uniffi/cli"]
 [features]
 default = ["proteus"]
 proteus = ["core-crypto/proteus", "core-crypto/cryptobox-migrate"]
-debug-logging = ["dep:log", "dep:femme"] # HAZMAT: Will dump dangerous data
+debug-logging = ["dep:log", "dep:femme"]                           # HAZMAT: Will dump dangerous data
 
 [dependencies]
 thiserror = "1.0"
@@ -35,10 +35,7 @@ femme = { version = "2", optional = true }
 [dependencies.log]
 version = "0.4"
 optional = true
-features = [
-    "max_level_trace",
-    "release_max_level_trace"
-]
+features = ["max_level_trace", "release_max_level_trace"]
 
 # see https://github.com/RustCrypto/hashes/issues/404
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "x86")))'.dependencies]
@@ -47,7 +44,7 @@ sha2 = { version = "0.10", features = ["force-soft"] }
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 # UniFFI - Android + iOS bindings - Runtime support
 uniffi = { workspace = true }
-core-crypto = { version = "^1.0.0-rc.60", path = "../crypto" }
+core-crypto = { version = "^1.0.0-rc.60-hotfix.1", path = "../crypto" }
 
 [target.wasm32-unknown-unknown.dependencies]
 wasm-bindgen = "0.2"
@@ -58,7 +55,7 @@ serde = { version = "1.0", features = ["derive"] }
 js-sys = "0.3"
 web-sys = "0.3"
 strum = "0.26"
-core-crypto = { version = "^1.0.0-rc.60", path = "../crypto" }
+core-crypto = { version = "^1.0.0-rc.60-hotfix.1", path = "../crypto" }
 
 
 # UniFFI - Android + iOS bindings - Build support
@@ -76,4 +73,9 @@ wasm-bindgen-test = "0.3"
 wasm-opt = false
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-Os", "--enable-mutable-globals", "--enable-threads", "--detect-features"]
+wasm-opt = [
+    "-Os",
+    "--enable-mutable-globals",
+    "--enable-threads",
+    "--detect-features",
+]
