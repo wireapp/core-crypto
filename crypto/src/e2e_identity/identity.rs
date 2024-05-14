@@ -82,6 +82,7 @@ impl MlsCentral {
     /// From a given conversation, get the identity of the members supplied. Identity is only present for
     /// members with a Certificate Credential (after turning on end-to-end identity).
     /// If no member has a x509 certificate, it will return an empty Vec
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn get_device_identities(
         &mut self,
         conversation_id: &ConversationId,
@@ -107,6 +108,7 @@ impl MlsCentral {
     ///
     /// Returns a Map with all the identities for a given users. Consumers are then recommended to
     /// reduce those identities to determine the actual status of a user.
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn get_user_identities(
         &mut self,
         conversation_id: &ConversationId,
@@ -128,6 +130,7 @@ impl MlsCentral {
 }
 
 impl MlsConversation {
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     fn get_device_identities(
         &self,
         device_ids: &[ClientId],
@@ -143,6 +146,7 @@ impl MlsConversation {
             .collect::<CryptoResult<Vec<_>>>()
     }
 
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     fn get_user_identities(
         &self,
         user_ids: &[String],

@@ -55,6 +55,7 @@ impl Client {
     ///
     /// # Errors
     /// KeyStore and OpenMls errors
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn generate_one_keypackage_from_credential_bundle(
         &self,
         backend: &MlsCryptoProvider,
@@ -92,6 +93,7 @@ impl Client {
     ///
     /// # Errors
     /// KeyStore and OpenMls errors
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn request_key_packages(
         &self,
         count: usize,
@@ -130,6 +132,7 @@ impl Client {
         Ok(kps)
     }
 
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn generate_new_keypackages(
         &self,
         backend: &MlsCryptoProvider,
@@ -150,6 +153,7 @@ impl Client {
     }
 
     /// Returns the count of valid, non-expired, unclaimed keypackages in store
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn valid_keypackages_count(
         &self,
         backend: &MlsCryptoProvider,
@@ -203,6 +207,7 @@ impl Client {
         Ok(())
     }
 
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn prune_keypackages_and_credential(
         &mut self,
         backend: &MlsCryptoProvider,
@@ -245,6 +250,7 @@ impl Client {
     /// * HPKE private keys
     /// * HPKE Encryption KeyPairs
     /// * Signature KeyPairs & Credentials (use [Self::prune_keypackages_and_credential])
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     async fn _prune_keypackages<'a>(
         &self,
         kps: &'a [(MlsKeyPackage, KeyPackage)],
@@ -320,6 +326,7 @@ impl MlsCentral {
     ///
     /// # Errors
     /// Errors can happen when accessing the KeyStore
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self)))]
     pub async fn get_or_create_client_keypackages(
         &self,
         ciphersuite: MlsCiphersuite,
@@ -333,6 +340,7 @@ impl MlsCentral {
 
     /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [MlsCiphersuite] and [MlsCredentialType]
     #[cfg_attr(test, crate::idempotent)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self)))]
     pub async fn client_valid_key_packages_count(
         &self,
         ciphersuite: MlsCiphersuite,
@@ -346,6 +354,7 @@ impl MlsCentral {
     /// Prunes local KeyPackages after making sure they also have been deleted on the backend side
     /// You should only use this after [MlsCentral::e2ei_rotate_all]
     #[cfg_attr(test, crate::dispotent)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn delete_keypackages(&mut self, refs: &[KeyPackageRef]) -> CryptoResult<()> {
         if refs.is_empty() {
             return Err(CryptoError::ConsumerError);

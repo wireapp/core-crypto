@@ -11,6 +11,7 @@ use wire_e2e_identity::prelude::JwsAlgorithm;
 use zeroize::Zeroize;
 
 impl super::E2eiEnrollment {
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(super) fn new_sign_key(
         ciphersuite: MlsCiphersuite,
         backend: &MlsCryptoProvider,
@@ -22,6 +23,7 @@ impl super::E2eiEnrollment {
         E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), sk)
     }
 
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(super) fn get_sign_key_for_mls(&self) -> CryptoResult<Vec<u8>> {
         let sk = match self.ciphersuite.signature_algorithm() {
             SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ECDSA_SECP384R1_SHA384 => self.sign_sk.to_vec(),

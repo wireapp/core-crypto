@@ -14,8 +14,10 @@ use core_crypto_keystore::entities::{EntityFindParams, MlsPendingMessage};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize;
+use tracing::{error, span, trace, Instrument, Level};
 
 impl MlsCentral {
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self, message), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub(crate) async fn handle_future_message(
         &mut self,
         id: &ConversationId,
@@ -31,6 +33,7 @@ impl MlsCentral {
         Err(CryptoError::BufferedFutureMessage)
     }
 
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self, conversation)))]
     pub(crate) async fn restore_pending_messages(
         &mut self,
         conversation: &mut MlsConversation,
@@ -64,56 +67,71 @@ impl MlsConversation {
         parent_conversation: Option<&'a GroupStoreValue<Self>>,
         is_rejoin: bool,
     ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
-        let keystore = backend.borrow_keystore();
+        // using the macro produces a clippy warning
+        let span = span!(target:module_path!(), Level::INFO, "restore_pending_messages");
+        let result = async move {
+            let keystore = backend.borrow_keystore();
 
-        let group_id = self.id().as_slice();
-        if is_rejoin {
-            // This means the external commit is about rejoining the group.
-            // This is most of the time a last resort measure (for example when a commit is dropped)
-            // and you go out of sync so there's no point in decrypting buffered messages
+            let group_id = self.id().as_slice();
+            if is_rejoin {
+                // This means the external commit is about rejoining the group.
+                // This is most of the time a last resort measure (for example when a commit is dropped)
+                // and you go out of sync so there's no point in decrypting buffered messages
 
-            if keystore.find::<MlsPendingMessage>(group_id).await?.is_some() {
-                keystore.remove::<MlsPendingMessage, _>(group_id).await?;
+                trace!("External commit trying to rejoin group");
+                if keystore.find::<MlsPendingMessage>(group_id).await?.is_some() {
+                    keystore.remove::<MlsPendingMessage, _>(group_id).await?;
+                }
+                return Ok(None);
             }
-            return Ok(None);
+
+            let mut pending_messages = keystore
+                .find_all::<MlsPendingMessage>(EntityFindParams::default())
+                .await?
+                .into_iter()
+                .filter(|pm| pm.id == group_id)
+                .try_fold(vec![], |mut acc, m| {
+                    let msg = MlsMessageIn::tls_deserialize(&mut m.message.as_slice()).map_err(MlsError::from)?;
+                    let ct = match msg.body_as_ref() {
+                        MlsMessageInBody::PublicMessage(m) => Ok(m.content_type()),
+                        MlsMessageInBody::PrivateMessage(m) => Ok(m.content_type()),
+                        _ => Err(CryptoError::ConsumerError),
+                    }?;
+                    acc.push((ct as u8, msg));
+                    CryptoResult::Ok(acc)
+                })?;
+
+            // We want to restore application messages first, then Proposals & finally Commits
+            // luckily for us that's the exact same order as the [ContentType] enum
+            pending_messages.sort_by(|(a, _), (b, _)| a.cmp(b));
+
+            let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
+            for (_, m) in pending_messages {
+                let parent_conversation = match &self.parent_id {
+                    Some(_) => Some(parent_conversation.ok_or(CryptoError::ParentGroupNotFound)?),
+                    _ => None,
+                };
+                let restore_pending = false; // to prevent infinite recursion
+                let decrypted = self
+                    .decrypt_message(m, parent_conversation, client, backend, callbacks, restore_pending)
+                    .in_current_span()
+                    .await?;
+                decrypted_messages.push(decrypted.into());
+            }
+
+            let decrypted_messages = (!decrypted_messages.is_empty()).then_some(decrypted_messages);
+
+            Ok(decrypted_messages)
         }
-
-        let mut pending_messages = keystore
-            .find_all::<MlsPendingMessage>(EntityFindParams::default())
-            .await?
-            .into_iter()
-            .filter(|pm| pm.id == group_id)
-            .try_fold(vec![], |mut acc, m| {
-                let msg = MlsMessageIn::tls_deserialize(&mut m.message.as_slice()).map_err(MlsError::from)?;
-                let ct = match msg.body_as_ref() {
-                    MlsMessageInBody::PublicMessage(m) => Ok(m.content_type()),
-                    MlsMessageInBody::PrivateMessage(m) => Ok(m.content_type()),
-                    _ => Err(CryptoError::ConsumerError),
-                }?;
-                acc.push((ct as u8, msg));
-                CryptoResult::Ok(acc)
-            })?;
-
-        // We want to restore application messages first, then Proposals & finally Commits
-        // luckily for us that's the exact same order as the [ContentType] enum
-        pending_messages.sort_by(|(a, _), (b, _)| a.cmp(b));
-
-        let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
-        for (_, m) in pending_messages {
-            let parent_conversation = match &self.parent_id {
-                Some(_) => Some(parent_conversation.ok_or(CryptoError::ParentGroupNotFound)?),
-                _ => None,
-            };
-            let restore_pending = false; // to prevent infinite recursion
-            let decrypted = self
-                .decrypt_message(m, parent_conversation, client, backend, callbacks, restore_pending)
-                .await?;
-            decrypted_messages.push(decrypted.into());
+        .instrument(span)
+        .await;
+        match result {
+            Ok(r) => Ok(r),
+            Err(e) => {
+                error!(target:module_path!(), error =  %e);
+                Err(e)
+            }
         }
-
-        let decrypted_messages = (!decrypted_messages.is_empty()).then_some(decrypted_messages);
-
-        Ok(decrypted_messages)
     }
 }
 

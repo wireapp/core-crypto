@@ -52,6 +52,7 @@ uniffi = { workspace = true, optional = true }
 itertools = "0.12"
 uuid = { version = "1.6", features = ["v4"] }
 base64 = "0.22"
+tracing = "0.1"
 
 [dependencies.proteus-wasm]
 version = "2.1"

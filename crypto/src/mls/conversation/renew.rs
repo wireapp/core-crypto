@@ -22,6 +22,7 @@ impl Renew {
     /// * `pending_proposals` - local pending proposals in group's proposal store
     /// * `pending_commit` - local pending commit which is now invalid
     /// * `valid_commit` - commit accepted by the backend which will now supersede our local pending commit
+    #[cfg_attr(not(test), tracing::instrument(skip_all))]
     pub(crate) fn renew<'a>(
         self_index: &LeafNodeIndex,
         pending_proposals: impl Iterator<Item = QueuedProposal> + 'a,
@@ -95,6 +96,7 @@ impl Renew {
 impl MlsConversation {
     /// Given the proposals to renew, actually restore them by using associated methods in [MlsGroup].
     /// This will also add them to the local proposal store
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn renew_proposals_for_current_epoch(
         &mut self,
         client: &Client,
@@ -124,6 +126,7 @@ impl MlsConversation {
     /// Renews an update proposal by considering the explicit LeafNode supplied in the proposal
     /// by applying it to the current own LeafNode.
     /// At this point, we have already verified we are only operating on proposals created by self.
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     async fn renew_update(
         &mut self,
         client: &Client,

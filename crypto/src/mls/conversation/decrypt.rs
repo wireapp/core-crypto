@@ -112,6 +112,8 @@ impl MlsConversation {
     /// see [MlsCentral::decrypt_message]
     #[allow(clippy::too_many_arguments)]
     #[cfg_attr(test, crate::durable)]
+    // FIXME: this might be causing stack overflow. Retry when this is solved: https://github.com/tokio-rs/tracing/issues/1147
+    // #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn decrypt_message(
         &mut self,
         message: MlsMessageIn,
@@ -268,6 +270,7 @@ impl MlsConversation {
         Ok(decrypted)
     }
 
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     async fn parse_message(
         &mut self,
         backend: &MlsCryptoProvider,
@@ -331,6 +334,7 @@ impl MlsConversation {
         Ok(processed_msg)
     }
 
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     async fn validate_commit(&self, commit: &StagedCommit, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         if backend.authentication_service().is_env_setup().await {
             let credentials: Vec<_> = commit
@@ -373,6 +377,7 @@ impl MlsCentral {
     /// # Errors
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self, message), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn decrypt_message(
         &mut self,
         id: &ConversationId,
