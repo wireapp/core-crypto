@@ -8,6 +8,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{ContentType, FramedContentBodyIn, Proposal, PublicMessageIn, Sender};
 
 impl MlsConversation {
+    #[cfg_attr(not(test), tracing::instrument(err, ret, skip_all))]
     pub(crate) fn is_duplicate_message(
         &self,
         backend: &MlsCryptoProvider,

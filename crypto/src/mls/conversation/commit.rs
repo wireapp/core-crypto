@@ -17,6 +17,7 @@ use crate::{
     },
     prelude::{Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError, MlsGroupInfoBundle},
 };
+use tracing::Instrument;
 
 use super::MlsConversation;
 
@@ -36,6 +37,7 @@ impl MlsCentral {
     /// If the authorisation callback is set, an error can be caused when the authorization fails.
     /// Other errors are KeyStore and OpenMls errors:
     #[cfg_attr(test, crate::idempotent)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self, key_packages), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn add_members_to_conversation(
         &mut self,
         id: &ConversationId,
@@ -69,6 +71,7 @@ impl MlsCentral {
     /// # Errors
     /// If the authorisation callback is set, an error can be caused when the authorization fails. Other errors are KeyStore and OpenMls errors.
     #[cfg_attr(test, crate::idempotent)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn remove_members_from_conversation(
         &mut self,
         id: &ConversationId,
@@ -102,6 +105,7 @@ impl MlsCentral {
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     #[cfg_attr(test, crate::idempotent)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn update_keying_material(&mut self, id: &ConversationId) -> CryptoResult<MlsCommitBundle> {
         self.get_conversation(id)
             .await?
@@ -122,6 +126,7 @@ impl MlsCentral {
     /// # Errors
     /// Errors can be originating from the KeyStore and OpenMls
     #[cfg_attr(test, crate::idempotent)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn commit_pending_proposals(&mut self, id: &ConversationId) -> CryptoResult<Option<MlsCommitBundle>> {
         self.get_conversation(id)
             .await?
@@ -137,6 +142,7 @@ impl MlsConversation {
     /// see [MlsCentral::add_members_to_conversation]
     /// Note: this is not exposed publicly because authorization isn't handled at this level
     #[cfg_attr(test, crate::durable)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn add_members(
         &mut self,
         client: &Client,
@@ -165,6 +171,7 @@ impl MlsConversation {
         let (commit, welcome, gi) = self
             .group
             .add_members(backend, signer, key_packages)
+            .in_current_span()
             .await
             .map_err(MlsError::from)?;
 
@@ -185,6 +192,7 @@ impl MlsConversation {
     /// see [MlsCentral::remove_members_from_conversation]
     /// Note: this is not exposed publicly because authorization isn't handled at this level
     #[cfg_attr(test, crate::durable)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self, client, backend)))]
     pub(crate) async fn remove_members(
         &mut self,
         client: &Client,
@@ -212,6 +220,7 @@ impl MlsConversation {
         let (commit, welcome, gi) = self
             .group
             .remove_members(backend, signer, &member_kps)
+            .in_current_span()
             .await
             .map_err(MlsError::from)?;
 
@@ -230,6 +239,7 @@ impl MlsConversation {
 
     /// see [MlsCentral::update_keying_material]
     #[cfg_attr(test, crate::durable)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn update_keying_material(
         &mut self,
         client: &Client,
@@ -243,6 +253,7 @@ impl MlsConversation {
         let (commit, welcome, group_info) = self
             .group
             .explicit_self_update(backend, &cb.signature_key, leaf_node)
+            .in_current_span()
             .await
             .map_err(MlsError::from)?;
 
@@ -261,6 +272,7 @@ impl MlsConversation {
 
     /// see [MlsCentral::commit_pending_proposals]
     #[cfg_attr(test, crate::durable)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn commit_pending_proposals(
         &mut self,
         client: &Client,
@@ -275,6 +287,7 @@ impl MlsConversation {
             let (commit, welcome, gi) = self
                 .group
                 .commit_to_pending_proposals(backend, signer)
+                .in_current_span()
                 .await
                 .map_err(MlsError::from)?;
             let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;

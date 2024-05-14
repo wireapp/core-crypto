@@ -35,6 +35,7 @@ impl MlsCentral {
     /// # Errors
     /// see [MlsCentral::process_welcome_message]
     #[cfg_attr(test, crate::dispotent)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn process_raw_welcome_message(
         &mut self,
         welcome: Vec<u8>,
@@ -59,6 +60,7 @@ impl MlsCentral {
     /// * if no [openmls::key_packages::KeyPackage] can be read from the KeyStore
     /// * if the message can't be decrypted
     #[cfg_attr(test, crate::dispotent)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn process_welcome_message(
         &mut self,
         welcome: MlsMessageIn,
@@ -104,6 +106,7 @@ impl MlsConversation {
     ///
     /// # Errors
     /// Errors can happen from OpenMls or from the KeyStore
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     async fn from_welcome_message(
         welcome: Welcome,
         configuration: MlsConversationConfiguration,

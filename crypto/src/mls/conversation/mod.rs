@@ -93,6 +93,7 @@ impl MlsConversation {
     ///
     /// # Errors
     /// Errors can happen from OpenMls or from the KeyStore
+    #[cfg_attr(not(test), tracing::instrument(err, skip(author_client, configuration, backend, creator_credential_type), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, &id))))]
     pub async fn create(
         id: ConversationId,
         author_client: &mut Client,
@@ -128,6 +129,7 @@ impl MlsConversation {
     }
 
     /// Internal API: create a group from an existing conversation. For example by external commit
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn from_mls_group(
         group: MlsGroup,
         configuration: MlsConversationConfiguration,
@@ -148,6 +150,7 @@ impl MlsConversation {
     }
 
     /// Internal API: restore the conversation from a persistence-saved serialized Group State.
+    #[cfg_attr(not(test), tracing::instrument(err, skip(buf), fields(id = parent_id.as_ref().map(|id| base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id)))))]
     pub(crate) fn from_serialized_state(buf: Vec<u8>, parent_id: Option<ConversationId>) -> CryptoResult<Self> {
         let group: MlsGroup = core_crypto_keystore::deser(&buf)?;
         let id = ConversationId::from(group.group_id().as_slice());
@@ -218,6 +221,7 @@ impl MlsConversation {
 
     /// Marks this conversation as child of another.
     /// Prequisite: Being a member of this group and for it to be stored in the keystore
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self, backend), fields(parent_id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, parent_id))))]
     pub async fn mark_as_child_of(
         &mut self,
         parent_id: &ConversationId,
@@ -263,6 +267,7 @@ impl MlsCentral {
             .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))
     }
 
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn get_parent_conversation(
         &mut self,
         conversation: &GroupStoreValue<MlsConversation>,
@@ -289,6 +294,7 @@ impl MlsCentral {
     /// Mark a conversation as child of another one
     /// This will affect the behavior of callbacks in particular
     #[cfg_attr(test, crate::idempotent)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(parent_id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, parent_id), child_id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, child_id))))]
     pub async fn mark_conversation_as_child_of(
         &mut self,
         child_id: &ConversationId,

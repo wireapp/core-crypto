@@ -3,6 +3,7 @@ use crate::mls::{ConversationId, MlsCentral, MlsConversation};
 impl MlsConversation {
     /// Replaces the MLS group in memory with the one from keystore.
     /// see [crate::durable]
+    #[cfg_attr(not(test), tracing::instrument(skip_all))]
     pub async fn drop_and_restore(&mut self, backend: &mls_crypto_provider::MlsCryptoProvider) {
         use core_crypto_keystore::CryptoKeystoreMls as _;
         use openmls_traits::OpenMlsCryptoProvider as _;
@@ -21,6 +22,7 @@ impl MlsConversation {
 
 impl MlsCentral {
     /// Replaces the MLS group in memory with the one from keystore.
+    #[cfg_attr(not(test), tracing::instrument(skip(self), fields (id = BASE64_STANDARD.encode(id))))]
     pub async fn drop_and_restore(&mut self, id: &ConversationId) {
         use core_crypto_keystore::CryptoKeystoreMls as _;
         use openmls_traits::OpenMlsCryptoProvider as _;

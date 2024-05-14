@@ -37,6 +37,7 @@ use tls_codec::{Deserialize, Serialize};
 use core_crypto_keystore::entities::{EntityBase, EntityFindParams, MlsCredential, MlsSignatureKeyPair};
 use identities::ClientIdentities;
 use mls_crypto_provider::MlsCryptoProvider;
+use tracing::{debug, Instrument};
 
 impl MlsCentral {
     pub(crate) fn mls_client(&self) -> CryptoResult<&Client> {
@@ -67,6 +68,7 @@ impl Client {
     ///
     /// # Errors
     /// KeyStore and OpenMls errors can happen
+    #[cfg_attr(not(test), tracing::instrument(err, skip(identifier, backend), fields(ciphersuites = ?ciphersuites)))]
     pub async fn init(
         identifier: ClientIdentifier,
         ciphersuites: &[MlsCiphersuite],
@@ -78,6 +80,7 @@ impl Client {
         let credentials = backend
             .key_store()
             .find_all::<MlsCredential>(EntityFindParams::default())
+            .in_current_span()
             .await?;
 
         let credentials = credentials
@@ -97,11 +100,13 @@ impl Client {
             match Self::load(backend, id.as_ref(), credentials, signature_schemes).await {
                 Ok(client) => client,
                 Err(CryptoError::ClientSignatureNotFound) => {
+                    debug!(nb_key_package, ciphersuites = ?ciphersuites, "Client signature not found. Generating client");
                     Self::generate(identifier, backend, ciphersuites, nb_key_package).await?
                 }
                 Err(e) => return Err(e),
             }
         } else {
+            debug!(nb_key_package, ciphersuites = ?ciphersuites, "Generating client");
             Self::generate(identifier, backend, ciphersuites, nb_key_package).await?
         };
 
@@ -117,6 +122,7 @@ impl Client {
     ///
     /// # Errors
     /// KeyStore and OpenMls errors can happen
+    #[cfg_attr(not(test), tracing::instrument(err, skip(backend), fields(ciphersuites = ?ciphersuites)))]
     pub async fn generate_raw_keypairs(
         ciphersuites: &[MlsCiphersuite],
         backend: &MlsCryptoProvider,
@@ -272,6 +278,7 @@ impl Client {
     }
 
     /// Loads the client from the keystore.
+    #[cfg_attr(not(test), tracing::instrument(err, skip(backend, credentials), fields(id = %id)))]
     pub(crate) async fn load(
         backend: &MlsCryptoProvider,
         id: &ClientId,
@@ -332,6 +339,7 @@ impl Client {
         })
     }
 
+    #[cfg_attr(not(test), tracing::instrument(err, skip(backend)))]
     async fn find_all_basic_credentials(backend: &MlsCryptoProvider) -> CryptoResult<Vec<Credential>> {
         let store_credentials = backend
             .key_store()
@@ -350,6 +358,7 @@ impl Client {
         Ok(credentials)
     }
 
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self, backend, cb), fields(id = id.as_ref().map(|id| id.to_string()))))]
     pub(crate) async fn save_identity(
         &mut self,
         backend: &MlsCryptoProvider,
@@ -400,6 +409,7 @@ impl Client {
             .any(|(_, cred)| cred.credential().credential_type() == CredentialType::X509)
     }
 
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self, backend)))]
     pub(crate) async fn get_most_recent_or_create_credential_bundle(
         &mut self,
         backend: &MlsCryptoProvider,
@@ -408,7 +418,9 @@ impl Client {
     ) -> CryptoResult<&CredentialBundle> {
         match ct {
             MlsCredentialType::Basic => {
-                self.init_basic_credential_bundle_if_missing(backend, sc).await?;
+                self.init_basic_credential_bundle_if_missing(backend, sc)
+                    .in_current_span()
+                    .await?;
                 self.find_most_recent_credential_bundle(sc, ct)
                     .ok_or(CryptoError::CredentialNotFound(ct))
             }
@@ -418,6 +430,7 @@ impl Client {
         }
     }
 
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self, backend)))]
     pub(crate) async fn init_basic_credential_bundle_if_missing(
         &mut self,
         backend: &MlsCryptoProvider,
@@ -425,6 +438,7 @@ impl Client {
     ) -> CryptoResult<()> {
         let existing_cb = self.find_most_recent_credential_bundle(sc, MlsCredentialType::Basic);
         if existing_cb.is_none() {
+            debug!(id = %self.id(), "Initializing basic credential bundle");
             let cb = Self::new_basic_credential_bundle(self.id(), sc, backend)?;
             self.save_identity(backend, None, sc, cb).await?;
         }

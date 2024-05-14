@@ -1,6 +1,7 @@
-use openmls_traits::OpenMlsCryptoProvider;
+use tracing::{trace, Instrument};
 
 use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
+use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::prelude::{
     identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT, Client, ClientId, ConversationId,
@@ -80,6 +81,7 @@ pub(crate) mod config {
         /// );
         /// assert!(result.is_ok());
         /// ```
+        #[cfg_attr(not(test), tracing::instrument(skip_all, fields(store_path, ciphersuites = ?ciphersuites, client_id = client_id.as_ref().map(|id| base64::Engine::encode::<&[u8]>(&base64::prelude::BASE64_STANDARD, id))), err))]
         pub fn try_new(
             store_path: String,
             identity_key: String,
@@ -160,6 +162,7 @@ impl MlsCentral {
     /// * for x509 Credentials if the cetificate chain length is lower than 2
     /// * for Basic Credentials if the signature key cannot be generated either by not supported
     /// scheme or the key generation fails
+    #[cfg_attr(not(test), tracing::instrument(skip_all, err))]
     pub async fn try_new(configuration: MlsCentralConfiguration) -> CryptoResult<Self> {
         // Init backend (crypto + rand + keystore)
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
@@ -168,6 +171,7 @@ impl MlsCentral {
             in_memory: false,
             entropy_seed: configuration.external_entropy,
         })
+        .in_current_span()
         .await?;
         let mls_client = if let Some(id) = configuration.client_id {
             // Init client identity (load or create)
@@ -186,6 +190,7 @@ impl MlsCentral {
             None
         };
 
+        trace!("Trying to restore groups");
         // Restore persisted groups if there are any
         let mls_groups = Self::restore_groups(&mls_backend).await?;
 
@@ -196,12 +201,13 @@ impl MlsCentral {
             callbacks: None,
         };
 
-        central.init_pki_env().await?;
+        central.init_pki_env().in_current_span().await?;
 
         Ok(central)
     }
 
     /// Same as the [MlsCentral::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
+    #[cfg_attr(not(test), tracing::instrument(skip_all, err))]
     pub async fn try_new_in_memory(configuration: MlsCentralConfiguration) -> CryptoResult<Self> {
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: &configuration.store_path,
@@ -209,6 +215,7 @@ impl MlsCentral {
             in_memory: true,
             entropy_seed: configuration.external_entropy,
         })
+        .in_current_span()
         .await?;
         let mls_client = if let Some(id) = configuration.client_id {
             Some(
@@ -234,7 +241,7 @@ impl MlsCentral {
             callbacks: None,
         };
 
-        central.init_pki_env().await?;
+        central.init_pki_env().in_current_span().await?;
 
         Ok(central)
     }
@@ -242,6 +249,7 @@ impl MlsCentral {
     /// Initializes the MLS client if [super::CoreCrypto] has previously been initialized with
     /// `CoreCrypto::deferred_init` instead of `CoreCrypto::new`.
     /// This should stay as long as proteus is supported. Then it should be removed.
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self, identifier), fields(ciphersuites = ?ciphersuites)))]
     pub async fn mls_init(
         &mut self,
         identifier: ClientIdentifier,
@@ -256,7 +264,8 @@ impl MlsCentral {
         let mls_client = Client::init(identifier, &ciphersuites, &self.mls_backend, nb_key_package).await?;
 
         if mls_client.is_e2ei_capable() {
-            self.init_pki_env().await?;
+            trace!(client_id = %mls_client.id(),"Initializing PKI environment");
+            self.init_pki_env().in_current_span().await?;
         }
 
         self.mls_client.replace(mls_client);
@@ -282,6 +291,7 @@ impl MlsCentral {
     ///
     /// Important: This is designed to be called after [MlsCentral::mls_generate_keypairs]
     #[cfg_attr(test, crate::dispotent)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(ciphersuites = ?ciphersuites, client_id = ?client_id, tmp_client_ids = ?tmp_client_ids)))]
     pub async fn mls_init_with_client_id(
         &mut self,
         client_id: ClientId,
@@ -343,6 +353,7 @@ impl MlsCentral {
     /// Errors can happen from the KeyStore or from OpenMls for ex if no [openmls::key_packages::KeyPackage] can
     /// be found in the KeyStore
     #[cfg_attr(test, crate::dispotent)]
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self, config), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn new_conversation(
         &mut self,
         id: &ConversationId,
@@ -361,6 +372,7 @@ impl MlsCentral {
             config,
             &self.mls_backend,
         )
+        .in_current_span()
         .await?;
 
         self.mls_groups.insert(id.clone(), conversation);
