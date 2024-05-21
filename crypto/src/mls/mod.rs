@@ -396,16 +396,7 @@ impl MlsCentral {
     /// If the conversation can't be found
     #[cfg_attr(test, crate::idempotent)]
     pub async fn conversation_epoch(&mut self, id: &ConversationId) -> CryptoResult<u64> {
-        Ok(self
-            .mls_groups
-            .get_fetch(id, self.mls_backend.borrow_keystore_mut(), None)
-            .await?
-            .ok_or_else(|| CryptoError::ConversationNotFound(id.to_owned()))?
-            .read()
-            .await
-            .group
-            .epoch()
-            .as_u64())
+        Ok(self.get_conversation(id).await?.read().await.group.epoch().as_u64())
     }
 
     /// Closes the connection with the local KeyStore
