@@ -445,10 +445,10 @@ test("get client keypackages", async () => {
 test("encrypt message", async () => {
     const [ctx, page] = await initBrowser();
 
-    const msgLen = await page.evaluate(async () => {
+    const [msgLen, cs, Ciphersuite] = await page.evaluate(async () => {
         const {CoreCrypto, Ciphersuite, CredentialType} = await import("./corecrypto.js");
 
-        const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+        const ciphersuite = Ciphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256;
         const credentialType = CredentialType.Basic;
         const cc = await CoreCrypto.init({
             databaseName: "encrypt message",
@@ -461,7 +461,8 @@ test("encrypt message", async () => {
 
         const conversationId = encoder.encode("testConversation");
 
-        await cc.createConversation(conversationId, credentialType);
+        await cc.createConversation(conversationId, credentialType, {ciphersuite});
+        const cs = await cc.conversationCiphersuite(conversationId);
 
         const encryptedMessage = await cc.encryptMessage(
             conversationId,
@@ -472,10 +473,11 @@ test("encrypt message", async () => {
 
         await cc.wipe();
 
-        return len;
+        return [len, cs, Ciphersuite];
     });
 
     expect(msgLen).toBeGreaterThan(0);
+    expect(cs).toEqual(Ciphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256);
 
     await page.close();
     await ctx.close();
