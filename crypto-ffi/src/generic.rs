@@ -977,6 +977,17 @@ impl CoreCrypto {
         Ok(self.central.lock().await.conversation_epoch(&conversation_id).await?)
     }
 
+    /// See [core_crypto::mls::MlsCentral::conversation_ciphersuite]
+    pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
+        let cs = self
+            .central
+            .lock()
+            .await
+            .conversation_ciphersuite(conversation_id)
+            .await?;
+        Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
+    }
+
     /// See [core_crypto::mls::MlsCentral::process_raw_welcome_message]
     pub async fn process_welcome_message(
         &self,
