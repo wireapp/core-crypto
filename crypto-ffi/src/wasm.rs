@@ -1611,6 +1611,28 @@ impl CoreCrypto {
         )
     }
 
+    /// Returns [`WasmCryptoResult<Ciphersuite>`]
+    ///
+    /// see [core_crypto::mls::MlsCentral::conversation_ciphersuite]
+    pub fn conversation_ciphersuite(&self, conversation_id: ConversationId) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                WasmCryptoResult::Ok(
+                    Ciphersuite::from(
+                        this.write()
+                            .await
+                            .conversation_ciphersuite(&conversation_id)
+                            .await
+                            .map_err(CoreCryptoError::from)?,
+                    )
+                    .into(),
+                )
+            }
+            .err_into(),
+        )
+    }
+
     /// Returns: [`bool`]
     ///
     /// see [core_crypto::mls::MlsCentral::conversation_exists]

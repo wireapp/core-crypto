@@ -1149,6 +1149,17 @@ export class CoreCrypto {
     }
 
     /**
+     * Returns the ciphersuite of a conversation
+     *
+     * @returns the ciphersuite of the conversation
+     */
+    async conversationCiphersuite(conversationId: ConversationId): Promise<Ciphersuite> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.conversation_ciphersuite(conversationId)
+        );
+    }
+
+    /**
      * Wipes and destroys the local storage of a given conversation / MLS group
      *
      * @param conversationId - The ID of the conversation to remove
