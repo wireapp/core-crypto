@@ -387,6 +387,15 @@ impl MlsCentral {
         Ok(self.get_conversation(id).await?.read().await.group.epoch().as_u64())
     }
 
+    /// Returns the ciphersuite of a given conversation
+    ///
+    /// # Errors
+    /// If the conversation can't be found
+    #[cfg_attr(test, crate::idempotent)]
+    pub async fn conversation_ciphersuite(&mut self, id: &ConversationId) -> CryptoResult<MlsCiphersuite> {
+        Ok(self.get_conversation(id).await?.read().await.ciphersuite())
+    }
+
     /// Closes the connection with the local KeyStore
     ///
     /// # Errors
