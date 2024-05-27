@@ -86,13 +86,13 @@ Build bindings for Android, JVM, iOS and WASM
 cd crypto-ffi 
 
 # builds bindings and targets for the JVM (macOS / Linux)
-cargo make "copy-jvm-resources"
+cargo make jvm
 
 # builds bindings and targets for Android
-cargo make "copy-android-resources"
+cargo make android
 
 # builds iOS framework
-cargo make "ios-create-xcframework"
+cargo make ios-create-xcframework
 
 # builds wasm binary & TS bindings
 cargo make wasm
