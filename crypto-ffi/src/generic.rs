@@ -758,6 +758,7 @@ impl MakeWriter<'_> for CoreCryptoLoggerWrapper {
     }
 }
 
+/// Defines the log level for a CoreCrypto
 #[derive(Debug, Clone, Copy, uniffi::Enum)]
 pub enum CoreCryptoLogLevel {
     Off,
