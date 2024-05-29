@@ -30,6 +30,8 @@ use core_crypto::{
     },
     MlsError,
 };
+use tracing::level_filters::LevelFilter;
+use tracing_subscriber::fmt::{self, MakeWriter};
 
 use crate::UniffiCustomTypeConverter;
 
@@ -723,6 +725,62 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     ) -> bool;
 }
 
+#[uniffi::export(with_foreign)]
+/// This trait is used to provide a callback mechanism to hook up the rerspective platform logging system
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
+    /// Function to setup a hook for the logging messages. Core Crypto will call this method
+    /// whenever it needs to log a message.
+    fn log(&self, msg: String);
+}
+
+#[derive(Debug, Clone)]
+struct CoreCryptoLoggerWrapper(std::sync::Arc<dyn CoreCryptoLogger>);
+
+impl std::io::Write for CoreCryptoLoggerWrapper {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let message = String::from_utf8_lossy(buf);
+        self.0.log(message.into_owned());
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+impl MakeWriter<'_> for CoreCryptoLoggerWrapper {
+    type Writer = Self;
+
+    fn make_writer(&self) -> Self::Writer {
+        self.clone()
+    }
+}
+
+#[derive(Debug, Clone, Copy, uniffi::Enum)]
+pub enum CoreCryptoLogLevel {
+    Off,
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+impl From<CoreCryptoLogLevel> for LevelFilter {
+    fn from(value: CoreCryptoLogLevel) -> LevelFilter {
+        match value {
+            CoreCryptoLogLevel::Off => LevelFilter::OFF,
+            CoreCryptoLogLevel::Trace => LevelFilter::TRACE,
+            CoreCryptoLogLevel::Debug => LevelFilter::DEBUG,
+            CoreCryptoLogLevel::Info => LevelFilter::INFO,
+            CoreCryptoLogLevel::Warn => LevelFilter::WARN,
+            CoreCryptoLogLevel::Error => LevelFilter::ERROR,
+        }
+    }
+}
+
 #[derive(Debug, uniffi::Object)]
 pub struct CoreCrypto {
     central: async_lock::Mutex<core_crypto::CoreCrypto>,
@@ -759,9 +817,6 @@ impl CoreCrypto {
         ciphersuites: Option<Ciphersuites>,
         nb_key_package: Option<u32>,
     ) -> CoreCryptoResult<Self> {
-        #[cfg(feature = "debug-logging")]
-        femme::with_level(femme::LevelFilter::Debug);
-
         let nb_key_package = nb_key_package
             .map(usize::try_from)
             .transpose()
@@ -886,6 +941,14 @@ impl CoreCrypto {
             .await
             .callbacks(std::sync::Arc::new(CoreCryptoCallbacksWrapper(callbacks)));
         Ok(())
+    }
+
+    /// Initializes the logger
+    pub fn set_logger(&self, logger: std::sync::Arc<dyn CoreCryptoLogger>, level: CoreCryptoLogLevel) {
+        fmt::fmt()
+            .with_max_level(LevelFilter::from(level))
+            .with_writer(CoreCryptoLoggerWrapper(logger))
+            .init()
     }
 
     /// See [core_crypto::mls::MlsCentral::client_public_key]
