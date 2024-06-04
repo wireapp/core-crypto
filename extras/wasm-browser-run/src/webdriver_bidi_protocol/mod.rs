@@ -19,7 +19,6 @@ pub mod remote {
         pub rest: Extensible,
     }
 
-    // TODO: Add actual commands
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     pub enum CommandData {
         BrowsingContextCommand, //(BrowsingContextCommand),

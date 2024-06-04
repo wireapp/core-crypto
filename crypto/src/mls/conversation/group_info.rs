@@ -89,7 +89,7 @@ pub enum MlsRatchetTreeType {
     /// Contains [GroupInfo] changes since previous epoch (not yet implemented)
     /// (see [draft](https://github.com/rohan-wire/ietf-drafts/blob/main/mahy-mls-ratchet-tree-delta/draft-mahy-mls-ratchet-tree-delta.md))
     Delta = 2,
-    /// TODO: to define
+    /// Not implemented
     ByRef = 3,
 }
 
@@ -98,7 +98,7 @@ pub enum MlsRatchetTreeType {
 pub enum GroupInfoPayload {
     /// Unencrypted [GroupInfo]
     Plaintext(Vec<u8>),
-    // TODO: expose when fully implemented
+    // not implemented
     // Encrypted(Vec<u8>),
 }
 

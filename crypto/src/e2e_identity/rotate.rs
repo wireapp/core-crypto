@@ -285,7 +285,7 @@ impl MlsRotateBundle {
         let key_package_refs_to_remove = self
             .key_package_refs_to_remove
             .into_iter()
-            // TODO: add a method for taking ownership in HashReference
+            // TODO: add a method for taking ownership in HashReference. Tracking issue: WPB-9593
             .map(|r| r.as_slice().to_vec())
             .collect::<Vec<_>>();
         Ok((
@@ -1100,7 +1100,7 @@ pub mod tests {
 
                             let final_count = alice_central.mls_central.count_entities().await;
                             assert_eq!(init_count.encryption_keypair, final_count.encryption_keypair);
-                            // TODO: there is no efficient way to clean a credential when alice merges her pending commit.
+                            // TODO: there is no efficient way to clean a credential when alice merges her pending commit. Tracking issue: WPB-9594
                             // One option would be to fetch all conversations and see if Alice is never represented with the said Credential
                             // but let's be honest this is not very efficient.
                             // The other option would be to get rid of having an implicit KeyPackage for the creator of a conversation

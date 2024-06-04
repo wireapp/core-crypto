@@ -774,7 +774,8 @@ test("ext commits|proposals & callbacks", async () => {
         const groupInfo = extProposalCommit.groupInfo;
 
         /* TODO: this test cannot work anymore since this 'groupInfo' is wrapped in a MlsMessage and 'joinByExternalCommit'
-            expects a raw GroupInfo. We don't have the required methods here to unwrap the MlsMessage
+            expects a raw GroupInfo. We don't have the required methods here to unwrap the MlsMessage.
+            Tracking issue: WPB-9583
         */
         /*const extCommit = await ccExternalCommit.joinByExternalCommit(groupInfo.payload, credentialType);
         // ! This should trigger the userAuthorize callback

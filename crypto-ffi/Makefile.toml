@@ -92,9 +92,6 @@ args = [
     "--out", "../target/doc/core_crypto_ffi/bindings/typescript"
 ]
 
-#[tasks.docs-swift]
-# TODO:
-
 ##################################### WASM ####################################
 
 [tasks.wasm-build]

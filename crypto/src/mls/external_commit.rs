@@ -186,7 +186,7 @@ impl MlsCentral {
         let is_rejoin = self.mls_backend.key_store().mls_group_exists(id.as_slice()).await;
 
         // Persist the now usable MLS group in the keystore
-        // TODO: find a way to make the insertion of the MlsGroup and deletion of the pending group transactional
+        // TODO: find a way to make the insertion of the MlsGroup and deletion of the pending group transactional. Tracking issue: WPB-9595
         let mut conversation = MlsConversation::from_mls_group(mls_group, configuration, &self.mls_backend).await?;
 
         let pending_messages = self.restore_pending_messages(&mut conversation, is_rejoin).await?;
@@ -1029,7 +1029,7 @@ pub mod tests {
                         .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
                         .await;
 
-                    // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage
+                    // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue: WPB-9596
                     join_ext_commit.unwrap();
                     /*assert!(matches!(
                         join_ext_commit.unwrap_err(),

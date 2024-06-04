@@ -131,7 +131,7 @@ pub fn entropy() -> EntropySeed {
     openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519,
     Some(entropy())
 )]
-// TODO: The next ciphersuite isn't supported because of the lack of  ed448 (status unknown) crate
+// TODO: The next ciphersuite isn't supported because of the lack of ed448 (status unknown) crate. Tracking issue: WPB-9650
 // #[case::ed448_aes256_sys_entropy__persistent(
 //     setup(false),
 //     openmls::prelude::Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448,

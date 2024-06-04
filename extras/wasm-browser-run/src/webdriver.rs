@@ -266,7 +266,7 @@ impl WebdriverKind {
             tokio::fs::remove_file(&exe_path).await?;
         }
 
-        // TODO: Check version properly
+        // TODO: Check version properly. Tracking issue: WPB-9636
         // if exe_path.exists() {
         //     let output = tokio::process::Command::new(exe_path.clone())
         //         .args(["--version"])
@@ -302,7 +302,7 @@ impl WebdriverKind {
             .ignore_stderr()
             .run()?;
 
-        // TODO: Do things properly and download with reqwest & unzip with `zip`, `flate2` and `tar`
+        // TODO: Do things properly and download with reqwest & unzip with `zip`, `flate2` and `tar`. Tracking issue: WPB-9636
 
         // let mut file = tokio::fs::File::create(&tempfile_path).await?;
 

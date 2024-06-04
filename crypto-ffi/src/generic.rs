@@ -297,7 +297,7 @@ pub enum MlsRatchetTreeType {
     /// Contains `GroupInfo` changes since previous epoch (not yet implemented)
     /// (see [draft](https://github.com/rohan-wire/ietf-drafts/blob/main/mahy-mls-ratchet-tree-delta/draft-mahy-mls-ratchet-tree-delta.md))
     Delta = 2,
-    /// TODO: to define
+    /// TODO: to define. Tracking issue: WPB-9586
     ByRef = 3,
 }
 
@@ -704,7 +704,7 @@ impl core_crypto::prelude::CoreCryptoCallbacks for CoreCryptoCallbacksWrapper {
 }
 
 /// This only exists to create a sync interface to our internal async callback interface
-// TODO: Remove this once UniFFI supports async callbacks
+// TODO: Remove this once UniFFI supports async callbacks. Tracking issue: WPB-9588
 #[uniffi::export(with_foreign)]
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]

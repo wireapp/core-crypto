@@ -15,7 +15,6 @@ pub struct EntitiesCount {
     pub key_package: usize,
     pub pending_group: usize,
     pub pending_messages: usize,
-    /// TODO: PreSharedKey are never ever deleted by openmls. Pay attention to this we introducing them
     pub psk_bundle: usize,
     pub signature_keypair: usize,
 }

@@ -42,7 +42,7 @@ macro_rules! test_for_entity {
             crate::tests_impl::can_find_entity::<$entity>(&store, &entity).await;
             let ignore_update = pat_to_bool!($($ignore_update)?);
 
-            // TODO: entities which do not support update tend not to have a primary key constraint.
+            // TODO: entities which do not support update tend not to have a primary key constraint. Tracking issue: WPB-9649
             // This can cause complications with the "default" remove implementation which does not support deleting many entities.
             // We should have an automated way to test this here
 

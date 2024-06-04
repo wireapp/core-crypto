@@ -21,7 +21,7 @@ RANLIB_i686-linux-android = "llvm-ranlib"
 # ? the presence of a `.git` folder
 # ? With us having a git dependency to ring, this triggers this local development behavior, preventing
 # ? release builds on certain platforms. Gotta love build systems that are "UB as a service"
-# TODO: Remove this once we target a crates.io version of ring. Probably never!
+# TODO: Remove this once we target a crates.io version of ring. Probably never! Tracking issue: WPB-9580
 CFLAGS="-Wno-error=inline"
 
 [unstable]

@@ -169,7 +169,7 @@ jobs:
       - name: Run tests (wasm)
         run: cargo test --target wasm32-unknown-unknown -p ${{ matrix.workspace }}
 
-  # TODO: pending a proper solution to fix the size limit for WASM tests
+  # TODO: pending a proper solution to fix the size limit for WASM tests. Tracking issue: WPB-9581
   wasm-core-test:
     runs-on: ubuntu-latest
     steps:

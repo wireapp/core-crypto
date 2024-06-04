@@ -6,7 +6,6 @@ pub use changelog::changelog;
 #[derive(Debug, clap::Subcommand)]
 pub enum DocumentationCommands {
     Build {
-        // TODO: Add platforms to build documentation for
         #[clap(value_parser)]
         platforms: Option<String>,
     },

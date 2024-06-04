@@ -22,8 +22,6 @@
 #![doc = include_str!("../../README.md")]
 #![deny(missing_docs)]
 #![allow(clippy::single_component_path_imports)]
-// TODO: remove that and clean prelude when we got time
-#![allow(ambiguous_glob_reexports)]
 
 #[cfg(test)]
 use rstest_reuse;
@@ -74,7 +72,7 @@ pub mod prelude {
             types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
             E2eiEnrollment,
         },
-        error::*,
+        error::{CryptoError, CryptoResult, CryptoboxMigrationError, MlsError, ProteusError},
         mls::{
             ciphersuite::MlsCiphersuite,
             client::id::ClientId,
@@ -85,11 +83,11 @@ pub mod prelude {
             conversation::{
                 commit::{MlsCommitBundle, MlsConversationCreationMessage},
                 config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
-                decrypt::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
+                decrypt::{self, MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
                 group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
                 proposal::MlsProposalBundle,
                 welcome::WelcomeBundle,
-                *,
+                ConversationId, MlsConversation,
             },
             credential::{typ::MlsCredentialType, x509::CertificateBundle},
             external_commit::MlsConversationInitBundle,

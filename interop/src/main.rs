@@ -39,8 +39,8 @@ const ROUNDTRIP_MSG_AMOUNT: usize = 100;
 
 const CIPHERSUITE_IN_USE: CiphersuiteName = CiphersuiteName::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 
-// TODO: Add support for Android emulator
-// TODO: Add support for iOS emulator when on macOS
+// TODO: Add support for Android emulator. Tracking issue: WPB-9646
+// TODO: Add support for iOS emulator when on macOS. Tracking issue: WPB-9646
 fn main() -> Result<()> {
     run_test()
 }

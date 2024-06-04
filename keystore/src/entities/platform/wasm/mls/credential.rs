@@ -119,7 +119,8 @@ impl MlsCredentialExt for MlsCredential {
                 store.delete(&id.into()).await?;
             }
             WasmStorageWrapper::InMemory(_) => {
-                // TODO: current table model does not fit in a hashmap (no more primary key)
+                // current table model does not fit in a hashmap (no more primary key)
+                // memory keystore is never used in prod
             }
         }
 
