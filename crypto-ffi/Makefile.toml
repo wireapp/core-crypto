@@ -263,7 +263,9 @@ args = [
     "--crate-type=staticlib",
     "--release",
     "--",
-    "-C", "strip=symbols"
+    "-C", "strip=symbols",
+    "-l", "static=clang_rt.builtins-x86_64-android",
+    "-L", "${CLANG_RT_DIR}"
 ]
 dependencies = ["ffi-kotlin", "android-env"]
 
@@ -416,6 +418,14 @@ fn update_android_env
 
     set_env ANDROID_NDK_HOME "${base_ndk_path}"
     set_env NDK_HOME "${base_ndk_path}"
+
+    # Determine the clang runtime lib dir so we can statically link
+    # clang_rt.builtins-x86_64-android on x86_64 Android.
+    output = exec ${base_ndk_path}/bin/clang --print-runtime-dir
+    clang_rt_dir = trim_end ${output.stdout}
+    clang_rt_dir = dirname ${clang_rt_dir}
+    clang_rt_dir = join_path ${clang_rt_dir} linux
+    set_env CLANG_RT_DIR "${clang_rt_dir}"
 
     set_env CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_ANDROID_NDK "${base_ndk_path}"
     set_env CARGO_TARGET_AARCH64_LINUX_ANDROID_ANDROID_NDK "${base_ndk_path}"
