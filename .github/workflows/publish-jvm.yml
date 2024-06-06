@@ -98,7 +98,7 @@ jobs:
           cd crypto-ffi
           cargo make ffi-kotlin
       - name: Gradle Setup
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@v1
       - name: Download x86_64 Linux Artifact
@@ -117,7 +117,7 @@ jobs:
           name: aarch64-apple-darwin
           path: target/aarch64-apple-darwin/release
       - name: Publish package
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
         with:
           build-root-directory: crypto-ffi/bindings/
           arguments: ":jvm:publishAllPublicationsToMavenCentral --no-configuration-cache"
