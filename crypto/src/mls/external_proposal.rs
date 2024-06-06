@@ -251,4 +251,63 @@ pub mod tests {
             .await
         }
     }
+
+    mod remove {
+        use openmls::prelude::{ExternalProposal, SenderExtensionIndex};
+
+        use super::{super::*, *};
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        async fn test_external_remove_proposal_decryption(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["owner", "guest"], move |[owner, guest]| {
+                let mut owner_central = owner.mls_central;
+                let guest_central = guest.mls_central;
+
+                Box::pin(async move {
+                    let id = conversation_id();
+
+                    let mut cfg = case.cfg.clone();
+                    let guest_sig_key = guest_central.client_signature_key(&case).as_slice().to_vec();
+                    owner_central
+                        .set_raw_external_senders(&mut cfg, vec![guest_sig_key])
+                        .unwrap();
+                    owner_central
+                        .new_conversation(&id, case.credential_type, cfg)
+                        .await
+                        .unwrap();
+
+                    let group_id = GroupId::from_slice(&id[..]);
+                    let epoch = owner_central.get_conversation_unchecked(&id).await.group.epoch();
+
+                    let to_remove = owner_central.index_of(&id, owner_central.get_client_id()).await;
+                    let sender_index = SenderExtensionIndex::new(0);
+
+                    let (sc, ct) = (case.signature_scheme(), case.credential_type);
+                    let cb = guest_central
+                        .mls_client
+                        .as_ref()
+                        .unwrap()
+                        .find_most_recent_credential_bundle(sc, ct)
+                        .unwrap();
+
+                    let proposal =
+                        ExternalProposal::new_remove(to_remove, group_id, epoch, &cb.signature_key, sender_index)
+                            .unwrap();
+
+                    owner_central
+                        .decrypt_message(&id, proposal.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+
+                    // Ensure the stored proposal matches the one we created.
+                    let conversation = owner_central.get_conversation_unchecked(&id).await;
+                    let pending_proposal = &conversation.group.pending_proposals().next().unwrap().proposal;
+                    let leaf_node_removed = LeafNodeIndex::new(0);
+                    assert!(matches!(pending_proposal, Proposal::Remove(p) if p.removed() == leaf_node_removed));
+                })
+            })
+            .await
+        }
+    }
 }
