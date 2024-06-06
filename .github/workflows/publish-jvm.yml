@@ -100,7 +100,7 @@ jobs:
       - name: Gradle Setup
         uses: gradle/actions/setup-gradle@v3
       - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@v3
+        uses: gradle/actions/wrapper-validation@v3
       - name: Download x86_64 Linux Artifact
         uses: actions/download-artifact@v3
         with:
