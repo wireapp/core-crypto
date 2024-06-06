@@ -25,7 +25,7 @@ jobs:
           java-version: "17"
           distribution: "adopt"
       - name: Gradle Setup
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v3
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@v3
       - name: "Setup rust"
@@ -48,10 +48,9 @@ jobs:
           cd crypto-ffi
           cargo make android
       - name: Build package
-        uses: gradle/gradle-build-action@v2
-        with:
-          build-root-directory: crypto-ffi/bindings/
-          arguments: android:build -x lint -x lintRelease
+        run: |
+          cd crypto-ffi/bindings
+          ./gradlew android:build -x lint -x lintRelease
 
   check-swift:
     runs-on: macos-latest
