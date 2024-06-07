@@ -725,10 +725,8 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     ) -> bool;
 }
 
-#[uniffi::export(with_foreign)]
 /// This trait is used to provide a callback mechanism to hook up the rerspective platform logging system
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[uniffi::export(with_foreign)]
 pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
     /// Function to setup a hook for the logging messages. Core Crypto will call this method
     /// whenever it needs to log a message.
