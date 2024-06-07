@@ -20,6 +20,7 @@ import initWasm, {
     ConversationConfiguration as ConversationConfigurationFfi,
     CustomConfiguration as CustomConfigurationFfi,
     CoreCryptoWasmCallbacks,
+    CoreCryptoWasmLogger,
     NewAcmeOrder,
     NewAcmeAuthz,
     AcmeChallenge,
@@ -631,7 +632,10 @@ const mapWireIdentity = (
         clientId: ffiIdentity.client_id,
         status: normalizeEnum(DeviceStatus, ffiIdentity.status),
         thumbprint: ffiIdentity.thumbprint,
-        credentialType: normalizeEnum(CredentialType, ffiIdentity.credential_type),
+        credentialType: normalizeEnum(
+            CredentialType,
+            ffiIdentity.credential_type
+        ),
         x509Identity: mapX509Identity(ffiIdentity.x509_identity),
     };
 };
@@ -863,6 +867,29 @@ export interface CoreCryptoCallbacks {
 }
 
 /**
+ * An interface to register a logger in CoreCrypto
+ **/
+export interface CoreCryptoLogger {
+    /**
+     * This method will be called by Core Crypto to log messages. It is up to the implementer to decide how to handle the message and where to actually log it.
+     * @param msg - message to log
+     **/
+    log: (msg: string) => void;
+}
+
+/**
+ * Defines the maximum log level for the logs from Core Crypto
+ **/
+export enum CoreCryptoLogLevel {
+    Off = 1,
+    Trace = 2,
+    Debug = 3,
+    Info = 4,
+    Warn = 5,
+    Error = 6,
+}
+
+/**
  * Wrapper for the WASM-compiled version of CoreCrypto
  */
 export class CoreCrypto {
@@ -970,11 +997,7 @@ export class CoreCrypto {
         await this.#loadModule(wasmFilePath);
 
         const cc = await CoreCryptoError.asyncMapErr(
-            CoreCryptoFfi.deferred_init(
-                databaseName,
-                key,
-                entropySeed,
-            )
+            CoreCryptoFfi.deferred_init(databaseName, key, entropySeed)
         );
         return new this(cc);
     }
@@ -1090,6 +1113,18 @@ export class CoreCrypto {
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
+    }
+
+    registerLogger(
+        logger: CoreCryptoLogger,
+        level: CoreCryptoLogLevel,
+        ctx: any = null
+    ): void {
+        const wasmLogger = new CoreCryptoWasmLogger(logger.log, ctx);
+        this.#cc.set_logger(
+            wasmLogger,
+            normalizeEnum(CoreCryptoLogLevel, level)
+        );
     }
 
     /**

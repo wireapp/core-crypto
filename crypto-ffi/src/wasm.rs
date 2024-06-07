@@ -26,6 +26,8 @@ use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
 use std::ops::DerefMut;
 use tls_codec::{Deserialize, Serialize};
+use tracing::level_filters::LevelFilter;
+use tracing_subscriber::fmt::{self, MakeWriter};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::future_to_promise;
@@ -1066,6 +1068,66 @@ impl From<WirePolicy> for MlsWirePolicy {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone)]
+pub struct CoreCryptoWasmLogger {
+    logger: js_sys::Function,
+    ctx: JsValue,
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, Copy)]
+#[repr(u8)]
+pub enum CoreCryptoLogLevel {
+    Off = 1,
+    Trace = 2,
+    Debug = 3,
+    Info = 4,
+    Warn = 5,
+    Error = 6,
+}
+
+impl From<CoreCryptoLogLevel> for LevelFilter {
+    fn from(value: CoreCryptoLogLevel) -> LevelFilter {
+        match value {
+            CoreCryptoLogLevel::Off => LevelFilter::OFF,
+            CoreCryptoLogLevel::Trace => LevelFilter::TRACE,
+            CoreCryptoLogLevel::Debug => LevelFilter::DEBUG,
+            CoreCryptoLogLevel::Info => LevelFilter::INFO,
+            CoreCryptoLogLevel::Warn => LevelFilter::WARN,
+            CoreCryptoLogLevel::Error => LevelFilter::ERROR,
+        }
+    }
+}
+
+#[wasm_bindgen]
+impl CoreCryptoWasmLogger {
+    #[wasm_bindgen(constructor)]
+    pub fn new(logger: js_sys::Function, ctx: JsValue) -> Self {
+        Self { logger, ctx }
+    }
+}
+
+impl std::io::Write for CoreCryptoWasmLogger {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let message = String::from_utf8_lossy(buf);
+        let _ = self.logger.call1(&self.ctx, &JsValue::from(message.as_ref()));
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+impl MakeWriter<'_> for CoreCryptoWasmLogger {
+    type Writer = Self;
+
+    fn make_writer(&self) -> Self::Writer {
+        self.clone()
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone)]
 /// see [core_crypto::prelude::CoreCryptoCallbacks]
 pub struct CoreCryptoWasmCallbacks {
     authorize: std::sync::Arc<async_lock::RwLock<js_sys::Function>>,
@@ -1118,6 +1180,8 @@ Please make all callbacks `async` or manually return a `Promise` via `Promise.re
 // SAFETY: All callback instances are wrapped into Arc<RwLock> so this is safe to mark
 unsafe impl Send for CoreCryptoWasmCallbacks {}
 unsafe impl Sync for CoreCryptoWasmCallbacks {}
+unsafe impl Send for CoreCryptoWasmLogger {}
+unsafe impl Sync for CoreCryptoWasmLogger {}
 
 #[async_trait::async_trait(?Send)]
 impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
@@ -1215,9 +1279,6 @@ impl CoreCrypto {
         entropy_seed: Option<Box<[u8]>>,
         nb_key_package: Option<u32>,
     ) -> WasmCryptoResult<CoreCrypto> {
-        #[cfg(feature = "debug-logging")]
-        femme::with_level(femme::LevelFilter::Debug);
-
         let ciphersuites = lower_ciphersuites(&ciphersuites)?;
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
         let nb_key_package = nb_key_package
@@ -1249,9 +1310,6 @@ impl CoreCrypto {
         key: String,
         entropy_seed: Option<Box<[u8]>>,
     ) -> WasmCryptoResult<CoreCrypto> {
-        #[cfg(feature = "debug-logging")]
-        femme::with_level(femme::LevelFilter::Debug);
-
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
         let configuration = MlsCentralConfiguration::try_new(path, key, None, vec![], entropy_seed, None)
             .map_err(CoreCryptoError::from)?;
@@ -1443,6 +1501,13 @@ impl CoreCrypto {
             }
             .err_into(),
         )
+    }
+
+    pub fn set_logger(&self, logger: CoreCryptoWasmLogger, level: CoreCryptoLogLevel) {
+        fmt::fmt()
+            .with_max_level(LevelFilter::from(level))
+            .with_writer(logger)
+            .init()
     }
 
     /// Returns:: [`WasmCryptoResult<js_sys::Uint8Array>`]

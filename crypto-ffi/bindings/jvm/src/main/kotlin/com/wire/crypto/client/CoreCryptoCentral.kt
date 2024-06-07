@@ -57,6 +57,16 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
     }
 
     /**
+     * Initializes the logging inside Core Crypto. Not required to be called and by default there will be no logging
+     *
+     * @param logger a callback to implement the platform specific logging. It will receive the string with the log text from Core Crypto
+     * @param  level the max level that should be logged. By default it will be OFF
+     **/
+    fun initLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel = CoreCryptoLogLevel.OFF) {
+        this.cc.setLogger(logger, level)
+    }
+
+    /**
      * Creates an enrollment instance with private key material you can use in order to fetch a new x509 certificate from the acme server.
      *
      * @param clientId client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`

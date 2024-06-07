@@ -30,7 +30,6 @@ use rstest_reuse;
 
 #[cfg(test)]
 pub use core_crypto_attributes::{dispotent, durable, idempotent};
-use strum::Display;
 
 pub use self::error::*;
 
@@ -97,32 +96,8 @@ pub mod prelude {
             proposal::{MlsProposal, MlsProposalRef},
             MlsCentral,
         },
-        CoreCrypto, CoreCryptoCallbacks, CoreCryptoLogger, LogLevel,
+        CoreCrypto, CoreCryptoCallbacks,
     };
-}
-
-/// Specifies the level for the log method in the [CoreCryptoLogger] trait
-#[derive(Debug, Clone, Copy, Display)]
-pub enum LogLevel {
-    /// Log level for information messages
-    INFO,
-    /// Log level for debug messages
-    DEBUG,
-    /// Log level for trace messages
-    TRACE,
-    /// Log level for error messages
-    ERROR,
-    /// Log level for warning messages
-    WARN,
-}
-
-/// This trait is used to provide a callback mechanism to hook up the rerspective platform logging system
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait CoreCryptoLogger {
-    /// Function to setup a hook for the logging messages. Core Crypto will call this methodo
-    /// whenever it needs to log a message.
-    async fn log(&self, log_level: LogLevel, message: &str);
 }
 
 /// This trait is used to provide callback mechanisms for the MlsCentral struct, for example for

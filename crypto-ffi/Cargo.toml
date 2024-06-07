@@ -19,7 +19,6 @@ required-features = ["uniffi/cli"]
 [features]
 default = ["proteus"]
 proteus = ["core-crypto/proteus", "core-crypto/cryptobox-migrate"]
-debug-logging = ["dep:log", "dep:femme"] # HAZMAT: Will dump dangerous data
 
 [dependencies]
 thiserror = "1.0"
@@ -28,17 +27,8 @@ futures-util = "0.3"
 async-trait = "0.1"
 tls_codec = { workspace = true }
 async-lock = "3.3"
-
-# Logging stuff for `debug-logging` feature
-femme = { version = "2", optional = true }
-
-[dependencies.log]
-version = "0.4"
-optional = true
-features = [
-    "max_level_trace",
-    "release_max_level_trace"
-]
+tracing = "0.1"
+tracing-subscriber = "0.3"
 
 # see https://github.com/RustCrypto/hashes/issues/404
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "x86")))'.dependencies]
