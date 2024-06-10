@@ -89,7 +89,7 @@ jobs:
           cargo run
       - name: "Upload test results"
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
             files: target/nextest/default/junit.xml
 
