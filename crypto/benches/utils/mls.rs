@@ -157,7 +157,7 @@ pub async fn setup_mls(
 
 pub async fn new_central(
     ciphersuite: MlsCiphersuite,
-    // TODO: always None for the moment. Need to update the benches with some realistic certificates
+    // TODO: always None for the moment. Need to update the benches with some realistic certificates. Tracking issue: WPB-9589
     _credential: Option<&CertificateBundle>,
     in_memory: bool,
 ) -> (MlsCentral, tempfile::TempDir) {

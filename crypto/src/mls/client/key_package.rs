@@ -110,7 +110,7 @@ impl Client {
             .mls_fetch_keypackages::<KeyPackage>(count as u32)
             .await?
             .into_iter()
-            // TODO: do this filtering in SQL when the schema is updated
+            // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
             .filter(|kp| kp.ciphersuite() == ciphersuite.0)
             .collect::<Vec<_>>();
 
@@ -169,7 +169,7 @@ impl Client {
         let valid_count = kps
             .into_iter()
             .map(|kp| core_crypto_keystore::deser::<KeyPackage>(&kp.keypackage))
-            // TODO: do this filtering in SQL when the schema is updated
+            // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
             .filter(|kp| {
                 kp.as_ref()
                     .map(|b| b.ciphersuite() == ciphersuite.0 && MlsCredentialType::from(b.leaf_node().credential().credential_type()) == credential_type)
@@ -275,7 +275,7 @@ impl Client {
             .collect();
 
         for (kp, kp_ref) in &kp_to_delete {
-            // TODO: maybe rewrite this to optimize it. But honestly it's called so rarely and on a so tiny amount of data
+            // TODO: maybe rewrite this to optimize it. But honestly it's called so rarely and on a so tiny amount of data. Tacking issue: WPB-9600
             MlsKeyPackage::delete(conn, &[kp_ref.as_slice().into()]).await?;
             MlsHpkePrivateKey::delete(conn, &[kp.hpke_init_key().as_slice().into()]).await?;
             MlsEncryptionKeyPair::delete(conn, &[kp.leaf_node().encryption_key().as_slice().into()]).await?;

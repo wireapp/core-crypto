@@ -27,7 +27,6 @@ enum CliFormat {
     Pretty,
     Terse,
     Json,
-    // TODO: Support using nextest's `quick-junit`
     Junit,
 }
 
@@ -154,7 +153,7 @@ async fn main() -> Result<()> {
 async fn test_runner(args: Args) -> Result<()> {
     // TODO: To achieve nextest compat, we need to spawn some sort of daemon then only issue commands to it.
     // TODO: Otherwise, the whole process of spawning stuff is too costly and causes errors as we recompile stuff with different hashes.
-    // TODO: Basically everything is too sequential
+    // TODO: Basically everything is too sequential. Tracking issue: WPB-9645
 
     let mut ctx = WebdriverContext::init(args.webdriver.into(), args.force_install_webdriver)
         .await?

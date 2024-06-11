@@ -166,7 +166,7 @@ impl MlsConversation {
             .map(|(uid, group)| {
                 let uid = String::try_from(uid);
                 let identities = group.into_iter().map(|(_, id)| id).collect::<CryptoResult<Vec<_>>>();
-                // TODO: simplify when `Result::zip` available
+                // could be simplified if `Result::zip` was available
                 uid.and_then(|uid| identities.map(|ids| (uid, ids)))
             })
             .collect::<CryptoResult<HashMap<_, _>>>()

@@ -546,6 +546,7 @@ pub mod tests {
                 Box::pin(async move {
                     let backend = MlsCryptoProvider::try_new(tmp_dir_argument, "test").await.unwrap();
                     // phase 1: generate standalone keypair
+                    // TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
                     let handles = Client::generate_raw_keypairs(&[case.ciphersuite()], &backend)
                         .await
                         .unwrap();
@@ -561,7 +562,7 @@ pub mod tests {
                     let prov_identity = identities.pop().unwrap();
 
                     // Make sure we are actually returning the clientId
-                    // TODO: test with multi-ciphersuite
+                    // TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
                     let prov_client_id: ClientId = prov_identity.credential_id.as_slice().into();
                     assert_eq!(&prov_client_id, handles.first().unwrap());
 

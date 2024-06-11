@@ -361,8 +361,9 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
                 let concrete_signature_keypair: &SignatureKeyPair = v
                     .downcast()
                     .expect("There's an implementation issue in OpenMLS. This shouln't be happening.");
-
-                let credential_id = vec![]; // FIXME: find a way to set the credential id
+                
+                // Having an empty credential id seems tolerable, since the SignatureKeyPair type is retrieved from the key store via its public key.
+                let credential_id = vec![];
                 let kp = MlsSignatureKeyPair::new(
                     concrete_signature_keypair.signature_scheme(),
                     k.into(),

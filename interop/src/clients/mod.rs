@@ -37,9 +37,9 @@ pub enum EmulatedClientType {
     // Natively test the FFI in `generic.rs`
     NativeFfi,
     Web,
-    // TODO: Bind with & drive iOS Emulator
+    // TODO: Bind with & drive iOS Emulator. Tracking issue: WPB-9646
     AppleiOS,
-    // TODO: Bind with & drive Android Emulator
+    // TODO: Bind with & drive Android Emulator. Tracking issue: WPB-9646
     Android,
 }
 
@@ -75,7 +75,7 @@ pub trait EmulatedMlsClient: EmulatedClient {
     async fn kick_client(&mut self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>>;
     async fn process_welcome(&mut self, welcome: &[u8]) -> Result<Vec<u8>>;
     async fn encrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>>;
-    // TODO: Make it more complex so that we can extract other things like proposals etc
+    // TODO: Make it more complex so that we can extract other things like proposals etc. Tracking issue: WPB-9647
     async fn decrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>>;
 }
 

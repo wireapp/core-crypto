@@ -38,7 +38,6 @@ pub(crate) mod config {
         /// Entropy pool seed for the internal PRNG
         pub external_entropy: Option<EntropySeed>,
         /// All supported ciphersuites
-        /// TODO: pending wire-server API supports selecting a ciphersuite only the first item of this array will be used.
         pub ciphersuites: Vec<ciphersuite::MlsCiphersuite>,
         /// Number of [openmls::prelude::KeyPackage] to create when creating a MLS client. Default to [INITIAL_KEYING_MATERIAL_COUNT]
         pub nb_init_key_packages: Option<usize>,
@@ -90,15 +89,15 @@ pub(crate) mod config {
             entropy: Option<Vec<u8>>,
             nb_init_key_packages: Option<usize>,
         ) -> CryptoResult<Self> {
-            // TODO: probably more complex rules to enforce
+            // TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
             if store_path.trim().is_empty() {
                 return Err(CryptoError::MalformedIdentifier("store_path"));
             }
-            // TODO: probably more complex rules to enforce
+            // TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
             if identity_key.trim().is_empty() {
                 return Err(CryptoError::MalformedIdentifier("identity_key"));
             }
-            // TODO: probably more complex rules to enforce
+            // TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
             if let Some(client_id) = client_id.as_ref() {
                 if client_id.is_empty() {
                     return Err(CryptoError::MalformedIdentifier("client_id"));

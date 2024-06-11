@@ -41,11 +41,7 @@ use crate::prelude::{ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIA
 pub use fixtures::{TestCase, *};
 pub use message::*;
 
-// FIXME: This takes around 10 minutes on WASM
-// #[cfg(debug_assertions)]
 pub const GROUP_SAMPLE_SIZE: usize = 9;
-// #[cfg(not(debug_assertions))]
-// pub const GROUP_SAMPLE_SIZE: usize = 99;
 
 #[derive(Debug)]
 pub struct ClientContext {

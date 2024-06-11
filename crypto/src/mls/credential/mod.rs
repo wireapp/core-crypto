@@ -138,7 +138,7 @@ impl Client {
     }
 }
 
-// TODO: ensure certificate signature must match the group's ciphersuite ; fails otherwise.
+// TODO: ensure certificate signature must match the group's ciphersuite ; fails otherwise. Tracking issue: WPB-9632
 // Requires more than 1 ciphersuite supported at the moment.
 #[cfg(test)]
 pub mod tests {

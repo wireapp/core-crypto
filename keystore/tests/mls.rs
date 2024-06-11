@@ -142,7 +142,7 @@ pub mod tests {
         teardown(backend.unwrap_keystore()).await;
     }
 
-    // FIXME: rewrite the tests using the new OpenMLS apis
+    // FIXME: rewrite the tests using the new OpenMLS apis. Tracking issue: WPB-9657
     // #[apply(all_storage_types)]
     // #[wasm_bindgen_test]
     // pub async fn can_add_read_delete_keypackage_bundle_openmls_traits(store: Connection) {

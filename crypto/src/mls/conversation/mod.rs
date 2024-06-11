@@ -548,7 +548,7 @@ pub mod tests {
                 );
 
                 let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
-                // TODO: Do things in parallel, this is waaaaay too slow (takes around 5 minutes)
+                // TODO: Do things in parallel, this is waaaaay too slow (takes around 5 minutes). Tracking issue: WPB-9624
                 for mut c in bob_and_friends {
                     c.process_welcome_message(welcome.clone().into(), case.custom_cfg())
                         .await

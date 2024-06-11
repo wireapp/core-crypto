@@ -138,7 +138,7 @@ pub mod tests {
 
                         let decrypting = bob_central.mls_central.decrypt_message(&id, proposal).await;
 
-                        // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage
+                        // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623
                         decrypting.unwrap();
                         /*assert!(matches!(
                             decrypting.unwrap_err(),
@@ -201,7 +201,7 @@ pub mod tests {
 
                         let decrypting = bob_central.mls_central.decrypt_message(&id, commit).await;
 
-                        // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage
+                        // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623
                         decrypting.unwrap();
                         /*assert!(matches!(
                             decrypting.unwrap_err(),
@@ -258,7 +258,7 @@ pub mod tests {
                             .process_welcome_message(commit.welcome.into(), case.custom_cfg())
                             .await;
 
-                        // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage
+                        // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623
                         process_welcome.unwrap();
                         /*assert!(matches!(
                             process_welcome.unwrap_err(),

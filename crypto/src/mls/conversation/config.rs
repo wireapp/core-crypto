@@ -79,7 +79,6 @@ pub struct MlsConversationConfiguration {
 }
 
 impl MlsConversationConfiguration {
-    // TODO: pending a long term solution with a real certificate
     const WIRE_SERVER_IDENTITY: &'static str = "wire-server";
 
     const PADDING_SIZE: usize = 128;
@@ -155,8 +154,8 @@ impl MlsConversationConfiguration {
     }
 
     /// This supports the legacy behaviour where the server was providing the external sender public key
-    /// raw. This only supports Ed25519
-    // TODO: remove at some point when the backend API is not used anymore
+    /// raw.
+    // TODO: remove at some point when the backend API is not used anymore. Tracking issue: WPB-9614
     fn legacy_external_sender(
         key: Vec<u8>,
         signature_scheme: SignatureScheme,
@@ -177,7 +176,7 @@ impl MlsConversationConfiguration {
 /// The configuration parameters for a group/conversation which are not handled natively by openmls
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MlsCustomConfiguration {
-    // TODO: Not implemented yet
+    // TODO: Not implemented yet. Tracking issue: WPB-9609
     /// Duration in seconds after which we will automatically force a self_update commit
     pub key_rotation_span: Option<std::time::Duration>,
     /// Defines if handshake messages are encrypted or not

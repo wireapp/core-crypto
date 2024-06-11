@@ -265,7 +265,7 @@ impl WebdriverContext {
         wasm_file_path: &std::path::Path,
         only_ignored: bool,
     ) -> WasmBrowserRunResult<Vec<String>> {
-        // TODO: Support introspecting ignored tests
+        // TODO: Support introspecting ignored tests. Tracking issue: WPB-9634
         if only_ignored {
             return Ok(vec![]);
         }

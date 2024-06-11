@@ -31,7 +31,7 @@ impl MlsConversation {
             (ContentType::Proposal, Sender::Member(_) | Sender::NewMemberProposal) => {
                 match msg.body() {
                     FramedContentBodyIn::Proposal(proposal) => {
-                        let proposal = Proposal::from(proposal.clone()); // TODO: eventually remove this clone 😮‍💨
+                        let proposal = Proposal::from(proposal.clone()); // TODO: eventually remove this clone 😮‍💨. Tracking issue: WPB-9622
                         let already_exists = self.group.pending_proposals().any(|pp| pp.proposal() == &proposal);
                         Ok(already_exists)
                     }

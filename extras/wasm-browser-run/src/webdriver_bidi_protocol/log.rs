@@ -43,7 +43,7 @@ pub struct BaseLogEntry {
     #[serde(flatten)]
     pub source: ScriptSource,
     pub text: Option<String>,
-    // FIXME: Do something better than a f64; ie std::time::Duration or something like chrono human durations
+    // FIXME: Do something better than a f64; ie std::time::Duration or something like chrono human durations. Tracking issue: WPB-9656
     pub timestamp: f64,
     pub stack_trace: Option<ScriptStackTrace>,
 }
